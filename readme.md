@@ -162,13 +162,15 @@ The client is not yet committed to the repository since it's not functional yet.
 - Server
    - Account
       - documentation & tests for recover/reset
-      - Get account activity
+      - check documentation for app routes
+      - Get account activity & test
    - DB backups to S3.
    - Limit of 1k for deleting S3 items in s3del.
    - Email sending & templates in config
 
 - Client
    - Fix all existing functionality after server refactor.
+   - Upload popup
    - Canvas
       - Correct dimensions after full screen (check flechita movediza and size of initial picture).
       - Show picture info.
@@ -180,8 +182,6 @@ The client is not yet committed to the repository since it's not functional yet.
       - Add multiple tags at the same time.
       - Bug when pictures fit in screen, no reload
       - Make 200x200 in organize view
-   - Share view
-   - Account view
 
 - Admin
    - Admin area with invites
@@ -193,6 +193,7 @@ The client is not yet committed to the repository since it's not functional yet.
    - Manage payments.
 
 - Account
+   - Account view
    - Two-cookie system with CSRF.
    - Delete account.
    - Change email & password.

@@ -1,7 +1,7 @@
 /*
-acpic - v0.0.0
+acpic - v0.1.0
 
-Written by Federico Pereiro (fpereiro@gmail.com) and released into the public domain.
+Written by Altocode and released into the public domain.
 
 Please refer to readme.md to read the annotated source (but not yet!).
 */
@@ -137,8 +137,6 @@ var k      = function (s) {
    });
    proc.on ('exit',  function (code, signal) {output.code = code; output.signal = signal; done ()});
 }
-
-// *** MAIN VIEW ***
 
 // *** HELPERS ***
 
