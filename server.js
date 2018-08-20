@@ -314,7 +314,10 @@ var routes = [
 
       var login = function (username) {
          giz.login (username, b.password, function (error, session) {
-            if (error || ! session) return reply (rs, 403, {error: 'auth'});
+            if (error) {
+               if (type (error) === 'string') return reply (rs, 403, {error: 'auth'});
+               else                           return reply (rs, 500, {error: error});
+            }
 
             redis.hget ('users:' + username, 'verificationPending', function (error, pending) {
                if (error)   return reply (rs, 500, {error: error});
@@ -413,39 +416,96 @@ var routes = [
    // *** PASSWORD RECOVER/RESET ***
 
    ['post', 'auth/recover', function (rq, rs) {
-      if (type (rq.body) !== 'object') return reply (rs, 400);
-      if (type (rq.body.username) !== 'string') return reply (rs, 400);
 
-      // XXX remove whitespace
-      giz.recover (rq.body.username.toLowerCase (), function (error, token) {
-         if (error) return reply (rs, 403);
-         redis.hgetall ('users:' + rq.body.username.toLowerCase (), function (error, user) {
-            if (error) return reply (rs, 500);
-            H.resolveTemplate ('password recovery', {firstName: rq.body.username.toLowerCase (), link: 'https://' + CONFIG.server + '#/auth/reset/' + encodeURIComponent (rq.body.username.toLowerCase ()) + '/' + encodeURIComponent (token)}, function (error, template) {
-               H.sendEmail ({
-                  recipientName: user.username,
-                  recipientEmail: user.email,
-                  subject: 'Password recovery rq',
-                  message: template
-               }, function (error) {
-                  return reply (rs, error ? 500 : 200);
-               });
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['body', b, 'string', 'each'],
+         ['keys of body', dale.keys (b), ['username'], 'eachOf', teishi.test.equal],
+         function () {return [
+            dale.do (['username'], function (key) {
+               return ['body.' + key, b [key], 'string']
+            }),
+         ]},
+      ])) return;
+
+      var recover = function (username) {
+         giz.recover (username, function (error, token) {
+            if (error) {
+               if (type (error) === 'string') return reply (rs, 403);
+               else                           return reply (rs, 500, {error: error});
+            }
+            redis.hgetall ('users:' + username, function (error, user) {
+               if (error)  return reply (rs, 500, {error: error});
+               if (! PROD) return reply (rs, 200, {token: token});
+               // XXX SEND EMAIL if PROD
             });
          });
+      }
+
+      var username = b.username.toLowerCase ().replace (/\s+$/g, '');
+
+      if (! username.match ('@')) recover (username);
+      else redis.hget ('emails', username, function (error, username) {
+         if (error)      return reply (rs, 500, {error: error});
+         if (! username) return reply (rs, 403);
+         recover (username);
       });
+
+               /*
+               H.resolveTemplate ('password recovery', {firstName: rq.body.username.toLowerCase (), link: 'https://' + CONFIG.server + '#/auth/reset/' + encodeURIComponent (rq.body.username.toLowerCase ()) + '/' + encodeURIComponent (token)}, function (error, template) {
+                  H.sendEmail ({
+                     recipientName: user.username,
+                     recipientEmail: user.email,
+                     subject: 'Password recovery rq',
+                     message: template
+                  }, function (error) {
+                     return reply (rs, error ? 500 : 200);
+                  });
+               });
+               */
    }],
 
    ['post', 'auth/reset', function (rq, rs) {
 
-      // XXX remove whitespace
       var b = rq.body;
 
-      if (type (b) !== 'object' || type (b.username) !== 'string' || type (b.token) !== 'string' || type (b.password) !== 'string' || b.password.length < 6) return reply (rs, 400);
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['body', b, 'string', 'each'],
+         ['keys of body', dale.keys (b), ['username', 'password', 'token'], 'eachOf', teishi.test.equal],
+         function () {return [
+            dale.do (['username', 'password', 'token'], function (key) {
+               return ['body.' + key, b [key], 'string']
+            }),
+         ]},
+      ])) return;
 
-      redis.hgetall ('users:' + b.username, function (error, user) {
-         if (error) return reply (rs, 500);
-         giz.reset (b.username, b.token, b.password, function (error) {
-            reply (rs, error ? 403 : 200, error ? {error: 'token'} : '');
+      var reset = function (username) {
+         redis.hgetall ('users:' + username, function (error, user) {
+            if (error) return reply (res, 500, {error: error});
+            giz.reset (username, b.token, b.password, function (error) {
+               if (error) {
+                  if (type (error) === 'string') return reply (rs, 403);
+                  else                           return reply (rs, 500, {error: error});
+               }
+               reply (rs, 200);
+               // XXX SEND EMAIL if PROD
+            });
+         });
+      }
+
+      var username = b.username.toLowerCase ().replace (/\s+$/g, '');
+
+      if (! username.match ('@')) reset (username);
+      else redis.hget ('emails', username, function (error, username) {
+         if (error)      return reply (rs, 500, {error: error});
+         if (! username) return reply (rs, 403);
+         reset (username);
+      });
+
+            /*
             if (! error) H.resolveTemplate ('password change', {firstName: b.username.toLowerCase ()}, function (error, template) {
                H.sendEmail ({
                   recipientName: user.username,
@@ -454,8 +514,7 @@ var routes = [
                   message: template
                });
             });
-         });
-      });
+            */
    }],
 
    // *** GATEKEEPER FUNCTION ***
@@ -463,19 +522,15 @@ var routes = [
    ['all', '*', function (rq, rs) {
 
       if (! PROD && rq.url === '/admin/invites') return rs.next ();
+      if (rq.url === 'clienterror')              return rs.next ();
 
-      var session = rq.data.cookie ? (rq.data.cookie [CONFIG.cookieName] || '') : '';
-      giz.auth (session, function (error, user) {
-         if (error || ! user) {
-            var cookie = {'set-cookie': cicek.cookie.write (CONFIG.cookieName, false)};
-            if (rq.method === 'get' && rq.url === '/') reply (rs, 200, view, cookie, 'html');
-            else                                                 reply (rs, 403, {error: 'Invalid session.'});
-         }
-         else {
-            rs.log.user = user.username;
-            rq.user = user;
-            rs.next ();
-         }
+      giz.auth ((rq.data.cookie || {}) [CONFIG.cookieName] || '', function (error, user) {
+         if (error)  return reply (rs, 500, {error: error});
+         if (! user) return reply (rs, 403, {error: 'session'});
+
+         rs.log.user = user.username;
+         rq.user = user;
+         rs.next ();
       });
    }],
 
@@ -486,7 +541,7 @@ var routes = [
       if (PROD) return reply (rs, 501);
 
       giz.destroy (rq.user.username, function (error) {
-         if (error) return reply (rs, 500, error);
+         if (error) return reply (rs, 500, {error: error});
          var multi = redis.multi ();
          multi.hdel ('emails',  rq.user.email);
          multi.hdel ('invites', rq.user.email);
@@ -495,7 +550,7 @@ var routes = [
          multi.del ('shm:'  + rq.user.username);
          multi.del ('sho:'  + rq.user.username);
          multi.exec (function (error) {
-            if (error) return reply (rs, 500, error);
+            if (error) return reply (rs, 500, {error: error});
             giz.logout (rq.data.cookie [CONFIG.cookieName], function (error) {
                H.log (rq.user.username, {a: 'des'});
                reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookieName, false)});
@@ -508,18 +563,18 @@ var routes = [
 
    ['get', 'pic/:id', function (rq, rs) {
       redis.hgetall ('pic:' + rq.data.params.id, function (error, pic) {
-         if (error)        return reply (rs, 500, error);
+         if (error)        return reply (rs, 500, {error: error});
          if (pic === null) return reply (rs, 404);
          if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), pic.id), [CONFIG.picfolder]);
          redis.smembers ('pict:' + pic.id, function (error, tags) {
-            if (error) return reply (rs, 500, error);
+            if (error) return reply (rs, 500, {error: error});
             if (tags.length === 0) return reply (rs, 404);
             var multi = redis.multi ();
             dale.do (tags, function (tag) {
                multi.sismember ('shm:' + rq.user.username, pic.owner + ':' + tag);
             });
             multi.exec (function (error, data) {
-               if (error) return reply (rs, 500, error);
+               if (error) return reply (rs, 500, {error: error});
                if (! dale.stop (data, true, function (v) {
                   if (! v) return;
                   redis.hincrby ('pic:' + pic.id, 'xp', 1);
@@ -533,21 +588,21 @@ var routes = [
 
    ['get', 'thumb/:id', function (rq, rs) {
       redis.get ('thu:' + rq.data.params.id, function (error, pic) {
-         if (error)        return reply (rs, 500, error);
+         if (error)        return reply (rs, 500, {error: error});
          if (pic === null) return reply (rs, 404);
          redis.hgetall ('pic:' + pic, function (error, pic) {
-            if (error)        return reply (rs, 500, error);
+            if (error)        return reply (rs, 500, {error: error});
             if (pic === null) return reply (rs, 404);
             if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
             redis.smembers ('pict:' + pic.id, function (error, tags) {
-               if (error) return reply (rs, 500, error);
+               if (error) return reply (rs, 500, {error: error});
                if (tags.length === 0) return reply (rs, 404);
                var multi = redis.multi ();
                dale.do (tags, function (tag) {
                   multi.sismember ('shm:' + rq.user.username, pic.owner + ':' + tag);
                });
                multi.exec (function (error, data) {
-                  if (error) return reply (rs, 500, error);
+                  if (error) return reply (rs, 500, {error: error});
                   if (! dale.stop (data, true, function (v) {
                      if (! v) return;
                      redis.hincrby ('pic:' + pic.id, 'xt' + (rq.data.params.id === pic.t200 ? 2 : 9), 1);
@@ -668,7 +723,7 @@ var routes = [
                      multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
                      multi.hmset ('pic:' + pic.id, pic);
                      multi.exec (function (error) {
-                        if (error) return reply (rs, 500, error);
+                        if (error) return reply (rs, 500, {error: error});
                         if (! rs.connection.writable) {
                            redis.log (['error', 'client upload error', {pic: s.pic}]);
                            cicek.log (['error', 'client upload error', {pic: s.pic}]);
@@ -698,7 +753,7 @@ var routes = [
             multi.hgetall ('pic:'  + id);
             multi.smembers ('pict:' + id);
             multi.exec (function (error, data) {
-               if (error) return reply (rs, 500, {error: 'Redis error 1'});
+               if (error) return reply (rs, 500, {error: error});
                s.last = data;
                s.do ();
             });
@@ -864,7 +919,7 @@ var routes = [
                multi.smembers ('pict:' + id);
             });
             multi.exec (function (error, data) {
-               if (error) return reply (rs, 500, error);
+               if (error) return reply (rs, 500, {error: error});
                // XXX s.do (data) doesn't work!
                s.last = data;
                s.do ();
@@ -901,7 +956,7 @@ var routes = [
                }
             });
             multi.exec (function (error) {
-               if (error) return reply (rs, 500, error);
+               if (error) return reply (rs, 500, {error: error});
                reply (rs, 200);
                H.log (rq.user.username, {a: 'tag', tag: b.tag, d: b.del ? true : undefined, ids: b.ids});
             })
@@ -916,7 +971,7 @@ var routes = [
       multi.hgetall ('tags:' + rq.user.username);
       multi.scard   ('tag:'  + rq.user.username + ':all');
       multi.exec (function (error, data) {
-         if (error) return reply (rs, 500, error);
+         if (error) return reply (rs, 500, {error: error});
          var output = {all: parseInt (data [1])};
          reply (rs, 200, dale.obj (data [0], output, function (v, k) {
             v = parseInt (v);
@@ -968,7 +1023,7 @@ var routes = [
       }
 
       redis.smembers ('shm:' + rq.user.username, function (error, shared) {
-         if (error) return reply (rs, 500, error);
+         if (error) return reply (rs, 500, {error: error});
 
          var allmode = dale.keys (tags).length === 0;
 
@@ -998,14 +1053,14 @@ var routes = [
          });
 
          multi.exec (function (error, data) {
-            if (error) return reply (rs, 500, error);
+            if (error) return reply (rs, 500, {error: error});
             var pics = data [dale.keys (tags).length];
             var multi2 = redis.multi ();
             dale.do (pics, function (pic) {
                multi2.hgetall ('pic:' + pic);
             });
             multi2.exec (function (error, pics) {
-               if (error) return reply (rs, 500, error);
+               if (error) return reply (rs, 500, {error: error});
                var output = {total: pics.length, pics: []};
 
                dale.do (pics, function (pic) {
@@ -1047,7 +1102,7 @@ var routes = [
                   multi3.smembers ('pict:' + pic.id);
                });
                multi3.exec (function (error, tags) {
-                  if (error) return reply (rs, 500, error);
+                  if (error) return reply (rs, 500, {error: error});
                   dale.do (output.pics, function (pic, k) {
                      pic.tags = tags [k];
                      pic.date = parseInt (pic.date);
@@ -1089,7 +1144,7 @@ var routes = [
       if (b.tag === 'all' || b.tag === 'untagged') return reply (rs, 400, {error: 'You cannot share that tag.'});
 
       redis.exists ('users:' + b.who, function (error, exists) {
-         if (error) return reply (rs, 500, error);
+         if (error) return reply (rs, 500, {error: error});
          if (! exists) return reply (rs, 404);
 
          var multi = redis.multi ();
@@ -1122,8 +1177,8 @@ var routes = [
 
    // *** CLIENT ERRORS ***
 
-   ['post', 'api/clienterror', cicek.json (function (rq, rs) {
-      if (PROD) fs.appendFile ('clienterror.log', teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).id, error: rq.body}) + '\n');
+   ['post', 'clienterror', cicek.json (function (rq, rs) {
+      if (PROD) fs.appendFile ('clienterror.log', teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).username, error: rq.body}) + '\n');
       reply (rs, 200);
    })],
 
@@ -1167,7 +1222,7 @@ var routes = [
 
    ['post', 'logs', cicek.json (function (rq, rs) {
       redis.lrange ('logs', 0, -1, function (error, list) {
-         if (error) return reply (rs, 500, error);
+         if (error) return reply (rs, 500, {error: error});
          reply (rs, 200, dale.fil (list, undefined, function (v) {
             if (! rq.body.query || v.match (new RegExp (rq.body.query.replace (/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i'))) return v;
          }).slice (0, 50));

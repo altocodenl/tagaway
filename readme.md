@@ -14,69 +14,6 @@ The application is currently under development and has not been launched yet. We
 
 The client is not yet committed to the repository since it's not functional yet. The server is functional but some work still remains (see Features section below).
 
-## Redis structure
-
-```
-- users:USERNAME (hash):
-   username: STRING,
-   email: STRING,
-   pass: STRING,
-   tier: STRING (one of tier1|tier2|tier3|tier4),
-   s3:bget: INT (bytes GET from s3),
-   s3:buse: INT (space used in S3),
-
-- emails (hash): key is email, value is username
-
-- invites (hash): key is email, value is {token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
-
-- verify (hash): key is token, value is email. Deleted after usage.
-
-- upic:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition.
-
-- thu:ID (string): id of the corresponding pic.
-
-- pic:ID (hash)
-   id: STRING (uuid),
-   owner: STRING (user id),
-   name: STRING,
-   dateup: INT (millis),
-   dimw: INT (width in pixels),
-   dimh: INT (height in pixels),
-   by:   INT (size in bytes)
-   hash: STRING,
-   dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first),
-   orientation: STRING (stringified array of orientation data) or absent
-   date: INT (latest date within dates),
-   t200: STRING or absent,
-   by200: INT or absent,
-   t900: STRING or absent,
-   by900: INT or absent,
-   xt2: INT or absent, number of thumb200 downloaded (also includes cache)
-   xt9: INT or absent, number of thumb900 downloaded (also includes cache)
-   xp: INT or absent, number of pics downloaded (also includes cache)
-
-- pict:ID (set): list of all the tags belonging to the picture.
-
-- tag:USERID:TAG (set): pic ids.
-
-- shm:USERID (set): USERA:TAG, USERB:TAG (shared with me)
-
-- sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
-
-- tags:USERID (hash): list of all tags and the number of pictures for each. Also contains untagged field. Does not count pictures shared with the user.
-
-- ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
-   - For login:    {t: INT, a: 'log', r: 0|1, ip: STRING, ua: STRING}
-   - For signup:   {t: INT, a: 'sig', r: 0|1, ip: STRING, ua: STRING}
-   - For destroy:  {t: INT, a: 'des', r: 0|1}
-   - For uploads:  {t: INT, a: 'upl', id: STRING}
-   - For deletes:  {t: INT, a: 'del', id: STRING}
-   - For rotates:  {t: INT, a: 'rot', id: STRING, d: 90|180|-90, o: STRING (pic orientation)}
-   - For tags:     {t: INT, a: 'tag', tag: STRING, d: true|undefined, ids: [...]}
-   - For shares:   {t: INT, a: 'sh1', tag: STRING, u: STRING}
-   - For unshares: {t: INT, a: 'sh0', tag: STRING, u: STRING}
-```
-
 ## Routes
 
 ### Auth routes
@@ -106,22 +43,39 @@ The client is not yet committed to the repository since it's not functional yet.
    - If the token provided doesn't match what's on the database, a 403 is returned with an empty object as body: `{}`.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
+- `POST /auth/recover`.
+   - Body must be `{username: STRING}`. The username can be either the username or the email.
+   - If username is invalid, a 403 is returned.
+   - If successful, it sends an email to the associated email address with a link for password recovery.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-   ['post', 'auth/recover', function (request, response) {
-   ['post', 'auth/reset', function (request, response) {
-   ['post', 'auth/destroy', function (request, response) {
+- `POST /auth/reset`.
+   - Body must be `{username: STRING, password: STRING, token: STRING}`. The username can be either the username or the email.
+   - If username is invalid, a 403 is returned.
+   - If successful, it sends an email to the associated email address with a link for password recovery.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
+
+- `POST /auth/delete`.
+   - User must be logged in, otherwise a 403 is returned.
+   - The body is ignored.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
+   - If successful, a 302 is returned redirecting to `/`.
 
 ### App routes
+
+From this point onwards, if a user is not logged in, any request will receive a 403 with body `{body: 'session'}`.
 
 - `GET /pic/ID`.
    - Pic must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `GET /thumb/ID`.
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /pic`.
    - Must be multipart.
@@ -155,18 +109,31 @@ The client is not yet committed to the repository since it's not functional yet.
    - `sort` determines whether sorting is done by `newest`, `oldest`, or `upload` (newest upload; there's no option for oldest upload).
    - `num` is number of things you already have. `more` adds 30 more to that, otherwise you just get what you asked for.
 
+POST /share
+
+GET /share
+
+POST /api
+
+### Admin & debugging routes
+
+POST /clienterror (no need to be logged in)
+
+   ['post', 'admin/invites', function (rq, rs) {
+   ['post', 'logs', cicek.json (function (rq, rs) {
+
 ## Features
 
 ### Todo alpha
 
 - Server
    - Account
-      - documentation & tests for recover/reset
       - check documentation for app routes
-      - Get account activity & test
+      - Get account activity, clienterror & test
+   - Email sending & templates in config
    - DB backups to S3.
    - Limit of 1k for deleting S3 items in s3del.
-   - Email sending & templates in config
+   - Count user & picture activity (uploads & downloads) with 10 minute granularity
 
 - Client
    - Fix all existing functionality after server refactor.
@@ -231,7 +198,6 @@ The client is not yet committed to the repository since it's not functional yet.
 
 - Other
    - Report pictures.
-   - Publish code.
    - QR code to share.
 
 ### Done
@@ -287,6 +253,77 @@ The client is not yet committed to the repository since it's not functional yet.
    - Serve images as hosting.
    - Share certain tags only on shared pictures.
    - Home pages.
+
+## Redis structure
+
+```
+- users:USERNAME (hash):
+   username: STRING,
+   email: STRING,
+   pass: STRING,
+   tier: STRING (one of tier1|tier2|tier3|tier4),
+   s3:bget: INT (bytes GET from s3),
+   s3:buse: INT (space used in S3),
+
+- emails (hash): key is email, value is username
+
+- invites (hash): key is email, value is {token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
+
+- verify (hash): key is token, value is email. Deleted after usage.
+
+- upic:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition.
+
+- thu:ID (string): id of the corresponding pic.
+
+- pic:ID (hash)
+   id: STRING (uuid),
+   owner: STRING (user id),
+   name: STRING,
+   dateup: INT (millis),
+   dimw: INT (width in pixels),
+   dimh: INT (height in pixels),
+   by:   INT (size in bytes)
+   hash: STRING,
+   dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first),
+   orientation: STRING (stringified array of orientation data) or absent
+   date: INT (latest date within dates),
+   t200: STRING or absent,
+   by200: INT or absent,
+   t900: STRING or absent,
+   by900: INT or absent,
+   xt2: INT or absent, number of thumb200 downloaded (also includes cache)
+   xt9: INT or absent, number of thumb900 downloaded (also includes cache)
+   xp: INT or absent, number of pics downloaded (also includes cache)
+
+- pict:ID (set): list of all the tags belonging to the picture.
+
+- tag:USERID:TAG (set): pic ids.
+
+- shm:USERID (set): USERA:TAG, USERB:TAG (shared with me)
+
+- sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
+
+- tags:USERID (hash): list of all tags and the number of pictures for each. Also contains untagged field. Does not count pictures shared with the user.
+
+- ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
+   - For login:    {t: INT, a: 'log', r: 0|1, ip: STRING, ua: STRING}
+   - For signup:   {t: INT, a: 'sig', r: 0|1, ip: STRING, ua: STRING}
+   - For destroy:  {t: INT, a: 'des', r: 0|1}
+   - For uploads:  {t: INT, a: 'upl', id: STRING}
+   - For deletes:  {t: INT, a: 'del', id: STRING}
+   - For rotates:  {t: INT, a: 'rot', id: STRING, d: 90|180|-90, o: STRING (pic orientation)}
+   - For tags:     {t: INT, a: 'tag', tag: STRING, d: true|undefined, ids: [...]}
+   - For shares:   {t: INT, a: 'sh1', tag: STRING, u: STRING}
+   - For unshares: {t: INT, a: 'sh0', tag: STRING, u: STRING}
+
+Used by giz:
+
+- session:ID (string): value is username. Used for sessions. Expires automatically.
+
+- token:ID (string): value is username. Used for password recovery. Expires automatically.
+
+- users:USERNAME (hash): covered above, giz only cares about `pass`.
+```
 
 ## License
 

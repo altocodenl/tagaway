@@ -64,6 +64,18 @@ var intro = [
       return true;
    }],
    ['verify user', 'get', function (s) {return 'auth/verify/' + s.vtoken1}, {}, '', 302],
+   ['recover pass invalid #1', 'post', 'auth/recover', {}, [], 400],
+   ['recover pass invalid #2', 'post', 'auth/recover', {}, '', 400],
+   ['recover pass invalid #3', 'post', 'auth/recover', {}, {}, 400],
+   ['recover pass with invalid username', 'post', 'auth/recover', {}, {username: 'foo'}, 403],
+   ['recover pass', 'post', 'auth/recover', {}, {username: 'a@a.com\t'}, 200],
+   ['recover pass', 'post', 'auth/recover', {}, {username: 'user1  '}, 200, function (s, rq, rs) {
+      s.rtoken = rs.body.token;
+      U [0].password = 'foobar';
+      return true;
+   }],
+   ['reset pass with invalid token', 'post', 'auth/reset', {}, function (s) {return {username: U [0].username, password: U [0].password, token: s.rtoken + '0'}}, 403],
+   ['reset pass', 'post', 'auth/reset', {}, function (s) {return {username: U [0].username, password: U [0].password, token: s.rtoken}}, 200],
    ['try to signup with existing username after verification', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [1].password, token: s.itoken2, email: 'b@b.com'};
    }, 403, function (s, rq, rs) {
@@ -71,15 +83,15 @@ var intro = [
       return true;
    }],
    ['try to signup with existing email after verification', 'post', 'auth/signup', {}, function (s) {
-      return {username: U [1].username, password: U [1].password, token: s.itoken2, email: 'a@a.com'};
+      return {username: U [1].username, password: U [0].password, token: s.itoken2, email: 'a@a.com'};
    }, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'token'})) return log ('Invalid payload received.');
       return true;
    }],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, {username: 'a@a.com', password: U [0].password}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, {username: 'A@A.com  ', password: U [0].password}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, {username: 'USER1\t   ', password: U [0].password}, 200, function (state, request, response) {
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'a@a.com', password: U [0].password}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'USER1\t   ', password: U [0].password}}, 200, function (state, request, response) {
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
