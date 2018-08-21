@@ -7,7 +7,7 @@ var h      = require ('hitit');
 var log    = teishi.l, type = teishi.t, eq = teishi.eq;
 
 var U = [
-   {username: 'user1', password: Math.random () + ''},
+   {username: 'user  \t1', password: Math.random () + ''},
    {username: 'user2', password: Math.random () + ''},
 ];
 
@@ -69,7 +69,7 @@ var intro = [
    ['recover pass invalid #3', 'post', 'auth/recover', {}, {}, 400],
    ['recover pass with invalid username', 'post', 'auth/recover', {}, {username: 'foo'}, 403],
    ['recover pass', 'post', 'auth/recover', {}, {username: 'a@a.com\t'}, 200],
-   ['recover pass', 'post', 'auth/recover', {}, {username: 'user1  '}, 200, function (s, rq, rs) {
+   ['recover pass', 'post', 'auth/recover', {}, {username: 'user\t  1  '}, 200, function (s, rq, rs) {
       s.rtoken = rs.body.token;
       U [0].password = 'foobar';
       return true;
@@ -89,9 +89,9 @@ var intro = [
       return true;
    }],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'a@a.com', password: U [0].password}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'USER1\t   ', password: U [0].password}}, 200, function (state, request, response) {
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password}}, 200, function (state, request, response) {
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
@@ -176,7 +176,7 @@ var main = [
       if (type (pic.id) !== 'string') return log ('Invalid pic.id.');
       delete pic.id;
       if (! eq (pic, {
-         owner: U [0].username,
+         owner: U [0].username.replace (' \t', ''),
          name: 'small.png',
          dimh: 149,
          dimw: 149,
@@ -214,7 +214,7 @@ var main = [
       if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
       delete pic.t200;
       if (! eq (pic, {
-         owner: U [0].username,
+         owner: U [0].username.replace (' \t', ''),
          name: 'medium.jpg',
          dimh: 204,
          dimw: 248,
@@ -243,7 +243,7 @@ var main = [
       delete pic.t900;
       return true;
       if (! eq (pic, {
-         owner: U [0].username,
+         owner: U [0].username.replace (' \t', ''),
          name: 'large.jpeg',
          dimh: 204,
          dimw: 248,
@@ -275,7 +275,7 @@ var main = [
       if (type (pic.t900) !== 'string') return log ('Invalid pic.t900.');
       delete pic.t900;
       if (! eq (pic, {
-         owner: U [0].username,
+         owner: U [0].username.replace (' \t', ''),
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
@@ -307,7 +307,7 @@ var main = [
       delete pic.date;
       delete pic.dateup;
       if (! eq (pic, {
-         owner: U [0].username,
+         owner: U [0].username.replace (' \t', ''),
          name: 'rotate.jpg',
          dimw: 1232,
          dimh: 2048,
@@ -537,7 +537,7 @@ var main = [
       return response.headers.cookie !== undefined;
    }],
    ['get shared tags as user2', 'get', 'share', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {shm: [[U [0].username, 'bla']], sho: []})) return log ('Invalid body', rs.body);
+      if (! eq (rs.body, {shm: [[U [0].username.replace (' \t', ''), 'bla']], sho: []})) return log ('Invalid body', rs.body);
       return true;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -615,7 +615,7 @@ var main = [
       s.repeated = rs.body.pics [0].id;
       return true;
    }],
-   ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username}, 200],
+   ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (' \t', '')}, 200],
    ['get `rotate` pics as user2 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
       if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
@@ -638,7 +638,7 @@ var main = [
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
-   ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username, del: true}, 200],
+   ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (' \t', ''), del: true}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;

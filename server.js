@@ -1,7 +1,7 @@
 /*
 acpic - v0.1.0
 
-Written by Altocode and released into the public domain.
+Written by Altocode (https://altocode.nl) and released into the public domain.
 
 Please refer to readme.md to read the annotated source (but not yet!).
 */
@@ -310,7 +310,7 @@ var routes = [
          ]},
       ])) return;
 
-      var username = b.username.toLowerCase ().replace (/\s+$/g, '');
+      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 
       var login = function (username) {
          giz.login (username, b.password, function (error, session) {
@@ -356,8 +356,8 @@ var routes = [
          ]},
       ])) return;
 
-      var username = b.username.toLowerCase ().replace (/\s+$/g, '');
-      var email    = b.email.toLowerCase ().replace (/\s+$/g, '');
+      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+      var email    = b.email.toLowerCase    ().replace (/\s+$/g, '');
 
       var multi = redis.multi ();
       multi.hget ('invites', email);
@@ -444,7 +444,7 @@ var routes = [
          });
       }
 
-      var username = b.username.toLowerCase ().replace (/\s+$/g, '');
+      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 
       if (! username.match ('@')) recover (username);
       else redis.hget ('emails', username, function (error, username) {
@@ -496,7 +496,7 @@ var routes = [
          });
       }
 
-      var username = b.username.toLowerCase ().replace (/\s+$/g, '');
+      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 
       if (! username.match ('@')) reset (username);
       else redis.hget ('emails', username, function (error, username) {
@@ -521,8 +521,8 @@ var routes = [
 
    ['all', '*', function (rq, rs) {
 
-      if (! PROD && rq.url === '/admin/invites') return rs.next ();
-      if (rq.url === 'clienterror')              return rs.next ();
+      if (! PROD && rq.method === 'post' && rq.url === '/admin/invites') return rs.next ();
+      if (          rq.method === 'post' && rq.url === '/clienterror')   return rs.next ();
 
       giz.auth ((rq.data.cookie || {}) [CONFIG.cookieName] || '', function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
@@ -619,15 +619,14 @@ var routes = [
 
    ['post', 'pic', function (rq, rs) {
 
-      if (! rq.data.fields) return reply (rs, 400, {error: 'No fields present.'});
-      if (! rq.data.files)  return reply (rs, 400, {error: 'No files present.'});
-      if (! teishi.eq (dale.keys (rq.data.fields), ['lastModified'])) return reply (rs, 400, {error: 'Invalid data field.'});
-      if (! teishi.eq (dale.keys (rq.data.files), ['pic'])) return reply (rs, 400, {error: 'Invalid file field.'});
+      if (! rq.data.fields) return reply (rs, 400, {error: 'field'});
+      if (! rq.data.files)  return reply (rs, 400, {error: 'file'});
+      if (! teishi.eq (dale.keys (rq.data.fields), ['lastModified'])) return reply (rs, 400, {error: 'invalidField'});
+      if (! teishi.eq (dale.keys (rq.data.files), ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
-      if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'No valid lastModified field present.'});
-      if (! rq.data.files.pic) return reply (rs, 400, {error: 'No pic present.'});
+      if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
-      if (CONFIG.allowedMime.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, 'Invalid pic.');
+      if (CONFIG.allowedMime.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
       var path = rq.data.files.pic;
 
@@ -646,11 +645,11 @@ var routes = [
                return [Redis, 'sismember', 'upic:' + rq.user.username, s.hash];
             },
             function (s) {
-               if (s.last) return reply (rs, 409);
+               if (s.last) return reply (rs, 409, {error: 'conflict'});
                return [
                   [Redis, 'hget', 'users:' + rq.user.username, 's3:buse'],
                   function (s) {
-                     if (s.last !== null && CONFIG.storelimit [rq.user.tier || 'tier1'] < parseInt (s.last)) return reply (rs, 409, 'Storage limit exceeded.');
+                     if (s.last !== null && CONFIG.storelimit [rq.user.tier || 'tier1'] < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
                      s.do ();
                   },
                   [H.mkdirif, Path.dirname (newpath)],
@@ -730,14 +729,14 @@ var routes = [
                            return;
                         }
                         H.log (rq.user.username, {a: 'upl', id: pic.id});
-                        reply (rs, 200, pic);
+                        reply (rs, 200);
                      });
                   }
                ];
             }
          ]];
       }, {catch: function (s) {
-         reply (rs, 500, s.catch);
+         reply (rs, 500, {error: s.catch});
       }});
    }],
 
@@ -811,13 +810,18 @@ var routes = [
 
    // *** ROTATE IMAGE ***
 
-   ['post', 'rotate', cicek.json (function (rq, rs) {
+   ['post', 'rotate', function (rq, rs) {
 
       var b = rq.body;
 
-      if (type (b) !== 'object')    return reply (rs, 400, {error: 'body must be an object.'});
-      if (type (b.id) !== 'string') return reply (rs, 400, {error: 'body.id must be a string.'});
-      if ([90, 180, -90].indexOf (b.deg) === -1) return reply (rs, 400, {error: 'body.deg must be 90, 180 or -90.'});
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ['id', 'deg'], 'eachOf', teishi.test.equal],
+         function () {return [
+            ['body.id', b.id, 'string'],
+            ['body.deg', b.deg, [90, 180, -90], 'oneOf', teishi.test.equal],
+         ]}
+      ])) return;
 
       var path, tmppath;
 
@@ -886,19 +890,29 @@ var routes = [
             });
          },
       ]], {catch: function (s) {
-         return reply (rs, 500, s.catch);
+         return reply (rs, 500, {error: s.catch});
       }});
 
-   })],
+   }],
 
    // *** TAGGING ***
 
-   ['post', 'tag', cicek.json (function (rq, rs) {
-      var b = rq.body;
-      if (type (b)     !== 'object') return reply (rs, 400, {error: 'body must be an object.'});
-      if (type (b.tag) !== 'string') return reply (rs, 400, {error: 'body.tag must be a string.'});
+   ['post', 'tag', function (rq, rs) {
 
-      b.tag = b.tag.replace (/^\s+|\s+$/g, '');
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ['ids', 'tag', 'del'], 'eachOf', teishi.test.equal],
+         function () {return [
+            ['body.tag', b.tag, 'string'],
+            ['body.ids', b.ids, 'array'],
+            ['body.ids', b.ids, 'string', 'each'],
+            ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
+         ]}
+      ])) return;
+
+      b.tag = b.tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 
       if (b.tag.match (/^\d{4}$/) && parseInt (b.tag) > 1899 && parseInt (b.tag) < 2101) return reply (rs, 400, {error: 'Tag cannot be a number between 1900 and 2100.'});
 
@@ -964,7 +978,7 @@ var routes = [
       ], {catch: function (s) {
          return reply (rs, 500, s.catch);
       }});
-   })],
+   }],
 
    ['get', 'tags', function (rq, rs) {
       var multi = redis.multi ();
@@ -982,7 +996,7 @@ var routes = [
 
    // *** SEARCH ***
 
-   ['post', 'query', cicek.json (function (rq, rs) {
+   ['post', 'query', function (rq, rs) {
 
       var b = rq.body;
 
@@ -993,15 +1007,15 @@ var routes = [
             ['body.tags', b.tags, 'string', 'each'],
             ['body.mindate',  b.mindate,  ['undefined', 'integer'], 'oneOf'],
             ['body.maxdate',  b.maxdate,  ['undefined', 'integer'], 'oneOf'],
+            ['body.sort',  b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
             ['body.from',  b.from, 'integer'],
             ['body.to',    b.to,   'integer'],
             ['body.from',  b.from, {min: 1},      teishi.test.range],
             ['body.to',    b.to,   {min: b.from}, teishi.test.range],
-            ['body.sort', b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
          ]}
       ])) return;
 
-      if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: '`all` is not a valid tag. Please send an empty tag array instead'});
+      if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: 'all'});
 
       var yeartags = [], mindate, maxdate;
 
@@ -1011,7 +1025,7 @@ var routes = [
       });
 
       if (yeartags.length > 0) {
-         if (b.mindate !== undefined || b.maxdate !== undefined) return reply (rs, 400, {error: 'You cannot pass mindate/maxdate if you send tags between 1900 and 2100'});
+         if (b.mindate !== undefined || b.maxdate !== undefined) return reply (rs, 400, {error: 'yeartags'});
          yeartags.sort ();
          yeartags = dale.do (yeartags, function (year) {
             return [new Date (year + '/01/01').getTime (), new Date ((parseInt (year) + 1) + '/01/01').getTime () - 1];
@@ -1124,11 +1138,11 @@ var routes = [
             });
          });
       });
-   })],
+   }],
 
    // *** SHARING ***
 
-   ['post', 'share', cicek.json (function (rq, rs) {
+   ['post', 'share', function (rq, rs) {
 
       var b = rq.body;
 
@@ -1141,30 +1155,30 @@ var routes = [
          ]}
       ])) return;
 
-      if (b.tag === 'all' || b.tag === 'untagged') return reply (rs, 400, {error: 'You cannot share that tag.'});
+      if (b.tag === 'all' || b.tag === 'untagged') return reply (rs, 400, {error: 'tag'});
 
       redis.exists ('users:' + b.who, function (error, exists) {
-         if (error) return reply (rs, 500, {error: error});
+         if (error)    return reply (rs, 500, {error: error});
          if (! exists) return reply (rs, 404);
 
          var multi = redis.multi ();
 
-         multi [b.del ? 'srem' : 'sadd'] ('sho:' + rq.user.username, b.who           + ':' + b.tag);
-         multi [b.del ? 'srem' : 'sadd'] ('shm:' + b.who,           rq.user.username + ':' + b.tag);
+         multi [b.del ? 'srem' : 'sadd'] ('sho:' + rq.user.username, b.who            + ':' + b.tag);
+         multi [b.del ? 'srem' : 'sadd'] ('shm:' + b.who,            rq.user.username + ':' + b.tag);
          multi.exec (function (error) {
-            reply (rs, error ? 500 : 200, error || '');
+            if (error) return reply (rs, 500, {error: error});
+            reply (rs, 200);
          });
       });
-   })],
+   }],
 
    ['get', 'share', function (rq, rs) {
       var multi = redis.multi ();
       multi.smembers ('sho:' + rq.user.username);
       multi.smembers ('shm:' + rq.user.username);
       multi.exec (function (error, data) {
-         var output = {
-         };
-         reply (rs, error ? 500 : 200, error || {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, {
             sho: dale.do (data [0], function (i) {
                return [i.split (':') [0], i.split (':').slice (1).join (':')];
             }),
@@ -1177,10 +1191,11 @@ var routes = [
 
    // *** CLIENT ERRORS ***
 
-   ['post', 'clienterror', cicek.json (function (rq, rs) {
+   ['post', 'clienterror', function (rq, rs) {
+      if (teishi.simple (rq.body) !== 'object' || type (rq.body) !== 'array') return reply (rs, 400);
       if (PROD) fs.appendFile ('clienterror.log', teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).username, error: rq.body}) + '\n');
       reply (rs, 200);
-   })],
+   }],
 
    // *** ADMIN GATEKEEPER ***
 
@@ -1220,14 +1235,23 @@ var routes = [
 
    // *** LOGS ***
 
-   ['post', 'logs', cicek.json (function (rq, rs) {
+   ['post', 'logs', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['body', b, 'string', 'each'],
+         ['keys of body', dale.keys (b), ['logs'], 'eachOf', teishi.test.equal],
+      ])) return;
+
       redis.lrange ('logs', 0, -1, function (error, list) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200, dale.fil (list, undefined, function (v) {
-            if (! rq.body.query || v.match (new RegExp (rq.body.query.replace (/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i'))) return v;
+            if (! b.query || v.match (new RegExp (b.query.replace (/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i'))) return v;
          }).slice (0, 50));
       });
-   })],
+   }],
 
 ];
 
@@ -1239,7 +1263,7 @@ if (PROD) {
 }
 cicek.options.cookieSecret = SECRET.cookie;
 cicek.options.log.body = function (log) {
-   if (log.requestqBody && log.requestBody.password) return false;
+   if (log.requestBody && log.requestBody.password) return false;
    return true;
 }
 

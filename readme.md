@@ -25,14 +25,14 @@ The client is not yet committed to the repository since it's not functional yet.
 
 - `POST /auth/login`.
    - Body must be `{username: STRING, password: STRING}`. If not, a 400 code will be returned with body `{error: ...}`.
-   - `username` is lowercased and any trailing space is removed from it. `username` can be either the `username` or the `email` associated to a `username`.
+   - `username` is lowercased and any leading & trailing space is removed from it (and intermediate spaces or space-like characters are reduced to a single space). `username` can be either the `username` or the `email` associated to a `username`.
    - If the username/password combination is not valid, a 403 code will be returned with body: `{error: 'auth'}`.
    - If the username/password combination is valid but the email hasn't been verified yet, a 403 code will be returned with body `{error: 'verify'}`.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /auth/signup`.
    - Body must be `{username: STRING, password: STRING, email: STRING, token: STRING}`. The email must be a valid email. If not, a 400 code will be returned with body `{error: ...}`.
-   - Both `username` and `email` are lowercased and trailing space is removed from them.
+   - Both `username` and `email` are lowercased and leading & trailing space is removed from them (and intermediate spaces or space-like characters are reduced to a single space).
    - If there's no invite associated with the token, a 403 is returned with body `{error: 'token'}`.
    - If there's already an account with that email, a 403 is returned with body `{error: 'email'}`.
    - If there's already an account with that username, a 403 is returned with body `{error: 'username'}`.
@@ -63,73 +63,98 @@ The client is not yet committed to the repository since it's not functional yet.
 
 ### App routes
 
-From this point onwards, if a user is not logged in, any request will receive a 403 with body `{body: 'session'}`.
+From this point onwards, if a user is not logged in, any request will receive a 403 with body `{error: 'session'}`.
 
-- `GET /pic/ID`.
+- `GET /pic/ID`
    - Pic must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-- `GET /thumb/ID`.
+- `GET /thumb/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-- `POST /pic`.
-   - Must be multipart.
-   - Must include a text `lastModified` field that's parseable to an integer (otherwise, 400).
-   - Must include a file `pic` field (otherwise, 400).
-   - Must be `.png` or `.jpg` (otherwise, 400).
-   - If the same file exists for that user, a 409 is returned.
+- `POST /pic`
+   - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
+   - Must contain one field (otherwise, 400 with body `{error: 'field'}`).
+   - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed field is `lastModified`.
+   - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
+   - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
+   - The file uploaded must be `.png` or `.jpg` (otherwise, 400 with body `{error: 'format'}`).
+   - If the same file exists for that user, a 409 is returned with body `{error: 'conflict'}`.
+   - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
+   - If the upload is successful, a 200 is returned.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-- `DELETE /pic/ID`.
+- `DELETE /pic/ID`
+   - If the picture is not found, or if it does not belong to the user attempting the deletion, a 404 is returned.
+   - If the deletion is successful, a 200 is returned.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-- `POST /pic/rotate`.
-   - Body must be of the form `{id: STRING, deg: 90|180|-90}` (otherwise, 400).
+- `POST /pic/rotate`
+   - Body must be of the form `{id: STRING, deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
    - Pic must exist and the user must own it (otherwise, 404).
+   - If the rotation is successful, a 200 is returned.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /tag`
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
-   - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated).
+   - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated; space-like characters in the middle will be replaced with a single space).
    - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
-   - Picture must exist and user must be owner of the picture, otherwise 404.
+   - Picture must exist and user must be owner of the picture, otherwise a 404 is returned.
 
 - `GET /tags`
    - Returns an object of the form `{tag1: INT, tag2: INT, ...}`. Includes a field for `untagged` and one for `all`.
 
-- `POST /query`.
-   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, num: INT, more: BOOLEAN|UNDEFINED}`.
-   - `mindate` & `maxdate` must be UTC dates in milliseconds.
-   - `sort` determines whether sorting is done by `newest`, `oldest`, or `upload` (newest upload; there's no option for oldest upload).
-   - `num` is number of things you already have. `more` adds 30 more to that, otherwise you just get what you asked for.
+- `POST /query`
+   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT}`. Otherwise, a 400 is returned with body `{error: ...}`.
+   - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last picture to be returned from a certain query. If both are equal to 1, the first picture for the query will be returned. If they are 1 & 10 respectively, the first ten pictures for the query will be returned.
+   - `all` cannot be included on `body.tags`. If you want to search for all available pictures, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
+   - If you include one or more tags that can be parsed to an integer between 1900 or 2100, they will be considered to be year tags. In this case, you must provide neither `body.mindate` nor `body.maxdate`, otherwise you'll get a 400 with body `{error: 'yeartags'}`.
+   - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
+   - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
+   - If the query is successful, a 200 is returned with body `[{...}]`. Each element within the array is an object with picture information and has these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-POST /share
+`POST /share`
+   - Body must be of the form `{tag: STRING, who: ID, del: BOOLEAN|UNDEFINED}`.
+   - The target user (`body.who`) must exist, otherwise a 404 is returned.
+   - If the tag being shared is `all` or `untagged`, a 400 is returned with body `{error: 'tag'}`.
+   - If the sharing is successful, a 200 is returned.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-GET /share
+`GET /share`
+   - If successful, returns a 200 with body `{sho: [[USERNAME1, TAG1], ...], shm: [[USERNAME2, TAG2], ...]}`.
+   - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-POST /api
+`GET /account`
+   - XXX
 
-### Admin & debugging routes
+### Debugging routes
 
-POST /clienterror (no need to be logged in)
+`POST /clienterror`
+   - This route does not require the user to be logged in.
+   - Body must be JSON, otherwise a 400 is returned.
 
-   ['post', 'admin/invites', function (rq, rs) {
-   ['post', 'logs', cicek.json (function (rq, rs) {
+All the routes below require an admin user to be logged in.
+
+### Admin routes
+
+`POST /admin/invites`
+   - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
 
 ## Features
 
 ### Todo alpha
 
 - Server
-   - Account
-      - check documentation for app routes
-      - Get account activity, clienterror & test
+   - Get account activity + test, clienterror + test
    - Email sending & templates in config
    - DB backups to S3.
    - Limit of 1k for deleting S3 items in s3del.
