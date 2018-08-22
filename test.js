@@ -14,6 +14,9 @@ var U = [
 var PICS = '/media/truecrypt2/acpictest/';
 
 var intro = [
+   ['submit client error, invalid 1', 'post', 'clientlog', {}, '', 400],
+   ['submit client error without being logged in #1', 'post', 'clientlog', {}, ['error1'], 200],
+   ['submit client error without being logged in #2', 'post', 'clientlog', {}, {error: 'error'}, 200],
    ['login with no credentials', 'post', 'auth/login', {}, {}, 400],
    ['login with invalid credentials', 'post', 'auth/login', {}, [], 400],
    ['create invite for user, invalid 1', 'post', 'admin/invites', {}, {}, 400],
@@ -95,6 +98,8 @@ var intro = [
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
+   ['submit client error being logged in #1', 'post', 'clientlog', {}, ['error1'], 200],
+   ['submit client error being logged in #2', 'post', 'clientlog', {}, {error: 'error'}, 200],
 ];
 
 var outro = [

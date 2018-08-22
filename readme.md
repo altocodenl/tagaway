@@ -138,7 +138,7 @@ From this point onwards, if a user is not logged in, any request will receive a 
 
 ### Debugging routes
 
-`POST /clienterror`
+`POST /clientlog`
    - This route does not require the user to be logged in.
    - Body must be JSON, otherwise a 400 is returned.
 
@@ -154,10 +154,7 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Server
-   - Get account activity + test, clienterror + test
    - Email sending & templates in config
-   - DB backups to S3.
-   - Limit of 1k for deleting S3 items in s3del.
    - Count user & picture activity (uploads & downloads) with 10 minute granularity
 
 - Client
@@ -181,11 +178,13 @@ All the routes below require an admin user to be logged in.
 
 ### Todo beta
 
-- Admin
+- Admin & deploy
    - Manage payments.
+   - Secret & config by environment.
+   - Test s3del with > 1k pictures
 
 - Account
-   - Account view
+   - Account view & account activity endpoint
    - Two-cookie system with CSRF.
    - Delete account.
    - Change email & password.

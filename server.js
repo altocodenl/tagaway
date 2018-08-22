@@ -88,14 +88,9 @@ var uuid    = require ('uuid/v4');
 var s3 = new aws.S3 ({
    apiVersion: '2006-03-01',
    sslEnabled: true,
-   params: {
-      Bucket: SECRET.s3.bucketName,
-   },
-   region: SECRET.s3.region,
-   credentials: {
-      accessKeyId:     SECRET.s3.accessKeyId,
-      secretAccessKey: SECRET.s3.secretAccessKey
-   }
+   credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
+   region: SECRET.s3.pic.region,
+   params: {Bucket: SECRET.s3.pic.bucketName},
 });
 
 var type = teishi.t, log = teishi.l, reply = cicek.reply, stop = function (rs, rules) {
@@ -219,14 +214,26 @@ H.s3get = function (user, key, cb) {
 }
 
 H.s3del = function (user, keys, sizes, cb) {
-   s3.deleteObjects ({Delete: {Objects: dale.do (keys, function (key) {return {Key: hashs (user) + '/' + key}})}}, function (error, data) {
-      if (error) return cb (error);
-      var multi = redis.multi ();
-      dale.do (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
-      multi.exec (function (error) {
-         cb (error, data);
+
+   var counter = 0;
+   if (type (keys) === 'string') keys = [keys];
+
+   var batch = function () {
+      s3.deleteObjects ({Delete: {Objects: dale.do (keys.slice (counter * 1000, (counter + 1) * 1000), function (key) {
+         return {Key: hashs (user) + '/' + key}
+      })}}, function (error) {
+         if (error) return cb (error);
+         var multi = redis.multi ();
+         dale.do (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
+         multi.exec (function (error) {
+            if (error) return cb (error);
+            if (++counter === Math.ceil (keys.length / 1000)) cb ();
+            else batch ();
+         });
       });
-   });
+   }
+
+   batch ();
 }
 
 H.log = function (user, ev, cb) {
@@ -257,8 +264,8 @@ var routes = [
             dale.do (['gotoB.min'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
-            ['script', 'var COOKIENAME = \'' + CONFIG.cookieName + '\';'],
-            ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedMime) + ';'],
+            ['script', 'var COOKIENAME = \'' + CONFIG.cookiename + '\';'],
+            ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedmime) + ';'],
             ['script', 'var BASETAGS = ' + JSON.stringify (['all', 'untagged']) + ';'],
             ['script', {src: 'client.js'}]
          ]]
@@ -280,7 +287,7 @@ var routes = [
             dale.do (['gotoB.min'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
-            ['script', 'var COOKIENAME = \'' + CONFIG.cookieName + '\';'],
+            ['script', 'var COOKIENAME = \'' + CONFIG.cookiename + '\';'],
             ['script', {src: 'admin.js'}]
          ]]
       ]]
@@ -289,9 +296,9 @@ var routes = [
    // *** AUTH WITH COOKIES & SESSIONS ***
 
    ['get', 'auth/logout', function (rq, rs) {
-      giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookieName] || '') : '', function (error) {
+      giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookiename] || '') : '', function (error) {
          if (error) return reply (rs, 500, {error: error});
-         reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookieName, false)});
+         reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
       });
    }],
 
@@ -322,7 +329,7 @@ var routes = [
             redis.hget ('users:' + username, 'verificationPending', function (error, pending) {
                if (error)   return reply (rs, 500, {error: error});
                if (pending) return reply (rs, 403, {error: 'verify'});
-               reply (rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookieName, session)});
+               reply (rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookiename, session)});
             });
          });
       }
@@ -522,9 +529,9 @@ var routes = [
    ['all', '*', function (rq, rs) {
 
       if (! PROD && rq.method === 'post' && rq.url === '/admin/invites') return rs.next ();
-      if (          rq.method === 'post' && rq.url === '/clienterror')   return rs.next ();
+      if (          rq.method === 'post' && rq.url === '/clientlog')   return rs.next ();
 
-      giz.auth ((rq.data.cookie || {}) [CONFIG.cookieName] || '', function (error, user) {
+      giz.auth ((rq.data.cookie || {}) [CONFIG.cookiename] || '', function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
          if (! user) return reply (rs, 403, {error: 'session'});
 
@@ -551,9 +558,9 @@ var routes = [
          multi.del ('sho:'  + rq.user.username);
          multi.exec (function (error) {
             if (error) return reply (rs, 500, {error: error});
-            giz.logout (rq.data.cookie [CONFIG.cookieName], function (error) {
+            giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
                H.log (rq.user.username, {a: 'des'});
-               reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookieName, false)});
+               reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
             });
          });
       });
@@ -626,7 +633,7 @@ var routes = [
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
-      if (CONFIG.allowedMime.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
+      if (CONFIG.allowedmime.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
       var path = rq.data.files.pic;
 
@@ -1191,10 +1198,13 @@ var routes = [
 
    // *** CLIENT ERRORS ***
 
-   ['post', 'clienterror', function (rq, rs) {
-      if (teishi.simple (rq.body) !== 'object' || type (rq.body) !== 'array') return reply (rs, 400);
-      if (PROD) fs.appendFile ('clienterror.log', teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).username, error: rq.body}) + '\n');
-      reply (rs, 200);
+   ['post', 'clientlog', function (rq, rs) {
+      if (teishi.simple (rq.body)) return reply (rs, 400);
+      if (! PROD || ! CONFIG.clientlog) return reply (rs, 200);
+      fs.appendFile (CONFIG.clientlog, teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).username, error: rq.body}) + '\n', function (error) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200);
+      });
    }],
 
    // *** ADMIN GATEKEEPER ***
@@ -1258,7 +1268,7 @@ var routes = [
 // *** LAUNCH SERVER ***
 
 if (PROD) {
-   cicek.options.log.file.path = CONFIG.accesslog;
+   if (CONFIG.accesslog) cicek.options.log.file.path = CONFIG.accesslog;
    cicek.options.log.console   = false;
 }
 cicek.options.cookieSecret = SECRET.cookie;
@@ -1279,3 +1289,26 @@ cicek.apres = function (rs) {
 cicek.cluster ();
 
 cicek.listen ({port:  CONFIG.port}, routes);
+
+// *** BACKUPS ***
+
+if (cicek.isMaster && PROD) setInterval (function () {
+   var s3 = new aws.S3 ({
+      apiVersion: '2006-03-01',
+      sslEnabled: true,
+      credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
+      region: SECRET.s3.db.region,
+      params: {Bucket: SECRET.s3.db.bucketName},
+   });
+
+   var cb = function (error) {
+      if (error) sendmail ({from1: 'acpic backup', from2: SECRET.admins [0], to1: 'acpic admin', to2: SECRET.admins [0], subject: 'Backup failed!', message: ['pre', error.toString ()]}, function (error) {
+         if (error) console.log ('FATAL ERROR WHEN WARNING ABOUT FAILED BACKUP.', error);
+      });
+   }
+
+   var file = fs.createReadStream (CONFIG.backup.path).on ('error', cb);
+
+   s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: CONFIG.backup.path}, cb);
+
+}, CONFIG.frequency * 60 * 1000);
