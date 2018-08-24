@@ -393,7 +393,10 @@ var routes = [
                multi2.exec (function (error) {
                   if (error)  return reply (rs, 500, {error: error});
                   if (! PROD) return reply (rs, 200, {token: vtoken});
-                  // XXX SEND EMAIL if PROD
+                  sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
+                     if (error) return reply (rs, 500, {error: error});
+                     reply (rs, 200);
+                  });
                });
             });
          });
@@ -446,7 +449,10 @@ var routes = [
             redis.hgetall ('users:' + username, function (error, user) {
                if (error)  return reply (rs, 500, {error: error});
                if (! PROD) return reply (rs, 200, {token: token});
-               // XXX SEND EMAIL if PROD
+               sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: user.username, to2: user.email, subject: CONFIG.etemplates.recover.subject, message: CONFIG.etemplates.recover.message (user.username, token)}, function (error) {
+                  if (error) return reply (rs, 500, {error: error});
+                  reply (rs, 200);
+               });
             });
          });
       }
@@ -459,19 +465,6 @@ var routes = [
          if (! username) return reply (rs, 403);
          recover (username);
       });
-
-               /*
-               H.resolveTemplate ('password recovery', {firstName: rq.body.username.toLowerCase (), link: 'https://' + CONFIG.server + '#/auth/reset/' + encodeURIComponent (rq.body.username.toLowerCase ()) + '/' + encodeURIComponent (token)}, function (error, template) {
-                  H.sendEmail ({
-                     recipientName: user.username,
-                     recipientEmail: user.email,
-                     subject: 'Password recovery rq',
-                     message: template
-                  }, function (error) {
-                     return reply (rs, error ? 500 : 200);
-                  });
-               });
-               */
    }],
 
    ['post', 'auth/reset', function (rq, rs) {
@@ -497,8 +490,11 @@ var routes = [
                   if (type (error) === 'string') return reply (rs, 403);
                   else                           return reply (rs, 500, {error: error});
                }
-               reply (rs, 200);
-               // XXX SEND EMAIL if PROD
+               if (! PROD) return reply (rs, 200);
+               sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
+                  if (error) return reply (rs, 500, {error: error});
+                  reply (rs, 200);
+               });
             });
          });
       }
@@ -1238,7 +1234,10 @@ var routes = [
          redis.hset ('invites', email, JSON.stringify ({token: itoken, sent: Date.now ()}), function (error) {
             if (error) return reply (rs, 500, {error: error});
             if (! PROD) return reply (rs, 200, {token: itoken});
-            // XXX SEND EMAIL if PROD
+            sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: email.replace (/@.+/, ''), to2: email, subject: CONFIG.etemplates.invite.subject, message: CONFIG.etemplates.invite.message (email.replace (/@.+/, ''), itoken)}, function (error) {
+               if (error) return reply (rs, 500, {error: error});
+               reply (rs, 200);
+            });
          });
       });
    }],

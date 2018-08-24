@@ -154,7 +154,6 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Server
-   - Email sending & templates in config
    - Count user & picture activity (uploads & downloads) with 10 minute granularity
 
 - Client
