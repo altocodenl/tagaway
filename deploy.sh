@@ -2,7 +2,7 @@ HOST="root@207.154.244.76"
 FOLDER="acpic"
 TAR="acpic.tar.gz"
 
-rm server.log
+rm *.log
 cd .. && tar czvf $TAR $FOLDER
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR

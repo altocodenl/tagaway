@@ -24,12 +24,12 @@ module.exports = {
    etemplates: {
       verify: {
          subject: 'Please verify your email',
-         message: function (token) {
+         message: function (username, token) {
             return ['p', [
                'Hi ' + username,
                ['br'],
                'Welcome to acpic! Please verify your email by clicking on the following link: ',
-               ['a', {href: 'https://' + CONFIG.domain + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
+               ['a', {href: 'https://altocode.nl:1427/auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
                ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
             ]];
@@ -42,7 +42,7 @@ module.exports = {
                'Hi ' + username,
                ['br'],
                'Did you forget your password? If you did, all good: please use the following link to reset your password',
-               ['a', {href: 'https://' + CONFIG.domain + 'auth/reset/' + '?username=' + encodeURIComponent (username) + '&token=' + encodeURIComponent (token)}, 'Reset your password'],
+               ['a', {href: 'https://altocode.nl:1427/auth/reset?username=' + encodeURIComponent (username) + '&token=' + encodeURIComponent (token)}, 'Reset your password'],
                ['br'],
                'If you didn\'t request a password reset, please do NOT click the link above. Rather, please reply to this email letting us know.',
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
@@ -69,8 +69,8 @@ module.exports = {
             return ['p', [
                'Hi ' + username,
                ['br'],
-               'Here\'s your invitation to join acpic! It would be great to have you as our user!',
-               ['a', {href: 'https://' + CONFIG.domain + 'auth/signup/' + encodeURIComponent (token)}, 'Join us!'],
+               'Here\'s your invitation to join acpic! It would be great to have you as our user! ',
+               ['a', {href: 'https://altocode.nl:1427/auth/signup/' + encodeURIComponent (token)}, 'Join us!'],
                ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
             ]];

@@ -153,9 +153,6 @@ All the routes below require an admin user to be logged in.
 
 ### Todo alpha
 
-- Server
-   - Count user & picture activity (uploads & downloads) with 10 minute granularity
-
 - Client
    - Fix all existing functionality after server refactor.
    - Upload popup
@@ -171,9 +168,12 @@ All the routes below require an admin user to be logged in.
       - Bug when pictures fit in screen, no reload
       - Make 200x200 in organize view
 
-- Admin
-   - Admin area with invites
-   - See login attempts & general activity.
+- Admin & other
+   - Test email flows.
+   - Admin area
+      - stats
+      - error log
+      - send invites
 
 ### Todo beta
 
@@ -338,6 +338,12 @@ All the routes below require an admin user to be logged in.
    - For tags:     {t: INT, a: 'tag', tag: STRING, d: true|undefined, ids: [...]}
    - For shares:   {t: INT, a: 'sh1', tag: STRING, u: STRING}
    - For unshares: {t: INT, a: 'sh0', tag: STRING, u: STRING}
+
+- sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
+- sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
+- sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
+- sti:exxx:DATE (string): responses with error code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
+- stp:a:DATE (hyperloglog): unique active users in the last 10 minutes. Time is Date.now () divided by 100000.
 
 Used by giz:
 

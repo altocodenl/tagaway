@@ -39,8 +39,7 @@ var sendmail = function (o, cb) {
       subject: o.subject,
       html: lith.g (o.message),
    }, function (error, rs) {
-      if (error) log ('mailer error', error, o);
-      else       log ('mailer message sent', o);
+      if (error) console.log ('Mailer error', {error: error, options: o});
       if (cb) cb (error);
    });
 }
@@ -239,6 +238,13 @@ H.s3del = function (user, keys, sizes, cb) {
 H.log = function (user, ev, cb) {
    ev.t = Date.now ();
    redis.lpush ('ulog:' + user, teishi.s (ev), cb || function () {});
+}
+
+H.stat = function (name, arg) {
+   var t = Date.now ();
+   t = (t - (t % (1000 * 60 * 10))) / 100000;
+   if (arg) redis.pfadd ('stp:' + name + ':' + t, arg, function (error) {if (error) console.log ('H.stat error', error)});
+   else     redis.incr  ('sti:' + name + ':' + t,      function (error) {if (error) console.log ('H.stat error', error)});
 }
 
 // *** ROUTES ***
@@ -507,30 +513,24 @@ var routes = [
          if (! username) return reply (rs, 403);
          reset (username);
       });
-
-            /*
-            if (! error) H.resolveTemplate ('password change', {firstName: b.username.toLowerCase ()}, function (error, template) {
-               H.sendEmail ({
-                  recipientName: user.username,
-                  recipientEmail: user.email,
-                  subject: 'Password changed',
-                  message: template
-               });
-            });
-            */
    }],
 
    // *** GATEKEEPER FUNCTION ***
 
    ['all', '*', function (rq, rs) {
 
-      if (! PROD && rq.method === 'post' && rq.url === '/admin/invites') return rs.next ();
-      if (          rq.method === 'post' && rq.url === '/clientlog')   return rs.next ();
+      if (rq.method === 'post' && rq.url === '/clientlog') return rs.next ();
+
+      if (rq.url.match (/^\/admin/)) {
+         if (! PROD) return rs.next ();
+         if (rq.body && rq.body.email && SECRET.admins.indexOf (rq.body.email) !== -1) return rs.next ();
+      }
 
       giz.auth ((rq.data.cookie || {}) [CONFIG.cookiename] || '', function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
          if (! user) return reply (rs, 403, {error: 'session'});
 
+         H.stat ('a', user.username);
          rs.log.user = user.username;
          rq.user = user;
          rs.next ();
@@ -1207,9 +1207,28 @@ var routes = [
 
    ['all', '*', function (rq, rs) {
       if (! PROD) return rs.next ();
+      if (rq.body && rq.body.email && SECRET.admins.indexOf (rq.body.email) !== -1) return rs.next ();
 
       if (SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
       rs.next ();
+   }],
+
+   // *** STATS ***
+
+   ['get', 'admin/stats', function (rq, rs) {
+      redis.keyscan ('st*', function (error, keys) {
+         if (error) return reply (rs, 500, {error: error});
+         var multi = redis.multi ();
+         dale.do (keys, function (key) {
+            multi [key.match (/^sti/) ? 'get' : 'pfcount'] (key);
+         });
+         multi.exec (function (error, data) {
+            if (error) return reply (rs, 500, {error: error});
+            reply (rs, 200, dale.do (data, function (item, k) {
+               return [keys [k].slice (4), parseInt (item)];
+            }));
+         });
+      });
    }],
 
    // *** INVITES ***
@@ -1267,8 +1286,7 @@ var routes = [
 // *** LAUNCH SERVER ***
 
 if (PROD) {
-   if (CONFIG.accesslog) cicek.options.log.file.path = CONFIG.accesslog;
-   cicek.options.log.console   = false;
+   cicek.options.log.console = false;
 }
 cicek.options.cookieSecret = SECRET.cookie;
 cicek.options.log.body = function (log) {
@@ -1281,13 +1299,24 @@ cicek.apres = function (rs) {
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
    }
-   if (CONFIG.errorlog && PROD && rs.log.code > 399 && rs.log.code !== 409) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log));
+   if (rs.log.code >= 400 && rs.log.code !== 409) {
+      H.stat ('e' + rs.log.code);
+      if (CONFIG.errorlog && PROD) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log));
+   }
+   else {
+      if (CONFIG.accesslog && PROD) fs.appendFile (CONFIG.accesslog, teishi.s (rs.log));
+   }
+   if (rs.log.code === 200 || rs.log.code === 304) {
+      if (rs.log.method === 'get'  && rs.log.url.match (/^\/(pic|thumb)/)) H.stat ('d');
+      if (rs.log.method === 'post' && rs.log.url.match (/^\/pic/))         H.stat ('u');
+      if (rs.log.method === 'post' && rs.log.url.match (/^\/tag/))         H.stat ('t');
+   }
    cicek.Apres (rs);
 }
 
 cicek.cluster ();
 
-cicek.listen ({port:  CONFIG.port}, routes);
+cicek.listen ({port: CONFIG.port}, routes);
 
 // *** BACKUPS ***
 
@@ -1310,4 +1339,18 @@ if (cicek.isMaster && PROD) setInterval (function () {
 
    s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: CONFIG.backup.path}, cb);
 
-}, CONFIG.frequency * 60 * 1000);
+}, CONFIG.backup.frequency * 60 * 1000);
+
+// *** BOOTSTRAP USER ***
+
+if (cicek.isMaster && PROD) setTimeout (function () {
+   redis.hget ('invites', SECRET.admins [0], function (error, admin) {
+      if (error) return console.log ('Bootstrap check error', error);
+      if (admin) return;
+
+      hitit.one ({}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0]}}, function (error) {
+         if (error) console.log ('Bootstrap invite error', error);
+         else       console.log ('Bootstrap invite sent OK');
+      });
+   });
+}, 3000);

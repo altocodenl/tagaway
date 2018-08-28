@@ -14,6 +14,7 @@ var U = [
 var PICS = '/media/truecrypt2/acpictest/';
 
 var intro = [
+   ['get stats if none present', 'get', 'admin/stats', {}, '', 200],
    ['submit client error, invalid 1', 'post', 'clientlog', {}, '', 400],
    ['submit client error without being logged in #1', 'post', 'clientlog', {}, ['error1'], 200],
    ['submit client error without being logged in #2', 'post', 'clientlog', {}, {error: 'error'}, 200],
@@ -679,6 +680,10 @@ var main = [
       return true;
    }],
    ['unshare as user1 after user was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
+   ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'array') return log ('Invalid body', rs.body);
+      return true;
+   }],
 ];
 
 h.seq ({host: CONFIG.host, port: CONFIG.port}, [
