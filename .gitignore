@@ -2,3 +2,4 @@
 *.swp
 *.log
 secret.js
+node_modules
