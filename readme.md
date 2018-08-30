@@ -118,7 +118,10 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - If you include one or more tags that can be parsed to an integer between 1900 or 2100, they will be considered to be year tags. In this case, you must provide neither `body.mindate` nor `body.maxdate`, otherwise you'll get a 400 with body `{error: 'yeartags'}`.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
-   - If the query is successful, a 200 is returned with body `[{...}]`. Each element within the array is an object with picture information and has these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
+   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, years: [...]}`.
+      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
+      - `body.total` contains the total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
+      - `body.years` a list of years for which there's pictures matching the query. The years always refer to the picture date, not the upload date.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 `POST /share`
@@ -170,6 +173,7 @@ All the routes below require an admin user to be logged in.
 
 - Admin & other
    - Test email flows.
+   - Test year range in query.
    - Admin area
       - stats
       - error log
@@ -276,6 +280,17 @@ All the routes below require an admin user to be logged in.
    - Serve images as hosting.
    - Share certain tags only on shared pictures.
    - Home pages.
+
+## Client structure
+
+`State.view`: can be `'auth'` or `'main'`.
+`State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
+
+`State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
+
+`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`.
+`Data.years`: `[...]`; comes from `body.years` from `POST /query`.
+`Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
 
 ## Redis structure
 

@@ -1078,9 +1078,12 @@ var routes = [
             });
             multi2.exec (function (error, pics) {
                if (error) return reply (rs, 500, {error: error});
-               var output = {total: pics.length, pics: []};
+               if (pics.length === 0) return reply (response, 200, {total: 0, pics: []});
+               var output = {pics: [], years: []};
 
                dale.do (pics, function (pic) {
+                  var y = new Date (parseInt (pic.date)).getFullYear ();
+                  if (output.years.indexOf (y) === -1) output.years.push (y);
                   var d = parseInt (pic [b.sort === 'upload' ? 'dateup': 'date']);
                   if (yeartags.length > 0) {
                      if (dale.stop (yeartags, true, function (year) {
@@ -1103,7 +1106,6 @@ var routes = [
                      hashes [pic.hash] = true;
                      return pic;
                   }
-                  else output.total--;
                });
 
                output.pics.sort (function (a, B) {
@@ -1111,6 +1113,8 @@ var routes = [
                   var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                   return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
                });
+
+               output.total = output.pics.length;
 
                output.pics = output.pics.slice (b.from - 1, b.to);
 
