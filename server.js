@@ -1078,7 +1078,7 @@ var routes = [
             });
             multi2.exec (function (error, pics) {
                if (error) return reply (rs, 500, {error: error});
-               if (pics.length === 0) return reply (response, 200, {total: 0, pics: []});
+               if (pics.length === 0) return reply (rs, 200, {total: 0, pics: []});
                var output = {pics: [], years: []};
 
                dale.do (pics, function (pic) {
