@@ -1301,10 +1301,14 @@ cicek.apres = function (rs) {
    }
    if (rs.log.code >= 400 && rs.log.code !== 409) {
       H.stat ('e' + rs.log.code);
-      if (CONFIG.errorlog && PROD) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log));
+      if (CONFIG.errorlog && PROD) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log) + '\n', function (error) {
+         if (error) console.log ('Error log write error', error);
+      });
    }
    else {
-      if (CONFIG.accesslog && PROD) fs.appendFile (CONFIG.accesslog, teishi.s (rs.log));
+      if (CONFIG.accesslog && PROD) fs.appendFile (CONFIG.accesslog, teishi.s (rs.log) + '\n', function (error) {
+         if (error) console.log ('Access log write error', error);
+      });
    }
    if (rs.log.code === 200 || rs.log.code === 304) {
       if (rs.log.method === 'get'  && rs.log.url.match (/^\/(pic|thumb)/)) H.stat ('d');
