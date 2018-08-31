@@ -1125,20 +1125,7 @@ var routes = [
                multi3.exec (function (error, tags) {
                   if (error) return reply (rs, 500, {error: error});
                   dale.do (output.pics, function (pic, k) {
-                     pic.tags = tags [k];
-                     pic.date = parseInt (pic.date);
-                     pic.dateup = parseInt (pic.dateup);
-                     pic.dimh   = parseInt (pic.dimh);
-                     pic.dimw   = parseInt (pic.dimw);
-                     pic.hash  = undefined;
-                     pic.by    = undefined;
-                     pic.by200 = undefined;
-                     pic.by900 = undefined;
-                     pic.dates = undefined;
-                     pic.orientation = undefined;
-                     pic.hitt = undefined;
-                     pic.hit2 = undefined;
-                     pic.hit9 = undefined;
+                     output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: tags [k], date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw)};
                   });
                   reply (rs, 200, output);
                });
