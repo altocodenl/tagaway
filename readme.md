@@ -159,6 +159,7 @@ All the routes below require an admin user to be logged in.
 - Client
    - Refactor & document client.
    - Upload: remove view, make it popup, show progress as % on browse
+   - Signup with token
    - Fix tag count on organize view per each picture
    - Canvas
       - Correct dimensions after full screen (check flechita movediza and size of initial picture).

@@ -30,8 +30,8 @@
 
    // *** INITIALIZATION OF STATE ***
 
-   B.do ({from: {ev: 'initialize'}}, 'set', ['Data'],  {});
-   B.do ({from: {ev: 'initialize'}}, 'set', ['State'], {});
+   B.do ({from: {ev: 'initialize'}}, 'set', 'Data',  {});
+   B.do ({from: {ev: 'initialize'}}, 'set', 'State', {});
    window.Data = B.get ('Data'), window.State = B.get ('State');
 
    // *** NAVIGATION ***
@@ -55,7 +55,7 @@
       B.do ({from: {ev: 'hashchange'}}, 'change', 'hash')
    });
 
-   // *** INITIALIZATION ***
+   // *** ERROR REPORTING ***
 
    window.onerror = function () {
       var payload = dale.do (arguments, function (v) {
@@ -63,6 +63,8 @@
       });
       c.ajax ('post', 'api/error', {}, payload);
    }
+
+   // *** INITIALIZATION ***
 
    c.ready (function () {
       B.do ({from: {ev: 'ready'}}, 'change', 'hash');
@@ -73,11 +75,19 @@
 
    var H = {};
 
+   H.logout = function () {
+      B.eventlog = [];
+      B.do ({from: {ev: 'logout'}}, 'set', 'Data',  {});
+      B.do ({from: {ev: 'logout'}}, 'set', 'State', {});
+      window.Data = B.get ('Data'), window.State = B.get ('State');
+      c.cookie (false);
+      B.do ({from: {ev: 'logout'}}, 'set', ['State', 'view'], 'auth');
+   }
+
    H.authajax = function (x, m, p, h, b, cb) {
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
-            c.cookie (false);
-            B.do (x, 'set', ['State', 'view'], 'auth');
+            H.logout ();
             return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.', error.responseText);
          }
          cb (error, rs);
@@ -135,21 +145,16 @@
 
    Views.notify = function (x) {
       return B.view (x, ['State', 'notify'], {listen: [
-         ['notify', '*', function (x, msg1, msg2) {
+         ['notify', '*', function (x, message, notimeout) {
             if (B.get ('State', 'notify', 'timeout')) clearTimeout (B.get ('State', 'notify', 'timeout'));
-            B.do (x, 'set', ['State', 'notify'], {color: x.path [0], message: msg1});
-            if (msg2 === true) return;
-            if (msg2) console.log ('Notify', msg1, msg2);
-            B.do (x, 'set', ['State', 'notify', 'timeout'], setTimeout (function () {
+            B.do (x, 'set', ['State', 'notify'], {color: x.path [0], message: message});
+            if (! notimeout) B.do (x, 'set', ['State', 'notify', 'timeout'], setTimeout (function () {
                B.do (x, 'rem', 'State', 'notify');
             }, 3000));
-         }]
+         }],
       ]}, function (x, notify) {
-         var color = ! notify ? '' : {
-            red: '#ff0033',
-            green: 'green',
-            yellow: 'yellow'
-         } [notify.color] || notify.color;
+         if (! notify) return;
+         var colormap = {red: '#ff0033'};
          return [
             ['style', [
                ['div.notify', {
@@ -157,7 +162,7 @@
                   'bottom, left': 0,
                   margin: '0 auto',
                   color: 'white',
-                  border: 'solid 4px ' + color,
+                  border: 'solid 4px ' + (colormap [notify.color] || notify.color),
                   'background-color': '#333333',
                   height: '1.6em',
                   width: 1,
@@ -168,7 +173,7 @@
                   'font-size': '1.2em'
                }]
             ]],
-            ['div', B.ev ({class: 'notify'}, ['onclick', 'set', ['State', 'notify'], undefined]), notify ? notify.message : '']
+            ['div', B.ev ({class: 'notify'}, ['onclick', 'rem', 'State', 'notify']), notify.message],
          ];
       });
    }
@@ -183,7 +188,7 @@
                password: c ('#auth-password').value
             };
             c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, creds, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + (B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.'), error.responseText);
+               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + (B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.'));
                else              B.do (x, 'notify', 'green', 'Welcome!');
                dale.do (rs.headers, function (v, k) {
                   if (k.match (/^cookie/i)) document.cookie = v;
@@ -193,7 +198,7 @@
          }],
       ], ondraw: function (x) {
          var subview = B.get ('State', 'subview');
-         if (subview !== 'signup' && subview !== 'login') B.do (x, 'set', ['State', 'subview'], 'login');
+         if (['login', 'signup'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
       }}, function (x, subview) {
          return [
             ['style', [
@@ -207,7 +212,7 @@
                      var v = V.toLowerCase ();
                      return ['div', {class: 'pure-control-group'}, [
                         ['label', {for: v}, V],
-                        ['input', {id: 'auth-' + v, type: v === 'password' ? v : 'text', placeholder: V}]
+                        ['input', {id: 'auth-' + v, type: v === 'password' ? v : 'text', placeholder: v}]
                      ]];
                   }),
                   ['div', {class: 'pure-controls'}, [
@@ -255,8 +260,30 @@
             var q = B.get ('State', 'upload', 'queue');
             if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
          }
-         var subview = B.get ('State', 'subview');
-         if (['browse', 'upload'].indexOf (subview) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
+         var from = function (x, o) {
+            x.from.unshift (o);
+            return x;
+         }
+         dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
+            document.addEventListener (v, function () {
+               if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
+                  B.do (from (x, {ev: 'onkeydown', key: 27}), 'rem', 'State', 'canvas');
+               }
+            });
+         });
+         document.onkeydown = function (e) {
+            e = e || window.event;
+            if (e.keyCode === 16) B.do (from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
+            if (e.keyCode === 17) B.do (from (x, {ev: 'onkeydown', key: 17}), 'set', ['State', 'ctrl'],  true);
+            return true;
+         };
+         document.onkeyup = function (e) {
+            e = e || window.event;
+            if (e.keyCode === 16) B.do (from (x, {ev: 'onkeyup', key: 16}), 'set', ['State', 'shift'], false);
+            if (e.keyCode === 17) B.do (from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
+            return true;
+         };
+         if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
       }}, function (x, subview) {
          return [
             ['style', [
@@ -561,7 +588,7 @@
             B.do (x, 'set', ['Data', 'pics'], []);
             B.do (x, 'retrieve', 'pics');
          }],
-         ['retrieve', 'pics', function (x, more) {
+         ['retrieve', 'pics', function (x) {
             var q = B.get ('State', 'query');
             if (! q) return;
             var num = (B.get ('Data', 'pics') || []).length;
@@ -630,7 +657,7 @@
          ['div', {class: 'pure-g'}, [
             ['div', {class: 'pure-u-5-24'}, [
                ['div', {style: 'position: fixed'}, [
-                  ['a', {class: 'logout', onclick: 'c.cookie (false)', href: 'auth/logout'}, 'Logout'],
+                  ['a', {class: 'logout', onclick: 'H.logout ()', href: 'auth/logout'}, 'Logout'],
                   ['br'], ['br'],
                   ['br'], ['br'],
                   ['a', {class: 'buttonlink', href: '#/main/upload'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Upload pictures']],
@@ -857,22 +884,6 @@
             B.do (x, 'set', ['State', 'lastclick'], {id: pic.id, time: Date.now ()});
          }],
       ], ondraw: function (x) {
-         var from = function (x, o) {
-            x.from.unshift (o);
-            return x;
-         }
-         document.onkeydown = function (e) {
-            e = e || window.event;
-            if (e.keyCode === 16) B.do (from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
-            if (e.keyCode === 17) B.do (from (x, {ev: 'onkeydown', key: 17}), 'set', ['State', 'ctrl'],  true);
-            return true;
-         };
-         document.onkeyup = function (e) {
-            e = e || window.event;
-            if (e.keyCode === 16) B.do (from (x, {ev: 'onkeyup', key: 16}), 'set', ['State', 'shift'], true);
-            if (e.keyCode === 17) B.do (from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  true);
-            return true;
-         };
          document.onscroll = function (e) {
             var prev = B.get ('State', 'lastscroll');
             if (prev && (Date.now () - prev.date < 100)) return;
@@ -883,7 +894,7 @@
             lasti = c ('img') [B.get ('Data', 'pics').length - 1].getBoundingClientRect ().top;
 
             if (lasty < lasti) return;
-            B.do ({from: {ev: 'scroll'}}, 'retrieve', 'pics', true);
+            B.do ({from: {ev: 'scroll'}}, 'retrieve', 'pics');
          }
       }}, function (x, pics) {
          if (! pics || pics.length === 0) return;
@@ -915,13 +926,15 @@
                if (pic.id === B.get ('State', 'canvas', 'id')) return k;
             });
             if (action === 'prev' && index === 0) return B.do (x, 'set', ['State', 'canvas'], pics [pics.length - 1]);
-            if (action === 'next' && index === pics.length - 1) {
-               B.do (x, 'retrieve', 'pics', true);
+            if (action === 'next' && index >= pics.length - 5) {
+               B.do (x, 'retrieve', 'pics');
+               /*
                var length = pics.length;
                setTimeout (function () {
                   if (length !== B.get ('Data', 'pics').length) B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', index + 1));
                }, 300);
                return;
+               */
             }
             B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', index + (action === 'prev' ? -1 : 1)));
          }]
