@@ -157,19 +157,16 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - Fix all existing functionality after server refactor.
-   - Upload popup
+   - Refactor & document client.
+   - Upload: remove view, make it popup, show progress as % on browse
+   - Fix tag count on organize view per each picture
    - Canvas
       - Correct dimensions after full screen (check flechita movediza and size of initial picture).
       - Show picture info.
       - Make keyboard keys go back & forth.
       - Preload next picture.
    - Organize
-      - Show tags when starting to type already.
       - Make browse usable when files are being uploaded.
-      - Add multiple tags at the same time.
-      - Bug when pictures fit in screen, no reload
-      - Make 200x200 in organize view
 
 - Admin & other
    - Test email flows.
@@ -209,6 +206,7 @@ All the routes below require an admin user to be logged in.
    - Upload to shared tag.
 
 - Organize
+   - Add multiple tags at the same time.
    - Hide certain tags when you don't search for any, unless you explicitly search for them
    - Smaller level of scale to go faster
    - Upload video.
@@ -285,8 +283,9 @@ All the routes below require an admin user to be logged in.
 
 `State.view`: can be `'auth'` or `'main'`.
 `State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
-
+`State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
+`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], XXX}`.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.
