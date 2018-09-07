@@ -68,7 +68,7 @@
 
    c.ready (function () {
       B.do ({from: {ev: 'ready'}}, 'change', 'hash');
-      B.mount ('body', Views.base ());
+      B.mount ('body', Views.base ({from: {ev: 'ready'}}));
    });
 
    // *** HELPERS ***
@@ -127,8 +127,8 @@
 
    var Views = {};
 
-   Views.base = function () {
-      return B.view (['State', 'view'], function (x, view) {
+   Views.base = function (x) {
+      return B.view (x, ['State', 'view'], function (x, view) {
          return ['div', {class: 'pure-g'}, [
             Views.canvas (x),
             ['div', {class: 'pure-u-1-24'}],
@@ -197,7 +197,6 @@
             });
          }],
       ], ondraw: function (x) {
-         var subview = B.get ('State', 'subview');
          if (['login', 'signup'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
       }}, function (x, subview) {
          return [
@@ -256,6 +255,7 @@
             });
          }],
       ], ondraw: function (x) {
+         if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          window.onbeforeunload = function () {
             var q = B.get ('State', 'upload', 'queue');
             if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
@@ -283,7 +283,6 @@
             if (e.keyCode === 17) B.do (from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
             return true;
          };
-         if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
       }}, function (x, subview) {
          return [
             ['style', [

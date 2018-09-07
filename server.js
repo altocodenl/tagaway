@@ -1332,7 +1332,7 @@ if (cicek.isMaster && PROD) setInterval (function () {
 
    var file = fs.createReadStream (CONFIG.backup.path).on ('error', cb);
 
-   s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: CONFIG.backup.path}, cb);
+   s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: file}, cb);
 
 }, CONFIG.backup.frequency * 60 * 1000);
 

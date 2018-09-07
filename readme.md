@@ -170,8 +170,10 @@ All the routes below require an admin user to be logged in.
       - Make browse usable when files are being uploaded.
 
 - Admin & other
+   - Colors in tags.
    - Test email flows.
    - Test year range in query.
+   - Change pfcounts to numbers to a) reduce memory usage; and b) to remove user info.
    - Admin area
       - stats
       - error log
@@ -223,6 +225,10 @@ All the routes below require an admin user to be logged in.
    - Order pictures within tag? Set priorities!
 
 - Other
+   Privacy with regard to backup & debug tools
+      - Server access logs are deleted after 7 days.
+      - Error logs are kept but user info will be purged from them if user is deleted.
+      - DB dumps are eliminated after a month.
    - Report pictures.
    - QR code to share.
 
