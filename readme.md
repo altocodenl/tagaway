@@ -85,7 +85,7 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - The file uploaded must be `.png` or `.jpg` (otherwise, 400 with body `{error: 'format'}`).
-   - If the same file exists for that user, a 409 is returned with body `{error: 'conflict'}`.
+   - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
@@ -286,13 +286,15 @@ All the routes below require an admin user to be logged in.
    - Share certain tags only on shared pictures.
    - Home pages.
 
-## Client structure
+## Client Data/State structure
 
 `State.view`: can be `'auth'` or `'main'`.
 `State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
 `State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
-`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], XXX}`.
+`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], done: INT, error: [[error, file], ...]}`.
+`State.shift`: true|false|undefined, truthy when the `shift` key is depressed.
+`State.ctrl`: true|false|undefined, truthy when the `ctrl` key is depressed.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.

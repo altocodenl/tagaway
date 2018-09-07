@@ -210,8 +210,8 @@
                   dale.do (['Username', 'Password'], function (V) {
                      var v = V.toLowerCase ();
                      return ['div', {class: 'pure-control-group'}, [
-                        ['label', {for: v}, V],
-                        ['input', {id: 'auth-' + v, type: v === 'password' ? v : 'text', placeholder: v}]
+                        ['label', {for: 'auth-' + v}, V],
+                        ['input', {id:  'auth-' + v, type: v === 'password' ? v : 'text', placeholder: v}]
                      ]];
                   }),
                   ['div', {class: 'pure-controls'}, [
@@ -233,25 +233,27 @@
          ['change', ['State', 'upload', 'queue'], function (x) {
             var queue = B.get ('State', 'upload', 'queue');
             var MAXSIMULT = 2, uploading = 0;
-            // XXX uploading must be in the state
             dale.do (queue, function (file) {
                if (uploading === MAXSIMULT) return;
                if (file.uploading) return uploading++;
                file.uploading = true;
                uploading++;
-               (function () {
-                  var f = new FormData ();
-                  f.append ('lastModified', file.lastModified);
-                  f.append ('pic', file);
-                  H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
-                     if      (error && error.responseText !== 'repeated') B.do (x, 'add', ['State', 'upload', 'error'], file);
-                     else if (error && error.responseText === 'repeated') B.do (x, 'set', ['State', 'upload', 'repeated', file.name], true);
-                     else                                                 B.do (x, 'add', ['State', 'upload', 'done'], rs.body);
-                     dale.do (B.get (['State', 'upload', 'queue']), function (v, i) {
-                        if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
-                     });
+
+               var f = new FormData ();
+               f.append ('lastModified', file.lastModified);
+               f.append ('pic', file);
+               H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
+                  dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
+                     if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
                   });
-               }) ();
+                  if (error && error.responseText.match ('repeated')) return;
+                  if (error && error.status === 409 && error.responseText.match ('capacity')) {
+                     B.do (x, 'set', ['State', 'upload', 'queue'], []);
+                     return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
+                  }
+                  if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
+                  B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
+               });
             });
          }],
       ], ondraw: function (x) {
@@ -347,7 +349,7 @@
    // *** MANAGE VIEW ***
 
    Views.manage = function (x) {
-      return B.view (x, ['Data', 'tags'], {listen: [
+      var evs = [
          ['delete', 'pics', function (x) {
             var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic) {
                if (pic.selected) return pic.id;
@@ -379,7 +381,7 @@
             });
          }],
          ['tag', 'pics', function (x, tag, del) {
-            if (tag == true) tag = B.get ('State', 'autotag');
+            if (tag === true) tag = B.get ('State', 'autotag');
             if (! tag) return;
             if (BASETAGS.indexOf (tag) !== -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             if (tag.match (/^\d{4}$/) && parseInt (tag) > 1899 && parseInt (tag) < 2101) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
@@ -403,7 +405,9 @@
             });
             B.do (x, 'change', ['Data', 'pics']);
          }]
-      ], ondraw: function (x) {
+      ];
+
+      return B.view (x, ['Data', 'tags'], {listen: evs, ondraw: function (x) {
          if (! B.get ('Data', 'tags')) B.do (x, 'retrieve', 'tags');
       }, onforget: function (x) {
          B.do (x, 'rem', 'State', 'query', 'tags');

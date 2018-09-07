@@ -648,7 +648,7 @@ var routes = [
                return [Redis, 'sismember', 'upic:' + rq.user.username, s.hash];
             },
             function (s) {
-               if (s.last) return reply (rs, 409, {error: 'conflict'});
+               if (s.last) return reply (rs, 409, {error: 'repeated'});
                return [
                   [Redis, 'hget', 'users:' + rq.user.username, 's3:buse'],
                   function (s) {
