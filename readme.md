@@ -185,7 +185,8 @@ All the routes below require an admin user to be logged in.
 - Admin & deploy
    - Manage payments.
    - Secret & config by environment.
-   - Test s3del with > 1k pictures
+   - Test s3del with > 1k pictures.
+   - Make `years` independent of query.
 
 - Account
    - Account view & account activity endpoint
@@ -299,6 +300,8 @@ All the routes below require an admin user to be logged in.
 `State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
 `State.action`: `undefined|'tag'|'untag'|'rotate'`, determines the action currently being displayed on the left part of the `organize` view.
 `State.rotate`: `undefined|90|-90|180`, determines the degrees of rotation for a `rotate` operation.
+`State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
+`State.autoquery`: `undefined|string`, used to search for tags in the query box.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.

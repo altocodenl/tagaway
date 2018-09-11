@@ -28,11 +28,19 @@
 
    B.verbose = true;
 
-   // *** INITIALIZATION OF STATE ***
+   // *** ERROR REPORTING ***
 
-   B.do ({from: {ev: 'initialize'}}, 'set', 'Data',  {});
+   window.onerror = function () {
+      c.ajax ('post', 'api/error', {}, dale.do (arguments, function (v) {
+         return v.toString ();
+      }));
+   }
+
+   // *** INITIALIZATION OF STATE/DATA ***
+
    B.do ({from: {ev: 'initialize'}}, 'set', 'State', {});
-   window.Data = B.get ('Data'), window.State = B.get ('State');
+   B.do ({from: {ev: 'initialize'}}, 'set', 'Data',  {});
+   window.State = B.get ('State'), window.Data = B.get ('Data');
 
    // *** NAVIGATION ***
 
@@ -55,15 +63,6 @@
       B.do ({from: {ev: 'hashchange'}}, 'change', 'hash')
    });
 
-   // *** ERROR REPORTING ***
-
-   window.onerror = function () {
-      var payload = dale.do (arguments, function (v) {
-         return v.toString ();
-      });
-      c.ajax ('post', 'api/error', {}, payload);
-   }
-
    // *** INITIALIZATION ***
 
    c.ready (function () {
@@ -75,11 +74,15 @@
 
    var H = {};
 
+   H.if = function (cond, then, Else) {
+      return cond ? then : Else;
+   }
+
    H.logout = function () {
       B.eventlog = [];
-      B.do ({from: {ev: 'logout'}}, 'set', 'Data',  {});
       B.do ({from: {ev: 'logout'}}, 'set', 'State', {});
-      window.Data = B.get ('Data'), window.State = B.get ('State');
+      B.do ({from: {ev: 'logout'}}, 'set', 'Data',  {});
+      window.State = B.get ('State'), window.Data = B.get ('Data');
       c.cookie (false);
       B.do ({from: {ev: 'logout'}}, 'set', ['State', 'view'], 'auth');
    }
@@ -134,8 +137,8 @@
             ['div', {class: 'pure-u-1-24'}],
             ['div', {class: 'pure-u-22-24'}, [
                Views.notify (x),
-               Views [view] ? Views [view] (x) : undefined],
-            ],
+               Views [view] ? Views [view] (x) : undefined,
+            ]],
             ['div', {class: 'pure-u-1-24'}],
           ]];
       });
@@ -183,11 +186,11 @@
    Views.auth = function (x) {
       return B.view (x, ['State', 'subview'], {listen: [
          ['submit', 'auth', function (x) {
-            var creds = {
+            var credentials = {
                username: c ('#auth-username').value,
                password: c ('#auth-password').value
             };
-            c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, creds, function (error, rs) {
+            c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, credentials, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error ' + B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.');
                else              B.do (x, 'notify', 'green', 'Welcome!');
                dale.do (rs.headers, function (v, k) {
@@ -246,7 +249,7 @@
                   dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
                      if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
                   });
-                  if (error && error.responseText.match ('repeated')) return;
+                  if (error && error.status === 409 && error.responseText.match ('repeated')) return;
                   if (error && error.status === 409 && error.responseText.match ('capacity')) {
                      B.do (x, 'set', ['State', 'upload', 'queue'], []);
                      return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
@@ -345,6 +348,23 @@
 
    Views.manage = function (x) {
       var evs = [
+         ['retrieve', 'pics', function (x) {
+            var q = B.get ('State', 'query');
+            if (! q) return;
+            var num = (B.get ('Data', 'pics') || []).length;
+
+            H.authajax (x, 'post', 'query', {}, {tags: q.tags, sort: q.sort, from: 1, to: num + 30}, function (error, rs) {
+               if (error) return B.do (x, 'notify', 'red', 'There was an error querying the picture(s).');
+               B.do (x, 'set', ['Data', 'years'], dale.do (rs.body.years, function (year) {return year + ''}));
+               var selected = dale.obj (B.get ('Data', 'pics'), function (oldpic) {
+                  if (oldpic.selected) return [oldpic.id, true];
+               });
+               dale.do (rs.body.pics, function (newpic) {
+                  if (selected [newpic.id]) newpic.selected = true;
+               });
+               B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+            });
+         }],
          ['retrieve', 'tags', function (x) {
             H.authajax (x, 'get', 'tags', {}, '', function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error querying the tags.');
@@ -394,12 +414,6 @@
                B.do (x, 'rem', 'State', 'action');
             });
          }],
-         ['unselect', 'pics', function (x) {
-            dale.do (B.get ('Data', 'pics'), function (pic, k) {
-               if (pic.selected) B.rem (['Data', 'pics', k], 'selected');
-            });
-            B.do (x, 'change', ['Data', 'pics']);
-         }],
          ['rotate', 'pics', function (x) {
             var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic, k) {
                if (pic.selected) return pic.id;
@@ -417,6 +431,12 @@
             }
             rotateOne ();
          }],
+         ['unselect', 'pics', function (x) {
+            dale.do (B.get ('Data', 'pics'), function (pic, k) {
+               if (pic.selected) B.rem (['Data', 'pics', k], 'selected');
+            });
+            B.do (x, 'change', ['Data', 'pics']);
+         }],
       ];
 
       return B.view (x, ['Data', 'tags'], {listen: evs, ondraw: function (x) {
@@ -426,16 +446,13 @@
          B.do (x, 'rem', 'Data', 'tags');
       }}, function (x, tags) {
          return B.view (x, ['Data', 'pics'], function (x, pics) {
-            pics = dale.fil (pics, undefined, function (v) {
-               if (type (v) === 'integer') return;
-               if (v.selected) return v;
-            });
-            if (pics.length === 0) return;
-            var picn = pics.length === 1 ? 'picture' : 'pictures';
+            var selected = dale.fil (pics, undefined, function (v) {if (v.selected) return v});
+            if (selected.length === 0) return;
+            var picn = selected.length === 1 ? 'picture' : 'pictures';
             return [
                ['h3', 'Manage pics'],
                ['h4', [
-                  [pics.length, ' ', picn, ' selected - '],
+                  [selected.length, ' ', picn, ' selected - '],
                   ['span', B.ev ({class: 'action'}, ['onclick', 'unselect', 'pics']), 'Unselect all']
                ]],
                ['hr'],
@@ -455,15 +472,15 @@
                   ];
 
                   if (action === 'untag') {
+
                      var tags = {};
-                     var selected = dale.fil (pics, undefined, function (pic) {
-                        if (pic.selected) {
-                           dale.do (pic.tags, function (tag) {
-                              tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
-                           });
-                           return pic;
-                        }
+                     dale.do (selected, function (pic) {
+                        dale.do (pic.tags, function (tag) {
+                           tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
+                        });
+                        return pic;
                      });
+
                      return [
                         dale.keys (tags).length === 0 ?
                            ['p', 'None of the selected pictures have tags.'] :
@@ -474,31 +491,29 @@
                      ];
                   }
 
-                  if (action === 'tag') {return [
-                     B.view (x, ['State', 'autotag'], {listen: [
-                        ['trigger', 'tag', function (x, ev) {
-                           if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
-                        }],
-                     ]}, function (x, autotag) {
-                        var matches = ! autotag ? [] : dale.fil (B.get ('Data', 'tags'), undefined, function (card, tag) {
-                           if (BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
-                        });
-                        return [
-                           ['input', B.ev ({class: 'autocomplete', placeholder: 'tag ' + picn, value: autotag}, [
-                              ['oninput', 'set', ['State', 'autotag']],
-                              ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
-                           ])],
-                           matches.length === 0 ? [] : ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
-                              return ['li', B.ev ({}, [
-                                 ['onclick', 'tag', 'pics', match [0]]
-                              ]), match [0] + ' (' + match [1] + ' pics)']
-                           })],
-                           ['br'], ['br'],
-                           ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'tag', 'pics', true]), 'Tag ' + picn],
-                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
-                        ];
-                     }),
-                  ]}
+                  if (action === 'tag') return B.view (x, ['State', 'autotag'], {listen: [
+                     ['trigger', 'tag', function (x, ev) {
+                        if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
+                     }],
+                  ]}, function (x, autotag) {
+                     var matches = ! autotag ? [] : dale.fil (B.get ('Data', 'tags'), undefined, function (card, tag) {
+                        if (BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
+                     });
+                     return [
+                        ['input', B.ev ({class: 'autocomplete', placeholder: 'tag ' + picn, value: autotag}, [
+                           ['oninput', 'set', ['State', 'autotag']],
+                           ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
+                        ])],
+                        H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
+                           return ['li', B.ev ([
+                              ['onclick', 'tag', 'pics', match [0]]
+                           ]), match [0] + ' (' + match [1] + ' pics)']
+                        })]),
+                        ['br'], ['br'],
+                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'tag', 'pics', true]), 'Tag ' + picn],
+                        ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
+                     ];
+                  });
 
                   if (action === 'rotate') {
                      var firstSelected = dale.stopNot (pics, undefined, function (pic) {
@@ -507,7 +522,7 @@
                      return B.view (x, ['State', 'rotate'], function (x, rotate) {return [
                         ['span', B.ev ({class: rotate === -90 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], -90]), 'Rotate left'],
                         ' / ',
-                        ['span', B.ev ({class: rotate === 90 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], 90]), 'Rotate right'],
+                        ['span', B.ev ({class: rotate === 90  ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'],  90]), 'Rotate right'],
                         ' / ',
                         ['span', B.ev ({class: rotate === 180 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], 180]), 'Invert'],
                         ['br'], ['br'], ['br'], ['br'],
@@ -577,74 +592,60 @@
          if (! B.get ('State', 'refreshQuery')) {
             B.do (x, 'set', ['State', 'refreshQuery'], setInterval (function () {
                var queue = B.get ('State', 'upload', 'queue');
-               if (queue && queue.length > 0) B.do ({from: {ev: 'setInterval', path: ['State', 'refreshQuery']}}, 'retrieve', 'pics');
+               if (queue && queue.length > 0) B.do ({from: {ev: 'refreshQuery'}}, 'retrieve', 'pics');
             }, 1000));
          }
       }, listen: [
          ['change', ['State', 'query'], function (x) {
-            B.do (x, 'set', ['Data', 'pics'], []);
             B.do (x, 'retrieve', 'pics');
          }],
-         ['retrieve', 'pics', function (x) {
-            var q = B.get ('State', 'query');
-            if (! q) return;
-            var num = (B.get ('Data', 'pics') || []).length;
-
-            H.authajax (x, 'post', 'query', {}, {tags: q.tags, sort: q.sort, from: 1, to: num + 30}, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error querying the picture(s).');
-               B.do (x, 'set', ['Data', 'years'], rs.body.years);
-               var selected = dale.obj (B.get ('Data', 'pics'), function (oldpic) {
-                  if (oldpic.selected) return [oldpic.id, true];
-               });
-               dale.do (rs.body.pics, function (newpic) {
-                  if (selected [newpic.id]) newpic.selected = true;
-               });
-               B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
-            });
-         }]
       ]}, function (x, query) {
-         return B.view (x, ['Data', 'pics'], function (x, pics) {
-            var selectedPics = dale.fil (B.get ('Data', 'pics'), undefined, function (p) {if (p.selected) return p}).length;
-            if (selectedPics > 0) return;
-            return ['div', {class: 'pure-g'}, [
-            ['div', {class: 'pure-u-5-5'}, [
-               ['h3', 'Search pics'],
-               ['p', [
-                  ! query || query.sort === 'newest' ? 'By newest' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
-                  [' | '],
-                  query && query.sort === 'oldest' ? 'By oldest' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
-                  [' | '],
-                  query && query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
-               ]],
-               ['ul', {class: 'search'}, [
-                  dale.do (query ? query.tags : [], function (tag, k) {
-                     if (tag === 'all') return;
-                     return [
-                        ['li', [
-                           ['span', tag],
-                           ['i', B.ev ({class: 'ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
-                        ]],
-                     ];
-                  }),
-               ]],
-            ]],
-            B.view (x, ['State', 'autoquery'], {attrs: {class: 'pure-u-5-5'}}, function (x, query) {
-               var matches = ! query ? [] : dale.fil (dale.keys (B.get ('Data', 'tags')).concat (B.get ('Data', 'years') || []), undefined, function (tag) {
-                  if (tag !== 'all' && (tag + '').match (new RegExp (query, 'i')) && (B.get ('State', 'query', 'tags') || []).indexOf (tag) === -1) return tag;
-               });
-
-               return [
-                  ['input', B.ev ({class: 'autocomplete', placeholder: 'search pics by tag or year', value: query}, ['oninput', 'set', ['State', 'autoquery']])],
-                  matches.length > 0 ? ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
-                     return ['li', B.ev ({}, [
-                        ['onclick', 'add', ['State', 'query', 'tags'], match + ''],
-                        ['onclick', 'rem', 'State', 'autoquery']
-                     ]), match];
-                  })] : [],
-               ];
+         return [
+            B.view (x, ['Data', 'pics'], function (x, pics) {
+               var selectedPics = dale.fil (B.get ('Data', 'pics'), undefined, function (p) {if (p.selected) return p}).length;
+               if (selectedPics > 0) return;
+               return ['div', {class: 'pure-g'}, [
+                  ['div', {class: 'pure-u-5-5'}, [
+                     ['h3', 'Search pics'],
+                     ['p', [
+                        ! query || query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
+                        [' | '],
+                        query   && query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
+                        [' | '],
+                        query   && query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
+                     ]],
+                     ['ul', {class: 'search'}, [
+                        dale.do (query ? query.tags : [], function (tag, k) {
+                           return [
+                              ['li', [
+                                 ['span', tag],
+                                 ['i', B.ev ({class: 'ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
+                              ]],
+                           ];
+                        }),
+                     ]],
+                  ]],
+               ]];
             }),
-         ]]})
-      })
+            B.view (x, ['Data', 'tags'], function (x, tags) {
+               return B.view (x, ['State', 'autoquery'], {attrs: {class: 'pure-u-5-5'}}, function (x, autoquery) {
+                  var matches = dale.fil (dale.keys (tags).concat (B.get ('Data', 'years') || []), undefined, function (tag) {
+                     if (tag.match (new RegExp (autoquery || '', 'i')) && (query ? query.tags : []).indexOf (tag) === -1) return tag;
+                  });
+
+                  return [
+                     ['input', B.ev ({class: 'autocomplete', placeholder: 'search pics by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
+                     H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
+                        return ['li', B.ev ([
+                           ['onclick', 'add', ['State', 'query', 'tags'], match],
+                           ['onclick', 'rem', 'State', 'autoquery']
+                        ]), match];
+                     })]),
+                  ];
+               });
+            }),
+         ];
+      }),
    ]}
 
    // *** BROWSE VIEW ***
@@ -692,7 +693,7 @@
             'margin-left': 0.45
          }]]
       ]],
-      ['a', {class: 'logout', onclick: 'c.cookie (false)', href: 'auth/logout'}, 'Logout'],
+      ['a', {class: 'logout', onclick: 'H.logout ()', href: 'auth/logout'}, 'Logout'],
       ['br'], ['br'], ['br'],
       ['a', {class: 'buttonlink', href: '#/main/browse'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Back to main view']],
       B.view (x, ['State', 'upload'], {listen: [
@@ -724,7 +725,7 @@
          ['form', {onsubmit: 'event.preventDefault ()', class: 'pure-form pure-form-aligned'}, [
             ['br'], ['br'],
             ['fieldset', [
-               B.view (['State', 'uploadFolder'], function (x, uploadFolder) {
+               B.view (x, ['State', 'uploadFolder'], function (x, uploadFolder) {
                   if (uploadFolder) return [
                      ['h3', ['Upload a folder (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], false]), 'individual pictures'], ')']],
                      ['input', {type: 'file', name: 'pics', directory: true, webkitdirectory: true, mozdirectory: true}]
@@ -808,12 +809,6 @@
             cursor: 'pointer',
             'background-color': '#ddd',
             'border-radius': 8,
-            /*
-            'vertical-align': 'top',
-            margin: 'auto',
-            display: 'block',
-            float: 'none !important'
-            */
             'max-height, max-width': 0.95,
             'width, height, margin': 'auto',
             position: 'absolute',
@@ -1033,7 +1028,7 @@
                      ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topm / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + leftm / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], true])],
                   ];
                }) (),
-               B.view (['State', 'showPictureInfo'], function (x, show) {
+               B.view (x, ['State', 'showPictureInfo'], function (x, show) {
                   if (! show) return;
                   return ['div', {class: 'info pure-u-24-24'}, [
                      ['ul', {class: 'search'}, [
