@@ -88,7 +88,7 @@
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
             H.logout ();
-            return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.', error.responseText);
+            return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
          }
          cb (error, rs);
       });
@@ -188,7 +188,7 @@
                password: c ('#auth-password').value
             };
             c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, creds, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + (B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.'));
+               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.');
                else              B.do (x, 'notify', 'green', 'Welcome!');
                dale.do (rs.headers, function (v, k) {
                   if (k.match (/^cookie/i)) document.cookie = v;
@@ -277,13 +277,11 @@
             e = e || window.event;
             if (e.keyCode === 16) B.do (from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
             if (e.keyCode === 17) B.do (from (x, {ev: 'onkeydown', key: 17}), 'set', ['State', 'ctrl'],  true);
-            return true;
          };
          document.onkeyup = function (e) {
             e = e || window.event;
             if (e.keyCode === 16) B.do (from (x, {ev: 'onkeyup', key: 16}), 'set', ['State', 'shift'], false);
             if (e.keyCode === 17) B.do (from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
-            return true;
          };
       }}, function (x, subview) {
          return [
@@ -295,8 +293,7 @@
                ['a.logout', {
                   'letter-spacing': 'normal',
                   position: 'absolute',
-                  left: 0.05,
-                  top: 0.05,
+                  'left, top': 0.05,
                   'font-weight': 'bold',
                   'text-decoration': 'none'
                }],
@@ -312,8 +309,7 @@
                ['.thumb', {
                   float: 'left',
                   position: 'relative',
-                  width: 210,
-                  height: 210,
+                  'width, height': 210,
                   padding: 2,
                   border: 'solid 1px #dddddd',
                   'border-right': 0
@@ -324,8 +320,7 @@
                      'top, left, right, bottom': 0
                   }],
                   ['.icon', {
-                     right: 2,
-                     top: 2,
+                     'right, top': 2,
                      'font-size': '1.5em',
                      display: 'none',
                      color: '#ff8080',
@@ -350,6 +345,16 @@
 
    Views.manage = function (x) {
       var evs = [
+         ['retrieve', 'tags', function (x) {
+            H.authajax (x, 'get', 'tags', {}, '', function (error, rs) {
+               if (error) return B.do (x, 'notify', 'red', 'There was an error querying the tags.');
+               B.do (x, 'set', ['Data', 'tags'], rs.body);
+               var tags = dale.keys (rs.body);
+               dale.do (B.get ('State', 'query', 'tags') || [], function (tag, k) {
+                  if (tags.indexOf (tag) === -1) B.do (x, 'rem', ['State', 'query', 'tags'], k);
+               });
+            });
+         }],
          ['delete', 'pics', function (x) {
             var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic) {
                if (pic.selected) return pic.id;
@@ -359,7 +364,7 @@
             B.do (x, 'notify', 'yellow', 'Deleting, please wait...');
             var deleteOne = function () {
                H.authajax (x, 'delete', 'pic/' + pics.shift (), {}, '', function (error, rs) {
-                  if (error) return B.do (x, 'notify', 'red', 'There was an error deleting the picture(s).', error.responseText);
+                  if (error) return B.do (x, 'notify', 'red', 'There was an error deleting the picture(s).');
                   if (pics.length > 0) deleteOne ();
                   else {
                      B.do (x, 'retrieve', 'tags');
@@ -369,16 +374,6 @@
                });
             }
             deleteOne ();
-         }],
-         ['retrieve', 'tags', function (x) {
-            H.authajax (x, 'get', 'tags', {}, '', function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error querying the tags.', error.responseText);
-               B.do (x, 'set', ['Data', 'tags'], rs.body);
-               var tags = dale.keys (rs.body);
-               dale.do (B.get ('State', 'query', 'tags') || [], function (tag, k) {
-                  if (tags.indexOf (tag) === -1) B.do (x, 'rem', ['State', 'query', 'tags'], k);
-               });
-            });
          }],
          ['tag', 'pics', function (x, tag, del) {
             if (tag === true) tag = B.get ('State', 'autotag');
@@ -391,8 +386,8 @@
                del: del
             }
             H.authajax (x, 'post', 'tag', {}, payload, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error tagging the picture(s).', error.responseText);
-               B.do (x, 'notify', 'green', B.get ('State', 'action') + ' operation successful!');
+               if (error) return B.do (x, 'notify', 'red', 'There was an error tagging the picture(s).');
+               B.do (x, 'notify', 'green', 'Tagging operation successful!');
                B.do (x, 'retrieve', 'tags');
                B.do (x, 'change', ['State', 'query', 'tags']);
                B.do (x, 'rem', 'State', 'autotag');
@@ -401,10 +396,27 @@
          }],
          ['unselect', 'pics', function (x) {
             dale.do (B.get ('Data', 'pics'), function (pic, k) {
-               if (pic.selected) B.set (['Data', 'pics', k, 'selected'], false);
+               if (pic.selected) B.rem (['Data', 'pics', k], 'selected');
             });
             B.do (x, 'change', ['Data', 'pics']);
-         }]
+         }],
+         ['rotate', 'pics', function (x) {
+            var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic, k) {
+               if (pic.selected) return pic.id;
+            });
+            if (pics.length === 0) return;
+            B.do (x, 'notify', 'yellow', 'Rotating, please wait...', true);
+            var rotateOne = function () {
+               H.authajax (x, 'post', 'rotate', {}, {deg: B.get ('State', 'rotate'), id: pics.shift ()}, function (error, data) {
+                  if (error) return B.do (x, 'notify', 'red', 'There was an error rotating the picture(s).');
+                  B.do (x, 'retrieve', 'pics');
+                  if (pics.length > 0) return rotateOne ();
+                  B.do (x, 'rem', 'State', 'action');
+                  B.do (x, 'notify', 'green', 'The pictures were successfully rotated.');
+               });
+            }
+            rotateOne ();
+         }],
       ];
 
       return B.view (x, ['Data', 'tags'], {listen: evs, ondraw: function (x) {
@@ -488,25 +500,7 @@
                      }),
                   ]}
 
-                  if (action === 'rotate') {return B.view (x, ['Data', 'pics'], {listen: [
-                     ['rotate', 'pics', function (x) {
-                        var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic, k) {
-                           if (pic.selected) return pic.id;
-                        });
-                        if (pics.length === 0) return;
-                        B.do (x, 'notify', 'yellow', 'Rotating, please wait...', true);
-                        var rotateOne = function () {
-                           H.authajax (x, 'post', 'rotate', {}, {deg: B.get ('State', 'rotate'), id: pics.shift ()}, function (error, data) {
-                              if (error) return B.do (x, 'notify', 'red', 'There was an error rotating the picture(s).', error.responseText);
-                              if (pics.length > 0) return rotateOne ();
-                              B.do (x, 'rem', 'State', 'action');
-                              B.do (x, 'retrieve', 'pics');
-                              B.do (x, 'notify', 'green', 'The pictures were successfully rotated.');
-                           });
-                        }
-                        rotateOne ();
-                     }]
-                  ]}, function (x, pics) {
+                  if (action === 'rotate') {
                      var firstSelected = dale.stopNot (pics, undefined, function (pic) {
                         if (pic.selected) return pic;
                      });
@@ -529,7 +523,7 @@
                         ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'rotate', 'pics']), 'Rotate'],
                         ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
                      ]});
-                  })}
+                  }
                }),
             ];
          });
@@ -597,7 +591,7 @@
             var num = (B.get ('Data', 'pics') || []).length;
 
             H.authajax (x, 'post', 'query', {}, {tags: q.tags, sort: q.sort, from: 1, to: num + 30}, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error querying the picture(s).', error.responseText);
+               if (error) return B.do (x, 'notify', 'red', 'There was an error querying the picture(s).');
                B.do (x, 'set', ['Data', 'years'], rs.body.years);
                var selected = dale.obj (B.get ('Data', 'pics'), function (oldpic) {
                   if (oldpic.selected) return [oldpic.id, true];

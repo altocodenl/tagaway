@@ -174,6 +174,7 @@ All the routes below require an admin user to be logged in.
    - Test email flows.
    - Test year range in query.
    - Change pfcounts to numbers to a) reduce memory usage; and b) to remove user info.
+   - Add test files
    - Admin area
       - stats
       - error log
@@ -293,10 +294,13 @@ All the routes below require an admin user to be logged in.
 `State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
 `State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], done: INT, error: [[error, file], ...]}`.
-`State.shift`: true|false|undefined, truthy when the `shift` key is depressed.
-`State.ctrl`: true|false|undefined, truthy when the `ctrl` key is depressed.
+`State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
+`State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
+`State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
+`State.action`: `undefined|'tag'|'untag'|'rotate'`, determines the action currently being displayed on the left part of the `organize` view.
+`State.rotate`: `undefined|90|-90|180`, determines the degrees of rotation for a `rotate` operation.
 
-`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`.
+`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
 
