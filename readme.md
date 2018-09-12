@@ -294,7 +294,6 @@ All the routes below require an admin user to be logged in.
 `State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
 `State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
-`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], done: INT, error: [[error, file], ...]}`.
 `State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
 `State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
 `State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
@@ -302,6 +301,10 @@ All the routes below require an admin user to be logged in.
 `State.rotate`: `undefined|90|-90|180`, determines the degrees of rotation for a `rotate` operation.
 `State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
 `State.autoquery`: `undefined|string`, used to search for tags in the query box.
+`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT}`.
+`State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
+`State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
+`State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.

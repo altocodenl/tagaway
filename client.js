@@ -72,13 +72,14 @@
 
    // *** HELPERS ***
 
-   var H = {};
+   var H = window.H = {};
 
    H.if = function (cond, then, Else) {
       return cond ? then : Else;
    }
 
    H.logout = function () {
+      c.ajax ('get', 'auth/logout');
       B.eventlog = [];
       B.do ({from: {ev: 'logout'}}, 'set', 'State', {});
       B.do ({from: {ev: 'logout'}}, 'set', 'Data',  {});
@@ -191,7 +192,7 @@
                password: c ('#auth-password').value
             };
             c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, credentials, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.');
+               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + (B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.'));
                else              B.do (x, 'notify', 'green', 'Welcome!');
                dale.do (rs.headers, function (v, k) {
                   if (k.match (/^cookie/i)) document.cookie = v;
@@ -249,7 +250,7 @@
                   dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
                      if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
                   });
-                  if (error && error.status === 409 && error.responseText.match ('repeated')) return;
+                  if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do ('set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
                   if (error && error.status === 409 && error.responseText.match ('capacity')) {
                      B.do (x, 'set', ['State', 'upload', 'queue'], []);
                      return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
@@ -630,8 +631,9 @@
             B.view (x, ['Data', 'tags'], function (x, tags) {
                return B.view (x, ['State', 'autoquery'], {attrs: {class: 'pure-u-5-5'}}, function (x, autoquery) {
                   var matches = dale.fil (dale.keys (tags).concat (B.get ('Data', 'years') || []), undefined, function (tag) {
+                     if (tag === 'all') return;
                      if (tag.match (new RegExp (autoquery || '', 'i')) && (query ? query.tags : []).indexOf (tag) === -1) return tag;
-                  });
+                  }).sort ();
 
                   return [
                      ['input', B.ev ({class: 'autocomplete', placeholder: 'search pics by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
@@ -655,7 +657,7 @@
          ['div', {class: 'pure-g'}, [
             ['div', {class: 'pure-u-5-24'}, [
                ['div', {style: 'position: fixed'}, [
-                  ['a', {class: 'logout', onclick: 'H.logout ()', href: 'auth/logout'}, 'Logout'],
+                  ['a', {href: '#', class: 'logout', onclick: 'H.logout ()'}, 'Logout'],
                   ['br'], ['br'],
                   ['br'], ['br'],
                   ['a', {class: 'buttonlink', href: '#/main/upload'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Upload pictures']],
@@ -675,28 +677,8 @@
 
    // *** UPLOAD VIEW ***
 
-   Views.upload = function (x) {return [
-      ['style', [
-         ['table.smallprint', {'font-size': 0.7}],
-         ['div.progress-out', {
-            border: 'solid 2px #eeeeee',
-            'border-radius': 3,
-            width: 0.5,
-         }],
-         ['div.progress-in', {
-            'border-radius': 3,
-            'background-color': '#4CAF50',
-            padding: 5
-         }, ['p', {
-            color: 'white',
-            margin: 0,
-            'margin-left': 0.45
-         }]]
-      ]],
-      ['a', {class: 'logout', onclick: 'H.logout ()', href: 'auth/logout'}, 'Logout'],
-      ['br'], ['br'], ['br'],
-      ['a', {class: 'buttonlink', href: '#/main/browse'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Back to main view']],
-      B.view (x, ['State', 'upload'], {listen: [
+   Views.upload = function (x) {
+      var evs = [
          ['upload', 'pics', function (x) {
 
             var pics = c ('form input') [0]
@@ -707,11 +689,9 @@
                if (ALLOWEDMIME.indexOf (file.type) !== -1) {
                   B.do (x, 'add', ['State', 'upload', 'queue'], file);
                }
-               else B.do (x, 'set', ['State', 'upload', 'invalid', file.name], true);
+               else B.do (x, 'add', ['State', 'upload', 'invalid'], file.name);
             });
-            dale.do (c ('form input'), function (input) {
-               input.value = '';
-            });
+            c ('#upload').value = '';
          }],
          ['retry', 'upload', function (x) {
             var files = B.get ('State', 'upload', 'error');
@@ -721,82 +701,72 @@
                B.do (x, 'add', ['State', 'upload', 'queue'], file);
             });
          }],
-      ]}, function (x, upload) {return [
-         ['form', {onsubmit: 'event.preventDefault ()', class: 'pure-form pure-form-aligned'}, [
-            ['br'], ['br'],
-            ['fieldset', [
-               B.view (x, ['State', 'uploadFolder'], function (x, uploadFolder) {
-                  if (uploadFolder) return [
-                     ['h3', ['Upload a folder (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], false]), 'individual pictures'], ')']],
-                     ['input', {type: 'file', name: 'pics', directory: true, webkitdirectory: true, mozdirectory: true}]
-                  ];
-                  else return [
-                     ['h3', ['Upload one or more pictures (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], true]), ' an entire folder'], ')']],
-                     ['input', {type: 'file', name: 'pics', multiple: true}],
-                  ];
-               }),
-               ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload']
-            ]]
+      ];
+
+      return [
+         ['style', [
+            ['table.smallprint', {'font-size': 0.7}],
+            ['div.progress-out', {
+               border: 'solid 2px #eeeeee',
+               'border-radius': 3,
+               width: 0.5,
+            }],
+            ['div.progress-in', {
+               'border-radius': 3,
+               'background-color': '#4CAF50',
+               padding: 5
+            }, ['p', {
+               color: 'white',
+               margin: 0,
+               'margin-left': 0.45
+            }]]
          ]],
-         ! upload ? [] : (function () {
-            upload.queue = upload.queue || [];
-            upload.done  = upload.done  || [];
-            upload.error = upload.error || [];
-            var perc = Math.round (upload.done.length / (upload.queue.length + upload.done.length) * 100);
-            if (perc === 0) perc = 5;
-            perc += '%';
-            return ['div', {class: 'pure-g'}, [
-               ['div', {class: 'pure-u-5-5'}, [
-                  ['br'], ['br'],
-                  upload.queue.length === 0 && upload.done.length > 0 ? ['h4', ['Uploaded ', upload.done.length, ' pictures']] : [],
-                  upload.queue.length > 0 ? ['h4', ['Uploading ', upload.queue.length, ' pictures']] : [],
-                  upload.queue.length > 0 || upload.done.length > 0 ? ['div', {class: 'progress-out'}, ['div', {class: 'progress-in', style: 'width: ' + perc}, ['p', perc]]] : [],
-                  upload.queue.length > 0 ? ['h4', ['While you wait, you can', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'subview'], 'browse']), ' start tagging your pictures!']]] : [],
-               ]],
-               upload.error.length === 0 ? [] : ['div', {class: 'pure-u-5-5'}, [
-                  ['p', ['There was an error uploading ' + upload.error.length + ' pictures. ', ['span', B.ev ({class: 'action'}, ['onclick', 'retry', 'upload']), 'Retry']]],
-                  ['table', {class: 'pure-table smallprint'}, [
-                     ['thead', ['tr', ['th', 'Pictures that could not be uploaded']]],
-                     dale.do (upload.error, function (file) {
-                        return ['tr', ['td', file.name]];
-                     })
-                  ]]
-               ]],
-               upload.done.length === 0 ? [] : ['div', {class: 'pure-u-5-5'}, [
-                  ['p', ['The following ' + upload.done.length + ' pictures were uploaded successfully:']],
-                  Views.pics (x, ['State', 'upload', 'done']),
-               ]],
-               dale.keys (upload.repeated).length === 0 ? [] : ['div', {class: 'pure-u-5-5'}, [
-                  ['p', [
-                     'The following ' + dale.keys (upload.repeated).length + ' pictures were already uploaded to your account, so they were ignored. ',
-                     ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'upload', 'repeated'], {}]), 'Dismiss.']
-                  ]],
-                  ['table', {class: 'pure-table smallprint'}, [
-                     ['thead', ['tr', ['th', 'Repeated pictures']]],
-                     dale.do (upload.repeated, function (v, name) {
-                        return ['tr', ['td', name]];
-                     })
-                  ]]
+         ['a', {href: '#', class: 'logout', onclick: 'H.logout ()'}, 'Logout'],
+         ['br'], ['br'], ['br'],
+         ['a', {class: 'buttonlink', href: '#/main/browse'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Back to main view']],
+         B.view (x, ['State', 'upload'], {listen: evs}, function (x, upload) {return [
+            ['form', {onsubmit: 'event.preventDefault ()', class: 'pure-form pure-form-aligned'}, [
+               ['br'], ['br'],
+               ['fieldset', [
+                  B.view (x, ['State', 'uploadFolder'], function (x, uploadFolder) {
+                     if (uploadFolder) return [
+                        ['h3', ['Upload a folder (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], false]), 'individual pictures'], ')']],
+                        ['input', {id: 'upload', type: 'file', name: 'pics', directory: true, webkitdirectory: true, mozdirectory: true}]
+                     ];
+                     else return [
+                        ['h3', ['Upload one or more pictures (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], true]), ' an entire folder'], ')']],
+                        ['input', {id: 'upload', type: 'file', name: 'pics', multiple: true}],
+                     ];
+                  }),
+                  ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload']
                ]]
-            ]];
-         }) ()
-      ]}),
-      B.view (x, ['State', 'upload', 'invalid'], function (x, invalid) {
-         if (! invalid || dale.keys (invalid).length === 0) return;
-         return [
-            ['p', [
-               'The following files are invalid images and will be ignored. ',
-               ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'upload', 'invalid'], {}]), 'Dismiss.']
             ]],
-            ['table', {class: 'pure-table smallprint'}, [
-               ['thead', ['tr', ['th', 'Invalid pictures']]],
-               dale.do (invalid, function (v, name) {
-                  return ['tr', ['td', name]];
-               })
-            ]]
-         ];
-      })
-   ]}
+            ! upload ? [] : (function () {
+               upload.queue = upload.queue || [];
+               upload.done  = upload.done  || 0;
+               upload.error = upload.error || [];
+               var perc = Math.round (upload.done / (upload.queue.length + upload.done) * 100);
+               if (perc === 0) perc = 2;
+               perc += '%';
+               return ['div', {class: 'pure-g'}, [
+                  ['div', {class: 'pure-u-5-5'}, [
+                     ['br'], ['br'],
+                     H.if (upload.queue.length === 0 && upload.done > 0, ['h4', ['Uploaded ', upload.done, ' pictures']]),
+                     H.if (upload.queue.length > 0, ['h4', ['Uploading ', upload.queue.length, ' pictures']]),
+                     H.if (upload.queue.length > 0 || upload.done > 0, ['div', {class: 'progress-out'}, ['div', {class: 'progress-in', style: 'width: ' + perc}, ['p', perc]]]),
+                     H.if (upload.queue.length > 0, ['h4', ['While you wait, you can', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'subview'], 'browse']), ' start tagging your pictures!']]]),
+                     H.if (upload.error.length > 0, ['div', {class: 'pure-u-5-5'}, [
+                        ['p', ['There was an error uploading ' + upload.error.length + ' pictures. ', ['span', B.ev ({class: 'action'}, ['onclick', 'retry', 'upload']), 'Retry']]],
+                     ]]),
+                     H.if (upload.done > 0, ['p', ['Uploaded ' + upload.done + ' pictures successfully.']]),
+                     H.if (upload.repeated > 0, ['p', [upload.repeated + ' pictures were already uploaded before.']]),
+                     H.if (upload.invalid && upload.invalid.length > 0, ['p', [upload.invalid.length + ' pictures were of an invalid format.']]),
+                  ]],
+               ]];
+            }) (),
+         ]}),
+      ];
+   }
 
    // *** PICS VIEW ***
 
@@ -849,11 +819,6 @@
             opacity: '1',
             '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
          }],
-         ['section.piclist', {
-            //background: 'rgba(25,25,25,0.2)',
-            //'border-radius': 8,
-            //padding: 8
-         }],
       ]],
       B.view (x, path, {listen: [
          ['click', 'pic', function (x, pic, k) {
@@ -878,8 +843,8 @@
       ], ondraw: function (x) {
          document.onscroll = function (e) {
             var prev = B.get ('State', 'lastscroll');
-            if (prev && (Date.now () - prev.date < 100)) return;
-            B.do ({from: {ev: 'scroll'}}, 'set', ['State', 'lastscroll'], {date: Date.now (), y: window.scrollY});
+            if (prev && (Date.now () - prev.time < 100)) return;
+            B.do ({from: {ev: 'scroll'}}, 'set', ['State', 'lastscroll'], {time: Date.now (), y: window.scrollY});
             if (prev && prev.y > window.scrollY) return;
 
             lasty = window.innerHeight;
@@ -896,7 +861,7 @@
             return ['div', {class: 'imgcont'}, [
                ['img', B.ev ({class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}, ['onclick', 'click', 'pic', pic, k])],
                ['div', {class: 'imgtext'}, [
-                  ['div', {class: 'left'}, [['i', {class: 'ion-pricetag'}], ' ' + (pic.tags ? teishi.p (pic.tags).length : 0)]],
+                  ['div', {class: 'left'}, [['i', {class: 'ion-pricetag'}], ' ' + pic.tags.length]],
                   ['div', {class: 'right'}, ['span', date]]
                ]],
                (k + 1) % 3 === 0 ? ['p', {style: 'clear: both; margin: 0px;'}] : []
@@ -911,23 +876,11 @@
       return B.view (x, ['State', 'canvas'], {listen: [
          ['canvas', '*', function (x) {
             var action = x.path [0];
-            if (action !== 'prev' && action !== 'next') return;
-            var pics = B.get ('Data', 'pics');
-            if (! pics) return;
             var index = dale.stopNot (pics, undefined, function (pic, k) {
                if (pic.id === B.get ('State', 'canvas', 'id')) return k;
             });
             if (action === 'prev' && index === 0) return B.do (x, 'set', ['State', 'canvas'], pics [pics.length - 1]);
-            if (action === 'next' && index >= pics.length - 5) {
-               B.do (x, 'retrieve', 'pics');
-               /*
-               var length = pics.length;
-               setTimeout (function () {
-                  if (length !== B.get ('Data', 'pics').length) B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', index + 1));
-               }, 300);
-               return;
-               */
-            }
+            if (action === 'next' && index >= pics.length - 3) B.do (x, 'retrieve', 'pics');
             B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', index + (action === 'prev' ? -1 : 1)));
          }]
       ], ondraw: function (x) {
@@ -962,11 +915,6 @@
                      'background-repeat': 'no-repeat !important'
                   }],
                   ['div.inner3', {
-                     //'width, min-width, max-width': 0.98,
-                     //'height, min-height, max-height': 0.98,
-                     //'margin-left, margin-top': 0.02,
-                     //'background-position': 'center !important',
-                     //'background-repeat': 'no-repeat !important',
                      '-webkit-background-size, -moz-background-size, -o-background-size, background-size': 'cover !important',
                   }],
                   ['div.info', {
@@ -1008,9 +956,7 @@
                ]]
             ]],
             ['div', {class: 'canvas'}, [
-               //['div', {class: 'inner1'}, ['div', {class: 'inner2', style: 'background: url(' + H.picPath (canvas, 900) + ')'}]],
                (function () {
-                  //   'background-size': '95% 95% !important',//'contain !important',
                   var leftm = 40, topm = 0;
                   var screenw = window.innerWidth - leftm * 2, screenh = window.innerHeight - topm * 2, picw = parseInt (canvas.dimw), pich = parseInt (canvas.dimh);
                   if (Math.max (picw, pich, 900) === 900) var thuw = picw, thuh = pich;
@@ -1022,7 +968,6 @@
                   var style = 'width: ' + (ratio * thuw) + 'px; height: ' + (ratio * thuh) + 'px; ';
                   var left = (screenw - (ratio * thuw)) / 2, top = (screenh - (ratio * thuh)) / 2;
                   style += 'margin-left: ' + (left + leftm) + 'px; margin-top: ' + (top + topm) + 'px; ';
-                  //return ['div', {class: 'inner3', style: style + 'background: url(' + H.picPath (canvas, 900) + ') no-repeat center center fixed'}];
                   return [
                      ['div', {class: 'inner3', style: style + 'background: url(' + H.picPath (canvas, 900) + ')'}],
                      ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topm / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + leftm / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], true])],
