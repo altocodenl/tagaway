@@ -856,7 +856,7 @@
       }}, function (x, pics) {
          if (! pics || pics.length === 0) return;
          return ['section', {class: 'piclist'}, dale.do (pics, function (pic, k) {
-            var date = new Date (parseInt (pic.date));
+            var date = new Date (pic.date);
             date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
             return ['div', {class: 'imgcont'}, [
                ['img', B.ev ({class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}, ['onclick', 'click', 'pic', pic, k])],
@@ -886,11 +886,11 @@
       ], ondraw: function (x) {
          if (B.get ('State', 'canvas')) H.fullScreen ();
          else                           H.fullScreen (true);
-      }}, function (x, canvas) {
-         if (! canvas) return;
+      }}, function (x, pic) {
+         if (! pic) return;
          return [
             ['style', [
-               canvas ? ['body', {overflow: 'hidden'}] : [],
+               ['body', {overflow: 'hidden'}],
                ['div.canvas', {
                   position: 'fixed',
                   'top, left': 0,
@@ -942,7 +942,6 @@
                   ['.ion-chevron-left', {
                      left: 10,
                      top: 0.5 * window.innerHeight,
-                     //'font-size': '2.3em'
                      'font-size': '40px',
                   }],
                   ['.ion-chevron-right', {
@@ -957,8 +956,8 @@
             ]],
             ['div', {class: 'canvas'}, [
                (function () {
-                  var leftm = 40, topm = 0;
-                  var screenw = window.innerWidth - leftm * 2, screenh = window.innerHeight - topm * 2, picw = parseInt (canvas.dimw), pich = parseInt (canvas.dimh);
+                  var sidemargin = 40, topmargin = 0;
+                  var screenw = window.innerWidth - sidemargin * 2, screenh = window.innerHeight - topmargin * 2, picw = pic.dimw, pich = pic.dimh;
                   if (Math.max (picw, pich, 900) === 900) var thuw = picw, thuh = pich;
                   else var thuw = picw * 900 / Math.max (picw, pich), thuh = pich * 900 / Math.max (picw, pich);
 
@@ -967,10 +966,10 @@
                   var ratio = Math.min (wratio, hratio, 2);
                   var style = 'width: ' + (ratio * thuw) + 'px; height: ' + (ratio * thuh) + 'px; ';
                   var left = (screenw - (ratio * thuw)) / 2, top = (screenh - (ratio * thuh)) / 2;
-                  style += 'margin-left: ' + (left + leftm) + 'px; margin-top: ' + (top + topm) + 'px; ';
+                  style += 'margin-left: ' + (left + sidemargin) + 'px; margin-top: ' + (top + topmargin) + 'px; ';
                   return [
-                     ['div', {class: 'inner3', style: style + 'background: url(' + H.picPath (canvas, 900) + ')'}],
-                     ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topm / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + leftm / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], true])],
+                     ['div', {class: 'inner3', style: style + 'background: url(' + H.picPath (pic, 900) + ')'}],
+                     ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topmargin / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + sidemargin / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], true])],
                   ];
                }) (),
                B.view (x, ['State', 'showPictureInfo'], function (x, show) {
@@ -978,14 +977,15 @@
                   return ['div', {class: 'info pure-u-24-24'}, [
                      ['ul', {class: 'search'}, [
                         (function () {
-                           var date = new Date (parseInt (canvas.date));
+                           var date = new Date (pic.date);
                            date = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'} [date.getDay ()] + ' ' + date.getDate () + ' ' + {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'} [(date.getMonth () + 1)] + ' ' + date.getFullYear ();
                            return ['li', {style: 'border: 0; font-weight: bold;'}, date];
                         }) (),
-                        dale.do (teishi.p (canvas.tags) || [], function (tag) {
+                        dale.do (pic.tags, function (tag) {
                            return ['li', tag];
                         }),
-                        ['p', canvas.name]
+                        ['p', pic.name],
+                        ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topmargin / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + sidemargin / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], false])],
                      ]]
                   ]];
                }),

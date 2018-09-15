@@ -157,24 +157,23 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - Refactor & document client.
    - Upload: remove view, make it popup, show progress as % on browse
-   - Signup with token
-   - Fix tag count on organize view per each picture
+   - Tokens for signup & reset
    - Canvas
+      - Show arrows again
       - Correct dimensions after full screen (check flechita movediza and size of initial picture).
-      - Show picture info.
       - Make keyboard keys go back & forth.
       - Preload next picture.
    - Organize
       - Make browse usable when files are being uploaded.
 
-- Admin & other
+- Server
+   - S3 cleanup if unbound to database (check pic & thumb)
    - Colors in tags.
    - Test email flows.
    - Test year range in query.
    - Change pfcounts to numbers to a) reduce memory usage; and b) to remove user info.
-   - Add test files
+   - Add test files & add invalid picture with valid format
    - Admin area
       - stats
       - error log
@@ -305,6 +304,8 @@ All the routes below require an admin user to be logged in.
 `State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
 `State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
 `State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
+`State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the canvas.
+`State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the canvas.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.
@@ -376,7 +377,8 @@ All the routes below require an admin user to be logged in.
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:exxx:DATE (string): responses with error code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
-- stp:a:DATE (hyperloglog): unique active users in the last 10 minutes. Time is Date.now () divided by 100000.
+- stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than ten minutes will be converted from hyperloglog to a string with a counter.
+- stp (set): list of all hyperloglog entries.
 
 Used by giz:
 

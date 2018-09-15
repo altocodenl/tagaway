@@ -243,9 +243,37 @@ H.log = function (user, ev, cb) {
 H.stat = function (name, arg) {
    var t = Date.now ();
    t = (t - (t % (1000 * 60 * 10))) / 100000;
-   if (arg) redis.pfadd ('stp:' + name + ':' + t, arg, function (error) {if (error) console.log ('H.stat error', error)});
-   else     redis.incr  ('sti:' + name + ':' + t,      function (error) {if (error) console.log ('H.stat error', error)});
+   if (arg) {
+      var multi = redis.multi ();
+      multi.pfadd ('stp:' + name + ':' + t, arg);
+      multi.sadd  ('stp', name + ':' + t);
+      multi.exec (function (error) {if (error) console.log ('H.stat error', error)});
+   }
+   else redis.incr  ('sti:' + name + ':' + t, function (error) {if (error) console.log ('H.stat error', error)});
 }
+
+if (cicek.isMaster) setInterval (function () {
+   redis.smembers ('stp', function (error, pfs) {
+      if (error) return console.log ('Stat pfcount -> counter error', error);
+      var multi = redis.multi ();
+      dale.do (pfs, function (pf) {
+         multi.pfcount (pf);
+      });
+      multi.exec (function (error, counts) {
+         if (error) return console.log ('Stat pfcount -> counter error', error);
+         var d = Date.now (), multi2 = redis.multi ();
+         dale.do (pfs, function (pf, k) {
+            if (d - parseInt (pf.split (':') [1]) > 1000 * 60 * 10) {
+               multi2.srem ('stp', pf);
+               multi2.set  ('stp:' + pf, counts [k]);
+            }
+         });
+         multi.exec (function (error) {
+            if (error) return console.log ('Stat pfcount -> counter error', error);
+         });
+      });
+   });
+}, 2 * 1000);
 
 // *** ROUTES ***
 
