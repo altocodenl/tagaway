@@ -263,9 +263,9 @@ if (cicek.isMaster) setInterval (function () {
          if (error) return console.log ('Stat pfcount -> counter error', error);
          var d = Date.now (), multi2 = redis.multi ();
          dale.do (pfs, function (pf, k) {
-            if (d - parseInt (pf.split (':') [2] + '00000') > 1000 * 60 * 10) {
+            if (d - parseInt (pf.split (':') [1] + '00000') > 1000 * 60 * 10) {
                multi2.srem ('stp', pf);
-               multi2.set  ('stp:' + pf, counts [k]);
+               multi2.set  (pf, counts [k]);
             }
          });
          multi2.exec (function (error) {
