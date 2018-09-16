@@ -78,6 +78,11 @@
       return cond ? then : Else;
    }
 
+   H.from = function (x, o) {
+      x.from.unshift (o);
+      return x;
+   }
+
    H.logout = function () {
       c.ajax ('get', 'auth/logout');
       B.eventlog = [];
@@ -104,7 +109,7 @@
       return 'pic/' + pic.id;
    }
 
-   H.fullScreen = function (exit) {
+   H.fullScreen = function (x, exit) {
       // https://www.sitepoint.com/use-html5-full-screen-api/
       // https://stackoverflow.com/a/10082234
       if (! exit) {
@@ -125,6 +130,10 @@
             if (wscript) wscript.SendKeys ('{ESC}');
          }
       }
+      setTimeout (function () {
+         B.do (H.from (x, {ev: 'fullScreen'}), 'set', ['State', 'screen'], {w: window.innerWidth, h: window.innerHeight});
+      }, 1);
+
    }
 
    // *** VIEWS ***
@@ -266,26 +275,24 @@
             var q = B.get ('State', 'upload', 'queue');
             if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
          }
-         var from = function (x, o) {
-            x.from.unshift (o);
-            return x;
-         }
          dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
             document.addEventListener (v, function () {
                if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
-                  B.do (from (x, {ev: 'onkeydown', key: 27}), 'rem', 'State', 'canvas');
+                  B.do (H.from (x, {ev: 'onkeydown', key: 27}), 'rem', 'State', 'canvas');
                }
             });
          });
          document.onkeydown = function (e) {
             e = e || window.event;
-            if (e.keyCode === 16) B.do (from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
-            if (e.keyCode === 17) B.do (from (x, {ev: 'onkeydown', key: 17}), 'set', ['State', 'ctrl'],  true);
+            if (e.keyCode === 16) B.do (H.from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
+            if (e.keyCode === 17) B.do (H.from (x, {ev: 'onkeydown', key: 17}), 'set', ['State', 'ctrl'],  true);
+            if (e.keyCode === 37) B.do (H.from (x, {ev: 'onkeydown', key: 37}), 'canvas', 'prev');
+            if (e.keyCode === 39) B.do (H.from (x, {ev: 'onkeydown', key: 39}), 'canvas', 'next');
          };
          document.onkeyup = function (e) {
             e = e || window.event;
-            if (e.keyCode === 16) B.do (from (x, {ev: 'onkeyup', key: 16}), 'set', ['State', 'shift'], false);
-            if (e.keyCode === 17) B.do (from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
+            if (e.keyCode === 16) B.do (H.from (x, {ev: 'onkeyup', key: 16}), 'set', ['State', 'shift'], false);
+            if (e.keyCode === 17) B.do (H.from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
          };
       }}, function (x, subview) {
          return [
@@ -875,125 +882,132 @@
    Views.canvas = function (x) {
       return B.view (x, ['State', 'canvas'], {listen: [
          ['canvas', '*', function (x) {
-            var action = x.path [0];
+            var action = x.path [0], pics = B.get ('Data', 'pics');
             var index = dale.stopNot (pics, undefined, function (pic, k) {
                if (pic.id === B.get ('State', 'canvas', 'id')) return k;
             });
             if (action === 'prev' && index === 0) return B.do (x, 'set', ['State', 'canvas'], pics [pics.length - 1]);
             if (action === 'next' && index >= pics.length - 3) B.do (x, 'retrieve', 'pics');
             B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', index + (action === 'prev' ? -1 : 1)));
+            if (action === 'next') B.do (x, 'set', ['State', 'nextCanvas'], B.get ('Data', 'pics', index + 2));
          }]
       ], ondraw: function (x) {
-         if (B.get ('State', 'canvas')) H.fullScreen ();
-         else                           H.fullScreen (true);
+         if (B.get ('State', 'canvas')) H.fullScreen (x);
+         else                           H.fullScreen (x, true);
       }}, function (x, pic) {
          if (! pic) return;
-         return [
-            ['style', [
-               ['body', {overflow: 'hidden'}],
-               ['div.canvas', {
-                  position: 'fixed',
-                  'top, left': 0,
-                  'height, width, min-height, min-width, max-height, max-width': 1,
-                  'background': 'rgba(50,50,50,0.9)',
-                  'z-index': '1',
-               }, [
-                  ['div.inner1', {
-                     'width, min-width, max-width': 0.92,
-                     'height, min-height, max-height': 0.86,
-                     'margin-left': 0.04,
-                     'margin-top': 0.02,
-                     'padding-top': 0.02,
-                     'background-color': 'black'
-                  }],
-                  ['div.inner2', {
-                     'width, min-width, max-width': 0.98,
-                     'height, min-height, max-height': 0.98,
-                     'margin-left': 0.01,
-                     'background-position': 'center !important',
-                     'background-size': 'contain !important',
-                     'background-repeat': 'no-repeat !important'
-                  }],
-                  ['div.inner3', {
-                     '-webkit-background-size, -moz-background-size, -o-background-size, background-size': 'cover !important',
-                  }],
-                  ['div.info', {
-                     'padding-top': 5,
-                     height: 0.08,
-                     'text-align': 'center',
-                     color: 'white',
-                     'background-color': '#444444',
-                  }, ['ul', {
-                     margin: 'auto',
-                     width: 0.5
-                  }]],
-                  ['img', {
-                     'max-width, max-height': 0.9,
-                     'z-index': '2',
-                  }],
-                  ['.icon', {
-                     'font-size': '1.8em',
-                     color: 'white',
-                  }],
-                  ['.ion-close', {
-                     right: 15,
-                     top: 10,
-                  }],
-                  ['.ion-chevron-left', {
-                     left: 10,
-                     top: 0.5 * window.innerHeight,
-                     'font-size': '40px',
-                  }],
-                  ['.ion-chevron-right', {
-                     right: 15,
-                     top: 0.5 * window.innerHeight,
-                     'font-size': '40px',
-                  }],
-                  ['.ion-information-circled', {
-                     'font-size': '40px',
-                  }],
-               ]]
-            ]],
-            ['div', {class: 'canvas'}, [
-               (function () {
-                  var sidemargin = 40, topmargin = 0;
-                  var screenw = window.innerWidth - sidemargin * 2, screenh = window.innerHeight - topmargin * 2, picw = pic.dimw, pich = pic.dimh;
-                  if (Math.max (picw, pich, 900) === 900) var thuw = picw, thuh = pich;
-                  else var thuw = picw * 900 / Math.max (picw, pich), thuh = pich * 900 / Math.max (picw, pich);
+         return B.view (['State', 'screen'], function (x, screen) {
+            if (! screen) return;
+            return [
+               ['style', [
+                  ['body', {overflow: 'hidden'}],
+                  ['div.canvas', {
+                     position: 'fixed',
+                     'top, left': 0,
+                     'height, width, min-height, min-width, max-height, max-width': 1,
+                     'background': 'rgba(50,50,50,0.9)',
+                     'z-index': '1',
+                  }, [
+                     ['div.inner1', {
+                        'width, min-width, max-width': 0.92,
+                        'height, min-height, max-height': 0.86,
+                        'margin-left': 0.04,
+                        'margin-top': 0.02,
+                        'padding-top': 0.02,
+                        'background-color': 'black'
+                     }],
+                     ['div.inner2', {
+                        'width, min-width, max-width': 0.98,
+                        'height, min-height, max-height': 0.98,
+                        'margin-left': 0.01,
+                        'background-position': 'center !important',
+                        'background-size': 'contain !important',
+                        'background-repeat': 'no-repeat !important'
+                     }],
+                     ['div.inner3', {
+                        '-webkit-background-size, -moz-background-size, -o-background-size, background-size': 'cover !important',
+                     }],
+                     ['div.info', {
+                        'padding-top': 5,
+                        height: 0.08,
+                        'text-align': 'center',
+                        color: 'white',
+                        'background-color': '#444444',
+                     }, ['ul', {
+                        margin: 'auto',
+                        width: 0.5
+                     }]],
+                     ['img', {
+                        'max-width, max-height': 0.9,
+                        'z-index': '2',
+                     }],
+                     ['.icon', {
+                        'font-size': '1.8em',
+                        color: 'white',
+                     }],
+                     ['.ion-close', {
+                        right: 15,
+                        top: 10,
+                     }],
+                     ['.ion-chevron-left', {
+                        left: 10,
+                        top: Math.round (0.5 * screen.h),
+                        'font-size': '40px',
+                     }],
+                     ['.ion-chevron-right', {
+                        right: 15,
+                        top: Math.round (0.5 * screen.h),
+                        'font-size': '40px',
+                     }],
+                     ['.ion-information-circled', {
+                        'font-size': '40px',
+                     }],
+                  ]]
+               ]],
+               ['div', {class: 'canvas'}, [
+                  (function () {
+                     var sidemargin = 40, topmargin = 0;
+                     var screenw = screen.w - sidemargin * 2, screenh = screen.h - topmargin * 2, picw = pic.dimw, pich = pic.dimh;
+                     if (Math.max (picw, pich, 900) === 900) var thuw = picw, thuh = pich;
+                     else var thuw = picw * 900 / Math.max (picw, pich), thuh = pich * 900 / Math.max (picw, pich);
 
-                  var wratio = screenw / thuw, hratio = screenh / thuh;
-                  // Respect aspect ratio; at most duplicate picture.
-                  var ratio = Math.min (wratio, hratio, 2);
-                  var style = 'width: ' + (ratio * thuw) + 'px; height: ' + (ratio * thuh) + 'px; ';
-                  var left = (screenw - (ratio * thuw)) / 2, top = (screenh - (ratio * thuh)) / 2;
-                  style += 'margin-left: ' + (left + sidemargin) + 'px; margin-top: ' + (top + topmargin) + 'px; ';
-                  return [
-                     ['div', {class: 'inner3', style: style + 'background: url(' + H.picPath (pic, 900) + ')'}],
-                     ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topmargin / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + sidemargin / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], true])],
-                  ];
-               }) (),
-               B.view (x, ['State', 'showPictureInfo'], function (x, show) {
-                  if (! show) return;
-                  return ['div', {class: 'info pure-u-24-24'}, [
-                     ['ul', {class: 'search'}, [
-                        (function () {
-                           var date = new Date (pic.date);
-                           date = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'} [date.getDay ()] + ' ' + date.getDate () + ' ' + {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'} [(date.getMonth () + 1)] + ' ' + date.getFullYear ();
-                           return ['li', {style: 'border: 0; font-weight: bold;'}, date];
-                        }) (),
-                        dale.do (pic.tags, function (tag) {
-                           return ['li', tag];
+                     var wratio = screenw / thuw, hratio = screenh / thuh;
+                     // Respect aspect ratio; at most duplicate picture.
+                     var ratio = Math.min (wratio, hratio, 2);
+                     var style = 'width: ' + (ratio * thuw) + 'px; height: ' + (ratio * thuh) + 'px; ';
+                     var left = (screenw - (ratio * thuw)) / 2, top = (screenh - (ratio * thuh)) / 2;
+                     style += 'margin-left: ' + (left + sidemargin) + 'px; margin-top: ' + (top + topmargin) + 'px; ';
+                     return [
+                        ['div', {class: 'inner3', style: style + 'background: url(' + H.picPath (pic, 900) + ')'}],
+                        ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topmargin / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + sidemargin / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], true])],
+                        B.view (x, ['State', 'showPictureInfo'], function (x, show) {
+                           if (! show) return;
+                           return ['div', {class: 'info pure-u-24-24'}, [
+                              ['ul', {class: 'search'}, [
+                                 (function () {
+                                    var date = new Date (pic.date);
+                                    date = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'} [date.getDay ()] + ' ' + date.getDate () + ' ' + {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'} [(date.getMonth () + 1)] + ' ' + date.getFullYear ();
+                                    return ['li', {style: 'border: 0; font-weight: bold;'}, date];
+                                 }) (),
+                                 dale.do (pic.tags, function (tag) {
+                                    return ['li', tag];
+                                 }),
+                                 ['p', pic.name],
+                                 ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topmargin / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + sidemargin / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], false])],
+                              ]]
+                           ]];
                         }),
-                        ['p', pic.name],
-                        ['i', B.ev ({class: 'icon ion-information-circled', style: 'bottom: ' + (10 + topmargin / 2 + (screenh - (ratio * thuh)) / 2) + 'px; left: ' + (25 + sidemargin / 2 + (screenw - (ratio * thuw)) / 2) + 'px;'},  ['onclick', 'set', ['State', 'showPictureInfo'], false])],
-                     ]]
-                  ]];
-               }),
-               ['i', B.ev ({class: 'icon ion-close'}, ['onclick', 'set', ['State', 'canvas'], undefined])],
-               ['i', B.ev ({class: 'icon ion-chevron-left'},  ['onclick', 'canvas', 'prev'])],
-               ['i', B.ev ({class: 'icon ion-chevron-right'}, ['onclick', 'canvas', 'next'])],
-            ]]
-         ];
+                     ];
+                  }) (),
+                  ['i', B.ev ({class: 'icon ion-close'}, ['onclick', 'set', ['State', 'canvas'], undefined])],
+                  ['i', B.ev ({class: 'icon ion-chevron-left'},  ['onclick', 'canvas', 'prev'])],
+                  ['i', B.ev ({class: 'icon ion-chevron-right'}, ['onclick', 'canvas', 'next'])],
+                  B.view (['State', 'nextCanvas'], function (x, next) {
+                     if (next) return ['img', {style: 'width: 1px; height: 1px;', src: H.picPath (next, 900)}];
+                  }),
+               ]]
+            ];
+         });
       });
    }
 

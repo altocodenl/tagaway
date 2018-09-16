@@ -159,20 +159,12 @@ All the routes below require an admin user to be logged in.
 - Client
    - Upload: remove view, make it popup, show progress as % on browse
    - Tokens for signup & reset
-   - Canvas
-      - Show arrows again
-      - Correct dimensions after full screen (check flechita movediza and size of initial picture).
-      - Make keyboard keys go back & forth.
-      - Preload next picture.
-   - Organize
-      - Make browse usable when files are being uploaded.
 
 - Server
    - S3 cleanup if unbound to database (check pic & thumb)
    - Colors in tags.
    - Test email flows.
    - Test year range in query.
-   - Change pfcounts to numbers to a) reduce memory usage; and b) to remove user info.
    - Add test files & add invalid picture with valid format
    - Admin area
       - stats
@@ -304,8 +296,10 @@ All the routes below require an admin user to be logged in.
 `State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
 `State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
 `State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
-`State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the canvas.
-`State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the canvas.
+`State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the `canvas` view.
+`State.nextCanvas`: `undefined|PIC`, used to preload the next picture in the `canvas` view.
+`State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
+`State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.years`: `[...]`; comes from `body.years` from `POST /query`.
