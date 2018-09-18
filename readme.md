@@ -161,15 +161,14 @@ All the routes below require an admin user to be logged in.
    - Tokens for signup & reset
 
 - Server
-   - S3 cleanup if unbound to database (check pic & thumb)
-   - Colors in tags.
-   - Test email flows.
    - Test year range in query.
    - Add test files & add invalid picture with valid format
+   - Test email flows.
    - Admin area
       - stats
       - error log
       - send invites
+   - Add colors to tags.
 
 ### Todo beta
 

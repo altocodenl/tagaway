@@ -235,6 +235,14 @@ H.s3del = function (user, keys, sizes, cb) {
    batch ();
 }
 
+H.s3list = function (prefix, cb) {
+   // XXX this function needs to implement pagination
+   s3.listObjects ({Prefix: prefix}, function (error, data) {
+      if (error) return cb (error);
+      cb (null, data.Contents);
+   });
+}
+
 H.log = function (user, ev, cb) {
    ev.t = Date.now ();
    redis.lpush ('ulog:' + user, teishi.s (ev), cb || function () {});
@@ -274,6 +282,7 @@ if (cicek.isMaster) setInterval (function () {
       });
    });
 }, 2 * 1000);
+
 
 // *** ROUTES ***
 
@@ -1377,3 +1386,19 @@ if (cicek.isMaster && PROD) setTimeout (function () {
       });
    });
 }, 3000);
+
+// *** CHECK IF THERE ARE UNREFERENCED FILES IN S3 ***
+
+if (cicek.isMaster && PROD) H.s3list ('', function (error, data) {
+   var multi = redis.multi ();
+   dale.do (data, function (item, k) {
+      var id = item.Key.split ('/') [1];
+      multi.exists ('thu:' + id, 'pic:' + id);
+   });
+   multi.exec (function (error, exists) {
+      dale.do (data, function (item, k) {
+         if (! exists [k]) console.log ('S3 blob is not on database!', item);
+      });
+   });
+});
+
