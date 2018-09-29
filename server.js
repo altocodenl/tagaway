@@ -737,7 +737,9 @@ var routes = [
                      pic.date = dale.fil (s.dates, undefined, function (v) {
                         if (! v) return;
                         var d = new Date (v);
+                        console.log (v, 'debug 1', d, new Date (Date.UTC (v)));
                         if (d.getTime ()) return d.getTime ();
+                        console.log (v, 'debug 2', d, new Date (Date.UTC (v.replace (/:/g, '-'))));
                         d = new Date (v.replace (':', '-').replace (':', '-'));
                         if (d.getTime ()) return d.getTime ();
                      }).sort (function (a, b) {
@@ -776,6 +778,7 @@ var routes = [
             }
          ]];
       }, {catch: function (s) {
+         if (s.catch.err && s.catch.err.match ('identify')) return reply (rs, 400, {error: 'Invalid image format: ' + s.catch.err});
          reply (rs, 500, {error: s.catch});
       }});
    }],
@@ -1327,8 +1330,8 @@ cicek.apres = function (rs) {
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
    }
+   H.stat ('h' + rs.log.code);
    if (rs.log.code >= 400 && rs.log.code !== 409) {
-      H.stat ('e' + rs.log.code);
       if (CONFIG.errorlog && PROD) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log) + '\n', function (error) {
          if (error) console.log ('Error log write error', error);
       });

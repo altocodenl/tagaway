@@ -369,7 +369,7 @@ All the routes below require an admin user to be logged in.
 - sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
-- sti:exxx:DATE (string): responses with error code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
+- sti:hxxx:DATE (string): responses with status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
 - stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than ten minutes will be converted from hyperloglog to a string with a counter.
 - stp (set): list of all hyperloglog entries.
 

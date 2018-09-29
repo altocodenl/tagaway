@@ -5,7 +5,7 @@ module.exports = {
    accesslog: 'access.log',
    errorlog:  'error.log',
    clientlog: 'client.log',
-   picfolder: process.argv [2] === 'prod' ? '/root/files' : '/media/truecrypt2/acpicfiles',
+   picfolder: process.argv [2] === 'prod' ? '/root/files' : '/home/hq/acpic/files',
    redisdb: 15,
    crypto: {
       algorithm: 'aes-256-ctr'
