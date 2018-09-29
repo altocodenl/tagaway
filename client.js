@@ -46,6 +46,7 @@
 
    B.listen ('change', 'hash', function (x) {
       var path = window.location.hash.replace ('#/', '').split ('/');
+      if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token = path [2];
       B.do (x, 'set', ['State', 'view'],    path [0]);
       B.do (x, 'set', ['State', 'subview'], path [1]);
    });
@@ -200,9 +201,12 @@
                username: c ('#auth-username').value,
                password: c ('#auth-password').value
             };
+            if (B.get ('State', 'subview') === 'signup') credentials.email = c ('#auth-email').value;
+            if (State.token) credentials.token = State.token;
             c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, credentials, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error ' + (B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.'));
                else              B.do (x, 'notify', 'green', 'Welcome!');
+               if (State.token) delete State.token;
                dale.do (rs.headers, function (v, k) {
                   if (k.match (/^cookie/i)) document.cookie = v;
                });
@@ -212,6 +216,7 @@
       ], ondraw: function (x) {
          if (['login', 'signup'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
       }}, function (x, subview) {
+         var fields = subview === 'signup' ? ['Username', 'Email', 'Password'] : ['Username', 'Password'];
          return [
             ['style', [
                ['label', {width: 80, display: 'inline-block'}]
@@ -220,7 +225,7 @@
                ['fieldset', [
                   ['legend', subview],
                   ['br'],
-                  dale.do (['Username', 'Password'], function (V) {
+                  dale.do (fields, function (V) {
                      var v = V.toLowerCase ();
                      return ['div', {class: 'pure-control-group'}, [
                         ['label', {for: 'auth-' + v}, V],
@@ -752,6 +757,7 @@
                upload.queue = upload.queue || [];
                upload.done  = upload.done  || 0;
                upload.error = upload.error || [];
+               upload.invalid = upload.invalid || [];
                var perc = Math.round (upload.done / (upload.queue.length + upload.done) * 100);
                if (perc === 0) perc = 2;
                perc += '%';

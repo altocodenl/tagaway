@@ -1,3 +1,8 @@
+var DOMAIN = {
+   dev:  'https://altocode.nl:1427/',
+   prod: 'http://104.248.38.85:1427/',
+} [process.argv [2]];
+
 module.exports = {
    cookiename: 'ac-v1',
    allowedmime: ['image/jpeg', 'image/png'],
@@ -5,22 +10,19 @@ module.exports = {
    accesslog: 'access.log',
    errorlog:  'error.log',
    clientlog: 'client.log',
-   picfolder: process.argv [2] === 'prod' ? '/root/files' : '/home/hq/acpic/files',
+   picfolder: process.argv [2] ? '/root/files' : '/home/hq/acpic/files',
    redisdb: 15,
    crypto: {
       algorithm: 'aes-256-ctr'
    },
    storelimit: {
-      tier1:        1024 * 1024 * 1024,
-      tier2:   10 * 1024 * 1024 * 1024,
-      tier3:  100 * 1024 * 1024 * 1024,
-      tier4: 1024 * 1024 * 1024 * 1024
+      tier1:   12 * 1024 * 1024 * 1024,
+      tier2:  100 * 1024 * 1024 * 1024,
    },
    backup: {
       frequency: 10,
       path: '/var/lib/redis/dump.rdb',
    },
-   domain: 'altocode.nl/pic/',
    etemplates: {
       verify: {
          subject: 'Please verify your email',
@@ -29,9 +31,9 @@ module.exports = {
                'Hi ' + username,
                ['br'],
                'Welcome to acpic! Please verify your email by clicking on the following link: ',
-               ['a', {href: 'https://altocode.nl:1427/auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
+               ['a', {href: DOMAIN + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
                ['br'],
-               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
+               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ]];
          }
       },
@@ -42,10 +44,10 @@ module.exports = {
                'Hi ' + username,
                ['br'],
                'Did you forget your password? If you did, all good: please use the following link to reset your password',
-               ['a', {href: 'https://altocode.nl:1427/auth/reset?username=' + encodeURIComponent (username) + '&token=' + encodeURIComponent (token)}, 'Reset your password'],
+               ['a', {href: DOMAIN + 'auth/reset?username=' + encodeURIComponent (username) + '&token=' + encodeURIComponent (token)}, 'Reset your password'],
                ['br'],
                'If you didn\'t request a password reset, please do NOT click the link above. Rather, please reply to this email letting us know.',
-               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
+               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ]];
          }
       },
@@ -59,7 +61,7 @@ module.exports = {
                ['br'],
                'If you didn\'t change your password, please contact us IMMEDIATELY.',
                ['br'],
-               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
+               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ]];
          }
       },
@@ -70,9 +72,9 @@ module.exports = {
                'Hi ' + username,
                ['br'],
                'Here\'s your invitation to join acpic! It would be great to have you as our user! ',
-               ['a', {href: 'https://altocode.nl:1427/auth/signup/' + encodeURIComponent (token)}, 'Join us!'],
+               ['a', {href: DOMAIN + 'auth/signup/' + encodeURIComponent (token)}, 'Join us!'],
                ['br'],
-               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] [new Date ().getDay ()] + '!',
+               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ]];
          }
       }

@@ -158,7 +158,7 @@ All the routes below require an admin user to be logged in.
 
 - Client
    - Upload: remove view, make it popup, show progress as % on browse
-   - Tokens for signup & reset
+   - Token for reset
 
 - Server
    - Test year range in query.

@@ -8,7 +8,7 @@ Please refer to readme.md to read the annotated source (but not yet!).
 
 var CONFIG = require ('./config.js');
 var SECRET = require ('./secret.js');
-var PROD   = process.argv [2] === 'prod';
+var ENV = process.argv [2];
 
 var crypto = require ('crypto');
 var fs     = require ('fs');
@@ -435,7 +435,7 @@ var routes = [
                multi2.hmset ('users:' + username, {username: username, email: email, type: 'tier1', created: Date.now (), verificationPending: true});
                multi2.exec (function (error) {
                   if (error)  return reply (rs, 500, {error: error});
-                  if (! PROD) return reply (rs, 200, {token: vtoken});
+                  if (! ENV) return reply (rs, 200, {token: vtoken});
                   sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
                      if (error) return reply (rs, 500, {error: error});
                      reply (rs, 200);
@@ -491,7 +491,7 @@ var routes = [
             }
             redis.hgetall ('users:' + username, function (error, user) {
                if (error)  return reply (rs, 500, {error: error});
-               if (! PROD) return reply (rs, 200, {token: token});
+               if (! ENV) return reply (rs, 200, {token: token});
                sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: user.username, to2: user.email, subject: CONFIG.etemplates.recover.subject, message: CONFIG.etemplates.recover.message (user.username, token)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   reply (rs, 200);
@@ -533,7 +533,7 @@ var routes = [
                   if (type (error) === 'string') return reply (rs, 403);
                   else                           return reply (rs, 500, {error: error});
                }
-               if (! PROD) return reply (rs, 200);
+               if (! ENV) return reply (rs, 200);
                sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   reply (rs, 200);
@@ -559,7 +559,7 @@ var routes = [
       if (rq.method === 'post' && rq.url === '/clientlog') return rs.next ();
 
       if (rq.url.match (/^\/admin/)) {
-         if (! PROD) return rs.next ();
+         if (! ENV) return rs.next ();
          if (rq.body && rq.body.email && SECRET.admins.indexOf (rq.body.email) !== -1) return rs.next ();
       }
 
@@ -578,7 +578,7 @@ var routes = [
 
    ['post', 'auth/delete', function (rq, rs) {
 
-      if (PROD) return reply (rs, 501);
+      if (ENV) return reply (rs, 501);
 
       giz.destroy (rq.user.username, function (error) {
          if (error) return reply (rs, 500, {error: error});
@@ -1227,7 +1227,7 @@ var routes = [
 
    ['post', 'clientlog', function (rq, rs) {
       if (teishi.simple (rq.body)) return reply (rs, 400);
-      if (! PROD || ! CONFIG.clientlog) return reply (rs, 200);
+      if (! ENV || ! CONFIG.clientlog) return reply (rs, 200);
       fs.appendFile (CONFIG.clientlog, teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).username, error: rq.body}) + '\n', function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200);
@@ -1237,7 +1237,7 @@ var routes = [
    // *** ADMIN GATEKEEPER ***
 
    ['all', '*', function (rq, rs) {
-      if (! PROD) return rs.next ();
+      if (! ENV) return rs.next ();
       if (rq.body && rq.body.email && SECRET.admins.indexOf (rq.body.email) !== -1) return rs.next ();
 
       if (SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
@@ -1283,7 +1283,7 @@ var routes = [
          if (error) return reply (rs, 500, {error: error});
          redis.hset ('invites', email, JSON.stringify ({token: itoken, sent: Date.now ()}), function (error) {
             if (error) return reply (rs, 500, {error: error});
-            if (! PROD) return reply (rs, 200, {token: itoken});
+            if (! ENV) return reply (rs, 200, {token: itoken});
             sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: email.replace (/@.+/, ''), to2: email, subject: CONFIG.etemplates.invite.subject, message: CONFIG.etemplates.invite.message (email.replace (/@.+/, ''), itoken)}, function (error) {
                if (error) return reply (rs, 500, {error: error});
                reply (rs, 200);
@@ -1316,7 +1316,7 @@ var routes = [
 
 // *** LAUNCH SERVER ***
 
-if (PROD) {
+if (ENV) {
    cicek.options.log.console = false;
 }
 cicek.options.cookieSecret = SECRET.cookie;
@@ -1332,12 +1332,12 @@ cicek.apres = function (rs) {
    }
    H.stat ('h' + rs.log.code);
    if (rs.log.code >= 400 && rs.log.code !== 409) {
-      if (CONFIG.errorlog && PROD) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log) + '\n', function (error) {
+      if (CONFIG.errorlog && ENV) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log) + '\n', function (error) {
          if (error) console.log ('Error log write error', error);
       });
    }
    else {
-      if (CONFIG.accesslog && PROD) fs.appendFile (CONFIG.accesslog, teishi.s (rs.log) + '\n', function (error) {
+      if (CONFIG.accesslog && ENV) fs.appendFile (CONFIG.accesslog, teishi.s (rs.log) + '\n', function (error) {
          if (error) console.log ('Access log write error', error);
       });
    }
@@ -1355,7 +1355,7 @@ cicek.listen ({port: CONFIG.port}, routes);
 
 // *** BACKUPS ***
 
-if (cicek.isMaster && PROD) setInterval (function () {
+if (cicek.isMaster && ENV) setInterval (function () {
    var s3 = new aws.S3 ({
       apiVersion: '2006-03-01',
       sslEnabled: true,
@@ -1370,7 +1370,7 @@ if (cicek.isMaster && PROD) setInterval (function () {
       });
    }
 
-   var file = fs.createReadStream (CONFIG.backup.path).on ('error', cb);
+   var file = fs.createReadStream (path).pipe (crypto.createCipher (CONFIG.crypto.algorithm, SECRET.crypto.password)).on ('error', cb);
 
    s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: file}, cb);
 
@@ -1378,7 +1378,7 @@ if (cicek.isMaster && PROD) setInterval (function () {
 
 // *** BOOTSTRAP USER ***
 
-if (cicek.isMaster && PROD) setTimeout (function () {
+if (cicek.isMaster && ENV) setTimeout (function () {
    redis.hget ('invites', SECRET.admins [0], function (error, admin) {
       if (error) return console.log ('Bootstrap check error', error);
       if (admin) return;
@@ -1392,7 +1392,7 @@ if (cicek.isMaster && PROD) setTimeout (function () {
 
 // *** CHECK IF THERE ARE UNREFERENCED FILES IN S3 ***
 
-if (cicek.isMaster && PROD) H.s3list ('', function (error, data) {
+if (cicek.isMaster && ENV) H.s3list ('', function (error, data) {
    var multi = redis.multi ();
    dale.do (data, function (item, k) {
       var id = item.Key.split ('/') [1];
@@ -1405,3 +1405,4 @@ if (cicek.isMaster && PROD) H.s3list ('', function (error, data) {
    });
 });
 
+if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString);
