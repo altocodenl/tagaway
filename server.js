@@ -1248,6 +1248,21 @@ var routes = [
 
    // *** INVITES ***
 
+   ['get', 'admin/invites', function (rq, rs) {
+      redis.hgetall ('invites', function (error, invites) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, dale.obj (invites, function (v, k) {
+            return [k, JSON.parse (v)];
+         }));
+      });
+   }],
+
+   ['delete', 'admin/invites/:email', function (rq, rs) {
+      redis.hdel ('invites', rq.data.params.email, function (error) {
+         reply (rs, error ? 500 : 200, {error: error} || '');
+      });
+   }],
+
    ['post', 'admin/invites', function (rq, rs) {
 
       var b = rq.body;
