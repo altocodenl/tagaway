@@ -58,21 +58,6 @@ redis.keyscan = function (match, cb, cursor, keys) {
    });
 }
 
-redis.log = function () {
-   var body;
-   if (arguments.length > 1) body = [].slice.call (arguments, 0);
-   else body = arguments [0];
-   redis.llen ('logs', function (error, len) {
-      if (error) return console.log ('redis error', error);
-      var multi = redis.multi ();
-      multi.lpush ('logs', teishi.complex (body) ? JSON.stringify (body) : body);
-      multi.ltrim ('logs', 0, 10000);
-      multi.exec (function (error) {
-         if (error) return console.log ('redis error', error);
-      });
-   });
-}
-
 var Redis  = function (s, action) {
    redis [action].apply (redis, [].slice.call (arguments, 2).concat (function (error, data) {
       s.do (data, error);
@@ -107,7 +92,7 @@ var k      = function (s) {
    var output = {out: '', err: ''};
 
    var command = [].slice.call (arguments, 1);
-   if (s.verbose) redis.log ('k executing command', command);
+   if (s.verbose) console.log ('k executing command', command);
    var proc = spawn (command [0], command.slice (1));
 
    var wait = 3;
@@ -766,7 +751,6 @@ var routes = [
                      multi.exec (function (error) {
                         if (error) return reply (rs, 500, {error: error});
                         if (! rs.connection.writable) {
-                           redis.log (['error', 'client upload error', {pic: s.pic}]);
                            cicek.log (['error', 'client upload error', {pic: s.pic}]);
                            return;
                         }
@@ -1292,26 +1276,6 @@ var routes = [
       });
    }],
 
-   // *** LOGS ***
-
-   ['post', 'logs', function (rq, rs) {
-
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['body', b, 'object'],
-         ['body', b, 'string', 'each'],
-         ['keys of body', dale.keys (b), ['logs'], 'eachOf', teishi.test.equal],
-      ])) return;
-
-      redis.lrange ('logs', 0, -1, function (error, list) {
-         if (error) return reply (rs, 500, {error: error});
-         reply (rs, 200, dale.fil (list, undefined, function (v) {
-            if (! b.query || v.match (new RegExp (b.query.replace (/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i'))) return v;
-         }).slice (0, 50));
-      });
-   }],
-
 ];
 
 // *** LAUNCH SERVER ***
@@ -1405,4 +1369,4 @@ if (cicek.isMaster && ENV) H.s3list ('', function (error, data) {
    });
 });
 
-if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString);
+if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString ());
