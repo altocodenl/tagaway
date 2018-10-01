@@ -302,7 +302,15 @@
             ['h3', 'Stats'],
             ['pre', JSON.stringify (Data.stats)],
             ['h3', 'Invites'],
-            ['pre', JSON.stringify (Data.invites)],
+            ['table', {class: 'pure-table pure-table-striped'}, dale.do (Data.invites, function (invite, email) {
+               return ['tr', [
+                  ['td', email],
+                  ['td', invite.token],
+                  ['td', new Date (invite.sent).toUTCString ()],
+                  ['td', invite.accepted ? new Date (invite.accepted).toUTCString () : ''],
+                  ['td', ['span', B.ev ({class: 'action'}, ['onclick', 'delete', 'invite', email]), 'Delete']],
+               ]];
+            })],
             B.view (['State', 'new', 'invite'], function (x, ninvite) {
                if (! ninvite) return ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'new', 'invite'], {email: ''}]), 'Create invite'];
                return [

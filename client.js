@@ -197,16 +197,28 @@
    Views.auth = function (x) {
       return B.view (x, ['State', 'subview'], {listen: [
          ['submit', 'auth', function (x) {
+            var subview = B.get ('State', 'subview');
             var credentials = {
                username: c ('#auth-username').value,
                password: c ('#auth-password').value
             };
-            if (B.get ('State', 'subview') === 'signup') credentials.email = c ('#auth-email').value;
-            if (State.token) credentials.token = State.token;
-            c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, credentials, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error ' + (B.get ('State', 'subview') === 'signup' ? 'signing up.' : 'logging in.'));
-               else              B.do (x, 'notify', 'green', 'Welcome!');
-               if (State.token) delete State.token;
+            if (subview === 'signup') credentials.email = c ('#auth-email').value;
+            if (State.token) credentials.token = decodeURIComponent (State.token);
+            c.ajax ('post', 'auth/' + subview, {}, credentials, function (error, rs) {
+               if (error) {
+                  if (error.responseText === '{"error":"verify"}') return B.do (x, 'notify', 'yellow', 'Please verify your email address before logging in.');
+                  return B.do (x, 'notify', 'red', 'There was an error ' + (subview === 'signup' ? 'signing up.' : 'logging in.'));
+               }
+               if (subview === 'signup') {
+                  delete State.token;
+                  B.do (x, 'notify', 'green', 'You have successfully created your account! Please check your inbox.');
+                  c ('#auth-username').value = '';
+                  c ('#auth-password').value = '';
+                  return B.do ('set', ['State', 'subview'], 'login');
+               }
+
+               B.do (x, 'notify', 'green', 'Welcome!');
+
                dale.do (rs.headers, function (v, k) {
                   if (k.match (/^cookie/i)) document.cookie = v;
                });
