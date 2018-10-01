@@ -157,17 +157,13 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - Upload: remove view, make it popup, show progress as % on browse
-   - Token for reset
+   - Upload: remove view, make it popup, autotag while uploading, show progress as % on browse,
+   - Reset password.
 
 - Server
    - Test year range in query.
    - Add test files & add invalid picture with valid format
    - Test email flows.
-   - Admin area
-      - stats
-      - error log
-      - send invites
    - Add colors to tags.
 
 ### Todo beta

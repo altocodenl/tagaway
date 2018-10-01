@@ -417,10 +417,13 @@ var routes = [
 
                multi2.hset ('emails', email, username);
 
-               multi2.hmset ('users:' + username, {username: username, email: email, type: 'tier1', created: Date.now (), verificationPending: true});
+               multi2.hmset ('users:' + username, {username: username, email: email, type: 'tier1', created: Date.now ()});
+               if (! b.token || ! ENV) multi2.hmset ('users:' + username, {verificationPending: true});
+
                multi2.exec (function (error) {
                   if (error)  return reply (rs, 500, {error: error});
                   if (! ENV) return reply (rs, 200, {token: vtoken});
+                  if (b.token) return reply (rs, 200);
                   sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
                      if (error) return reply (rs, 500, {error: error});
                      reply (rs, 200);
