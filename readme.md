@@ -1,4 +1,6 @@
-# acpic
+<div style="font-family: 'Lucida Bright', Georgia, serif; font-size: 36px; font-weight: bold">
+   <span style="color: green;">ac|</span>pic
+</div>
 
 A place for your pictures.
 
@@ -11,8 +13,6 @@ To understand why we're sharing the source code of a commercial product, please 
 ## Status
 
 The application is currently under development and has not been launched yet. We estimate to have an alpha by September 2018 and a beta before the end of 2018.
-
-The client is not yet committed to the repository since it's not functional yet. The server is functional but some work still remains (see Features section below).
 
 ## Routes
 
@@ -165,12 +165,12 @@ All the routes below require an admin user to be logged in.
    - Add test files & add invalid picture with valid format
    - Test email flows.
    - Add colors to tags.
+   - Emails from corporate account.
 
 ### Todo beta
 
 - Admin & deploy
    - Manage payments.
-   - Secret & config by environment.
    - Test s3del with > 1k pictures.
    - Make `years` independent of query.
 
@@ -193,7 +193,6 @@ All the routes below require an admin user to be logged in.
    - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures).
 
 - Upload
-   - Add tag(s) to uploads.
    - Upload to shared tag.
 
 - Organize
