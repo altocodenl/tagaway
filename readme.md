@@ -1,6 +1,4 @@
-<div style="font-family: 'Lucida Bright', Georgia, serif; font-size: 36px; font-weight: bold">
-   <span style="color: green;">ac|</span>pic
-</div>
+# acpic
 
 A place for your pictures.
 
