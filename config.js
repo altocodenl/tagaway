@@ -1,7 +1,9 @@
 var DOMAIN = {
-   dev:  'https://altocode.nl:1427/',
-   prod: 'http://104.248.38.85:1427/',
+   dev:  'https://altocode.nl/picdev/',
+   prod: 'https://altocode.nl/pic/',
 } [process.argv [2]];
+
+var ACPIC = [['span', {style: 'font-weight: bold; color: green;'}, 'ac|'], ['span', {style: 'font-weight: bold'}, 'pic']];
 
 module.exports = {
    cookiename: 'ac-v1',
@@ -28,9 +30,9 @@ module.exports = {
          subject: 'Please verify your email',
          message: function (username, token) {
             return ['p', [
-               'Hi ' + username,
+               'Hi ' + username + ',',
                ['br'],
-               'Welcome to acpic! Please verify your email by clicking on the following link: ',
+               'Welcome to ', ACPIC, ' ! Please verify your email by clicking on the following link: ',
                ['a', {href: DOMAIN + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
                ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
@@ -41,12 +43,13 @@ module.exports = {
          subject: 'Did you forget your password?',
          message: function (username, token) {
             return ['p', [
-               'Hi ' + username,
+               'Hi ' + username + ',',
                ['br'],
-               'Did you forget your password? If you did, all good: please use the following link to reset your password',
+               'Did you forget your password? If you did, all is well: please use the following link to reset your password',
                ['a', {href: DOMAIN + '#/auth/reset?username=' + encodeURIComponent (username) + '&token=' + encodeURIComponent (token)}, 'Reset your password'],
                ['br'],
-               'If you didn\'t request a password reset, please do NOT click the link above. Rather, please reply to this email letting us know.',
+               'If you didn\'t request a password reset, please do NOT click the link above. Instead reply immediately to this email and let us know.',
+               ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ]];
          }
@@ -55,7 +58,7 @@ module.exports = {
          subject: 'You just changed your password',
          message: function (username) {
             return ['p', [
-               'Hi ' + username,
+               'Hi ' + username + ',',
                ['br'],
                'We just changed your password. If you performed this change, no further action is necessary.',
                ['br'],
@@ -66,12 +69,12 @@ module.exports = {
          }
       },
       invite: {
-         subject: 'Your invitation to join acpic',
+         subject: 'Your invitation to join ', ACPIC,
          message: function (username, token) {
-            return ['p', [
-               'Hi ' + username,
+            return ['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+               'Hi ' + username + ',',
                ['br'],
-               'Here\'s your invitation to join acpic! It would be great to have you as our user! ',
+               'Here\'s your invitation to join ', ACPIC, ' ! It would be great to have you as our user! ',
                ['a', {href: DOMAIN + '#/auth/signup/' + encodeURIComponent (token)}, 'Join us!'],
                ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
