@@ -15,7 +15,7 @@ FOLDER="acpic"
 TAR="acpic.tar.gz"
 
 rm *.log
-cd .. && tar czvf $TAR $FOLDER
+cd .. && tar --exclude="acpic/test" -czvf $TAR $FOLDER
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
 echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"

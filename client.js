@@ -47,6 +47,9 @@
    B.listen ('change', 'hash', function (x) {
       var path = window.location.hash.replace ('#/', '').split ('/');
       if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token = path [2];
+      if (path [0] === 'auth' && path [1] === 'reset' && path [2])  State.token = path [2];
+      if (path [0] === 'auth' && path [1] === 'reset' && path [3])  State.username = path [3];
+      if (path [0] === 'auth' && path [1] === 'login' && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using acpic!');
       B.do (x, 'set', ['State', 'view'],    path [0]);
       B.do (x, 'set', ['State', 'subview'], path [1]);
    });
@@ -147,6 +150,7 @@
             Views.canvas (x),
             ['div', {class: 'pure-u-1-24'}],
             ['div', {class: 'pure-u-22-24'}, [
+               ['p', {style: 'font-size: 24px'}, [['span', {style: 'font-weight: bold;'}, 'ac:'], ['span', {style: 'font-weight: bold; color: red'}, 'pic']]],
                Views.notify (x),
                Views [view] ? Views [view] (x) : undefined,
             ]],
@@ -202,36 +206,98 @@
                username: c ('#auth-username').value,
                password: c ('#auth-password').value
             };
-            if (subview === 'signup') credentials.email = c ('#auth-email').value;
-            if (State.token) credentials.token = decodeURIComponent (State.token);
+            if ((credentials.username || '').length < 3) return B.do (x, 'notify', 'red', 'Your username must be at least three characters.');
+            if ((credentials.password || '').length < 6) return B.do (x, 'notify', 'red', 'Your password must be at least six characters.');
+            if (subview === 'signup') {
+               credentials.email = c ('#auth-email').value;
+               if ((credentials.username || '').match (/@/)) return B.do (x, 'notify', 'red', 'Your username cannot contain the "@" sign.');
+               if (State.token) credentials.token = decodeURIComponent (State.token);
+               else {
+                  if (confirm ('acpic is currently on alpha and is invitation only. Would you like to request an invitation?')) {
+                     c.ajax ('post', 'requestInvite', {}, {email: credentials.email}, function (error) {
+                        if (error) return alert ('Wow, we just experienced a connection error. Could you please try again?');
+                        B.do (x, 'notify', 'green', 'We have successfully received your request! We\'ll get back to you ASAP.');
+                     });
+                  }
+                  return;
+               }
+            }
             c.ajax ('post', 'auth/' + subview, {}, credentials, function (error, rs) {
                if (error) {
+                  if (error.responseText === '{"error":"token"}') return B.do (x, 'notify', 'yellow', 'The email you provided does not match the invitation you received. Please enter the email where you received the invitation.');
                   if (error.responseText === '{"error":"verify"}') return B.do (x, 'notify', 'yellow', 'Please verify your email address before logging in.');
+                  if (error.responseText === '{"error":"username"}') return B.do (x, 'notify', 'yellow', 'The username you provided is already in use. Please use another one.');
+                  if (error.responseText === '{"error":"email"}') return B.do (x, 'notify', 'yellow', 'Seems there is already an account with that email. Should you try to login instead?');
                   return B.do (x, 'notify', 'red', 'There was an error ' + (subview === 'signup' ? 'signing up.' : 'logging in.'));
                }
                if (subview === 'signup') {
                   delete State.token;
-                  B.do (x, 'notify', 'green', 'You have successfully created your account! Please check your inbox.');
                   c ('#auth-username').value = '';
                   c ('#auth-password').value = '';
-                  return B.do ('set', ['State', 'subview'], 'login');
                }
 
-               B.do (x, 'notify', 'green', 'Welcome!');
+               if (dale.stopNot (rs.headers, undefined, function (v, k) {
+                  if (k.match (/^cookie/i)) {
+                     document.cookie = v;
+                     return true;
+                  }
+               })) {
+                  B.do (x, 'notify', 'green', 'Welcome!');
+                  B.do (x, 'set', ['State', 'view'], 'main');
+               }
+               else {
+                  B.do (x, 'notify', 'green', 'You have successfully created your account! Please check your inbox.');
+                  return B.do ('set', ['State', 'subview'], 'login');
+               }
+            });
+         }],
+         ['submit', 'recover', function (x) {
+            var credentials = {
+               username: c ('#auth-username').value,
+            };
+            if ((credentials.username || '').length < 3) return B.do (x, 'notify', 'red', 'Your username must be at least three characters.');
+            c.ajax ('post', 'auth/recover', {}, credentials, function (error, rs) {
+               if (error && error.status === 500) return B.do (x, 'notify', 'red', 'There was an unexpected error. Please contact us through email.');
+               c ('#auth-username').value = '';
+               B.do (x, 'set', ['State', 'subview'], 'login'),
+               B.do (x, 'notify', 'green', 'You should receive an email with instructions for resetting your password.');
+            });
+         }],
+         ['submit', 'reset', function (x) {
+            var credentials = {
+               password: c ('#auth-password').value,
+            };
+            if ((credentials.password || '').length < 6) return B.do (x, 'notify', 'red', 'Your new password must be at least three characters.');
+            if (State.token)    credentials.token    = decodeURIComponent (State.token);
+            if (State.username) credentials.username = decodeURIComponent (State.username);
 
-               dale.do (rs.headers, function (v, k) {
-                  if (k.match (/^cookie/i)) document.cookie = v;
-               });
-               B.do (x, 'set', ['State', 'view'], 'main');
+            if (c ('#auth-confirm').value !== credentials.password) return B.do (x, 'notify', 'red', 'Please confirm that your password is entered correctly.');
+
+            c.ajax ('post', 'auth/reset', {}, credentials, function (error, rs) {
+               if (error) {
+                  if (error.status === 500) return B.do (x, 'notify', 'red', 'There was an unexpected error. Please contact us through email.');
+                  return B.do (x, 'notify', 'red', 'Invalid reset password link.');
+               }
+               delete State.token;
+               delete State.username;
+               c ('#auth-password').value = '';
+               B.do (x, 'set', ['State', 'subview'], 'login'),
+               B.do (x, 'notify', 'green', 'Your password was changed successfully! Please login.');
             });
          }],
       ], ondraw: function (x) {
-         if (['login', 'signup'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
+         if (['login', 'signup', 'recover', 'reset'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
       }}, function (x, subview) {
-         var fields = subview === 'signup' ? ['Username', 'Email', 'Password'] : ['Username', 'Password'];
+         var fields = {
+            signup: ['Username', 'Email', 'Password'],
+            login: ['Username', 'Password'],
+            recover: ['Username'],
+            reset: ['Password', 'Confirm'],
+         } [subview];
          return [
             ['style', [
-               ['label', {width: 80, display: 'inline-block'}]
+               ['label', {width: 80, display: 'inline-block'}],
+               ['a.blue', {color: 'blue'}],
             ]],
             ['form', {class: 'pure-form pure-form-aligned', onsubmit: 'event.preventDefault ()'}, [
                ['fieldset', [
@@ -241,14 +307,17 @@
                      var v = V.toLowerCase ();
                      return ['div', {class: 'pure-control-group'}, [
                         ['label', {for: 'auth-' + v}, V],
-                        ['input', {id:  'auth-' + v, type: v === 'password' ? v : 'text', placeholder: v}]
+                        ['input', {id:  'auth-' + v, type: (v === 'password' || v === 'confirm') ? 'password' : 'text', placeholder: v}]
                      ]];
                   }),
                   ['div', {class: 'pure-controls'}, [
-                     ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'submit', 'auth']), 'Submit'],
+                     ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'submit', subview === 'login' || subview === 'signup' ? 'auth' : subview]), 'Submit'],
                      ['br'], ['br'],
-                     subview === 'login' ? ['a', {href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.']
-                                         : ['a', {href: '#/auth/login'},  'Already have an account? Log in.'],
+                     subview === 'login' ? [
+                        ['a', {class: 'blue', href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.'],
+                        ['br'],
+                        ['a', {class: 'blue', href: '#/auth/recover'}, 'Forgot your password?'],
+                     ] : ['a', {class: 'blue', href: '#/auth/login'},  'Already have an account? Log in.'],
                   ]]
                ]]
             ]]

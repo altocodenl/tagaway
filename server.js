@@ -321,6 +321,15 @@ var routes = [
       ]]
    ])],
 
+   // *** REQUEST INVITE ***
+
+   ['post', 'requestInvite', function (rq, rs) {
+      if (type (rq.body) !== 'object' || type (rq.body.email) !== 'string') return reply (rq, 400);
+      sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for acpic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
+         reply (rs, error ? 500 : 200);
+      });
+   }],
+
    // *** AUTH WITH COOKIES & SESSIONS ***
 
    ['get', 'auth/logout', function (rq, rs) {
@@ -392,6 +401,7 @@ var routes = [
       ])) return;
 
       var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+      if (username.length < 3) return reply (rs, 400, {error: 'Trimmed username is less than three characters long.'});
       var email    = b.email.toLowerCase    ().replace (/\s+$/g, '');
 
       var multi = redis.multi ();
@@ -423,7 +433,15 @@ var routes = [
                multi2.exec (function (error) {
                   if (error)  return reply (rs, 500, {error: error});
                   if (! ENV) return reply (rs, 200, {token: vtoken});
-                  if (b.token) return reply (rs, 200);
+                  if (b.token) {
+                     return sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
+                        if (error) return reply (rs, 500, {error: error});
+                        giz.login (username, b.password, function (error, session) {
+                           if (error) reply (rs, 500, {error: error});
+                           reply (rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookiename, session)});
+                        });
+                     });
+                  }
                   sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
                      if (error) return reply (rs, 500, {error: error});
                      reply (rs, 200);
@@ -448,7 +466,10 @@ var routes = [
             multi.hdel ('verify', token);
             multi.exec (function (error) {
                if (error) return reply (rs, 500, {error: error});
-               reply (rs, 302, '', {location: '/'});
+               sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
+                  if (error) return reply (rs, 500, {error: error});
+                  reply (rs, 302, '', {location: '/#/auth/login/verified'});
+               });
             });
          });
       });
@@ -725,9 +746,10 @@ var routes = [
                      pic.date = dale.fil (s.dates, undefined, function (v) {
                         if (! v) return;
                         var d = new Date (v);
-                        console.log (v, 'debug 1', d, new Date (Date.UTC (v)));
+                        // https://stackoverflow.com/questions/9756120/how-do-i-get-a-utc-timestamp-in-javascript
+                        console.log ('debug 1', v, d, new Date (Date.UTC (v)));
                         if (d.getTime ()) return d.getTime ();
-                        console.log (v, 'debug 2', d, new Date (Date.UTC (v.replace (/:/g, '-'))));
+                        console.log ('debug 2', v, d, new Date (Date.UTC (v.replace (/:/g, '-'))));
                         d = new Date (v.replace (':', '-').replace (':', '-'));
                         if (d.getTime ()) return d.getTime ();
                      }).sort (function (a, b) {
@@ -1308,6 +1330,7 @@ cicek.options.log.body = function (log) {
 }
 
 cicek.apres = function (rs) {
+   rs.log.startTime = new Date (rs.log.startTime).toUTCString ();
    if (rs.log.url.match (/^\/logs/)) rs.log.responseBody = 'OMITTED';
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
