@@ -150,7 +150,7 @@
             Views.canvas (x),
             ['div', {class: 'pure-u-1-24'}],
             ['div', {class: 'pure-u-22-24'}, [
-               ['p', {style: 'font-size: 24px'}, [['span', {style: 'font-weight: bold;'}, 'ac:'], ['span', {style: 'font-weight: bold; color: red'}, 'pic']]],
+               ['p', {style: 'font-family: \'Lucida Bright\', Georgia, serif; font-size: 24px'}, [['span', {style: 'font-weight: bold;'}, 'ac:'], ['span', {style: 'font-weight: bold; color: red'}, 'pic']]],
                Views.notify (x),
                Views [view] ? Views [view] (x) : undefined,
             ]],
