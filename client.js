@@ -136,7 +136,7 @@
       }
       setTimeout (function () {
          B.do (H.from (x, {ev: 'fullScreen'}), 'set', ['State', 'screen'], {w: window.innerWidth, h: window.innerHeight});
-      }, 1);
+      }, 50);
 
    }
 
@@ -211,6 +211,7 @@
             if (subview === 'signup') {
                credentials.email = c ('#auth-email').value;
                if ((credentials.username || '').match (/@/)) return B.do (x, 'notify', 'red', 'Your username cannot contain the "@" sign.');
+               if (c ('#auth-confirm').value !== credentials.password) return B.do (x, 'notify', 'red', 'Please confirm that your password is entered correctly.');
                if (State.token) credentials.token = decodeURIComponent (State.token);
                else {
                   if (confirm ('acpic is currently on alpha and is invitation only. Would you like to request an invitation?')) {
@@ -289,7 +290,7 @@
          if (['login', 'signup', 'recover', 'reset'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
       }}, function (x, subview) {
          var fields = {
-            signup: ['Username', 'Email', 'Password'],
+            signup: ['Username', 'Email', 'Password', 'Confirm'],
             login: ['Username', 'Password'],
             recover: ['Username'],
             reset: ['Password', 'Confirm'],
@@ -794,6 +795,10 @@
                B.do (x, 'add', ['State', 'upload', 'queue'], file);
             });
          }],
+         ['cancel', 'upload', function (x) {
+            if (! confirm ('Are you sure you want to cancel the upload?')) return;
+            B.do (x, 'set', ['State', 'upload', 'queue'], []);
+         }],
       ];
 
       return [
@@ -831,7 +836,9 @@
                         ['input', {id: 'upload', type: 'file', name: 'pics', multiple: true}],
                      ];
                   }),
-                  ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload']
+                  ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload'],
+                  ['br'], ['br'],
+                  ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'cancel', 'upload']), 'Cancel upload'],
                ]]
             ]],
             ! upload ? [] : (function () {
@@ -917,7 +924,7 @@
       B.view (x, path, {listen: [
          ['click', 'pic', function (x, pic, k) {
             var last = B.get ('State', 'lastclick') || {time: 0};
-            if (last.id === pic.id && Date.now () - B.get ('State', 'lastclick').time < 200) {
+            if (last.id === pic.id && Date.now () - B.get ('State', 'lastclick').time < 500) {
                B.do (x, 'set', ['Data', 'pics', k, 'selected'], false);
                return B.do (x, 'set', ['State', 'canvas'], pic);
             }
@@ -952,8 +959,8 @@
          return ['section', {class: 'piclist'}, dale.do (pics, function (pic, k) {
             var date = new Date (pic.date);
             date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
-            return ['div', {class: 'imgcont'}, [
-               ['img', B.ev ({class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}, ['onclick', 'click', 'pic', pic, k])],
+            return ['div', B.ev ({class: 'imgcont'}, ['onclick', 'click', 'pic', pic, k]), [
+               ['img', {class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}],
                ['div', {class: 'imgtext'}, [
                   ['div', {class: 'left'}, [['i', {class: 'ion-pricetag'}], ' ' + pic.tags.length]],
                   ['div', {class: 'right'}, ['span', date]]
