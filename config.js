@@ -10,6 +10,10 @@ var TEMPLATE = function (content) {
       content,
    ]];
 }
+var GREETING = function (username) {
+   username = username [0].toUpperCase () + username.slice (1);
+   return ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','];
+}
 
 module.exports = {
    cookiename: 'ac-v1',
@@ -36,7 +40,7 @@ module.exports = {
          subject: 'Your invitation to join acpic',
          message: function (username, token) {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
-               ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','],
+               GREETING (username),
                ['br'],
                'You have been officially invited to join ', ACPIC, '!',
                ['br'],
@@ -52,7 +56,7 @@ module.exports = {
          subject: 'Please verify your email',
          message: function (username, token) {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
-               ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','],
+               GREETING (username),
                ['br'],
                'Welcome to ', ACPIC, ' ! Please verify your email by clicking on the following link: ',
                ['a', {href: DOMAIN + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
@@ -67,7 +71,7 @@ module.exports = {
          subject: 'Welcome to acpic!',
          message: function (username, token) {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
-               ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','],
+               GREETING (username),
                ['br'],
                'Welcome to ', ACPIC, ' ! We are thrilled to have you with us.',
                ['br'],
@@ -83,7 +87,7 @@ module.exports = {
          subject: 'Did you forget your password?',
          message: function (username, token) {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
-               ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','],
+               GREETING (username),
                ['br'],
                'Did you forget your password? If you did, all is well: please ', ['a', {href: DOMAIN + '#/auth/reset/' + encodeURIComponent (token) + '/' + encodeURIComponent (username)}, 'click on this link to set a new password.'],
                ['br'],
@@ -99,7 +103,7 @@ module.exports = {
          subject: 'You just changed your password',
          message: function (username) {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
-               ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','],
+               GREETING (username),
                ['br'],
                'We just changed your password. If you performed this change, no further action is necessary.',
                ['br'],

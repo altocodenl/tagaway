@@ -1140,6 +1140,8 @@ var routes = [
                   if (d >= mindate && d <= maxdate) output.pics.push (pic);
                });
 
+               output.years.sort ();
+
                output.pics.sort (function (a, b) {
                   if (a.owner === rq.user.username) return -1;
                   if (b.owner === rq.user.username) return 1;

@@ -154,18 +154,11 @@ All the routes below require an admin user to be logged in.
 
 ### Todo alpha
 
-Capitalize usernames emails
-Confirm password signups
-Wait for full screen mac
-Click on pic to select deselect
-Cancel upload
-Issue with lastModified being undefined and file being considered as field (only on macs?)
-
 - Client
    - Upload: remove view, make it popup, autotag while uploading, show progress as % on browse.
+   - Issue with lastModified being undefined and file being considered as field (only on macs?)
 
 - Server
-   - Test year range in query.
    - Add colors to tags.
    - Emails from corporate account.
 
@@ -198,7 +191,6 @@ Issue with lastModified being undefined and file being considered as field (only
    - Upload to shared tag.
 
 - Organize
-   - Add multiple tags at the same time.
    - Hide certain tags when you don't search for any, unless you explicitly search for them
    - Smaller level of scale to go faster
    - Upload video.
@@ -260,6 +252,7 @@ Issue with lastModified being undefined and file being considered as field (only
 - Admin
    - Metering requests, downloads & space stored.
    - Block further uploads if storage limits are exceeded.
+   - Invites.
 
 ### Features we may never implement
 
