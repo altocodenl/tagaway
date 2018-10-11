@@ -154,13 +154,18 @@ All the routes below require an admin user to be logged in.
 
 ### Todo alpha
 
+Capitalize usernames emails
+Confirm password signups
+Wait for full screen mac
+Click on pic to select deselect
+Cancel upload
+Issue with lastModified being undefined and file being considered as field (only on macs?)
+
 - Client
    - Upload: remove view, make it popup, autotag while uploading, show progress as % on browse.
 
 - Server
-   - Fix issue with timezones & pics.
    - Test year range in query.
-   - Add test files & add invalid picture with valid format.
    - Add colors to tags.
    - Emails from corporate account.
 

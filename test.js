@@ -11,7 +11,11 @@ var U = [
    {username: 'user2', password: Math.random () + ''},
 ];
 
-var PICS = '/media/truecrypt2/acpictest/';
+var PICS = 'test/';
+
+var getUTCTime = function (dstring) {
+   return new Date (dstring).getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
+}
 
 var intro = [
    ['get stats if none present', 'get', 'admin/stats', {}, '', 200],
@@ -148,7 +152,15 @@ var main = [
    ['upload invalid payload #4', 'post', 'pic', {}, {}, 400],
    ['upload invalid payload #5', 'post', 'pic', {}, {file: {}}, 400],
    ['upload video (no support)', 'post', 'pic', {}, {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'video.mp4'},
+      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 400],
+   ['upload empty picture', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+   ]}, 400],
+   ['upload invalid picture', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
    ['upload picture without lastModified', 'post', 'pic', {}, {multipart: [
@@ -174,7 +186,7 @@ var main = [
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       var pic = rs.body.pics [0];
       s.smallpic = teishi.c (pic);
-      if (pic.date !== new Date ('2018/06/07').getTime ()) return log ('Invalid pic.date');
+      if (pic.date !== getUTCTime ('2018/06/07')) return log ('Invalid pic.date');
       if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
       delete pic.date;
@@ -211,7 +223,7 @@ var main = [
       if (rs.body.total !== 2) return log ('Invalid total count.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       var pic = rs.body.pics [0];
-      if (pic.date !== new Date ('2018/06/03').getTime ()) return log ('Invalid pic.date');
+      if (pic.date !== getUTCTime ('2018/06/03')) return log ('Invalid pic.date');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
       delete pic.date;
       delete pic.dateup;
@@ -239,7 +251,7 @@ var main = [
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       if (rs.body.pics.length !== 1) return log ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
-      if (pic.date !== 1405873231000) return log ('Invalid pic.date');
+      if (pic.date !== 1405880431000) return log ('Invalid pic.date');
       delete pic.date;
       delete pic.dateup;
       delete pic.id;
@@ -269,7 +281,7 @@ var main = [
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
-      if (pic.date !== 1490200520000) return log ('Invalid date.');
+      if (pic.date !== 1490207720000) return log ('Invalid date.');
       s.rotateid = pic.id;
       s.rotatepic = teishi.c (pic);
       delete pic.date;
@@ -334,32 +346,32 @@ var main = [
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490200520000}, 200, function (s, rq, rs) {
+   ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490207720000}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490200520000}, 200, function (s, rq, rs) {
+   ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490207720000}, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490200520000}, 200, function (s, rq, rs) {
+   ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490207720000}, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490200520000}, 200, function (s, rq, rs) {
+   ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490207720000}, 200, function (s, rq, rs) {
       if (! eq (['large.jpeg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, maxdate: 1490200520000}, 400],
-   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, mindate: 1490200520000}, 400],
+   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, maxdate: 1490207720000}, 400],
+   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, mindate: 1490207720000}, 400],
    ['get pics by year #3', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;

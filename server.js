@@ -684,7 +684,7 @@ var routes = [
          pic.id     = uuid ();
          pic.owner  = rq.user.username;
          pic.name   = path.slice (path.indexOf ('_') + 1);
-         pic.dateup = new Date ().getTime ();
+         pic.dateup = new Date ().getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
 
          var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
 
@@ -746,12 +746,9 @@ var routes = [
                      pic.date = dale.fil (s.dates, undefined, function (v) {
                         if (! v) return;
                         var d = new Date (v);
-                        // https://stackoverflow.com/questions/9756120/how-do-i-get-a-utc-timestamp-in-javascript
-                        console.log ('debug 1', v, d, new Date (Date.UTC (v)));
-                        if (d.getTime ()) return d.getTime ();
-                        console.log ('debug 2', v, d, new Date (Date.UTC (v.replace (/:/g, '-'))));
+                        if (d.getTime ()) return d.getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
                         d = new Date (v.replace (':', '-').replace (':', '-'));
-                        if (d.getTime ()) return d.getTime ();
+                        if (d.getTime ()) return d.getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
                      }).sort (function (a, b) {
                         return a - b;
                      });
@@ -1375,7 +1372,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
       });
    }
 
-   var file = fs.createReadStream (path).pipe (crypto.createCipher (CONFIG.crypto.algorithm, SECRET.crypto.password)).on ('error', cb);
+   var file = fs.createReadStream (CONFIG.backup.path).pipe (crypto.createCipher (CONFIG.crypto.algorithm, SECRET.crypto.password)).on ('error', cb);
 
    s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: file}, cb);
 
