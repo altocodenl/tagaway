@@ -15,5 +15,20 @@
       "nodemailer-ses-transport": "1.5.1",
       "uuid":         "3.2.1"
    },
-   "main": "server.js"
+   "main": "server.js",
+   "author": "Federico Pereiro <fpereiro@gmail.com>",
+   "contributors": ["Ruben Meines (http://rubenmeines.com)"],
+   "license": [{
+      "type": "Public Domain",
+      "url": "http://github.com/fpereiro/lith#license"
+   }],
+   "keywords": ["pictures", "tags"],
+   "repository" : {
+      "type": "git",
+      "url": "http://github.com/altocodenl/acpic.git"
+   },
+   "bugs": {
+      "url": "http://github.com/altocodenl/acpic/issues",
+      "email": "fpereiro@gmail.com"
+   }
 }
