@@ -31,7 +31,7 @@
    // *** ERROR REPORTING ***
 
    window.onerror = function () {
-      c.ajax ('post', 'api/error', {}, dale.do (arguments, function (v) {
+      c.ajax ('post', 'clientlog', {}, dale.do (arguments, function (v) {
          return v.toString ();
       }));
    }
@@ -948,8 +948,13 @@
             B.do ({from: {ev: 'scroll'}}, 'set', ['State', 'lastscroll'], {time: Date.now (), y: window.scrollY});
             if (prev && prev.y > window.scrollY) return;
 
+            var pics = B.get ('Data', 'pics');
+            if (! pics) return;
+
             lasty = window.innerHeight;
-            lasti = c ('img') [B.get ('Data', 'pics').length - 1].getBoundingClientRect ().top;
+            lasti = c ('img') [B.get ('Data', 'pics').length - 1];
+            if (! lasti) return;
+            lasti = lasti.getBoundingClientRect ().top;
 
             if (lasty < lasti) return;
             B.do ({from: {ev: 'scroll'}}, 'retrieve', 'pics');
