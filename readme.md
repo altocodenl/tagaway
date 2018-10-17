@@ -157,10 +157,12 @@ All the routes below require an admin user to be logged in.
 - Client
    - Upload: remove view, make it popup, autotag while uploading, show progress as % on browse.
    - Issue with lastModified being undefined and file being considered as field (only on macs?)
+   - Retry is broken?
 
 - Server
-   - Add colors to tags.
+   - normalized date function also for stats
    - Emails from corporate account.
+   - Wordpress.
 
 ### Todo beta
 
@@ -186,11 +188,14 @@ All the routes below require an admin user to be logged in.
 - Share
    - Share/unshare with authorization & automatic email.
    - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures).
+   - Upload to shared tag.
+   - Tags with same name (local vs shared, put a @ or : ?)
 
 - Upload
-   - Upload to shared tag.
+   - Hash check in client.
 
 - Organize
+   - Add colors to tags.
    - Hide certain tags when you don't search for any, unless you explicitly search for them
    - Smaller level of scale to go faster
    - Upload video.
@@ -206,9 +211,10 @@ All the routes below require an admin user to be logged in.
    - Order pictures within tag? Set priorities!
 
 - Other
-   Privacy with regard to backup & debug tools
+   - Favicon & icons.
+   - Privacy with regard to backup & debug tools
       - Server access logs are deleted after 7 days.
-      - Error logs are kept but user info will be purged from them if user is deleted.
+      - Error logs are kept but user info will be manually purged from them if user is deleted.
       - DB dumps are eliminated after a month.
    - Report pictures.
    - QR code to share.

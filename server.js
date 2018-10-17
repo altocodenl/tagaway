@@ -92,7 +92,6 @@ var k      = function (s) {
    var output = {out: '', err: ''};
 
    var command = [].slice.call (arguments, 1);
-   if (s.verbose) console.log ('k executing command', command);
    var proc = spawn (command [0], command.slice (1));
 
    var wait = 3;
@@ -161,38 +160,58 @@ H.hash = function (s, path) {
    });
 }
 
-H.s3put = function (s, user, path, key) {
-   var file = fs.createReadStream (path).pipe (crypto.createCipher (CONFIG.crypto.algorithm, SECRET.crypto.password));
-   file.on ('error', function (error) {
-      s.do (null, error);
+H.encrypt = function (path, cb) {
+   // https://github.com/luke-park/SecureCompatibleEncryptionExamples/blob/master/JavaScript/SCEE-Node.js
+   fs.readFile (path, function (error, file) {
+      if (error) return cb (error);
+      var nonce = crypto.randomBytes (CONFIG.crypto.nonceLength);
+      var cipher = crypto.createCipheriv (CONFIG.crypto.algorithm, SECRET.crypto.password, nonce);
+      var ciphertext = Buffer.concat ([cipher.update (file), cipher.final ()]);
+      cb (null, Buffer.concat ([nonce, ciphertext, cipher.getAuthTag ()]));
    });
-   return [
-      function (s) {
-         s3.upload ({Key: hashs (user) + '/' + key, Body: file}, function (error, data) {
-            if (error) return s.do (null, error);
-            s.do ([
-               function (s) {
-                  s3.headObject ({Key: hashs (user) + '/' + key}, function (error, data) {
-                     if (error) return s.do (null, error);
-                     s.last = data;
-                     s.do ([
-                        [a.set, false, [Redis, 'hincrby', 'users:' + user, 's3:buse', data.ContentLength]],
-                     ]);
-                  });
-               }
-            ]);
-         });
-      }
-   ];
+}
+
+H.decrypt = function (data) {
+   var nonce      = data.slice (0, CONFIG.crypto.nonceLength);
+   var ciphertext = data.slice (CONFIG.crypto.nonceLength, data.length - CONFIG.crypto.tagLength);
+   var tag        = data.slice (- CONFIG.crypto.tagLength);
+
+   var cipher = crypto.createDecipheriv (CONFIG.crypto.algorithm, SECRET.crypto.password, nonce);
+   cipher.setAuthTag (tag);
+   return Buffer.concat ([cipher.update (ciphertext), cipher.final ()]);
+}
+
+H.s3put = function (s, user, path, key) {
+   H.encrypt (path, function (error, file) {
+      if (error) return s.do (null, error);
+      s.do ([
+         function (s) {
+            s3.upload ({Key: hashs (user) + '/' + key, Body: file}, function (error, data) {
+               if (error) return s.do (null, error);
+               s.do ([
+                  function (s) {
+                     s3.headObject ({Key: hashs (user) + '/' + key}, function (error, data) {
+                        if (error) return s.do (null, error);
+                        s.last = data;
+                        s.do ([
+                           [a.set, false, [Redis, 'hincrby', 'users:' + user, 's3:buse', data.ContentLength]],
+                        ]);
+                     });
+                  }
+               ]);
+            });
+         }
+      ]);
+   });
 }
 
 H.s3get = function (user, key, cb) {
    s3.getObject ({Key: hashs (user) + '/' + key}, function (error, data) {
       if (error) return cb (error);
-      data.file = crypto.createDecipher (CONFIG.crypto.algorithm, SECRET.crypto.password);
-      data.file.end (data.Body);
       redis.hincrby ('users:' + user, 's3:bget', data.ContentLength, function (error) {
-         cb (error, data);
+         if (error) return cb (error);
+         data.file = H.decrypt (data.Body);
+         cb (null, data);
       });
    });
 }
@@ -642,7 +661,14 @@ var routes = [
          redis.hgetall ('pic:' + pic, function (error, pic) {
             if (error)        return reply (rs, 500, {error: error});
             if (pic === null) return reply (rs, 404);
-            if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
+
+            // XXX testing amazon
+            //if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
+            return H.s3get (pic.owner, rq.data.params.id, function (error, data) {
+               if (error) return reply (rs, 500, {error: error});
+               rs.end (data.file);
+            });
+
             redis.smembers ('pict:' + pic.id, function (error, tags) {
                if (error) return reply (rs, 500, {error: error});
                if (tags.length === 0) return reply (rs, 404);
@@ -688,7 +714,7 @@ var routes = [
 
          var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
 
-         return [{verbose: true}, [
+         return [
             [a.set, 'hash', [H.hash, path]],
             function (s) {
                return [Redis, 'sismember', 'upic:' + rq.user.username, s.hash];
@@ -782,7 +808,7 @@ var routes = [
                   }
                ];
             }
-         ]];
+         ];
       }, {catch: function (s) {
          if (s.catch.err && s.catch.err.match ('identify')) return reply (rs, 400, {error: 'Invalid image format: ' + s.catch.err});
          reply (rs, 500, {error: s.catch});
@@ -874,7 +900,7 @@ var routes = [
 
       var path, tmppath;
 
-      a.stop ([{verbose: true}, [
+      a.stop ([
          [a.set, 'pic', [Redis, 'hgetall', 'pic:' + b.id]],
          function (s) {
             if (! s.pic || s.pic.owner !== rq.user.username) return reply (rs, 404);
@@ -938,7 +964,7 @@ var routes = [
                reply (rs, 200);
             });
          },
-      ]], {catch: function (s) {
+      ], {catch: function (s) {
          return reply (rs, 500, {error: s.catch});
       }});
 
@@ -1353,6 +1379,11 @@ cicek.apres = function (rs) {
    cicek.Apres (rs);
 }
 
+cicek.log = function (message) {
+   if (type (message) !== 'array' || message [0] !== 'error') return;
+   console.log.apply (console, [new Date ().toUTCString (), cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id].concat (message));
+}
+
 cicek.cluster ();
 
 cicek.listen ({port: CONFIG.port}, routes);
@@ -1374,9 +1405,10 @@ if (cicek.isMaster && ENV) setInterval (function () {
       });
    }
 
-   var file = fs.createReadStream (CONFIG.backup.path).pipe (crypto.createCipher (CONFIG.crypto.algorithm, SECRET.crypto.password)).on ('error', cb);
-
-   s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: file}, cb);
+   H.encrypt (CONFIG.backup.path, function (error, file) {
+      if (error) return cb (error);
+      s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: file}, cb);
+   });
 
 }, CONFIG.backup.frequency * 60 * 1000);
 
@@ -1404,7 +1436,7 @@ if (cicek.isMaster && ENV) H.s3list ('', function (error, data) {
    });
    multi.exec (function (error, exists) {
       dale.do (data, function (item, k) {
-         if (! exists [k]) console.log ('S3 blob is not on database!', item);
+         if (! exists [k]) console.log ('S3 blob is not on database!', item.Key);
       });
    });
 });

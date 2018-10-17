@@ -25,7 +25,9 @@ module.exports = {
    picfolder: process.argv [2] ? '/root/files' : '/home/hq/acpic/files',
    redisdb: 15,
    crypto: {
-      algorithm: 'aes-256-ctr'
+      algorithm: 'aes-256-gcm',
+      nonceLength: 16,
+      tagLength: 16,
    },
    storelimit: {
       tier1:   12 * 1024 * 1024 * 1024,
@@ -139,7 +141,7 @@ module.exports = {
       secretAccessKey: 'SECRETKEY',
    },
    crypto: {
-      password: 'CRYPTOSTRONGPASSWORD',
+      password: 'CRYPTOSTRONGPASSWORD'
    },
    admins: ['EMAIL1', 'EMAIL2', ...]
 }
