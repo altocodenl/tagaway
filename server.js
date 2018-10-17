@@ -662,13 +662,7 @@ var routes = [
             if (error)        return reply (rs, 500, {error: error});
             if (pic === null) return reply (rs, 404);
 
-            // XXX testing amazon
-            //if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
-            return H.s3get (pic.owner, rq.data.params.id, function (error, data) {
-               if (error) return reply (rs, 500, {error: error});
-               rs.end (data.file);
-            });
-
+            if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
             redis.smembers ('pict:' + pic.id, function (error, tags) {
                if (error) return reply (rs, 500, {error: error});
                if (tags.length === 0) return reply (rs, 404);

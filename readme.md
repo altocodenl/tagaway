@@ -160,7 +160,6 @@ All the routes below require an admin user to be logged in.
    - Retry is broken?
 
 - Server
-   - normalized date function also for stats
    - Emails from corporate account.
    - Wordpress.
 
