@@ -1441,29 +1441,4 @@ if (cicek.isMaster && ENV) H.s3list ('', function (error, data) {
    });
 });
 
-// *** SCRIPT FOR REUPLOADING FILES ***
-
-H.reuploadstate = {current: undefined, queue: []};
-
-H.reupload = function (item) {
-   if (H.reuploadstate.current) return H.reuploadstate.queue.push (item);
-   H.reuploadstate.current = item;
-   item = item.split ('/');
-   var path = Path.join (CONFIG.picfolder, item [0], item [1]);
-   H.encrypt (path, function (error, file) {
-      console.log ('Uploading', path);
-      if (error) {
-         console.log ('Ignoring', path);
-         H.reuploadstate.current = undefined;
-         if (H.reuploadstate.queue [0]) H.reupload (H.reuploadstate.queue.shift ());
-         return;
-      }
-      s3.upload ({Key: item [0] + '/' + item [1], Body: file}, function (error, data) {
-         console.log ('Done uploading', path, error ? 'ERROR ' + error : 'OK');
-         H.reuploadstate.current = undefined;
-         if (H.reuploadstate.queue [0]) H.reupload (H.reuploadstate.queue.shift ());
-      });
-   });
-}
-
 if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString ());
