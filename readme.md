@@ -155,12 +155,11 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - Upload: remove view, make it popup, autotag while uploading, show progress as % on browse.
+   - Make upload as popup, optional tags while uploading.
    - Issue with lastModified being undefined and file being considered as field (only on macs?)
    - Retry is broken?
 
 - Server
-   - Emails from corporate account.
    - Wordpress.
 
 ### Todo beta

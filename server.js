@@ -32,6 +32,8 @@ var bcrypt = require ('bcryptjs');
 var mailer = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
 
 var sendmail = function (o, cb) {
+   o.from1 = o.from1 || SECRET.emailName;
+   o.from2 = o.from2 || SECRET.emailAddress;
    mailer.sendMail ({
       from: o.from1 + ' <' + o.from2 + '>',
       to: o.to1 + ' <' + o.to2 + '>',
@@ -344,7 +346,7 @@ var routes = [
 
    ['post', 'requestInvite', function (rq, rs) {
       if (type (rq.body) !== 'object' || type (rq.body.email) !== 'string') return reply (rq, 400);
-      sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for acpic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
+      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for acpic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
          reply (rs, error ? 500 : 200);
       });
    }],
@@ -453,7 +455,7 @@ var routes = [
                   if (error)  return reply (rs, 500, {error: error});
                   if (! ENV) return reply (rs, 200, {token: vtoken});
                   if (b.token) {
-                     return sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
+                     return sendmail ({to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
                         if (error) return reply (rs, 500, {error: error});
                         giz.login (username, b.password, function (error, session) {
                            if (error) reply (rs, 500, {error: error});
@@ -461,7 +463,7 @@ var routes = [
                         });
                      });
                   }
-                  sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
+                  sendmail ({to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
                      if (error) return reply (rs, 500, {error: error});
                      reply (rs, 200);
                   });
@@ -485,7 +487,7 @@ var routes = [
             multi.hdel ('verify', token);
             multi.exec (function (error) {
                if (error) return reply (rs, 500, {error: error});
-               sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
+               sendmail ({to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   reply (rs, 302, '', {location: '/#/auth/login/verified'});
                });
@@ -520,7 +522,7 @@ var routes = [
             redis.hgetall ('users:' + username, function (error, user) {
                if (error)  return reply (rs, 500, {error: error});
                if (! ENV) return reply (rs, 200, {token: token});
-               sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: user.username, to2: user.email, subject: CONFIG.etemplates.recover.subject, message: CONFIG.etemplates.recover.message (user.username, token)}, function (error) {
+               sendmail ({to1: user.username, to2: user.email, subject: CONFIG.etemplates.recover.subject, message: CONFIG.etemplates.recover.message (user.username, token)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   reply (rs, 200);
                });
@@ -562,7 +564,7 @@ var routes = [
                   else                           return reply (rs, 500, {error: error});
                }
                if (! ENV) return reply (rs, 200);
-               sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
+               sendmail ({to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   reply (rs, 200);
                });
@@ -690,8 +692,20 @@ var routes = [
 
       if (! rq.data.fields) return reply (rs, 400, {error: 'field'});
       if (! rq.data.files)  return reply (rs, 400, {error: 'file'});
-      if (! teishi.eq (dale.keys (rq.data.fields), ['lastModified'])) return reply (rs, 400, {error: 'invalidField'});
+      if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
+      if (! teishi.eq (dale.keys (rq.data.fields), ['lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
       if (! teishi.eq (dale.keys (rq.data.files), ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
+
+      var tags = teishi.p (rq.data.fields.tags), error;
+      if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
+      tags = dale.do (tags, function (tag) {
+         if (type (tag) !== 'string') return error = teishi.s (tag);
+         tag = tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+         if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
+         if (tag.match (/^\d{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100) error = tag;
+         return tag;
+      });
+      if (error) return reply (rs, 400, {error: 'tag: ' + error});
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
@@ -786,9 +800,16 @@ var routes = [
                      }
 
                      multi.sadd ('upic:' + rq.user.username, pic.hash);
-                     multi.sadd ('tag:'  + rq.user.username  + ':all',      pic.id);
-                     multi.sadd ('tag:'  + rq.user.username  + ':untagged', pic.id);
-                     multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
+                     multi.sadd ('tag:'  + rq.user.username  + ':all', pic.id);
+                     if (tags.length > 0) dale.do (tags, function (tag) {
+                        multi.sadd    ('pict:' + pic.id, tag);
+                        multi.hincrby ('tags:' + rq.user.username, tag, 1);
+                        multi.sadd    ('tag:'  + rq.user.username + ':' + tag, pic.id);
+                     });
+                     else {
+                        multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
+                        multi.sadd    ('tag:'  + rq.user.username + ':untagged', pic.id);
+                     }
                      multi.hmset ('pic:' + pic.id, pic);
                      multi.exec (function (error) {
                         if (error) return reply (rs, 500, {error: error});
@@ -1327,7 +1348,7 @@ var routes = [
          redis.hset ('invites', email, JSON.stringify ({token: itoken, sent: Date.now ()}), function (error) {
             if (error) return reply (rs, 500, {error: error});
             if (! ENV) return reply (rs, 200, {token: itoken});
-            sendmail ({from1: 'acpic', from2: SECRET.admins [0], to1: email.replace (/@.+/, ''), to2: email, subject: CONFIG.etemplates.invite.subject, message: CONFIG.etemplates.invite.message (email.replace (/@.+/, ''), itoken)}, function (error) {
+            sendmail ({to1: email.replace (/@.+/, ''), to2: email, subject: CONFIG.etemplates.invite.subject, message: CONFIG.etemplates.invite.message (email.replace (/@.+/, ''), itoken)}, function (error) {
                if (error) return reply (rs, 500, {error: error});
                reply (rs, 200);
             });
@@ -1394,7 +1415,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
    });
 
    var cb = function (error) {
-      if (error) sendmail ({from1: 'acpic backup', from2: SECRET.admins [0], to1: 'acpic admin', to2: SECRET.admins [0], subject: 'Backup failed!', message: ['pre', error.toString ()]}, function (error) {
+      if (error) sendmail ({from1: 'acpic backup', to1: 'acpic admin', to2: SECRET.admins [0], subject: 'Backup failed!', message: ['pre', error.toString ()]}, function (error) {
          if (error) console.log ('FATAL ERROR WHEN WARNING ABOUT FAILED BACKUP.', error);
       });
    }

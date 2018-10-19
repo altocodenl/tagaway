@@ -5,8 +5,8 @@ var DOMAIN = {
 
 var ACPIC = [['span', {style: 'font-weight: bold;'}, 'ac:'], ['span', {style: 'font-weight: bold; color: red'}, 'pic']];
 var TEMPLATE = function (content) {
-   return ['body', {style: 'width: 50%; margin-left: 25%;'}, [
-      ['p', {style: 'text-align: center; font-size: 28px;'}, ['a', {href: DOMAIN, style: 'color: inherit; text-decoration: none'}, ACPIC]],
+   return ['body', {style: 'width: 50%; margin-left: 25%'}, [
+      ['p', {style: 'text-align: center; font-size: 28px; font-family: \'Lucida Bright\', Georgia, serif'}, ['a', {href: DOMAIN, style: 'color: inherit; text-decoration: none'}, ACPIC]],
       content,
    ]];
 }
@@ -143,6 +143,8 @@ module.exports = {
    crypto: {
       password: 'CRYPTOSTRONGPASSWORD'
    },
-   admins: ['EMAIL1', 'EMAIL2', ...]
+   admins: ['EMAIL1', 'EMAIL2', ...],
+   emailAddress: 'EMAIL',
+   emailName: 'NAME',
 }
 */

@@ -627,9 +627,30 @@ var main = [
          }, {}, '', 200],
       ];
    }),
+   ['upload lopsided picture as user2 with invalid tags #1', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '{}'}
+   ]}, 400],
+   ['upload lopsided picture as user2 with invalid tags #2', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '2'}
+   ]}, 400],
+   ['upload lopsided picture as user2 with invalid tags #3', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '["hello", 1]'}
+   ]}, 400],
+   ['upload lopsided picture as user2 with invalid tags #4', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '["hello", "all"]'}
+   ]}, 400],
    ['upload lopsided picture as user2', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
-      {type: 'field',  name: 'lastModified', value: Date.now ()}
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '["rotate"]'}
    ]}, 200],
    ['get all pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (! eq ([2017, 2018], rs.body.years)) return log ('Invalid years.');
@@ -639,9 +660,6 @@ var main = [
       s.rotate2 = rs.body.pics [0];
       return true;
    }],
-   ['tag rotated picture', 'post', 'tag', {}, function (s) {
-      return {tag: 'rotate', ids: [s.rotate2.id]};
-   }, 200],
    ['get `rotate` pics as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (! eq ([2017], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
