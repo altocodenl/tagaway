@@ -77,11 +77,12 @@ From this point onwards, if a user is not logged in, any request will receive a 
 
 - `POST /pic`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
-   - Must contain one field (otherwise, 400 with body `{error: 'field'}`).
+   - Must contain one or two fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
-   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed field is `lastModified`.
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `lastModified` and `tags`; the last one is optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
+   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
    - The file uploaded must be `.png` or `.jpg` (otherwise, 400 with body `{error: 'format'}`).
    - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
@@ -155,12 +156,10 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - Make upload as popup, optional tags while uploading.
-   - Issue with lastModified being undefined and file being considered as field (only on macs?)
-   - Retry is broken?
+   - New interface!
 
 - Server
-   - Wordpress.
+   - Logging service on server with email sending by priority tiers.
 
 ### Todo beta
 
@@ -190,7 +189,9 @@ All the routes below require an admin user to be logged in.
    - Tags with same name (local vs shared, put a @ or : ?)
 
 - Upload
-   - Hash check in client.
+   - Client-side hashes for fast duplicate elimination.
+   - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
+   - Folder upload on Android & mobile.
 
 - Organize
    - Add colors to tags.
@@ -285,7 +286,7 @@ All the routes below require an admin user to be logged in.
 `State.rotate`: `undefined|90|-90|180`, determines the degrees of rotation for a `rotate` operation.
 `State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
 `State.autoquery`: `undefined|string`, used to search for tags in the query box.
-`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT}`.
+`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
 `State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
 `State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
 `State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
@@ -316,6 +317,8 @@ All the routes below require an admin user to be logged in.
 - verify (hash): key is token, value is email. Deleted after usage.
 
 - upic:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition.
+
+- upicd:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition when re-uploading files.
 
 - thu:ID (string): id of the corresponding pic.
 
@@ -365,6 +368,7 @@ All the routes below require an admin user to be logged in.
 - sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:hxxx:DATE (string): responses with status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
 - stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than ten minutes will be converted from hyperloglog to a string with a counter.
+- stp:A:DATE (hyperloglog or string): unique active users in the last 24 hours. Time is Date.now () divided by 100000. Entries older than a day will be converted from hyperloglog to a string with a counter.
 - stp (set): list of all hyperloglog entries.
 
 Used by giz:

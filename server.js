@@ -35,7 +35,7 @@ var sendmail = function (o, cb) {
    o.from1 = o.from1 || SECRET.emailName;
    o.from2 = o.from2 || SECRET.emailAddress;
    mailer.sendMail ({
-      from: o.from1 + ' <' + o.from2 + '>',
+      from: o.from1 + ' <' + SECRET.emailAddress + '>',
       to: o.to1 + ' <' + o.to2 + '>',
       replyTo: o.from2,
       subject: o.subject,
@@ -254,13 +254,13 @@ H.log = function (user, ev, cb) {
    redis.lpush ('ulog:' + user, teishi.s (ev), cb || function () {});
 }
 
-H.stat = function (name, arg) {
+H.stat = function (name, pf) {
    var t = Date.now ();
    t = (t - (t % (1000 * 60 * 10))) / 100000;
-   if (arg) {
+   if (pf) {
       var multi = redis.multi ();
-      multi.pfadd ('stp:' + name + ':' + t, arg);
-      multi.sadd  ('stp', name + ':' + t);
+      multi.pfadd ('stp:' + name + ':' + t, pf);
+      multi.sadd  ('stp',   name + ':' + t);
       multi.exec (function (error) {if (error) console.log ('H.stat error', error)});
    }
    else redis.incr  ('sti:' + name + ':' + t, function (error) {if (error) console.log ('H.stat error', error)});
@@ -277,7 +277,8 @@ if (cicek.isMaster) setInterval (function () {
          if (error) return console.log ('Stat pfcount -> counter error', error);
          var d = Date.now (), multi2 = redis.multi ();
          dale.do (pfs, function (pf, k) {
-            if (d - parseInt (pf.split (':') [1] + '00000') > 1000 * 60 * 10) {
+            var duration = pf.split (':') [0] === 'a' ? 1000 * 60 * 10 : 1000 * 60 * 60 * 24;
+            if (d - parseInt (pf.split (':') [1] + '00000') > duration) {
                multi2.srem ('stp', pf);
                multi2.set  (pf, counts [k]);
             }
@@ -598,6 +599,7 @@ var routes = [
          if (! user) return reply (rs, 403, {error: 'session'});
 
          H.stat ('a', user.username);
+         H.stat ('A', user.username);
          rs.log.user = user.username;
          rq.user = user;
          rs.next ();
@@ -799,7 +801,8 @@ var routes = [
                         multi.set ('thu:' + pic.t900, pic.id);
                      }
 
-                     multi.sadd ('upic:' + rq.user.username, pic.hash);
+                     multi.sadd ('upic:'  + rq.user.username, pic.hash);
+                     multi.srem ('upicd:' + rq.user.username, pic.hash);
                      multi.sadd ('tag:'  + rq.user.username  + ':all', pic.id);
                      if (tags.length > 0) dale.do (tags, function (tag) {
                         multi.sadd    ('pict:' + pic.id, tag);
@@ -876,7 +879,8 @@ var routes = [
             multi.del  ('pict:' + s.pic.id);
             if (s.pic.t200) multi.del ('thu:' + s.pic.t200);
             if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
-            multi.srem ('upic:' + s.pic.owner, s.pic.hash);
+            multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
+            multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
 
             if (s.tags.length === 0) multi.hincrby ('tags:' + s.pic.owner, 'untagged', -1);
 
@@ -1394,7 +1398,7 @@ cicek.apres = function (rs) {
    cicek.Apres (rs);
 }
 
-cicek.log = function (message) {
+if (ENV) cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
    console.log.apply (console, [new Date ().toUTCString (), cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id].concat (message));
 }

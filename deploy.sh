@@ -20,7 +20,11 @@ if [ "$2" == "client" ] ; then
 fi
 
 rm *.log
-cd .. && tar --exclude="acpic/test" -czvf $TAR $FOLDER
+if [ "$2" == "fast" ] ; then
+   cd .. && tar --exclude="acpic/*.swp" --exclude="acpic/.git" --exclude="acpic/test" -czvf $TAR $FOLDER
+else
+   cd .. && tar --exclude="acpic/*.swp" -czvf $TAR $FOLDER
+fi
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
 echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
