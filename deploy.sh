@@ -14,12 +14,13 @@ fi
 FOLDER="acpic"
 TAR="acpic.tar.gz"
 
-rm *.log
-if [ "$2" == "fast" ] ; then
-   cd .. && tar --exclude="acpic/test" --exclude="acpic/.git" -czvf $TAR $FOLDER
-else
-   cd .. && tar --exclude="acpic/test" -czvf $TAR $FOLDER
+if [ "$2" == "client" ] ; then
+   scp client.js $HOST:acpic
+   exit 0
 fi
+
+rm *.log
+cd .. && tar --exclude="acpic/test" -czvf $TAR $FOLDER
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
 echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
