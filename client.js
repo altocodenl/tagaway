@@ -33,7 +33,7 @@
    window.onerror = function () {
       c.ajax ('post', 'clientlog', {}, dale.do (arguments, function (v) {
          return v.toString ();
-      }));
+      }).concat (B.eventlog));
    }
 
    // *** INITIALIZATION OF STATE/DATA ***
@@ -340,8 +340,9 @@
                uploading++;
 
                var f = new FormData ();
-               f.append ('lastModified', file.lastModified);
+               f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
                f.append ('pic', file);
+               if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
                H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
                   dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
                      if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
@@ -791,6 +792,7 @@
             var files = B.get ('State', 'upload', 'error');
             B.do (x, 'set', ['State', 'upload', 'error'], []);
             dale.do (files, function (file) {
+               file = file [1];
                file.uploading = false;
                B.do (x, 'add', ['State', 'upload', 'queue'], file);
             });
@@ -837,6 +839,9 @@
                      ];
                   }),
                   ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload'],
+                  ['br'], ['br'],
+                  ['h3', 'Add a tag to the uploaded pictures'],
+                  ['input', B.ev ({placeholder: 'tags'}, ['onchange', 'set', ['State', 'upload', 'tags']])],
                   ['br'], ['br'],
                   ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'cancel', 'upload']), 'Cancel upload'],
                ]]
@@ -962,7 +967,7 @@
       }}, function (x, pics) {
          if (! pics || pics.length === 0) return;
          return ['section', {class: 'piclist'}, dale.do (pics, function (pic, k) {
-            var date = new Date (pic.date);
+            var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
             date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
             return ['div', B.ev ({class: 'imgcont'}, ['onclick', 'click', 'pic', pic, k]), [
                ['img', {class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}],
@@ -1084,7 +1089,7 @@
                            return ['div', {class: 'info pure-u-24-24'}, [
                               ['ul', {class: 'search'}, [
                                  (function () {
-                                    var date = new Date (pic.date);
+                                    var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
                                     date = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'} [date.getDay ()] + ' ' + date.getDate () + ' ' + {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'} [(date.getMonth () + 1)] + ' ' + date.getFullYear ();
                                     return ['li', {style: 'border: 0; font-weight: bold;'}, date];
                                  }) (),
