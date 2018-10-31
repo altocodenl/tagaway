@@ -720,7 +720,7 @@ var routes = [
          pic.id     = uuid ();
          pic.owner  = rq.user.username;
          pic.name   = path.slice (path.indexOf ('_') + 1);
-         pic.dateup = new Date ().getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
+         pic.dateup = new Date ().getTime ();
 
          var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
 

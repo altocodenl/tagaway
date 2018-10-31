@@ -254,7 +254,7 @@ var main = [
       if (! eq ([2014, 2018], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 1) return log ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
-      if (pic.date !== 1405880431000) return log ('Invalid pic.date');
+      if (pic.date !== 1405876831000) return log ('Invalid pic.date');
       delete pic.date;
       delete pic.dateup;
       delete pic.id;
@@ -285,7 +285,7 @@ var main = [
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
-      if (pic.date !== 1490207720000) return log ('Invalid date.');
+      if (pic.date !== 1490204120000) return log ('Invalid date.');
       s.rotateid = pic.id;
       s.rotatepic = teishi.c (pic);
       delete pic.date;
@@ -353,36 +353,36 @@ var main = [
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490207720000}, 200, function (s, rq, rs) {
+   ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490207720000}, 200, function (s, rq, rs) {
+   ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['rotate.jpg', 'medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490207720000}, 200, function (s, rq, rs) {
+   ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490207720000}, 200, function (s, rq, rs) {
+   ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['large.jpeg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, maxdate: 1490207720000}, 400],
-   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, mindate: 1490207720000}, 400],
+   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 400],
+   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 400],
    ['get pics by year #3', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
