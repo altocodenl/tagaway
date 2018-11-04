@@ -427,7 +427,7 @@
    // *** MAIN VIEW ***
 
    Views.main = function (x) {
-      var evs = ['change', ['State', 'upload', 'queue'], function (x) {
+      var routes = ['change', ['State', 'upload', 'queue'], function (x) {
          var queue = B.get ('State', 'upload', 'queue');
          var MAXSIMULT = 2, uploading = 0;
          dale.do (queue, function (file) {
@@ -455,7 +455,7 @@
          });
       }];
 
-      return B.view (x, ['State', 'subview'], {listen: evs, ondraw: function (x) {
+      return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
          if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          window.onbeforeunload = function () {
             var q = B.get ('State', 'upload', 'queue');
@@ -565,7 +565,7 @@
    // *** MANAGE VIEW ***
 
    Views.manage = function (x) {
-      var evs = [
+      var routes = [
          ['retrieve', 'pics', function (x) {
             var q = B.get ('State', 'query');
             if (! q) return;
@@ -657,7 +657,7 @@
          }],
       ];
 
-      return B.view (x, ['Data', 'tags'], {listen: evs, ondraw: function (x) {
+      return B.view (x, ['Data', 'tags'], {listen: routes, ondraw: function (x) {
          if (! B.get ('Data', 'tags')) B.do (x, 'retrieve', 'tags');
       }, onforget: function (x) {
          B.do (x, 'rem', 'State', 'query', 'tags');
@@ -870,7 +870,7 @@
    // *** UPLOAD VIEW ***
 
    Views.upload = function (x) {
-      var evs = [
+      var routes = [
          ['upload', 'pics', function (x) {
 
             var pics = c ('form input') [0]
@@ -921,7 +921,7 @@
          ['a', {href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, 'Logout'],
          ['br'], ['br'], ['br'],
          ['a', {class: 'buttonlink', href: '#/main/browse'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Back to main view']],
-         B.view (x, ['State', 'upload'], {listen: evs}, function (x, upload) {return [
+         B.view (x, ['State', 'upload'], {listen: routes}, function (x, upload) {return [
             ['form', {onsubmit: 'event.preventDefault ()', class: 'pure-form pure-form-aligned'}, [
                ['br'], ['br'],
                ['fieldset', [
