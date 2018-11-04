@@ -78,6 +78,12 @@
 
    var H = window.H = {};
 
+   H.css = {
+      blue: '#4562FF',
+      gray1: '#F2F2F2',
+      font: 'Montserrat, sans-serif',
+   }
+
    H.if = function (cond, then, Else) {
       return cond ? then : Else;
    }
@@ -87,20 +93,21 @@
       return x;
    }
 
-   H.logout = function () {
+   H.logout = function (x) {
       c.ajax ('get', 'auth/logout');
       B.eventlog = [];
-      B.do ({from: {ev: 'logout'}}, 'set', 'State', {});
-      B.do ({from: {ev: 'logout'}}, 'set', 'Data',  {});
+      B.do (x, 'set', 'State', {});
+      B.do (x, 'set', 'Data',  {});
       window.State = B.get ('State'), window.Data = B.get ('Data');
       c.cookie (false);
-      B.do ({from: {ev: 'logout'}}, 'set', ['State', 'view'], 'auth');
+      B.do (x, 'set', ['State', 'view'], 'auth');
    }
 
    H.authajax = function (x, m, p, h, b, cb) {
+      x = H.from (x, {ev: 'authajax', method: m, path: p, headers: h, body: b});
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
-            H.logout ();
+            H.logout (x);
             return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
          }
          cb (error, rs);
@@ -140,22 +147,92 @@
 
    }
 
+   H.spaceh = function (cols) {
+      var COLS = 40;
+      return 100 * cols / COLS + 'vw';
+   }
+
+   H.spacev = function (number, lineHeight) {
+      var TYPELINEHEIGHT = 1.5;
+      return number * (lineHeight || TYPELINEHEIGHT) + 'rem';
+   }
+
+   H.fontSize = function (value, ratio, base) {
+      var TYPEBASE = 1, TYPERATIO = 1.2;
+      return Math.pow (ratio || TYPERATIO, value) * (base || TYPEBASE) + 'rem';
+   }
+
    // *** VIEWS ***
 
    var Views = {};
 
    Views.base = function (x) {
       return B.view (x, ['State', 'view'], function (x, view) {
-         return ['div', {class: 'pure-g'}, [
-            Views.canvas (x),
-            ['div', {class: 'pure-u-1-24'}],
-            ['div', {class: 'pure-u-22-24'}, [
-               ['p', {style: 'font-family: \'Lucida Bright\', Georgia, serif; font-size: 24px'}, [['span', {style: 'font-weight: bold;'}, 'ac:'], ['span', {style: 'font-weight: bold; color: red'}, 'pic']]],
-               Views.notify (x),
-               Views [view] ? Views [view] (x) : undefined,
+         return [
+            ['style', [
+               ['html', {
+                  'font-size': 17,
+                  'font-family': 'Montserrat, sans-serif',
+               }],
+               ['h1', {
+                  'font-size':     H.fontSize (4),
+                  'margin-bottom': H.spacev (2),
+                  'margin-top':    H.spacev (1),
+               }],
+               ['h2', {
+                  'font-size':     H.fontSize (3),
+                  'margin-bottom': H.spacev (1),
+                  'margin-top':    H.spacev (0.5),
+               }],
+               ['.logo-container', {
+                  'margin-left': H.spaceh (2),
+               }],
+               ['.logo', {
+                  //'font-family': '\'Lucida Bright\', Georgia, serif',
+                  'font-family': '\'Kadwa\', serif',
+                  'font-weight': 'bold',
+               }],
+               ['.button', {
+                  'font-family': 'Montserrat, sans-serif',
+                  'background-color': H.css.blue,
+                  color: 'white',
+                  border: 'none',
+                  'font-weight': 'bold',
+                  'border-radius': 25,
+                  'padding-top': 13,
+                  'padding-bottom': 14,
+                  'padding-left': 25,
+                  'padding-right': 23
+               }],
+               ['.bold', {
+                  'font-weight': 'bold',
+               }],
+               ['input', {
+                  height: 41,
+                  'border-radius': 20,
+                  border: 0,
+                  'background-color': H.css.gray1,
+                  'padding-left': 16,
+                  'line-height': 0.7,
+                  'font-family': H.css.font,
+               }],
+               dale.do (['::-webkit-input-placeholder', '::-moz-placeholder', ':-ms-input-placeholder', ':-moz-placeholder'], function (v) {
+                  return [v, {
+                     'font-style': 'italic',
+                  }];
+               }),
+               ['input:focus, select:focus, textarea:focus, button:focus', {
+                  outline: 'none',
+               }],
             ]],
-            ['div', {class: 'pure-u-1-24'}],
-          ]];
+            ['h2', {class: 'logo-container'}, [
+                ['span', {class: 'logo'}, 'ac:'],
+                ['span', {class: 'logo', style: 'color: red'}, 'pic']
+            ]],
+            Views.canvas (x),
+            Views.notify (x),
+            H.if (Views [view], Views [view] (x)),
+         ];
       });
    }
 
@@ -199,7 +276,7 @@
    // *** AUTH ***
 
    Views.auth = function (x) {
-      return B.view (x, ['State', 'subview'], {listen: [
+      var routes = [
          ['submit', 'auth', function (x) {
             var subview = B.get ('State', 'subview');
             var credentials = {
@@ -224,6 +301,7 @@
                }
             }
             c.ajax ('post', 'auth/' + subview, {}, credentials, function (error, rs) {
+               x = H.from (x, {ev: 'ajax', method: 'post', path: 'auth/' + subview});
                if (error) {
                   if (error.responseText === '{"error":"token"}') return B.do (x, 'notify', 'yellow', 'The email you provided does not match the invitation you received. Please enter the email where you received the invitation.');
                   if (error.responseText === '{"error":"verify"}') return B.do (x, 'notify', 'yellow', 'Please verify your email address before logging in.');
@@ -248,7 +326,7 @@
                }
                else {
                   B.do (x, 'notify', 'green', 'You have successfully created your account! Please check your inbox.');
-                  return B.do ('set', ['State', 'subview'], 'login');
+                  return B.do (x, 'set', ['State', 'subview'], 'login');
                }
             });
          }],
@@ -258,6 +336,7 @@
             };
             if ((credentials.username || '').length < 3) return B.do (x, 'notify', 'red', 'Your username must be at least three characters.');
             c.ajax ('post', 'auth/recover', {}, credentials, function (error, rs) {
+               x = H.from (x, {ev: 'ajax', method: 'post', path: 'auth/recover'});
                if (error && error.status === 500) return B.do (x, 'notify', 'red', 'There was an unexpected error. Please contact us through email.');
                c ('#auth-username').value = '';
                B.do (x, 'set', ['State', 'subview'], 'login'),
@@ -275,6 +354,7 @@
             if (c ('#auth-confirm').value !== credentials.password) return B.do (x, 'notify', 'red', 'Please confirm that your password is entered correctly.');
 
             c.ajax ('post', 'auth/reset', {}, credentials, function (error, rs) {
+               x = H.from (x, {ev: 'ajax', method: 'post', path: 'auth/reset'});
                if (error) {
                   if (error.status === 500) return B.do (x, 'notify', 'red', 'There was an unexpected error. Please contact us through email.');
                   return B.do (x, 'notify', 'red', 'Invalid reset password link.');
@@ -286,39 +366,57 @@
                B.do (x, 'notify', 'green', 'Your password was changed successfully! Please login.');
             });
          }],
-      ], ondraw: function (x) {
+      ];
+
+      return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
          if (['login', 'signup', 'recover', 'reset'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
       }}, function (x, subview) {
+
          var fields = {
-            signup: ['Username', 'Email', 'Password', 'Confirm'],
-            login: ['Username', 'Password'],
+            signup:  ['Username', 'Email', 'Password', 'Confirm'],
+            login:   ['Username', 'Password'],
             recover: ['Username'],
-            reset: ['Password', 'Confirm'],
+            reset:   ['Password', 'Confirm'],
          } [subview];
+
          return [
             ['style', [
-               ['label', {width: 80, display: 'inline-block'}],
+               ['label', {display: 'inline-block'}],
                ['a.blue', {color: 'blue'}],
+               ['form', {
+                  width: H.spaceh (20),
+                  'margin-left': H.spaceh (5),
+               }],
+               ['fieldset', {
+                  width: H.spaceh (16),
+               }],
+               ['legend', {
+                  'font-size': H.fontSize (1.3),
+               }],
+               ['label', {
+                  width: H.spaceh (3),
+               }],
             ]],
-            ['form', {class: 'pure-form pure-form-aligned', onsubmit: 'event.preventDefault ()'}, [
+            ['form', {onsubmit: 'event.preventDefault ()'}, [
                ['fieldset', [
-                  ['legend', subview],
+                  ['legend', {class: 'bold'}, {login: 'Login', signup: 'Sign in', recover: 'Recover password', reset: 'Reset password'} [subview]],
                   ['br'],
                   dale.do (fields, function (V) {
                      var v = V.toLowerCase ();
-                     return ['div', {class: 'pure-control-group'}, [
-                        ['label', {for: 'auth-' + v}, V],
-                        ['input', {id:  'auth-' + v, type: (v === 'password' || v === 'confirm') ? 'password' : 'text', placeholder: v}]
+                     return ['div', [
+                        ['label', {class: 'bold', for: 'auth-' + v}, V],
+                        ['input', {id:  'auth-' + v, type: (v === 'password' || v === 'confirm') ? 'password' : 'text', placeholder: v}],
+                        ['br'], ['br'],
                      ]];
                   }),
-                  ['div', {class: 'pure-controls'}, [
-                     ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'submit', subview === 'login' || subview === 'signup' ? 'auth' : subview]), 'Submit'],
+                  ['div', [
+                     ['button', B.ev ({class: 'button'}, ['onclick', 'submit', subview === 'login' || subview === 'signup' ? 'auth' : subview]), 'Submit'],
                      ['br'], ['br'],
                      subview === 'login' ? [
-                        ['a', {class: 'blue', href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.'],
-                        ['br'],
-                        ['a', {class: 'blue', href: '#/auth/recover'}, 'Forgot your password?'],
-                     ] : ['a', {class: 'blue', href: '#/auth/login'},  'Already have an account? Log in.'],
+                        ['a', {class: 'bold blue', href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.'],
+                        ['br'], ['br'],
+                        ['a', {class: 'bold blue', href: '#/auth/recover'}, 'Forgot your password?'],
+                     ] : ['a', {class: 'bold blue', href: '#/auth/login'},  'Already have an account? Log in.'],
                   ]]
                ]]
             ]]
@@ -329,35 +427,35 @@
    // *** MAIN VIEW ***
 
    Views.main = function (x) {
-      return B.view (x, ['State', 'subview'], {listen: [
-         ['change', ['State', 'upload', 'queue'], function (x) {
-            var queue = B.get ('State', 'upload', 'queue');
-            var MAXSIMULT = 2, uploading = 0;
-            dale.do (queue, function (file) {
-               if (uploading === MAXSIMULT) return;
-               if (file.uploading) return uploading++;
-               file.uploading = true;
-               uploading++;
+      var evs = ['change', ['State', 'upload', 'queue'], function (x) {
+         var queue = B.get ('State', 'upload', 'queue');
+         var MAXSIMULT = 2, uploading = 0;
+         dale.do (queue, function (file) {
+            if (uploading === MAXSIMULT) return;
+            if (file.uploading) return uploading++;
+            file.uploading = true;
+            uploading++;
 
-               var f = new FormData ();
-               f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
-               f.append ('pic', file);
-               if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
-               H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
-                  dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
-                     if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
-                  });
-                  if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do ('set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
-                  if (error && error.status === 409 && error.responseText.match ('capacity')) {
-                     B.do (x, 'set', ['State', 'upload', 'queue'], []);
-                     return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
-                  }
-                  if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
-                  B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
+            var f = new FormData ();
+            f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
+            f.append ('pic', file);
+            if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
+            H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
+               dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
+                  if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
                });
+               if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do (x, 'set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
+               if (error && error.status === 409 && error.responseText.match ('capacity')) {
+                  B.do (x, 'set', ['State', 'upload', 'queue'], []);
+                  return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
+               }
+               if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
+               B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
             });
-         }],
-      ], ondraw: function (x) {
+         });
+      }];
+
+      return B.view (x, ['State', 'subview'], {listen: evs, ondraw: function (x) {
          if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          window.onbeforeunload = function () {
             var q = B.get ('State', 'upload', 'queue');
@@ -384,11 +482,8 @@
          };
       }}, function (x, subview) {
          return [
+            /*
             ['style', [
-               ['body', {
-                  'background-color': '#dddddd',
-                  'background-image': "url(\"data:image/svg+xml,%3Csvg width='24' height='20' viewBox='0 0 24 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 18c0-1.105.887-2 1.998-2 1.104 0 2-.895 2.002-1.994V14v6h-4v-2zM0 13.998C0 12.895.888 12 2 12c1.105 0 2 .888 2 2 0 1.105.888 2 2 2 1.105 0 2 .888 2 2v2H0v-6.002zm16 4.004A1.994 1.994 0 0 1 14 20c-1.105 0-2-.887-2-1.998v-4.004A1.994 1.994 0 0 0 10 12c-1.105 0-2-.888-2-2 0-1.105-.888-2-2-2-1.105 0-2-.887-2-1.998V1.998A1.994 1.994 0 0 0 2 0a2 2 0 0 0-2 2V0h8v2c0 1.105.888 2 2 2 1.105 0 2 .888 2 2 0 1.105.888 2 2 2 1.105 0 2-.888 2-2 0-1.105.888-2 2-2 1.105 0 2-.888 2-2V0h4v6.002A1.994 1.994 0 0 1 22 8c-1.105 0-2 .888-2 2 0 1.105-.888 2-2 2-1.105 0-2 .887-2 1.998v4.004z' fill='%23eeeeee' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E\")"
-               }],
                ['a.logout', {
                   'letter-spacing': 'normal',
                   position: 'absolute',
@@ -435,9 +530,36 @@
                   overflow: 'auto'
                }],
             ]],
+            */
             Views [subview] ? Views [subview] (x) : undefined,
          ]
       });
+   }
+
+   // *** BROWSE VIEW ***
+
+   Views.browse = function (x) {
+      return [
+         ['style', [
+            ['div.left', {
+               width: H.spaceh (8),
+               height: 1,
+            }],
+         ]],
+         ['div', {class: 'left'}, [
+            ['a', {href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, 'Logout'],
+            ['br'], ['br'],
+            ['br'], ['br'],
+            ['a', {class: 'buttonlink', href: '#/main/upload'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Upload pictures']],
+            ['br'],
+            ['br'],
+            Views.query (x),
+            Views.manage (x),
+         ]],
+         ['div', {style: 'width:' + H.spaceh (3)}],
+         ['div', {style: 'width:' + H.spaceh (24)}, Views.pics (x, ['Data', 'pics'])],
+         ['div', {style: 'width:' + H.spaceh (5)}, Views.pics (x, ['Data', 'pics'])],
+      ];
    }
 
    // *** MANAGE VIEW ***
@@ -745,31 +867,6 @@
       }),
    ]}
 
-   // *** BROWSE VIEW ***
-
-   Views.browse = function (x) {
-      return [
-         ['div', {class: 'pure-g'}, [
-            ['div', {class: 'pure-u-5-24'}, [
-               ['div', {style: 'position: fixed'}, [
-                  ['a', {href: '#', class: 'logout', onclick: 'H.logout ()'}, 'Logout'],
-                  ['br'], ['br'],
-                  ['br'], ['br'],
-                  ['a', {class: 'buttonlink', href: '#/main/upload'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Upload pictures']],
-                  ['br'],
-                  ['br'],
-                  Views.query (x),
-                  Views.manage (x),
-               ]]
-            ]],
-            ['div', {class: 'pure-u-1-24'}],
-            ['div', {class: 'pure-u-18-24'}, [
-               Views.pics (x, ['Data', 'pics'])
-            ]]
-         ]]
-      ];
-   }
-
    // *** UPLOAD VIEW ***
 
    Views.upload = function (x) {
@@ -821,7 +918,7 @@
                'margin-left': 0.45
             }]]
          ]],
-         ['a', {href: '#', class: 'logout', onclick: 'H.logout ()'}, 'Logout'],
+         ['a', {href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, 'Logout'],
          ['br'], ['br'], ['br'],
          ['a', {class: 'buttonlink', href: '#/main/browse'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Back to main view']],
          B.view (x, ['State', 'upload'], {listen: evs}, function (x, upload) {return [
@@ -897,11 +994,11 @@
          ['div.imgcont', {
             position: 'relative',
             display: 'inline-block',
-            'width, height': 210,
-            height: 130,
+            width: 180,
+            height: 135,
             'vertical-align': 'middle',
             'text-align': 'middle',
-            'border-radius': 4,
+            'border-radius': 12,
             'background-color': '#222222',
             'margin-right, margin-bottom': 3
          }],
@@ -1000,7 +1097,7 @@
          else                           H.fullScreen (x, true);
       }}, function (x, pic) {
          if (! pic) return;
-         return B.view (['State', 'screen'], function (x, screen) {
+         return B.view (x, ['State', 'screen'], function (x, screen) {
             if (! screen) return;
             return [
                ['style', [
@@ -1106,7 +1203,7 @@
                   ['i', B.ev ({class: 'icon ion-close'}, ['onclick', 'set', ['State', 'canvas'], undefined])],
                   ['i', B.ev ({class: 'icon ion-chevron-left'},  ['onclick', 'canvas', 'prev'])],
                   ['i', B.ev ({class: 'icon ion-chevron-right'}, ['onclick', 'canvas', 'next'])],
-                  B.view (['State', 'nextCanvas'], function (x, next) {
+                  B.view (x, ['State', 'nextCanvas'], function (x, next) {
                      if (next) return ['img', {style: 'width: 1px; height: 1px;', src: H.picPath (next, 900)}];
                   }),
                ]]

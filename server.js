@@ -306,7 +306,9 @@ var routes = [
             ['meta', {charset: 'utf-8'}],
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
             ['title', 'acpic'],
-            dale.do (['pure-min', 'ionicons.min'], function (v) {
+            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
+            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+            dale.do (['ionicons.min', 'normalize.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
             })
          ]],
@@ -329,6 +331,7 @@ var routes = [
             ['meta', {charset: 'utf-8'}],
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
             ['title', 'acpic admin'],
+            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             dale.do (['pure-min', 'ionicons.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
             })
