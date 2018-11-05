@@ -81,6 +81,7 @@
    H.css = {
       blue: '#4562FF',
       gray1: '#F2F2F2',
+      gray2: '#8B8B8B',
       font: 'Montserrat, sans-serif',
    }
 
@@ -185,7 +186,7 @@
                   'margin-top':    H.spacev (0.5),
                }],
                ['.logo-container', {
-                  'margin-left': H.spaceh (2),
+                  'margin-left': H.spaceh (0.5),
                }],
                ['.logo', {
                   //'font-family': '\'Lucida Bright\', Georgia, serif',
@@ -193,6 +194,7 @@
                   'font-weight': 'bold',
                }],
                ['.button', {
+                  cursor: 'pointer',
                   'font-family': 'Montserrat, sans-serif',
                   'background-color': H.css.blue,
                   color: 'white',
@@ -206,6 +208,9 @@
                }],
                ['.bold', {
                   'font-weight': 'bold',
+               }],
+               ['.float', {
+                  float: 'left',
                }],
                ['input', {
                   height: 41,
@@ -224,10 +229,18 @@
                ['input:focus, select:focus, textarea:focus, button:focus', {
                   outline: 'none',
                }],
+               ['a.logout i', {
+                  'font-size': '1.7rem',
+                  'font-weight': 'bold',
+                  color: H.css.blue,
+                  position: 'absolute',
+                  right: H.spaceh (2),
+               }],
             ]],
             ['h2', {class: 'logo-container'}, [
                 ['span', {class: 'logo'}, 'ac:'],
-                ['span', {class: 'logo', style: 'color: red'}, 'pic']
+                ['span', {class: 'logo', style: 'color: red'}, 'pic'],
+                ['a', {title: 'Log Out', href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, ['i', {class: 'icon ion-log-out'}]],
             ]],
             Views.canvas (x),
             Views.notify (x),
@@ -542,25 +555,146 @@
       return [
          ['style', [
             ['div.left', {
-               width: H.spaceh (8),
+               width: H.spaceh (7.5),
+               'padding-left': H.spaceh (0.5),
                height: 1,
             }],
+            ['div.center', {
+               width: H.spaceh (24),
+               'padding-left': H.spaceh (3),
+            }],
+            ['.button', {
+               'font-size': '0.9rem',
+               'padding-left, padding-right': 15,
+               height: 60,
+               'padding-bottom': 35,
+            }, [
+               ['i', {
+                  'margin-right': 15,
+                  color: 'white',
+                  'font-weight': 'bold',
+                  'font-size': '1.9rem',
+                  'vertical-align': 'baseline',
+               }],
+            ]],
          ]],
-         ['div', {class: 'left'}, [
-            ['a', {href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, 'Logout'],
-            ['br'], ['br'],
-            ['br'], ['br'],
-            ['a', {class: 'buttonlink', href: '#/main/upload'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Upload pictures']],
-            ['br'],
-            ['br'],
-            Views.query (x),
+         ['div', {class: 'left float'}, [
+            Views.query  (x),
             Views.manage (x),
          ]],
-         ['div', {style: 'width:' + H.spaceh (3)}],
-         ['div', {style: 'width:' + H.spaceh (24)}, Views.pics (x, ['Data', 'pics'])],
-         ['div', {style: 'width:' + H.spaceh (5)}, Views.pics (x, ['Data', 'pics'])],
+         ['div', {class: 'center float'}, Views.pics (x, ['Data', 'pics'])],
+         ['div', {class: 'float', style: 'width:' + H.spaceh (4)}, [
+            ['button', B.ev ({class: 'button'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
+         ]],
       ];
    }
+
+   // *** QUERY VIEW ***
+
+   Views.query = function (x) {return [
+      ['style', [
+         /*
+         ['input.autocomplete, ul.autocomplete', {
+            width: 0.6,
+            padding: 5
+         }],
+         ['ul.autocomplete', {
+            border: 'solid 1px #cccccc',
+            margin: 0,
+            padding: 5
+         }, [
+            ['li', {
+               'list-style-type': 'none',
+            }],
+            ['li:hover', {
+               color: 'white',
+               'background-color': 'blue'
+            }]
+         ]],
+         ['ul.search', {
+            'margin, padding': 0,
+         }, [
+            ['li', {
+               float: 'left',
+               padding: 6,
+               'margin-bottom': 3,
+               'list-style-type': 'none',
+               'margin-right': 5,
+               border: 'solid 1px #dddddd',
+               'border-radius': 5
+            }, [
+               ['span', {
+                  color: '#0073ea'
+               }],
+               ['i', {'font-size': '0.8em', 'margin-left': 3}]
+            ]]
+         ]],
+         */
+      ]],
+      B.view (x, ['State', 'query'], {ondraw: function (x) {
+         if (! B.get ('State', 'query')) {
+            B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
+         }
+         if (! B.get ('State', 'refreshQuery')) {
+            B.do (x, 'set', ['State', 'refreshQuery'], setInterval (function () {
+               var queue = B.get ('State', 'upload', 'queue');
+               if (queue && queue.length > 0) B.do ({from: {ev: 'refreshQuery'}}, 'retrieve', 'pics');
+            }, 1000));
+         }
+      }, listen: [
+         ['change', ['State', 'query'], function (x) {
+            B.do (x, 'retrieve', 'pics');
+         }],
+      ]}, function (x, query) {
+         return [
+            B.view (x, ['Data', 'pics'], function (x, pics) {
+               var selectedPics = dale.fil (B.get ('Data', 'pics'), undefined, function (p) {if (p.selected) return p}).length;
+               if (selectedPics > 0) return;
+               return ['div', [
+                  ['h5', {style: 'color: ' + H.css.gray2}, 'OVERVIEW'],
+                  ['div', {class: 'pure-u-5-5'}, [
+                     ['h3', 'Search pics'],
+                     ['p', [
+                        ! query || query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
+                        [' | '],
+                        query   && query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
+                        [' | '],
+                        query   && query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
+                     ]],
+                     ['ul', {class: 'search'}, [
+                        dale.do (query ? query.tags : [], function (tag, k) {
+                           return [
+                              ['li', [
+                                 ['span', tag],
+                                 ['i', B.ev ({class: 'ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
+                              ]],
+                           ];
+                        }),
+                     ]],
+                  ]],
+               ]];
+            }),
+            B.view (x, ['Data', 'tags'], function (x, tags) {
+               return B.view (x, ['State', 'autoquery'], {attrs: {class: 'pure-u-5-5'}}, function (x, autoquery) {
+                  var matches = dale.fil (dale.keys (tags).concat (B.get ('Data', 'years') || []), undefined, function (tag) {
+                     if (tag === 'all') return;
+                     if (tag.match (new RegExp (autoquery || '', 'i')) && (query ? query.tags : []).indexOf (tag) === -1) return tag;
+                  }).sort ();
+
+                  return [
+                     ['input', B.ev ({class: 'autocomplete', placeholder: 'search pics by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
+                     H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
+                        return ['li', B.ev ([
+                           ['onclick', 'add', ['State', 'query', 'tags'], match],
+                           ['onclick', 'rem', 'State', 'autoquery']
+                        ]), match];
+                     })]),
+                  ];
+               });
+            }),
+         ];
+      }),
+   ]}
 
    // *** MANAGE VIEW ***
 
@@ -762,110 +896,6 @@
          });
       });
    }
-
-   // *** QUERY VIEW ***
-
-   Views.query = function (x) {return [
-      ['style', [
-         ['input.autocomplete, ul.autocomplete', {
-            width: 0.6,
-            padding: 5
-         }],
-         ['ul.autocomplete', {
-            border: 'solid 1px #cccccc',
-            margin: 0,
-            padding: 5
-         }, [
-            ['li', {
-               'list-style-type': 'none',
-            }],
-            ['li:hover', {
-               color: 'white',
-               'background-color': 'blue'
-            }]
-         ]],
-         ['ul.search', {
-            'margin, padding': 0,
-         }, [
-            ['li', {
-               float: 'left',
-               padding: 6,
-               'margin-bottom': 3,
-               'list-style-type': 'none',
-               'margin-right': 5,
-               border: 'solid 1px #dddddd',
-               'border-radius': 5
-            }, [
-               ['span', {
-                  color: '#0073ea'
-               }],
-               ['i', {'font-size': '0.8em', 'margin-left': 3}]
-            ]]
-         ]],
-      ]],
-      B.view (x, ['State', 'query'], {ondraw: function (x) {
-         if (! B.get ('State', 'query')) {
-            B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-         }
-         if (! B.get ('State', 'refreshQuery')) {
-            B.do (x, 'set', ['State', 'refreshQuery'], setInterval (function () {
-               var queue = B.get ('State', 'upload', 'queue');
-               if (queue && queue.length > 0) B.do ({from: {ev: 'refreshQuery'}}, 'retrieve', 'pics');
-            }, 1000));
-         }
-      }, listen: [
-         ['change', ['State', 'query'], function (x) {
-            B.do (x, 'retrieve', 'pics');
-         }],
-      ]}, function (x, query) {
-         return [
-            B.view (x, ['Data', 'pics'], function (x, pics) {
-               var selectedPics = dale.fil (B.get ('Data', 'pics'), undefined, function (p) {if (p.selected) return p}).length;
-               if (selectedPics > 0) return;
-               return ['div', {class: 'pure-g'}, [
-                  ['div', {class: 'pure-u-5-5'}, [
-                     ['h3', 'Search pics'],
-                     ['p', [
-                        ! query || query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
-                        [' | '],
-                        query   && query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
-                        [' | '],
-                        query   && query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
-                     ]],
-                     ['ul', {class: 'search'}, [
-                        dale.do (query ? query.tags : [], function (tag, k) {
-                           return [
-                              ['li', [
-                                 ['span', tag],
-                                 ['i', B.ev ({class: 'ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
-                              ]],
-                           ];
-                        }),
-                     ]],
-                  ]],
-               ]];
-            }),
-            B.view (x, ['Data', 'tags'], function (x, tags) {
-               return B.view (x, ['State', 'autoquery'], {attrs: {class: 'pure-u-5-5'}}, function (x, autoquery) {
-                  var matches = dale.fil (dale.keys (tags).concat (B.get ('Data', 'years') || []), undefined, function (tag) {
-                     if (tag === 'all') return;
-                     if (tag.match (new RegExp (autoquery || '', 'i')) && (query ? query.tags : []).indexOf (tag) === -1) return tag;
-                  }).sort ();
-
-                  return [
-                     ['input', B.ev ({class: 'autocomplete', placeholder: 'search pics by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
-                     H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
-                        return ['li', B.ev ([
-                           ['onclick', 'add', ['State', 'query', 'tags'], match],
-                           ['onclick', 'rem', 'State', 'autoquery']
-                        ]), match];
-                     })]),
-                  ];
-               });
-            }),
-         ];
-      }),
-   ]}
 
    // *** UPLOAD VIEW ***
 

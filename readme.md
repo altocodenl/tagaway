@@ -151,7 +151,7 @@ All the routes below require an admin user to be logged in.
 `POST /admin/invites`
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
 
-## Notification service
+## Notification service for admins
 
 Push into a list, to the left. Most recent is leftmost. Within list, stringified JSONs.
 
@@ -173,8 +173,8 @@ Use cases:
 - Client
    - New interface!
    - Add window.onresize on canvas view.
-   - Self host font.
    - What to do if x.from is used multiple times (they should be independent).
+   - New font in email logo
 
 - Server
    - Logging service on server with email sending by priority tiers.
@@ -228,6 +228,7 @@ Use cases:
    - Order pictures within tag? Set priorities!
 
 - Other
+   - Self host font.
    - Favicon & icons.
    - Privacy with regard to backup & debug tools
       - Server access logs are deleted after 7 days.
