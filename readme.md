@@ -119,7 +119,7 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, years: [...]}`.
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
-      - `body.total` contains the total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
+      - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
       - `body.years` a list of years for which there's pictures matching the query. The years always refer to the picture date, not the upload date.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 

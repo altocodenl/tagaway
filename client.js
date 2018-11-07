@@ -26,7 +26,7 @@
       console.log.apply (console, toprint);
    });
 
-   B.verbose = true;
+   //B.verbose = true;
 
    // *** ERROR REPORTING ***
 
@@ -111,6 +111,7 @@
             H.logout (x);
             return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
          }
+         if (error) console.log (error.responseText);
          cb (error, rs);
       });
    }
@@ -186,7 +187,7 @@
                   'margin-top':    H.spacev (0.5),
                }],
                ['.logo-container', {
-                  'margin-left': H.spaceh (0.5),
+                  'margin-left': H.spaceh (1),
                }],
                ['.logo', {
                   //'font-family': '\'Lucida Bright\', Georgia, serif',
@@ -212,6 +213,15 @@
                ['.float', {
                   float: 'left',
                }],
+               ['p', {
+                  'font-size': H.fontSize (-1),
+               }],
+               ['.pointer', {
+                  cursor: 'pointer',
+               }],
+               ['i.inline', {
+                  'margin-right': 5,
+               }],
                ['input', {
                   height: 41,
                   'border-radius': 20,
@@ -220,6 +230,7 @@
                   'padding-left': 16,
                   'line-height': 0.7,
                   'font-family': H.css.font,
+                  'font-size': H.fontSize (-1),
                }],
                dale.do (['::-webkit-input-placeholder', '::-moz-placeholder', ':-ms-input-placeholder', ':-moz-placeholder'], function (v) {
                   return [v, {
@@ -230,7 +241,7 @@
                   outline: 'none',
                }],
                ['a.logout i', {
-                  'font-size': '1.7rem',
+                  'font-size': H.fontSize (1.4),
                   'font-weight': 'bold',
                   color: H.css.blue,
                   position: 'absolute',
@@ -278,7 +289,7 @@
                   padding: '0.5em',
                   opacity: notify ? 1 : 0,
                   'text-align': 'center',
-                  'font-size': '1.2em'
+                  'font-size': H.fontSize (1),
                }]
             ]],
             ['div', B.ev ({class: 'notify'}, ['onclick', 'rem', 'State', 'notify']), notify.message],
@@ -555,8 +566,8 @@
       return [
          ['style', [
             ['div.left', {
-               width: H.spaceh (7.5),
-               'padding-left': H.spaceh (0.5),
+               width: H.spaceh (7.0),
+               'padding-left': H.spaceh (1),
                height: 1,
             }],
             ['div.center', {
@@ -564,16 +575,14 @@
                'padding-left': H.spaceh (3),
             }],
             ['.button', {
-               'font-size': '0.9rem',
+               'font-size': H.fontSize (0),
                'padding-left, padding-right': 15,
-               height: 60,
-               'padding-bottom': 35,
             }, [
                ['i', {
-                  'margin-right': 15,
+                  'margin-right': 5,
                   color: 'white',
                   'font-weight': 'bold',
-                  'font-size': '1.9rem',
+                  'font-size': H.fontSize (1),
                   'vertical-align': 'baseline',
                }],
             ]],
@@ -593,84 +602,89 @@
 
    Views.query = function (x) {return [
       ['style', [
-         /*
-         ['input.autocomplete, ul.autocomplete', {
-            width: 0.6,
-            padding: 5
+         ['.blueside', {
+            'position': 'relative',
          }],
-         ['ul.autocomplete', {
-            border: 'solid 1px #cccccc',
-            margin: 0,
-            padding: 5
+         ['.blueside div.blueside', {
+            height: 1,
+            'position': 'absolute',
+            left: -15,
+            'border-left': 'solid 4px ' + H.css.blue,
+         }],
+         ['div.input-search', {
+            position: 'relative',
          }, [
-            ['li', {
-               'list-style-type': 'none',
+            ['i', {
+               position: 'absolute',
+               right: H.spaceh (1),
+               'font-size': H.fontSize (1.5),
+               top: 10,
             }],
-            ['li:hover', {
-               color: 'white',
-               'background-color': 'blue'
-            }]
          ]],
-         ['ul.search', {
-            'margin, padding': 0,
-         }, [
-            ['li', {
-               float: 'left',
-               padding: 6,
-               'margin-bottom': 3,
-               'list-style-type': 'none',
-               'margin-right': 5,
-               border: 'solid 1px #dddddd',
-               'border-radius': 5
-            }, [
-               ['span', {
-                  color: '#0073ea'
-               }],
-               ['i', {'font-size': '0.8em', 'margin-left': 3}]
-            ]]
-         ]],
-         */
       ]],
       B.view (x, ['State', 'query'], {ondraw: function (x) {
-         if (! B.get ('State', 'query')) {
-            B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-         }
+         if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
          if (! B.get ('State', 'refreshQuery')) {
             B.do (x, 'set', ['State', 'refreshQuery'], setInterval (function () {
                var queue = B.get ('State', 'upload', 'queue');
-               if (queue && queue.length > 0) B.do ({from: {ev: 'refreshQuery'}}, 'retrieve', 'pics');
+               if (queue && queue.length > 0) B.do (H.from (x, {from: {ev: 'refreshQuery'}}), 'retrieve', 'pics');
             }, 1000));
          }
       }, listen: [
          ['change', ['State', 'query'], function (x) {
+            var untaggedIndex = B.get ('State', 'query', 'tags').indexOf ('untagged');
+            if (untaggedIndex !== -1 && B.get ('State', 'query', 'tags').length > 1) return B.do (x, 'rem', ['State', 'query', 'tags'], untaggedIndex);
             B.do (x, 'retrieve', 'pics');
          }],
       ]}, function (x, query) {
+         if (! query) return;
          return [
             B.view (x, ['Data', 'pics'], function (x, pics) {
                var selectedPics = dale.fil (B.get ('Data', 'pics'), undefined, function (p) {if (p.selected) return p}).length;
                if (selectedPics > 0) return;
                return ['div', [
                   ['h5', {style: 'color: ' + H.css.gray2}, 'OVERVIEW'],
-                  ['div', {class: 'pure-u-5-5'}, [
-                     ['h3', 'Search pics'],
-                     ['p', [
-                        ! query || query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
-                        [' | '],
-                        query   && query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
-                        [' | '],
-                        query   && query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
-                     ]],
-                     ['ul', {class: 'search'}, [
-                        dale.do (query ? query.tags : [], function (tag, k) {
-                           return [
-                              ['li', [
-                                 ['span', tag],
-                                 ['i', B.ev ({class: 'ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
-                              ]],
-                           ];
-                        }),
-                     ]],
+                  B.view (x, ['Data', 'tags'], function (x, tags) {
+                     if (! tags) return;
+                     return [
+                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.length === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], []]), [
+                           H.if (query.tags.length === 0, ['div', {class: 'blueside'}]),
+                           ['i', {class: 'float inline icon ion-camera'}],
+                           ['All photos (', tags.all + ')']
+                        ]],
+                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.indexOf ('untagged') === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']]), [
+                           H.if (query.tags.indexOf ('untagged') === 0, ['div', {class: 'blueside'}]),
+                           ['i', {class: 'float inline icon ion-ios-pricetag-outline'}],
+                           ['Untagged (' + tags.untagged + ')']
+                        ]],
+                        query.tags.length > 0 && query.tags [0] !== 'untagged' ?
+                           ['h5', {class: 'blueside'}, [['div', {class: 'blueside'}], 'Filter']] :
+                           ['h5', 'Filter'],
+                        ['div', {class: 'input-search'}, [
+                           ['input', {placeholder: 'Filter by tag or year'}],
+                           ['i', {class: 'icon ion-ios-search'}],
+                        ]],
+                     ];
+                  }),
+                  /*
+                  ['p', [
+                     query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
+                     [' | '],
+                     query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
+                     [' | '],
+                     query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
+                  ]],
+                  */
+                  ['ul', {class: 'search'}, [
+                     dale.do (query.tags, function (tag, k) {
+                        if (tag === 'untagged') return;
+                        return [
+                           ['li', [
+                              ['span', tag],
+                              ['i', B.ev ({class: 'ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
+                           ]],
+                        ];
+                     }),
                   ]],
                ]];
             }),
@@ -684,10 +698,8 @@
                   return [
                      ['input', B.ev ({class: 'autocomplete', placeholder: 'search pics by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
                      H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
-                        return ['li', B.ev ([
-                           ['onclick', 'add', ['State', 'query', 'tags'], match],
-                           ['onclick', 'rem', 'State', 'autoquery']
-                        ]), match];
+                        if (match === 'untagged') return;
+                        return ['li', B.ev (['onclick', 'add', ['State', 'query', 'tags'], match]), match];
                      })]),
                   ];
                });
