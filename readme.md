@@ -172,6 +172,7 @@ Use cases:
 
 - Client
    - New interface!
+   - H.logout should be route.
    - Add window.onresize on canvas view.
    - What to do if x.from is used multiple times (they should be independent).
    - New font in email logo
@@ -315,7 +316,7 @@ Use cases:
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
-`Data.years`: `[...]`; comes from `body.years` from `POST /query`.
+`Data.years`: `[...]`; comes from `body.years` from `POST /query`, but with each of the years stringified.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
 
 ## Redis structure
