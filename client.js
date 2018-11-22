@@ -80,13 +80,20 @@
    var H = window.H = {};
 
    H.css = {
-      blue: '#4562FF',
+      blue:  '#4562FF',
       gray1: '#3A3A3A',
       gray2: '#484848',
       gray3: '#8B8B8B',
       gray4: '#DEDEDE',
       gray5: '#F2F2F2',
       gray6: '#FBFBFB',
+      tagc0: '#FECB5F',
+      tagc1: '#BE5764',
+      tagc2: '#5DE3C2',
+      tagc3: '#8B572A',
+      tagc4: '#6B6DF9',
+      tagc5: '#FA7E5C',
+      tagc6: '#4EDEF8',
       font: 'Montserrat, sans-serif',
    }
 
@@ -191,6 +198,12 @@
                   'margin-bottom': H.spacev (1),
                   'margin-top':    H.spacev (0.5),
                }],
+               ['h5', {
+                  'font-size': H.fontSize (-1.5),
+               }],
+               ['.gray3', {
+                  color: H.css.gray3,
+               }],
                ['.logo-container', {
                   'margin-left': H.spaceh (1),
                }],
@@ -198,6 +211,7 @@
                   //'font-family': '\'Lucida Bright\', Georgia, serif',
                   'font-family': '\'Kadwa\', serif',
                   'font-weight': 'bold',
+                  'font-size': H.fontSize (2),
                }],
                ['.button', {
                   cursor: 'pointer',
@@ -254,7 +268,7 @@
                }],
             ]],
             ['h2', {class: 'logo-container'}, [
-                ['span', {class: 'logo'}, 'ac:'],
+                ['span', {class: 'logo', style: 'color: ' + H.css.blue}, 'ac:'],
                 ['span', {class: 'logo', style: 'color: red'}, 'pic'],
                 ['a', {title: 'Log Out', href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, ['i', {class: 'icon ion-log-out'}]],
             ]],
@@ -572,8 +586,10 @@
          ['style', [
             ['div.left', {
                width: H.spaceh (7.0),
-               'padding-left': H.spaceh (1),
+               'padding-left': H.spaceh (0.35),
+               'margin-left':  H.spaceh (1),
                height: 1,
+               'background-color': H.css.gray6
             }],
             ['div.center', {
                width: H.spaceh (24),
@@ -634,8 +650,8 @@
                   ['.blueside div.blueside', {
                      height: 1,
                      'position': 'absolute',
-                     left: -15,
-                     'border-left': 'solid 4px ' + H.css.blue,
+                     left: H.spaceh (-0.35),
+                     'border-left': 'solid 3px ' + H.css.blue,
                   }],
                   ['div.input-search', {
                      position: 'relative',
@@ -668,23 +684,40 @@
                         right: 0,
                      }],
                   ]],
+                  ['.tag', {
+                     'width, height': 16,
+                     'margin-right': 12,
+                  }],
                   ['.taglabel', {
                      'margin-right': 15,
                      'font-size': H.fontSize (1.3),
                   }],
                ]],
-               ['h5', {style: 'color: ' + H.css.gray3}, 'OVERVIEW'],
-               B.view (x, ['Data', 'tags'], function (x, tags) {
+               ['h5', {class: 'gray3'}, 'OVERVIEW'],
+               B.view (x, ['Data', 'tags'], {ondraw: function () {
+                  dale.do (c ('object.tag'), function (el) {
+                     var color = H.css [el.getAttribute ('class').replace ('tag ', '')];
+                     var interval = setInterval (function () {
+                        var style = el.contentDocument.getElementsByTagName ('style') [0];
+                        if (! style) return;
+                        style.innerHTML = '.cls-1{fill:' + color + ';stroke:' + color + '}';
+                        clearInterval (interval);
+                     }, 10);
+                  });
+               }}, function (x, tags) {
                   if (! tags) return;
                   var tagmaker = function (tag, k, selected) {
                      var tagn = [tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
                      if (selected) return [['li', {class: 'selected'}, [
-                        ['i', {class: 'float taglabel icon ion-ios-pricetag-outline'}],
+                        ['i', {class: 'float taglabel icon ion-ios-pricetag-outline', style: 'background-color: lime'}],
                         tagn,
                         ['i', B.ev ({class: 'cancel icon ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
                      ]], ['br']];
                      return [['li', B.ev (['onclick', 'add', ['State', 'query', 'tags'], tag]), [
-                        ['i', {class: 'float taglabel icon ion-ios-pricetag-outline'}],
+                        //['i', {class: 'float taglabel icon ion-ios-pricetag-outline'}],
+                        ['object', {class: 'tag ' + ('tagc' + Math.floor (Math.random () * 7)), type: 'image/svg+xml', data: 'lib/icons/icon-tag.svg'}, [
+                           ['img', {src: 'lib/icons/icon-tag.svg'}],
+                        ]],
                         tagn,
                      ]], ['br']];
                   }
@@ -697,11 +730,12 @@
                      ['p', B.ev ({class: 'pointer ' + H.if (query.tags.indexOf ('untagged') === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']]), [
                         H.if (query.tags.indexOf ('untagged') === 0, ['div', {class: 'blueside'}]),
                         ['i', {class: 'float inline icon ion-ios-pricetag-outline'}],
-                        ['Untagged (' + tags.untagged + ')']
+                        ['Untagged (' + tags.untagged + ')'],
                      ]],
+                     ['div', {style: 'height: 2px'}],
                      query.tags.length > 0 && query.tags [0] !== 'untagged' ?
-                        ['h5', {class: 'blueside'}, [['div', {class: 'blueside'}], 'Filter']] :
-                        ['h5', 'FILTER'],
+                        ['h5', {class: 'gray3 blueside'}, [['div', {class: 'blueside'}], 'FILTER']] :
+                        ['h5', {class: 'gray3'}, 'FILTER'],
                      B.view (x, ['State', 'autoquery'], {attrs: {class: 'input-search'}}, function (x, autoquery) {
                         return [
                            ['input', B.ev ({placeholder: 'Filter by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
@@ -711,7 +745,7 @@
                      H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags'}, dale.do (query.tags, function (tag, k) {
                         return tagmaker (tag, k, true);
                      })]),
-                     ['h5', 'TAGS'],
+                     ['h5', {class: 'gray3'}, 'TAGS'],
                      H.if (tags.length === 0, ['p', 'No tags yet! Click the upload button to add pictures and tags.']),
                      B.view (x, ['State', 'autoquery'], function (x, autoquery) {
 
