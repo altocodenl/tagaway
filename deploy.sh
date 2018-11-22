@@ -21,9 +21,9 @@ fi
 
 rm *.log
 if [ "$2" == "fast" ] ; then
-   cd .. && tar --exclude="acpic/*.swp" --exclude="acpic/.git" --exclude="acpic/test" -czvf $TAR $FOLDER
+   cd .. && tar --exclude="$FOLDER/*.swp" --exclude="$FOLDER/.git" --exclude="$FOLDER/test" -czvf $TAR $FOLDER
 else
-   cd .. && tar --exclude="acpic/*.swp" -czvf $TAR $FOLDER
+   cd .. && tar --exclude="$FOLDER/*.swp" -czvf $TAR $FOLDER
 fi
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
