@@ -22,7 +22,7 @@ module.exports = {
    accesslog: 'access.log',
    errorlog:  'error.log',
    clientlog: 'client.log',
-   picfolder: process.argv [2] ? '/root/files' : '/home/hq/acpic/files',
+   picfolder: process.argv [2] ? '/root/files' : '/tmp',
    redisdb: 15,
    crypto: {
       algorithm: 'aes-256-gcm',
