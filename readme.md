@@ -173,6 +173,7 @@ Use cases:
 - Client
    - New interface!
    - H.logout should be route.
+   - Bug when removing year tags from selected
    - Add window.onresize on canvas view.
    - What to do if x.from is used multiple times (they should be independent).
    - New font in email logo

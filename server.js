@@ -297,6 +297,8 @@ var routes = [
 
    // *** STATIC ASSETS ***
 
+   ['get', 'lib/murmurhash.js', cicek.file, 'node_modules/murmurhash/murmurhash.js'],
+
    ['get', ['lib/*', 'client.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
@@ -313,7 +315,7 @@ var routes = [
             })
          ]],
          ['body', [
-            dale.do (['gotoB.min'], function (v) {
+            dale.do (['gotoB.min', 'murmurhash'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
             ['script', 'var COOKIENAME = \'' + CONFIG.cookiename + '\';'],

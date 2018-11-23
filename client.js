@@ -4,6 +4,7 @@
 
    var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
    var type = teishi.t, log = teishi.l;
+   var murmur = window.murmur;
 
    // *** LOGGING ***
 
@@ -95,6 +96,12 @@
       tagc5: '#FA7E5C',
       tagc6: '#4EDEF8',
       font: 'Montserrat, sans-serif',
+   }
+
+   H.icons = {
+      tag: function (color) {
+         return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21"><title>icon-tag</title><g><path fill="' + color + '" stroke="' + color + '" d="M15.75,9.9a1.51,1.51,0,0,0,.34-1.1l-.32-3.51a1.5,1.5,0,0,0-1.62-1.36l-3.51.29a1.5,1.5,0,0,0-1,.54L4.67,10.65a1.51,1.51,0,0,0,.18,2.12L8.68,16a1.51,1.51,0,0,0,2.12-.18Z"/></g></svg>';
+      }
    }
 
    H.if = function (cond, then, Else) {
@@ -636,6 +643,14 @@
             if (untaggedIndex !== -1 && B.get ('State', 'query', 'tags').length > 1) return B.do (x, 'rem', ['State', 'query', 'tags'], untaggedIndex);
             B.do (x, 'retrieve', 'pics');
          }],
+         // We update the tag svgs whenever a change fires on the page. We use priority -1000 so that we run this after the views are updated.
+         ['change', '*', {priority: -1000}, function () {
+            dale.do (c ('span.tag'), function (el) {
+               var i = parseInt (el.getAttribute ('class').replace ('opaque tag ', '').slice (-2));
+               var color = H.css ['tagc' + Math.floor (i / (100 / 7))];
+               el.innerHTML = H.icons.tag (color);
+            });
+         }],
       ]}, function (x, query) {
          if (! query) return;
          return B.view (x, ['Data', 'pics'], function (x, pics) {
@@ -687,37 +702,23 @@
                   ['.tag', {
                      'width, height': 16,
                      'margin-right': 12,
-                  }],
-                  ['.taglabel', {
-                     'margin-right': 15,
-                     'font-size': H.fontSize (1.3),
+                     display: 'block',
+                     float: 'left',
                   }],
                ]],
                ['h5', {class: 'gray3'}, 'OVERVIEW'],
                B.view (x, ['Data', 'tags'], {ondraw: function () {
-                  dale.do (c ('object.tag'), function (el) {
-                     var color = H.css [el.getAttribute ('class').replace ('tag ', '')];
-                     var interval = setInterval (function () {
-                        var style = el.contentDocument.getElementsByTagName ('style') [0];
-                        if (! style) return;
-                        style.innerHTML = '.cls-1{fill:' + color + ';stroke:' + color + '}';
-                        clearInterval (interval);
-                     }, 10);
-                  });
                }}, function (x, tags) {
                   if (! tags) return;
                   var tagmaker = function (tag, k, selected) {
-                     var tagn = [tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
+                     var tagn = ['', tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
                      if (selected) return [['li', {class: 'selected'}, [
-                        ['i', {class: 'float taglabel icon ion-ios-pricetag-outline', style: 'background-color: lime'}],
+                        ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
                         tagn,
                         ['i', B.ev ({class: 'cancel icon ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
                      ]], ['br']];
                      return [['li', B.ev (['onclick', 'add', ['State', 'query', 'tags'], tag]), [
-                        //['i', {class: 'float taglabel icon ion-ios-pricetag-outline'}],
-                        ['object', {class: 'tag ' + ('tagc' + Math.floor (Math.random () * 7)), type: 'image/svg+xml', data: 'lib/icons/icon-tag.svg'}, [
-                           ['img', {src: 'lib/icons/icon-tag.svg'}],
-                        ]],
+                        ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
                         tagn,
                      ]], ['br']];
                   }
@@ -750,6 +751,7 @@
                      B.view (x, ['State', 'autoquery'], function (x, autoquery) {
 
                         var matches = dale.fil (dale.keys (tags).concat (B.get ('Data', 'years')), undefined, function (tag) {
+                           if (tag === 'all' || tag === 'untagged') return;
                            if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
                         }).sort ();
 
@@ -1170,9 +1172,23 @@
          }
       }}, function (x, pics) {
          if (! pics || pics.length === 0) return;
+         // dale.do (pics,
+         // first row starts all with top 0, left as previous end + 24. Know when to end the row because of lack of space (width, without 24)
+         // next row, throughout its width check previous row pictures bottom offset (the max one). Add 25, that's your top offset. For right it is simply 25 + the previous in the row, or nothing if first in row.
          return ['section', {class: 'piclist'}, dale.do (pics, function (pic, k) {
             var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
             date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
+            return [
+               ['style', [
+                  ['img.pic', {
+                     float: 'left',
+                     'margin-right, margin-bottom': 24,
+                     'border-radius': 12,
+                     'max-width, max-height': 200,
+                  }],
+               ]],
+               ['img', {class: 'pic', src: H.picPath (pic)}],
+            ];
             return ['div', B.ev ({class: 'imgcont'}, ['onclick', 'click', 'pic', pic, k]), [
                ['img', {class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}],
                ['div', {class: 'imgtext'}, [
