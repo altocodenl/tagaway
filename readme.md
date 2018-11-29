@@ -174,6 +174,8 @@ Use cases:
    - New interface!
    - H.logout should be route.
    - Bug when removing year tags from selected
+   - B.ev path false, then 'button', false, 'submit'
+   - onwhatever to recalc events!
    - Add window.onresize on canvas view.
    - What to do if x.from is used multiple times (they should be independent).
    - New font in email logo

@@ -9,11 +9,11 @@
       "lith":   "4.5.3",
       "redis":  "2.8.0",
       "teishi": "3.13.2",
-      "aws-sdk":      "2.141.0",
+      "aws-sdk":      "2.364.0",
       "murmurhash":   "0.0.2",
-      "nodemailer":   "4.4.0",
+      "nodemailer":   "4.7.0",
       "nodemailer-ses-transport": "1.5.1",
-      "uuid":         "3.2.1"
+      "uuid":         "3.3.2"
    },
    "main": "server.js",
    "author": "Federico Pereiro <fpereiro@gmail.com>",

@@ -74,6 +74,10 @@
    c.ready (function () {
       B.do ({from: {ev: 'ready'}}, 'change', 'hash');
       B.mount ('body', Views.base ({from: {ev: 'ready'}}));
+      document.onscroll = function (e) {
+         // XXX x.from not working
+         B.do ('document', 'scroll', e);
+      }
    });
 
    // *** HELPERS ***
@@ -100,12 +104,16 @@
 
    H.icons = {
       tag: function (color) {
-         return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21"><title>icon-tag</title><g><path fill="' + color + '" stroke="' + color + '" d="M15.75,9.9a1.51,1.51,0,0,0,.34-1.1l-.32-3.51a1.5,1.5,0,0,0-1.62-1.36l-3.51.29a1.5,1.5,0,0,0-1,.54L4.67,10.65a1.51,1.51,0,0,0,.18,2.12L8.68,16a1.51,1.51,0,0,0,2.12-.18Z"/></g></svg>';
+         return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21"><g><path fill="' + color + '" stroke="' + color + '" d="M15.75,9.9a1.51,1.51,0,0,0,.34-1.1l-.32-3.51a1.5,1.5,0,0,0-1.62-1.36l-3.51.29a1.5,1.5,0,0,0-1,.54L4.67,10.65a1.51,1.51,0,0,0,.18,2.12L8.68,16a1.51,1.51,0,0,0,2.12-.18Z"/></g></svg>';
       }
    }
 
    H.if = function (cond, then, Else) {
       return cond ? then : Else;
+   }
+
+   H.last = function (a, pos) {
+      return a [a.length - (pos || 1)];
    }
 
    H.from = function (x, o) {
@@ -600,7 +608,7 @@
             }],
             ['div.center', {
                width: H.spaceh (24),
-               'padding-left': H.spaceh (3),
+               'padding-left': H.spaceh (1),
             }],
             ['.button', {
                'font-size': H.fontSize (0),
@@ -1152,8 +1160,8 @@
             B.do (x, 'change', ['Data', 'pics']);
             B.do (x, 'set', ['State', 'lastclick'], {id: pic.id, time: Date.now ()});
          }],
-      ], ondraw: function (x) {
-         document.onscroll = function (e) {
+         ['document', 'scroll', function (x, e) {
+            // XXX fix after change in pic display
             var prev = B.get ('State', 'lastscroll');
             if (prev && (Date.now () - prev.time < 100)) return;
             B.do ({from: {ev: 'scroll'}}, 'set', ['State', 'lastscroll'], {time: Date.now (), y: window.scrollY});
@@ -1169,26 +1177,100 @@
 
             if (lasty < lasti) return;
             B.do ({from: {ev: 'scroll'}}, 'retrieve', 'pics');
-         }
-      }}, function (x, pics) {
+         }],
+      ], attrs: {class: 'piclist'}}, function (x, pics) {
          if (! pics || pics.length === 0) return;
-         // dale.do (pics,
          // first row starts all with top 0, left as previous end + 24. Know when to end the row because of lack of space (width, without 24)
          // next row, throughout its width check previous row pictures bottom offset (the max one). Add 25, that's your top offset. For right it is simply 25 + the previous in the row, or nothing if first in row.
-         return ['section', {class: 'piclist'}, dale.do (pics, function (pic, k) {
-            var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
-            date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
-            return [
-               ['style', [
-                  ['img.pic', {
-                     float: 'left',
-                     'margin-right, margin-bottom': 24,
-                     'border-radius': 12,
-                     'max-width, max-height': 200,
-                  }],
-               ]],
-               ['img', {class: 'pic', src: H.picPath (pic)}],
-            ];
+         var positions = [[]], width = c ('.piclist') [0].getBoundingClientRect ().width;
+         return [
+            ['style', [
+               ['div.piclist', {
+                  width: 1,
+                  position: 'relative',
+                  display: 'inline-block',
+               }],
+               ['img.pic', {
+                  float: 'left',
+                  //'margin-right, margin-bottom': 24,
+                  'border-radius': 12,
+                  'max-width, max-height': 185,
+                  position: 'absolute',
+               }],
+            ]],
+            dale.do (pics, function (pic, k) {
+               var output = [], date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
+               date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
+               var ratio = pic.dimw / pic.dimh, picw, pich;
+               if (ratio >= 1) {
+                  picw = Math.round (Math.min (185, pic.dimw));
+                  pich = Math.round (pic.dimh * picw / pic.dimw);
+               }
+               else {
+                  pich = Math.round (Math.min (185, pic.dimh));
+                  picw = Math.round (pic.dimw * pich / pic.dimh);
+               }
+               // calculate x to see how many
+               // get max span of row
+               // avoid more than a 1/3 overlap. If it goes to more than that, increase the offset of the kraini.
+
+               var pushrow = function () {
+                  if (positions.length > 1) {
+                     var maxyprev = Math.max.apply (null, dale.do (H.last (positions, 2), function (p) {return p [1]}));
+                     var recalculate = function () {
+                        var miny = Infinity, maxy = 0;
+                        dale.do (H.last (positions), function (p) {
+                           if ((p [1] - p [3]) < miny) miny = p [1] - p [3];
+                           if (p [1] > maxy) maxy = p [1];
+                        });
+                        console.log ('maxyprev', maxyprev, 'miny', miny, 'maxy', maxy);
+                        if (maxyprev > miny + (maxy - miny) * 0.16) {
+                           var adjustment = maxyprev - (miny + (maxy - miny) * 0.16);
+                           console.log ('adjustment', adjustment);
+                           dale.do (H.last (positions), function (p) {
+                              if ((p [1] - p [3]) === miny) p [1] += adjustment;
+                           });
+                           recalculate ();
+                        }
+                     }
+                     recalculate ();
+                  }
+
+                  console.log ('row', H.last (positions));
+
+                  return dale.do (H.last (positions), function (p) {
+                     return ['img', {class: 'pic ' + (p [4].selected ? ' selected' : ''), src: H.picPath (p [4]), style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'}];
+                  });
+               }
+
+               // If first item on row, start at the left.
+               if (! H.last (positions).length) x = 0;
+               // If there's enough room, put it on the same row, leaving 24px to its left.
+               else if (width >= H.last (H.last (positions)) [0] + picw + 24) x = H.last (H.last (positions)) [0];
+               else {
+                  // Adjust so 50% or less of a row overlaps with the previous row. This is done to keep visual separation between rows.
+                  // need a new row
+                  output = pushrow ();
+                  positions.push ([]);
+                  x = 0;
+               }
+
+               var y = (function () {
+                  if (positions.length === 1) return 0;
+                  var upstairs = dale.fil (H.last (positions, 2), undefined, function (lastrowpic) {
+                     if (x > lastrowpic [0] || (x + picw) < (lastrowpic [0] - lastrowpic [2])) return;
+                     return lastrowpic [1];
+                  });
+                  return Math.max.apply (null, upstairs);
+               }) ();
+
+               H.last (positions).push ([x + picw + 24, y + pich + 24, picw, pich, pic]);
+
+               if (! output && k === pics.length - 1) output = pushrow ();
+               return output;
+            }),
+         ];
+         /*
             return ['div', B.ev ({class: 'imgcont'}, ['onclick', 'click', 'pic', pic, k]), [
                ['img', {class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}],
                ['div', {class: 'imgtext'}, [
@@ -1197,8 +1279,8 @@
                ]],
                (k + 1) % 3 === 0 ? ['p', {style: 'clear: both; margin: 0px;'}] : []
             ]];
-         })];
-      })
+            */
+      }),
    ]}
 
    // *** CANVAS VIEW ***
@@ -1210,7 +1292,7 @@
             var index = dale.stopNot (pics, undefined, function (pic, k) {
                if (pic.id === B.get ('State', 'canvas', 'id')) return k;
             });
-            if (action === 'prev' && index === 0) return B.do (x, 'set', ['State', 'canvas'], pics [pics.length - 1]);
+            if (action === 'prev' && index === 0) return B.do (x, 'set', ['State', 'canvas'], H.last (pics));
             if (action === 'next' && index >= pics.length - 3) B.do (x, 'retrieve', 'pics');
             B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', index + (action === 'prev' ? -1 : 1)));
             if (action === 'next') B.do (x, 'set', ['State', 'nextCanvas'], B.get ('Data', 'pics', index + 2));
