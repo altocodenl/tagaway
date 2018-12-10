@@ -172,12 +172,10 @@ Use cases:
 
 - Client
    - New interface!
-   - H.logout should be route.
-   - Bug when removing year tags from selected
-   - B.ev path false, then 'button', false, 'submit'
-   - onwhatever to recalc events!
+   - Bug when removing year 2010 tag from selected (recycling?)
+   - Fix overlaps & -Infinity y on picture display.
    - Add window.onresize on canvas view.
-   - What to do if x.from is used multiple times (they should be independent).
+   - What to do if x.from is used multiple times on the same handler (they should be independent).
    - New font in email logo
 
 - Server

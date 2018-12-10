@@ -69,6 +69,18 @@
       B.do ({from: {ev: 'hashchange'}}, 'change', 'hash')
    });
 
+   // *** LOGOUT ***
+
+   B.listen ('logout', '*', function (x) {
+      c.ajax ('get', 'auth/logout');
+      B.eventlog = [];
+      B.do (x, 'set', 'State', {});
+      B.do (x, 'set', 'Data',  {});
+      window.State = B.get ('State'), window.Data = B.get ('Data');
+      c.cookie (false);
+      B.do (x, 'set', ['State', 'view'], 'auth');
+   });
+
    // *** INITIALIZATION ***
 
    c.ready (function () {
@@ -121,21 +133,11 @@
       return x;
    }
 
-   H.logout = function (x) {
-      c.ajax ('get', 'auth/logout');
-      B.eventlog = [];
-      B.do (x, 'set', 'State', {});
-      B.do (x, 'set', 'Data',  {});
-      window.State = B.get ('State'), window.Data = B.get ('Data');
-      c.cookie (false);
-      B.do (x, 'set', ['State', 'view'], 'auth');
-   }
-
    H.authajax = function (x, m, p, h, b, cb) {
       x = H.from (x, {ev: 'authajax', method: m, path: p, headers: h, body: b});
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
-            H.logout (x);
+            B.do (x, 'logout', '*');
             return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
          }
          if (error) console.log (error.responseText);
@@ -285,7 +287,7 @@
             ['h2', {class: 'logo-container'}, [
                 ['span', {class: 'logo', style: 'color: ' + H.css.blue}, 'ac:'],
                 ['span', {class: 'logo', style: 'color: red'}, 'pic'],
-                ['a', {title: 'Log Out', href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, ['i', {class: 'icon ion-log-out'}]],
+                ['a', B.ev ({title: 'Log Out', href: '#', class: 'logout'}, ['onclick', 'logout', '*']), ['i', {class: 'icon ion-log-out'}]],
             ]],
             Views.canvas (x),
             Views.notify (x),
@@ -468,7 +470,7 @@
                      ]];
                   }),
                   ['div', [
-                     ['button', B.ev ({class: 'button'}, ['onclick', 'submit', subview === 'login' || subview === 'signup' ? 'auth' : subview]), 'Submit'],
+                     ['button', B.ev ({class: 'button'}, ['onclick', 'submit', (subview === 'login' || subview === 'signup') ? 'auth' : subview || 'auth']), 'Submit'],
                      ['br'], ['br'],
                      subview === 'login' ? [
                         ['a', {class: 'bold blue', href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.'],
@@ -513,6 +515,8 @@
          });
       }];
 
+
+
       return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
          if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          window.onbeforeunload = function () {
@@ -526,6 +530,7 @@
                }
             });
          });
+
          document.onkeydown = function (e) {
             e = e || window.event;
             if (e.keyCode === 16) B.do (H.from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
@@ -539,58 +544,7 @@
             if (e.keyCode === 17) B.do (H.from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
          };
       }}, function (x, subview) {
-         return [
-            /*
-            ['style', [
-               ['a.logout', {
-                  'letter-spacing': 'normal',
-                  position: 'absolute',
-                  'left, top': 0.05,
-                  'font-weight': 'bold',
-                  'text-decoration': 'none'
-               }],
-               ['span.action', {
-                  color: 'blue',
-                  'text-decoration': 'underlined',
-                  cursor: 'pointer'
-               }],
-               ['.icon', {
-                  position: 'absolute',
-                  cursor: 'pointer',
-               }],
-               ['.thumb', {
-                  float: 'left',
-                  position: 'relative',
-                  'width, height': 210,
-                  padding: 2,
-                  border: 'solid 1px #dddddd',
-                  'border-right': 0
-               }, [
-                  ['img', {
-                     position: 'absolute',
-                     margin: 'auto',
-                     'top, left, right, bottom': 0
-                  }],
-                  ['.icon', {
-                     'right, top': 2,
-                     'font-size': '1.5em',
-                     display: 'none',
-                     color: '#ff8080',
-                  }]
-               ]],
-               ['.thumb:hover .icon', {display: 'block'}],
-               ['a.buttonlink', {
-                  color: 'white',
-                  'text-decoration': 'none'
-               }],
-               ['topspace', {
-                  'min-height': 0.14,
-                  overflow: 'auto'
-               }],
-            ]],
-            */
-            Views [subview] ? Views [subview] (x) : undefined,
-         ]
+         return Views [subview] ? Views [subview] (x) : undefined;
       });
    }
 
@@ -607,7 +561,7 @@
                'background-color': H.css.gray6
             }],
             ['div.center', {
-               width: H.spaceh (24),
+               width: H.spaceh (25),
                'padding-left': H.spaceh (1),
             }],
             ['.button', {
@@ -628,7 +582,7 @@
             Views.manage (x),
          ]],
          ['div', {class: 'center float'}, Views.pics (x, ['Data', 'pics'])],
-         ['div', {class: 'float', style: 'width:' + H.spaceh (4)}, [
+         ['div', {class: 'float', style: 'width:' + H.spaceh (3.5)}, [
             ['button', B.ev ({class: 'button'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
          ]],
       ];
@@ -1161,7 +1115,6 @@
             B.do (x, 'set', ['State', 'lastclick'], {id: pic.id, time: Date.now ()});
          }],
          ['document', 'scroll', function (x, e) {
-            // XXX fix after change in pic display
             var prev = B.get ('State', 'lastscroll');
             if (prev && (Date.now () - prev.time < 100)) return;
             B.do ({from: {ev: 'scroll'}}, 'set', ['State', 'lastscroll'], {time: Date.now (), y: window.scrollY});
@@ -1171,7 +1124,7 @@
             if (! pics) return;
 
             lasty = window.innerHeight;
-            lasti = c ('img') [B.get ('Data', 'pics').length - 1];
+            lasti = c ('img.pic') [B.get ('Data', 'pics').length - 1];
             if (! lasti) return;
             lasti = lasti.getBoundingClientRect ().top;
 
@@ -1183,6 +1136,7 @@
          // first row starts all with top 0, left as previous end + 24. Know when to end the row because of lack of space (width, without 24)
          // next row, throughout its width check previous row pictures bottom offset (the max one). Add 25, that's your top offset. For right it is simply 25 + the previous in the row, or nothing if first in row.
          var positions = [[]], width = c ('.piclist') [0].getBoundingClientRect ().width;
+
          return [
             ['style', [
                ['div.piclist', {
@@ -1198,9 +1152,13 @@
                   position: 'absolute',
                }],
             ]],
+
             dale.do (pics, function (pic, k) {
-               var output = [], date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
+
+               var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
+
                date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
+
                var ratio = pic.dimw / pic.dimh, picw, pich;
                if (ratio >= 1) {
                   picw = Math.round (Math.min (185, pic.dimw));
@@ -1210,25 +1168,25 @@
                   pich = Math.round (Math.min (185, pic.dimh));
                   picw = Math.round (pic.dimw * pich / pic.dimh);
                }
-               // calculate x to see how many
-               // get max span of row
-               // avoid more than a 1/3 overlap. If it goes to more than that, increase the offset of the kraini.
 
                var pushrow = function () {
+
+                  // If this is not the first row:
                   if (positions.length > 1) {
                      var maxyprev = Math.max.apply (null, dale.do (H.last (positions, 2), function (p) {return p [1]}));
                      var recalculate = function () {
                         var miny = Infinity, maxy = 0;
+                        // Each of positions contains one array per picture in the row
+                        // Each of these arrays is of the form [maxx, maxy, picw, pich, pic], where max? is the maximum horizontal/vertical extent of the picture (including the 24 px margin)
                         dale.do (H.last (positions), function (p) {
-                           if ((p [1] - p [3]) < miny) miny = p [1] - p [3];
+                           // If the beginning of the
+                           if ((p [1] - p [3] - 24) < miny) miny = p [1] - p [3] - 24;
                            if (p [1] > maxy) maxy = p [1];
                         });
-                        console.log ('maxyprev', maxyprev, 'miny', miny, 'maxy', maxy);
-                        if (maxyprev > miny + (maxy - miny) * 0.16) {
-                           var adjustment = maxyprev - (miny + (maxy - miny) * 0.16);
-                           console.log ('adjustment', adjustment);
+                        if (maxyprev > miny + (maxy - miny) * 0.25) {
+                           var adjustment = Math.round (maxyprev - (miny + (maxy - miny) * 0.16)) + 1;
                            dale.do (H.last (positions), function (p) {
-                              if ((p [1] - p [3]) === miny) p [1] += adjustment;
+                              if ((p [1] - p [3] - 24) === miny) p [1] += adjustment;
                            });
                            recalculate ();
                         }
@@ -1236,11 +1194,6 @@
                      recalculate ();
                   }
 
-                  console.log ('row', H.last (positions));
-
-                  return dale.do (H.last (positions), function (p) {
-                     return ['img', {class: 'pic ' + (p [4].selected ? ' selected' : ''), src: H.picPath (p [4]), style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'}];
-                  });
                }
 
                // If first item on row, start at the left.
@@ -1250,7 +1203,7 @@
                else {
                   // Adjust so 50% or less of a row overlaps with the previous row. This is done to keep visual separation between rows.
                   // need a new row
-                  output = pushrow ();
+                  pushrow ();
                   positions.push ([]);
                   x = 0;
                }
@@ -1266,9 +1219,15 @@
 
                H.last (positions).push ([x + picw + 24, y + pich + 24, picw, pich, pic]);
 
-               if (! output && k === pics.length - 1) output = pushrow ();
-               return output;
+               if (k === pics.length - 1) pushrow ();
             }),
+            (function () {
+               return dale.do (positions, function (v) {
+                  return dale.do (v, function (p) {
+                     return ['img', {class: 'pic ' + (p [4].selected ? ' selected' : ''), src: H.picPath (p [4]), style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'}];
+                  });
+               });
+            }) (),
          ];
          /*
             return ['div', B.ev ({class: 'imgcont'}, ['onclick', 'click', 'pic', pic, k]), [
