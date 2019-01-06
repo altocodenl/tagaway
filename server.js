@@ -122,6 +122,10 @@ var k      = function (s) {
 
 var H = {};
 
+H.isYear = function (tag) {
+   return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
+}
+
 H.mkdirif = function (s, path) {
    a.stop (s, [k, 'test', '-d', path], {catch: function (s) {
       return [k, 'mkdir', path];
@@ -266,6 +270,73 @@ H.stat = function (name, pf) {
    else redis.incr  ('sti:' + name + ':' + t, function (error) {if (error) console.log ('H.stat error', error)});
 }
 
+H.deletePic = function (id, username, cb) {
+
+   a.stop ([
+      [function (s) {
+         var multi = redis.multi ();
+         multi.hgetall ('pic:'  + id);
+         multi.smembers ('pict:' + id);
+         multi.exec (function (error, data) {
+            if (error) return cb (error);
+            s.last = data;
+            s.do ();
+         });
+      }],
+      function (s) {
+         s.pic = s.last [0];
+         s.tags = s.last [1];
+         if (! s.pic || username !== s.pic.owner) return cb ('nf');
+
+         var toDelete = [s.pic.id], toDeleteSizes = [s.pic.by];
+         if (s.pic.t200) {
+            toDelete.push (s.pic.t200);
+            toDeleteSizes.push (s.pic.by900);
+         }
+         if (s.pic.t900) {
+            toDelete.push (s.pic.t900);
+            toDeleteSizes.push (s.pic.by900);
+         }
+
+         H.s3del (username, toDelete, toDeleteSizes, function (error) {
+            if (error) return s.do (null, error);
+            a.fork (s, toDelete, function (v) {
+               return [a.make (fs.unlink), Path.join (CONFIG.picfolder, hashs (username), v)];
+            });
+         });
+      },
+      function (s) {
+         var multi = redis.multi ();
+
+         multi.del  ('pic:'  + s.pic.id);
+         multi.del  ('pict:' + s.pic.id);
+         if (s.pic.t200) multi.del ('thu:' + s.pic.t200);
+         if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
+         multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
+         multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
+
+         if (dale.acc (s.tags, 0, function (a, b) {
+            return a + (H.isYear (b) ? 0 : 1);
+         }) === 0) multi.hincrby ('tags:' + s.pic.owner, 'untagged', -1);
+
+         s.tags = s.tags.concat (['all', 'untagged']);
+
+         dale.do (s.tags, function (tag) {
+            if (tag !== 'untagged') multi.hincrby ('tags:' + s.pic.owner, tag, -1);
+            multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
+         });
+
+         multi.exec (function (error) {
+            if (error) return s.do (null, error);
+            H.log (username, {a: 'del', id: s.pic.id});
+            cb ();
+         });
+      },
+   ], {catch: function (s) {
+      cb (s.catch);
+   }});
+}
+
 if (cicek.isMaster) setInterval (function () {
    redis.smembers ('stp', function (error, pfs) {
       if (error) return console.log ('Stat pfcount -> counter error', error);
@@ -288,7 +359,7 @@ if (cicek.isMaster) setInterval (function () {
          });
       });
    });
-}, 2 * 1000);
+}, 20 * 1000);
 
 
 // *** ROUTES ***
@@ -420,7 +491,7 @@ var routes = [
             }),
          ]},
          function () {return [
-            ['body.username', b.username, /^[^@]+$/, teishi.test.match],
+            ['body.username', b.username, /^[^@:]+$/, teishi.test.match],
             ['body.email',    b.email,    /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
             ['body.username length', b.username.length, {min: 3}, teishi.test.range],
             ['body.password length', b.password.length, {min: 6}, teishi.test.range],
@@ -617,20 +688,37 @@ var routes = [
 
       if (ENV) return reply (rs, 501);
 
-      giz.destroy (rq.user.username, function (error) {
+      redis.get ('tag:' + rq.user.username + ':all', function (error, pics) {
          if (error) return reply (rs, 500, {error: error});
-         var multi = redis.multi ();
-         multi.hdel ('emails',  rq.user.email);
-         multi.hdel ('invites', rq.user.email);
-         multi.del ('tags:' + rq.user.username);
-         multi.del ('ulog:' + rq.user.username);
-         multi.del ('shm:'  + rq.user.username);
-         multi.del ('sho:'  + rq.user.username);
-         multi.exec (function (error) {
+         redis.get ('tags:' + rq.user.username + ':', function (error, tags) {
             if (error) return reply (rs, 500, {error: error});
-            giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
-               H.log (rq.user.username, {a: 'des'});
-               reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
+
+            giz.destroy (rq.user.username, function (error) {
+               if (error) return reply (rs, 500, {error: error});
+               var multi = redis.multi ();
+               multi.hdel ('emails',  rq.user.email);
+               multi.hdel ('invites', rq.user.email);
+               dale.do (pics, function (pic) {
+                  H.deletePic (pic, rq.user.username, function (error) {
+                     // XXX Report error.
+                  });
+               });
+               dale.do (tags, function (tag) {
+                  multi.del ('tag:' + rq.user.username + ':' + tag);
+               });
+               multi.del ('upic:'  + rq.user.username);
+               multi.del ('upicd:' + rq.user.username);
+               multi.del ('shm:'   + rq.user.username);
+               multi.del ('sho:'   + rq.user.username);
+               multi.del ('tags:'  + rq.user.username);
+               multi.del ('ulog:'  + rq.user.username);
+               multi.exec (function (error) {
+                  if (error) return reply (rs, 500, {error: error});
+                  giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
+                     H.log (rq.user.username, {a: 'des'});
+                     reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
+                  });
+               });
             });
          });
       });
@@ -709,7 +797,7 @@ var routes = [
          if (type (tag) !== 'string') return error = teishi.s (tag);
          tag = tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
          if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
-         if (tag.match (/^\d{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100) error = tag;
+         if (H.isYear (tag)) error = tag;
          return tag;
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
@@ -725,7 +813,7 @@ var routes = [
          pic.id     = uuid ();
          pic.owner  = rq.user.username;
          pic.name   = path.slice (path.indexOf ('_') + 1);
-         pic.dateup = new Date ().getTime ();
+         pic.dateup = Date.now ();
 
          var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
 
@@ -809,6 +897,12 @@ var routes = [
                      multi.sadd ('upic:'  + rq.user.username, pic.hash);
                      multi.srem ('upicd:' + rq.user.username, pic.hash);
                      multi.sadd ('tag:'  + rq.user.username  + ':all', pic.id);
+
+                     var picyear = new Date (pic.date).getUTCFullYear ();
+                     multi.sadd ('pict:' + pic.id, picyear);
+                     multi.hincrby ('tags:' + rq.user.username, picyear, 1);
+                     multi.sadd ('tag:' + rq.user.username + ':' + picyear, pic.id);
+
                      if (tags.length > 0) dale.do (tags, function (tag) {
                         multi.sadd    ('pict:' + pic.id, tag);
                         multi.hincrby ('tags:' + rq.user.username, tag, 1);
@@ -818,6 +912,7 @@ var routes = [
                         multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
                         multi.sadd    ('tag:'  + rq.user.username + ':untagged', pic.id);
                      }
+
                      multi.hmset ('pic:' + pic.id, pic);
                      multi.exec (function (error) {
                         if (error) return reply (rs, 500, {error: error});
@@ -841,70 +936,12 @@ var routes = [
    // *** DELETE PICS ***
 
    ['delete', 'pic/:id', function (rq, rs) {
+      H.deletePic (rq.data.params.id, rq.user.username, function (error) {
+         if (error && error === 'nf') return reply (rs, 404);
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200);
+      });
 
-      var id = rq.data.params.id;
-
-      a.stop ([
-         [function (s) {
-            var multi = redis.multi ();
-            multi.hgetall ('pic:'  + id);
-            multi.smembers ('pict:' + id);
-            multi.exec (function (error, data) {
-               if (error) return reply (rs, 500, {error: error});
-               s.last = data;
-               s.do ();
-            });
-         }],
-         function (s) {
-            s.pic = s.last [0];
-            s.tags = s.last [1];
-            if (! s.pic || rq.user.username !== s.pic.owner) return reply (rs, 404);
-
-            var toDelete = [s.pic.id], toDeleteSizes = [s.pic.by];
-            if (s.pic.t200) {
-               toDelete.push (s.pic.t200);
-               toDeleteSizes.push (s.pic.by900);
-            }
-            if (s.pic.t900) {
-               toDelete.push (s.pic.t900);
-               toDeleteSizes.push (s.pic.by900);
-            }
-
-            H.s3del (rq.user.username, toDelete, toDeleteSizes, function (error) {
-               if (error) return s.do (null, error);
-               a.fork (s, toDelete, function (v) {
-                  return [a.make (fs.unlink), Path.join (CONFIG.picfolder, hashs (rq.user.username), v)];
-               });
-            });
-         },
-         function (s) {
-            var multi = redis.multi ();
-
-            multi.del  ('pic:'  + s.pic.id);
-            multi.del  ('pict:' + s.pic.id);
-            if (s.pic.t200) multi.del ('thu:' + s.pic.t200);
-            if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
-            multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
-            multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
-
-            if (s.tags.length === 0) multi.hincrby ('tags:' + s.pic.owner, 'untagged', -1);
-
-            s.tags = s.tags.concat (['all', 'untagged']);
-
-            dale.do (s.tags, function (tag) {
-               if (tag !== 'all' && tag !== 'untagged') multi.hincrby ('tags:' + s.pic.owner, tag, -1);
-               multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
-            });
-
-            multi.exec (function (error) {
-               if (error) return s.do (null, error);
-               H.log (rq.user.username, {a: 'del', id: s.pic.id});
-               reply (rs, 200);
-            });
-         },
-      ], {catch: function (s) {
-         reply (rs, 500, s.catch);
-      }});
    }],
 
    // *** ROTATE IMAGE ***
@@ -1013,7 +1050,7 @@ var routes = [
 
       b.tag = b.tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 
-      if (b.tag.match (/^\d{4}$/) && parseInt (b.tag) > 1899 && parseInt (b.tag) < 2101) return reply (rs, 400, {error: 'Tag cannot be a number between 1900 and 2100.'});
+      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'Tag cannot be a number between 1900 and 2100.'});
 
       if (type (b.ids) !== 'array') return reply (rs, 400, {error: 'Invalid pics.'});
       if (stop (rs, [
@@ -1052,7 +1089,9 @@ var routes = [
                   multi.srem    ('pict:' + pic, b.tag);
                   multi.hincrby ('tags:' + rq.user.username, b.tag, -1);
                   multi.srem ('tag:'   + rq.user.username + ':' + b.tag, pic);
-                  if (s.last [k + 1].length === 1) {
+                  if (dale.acc (s.last [k + 1], 0, function (a, b) {
+                     return a + (H.isYear (b) ? 0 : 1);
+                  }) === 1) {
                      multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
                      multi.sadd    ('tag:'  + rq.user.username + ':untagged', pic);
                   }
@@ -1062,7 +1101,9 @@ var routes = [
                   multi.sadd    ('pict:' + pic, b.tag);
                   multi.hincrby ('tags:' + rq.user.username, b.tag, 1);
                   multi.sadd ('tag:'   + rq.user.username + ':' + b.tag, pic);
-                  if (s.last [k + 1].length === 0) {
+                  if (dale.acc (s.last [k + 1], 0, function (a, b) {
+                     return a + (H.isYear (b) ? 0 : 1);
+                  }) === 0) {
                      multi.hincrby ('tags:' + rq.user.username, 'untagged', -1);
                      multi.srem    ('tag:'  + rq.user.username + ':untagged', pic);
                   }
@@ -1116,29 +1157,18 @@ var routes = [
 
       if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: 'all'});
 
-      var yeartags = [], mindate, maxdate;
+      var ytags = [];
 
+      //{tag1: [USERID], ...}
       var tags = dale.obj (b.tags, function (tag) {
-         if (tag.match (/^\d{4}$/) && 2100 >= parseInt (tag) && parseInt (tag) >= 1900) yeartags.push (tag);
-         else return [tag, [rq.user.username]];
+         if (! H.isYear (tag)) return [tag, [rq.user.username]];
+         ytags.push (tag);
       });
-
-      if (yeartags.length > 0) {
-         if (b.mindate !== undefined || b.maxdate !== undefined) return reply (rs, 400, {error: 'yeartags'});
-         yeartags.sort ();
-         yeartags = dale.do (yeartags, function (year) {
-            return [new Date (year + '/01/01').getTime (), new Date ((parseInt (year) + 1) + '/01/01').getTime () - 1];
-         });
-      }
-      else {
-         mindate = b.mindate || 0;
-         maxdate = b.maxdate || new Date ('2101/01/01');
-      }
 
       redis.smembers ('shm:' + rq.user.username, function (error, shared) {
          if (error) return reply (rs, 500, {error: error});
 
-         var allmode = dale.keys (tags).length === 0;
+         var allmode = dale.keys (tags).length === 0 && ytags.length === 0;
 
          if (allmode) tags.all = [rq.user.username];
 
@@ -1146,28 +1176,36 @@ var routes = [
             var tag = sharedTag.replace (/[^:]+:/, '');
             if (allmode || tags [tag]) {
                if (! tags [tag]) tags [tag] = [];
+               // {tag1: [USERID, USERID2], ...}
                tags [tag].push (sharedTag.match (/[^:]+/) [0]);
             }
          });
 
-         // for each tag (or all tags if all is there) list usres per tag that share it with you. run a sunion per tag, also including your own username. then do a sinter of the whole thing.
+         // for each tag (or all tags if all is there) list users per tag that share it with you. run a sunion per tag, also including your own username. then do a sinter of the whole thing.
 
          var multi = redis.multi (), qid = 'query:' + uuid ();
+         if (ytags.length) multi.sunionstore (qid, dale.do (ytags, function (ytag) {
+            return 'tag:' + rq.user.username + ':' + ytag;
+         }));
+
          dale.do (tags, function (users, tag) {
             multi.sunionstore (qid + ':' + tag, dale.do (users, function (user) {
                return 'tag:' + user + ':' + tag;
             }));
          });
+
          multi [allmode ? 'sunion' : 'sinter'] (dale.do (tags, function (users, tag) {
             return qid + ':' + tag;
-         }));
+         }).concat (ytags.length ? qid : []));
+
+         if (ytags.length) multi.del (qid);
          dale.do (tags, function (users, tag) {
             multi.del (qid + ':' + tag);
          });
 
          multi.exec (function (error, data) {
             if (error) return reply (rs, 500, {error: error});
-            var pics = data [dale.keys (tags).length];
+            var pics = data [dale.keys (tags).length + (ytags.length ? 1 : 0)];
             var multi2 = redis.multi ();
             dale.do (pics, function (pic) {
                multi2.hgetall ('pic:' + pic);
@@ -1175,29 +1213,23 @@ var routes = [
             multi2.exec (function (error, pics) {
                if (error) return reply (rs, 500, {error: error});
                if (pics.length === 0) return reply (rs, 200, {total: 0, pics: []});
-               var output = {pics: [], years: []};
+               var output = {pics: []};
+
+               var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
 
                dale.do (pics, function (pic) {
-                  var y = new Date (parseInt (pic.date)).getFullYear ();
-                  if (output.years.indexOf (y) === -1) output.years.push (y);
-                  var d = parseInt (pic [b.sort === 'upload' ? 'dateup': 'date']);
-                  if (yeartags.length > 0) {
-                     if (dale.stop (yeartags, true, function (year) {
-                        if (d >= year [0] && d <= year [1]) return true;
-                     })) output.pics.push (pic);
-                     return;
-                  }
+                  var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
                   if (d >= mindate && d <= maxdate) output.pics.push (pic);
                });
 
-               output.years.sort ();
-
+               // Sort own pictures first.
                output.pics.sort (function (a, b) {
                   if (a.owner === rq.user.username) return -1;
                   if (b.owner === rq.user.username) return 1;
                   return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
                });
 
+               // To avoid returning duplicated picture if someone shares a picture you already have with you. Own picture has priority.
                var hashes = {};
                output.pics = dale.fil (output.pics, undefined, function (pic, k) {
                   if (! hashes [pic.hash]) {
@@ -1206,6 +1238,7 @@ var routes = [
                   }
                });
 
+               // Sort pictures by criteria.
                output.pics.sort (function (a, B) {
                   var d1 = parseInt (a [b.sort === 'upload' ? 'dateup' : 'date']);
                   var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
@@ -1223,7 +1256,7 @@ var routes = [
                multi3.exec (function (error, tags) {
                   if (error) return reply (rs, 500, {error: error});
                   dale.do (output.pics, function (pic, k) {
-                     output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: tags [k], date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw)};
+                     output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: tags [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw)};
                   });
                   reply (rs, 200, output);
                });
@@ -1248,6 +1281,8 @@ var routes = [
       ])) return;
 
       if (b.tag === 'all' || b.tag === 'untagged') return reply (rs, 400, {error: 'tag'});
+
+      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       redis.exists ('users:' + b.who, function (error, exists) {
          if (error)    return reply (rs, 500, {error: error});
@@ -1412,6 +1447,10 @@ cicek.cluster ();
 
 cicek.listen ({port: CONFIG.port}, routes);
 
+// *** START LOG ***
+
+if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString ());
+
 // *** BACKUPS ***
 
 if (cicek.isMaster && ENV) setInterval (function () {
@@ -1459,10 +1498,41 @@ if (cicek.isMaster && ENV) H.s3list ('', function (error, data) {
       multi.exists ('thu:' + id, 'pic:' + id);
    });
    multi.exec (function (error, exists) {
-      dale.do (data, function (item, k) {
-         if (! exists [k]) console.log ('S3 blob is not on database!', item.Key);
+      var toDelete = dale.fil (data, undefined, function (item, k) {
+         if (exists [k]) return;
+         console.log ('S3 blob is not on database! Deleting:', item.Key);
+         return {Key: item.Key};
+      });
+      if (toDelete.length === 0) return;
+      s3.deleteObjects ({Delete: {Objects: toDelete.slice (0, 1000)}}, function (error) {
+         if (error) return console.log ('Error deleting loose S3 blobs.', error);
       });
    });
 });
 
-if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString ());
+// *** XXX TEMPORARY: ADD YEAR TAGS TO PICTURES ON STARTUP ***
+
+if (cicek.isMaster) redis.keyscan ('pic:*', function (error, pics) {
+   if (error) return console.log ('Error when retrieving pics for adding yeartags!', error);
+   var multi = redis.multi ();
+   dale.do (pics, function (pic) {
+      multi.hgetall (pic);
+      multi.sinter  (pic.replace ('pic:', 'pict:'));
+   });
+   multi.exec (function (error, data) {
+      if (error) return console.log ('Error when retrieving pics for adding yeartags!', error);
+      var multi = redis.multi ();
+      dale.do (pics, function (pic, k) {
+         var pic = data [k * 2], tags = data [k * 2 + 1];
+         if (dale.stop (tags, true, H.isYear)) return;
+         var picyear = new Date (parseInt (pic.date)).getUTCFullYear ();
+         multi.sadd ('pict:' + pic.id, picyear);
+         multi.hincrby ('tags:' + pic.owner, picyear, 1);
+         multi.sadd ('tag:' + pic.owner + ':' + picyear, pic.id);
+         console.log ('Adding yeartag', picyear, 'to', pic.id);
+      });
+      multi.exec (function (error) {
+         if (error) return console.log ('Error when updating pics with yeartags!', error);
+      });
+   });
+});

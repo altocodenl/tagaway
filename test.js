@@ -189,7 +189,6 @@ var main = [
       if (pic.date !== getUTCTime ('2018/06/07')) return log ('Invalid pic.date');
       if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
-      if (! eq ([2018], rs.body.years)) return log ('Invalid years.');
       delete pic.date;
       delete pic.dateup;
       if (type (pic.id) !== 'string') return log ('Invalid pic.id.');
@@ -199,8 +198,7 @@ var main = [
          name: 'small.png',
          dimh: 149,
          dimw: 149,
-         tags: [
-         ]
+         tags: ['2018']
       })) return log ('Invalid pic fields.');
       return true;
    }],
@@ -223,7 +221,6 @@ var main = [
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 2) return log ('Invalid total count.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
-      if (! eq ([2018], rs.body.years)) return log ('Invalid years.');
       var pic = rs.body.pics [0];
       if (pic.date !== getUTCTime ('2018/06/03')) return log ('Invalid pic.date');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
@@ -238,8 +235,7 @@ var main = [
          name: 'medium.jpg',
          dimh: 204,
          dimw: 248,
-         tags: [
-         ]
+         tags: ['2018']
       })) return log ('Invalid pic fields.');
       return true;
    }],
@@ -251,7 +247,6 @@ var main = [
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 3) return log ('Invalid total count.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
-      if (! eq ([2014, 2018], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 1) return log ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
       if (pic.date !== 1405876831000) return log ('Invalid pic.date');
@@ -268,8 +263,7 @@ var main = [
          name: 'large.jpeg',
          dimh: 204,
          dimw: 248,
-         tags: [
-         ]
+         tags: ['2014']
       })) return log ('Invalid pic fields.');
       return true;
    }],
@@ -281,7 +275,6 @@ var main = [
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 4) return log ('Invalid total count.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
@@ -301,8 +294,7 @@ var main = [
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
-         tags: [
-         ]
+         tags: ['2017']
       })) return log ('Invalid pic fields.');
       return true;
    }],
@@ -320,7 +312,6 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       var pic = rs.body.pics [0];
       delete pic.id;
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
       delete pic.t200;
       if (type (pic.t900) !== 'string') return log ('Invalid pic.t900.');
@@ -334,81 +325,72 @@ var main = [
          name: 'rotate.jpg',
          dimw: 1232,
          dimh: 2048,
-         tags: [
-         ]
+         tags: ['2017']
       })) return log ('Invalid pic fields.');
       return true;
    }],
    ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by oldest', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['large.jpeg', 'rotate.jpg', 'medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['rotate.jpg', 'medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (! eq (['large.jpeg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 400],
-   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 400],
-   ['get pics by year #3', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by year #4', 'post', 'query', {}, {tags: ['2018'], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by year #5', 'post', 'query', {}, {tags: ['2017', '2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get pics by year #3', 'post', 'query', {}, {tags: ['2017', '2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by year #6', 'post', 'query', {}, {tags: ['2017', '2014', '2015'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get pics by year #4', 'post', 'query', {}, {tags: ['2017', '2014', '2015'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 4})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['tag invalid #1', 'post', 'tag', {}, '', 400],
@@ -422,13 +404,13 @@ var main = [
    ['tag valid empty', 'post', 'tag', {}, {tag: 'foo', ids: []}, 200],
    ['tag valid empty', 'post', 'tag', {}, {tag: 'foo', ids: [], del: true}, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 4})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['tag valid #1', 'post', 'tag', {}, {tag: 'foo', ids: []}, 200],
    ['tag valid #2', 'post', 'tag', {}, {tag: 'foo', ids: ['a', 'b']}, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 4})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
@@ -453,62 +435,66 @@ var main = [
       return {tag: 'foo', ids: [s.pics [0].id, 'b']};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 3, foo: 1})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['foo'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['tag valid #4', 'post', 'tag', {}, function (s) {
       return {tag: 'foo', ids: [s.pics [0].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 3, foo: 1})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['foo'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags');
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (rs.body.total !== 1) return log ('Searching by tag does not work.');
-      if (! eq (rs.body.pics [0].tags, ['foo'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags');
       return true;
    }],
    ['untag #1', 'post', 'tag', {}, function (s) {
       return {tag: 'foo', ids: ['bla', s.pics [0].id, s.pics [1].id, 'foo'], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 4})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['get pic after untagging', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, [])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018'])) return log ('Invalid tags');
       return true;
    }],
    ['get tagged pic after untagging', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (rs.body.total !== 0) return log ('Searching by tag does not work.');
       return true;
    }],
-   ['tag two pics', 'post', 'tag', {}, function (s) {
+   ['tag two pics #1', 'post', 'tag', {}, function (s) {
       return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 2, bla: 2})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log (rs.body);
       return true;
    }],
    ['get tagged pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq ([2014, 2017, 2018], rs.body.years)) return log ('Invalid years.');
-      if (! eq (rs.body.pics [0].tags, ['bla'])) return log ('Invalid tags');
-      if (! eq (rs.body.pics [3].tags, ['bla'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'bla'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [3].tags, ['2014', 'bla'])) return log ('Invalid tags');
+      return true;
+   }],
+   ['get tagged pics again', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (rs.body.pics [0].tags, ['2014', 'bla'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [3].tags, ['2018', 'bla'])) return log ('Invalid tags');
       return true;
    }],
    ['untag tag two pics with tag they don\'t have', 'post', 'tag', {}, function (s) {
       return {tag: 'blablabla', ids: ['foo', s.pics [0].id, s.pics [3].id, s.pics [3].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 2, bla: 2})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['untag two pics', 'post', 'tag', {}, function (s) {
@@ -519,17 +505,17 @@ var main = [
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 4, untagged: 4})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag two pics', 'post', 'tag', {}, function (s) {
+   ['tag two pics #2', 'post', 'tag', {}, function (s) {
       return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
    }, 200],
    ['delete tagged picture', 'delete', function (s) {
       return 'pic/' + s.pics [3].id;
    }, {}, '', 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 3, untagged: 2, bla: 1})) return log (rs.body);
+      if (! eq (rs.body, {2017: 1, 2018: 2, all: 3, untagged: 2, bla: 1})) return log (rs.body);
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -571,13 +557,11 @@ var main = [
       return true;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq ([2018], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 1) return log ('user2 should have one pic');
       s.shared = rs.body.pics [0];
       return true;
    }],
    ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq ([2018], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 1) return log ('user2 should have one pic with this tag');
       return true;
    }],
@@ -605,7 +589,6 @@ var main = [
       return response.headers.cookie !== undefined;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq ([2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 2) return log ('user2 should have two pics.');
       s.pics2 = rs.body.pics;
       return true;
@@ -653,7 +636,6 @@ var main = [
       {type: 'field',  name: 'tags', value: '["rotate"]'}
    ]}, 200],
    ['get all pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq ([2017, 2018], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 2) return log ('user2 should have two pics.');
       if (rs.body.total !== 2) return log ('total not computed properly with repeated pics.');
       if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
@@ -661,7 +643,6 @@ var main = [
       return true;
    }],
    ['get `rotate` pics as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq ([2017], rs.body.years)) return log ('Invalid years.');
       if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
       if (rs.body.total !== 1) return log ('total not computed properly with repeated pics.');
       if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
