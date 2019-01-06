@@ -171,8 +171,6 @@ Use cases:
 
 - Client
    - New interface!
-      - Fix bug when selecting two tags (B.get receives x.from as part of path?)
-      - Top title (nn)
       - tag1 (nn), tag2 (nn) above pictures
       - Deselect vs select all
       - Sort dropdown
@@ -329,6 +327,7 @@ Use cases:
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
+`Data.total`: number of pics matched by query.
 
 ## Redis structure
 

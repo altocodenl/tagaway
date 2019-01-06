@@ -585,11 +585,12 @@
          ['div', {class: 'center float'}, [
             B.view (x, ['State', 'query', 'tags'], function (x, qtags) {
                return B.view (x, ['Data', 'tags'], function (x, tags) {
-                  if (! qtags || qtags.length === 0) return ['h1', 'All Photos (' + (tags ? tags.all : 0)  + ')'];
-                  else if (teishi.eq (['untagged'], qtags)) return ['h1', 'Untagged (' + (tags.untagged) + ')'];
-                  else if (qtags.length === 1)              return ['h1', qtags [0] + ' (' + tags [qtags [0]] + ')'];
-                  else                                      return B.get (x, ['Data', 'pics'], function (x, pics) {
-                     return ['h1', 'Multiple tags (' + (pics ? pics.length : 0) + ')'];
+                  return B.view (x, ['Data', 'total'], function (x, total) {
+                     total = total || 0;
+                     if (! qtags || qtags.length === 0) return ['h1', 'All Photos (' + total  + ')'];
+                     else if (teishi.eq (['untagged'], qtags)) return ['h1', 'Untagged (' + total + ')'];
+                     else if (qtags.length === 1)              return ['h1', qtags [0] + ' (' + total + ')'];
+                     else                                      return ['h1', 'Multiple tags (' + total + ')'];
                   });
                });
             }),
@@ -773,6 +774,7 @@
                   if (selected [newpic.id]) newpic.selected = true;
                });
                B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+               B.do (x, 'set', ['Data', 'total'], rs.body.total);
             });
          }],
          ['retrieve', 'tags', function (x) {
