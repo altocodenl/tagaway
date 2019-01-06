@@ -430,6 +430,7 @@
 
       return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
          if (['login', 'signup', 'recover', 'reset'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
+         dale.do (c ('input'), function (input) {input.value = ''});
       }}, function (x, subview) {
 
          var fields = {
@@ -581,7 +582,19 @@
             Views.query  (x),
             Views.manage (x),
          ]],
-         ['div', {class: 'center float'}, Views.pics (x, ['Data', 'pics'])],
+         ['div', {class: 'center float'}, [
+            B.view (x, ['State', 'query', 'tags'], function (x, qtags) {
+               return B.view (x, ['Data', 'tags'], function (x, tags) {
+                  if (! qtags || qtags.length === 0) return ['h1', 'All Photos (' + (tags ? tags.all : 0)  + ')'];
+                  else if (teishi.eq (['untagged'], qtags)) return ['h1', 'Untagged (' + (tags.untagged) + ')'];
+                  else if (qtags.length === 1)              return ['h1', qtags [0] + ' (' + tags [qtags [0]] + ')'];
+                  else                                      return B.get (x, ['Data', 'pics'], function (x, pics) {
+                     return ['h1', 'Multiple tags (' + (pics ? pics.length : 0) + ')'];
+                  });
+               });
+            }),
+            Views.pics (x, ['Data', 'pics'])
+         ]],
          ['div', {class: 'float', style: 'width:' + H.spaceh (3.5)}, [
             ['button', B.ev ({class: 'button'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
          ]],
@@ -669,17 +682,19 @@
                   }],
                ]],
                ['h5', {class: 'gray3'}, 'OVERVIEW'],
-               B.view (x, ['Data', 'tags'], {ondraw: function () {
-               }}, function (x, tags) {
+               B.view (x, ['Data', 'tags'], function (x, tags) {
                   if (! tags) return;
                   var tagmaker = function (tag, k, selected) {
                      var tagn = ['', tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
-                     if (selected) return [['li', {class: 'selected'}, [
+                     if (selected) return [['li', B.ev (['onclick', 'rem', ['State', 'query', 'tags'], k]), [
                         ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
                         tagn,
-                        ['i', B.ev ({class: 'cancel icon ion-close'}, ['onclick', 'rem', ['State', 'query', 'tags'], k])],
+                        ['i', {class: 'cancel icon ion-close'}],
                      ]], ['br']];
-                     return [['li', B.ev (['onclick', 'add', ['State', 'query', 'tags'], tag]), [
+                     return [['li', B.ev ([
+                        ['onclick', 'add', ['State', 'query', 'tags'], tag],
+                        ['onclick', 'rem', 'State', 'autoquery'],
+                     ]), [
                         ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
                         tagn,
                      ]], ['br']];
@@ -712,10 +727,13 @@
                      H.if (tags.length === 0, ['p', 'No tags yet! Click the upload button to add pictures and tags.']),
                      B.view (x, ['State', 'autoquery'], function (x, autoquery) {
 
-                        var matches = dale.fil (dale.keys (tags).concat (B.get ('Data', 'years')), undefined, function (tag) {
+                        var matches = dale.fil (dale.keys (tags), undefined, function (tag) {
                            if (tag === 'all' || tag === 'untagged') return;
                            if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
-                        }).sort ();
+                        }).sort (function (a, b) {
+                           if (a.match (/^\d{4}$/) && b.match (/^\d{4}$/)) return parseInt (a) > parseInt (b) ? 1 : -1;
+                           return a.toLowerCase () < b.toLowerCase ? -1 : 1;
+                        });
 
                         if (matches.length > 0) return ['ul', {class: 'gray tags'}, dale.do (matches, function (tag) {
                            return tagmaker (tag);
@@ -748,7 +766,6 @@
 
             H.authajax (x, 'post', 'query', {}, {tags: q.tags, sort: q.sort, from: 1, to: num + 30}, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error querying the picture(s).');
-               B.do (x, 'set', ['Data', 'years'], dale.do (rs.body.years, function (year) {return year + ''}));
                var selected = dale.obj (B.get ('Data', 'pics'), function (oldpic) {
                   if (oldpic.selected) return [oldpic.id, true];
                });
@@ -792,7 +809,7 @@
             if (tag === true) tag = B.get ('State', 'autotag');
             if (! tag) return;
             if (BASETAGS.indexOf (tag) !== -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
-            if (tag.match (/^\d{4}$/) && parseInt (tag) > 1899 && parseInt (tag) < 2101) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
+            if (tag.match (/^\d{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             var payload = {
                tag: tag,
                ids: dale.fil (B.get ('Data', 'pics'), undefined, function (v) {if (v.selected) return v.id}),
@@ -1173,6 +1190,7 @@
 
                   // If this is not the first row:
                   if (positions.length > 1) {
+                     var OVERLAP = 0;
                      var maxyprev = Math.max.apply (null, dale.do (H.last (positions, 2), function (p) {return p [1]}));
                      var recalculate = function () {
                         var miny = Infinity, maxy = 0;
@@ -1183,8 +1201,8 @@
                            if ((p [1] - p [3] - 24) < miny) miny = p [1] - p [3] - 24;
                            if (p [1] > maxy) maxy = p [1];
                         });
-                        if (maxyprev > miny + (maxy - miny) * 0.25) {
-                           var adjustment = Math.round (maxyprev - (miny + (maxy - miny) * 0.16)) + 1;
+                        if (maxyprev > miny + (maxy - miny) * OVERLAP) {
+                           var adjustment = Math.round (maxyprev - (miny + (maxy - miny) * OVERLAP)) + 1;
                            dale.do (H.last (positions), function (p) {
                               if ((p [1] - p [3] - 24) === miny) p [1] += adjustment;
                            });
@@ -1197,23 +1215,32 @@
                }
 
                // If first item on row, start at the left.
-               if (! H.last (positions).length) x = 0;
-               // If there's enough room, put it on the same row, leaving 24px to its left.
+               if (H.last (positions).length === 0) x = 0;
+               // If there's enough room, put it on the same row.
                else if (width >= H.last (H.last (positions)) [0] + picw + 24) x = H.last (H.last (positions)) [0];
                else {
-                  // Adjust so 50% or less of a row overlaps with the previous row. This is done to keep visual separation between rows.
-                  // need a new row
+                  // If there's not enough room, push the existing row and create a new one. Start at the left.
                   pushrow ();
                   positions.push ([]);
                   x = 0;
                }
 
                var y = (function () {
+                  // If first row, position the image at the top.
                   if (positions.length === 1) return 0;
+
+                  // From the previous row, we build a list of images that overlap in their width with the current one.
                   var upstairs = dale.fil (H.last (positions, 2), undefined, function (lastrowpic) {
-                     if (x > lastrowpic [0] || (x + picw) < (lastrowpic [0] - lastrowpic [2])) return;
+                     // XXX 23 or 24?
+                     if (x > lastrowpic [0] || (x + picw + 24) < (lastrowpic [0] - lastrowpic [2] - 23)) return;
                      return lastrowpic [1];
                   });
+
+                  if (upstairs.length === 0) {
+                     var lpicrow = H.last (H.last (positions));
+                     return lpicrow [1] - lpicrow [3] - 24;
+                  }
+
                   return Math.max.apply (null, upstairs);
                }) ();
 

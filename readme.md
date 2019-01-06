@@ -30,7 +30,7 @@ The application is currently under development and has not been launched yet. We
 
 - `POST /auth/signup`.
    - Body must be `{username: STRING, password: STRING, email: STRING, token: STRING}`. The email must be a valid email. If not, a 400 code will be returned with body `{error: ...}`.
-   - Both `username` and `email` are lowercased and leading & trailing space is removed from them (and intermediate spaces or space-like characters are reduced to a single space).
+   - Both `username` and `email` are lowercased and leading & trailing space is removed from them (and intermediate spaces or space-like characters are reduced to a single space). `username` cannot contain any `@` or `:` characters.
    - If there's no invite associated with the token, a 403 is returned with body `{error: 'token'}`.
    - If there's already an account with that email, a 403 is returned with body `{error: 'email'}`.
    - If there's already an account with that username, a 403 is returned with body `{error: 'username'}`.
@@ -114,10 +114,9 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last picture to be returned from a certain query. If both are equal to 1, the first picture for the query will be returned. If they are 1 & 10 respectively, the first ten pictures for the query will be returned.
    - `all` cannot be included on `body.tags`. If you want to search for all available pictures, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
-   - If you include one or more tags that can be parsed to an integer between 1900 or 2100, they will be considered to be year tags. In this case, you must provide neither `body.mindate` nor `body.maxdate`, otherwise you'll get a 400 with body `{error: 'yeartags'}`.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
-   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, years: [...]}`.
+   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
       - `body.years` a list of years for which there's pictures matching the query. The years always refer to the picture date, not the upload date.
@@ -172,8 +171,19 @@ Use cases:
 
 - Client
    - New interface!
-   - Bug when removing year 2010 tag from selected (recycling?)
-   - Fix overlaps & -Infinity y on picture display.
+      - Fix bug when selecting two tags (B.get receives x.from as part of path?)
+      - Top title (nn)
+      - tag1 (nn), tag2 (nn) above pictures
+      - Deselect vs select all
+      - Sort dropdown
+      - Select pictures
+      - Edit pictures: rotate
+      - Edit pictures: add tags (when entering non-existing tag, add text next to it to say "XX (new tag)")
+      - Edit pictures: delete with confirm
+      - Initial view with no pictures
+      - Upload view
+      - Add tags to upload after some pictures were uploaded
+      - Multiple uploads?
    - Add window.onresize on canvas view.
    - What to do if x.from is used multiple times on the same handler (they should be independent).
    - New font in email logo
@@ -189,6 +199,7 @@ Use cases:
    - Make `years` independent of query.
 
 - Account
+   - Expire unused recovery tokens, avoid duplicated per user?
    - Account view & account activity endpoint
    - Two-cookie system with CSRF.
    - Delete account.
@@ -317,7 +328,6 @@ Use cases:
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
-`Data.years`: `[...]`; comes from `body.years` from `POST /query`, but with each of the years stringified.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
 
 ## Redis structure
@@ -359,11 +369,11 @@ Use cases:
    by200: INT or absent,
    t900: STRING or absent,
    by900: INT or absent,
-   xt2: INT or absent, number of thumb200 downloaded (also includes cache)
-   xt9: INT or absent, number of thumb900 downloaded (also includes cache)
+   xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
+   xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp: INT or absent, number of pics downloaded (also includes cache)
 
-- pict:ID (set): list of all the tags belonging to the picture.
+- pict:ID (set): list of all the tags belonging to a picture.
 
 - tag:USERID:TAG (set): pic ids.
 
