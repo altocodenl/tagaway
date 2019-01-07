@@ -25,7 +25,7 @@ var cicek  = require ('cicek');
 var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var giz    = require ('giz');
 var hitit  = require ('hitit');
-var a      = require ('./astack.js');
+var a      = require ('./lib/astack.js');
 giz.redis  = redis;
 
 var bcrypt = require ('bcryptjs');
@@ -1044,6 +1044,7 @@ var routes = [
             ['body.tag', b.tag, 'string'],
             ['body.ids', b.ids, 'array'],
             ['body.ids', b.ids, 'string', 'each'],
+            function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
             ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
          ]}
       ])) return;
@@ -1051,15 +1052,6 @@ var routes = [
       b.tag = b.tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 
       if (H.isYear (b.tag)) return reply (rs, 400, {error: 'Tag cannot be a number between 1900 and 2100.'});
-
-      if (type (b.ids) !== 'array') return reply (rs, 400, {error: 'Invalid pics.'});
-      if (stop (rs, [
-         ['body.tag', b.tag, 'all',      teishi.test.notEqual],
-         ['body.tag', b.tag, 'untagged', teishi.test.notEqual],
-         ['body.ids', b.ids, 'array'],
-         ['body.ids', b.ids, 'string', 'each'],
-         ['body.ids', b.del, ['boolean', 'undefined'], 'oneOf'],
-      ])) return;
 
       a.stop ([
          [function (s) {

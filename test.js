@@ -17,6 +17,68 @@ var getUTCTime = function (dstring) {
    return new Date (dstring).getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
 }
 
+var ttester = function (label, method, Path, headers, list, allErrors) {
+   var apres = allErrors ? function (s, rq, rs) {
+      return rs.code >= 400;
+   } : undefined;
+
+   var types = {
+      string:    function () {return Math.random () + ''},
+      integer:   function () {return Math.round (Math.random () + Math.random ())},
+      float:     function () {return Math.random ()},
+      nan:       function () {return NaN},
+      infinity:  function () {return Infinity},
+      object:    function () {return {}},
+      array:     function () {return []},
+      null:      function () {return null},
+      regex:     function () {return /jetset/},
+      boolean:   function () {return Math.random > 0.5},
+      undefined: function () {},
+   }
+
+   var tests = {}, longest = 0;
+
+   dale.do (list, function (v) {
+      var path = v [0], allowed = v [1];
+      if (type (path) !== 'array') path = [path];
+      if (path.length > longest) longest = path.length;
+      dale.do (dale.times (path.length), function (k) {
+         if (k < path.length) {
+            return tests [JSON.stringify (path.slice (0, k))] = [type (path [k]) === 'integer' ? 'array' : 'object'];
+         }
+         tests [JSON.stringify (path)] = type (allowed) === 'array' ? allowed : [allowed];
+      });
+   });
+
+   var output = [];
+   var body = type (JSON.parse (dale.keys (tests) [0]) [0]) === 'string' ? {} : [];
+
+   dale.do (dale.times (longest), function (length) {
+      dale.do (tests, function (allowed, path) {
+         path = JSON.parse (path);
+         if (path.length !== length) return;
+         if (output.length === 0) {
+            // base object test
+            dale.do (types, function (tfun, t) {
+               if (t !== type (body)) output.push ([label + ' test type #' + (output.length + 1) + ' base - ' + t, method, Path, headers, tfun (), allErrors ? '*' : 400, apres]);
+            });
+         }
+         var ref = body;
+         dale.do (dale.times (path.length - 1, 0), function (k) {
+            if (! ref [path [k]]) ref [path [k]] = type (path [k + 1]) === 'integer' ? [] : {};
+            ref = ref [path [k]];
+         });
+         dale.do (types, function (tfun, t) {
+            ref [path [path.length - 1]] = tfun ();
+            if (allowed.indexOf (t) === -1) output.push ([label + ' test type #' + (output.length + 1) + ' ' + path.join ('.') + ' - ' + t, method, Path, headers, teishi.c (body), allErrors ? '*' : 400, apres]);
+         });
+         ref [path [path.length - 1]] = types [allowed [0]] ();
+      });
+   });
+
+   return output;
+}
+
 var intro = [
    ['get stats if none present', 'get', 'admin/stats', {}, '', 200],
    ['submit client error, invalid 1', 'post', 'clientlog', {}, '', 400],
@@ -24,10 +86,20 @@ var intro = [
    ['submit client error without being logged in #2', 'post', 'clientlog', {}, {error: 'error'}, 200],
    ['login with no credentials', 'post', 'auth/login', {}, {}, 400],
    ['login with invalid credentials', 'post', 'auth/login', {}, [], 400],
-   ['create invite for user, invalid 1', 'post', 'admin/invites', {}, {}, 400],
-   ['create invite for user, invalid 2', 'post', 'admin/invites', {}, [], 400],
-   ['create invite for user, invalid 3', 'post', 'admin/invites', {}, {email: 2}, 400],
-   ['create invite for user, invalid 4', 'post', 'admin/invites', {}, {email: 'che'}, 400],
+   ttester ('login', 'post', 'auth/signup', {}, [
+      ['username', 'string'],
+      ['password', 'string'],
+      ['email', 'string'],
+      ['token', 'string'],
+   ]),
+   ttester ('login', 'post', 'auth/login', {}, [
+      ['username', 'string'],
+      ['password', 'string'],
+   ]),
+   ttester ('create invite for user', 'post', 'admin/invites', {}, [
+      ['email', 'string'],
+   ]),
+   ['create invite for user, invalid email', 'post', 'admin/invites', {}, {email: 'che'}, 400],
    ['create invite for user', 'post', 'admin/invites', {}, {email: 'a@a.com  '}, 200, function (s, rq, rs) {
       s.itoken1 = rs.body.token;
       return true;
@@ -72,9 +144,9 @@ var intro = [
       return true;
    }],
    ['verify user', 'get', function (s) {return 'auth/verify/' + s.vtoken1}, {}, '', 302],
-   ['recover pass invalid #1', 'post', 'auth/recover', {}, [], 400],
-   ['recover pass invalid #2', 'post', 'auth/recover', {}, '', 400],
-   ['recover pass invalid #3', 'post', 'auth/recover', {}, {}, 400],
+   ttester ('recover pass', 'post', function (s) {return 'auth/verify/' + s.vtoken1}, {}, [
+      ['username', 'string'],
+   ], true),
    ['recover pass with invalid username', 'post', 'auth/recover', {}, {username: 'foo'}, 403],
    ['recover pass', 'post', 'auth/recover', {}, {username: 'a@a.com\t'}, 200],
    ['recover pass', 'post', 'auth/recover', {}, {username: 'user\t  1  '}, 200, function (s, rq, rs) {
@@ -130,17 +202,15 @@ var outro = [
 
 var main = [
    // invalid getpics
-   ['query pics (invalid #1)', 'post', 'query', {}, '', 400],
-   ['query pics (invalid #2)', 'post', 'query', {}, [], 400],
-   ['query pics (invalid #3)', 'post', 'query', {}, {}, 400],
-   ['query pics (invalid #4)', 'post', 'query', {}, {tags: 'hello'}, 400],
-   ['query pics (invalid #5)', 'post', 'query', {}, {tags: []}, 400],
-   ['query pics (invalid #6)', 'post', 'query', {}, {tags: [], sort: []}, 400],
-   ['query pics (invalid #7)', 'post', 'query', {}, {tags: [], sort: 'NEW'}, 400],
-   ['query pics (invalid #8)', 'post', 'query', {}, {tags: [], sort: 'newest'}, 400],
-   ['query pics (invalid #9)', 'post', 'query', {}, {tags: [], from: 1}, 400],
-   ['query pics (invalid #10)', 'post', 'query', {}, {tags: [], from: 0, to: 10}, 400],
-   ['query pics (invalid #11)', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
+   ttester ('query pics', 'post', 'query', {}, [
+      [['tags', 0], 'string'],
+      ['mindate', ['undefined', 'integer']],
+      ['maxdate', ['undefined', 'integer']],
+      ['sort', 'string'],
+      ['from', 'integer'],
+      ['to', 'integer'],
+   ]),
+   ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {total: 0, pics: []})) return log ('Invalid payload');
@@ -298,14 +368,12 @@ var main = [
       })) return log ('Invalid pic fields.');
       return true;
    }],
-   ['rotate pic (invalid #1)', 'post', 'rotate', {}, '', 400],
-   ['rotate pic (invalid #2)', 'post', 'rotate', {}, [], 400],
-   ['rotate pic (invalid #3)', 'post', 'rotate', {}, {}, 400],
-   ['rotate pic (invalid #4)', 'post', 'rotate', {}, {id: 1, deg: 20}, 400],
-   ['rotate pic (invalid #5)', 'post', 'rotate', {}, {id: 'hello'}, 400],
-   ['rotate pic (invalid #6)', 'post', 'rotate', {}, {deg: 90}, 400],
-   ['rotate pic (invalid #7)', 'post', 'rotate', {}, {id: 'hello', deg: 45}, 400],
-   ['rotate pic (invalid #8)', 'post', 'rotate', {}, {id: 'hello', deg: -90}, 404],
+   ttester ('rotate pic', 'post', 'rotate', {}, [
+      ['id', 'string'],
+      ['deg', 'integer'],
+   ]),
+   ['rotate pic (invalid #1)', 'post', 'rotate', {}, {id: 'hello', deg: 45}, 400],
+   ['rotate pic (invalid #2)', 'post', 'rotate', {}, {id: 'hello', deg: -90}, 404],
    ['rotate pic', 'post', 'rotate', {}, function (s) {
       return {id: s.rotateid, deg: 90};
    }, 200],
@@ -393,22 +461,16 @@ var main = [
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag invalid #1', 'post', 'tag', {}, '', 400],
-   ['tag invalid #2', 'post', 'tag', {}, {}, 400],
-   ['tag invalid #3', 'post', 'tag', {}, [], 400],
-   ['tag invalid #4', 'post', 'tag', {}, {tag: 22, ids: []}, 400],
-   ['tag invalid #5', 'post', 'tag', {}, {tag: 'foo', ids: ''}, 400],
-   ['tag invalid #6', 'post', 'tag', {}, {tag: 'foo', ids: {}}, 400],
-   ['tag invalid #7', 'post', 'tag', {}, {tag: 'foo', ids: ['a', 'b', 2]}, 400],
-   ['tag invalid #8', 'post', 'tag', {}, {tag: 'foo', ids: ['a', 'b'], del: 1}, 400],
-   ['tag valid empty', 'post', 'tag', {}, {tag: 'foo', ids: []}, 200],
-   ['tag valid empty', 'post', 'tag', {}, {tag: 'foo', ids: [], del: true}, 200],
+   ttester ('tag pic', 'post', 'tag', {}, [
+      ['tag', 'string'],
+      [['ids', 0], 'string'],
+      ['del', ['boolean', 'undefined']],
+   ]),
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag valid #1', 'post', 'tag', {}, {tag: 'foo', ids: []}, 200],
-   ['tag valid #2', 'post', 'tag', {}, {tag: 'foo', ids: ['a', 'b']}, 200],
+   ['tag valid #1', 'post', 'tag', {}, {tag: 'foo', ids: ['a', 'b']}, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
@@ -529,12 +591,11 @@ var main = [
       return true;
    }],
    ['verify user', 'get', function (s) {return 'auth/verify/' + s.vtoken2}, {}, '', 302],
-   ['share invalid payload #1', 'post', 'share', {}, {}, 400],
-   ['share invalid payload #2', 'post', 'share', {}, [], 400],
-   ['share invalid payload #3', 'post', 'share', {}, {tag: 'bla'}, 400],
-   ['share invalid payload #4', 'post', 'share', {}, {who: U [1].username}, 400],
-   ['share invalid payload #5', 'post', 'share', {}, {tag: 'bla', who: 2}, 400],
-   ['share invalid payload #6', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: 1}, 400],
+   ttester ('share pic', 'post', 'share', {}, [
+      ['tag', 'string'],
+      ['who', 'string'],
+      ['del', ['boolean', 'undefined']],
+   ]),
    ['share invalid tag', 'post', 'share', {}, {tag: 'all', who: U [1].username}, 400],
    ['share invalid tag', 'post', 'share', {}, {tag: 'untagged', who: U [1].username}, 400],
    ['share with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],

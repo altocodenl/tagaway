@@ -12,8 +12,8 @@ else
 fi
 
 ssh $HOST apt-get update
-ssh $HOST DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
 ssh $HOST DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+ssh $HOST DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
 ssh $HOST apt-get install fail2ban -y
 ssh $HOST apt-get install htop -y
 ssh $HOST "curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -"
