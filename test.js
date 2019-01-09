@@ -31,7 +31,6 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
       object:    function () {return {}},
       array:     function () {return []},
       null:      function () {return null},
-      regex:     function () {return /jetset/},
       boolean:   function () {return Math.random > 0.5},
       undefined: function () {},
    }
