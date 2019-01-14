@@ -212,7 +212,7 @@ var main = [
    ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq (rs.body, {total: 0, pics: []})) return log ('Invalid payload');
+      if (! eq (rs.body, {total: 0, pics: [], ids: []})) return log ('Invalid payload');
       return true;
    }],
    ['upload invalid payload #1', 'post', 'pic', {}, '', 400],
@@ -252,6 +252,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 1) return log ('Invalid total count.');
+      if (type (rs.body.ids) !== 'array' || rs.body.ids.length !== 1 || type (rs.body.ids [0]) !== 'string') return log ('Invalid ids.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       var pic = rs.body.pics [0];
       s.smallpic = teishi.c (pic);
@@ -289,6 +290,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 2) return log ('Invalid total count.');
+      if (type (rs.body.ids) !== 'array' || rs.body.ids.length !== 2 || type (rs.body.ids [1]) !== 'string') return log ('Invalid ids.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       var pic = rs.body.pics [0];
       if (pic.date !== getUTCTime ('2018/06/03')) return log ('Invalid pic.date');
@@ -315,6 +317,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 3) return log ('Invalid total count.');
+      if (type (rs.body.ids) !== 'array' || rs.body.ids.length !== 3 || type (rs.body.ids [2]) !== 'string') return log ('Invalid ids.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       if (rs.body.pics.length !== 1) return log ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
@@ -343,6 +346,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
       if (rs.body.total !== 4) return log ('Invalid total count.');
+      if (type (rs.body.ids) !== 'array' || rs.body.ids.length !== 4 || type (rs.body.ids [3]) !== 'string') return log ('Invalid ids.');
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
