@@ -119,7 +119,6 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
-      - `body.years` a list of years for which there's pictures matching the query. The years always refer to the picture date, not the upload date.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 `POST /share`
@@ -194,7 +193,6 @@ Use cases:
 - Admin & deploy
    - Manage payments.
    - Test s3del with > 1k pictures.
-   - Make `years` independent of query.
 
 - Account
    - Expire unused recovery tokens, avoid duplicated per user?
@@ -324,6 +322,7 @@ Use cases:
 `State.nextCanvas`: `undefined|PIC`, used to preload the next picture in the `canvas` view.
 `State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
+`State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.

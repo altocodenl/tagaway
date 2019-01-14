@@ -206,7 +206,7 @@
                   'font-family': 'Montserrat, sans-serif',
                }],
                ['h1', {
-                  'font-size':     H.fontSize (4),
+                  'font-size':     H.fontSize (3),
                   'margin-bottom': H.spacev (2),
                   'margin-top':    H.spacev (1),
                }],
@@ -594,6 +594,9 @@
                   });
                });
             }),
+            ['p', 'Deselect'],
+            ['p', 'Select all'],
+            ['hr'],
             Views.pics (x, ['Data', 'pics'])
          ]],
          ['div', {class: 'float', style: 'width:' + H.spaceh (3.5)}, [
@@ -630,128 +633,128 @@
       ]}, function (x, query) {
          if (! query) return;
          return B.view (x, ['Data', 'pics'], function (x, pics) {
-            if (! pics) return;
-            var selectedPics = dale.fil (B.get ('Data', 'pics'), undefined, function (p) {if (p.selected) return p}).length;
-            if (selectedPics > 0) return;
-            return [
-               ['style', [
-                  ['.blueside', {
-                     'position': 'relative',
-                  }],
-                  ['.blueside div.blueside', {
-                     height: 1,
-                     'position': 'absolute',
-                     left: H.spaceh (-0.35),
-                     'border-left': 'solid 3px ' + H.css.blue,
-                  }],
-                  ['div.input-search', {
-                     position: 'relative',
-                  }, [
-                     ['i', {
-                        position: 'absolute',
-                        right: H.spaceh (1),
-                        'font-size': H.fontSize (1.5),
-                        top: 10,
+            return B.view (x, ['State', 'selected'], function (x, selected) {
+               if (! pics || dale.keys (selected) > 0) return;
+               return [
+                  ['style', [
+                     ['.blueside', {
+                        'position': 'relative',
                      }],
-                  ]],
-                  ['ul', {
-                  }],
-                  ['ul.tags', {
-                     'list-style-type': 'none',
-                     padding: 0,
-                  }, [
-                     ['li', {
-                        cursor: 'pointer',
-                        'font-size': H.fontSize (-1),
-                        'font-weight': 'bold',
-                        color: H.css.gray3,
+                     ['.blueside div.blueside', {
+                        height: 1,
+                        'position': 'absolute',
+                        left: H.spaceh (-0.35),
+                        'border-left': 'solid 3px ' + H.css.blue,
+                     }],
+                     ['div.input-search', {
                         position: 'relative',
+                     }, [
+                        ['i', {
+                           position: 'absolute',
+                           right: H.spaceh (1),
+                           'font-size': H.fontSize (1.5),
+                           top: 10,
+                        }],
+                     ]],
+                     ['ul', {
                      }],
-                     ['li.selected', {
-                        color: H.css.gray1,
-                     }],
-                     ['i.cancel', {
-                        position: 'absolute',
-                        right: 0,
+                     ['ul.tags', {
+                        'list-style-type': 'none',
+                        padding: 0,
+                     }, [
+                        ['li', {
+                           cursor: 'pointer',
+                           'font-size': H.fontSize (-1),
+                           'font-weight': 'bold',
+                           color: H.css.gray3,
+                           position: 'relative',
+                        }],
+                        ['li.selected', {
+                           color: H.css.gray1,
+                        }],
+                        ['i.cancel', {
+                           position: 'absolute',
+                           right: 0,
+                        }],
+                     ]],
+                     ['.tag', {
+                        'width, height': 16,
+                        'margin-right': 12,
+                        display: 'block',
+                        float: 'left',
                      }],
                   ]],
-                  ['.tag', {
-                     'width, height': 16,
-                     'margin-right': 12,
-                     display: 'block',
-                     float: 'left',
-                  }],
-               ]],
-               ['h5', {class: 'gray3'}, 'OVERVIEW'],
-               B.view (x, ['Data', 'tags'], function (x, tags) {
-                  if (! tags) return;
-                  var tagmaker = function (tag, k, selected) {
-                     var tagn = ['', tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
-                     if (selected) return [['li', B.ev (['onclick', 'rem', ['State', 'query', 'tags'], k]), [
-                        ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
-                        tagn,
-                        ['i', {class: 'cancel icon ion-close'}],
-                     ]], ['br']];
-                     return [['li', B.ev ([
-                        ['onclick', 'add', ['State', 'query', 'tags'], tag],
-                        ['onclick', 'rem', 'State', 'autoquery'],
-                     ]), [
-                        ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
-                        tagn,
-                     ]], ['br']];
-                  }
-                  return [
-                     ['p', B.ev ({class: 'pointer ' + H.if (query.tags.length === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], []]), [
-                        H.if (query.tags.length === 0, ['div', {class: 'blueside'}]),
-                        ['i', {class: 'float inline icon ion-camera'}],
-                        ['All photos (', tags.all + ')']
-                     ]],
-                     ['p', B.ev ({class: 'pointer ' + H.if (query.tags.indexOf ('untagged') === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']]), [
-                        H.if (query.tags.indexOf ('untagged') === 0, ['div', {class: 'blueside'}]),
-                        ['i', {class: 'float inline icon ion-ios-pricetag-outline'}],
-                        ['Untagged (' + tags.untagged + ')'],
-                     ]],
-                     ['div', {style: 'height: 2px'}],
-                     query.tags.length > 0 && query.tags [0] !== 'untagged' ?
-                        ['h5', {class: 'gray3 blueside'}, [['div', {class: 'blueside'}], 'FILTER']] :
-                        ['h5', {class: 'gray3'}, 'FILTER'],
-                     B.view (x, ['State', 'autoquery'], {attrs: {class: 'input-search'}}, function (x, autoquery) {
-                        return [
-                           ['input', B.ev ({placeholder: 'Filter by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
-                           ['i', {class: 'icon ion-ios-search'}],
-                        ];
-                     }),
-                     H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags'}, dale.do (query.tags, function (tag, k) {
-                        return tagmaker (tag, k, true);
-                     })]),
-                     ['h5', {class: 'gray3'}, 'TAGS'],
-                     H.if (tags.length === 0, ['p', 'No tags yet! Click the upload button to add pictures and tags.']),
-                     B.view (x, ['State', 'autoquery'], function (x, autoquery) {
+                  ['h5', {class: 'gray3'}, 'OVERVIEW'],
+                  B.view (x, ['Data', 'tags'], function (x, tags) {
+                     if (! tags) return;
+                     var tagmaker = function (tag, k, active) {
+                        var tagn = ['', tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
+                        if (active) return [['li', B.ev (['onclick', 'rem', ['State', 'query', 'tags'], k]), [
+                           ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
+                           tagn,
+                           ['i', {class: 'cancel icon ion-close'}],
+                        ]], ['br']];
+                        return [['li', B.ev ([
+                           ['onclick', 'add', ['State', 'query', 'tags'], tag],
+                           ['onclick', 'rem', 'State', 'autoquery'],
+                        ]), [
+                           ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
+                           tagn,
+                        ]], ['br']];
+                     }
+                     return [
+                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.length === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], []]), [
+                           H.if (query.tags.length === 0, ['div', {class: 'blueside'}]),
+                           ['i', {class: 'float inline icon ion-camera'}],
+                           ['All photos (', tags.all + ')']
+                        ]],
+                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.indexOf ('untagged') === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']]), [
+                           H.if (query.tags.indexOf ('untagged') === 0, ['div', {class: 'blueside'}]),
+                           ['i', {class: 'float inline icon ion-ios-pricetag-outline'}],
+                           ['Untagged (' + tags.untagged + ')'],
+                        ]],
+                        ['div', {style: 'height: 2px'}],
+                        query.tags.length > 0 && query.tags [0] !== 'untagged' ?
+                           ['h5', {class: 'gray3 blueside'}, [['div', {class: 'blueside'}], 'FILTER']] :
+                           ['h5', {class: 'gray3'}, 'FILTER'],
+                           B.view (x, ['State', 'autoquery'], {attrs: {class: 'input-search'}}, function (x, autoquery) {
+                           return [
+                              ['input', B.ev ({placeholder: 'Filter by tag or year', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
+                              ['i', {class: 'icon ion-ios-search'}],
+                           ];
+                        }),
+                        H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags'}, dale.do (query.tags, function (tag, k) {
+                           return tagmaker (tag, k, true);
+                        })]),
+                        ['h5', {class: 'gray3'}, 'TAGS'],
+                        H.if (tags.length === 0, ['p', 'No tags yet! Click the upload button to add pictures and tags.']),
+                        B.view (x, ['State', 'autoquery'], function (x, autoquery) {
 
-                        var matches = dale.fil (dale.keys (tags), undefined, function (tag) {
-                           if (tag === 'all' || tag === 'untagged') return;
-                           if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
-                        }).sort (function (a, b) {
-                           if (a.match (/^\d{4}$/) && b.match (/^\d{4}$/)) return parseInt (a) > parseInt (b) ? 1 : -1;
-                           return a.toLowerCase () < b.toLowerCase ? -1 : 1;
-                        });
+                           var matches = dale.fil (dale.keys (tags), undefined, function (tag) {
+                              if (tag === 'all' || tag === 'untagged') return;
+                              if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
+                           }).sort (function (a, b) {
+                              if (a.match (/^\d{4}$/) && b.match (/^\d{4}$/)) return parseInt (a) > parseInt (b) ? 1 : -1;
+                              return a.toLowerCase () < b.toLowerCase ? -1 : 1;
+                           });
 
-                        if (matches.length > 0) return ['ul', {class: 'gray tags'}, dale.do (matches, function (tag) {
-                           return tagmaker (tag);
-                        })];
-                     }),
-                  ];
-               }),
-               /*
-               ['p', [
-                  query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
-                  [' | '],
-                  query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
-                  [' | '],
-                  query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
-               ]],
-               */
-            ];
+                           if (matches.length > 0) return ['ul', {class: 'gray tags'}, dale.do (matches, function (tag) {
+                              return tagmaker (tag);
+                           })];
+                        }),
+                     ];
+                  }),
+                  /*
+                  ['p', [
+                     query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
+                     [' | '],
+                     query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
+                     [' | '],
+                     query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
+                  ]],
+                  */
+               ];
+            });
          });
       });
    }
@@ -767,12 +770,11 @@
 
             H.authajax (x, 'post', 'query', {}, {tags: q.tags, sort: q.sort, from: 1, to: num + 30}, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error querying the picture(s).');
-               var selected = dale.obj (B.get ('Data', 'pics'), function (oldpic) {
-                  if (oldpic.selected) return [oldpic.id, true];
-               });
+               var selected = {};
                dale.do (rs.body.pics, function (newpic) {
-                  if (selected [newpic.id]) newpic.selected = true;
+                  if (B.get ('State', 'selected', newpic.id)) selected [newpic.id] = true;
                });
+               B.do (x, 'set', ['State', 'selected'], selected);
                B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
                B.do (x, 'set', ['Data', 'total'], rs.body.total);
             });
@@ -788,9 +790,7 @@
             });
          }],
          ['delete', 'pics', function (x) {
-            var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic) {
-               if (pic.selected) return pic.id;
-            });
+            var pics = dale.keys (B.get ('State', 'selected'));
             if (pics.length === 0) return;
             if (! confirm ('Are you sure you want to delete the selected pictures?')) return;
             B.do (x, 'notify', 'yellow', 'Deleting, please wait...');
@@ -812,9 +812,11 @@
             if (! tag) return;
             if (BASETAGS.indexOf (tag) !== -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             if (tag.match (/^\d{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
+            var ids = dale.keys (B.get ('State', 'selected'));
+            if (ids.length === 0) return;
             var payload = {
                tag: tag,
-               ids: dale.fil (B.get ('Data', 'pics'), undefined, function (v) {if (v.selected) return v.id}),
+               ids: ids,
                del: del
             }
             H.authajax (x, 'post', 'tag', {}, payload, function (error, rs) {
@@ -827,9 +829,7 @@
             });
          }],
          ['rotate', 'pics', function (x) {
-            var pics = dale.fil (B.get ('Data', 'pics'), undefined, function (pic, k) {
-               if (pic.selected) return pic.id;
-            });
+            var pics = dale.keys (B.get ('State', 'selected'));
             if (pics.length === 0) return;
             B.do (x, 'notify', 'yellow', 'Rotating, please wait...', true);
             var rotateOne = function () {
@@ -843,11 +843,13 @@
             }
             rotateOne ();
          }],
-         ['unselect', 'pics', function (x) {
-            dale.do (B.get ('Data', 'pics'), function (pic, k) {
-               if (pic.selected) B.rem (['Data', 'pics', k], 'selected');
+         ['selectall', [], function (x) {
+            H.authajax (x, 'post', 'query', {}, {tags: B.get ('State', 'query', 'tags'), from: 1, to: 1024 * 1024 * 1024}, function (error, rs) {
+               if (error) return B.do (x, 'notify', 'red', 'There was an error selecting all pictures.');
+               B.do (x, 'set', ['State', 'selected'], dale.do (rs.body.pics, function (pic) {
+                  return [pic.id, true];
+               }));
             });
-            B.do (x, 'change', ['Data', 'pics']);
          }],
       ];
 
@@ -858,14 +860,14 @@
          B.do (x, 'rem', 'Data', 'tags');
       }}, function (x, tags) {
          return B.view (x, ['Data', 'pics'], function (x, pics) {
-            var selected = dale.fil (pics, undefined, function (v) {if (v.selected) return v});
-            if (selected.length === 0) return;
-            var picn = selected.length === 1 ? 'picture' : 'pictures';
+            var pics = dale.keys (B.get ('State', 'selected'));
+            if (pics.length === 0) return;
+            var picn = pics.length === 1 ? 'picture' : 'pictures';
             return [
                ['h3', 'Manage pics'],
                ['h4', [
-                  [selected.length, ' ', picn, ' selected - '],
-                  ['span', B.ev ({class: 'action'}, ['onclick', 'unselect', 'pics']), 'Unselect all']
+                  [pics.length, ' ', picn, ' selected - '],
+                  ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'selected'], {}]), 'Unselect all']
                ]],
                ['hr'],
                B.view (x, ['State', 'action'], function (x, action) {
@@ -886,7 +888,7 @@
                   if (action === 'untag') {
 
                      var tags = {};
-                     dale.do (selected, function (pic) {
+                     dale.do (pics, function (pic) {
                         dale.do (pic.tags, function (tag) {
                            tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
                         });
@@ -929,7 +931,7 @@
 
                   if (action === 'rotate') {
                      var firstSelected = dale.stopNot (pics, undefined, function (pic) {
-                        if (pic.selected) return pic;
+                        if (B.get ('State', 'selected', pic.id)) return pic;
                      });
                      return B.view (x, ['State', 'rotate'], function (x, rotate) {return [
                         ['span', B.ev ({class: rotate === -90 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], -90]), 'Rotate left'],
@@ -1114,24 +1116,27 @@
          }],
       ]],
       B.view (x, path, {listen: [
-         ['click', 'pic', function (x, pic, k) {
+         ['click', 'pic', function (x, id, k) {
+            console.log ('click pic', id, k);
             var last = B.get ('State', 'lastclick') || {time: 0};
-            if (last.id === pic.id && Date.now () - B.get ('State', 'lastclick').time < 500) {
-               B.do (x, 'set', ['Data', 'pics', k, 'selected'], false);
+            if (last.id === id && Date.now () - B.get ('State', 'lastclick').time < 500) {
+               B.do (x, 'rem', ['State', 'selected'], id);
                return B.do (x, 'set', ['State', 'canvas'], pic);
             }
             var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
-               if (pic.id === last.id) return k;
+               if (id === last.id) return k;
             });
-            if (! B.get ('State', 'shift') || B.get ('State', 'ctrl') || last.id === pic.id || ! B.get ('Data', 'pics', lastIndex, 'selected')) {
-               B.do (x, 'set', ['State', 'lastclick'], {id: pic.id, time: Date.now ()});
-               return B.do (x, 'set', ['Data', 'pics', k, 'selected'], ! pic.selected);
+            // XXX fix selection with shift
+            if (! B.get ('State', 'shift') || B.get ('State', 'ctrl') || last.id === id || ! B.get ('State', 'selected', B.get ('Data', 'pics', lastIndex, 'id'))) {
+               B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
+               if (B.get ('State', 'selected', id)) return B.do (x, 'rem', ['State', 'selected'], id);
+               else                                     return B.do (x, 'set', ['State', 'selected', id], true);
             }
             dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
-               B.set (['Data', 'pics', k, 'selected'], true);
+               B.set (['State', 'selected', B.get ('Data', 'pics', k, 'id')], true);
             });
-            B.do (x, 'change', ['Data', 'pics']);
-            B.do (x, 'set', ['State', 'lastclick'], {id: pic.id, time: Date.now ()});
+            B.do (x, 'change', ['State', 'selected']);
+            B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
          }],
          ['document', 'scroll', function (x, e) {
             var prev = B.get ('State', 'lastscroll');
@@ -1246,14 +1251,20 @@
                   return Math.max.apply (null, upstairs);
                }) ();
 
-               H.last (positions).push ([x + picw + 24, y + pich + 24, picw, pich, pic]);
+               H.last (positions).push ([x + picw + 24, y + pich + 24, picw, pich, pic, k]);
 
                if (k === pics.length - 1) pushrow ();
             }),
             (function () {
                return dale.do (positions, function (v) {
                   return dale.do (v, function (p) {
-                     return ['img', {class: 'pic ' + (p [4].selected ? ' selected' : ''), src: H.picPath (p [4]), style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'}];
+                     return B.view (['State', 'selected'], function (x, selected) {
+                        return ['img', B.ev ({
+                           class: 'pic ' + (selected [p [4].id] ? ' selected' : ''),
+                           src: H.picPath (p [4]),
+                           style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'
+                        }, ['onclick', 'click', 'pic', p [4].id, p [5]])];
+                     });
                   });
                });
             }) (),
