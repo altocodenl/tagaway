@@ -1204,8 +1204,8 @@ var routes = [
             });
             multi2.exec (function (error, pics) {
                if (error) return reply (rs, 500, {error: error});
-               if (pics.length === 0) return reply (rs, 200, {total: 0, ids: [], pics: []});
-               var output = {pics: [], ids: []};
+               if (pics.length === 0) return reply (rs, 200, {total: 0, pics: []});
+               var output = {pics: []};
 
                var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
 
@@ -1226,7 +1226,6 @@ var routes = [
                output.pics = dale.fil (output.pics, undefined, function (pic, k) {
                   if (! hashes [pic.hash]) {
                      hashes [pic.hash] = true;
-                     output.ids.push (pic.id);
                      return pic;
                   }
                });
