@@ -193,6 +193,11 @@
       return Math.pow (ratio || TYPERATIO, value) * (base || TYPEBASE) + 'rem';
    }
 
+   H.tagsort = function (a, b) {
+      if (a.match (/^\d{4}$/) && b.match (/^\d{4}$/)) return parseInt (a) > parseInt (b) ? 1 : -1;
+      return a.toLowerCase () < b.toLowerCase ? -1 : 1;
+   }
+
    // *** VIEWS ***
 
    var Views = {};
@@ -225,10 +230,9 @@
                   'margin-left': H.spaceh (1),
                }],
                ['.logo', {
-                  //'font-family': '\'Lucida Bright\', Georgia, serif',
                   'font-family': '\'Kadwa\', serif',
                   'font-weight': 'bold',
-                  'font-size': H.fontSize (2),
+                  'font-size': H.fontSize (2.5),
                }],
                ['.button', {
                   cursor: 'pointer',
@@ -248,6 +252,9 @@
                }],
                ['.float', {
                   float: 'left',
+               }],
+               ['.floatr', {
+                  float: 'right',
                }],
                ['p', {
                   'font-size': H.fontSize (-1),
@@ -285,8 +292,8 @@
                }],
             ]],
             ['h2', {class: 'logo-container'}, [
-                ['span', {class: 'logo', style: 'color: ' + H.css.blue}, 'ac:'],
-                ['span', {class: 'logo', style: 'color: red'}, 'pic'],
+                ['span', {class: 'logo', style: 'color: ' + H.css.tagc4}, 'ac:'],
+                ['span', {class: 'logo', style: 'color: ' + H.css.tagc1}, 'pic'],
                 ['a', B.ev ({title: 'Log Out', href: '#', class: 'logout'}, ['onclick', 'logout', '*']), ['i', {class: 'icon ion-log-out'}]],
             ]],
             Views.canvas (x),
@@ -587,15 +594,47 @@
                return B.view (x, ['Data', 'tags'], function (x, tags) {
                   return B.view (x, ['Data', 'total'], function (x, total) {
                      total = total || 0;
-                     if (! qtags || qtags.length === 0) return ['h1', 'All Photos (' + total  + ')'];
-                     else if (teishi.eq (['untagged'], qtags)) return ['h1', 'Untagged (' + total + ')'];
-                     else if (qtags.length === 1)              return ['h1', qtags [0] + ' (' + total + ')'];
-                     else                                      return ['h1', 'Multiple tags (' + total + ')'];
+                     var style = {style: 'margin-top: 0.5rem; margin-bottom: 1.5rem'};
+                     if (! qtags || qtags.length === 0)        return ['h1', style, 'All Photos (' + total  + ')'];
+                     else if (teishi.eq (['untagged'], qtags)) return ['h1', style, 'Untagged (' + total + ')'];
+                     else if (qtags.length === 1)              return ['h1', style, qtags [0] + ' (' + total + ')'];
+                     else                                      return ['h1', style, 'Multiple tags (' + total + ')'];
                   });
                });
             }),
-            ['p', 'Deselect'],
-            ['p', 'Select all'],
+            B.view (x, ['State', 'query', 'tags'], {attrs: {class: 'float', style: 'width: ' + H.spaceh (14)}}, function (x, qtags) {
+               return B.view (x, ['Data', 'tags'], function (x, tags) {
+                  return B.view (x, ['Data', 'total'], function (x, total) {
+                     if (! qtags || qtags.length === 0) return 'all';
+                     else if (teishi.eq (['untagged'], qtags)) return ['h1', style, 'Untagged (' + total + ')'];
+                     else return dale.do (teishi.c (qtags).sort (H.tagsort), function (tag) {
+                        return [
+                           ['p', {class: 'float bold gray3'}, [
+                              ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
+                              ['span', {style: 'margin-left: -10px; margin-right: 15px;'}, tag],
+                           ]],
+                        ];
+                     });
+                  });
+               });
+            }),
+            B.view (x, ['State', 'query', 'sort'], function (x, sort) {
+               return ['div', {class: 'float', style: 'height: 80px; width: ' + H.spaceh (11)}, [
+                  ['style', [
+                     ['p.select', {
+                        'margin-right': 10,
+                     }],
+                  ]],
+                  ['select', B.ev ({class: 'floatr'}, ['onchange', 'set', ['State', 'query', 'sort']]), [
+                     ['option', {selected: sort === 'newest', value: 'newest'}, 'Newest'],
+                     ['option', {selected: sort === 'oldest', value: 'oldest'}, 'Oldest'],
+                     ['option', {selected: sort === 'upload', value: 'upload'}, 'Upload'],
+                  ]],
+                  ['p', B.ev ({class: 'select bold pointer floatr gray3'}, ['onclick', 'set', ['State', 'selected'], {}]), 'Deselect '],
+                  ['p', B.ev ({class: 'select bold pointer floatr gray3'}, ['onclick', 'selectall', []]), ' Select all'],
+               ]];
+            }),
+            ['br'], ['br'],
             ['hr'],
             Views.pics (x, ['Data', 'pics'])
          ]],
@@ -684,7 +723,7 @@
                         float: 'left',
                      }],
                   ]],
-                  ['h5', {class: 'gray3'}, 'OVERVIEW'],
+                  ['h5', {class: 'gray3', style: 'margin-top: 0.5rem'}, 'OVERVIEW'],
                   B.view (x, ['Data', 'tags'], function (x, tags) {
                      if (! tags) return;
                      var tagmaker = function (tag, k, active) {
@@ -733,10 +772,7 @@
                            var matches = dale.fil (dale.keys (tags), undefined, function (tag) {
                               if (tag === 'all' || tag === 'untagged') return;
                               if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
-                           }).sort (function (a, b) {
-                              if (a.match (/^\d{4}$/) && b.match (/^\d{4}$/)) return parseInt (a) > parseInt (b) ? 1 : -1;
-                              return a.toLowerCase () < b.toLowerCase ? -1 : 1;
-                           });
+                           }).sort (H.tagsort);
 
                            if (matches.length > 0) return ['ul', {class: 'gray tags'}, dale.do (matches, function (tag) {
                               return tagmaker (tag);
@@ -844,9 +880,9 @@
             rotateOne ();
          }],
          ['selectall', [], function (x) {
-            H.authajax (x, 'post', 'query', {}, {tags: B.get ('State', 'query', 'tags'), from: 1, to: 1024 * 1024 * 1024}, function (error, rs) {
+            H.authajax (x, 'post', 'query', {}, {tags: B.get ('State', 'query', 'tags'), from: 1, to: 1024 * 1024 * 1024, sort: 'newest'}, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error selecting all pictures.');
-               B.do (x, 'set', ['State', 'selected'], dale.do (rs.body.pics, function (pic) {
+               B.do (x, 'set', ['State', 'selected'], dale.obj (rs.body.pics, function (pic) {
                   return [pic.id, true];
                }));
             });
@@ -941,7 +977,6 @@
                         ['span', B.ev ({class: rotate === 180 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], 180]), 'Invert'],
                         ['br'], ['br'], ['br'], ['br'],
                         ['style', [
-                           ['span.bold', {'font-weight': 'bold'}],
                            ['img.rotate', {
                               'transform, -ms-transform, -webkit-transform, -moz-transform': 'rotate(' + (rotate || 0) + 'deg)',
                               'max-height, max-width': 130
@@ -1121,7 +1156,7 @@
             var last = B.get ('State', 'lastclick') || {time: 0};
             if (last.id === id && Date.now () - B.get ('State', 'lastclick').time < 500) {
                B.do (x, 'rem', ['State', 'selected'], id);
-               return B.do (x, 'set', ['State', 'canvas'], pic);
+               return B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', k));
             }
             var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
                if (id === last.id) return k;
@@ -1170,7 +1205,6 @@
                }],
                ['img.pic', {
                   float: 'left',
-                  //'margin-right, margin-bottom': 24,
                   'border-radius': 12,
                   'max-width, max-height': 185,
                   position: 'absolute',

@@ -169,11 +169,10 @@ Use cases:
 ### Todo alpha
 
 - Client
+   - Add window.onresize on canvas view.
+   - New font in email logo
    - New interface!
-      - tag1 (nn), tag2 (nn) above pictures
-      - Deselect vs select all
-      - Sort dropdown
-      - Select pictures
+      - Select pictures: shift
       - Edit pictures: rotate
       - Edit pictures: add tags (when entering non-existing tag, add text next to it to say "XX (new tag)")
       - Edit pictures: delete with confirm
@@ -181,12 +180,10 @@ Use cases:
       - Upload view
       - Add tags to upload after some pictures were uploaded
       - Multiple uploads?
-   - Add window.onresize on canvas view.
-   - What to do if x.from is used multiple times on the same handler (they should be independent).
-   - New font in email logo
 
 - Server
    - Logging service on server with email sending by priority tiers.
+   - Catch exceptions.
 
 ### Todo beta
 
