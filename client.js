@@ -87,8 +87,10 @@
       B.do ({from: {ev: 'ready'}}, 'change', 'hash');
       B.mount ('body', Views.base ({from: {ev: 'ready'}}));
       document.onscroll = function (e) {
-         // XXX x.from not working
-         B.do ('document', 'scroll', e);
+         B.do ({from: {ev: 'onscroll'}}, 'document', 'scroll', e);
+      }
+      window.onresize = function (e) {
+         B.do ({from: {ev: 'onresize'}}, 'change', ['Data', 'pics']);
       }
    });
 
@@ -195,7 +197,7 @@
 
    H.tagsort = function (a, b) {
       if (a.match (/^\d{4}$/) && b.match (/^\d{4}$/)) return parseInt (a) > parseInt (b) ? 1 : -1;
-      return a.toLowerCase () < b.toLowerCase ? -1 : 1;
+      return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
    }
 
    // *** VIEWS ***
@@ -605,8 +607,8 @@
             B.view (x, ['State', 'query', 'tags'], {attrs: {class: 'float', style: 'width: ' + H.spaceh (14)}}, function (x, qtags) {
                return B.view (x, ['Data', 'tags'], function (x, tags) {
                   return B.view (x, ['Data', 'total'], function (x, total) {
-                     if (! qtags || qtags.length === 0) return 'all';
-                     else if (teishi.eq (['untagged'], qtags)) return ['h1', style, 'Untagged (' + total + ')'];
+                     if (! qtags || qtags.length === 0) return ['p', {class: 'float bold gray3'}];
+                     else if (teishi.eq (['untagged'], qtags)) return ['p', {class: 'float bold gray3'}];
                      else return dale.do (teishi.c (qtags).sort (H.tagsort), function (tag) {
                         return [
                            ['p', {class: 'float bold gray3'}, [
@@ -625,7 +627,7 @@
                         'margin-right': 10,
                      }],
                   ]],
-                  ['select', B.ev ({class: 'floatr'}, ['onchange', 'set', ['State', 'query', 'sort']]), [
+                  ['select', B.ev ({class: 'floatr', style: 'padding: 5px'}, ['onchange', 'set', ['State', 'query', 'sort']]), [
                      ['option', {selected: sort === 'newest', value: 'newest'}, 'Newest'],
                      ['option', {selected: sort === 'oldest', value: 'oldest'}, 'Oldest'],
                      ['option', {selected: sort === 'upload', value: 'upload'}, 'Upload'],
@@ -1165,7 +1167,7 @@
             if (! B.get ('State', 'shift') || B.get ('State', 'ctrl') || last.id === id || ! B.get ('State', 'selected', B.get ('Data', 'pics', lastIndex, 'id'))) {
                B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
                if (B.get ('State', 'selected', id)) return B.do (x, 'rem', ['State', 'selected'], id);
-               else                                     return B.do (x, 'set', ['State', 'selected', id], true);
+               else                                 return B.do (x, 'set', ['State', 'selected', id], true);
             }
             dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
                B.set (['State', 'selected', B.get ('Data', 'pics', k, 'id')], true);

@@ -3,10 +3,15 @@ var DOMAIN = {
    prod: 'https://altocode.nl/pic/',
 } [process.argv [2]];
 
-var ACPIC = [['span', {style: 'font-weight: bold;'}, 'ac:'], ['span', {style: 'font-weight: bold; color: red'}, 'pic']];
+var LOGO = [
+   ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #6B6DF9;'}, 'ac:'],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #BE5764;'}, 'pic'],
+];
+
 var TEMPLATE = function (content) {
    return ['body', {style: 'width: 50%; margin-left: 25%'}, [
-      ['p', {style: 'text-align: center; font-size: 28px; font-family: \'Lucida Bright\', Georgia, serif'}, ['a', {href: DOMAIN, style: 'color: inherit; text-decoration: none'}, ACPIC]],
+      ['p', {style: 'text-align: center; font-size: 28px; font-family: \'Lucida Bright\', Georgia, serif'}, ['a', {href: DOMAIN, style: 'color: inherit; text-decoration: none'}, LOGO]],
       content,
    ]];
 }
@@ -44,13 +49,13 @@ module.exports = {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
                GREETING (username),
                ['br'],
-               'You have been officially invited to join ', ACPIC, '!',
+               'You have been officially invited to join ', LOGO, '!',
                ['br'],
                ['a', {href: DOMAIN + '#/auth/signup/' + encodeURIComponent (token)}, 'Please click on this link to create your account.'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', ACPIC, ' team'
+               'The ', LOGO, ' team'
             ]]);
          }
       },
@@ -60,12 +65,12 @@ module.exports = {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
                GREETING (username),
                ['br'],
-               'Welcome to ', ACPIC, ' ! Please verify your email by clicking on the following link: ',
+               'Welcome to ', LOGO, ' ! Please verify your email by clicking on the following link: ',
                ['a', {href: DOMAIN + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', ACPIC, ' team'
+               'The ', LOGO, ' team'
             ]]);
          }
       },
@@ -75,13 +80,13 @@ module.exports = {
             return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
                GREETING (username),
                ['br'],
-               'Welcome to ', ACPIC, ' ! We are thrilled to have you with us.',
+               'Welcome to ', LOGO, ' ! We are thrilled to have you with us.',
                ['br'],
-               ACPIC, ' is just getting started; we would love to have your feedback. Feel free to tell us how we can make ', ACPIC, ' work better for you.',
+               LOGO, ' is just getting started; we would love to have your feedback. Feel free to tell us how we can make ', LOGO, ' work better for you.',
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', ACPIC, ' team'
+               'The ', LOGO, ' team'
             ]]);
          }
       },
@@ -97,7 +102,7 @@ module.exports = {
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', ACPIC, ' team'
+               'The ', LOGO, ' team'
             ]]);
          }
       },
@@ -113,7 +118,7 @@ module.exports = {
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', ACPIC, ' team'
+               'The ', LOGO, ' team'
             ]]);
          }
       },

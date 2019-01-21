@@ -169,9 +169,8 @@ Use cases:
 ### Todo alpha
 
 - Client
-   - Add window.onresize on canvas view.
-   - New font in email logo
    - New interface!
+      - Blue dot on select
       - Select pictures: shift
       - Edit pictures: rotate
       - Edit pictures: add tags (when entering non-existing tag, add text next to it to say "XX (new tag)")
@@ -182,8 +181,7 @@ Use cases:
       - Multiple uploads?
 
 - Server
-   - Logging service on server with email sending by priority tiers.
-   - Catch exceptions.
+   - Catch exceptions & abnormal behavior and send to notification service.
 
 ### Todo beta
 
