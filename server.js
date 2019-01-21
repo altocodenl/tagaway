@@ -808,15 +808,15 @@ var routes = [
 
       var path = rq.data.files.pic;
 
+      var pic = {lastModified: parseInt (rq.data.fields.lastModified)};
+      pic.id     = uuid ();
+      pic.owner  = rq.user.username;
+      pic.name   = path.slice (path.indexOf ('_') + 1);
+      pic.dateup = Date.now ();
+
+      var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
+
       a.stop (function (s) {
-         var pic = {lastModified: parseInt (rq.data.fields.lastModified)};
-         pic.id     = uuid ();
-         pic.owner  = rq.user.username;
-         pic.name   = path.slice (path.indexOf ('_') + 1);
-         pic.dateup = Date.now ();
-
-         var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
-
          return [
             [a.set, 'hash', [H.hash, path]],
             function (s) {
@@ -916,11 +916,8 @@ var routes = [
                      multi.hmset ('pic:' + pic.id, pic);
                      multi.exec (function (error) {
                         if (error) return reply (rs, 500, {error: error});
-                        if (! rs.connection.writable) {
-                           cicek.log (['error', 'client upload error', {pic: s.pic}]);
-                           return;
-                        }
                         H.log (rq.user.username, {a: 'upl', id: pic.id});
+                        if (! rs.connection.writable) return cicek.log (['error', 'client upload error', {pic: s.pic}]);
                         reply (rs, 200);
                      });
                   }
@@ -928,7 +925,12 @@ var routes = [
             }
          ];
       }, {catch: function (s) {
-         if (s.catch.err && s.catch.err.match ('identify')) return reply (rs, 400, {error: 'Invalid image format: ' + s.catch.err});
+
+         if (s.catch.err && s.catch.err.match ('identify')) return fs.unlink (newpath, function (error) {
+            if (error) return reply (rs, 500, {error: error});
+            reply (rs, 400, {error: 'Invalid image format: ' + s.catch.err});
+         });
+
          reply (rs, 500, {error: s.catch});
       }});
    }],
@@ -1062,7 +1064,6 @@ var routes = [
             });
             multi.exec (function (error, data) {
                if (error) return reply (rs, 500, {error: error});
-               // XXX s.do (data) doesn't work!
                s.last = data;
                s.do ();
             });
