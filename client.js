@@ -200,6 +200,13 @@
       return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
    }
 
+   H.zp = function (v) {return v < 10 ? '0' + v : v}
+
+   H.dformat = function (d) {
+      d = new Date (d);
+      return H.zp (d.getUTCDate ()) + '/' + H.zp (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
+   }
+
    // *** VIEWS ***
 
    var Views = {};
@@ -984,7 +991,7 @@
                               'max-height, max-width': 130
                            }]
                         ]],
-                        ['div', {style: 'height: 200px, width: 200px'}, ['img', {class: 'rotate pure-img', src: H.picPath (firstSelected)}]],
+                        ['div', {style: 'height: 200px, width: 200px'}, ['img', {class: 'rotate', src: H.picPath (firstSelected)}]],
                         ['br'], ['br'], ['br'], ['br'],
                         ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'rotate', 'pics']), 'Rotate'],
                         ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
@@ -1102,78 +1109,29 @@
 
    // *** PICS VIEW ***
 
-   Views.pics = function (x, path) {return [
-      ['style', [
-         ['div.selected', {
-            'background-color': 'blue'
-         }],
-         ['img.pure-img', {
-            cursor: 'pointer',
-            'background-color': '#ddd',
-            'border-radius': 8,
-            'max-height, max-width': 0.95,
-            'width, height, margin': 'auto',
-            position: 'absolute',
-            'top, bottom, left, right': 3
-         }],
-         ['img.selected', {
-            'box-shadow': 'inset 0 0 0 1000px rgba(255,0,0,0.5)',
-            opacity: '0.5'
-         }],
-         ['div.imgcont', {
-            position: 'relative',
-            display: 'inline-block',
-            width: 180,
-            height: 135,
-            'vertical-align': 'middle',
-            'text-align': 'middle',
-            'border-radius': 12,
-            'background-color': '#222222',
-            'margin-right, margin-bottom': 3
-         }],
-         ['div.imgtext', {
-            opacity: 0,
-            width: 0.97,
-            height: 25,
-            padding: 5,
-            background: 'rgba(0,0,0,.8)',
-            color: 'white',
-            position: 'absolute',
-            'bottom, left': 3,
-            'vertical-align': 'bottom',
-            'font-size': 0.7,
-            transition: 'opacity',
-         }],
-         ['div.left', {float: 'left'}],
-         ['div.right', {float: 'right'}],
-         ['div.imgcont:hover div.imgtext', {
-            'transition-delay': '0.4s',
-            opacity: '1',
-            '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
-         }],
-      ]],
-      B.view (x, path, {listen: [
+   Views.pics = function (x, path) {
+      var evs = [
          ['click', 'pic', function (x, id, k) {
-            console.log ('click pic', id, k);
             var last = B.get ('State', 'lastclick') || {time: 0};
             if (last.id === id && Date.now () - B.get ('State', 'lastclick').time < 500) {
                B.do (x, 'rem', ['State', 'selected'], id);
+               // If last click was on this picture and recent, we open canvas.
                return B.do (x, 'set', ['State', 'canvas'], B.get ('Data', 'pics', k));
             }
+
+            B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
+
             var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
-               if (id === last.id) return k;
+               if (pic.id === last.id) return k;
             });
-            // XXX fix selection with shift
-            if (! B.get ('State', 'shift') || B.get ('State', 'ctrl') || last.id === id || ! B.get ('State', 'selected', B.get ('Data', 'pics', lastIndex, 'id'))) {
-               B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
-               if (B.get ('State', 'selected', id)) return B.do (x, 'rem', ['State', 'selected'], id);
-               else                                 return B.do (x, 'set', ['State', 'selected', id], true);
-            }
+
+            if (! B.get ('State', 'shift') || lastIndex === undefined) return B.do (x, 'set', ['State', 'selected', id], true);
+
+            // Selection with shift when the previously clicked picture is still here.
             dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
                B.set (['State', 'selected', B.get ('Data', 'pics', k, 'id')], true);
             });
             B.do (x, 'change', ['State', 'selected']);
-            B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
          }],
          ['document', 'scroll', function (x, e) {
             var prev = B.get ('State', 'lastscroll');
@@ -1192,7 +1150,8 @@
             if (lasty < lasti) return;
             B.do ({from: {ev: 'scroll'}}, 'retrieve', 'pics');
          }],
-      ], attrs: {class: 'piclist'}}, function (x, pics) {
+      ];
+      return B.view (x, path, {listen: evs, attrs: {class: 'piclist'}}, function (x, pics) {
          if (! pics || pics.length === 0) return;
          // first row starts all with top 0, left as previous end + 24. Know when to end the row because of lack of space (width, without 24)
          // next row, throughout its width check previous row pictures bottom offset (the max one). Add 25, that's your top offset. For right it is simply 25 + the previous in the row, or nothing if first in row.
@@ -1206,10 +1165,45 @@
                   display: 'inline-block',
                }],
                ['img.pic', {
-                  float: 'left',
                   'border-radius': 12,
                   'max-width, max-height': 185,
+               }],
+               ['div.imagecontainer', {
                   position: 'absolute',
+               }],
+               ['div.imagecaption', {
+                  'border-radius': 10,
+                  opacity: 0,
+                  width: 1,
+                  height: 25,
+                  padding: 5,
+                  background: 'rgba(0,0,0,.8)',
+                  color: 'white',
+                  position: 'absolute',
+                  bottom: 3,
+                  left: 0,
+                  'vertical-align': 'bottom',
+                  'font-size': 0.7,
+                  transition: 'opacity',
+               }],
+               ['div.left', {float: 'left'}],
+               ['div.right', {float: 'right'}],
+               ['div.imagecontainer:hover div.imagecaption', {
+                  'transition-delay': '0.4s',
+                  opacity: '1',
+                  '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
+               }],
+               ['img.selected', {
+                  'box-shadow': 'inset 0 0 0 1000px rgba(230,230,230,0.5)',
+                  opacity: '0.5'
+               }],
+               ['div.blueoval', {
+                  'border-radius': 0.5,
+                  'width, height': 18,
+                  'background-color': H.css.blue,
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
                }],
             ]],
 
@@ -1294,29 +1288,28 @@
             (function () {
                return dale.do (positions, function (v) {
                   return dale.do (v, function (p) {
-                     return B.view (['State', 'selected'], function (x, selected) {
-                        return ['img', B.ev ({
-                           class: 'pic ' + (selected [p [4].id] ? ' selected' : ''),
-                           src: H.picPath (p [4]),
-                           style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'
-                        }, ['onclick', 'click', 'pic', p [4].id, p [5]])];
+                     return B.view (['State', 'selected'], {attrs: {
+                        class: 'imagecontainer',
+                        style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'
+                     }}, function (x, selected) {
+                        return [
+                           ['img', B.ev ({
+                              class: 'pic ' + (selected [p [4].id] ? ' selected' : ''),
+                              src: H.picPath (p [4]),
+                           }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
+                           ['div', {class: 'imagecaption'}, [
+                              ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],
+                              ['span', {style: 'position: absolute; right: 5px'}, H.dformat (p [4].date)],
+                           ]],
+                           H.if (selected [p [4].id], ['div', {class: 'blueoval'}]),
+                        ];
                      });
                   });
                });
             }) (),
          ];
-         /*
-            return ['div', B.ev ({class: 'imgcont'}, ['onclick', 'click', 'pic', pic, k]), [
-               ['img', {class: 'pure-img' + (pic.selected ? ' selected' : ''), style: 'padding: 2px; float: left', src: H.picPath (pic)}],
-               ['div', {class: 'imgtext'}, [
-                  ['div', {class: 'left'}, [['i', {class: 'ion-pricetag'}], ' ' + pic.tags.length]],
-                  ['div', {class: 'right'}, ['span', date]]
-               ]],
-               (k + 1) % 3 === 0 ? ['p', {style: 'clear: both; margin: 0px;'}] : []
-            ]];
-            */
-      }),
-   ]}
+      });
+   }
 
    // *** CANVAS VIEW ***
 

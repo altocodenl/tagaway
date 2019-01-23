@@ -170,24 +170,25 @@ Use cases:
 
 - Client
    - New interface!
-      - Blue dot on select
-      - Select pictures: shift
       - Edit pictures: rotate
       - Edit pictures: add tags (when entering non-existing tag, add text next to it to say "XX (new tag)")
       - Edit pictures: delete with confirm
-      - Initial view with no pictures
+      - Canvas: size, border, caption, chevrons & x, resizing on rotation
       - Upload view
-      - Add tags to upload after some pictures were uploaded
+      - Initial view with no pictures
+      - Add tags to upload after some pictures were uploaded?
       - Multiple uploads?
 
 - Server
+   - ttester add extra keys.
    - Catch exceptions & abnormal behavior and send to notification service.
+   - Infra: new bucket (with IA lifecycle), new server
 
 ### Todo beta
 
 - Admin & deploy
    - Manage payments.
-   - Test s3del with > 1k pictures.
+   - s3del with > 1k pictures.
 
 - Account
    - Expire unused recovery tokens, avoid duplicated per user?
@@ -227,7 +228,7 @@ Use cases:
    - Create group that groups people.
    - Filters.
    - Themes for the interface.
-   - Mark tag as private/hide tag from normal view?
+   - Private mode on/off; when on, tags marked as private are shown.
    - Set date manually?
    - Order pictures within tag? Set priorities!
 
