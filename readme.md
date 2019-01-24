@@ -134,7 +134,8 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 `GET /account`
-   - XXX
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, used: [INTEGER_USED, INTEGER_MAXIMUM], logs: [...]}`.
+   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 ### Debugging routes
 
@@ -181,6 +182,7 @@ Use cases:
 
 - Server
    - ttester add extra keys.
+   - add test for get account.
    - Catch exceptions & abnormal behavior and send to notification service.
    - Infra: new bucket (with IA lifecycle), new server
 
@@ -217,6 +219,7 @@ Use cases:
    - Folder upload on Android & mobile.
 
 - Organize
+   - Mobile/tablet view.
    - Add colors to tags.
    - Hide certain tags when you don't search for any, unless you explicitly search for them
    - Smaller level of scale to go faster
@@ -328,10 +331,11 @@ Use cases:
 
 ```
 - users:USERNAME (hash):
+   pass: STRING,
    username: STRING,
    email: STRING,
-   pass: STRING,
-   tier: STRING (one of tier1|tier2|tier3|tier4),
+   type: STRING (one of tier1|tier2),
+   created: INT
    s3:bget: INT (bytes GET from s3),
    s3:buse: INT (space used in S3),
 

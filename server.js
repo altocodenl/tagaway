@@ -827,7 +827,7 @@ var routes = [
                return [
                   [Redis, 'hget', 'users:' + rq.user.username, 's3:buse'],
                   function (s) {
-                     if (s.last !== null && CONFIG.storelimit [rq.user.tier || 'tier1'] < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
+                     if (s.last !== null && (CONFIG.storelimit [rq.user.type || 'tier1'] || 0) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
                      s.do ();
                   },
                   [H.mkdirif, Path.dirname (newpath)],
@@ -1305,6 +1305,22 @@ var routes = [
             shm: dale.do (data [1], function (i) {
                return [i.split (':') [0], i.split (':').slice (1).join (':')];
             }),
+         });
+      });
+   }],
+
+   // *** ACCOUNT ***
+
+   ['get', 'account', function (rq, rs) {
+      redis.lrange ('ulog:' + rq.user.username, 0, -1, function (error, logs) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, {
+            username: rq.user.username,
+            email:    rq.user.email,
+            type:     rq.user.type,
+            created:  parseInt (rq.user.created),
+            used:     [parseInt (rq.user ['s3:buse']), parseInt (CONFIG.storelimit [rq.user.type || 'tier1']) || 0],
+            logs:     dale.do (logs, JSON.parse),
          });
       });
    }],

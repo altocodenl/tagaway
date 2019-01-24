@@ -92,6 +92,29 @@
       window.onresize = function (e) {
          B.do ({from: {ev: 'onresize'}}, 'change', ['Data', 'pics']);
       }
+      window.onbeforeunload = function () {
+         var q = B.get ('State', 'upload', 'queue');
+         if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
+      }
+      dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
+         document.addEventListener (v, function () {
+            if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
+               B.do ({ev: 'onkeydown', key: 27}, 'rem', 'State', 'canvas');
+            }
+         });
+      });
+      document.onkeydown = function (e) {
+         e = e || window.event;
+         if (e.keyCode === 16) B.do ({ev: 'onkeydown', key: 16}, 'set', ['State', 'shift'], true);
+         if (e.keyCode === 17) B.do ({ev: 'onkeydown', key: 17}, 'set', ['State', 'ctrl'],  true);
+         if (e.keyCode === 37) B.do ({ev: 'onkeydown', key: 37}, 'canvas', 'prev');
+         if (e.keyCode === 39) B.do ({ev: 'onkeydown', key: 39}, 'canvas', 'next');
+      };
+      document.onkeyup = function (e) {
+         e = e || window.event;
+         if (e.keyCode === 16) B.do ({ev: 'onkeyup', key: 16}, 'set', ['State', 'shift'], false);
+         if (e.keyCode === 17) B.do ({ev: 'onkeyup', key: 17}, 'set', ['State', 'ctrl'],  false);
+      };
    });
 
    // *** HELPERS ***
@@ -216,7 +239,7 @@
          return [
             ['style', [
                ['html', {
-                  'font-size': 17,
+                  'font-size': H.fontSize (0.5),
                   'font-family': 'Montserrat, sans-serif',
                }],
                ['h1', {
@@ -236,7 +259,7 @@
                   color: H.css.gray3,
                }],
                ['.logo-container', {
-                  'margin-left': H.spaceh (1),
+                  'margin-left': H.spaceh (1.35),
                }],
                ['.logo', {
                   'font-family': '\'Kadwa\', serif',
@@ -296,14 +319,11 @@
                   'font-size': H.fontSize (1.4),
                   'font-weight': 'bold',
                   color: H.css.blue,
-                  position: 'absolute',
-                  right: H.spaceh (2),
                }],
             ]],
             ['h2', {class: 'logo-container'}, [
                 ['span', {class: 'logo', style: 'color: ' + H.css.tagc4}, 'ac:'],
                 ['span', {class: 'logo', style: 'color: ' + H.css.tagc1}, 'pic'],
-                ['a', B.ev ({title: 'Log Out', href: '#', class: 'logout'}, ['onclick', 'logout', '*']), ['i', {class: 'icon ion-log-out'}]],
             ]],
             Views.canvas (x),
             Views.notify (x),
@@ -504,62 +524,45 @@
    // *** MAIN VIEW ***
 
    Views.main = function (x) {
-      var routes = ['change', ['State', 'upload', 'queue'], function (x) {
-         var queue = B.get ('State', 'upload', 'queue');
-         var MAXSIMULT = 2, uploading = 0;
-         dale.do (queue, function (file) {
-            if (uploading === MAXSIMULT) return;
-            if (file.uploading) return uploading++;
-            file.uploading = true;
-            uploading++;
+      var routes = [
+         ['change', ['State', 'upload', 'queue'], function (x) {
+            var queue = B.get ('State', 'upload', 'queue');
+            var MAXSIMULT = 2, uploading = 0;
+            dale.do (queue, function (file) {
+               if (uploading === MAXSIMULT) return;
+               if (file.uploading) return uploading++;
+               file.uploading = true;
+               uploading++;
 
-            var f = new FormData ();
-            f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
-            f.append ('pic', file);
-            if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
-            H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
-               dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
-                  if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+               var f = new FormData ();
+               f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
+               f.append ('pic', file);
+               if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
+               H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
+                  dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
+                     if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                  });
+                  if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do (x, 'set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
+                  if (error && error.status === 409 && error.responseText.match ('capacity')) {
+                     B.do (x, 'set', ['State', 'upload', 'queue'], []);
+                     return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
+                  }
+                  if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
+                  B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
                });
-               if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do (x, 'set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
-               if (error && error.status === 409 && error.responseText.match ('capacity')) {
-                  B.do (x, 'set', ['State', 'upload', 'queue'], []);
-                  return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
-               }
-               if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
-               B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
             });
-         });
-      }];
-
-
+         }],
+         ['retrieve', 'account', function (x) {
+            H.authajax (x, 'get', 'account', {}, '', function (error, rs) {
+               if (error) return B.do (x, 'notify', 'red', 'There was an error retrieving account information.');
+               B.do (x, 'set', ['Data', 'account'], rs.body);
+            });
+         }],
+      ];
 
       return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
          if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
-         window.onbeforeunload = function () {
-            var q = B.get ('State', 'upload', 'queue');
-            if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
-         }
-         dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
-            document.addEventListener (v, function () {
-               if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
-                  B.do (H.from (x, {ev: 'onkeydown', key: 27}), 'rem', 'State', 'canvas');
-               }
-            });
-         });
-
-         document.onkeydown = function (e) {
-            e = e || window.event;
-            if (e.keyCode === 16) B.do (H.from (x, {ev: 'onkeydown', key: 16}), 'set', ['State', 'shift'], true);
-            if (e.keyCode === 17) B.do (H.from (x, {ev: 'onkeydown', key: 17}), 'set', ['State', 'ctrl'],  true);
-            if (e.keyCode === 37) B.do (H.from (x, {ev: 'onkeydown', key: 37}), 'canvas', 'prev');
-            if (e.keyCode === 39) B.do (H.from (x, {ev: 'onkeydown', key: 39}), 'canvas', 'next');
-         };
-         document.onkeyup = function (e) {
-            e = e || window.event;
-            if (e.keyCode === 16) B.do (H.from (x, {ev: 'onkeyup', key: 16}), 'set', ['State', 'shift'], false);
-            if (e.keyCode === 17) B.do (H.from (x, {ev: 'onkeyup', key: 17}), 'set', ['State', 'ctrl'],  false);
-         };
+         if (! B.get ('Data', 'account')) B.do (x, 'retrieve', 'account');
       }}, function (x, subview) {
          return Views [subview] ? Views [subview] (x) : undefined;
       });
@@ -731,7 +734,26 @@
                         display: 'block',
                         float: 'left',
                      }],
+                     ['.profile', {
+                        'width, height': 30,
+                        'font-size': 30,
+                        'border-radius': 0.5,
+                     }],
+                     ['span.action', {
+                        color: H.css.blue,
+                        'font-weight': 'bold',
+                     }],
                   ]],
+                  B.view (['Data', 'account'], {attrs: {style: 'height: ' + H.spacev (2.5)}}, function (x, account) {
+                     if (! account) return;
+                     return [
+                        ['i', {class: 'profile float icon ion-android-person'}],
+                        ['p', {class: 'float'}, [
+                           account.username,
+                           ['span', B.ev ({title: 'Log out', class: 'action pointer', style: 'margin-left: 8px; font-weight: bold; font-size: ' + H.fontSize (-0.8)}, ['onclick', 'logout', '*']), ['i', {class: 'icon ion-log-out'}]],
+                        ]],
+                     ];
+                  }),
                   ['h5', {class: 'gray3', style: 'margin-top: 0.5rem'}, 'OVERVIEW'],
                   B.view (x, ['Data', 'tags'], function (x, tags) {
                      if (! tags) return;
@@ -1125,7 +1147,7 @@
                if (pic.id === last.id) return k;
             });
 
-            if (! B.get ('State', 'shift') || lastIndex === undefined) return B.do (x, 'set', ['State', 'selected', id], true);
+            if (! B.get ('State', 'shift') || lastIndex === undefined) return B.do (x, 'set', ['State', 'selected', id], ! B.get ('State', 'selected', id));
 
             // Selection with shift when the previously clicked picture is still here.
             dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
@@ -1152,10 +1174,15 @@
          }],
       ];
       return B.view (x, path, {listen: evs, attrs: {class: 'piclist'}}, function (x, pics) {
+
          if (! pics || pics.length === 0) return;
-         // first row starts all with top 0, left as previous end + 24. Know when to end the row because of lack of space (width, without 24)
-         // next row, throughout its width check previous row pictures bottom offset (the max one). Add 25, that's your top offset. For right it is simply 25 + the previous in the row, or nothing if first in row.
-         var positions = [[]], width = c ('.piclist') [0].getBoundingClientRect ().width;
+
+         // first row starts all with top 0, left as previous end + margin. Know when to end the row because of lack of space (width, without margin)
+         // next row, throughout its width check previous row pictures bottom offset (the max one). Add margin, that's your top offset. For right it is simply margin + the previous in the row, or nothing if first in row.
+
+         var rows = [[]], width = c ('.piclist') [0].getBoundingClientRect ().width;
+
+         var MAXWH = 185, MARGIN = 22;
 
          return [
             ['style', [
@@ -1166,7 +1193,7 @@
                }],
                ['img.pic', {
                   'border-radius': 12,
-                  'max-width, max-height': 185,
+                  'max-width, max-height': MAXWH,
                }],
                ['div.imagecontainer', {
                   position: 'absolute',
@@ -1215,82 +1242,99 @@
 
                var ratio = pic.dimw / pic.dimh, picw, pich;
                if (ratio >= 1) {
-                  picw = Math.round (Math.min (185, pic.dimw));
+                  picw = Math.round (Math.min (MAXWH, pic.dimw));
                   pich = Math.round (pic.dimh * picw / pic.dimw);
                }
                else {
-                  pich = Math.round (Math.min (185, pic.dimh));
+                  pich = Math.round (Math.min (MAXWH, pic.dimh));
                   picw = Math.round (pic.dimw * pich / pic.dimh);
                }
 
-               var pushrow = function () {
+               var bringup = function () {
+                  if (rows.length === 1) return;
 
-                  // If this is not the first row:
-                  if (positions.length > 1) {
-                     var OVERLAP = 0;
-                     var maxyprev = Math.max.apply (null, dale.do (H.last (positions, 2), function (p) {return p [1]}));
-                     var recalculate = function () {
-                        var miny = Infinity, maxy = 0;
-                        // Each of positions contains one array per picture in the row
-                        // Each of these arrays is of the form [maxx, maxy, picw, pich, pic], where max? is the maximum horizontal/vertical extent of the picture (including the 24 px margin)
-                        dale.do (H.last (positions), function (p) {
-                           // If the beginning of the
-                           if ((p [1] - p [3] - 24) < miny) miny = p [1] - p [3] - 24;
-                           if (p [1] > maxy) maxy = p [1];
+                  // This function brings pictures "up" into gaps that there might be above.
+                  // OVERLAP is a coefficient.
+
+                  var OVERLAP = 0;
+                  var maxyprev = Math.max.apply (null, dale.do (H.last (rows, 2), function (p) {return p [1]}));
+                  var recalculate = function () {
+                     var miny = Infinity, maxy = 0;
+                     // Each of rows contains one array per picture in the row
+                     // Each of these arrays is of the form [maxx, maxy, picw, pich, pic], where max? is the maximum horizontal/vertical extent of the picture (including the margin)
+                     dale.do (H.last (rows), function (p) {
+                        if ((p [1] - p [3] - MARGIN) < miny) miny = p [1] - p [3] - MARGIN;
+                        if (p [1] > maxy) maxy = p [1];
+                     });
+                     if (maxyprev > miny + (maxy - miny) * OVERLAP) {
+                        var adjustment = Math.round (maxyprev - (miny + (maxy - miny) * OVERLAP)) + 1;
+                        dale.do (H.last (rows), function (p) {
+                           if ((p [1] - p [3] - MARGIN) === miny) p [1] += adjustment;
                         });
-                        if (maxyprev > miny + (maxy - miny) * OVERLAP) {
-                           var adjustment = Math.round (maxyprev - (miny + (maxy - miny) * OVERLAP)) + 1;
-                           dale.do (H.last (positions), function (p) {
-                              if ((p [1] - p [3] - 24) === miny) p [1] += adjustment;
-                           });
-                           recalculate ();
-                        }
+                        recalculate ();
                      }
-                     recalculate ();
                   }
-
+                  recalculate ();
                }
 
+               var justify = function () {
+                  var rightgap = width - MARGIN * (H.last (rows).length - 1);
+                  dale.do (H.last (rows), function (pic) {
+                     rightgap -= pic [2];
+                  });
+                  var justifyoffset = Math.floor (rightgap / (H.last (rows).length - 1));
+                  if (justifyoffset === 0) return;
+                  dale.do (H.last (rows), function (v, k) {
+                     if (k === 0) return;
+                     v [0] += k * justifyoffset;
+                  });
+                  bringup ();
+               }
+
+               var x;
+
                // If first item on row, start at the left.
-               if (H.last (positions).length === 0) x = 0;
+               if (H.last (rows).length === 0) x = 0;
                // If there's enough room, put it on the same row.
-               else if (width >= H.last (H.last (positions)) [0] + picw + 24) x = H.last (H.last (positions)) [0];
+               else if (width >= H.last (H.last (rows)) [0] + picw) {
+                  x = H.last (H.last (rows)) [0];
+               }
                else {
                   // If there's not enough room, push the existing row and create a new one. Start at the left.
-                  pushrow ();
-                  positions.push ([]);
+                  justify ();
+                  rows.push ([]);
                   x = 0;
                }
 
                var y = (function () {
                   // If first row, position the image at the top.
-                  if (positions.length === 1) return 0;
+                  if (rows.length === 1) return 0;
 
                   // From the previous row, we build a list of images that overlap in their width with the current one.
-                  var upstairs = dale.fil (H.last (positions, 2), undefined, function (lastrowpic) {
-                     // XXX 23 or 24?
-                     if (x > lastrowpic [0] || (x + picw + 24) < (lastrowpic [0] - lastrowpic [2] - 23)) return;
+                  var upstairs = dale.fil (H.last (rows, 2), undefined, function (lastrowpic) {
+                     if (x > lastrowpic [0] || (x + picw + MARGIN) < (lastrowpic [0] - lastrowpic [2] - MARGIN)) return;
                      return lastrowpic [1];
                   });
 
                   if (upstairs.length === 0) {
-                     var lpicrow = H.last (H.last (positions));
-                     return lpicrow [1] - lpicrow [3] - 24;
+                     var lpicrow = H.last (H.last (rows));
+                     return lpicrow [1] - lpicrow [3] - MARGIN;
                   }
 
                   return Math.max.apply (null, upstairs);
                }) ();
 
-               H.last (positions).push ([x + picw + 24, y + pich + 24, picw, pich, pic, k]);
+               // [rightmost x including margin, lowest y including margin, width, height, picture, index]
+               H.last (rows).push ([x + picw + MARGIN, y + pich + MARGIN, picw, pich, pic, k]);
 
-               if (k === pics.length - 1) pushrow ();
+               if (k === pics.length - 1) justify ();
             }),
             (function () {
-               return dale.do (positions, function (v) {
+               return dale.do (rows, function (v) {
                   return dale.do (v, function (p) {
                      return B.view (['State', 'selected'], {attrs: {
                         class: 'imagecontainer',
-                        style: 'left: ' + (p [0] - p [2] - 24) + 'px; top: ' + (p [1] - p [3] - 24) + 'px'
+                        style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px'
                      }}, function (x, selected) {
                         return [
                            ['img', B.ev ({
