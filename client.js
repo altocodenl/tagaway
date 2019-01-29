@@ -1182,7 +1182,7 @@
 
          var rows = [[]], width = c ('.piclist') [0].getBoundingClientRect ().width;
 
-         var MAXWH = 185, MARGIN = 22;
+         var MAXWH = 185, MARGIN = 22, OVERLAP = 0;
 
          return [
             ['style', [
@@ -1254,30 +1254,26 @@
                   if (rows.length === 1) return;
 
                   // This function brings pictures "up" into gaps that there might be above.
-                  // OVERLAP is a coefficient.
 
-                  var OVERLAP = 0;
                   var maxyprev = Math.max.apply (null, dale.do (H.last (rows, 2), function (p) {return p [1]}));
-                  var recalculate = function () {
-                     var miny = Infinity, maxy = 0;
-                     // Each of rows contains one array per picture in the row
-                     // Each of these arrays is of the form [maxx, maxy, picw, pich, pic], where max? is the maximum horizontal/vertical extent of the picture (including the margin)
-                     dale.do (H.last (rows), function (p) {
-                        if ((p [1] - p [3] - MARGIN) < miny) miny = p [1] - p [3] - MARGIN;
-                        if (p [1] > maxy) maxy = p [1];
+
+                  var rowup = dale.do (H.last (rows), function (p) {
+                     var left = p [0] - p [2] - MARGIN, right = p [0];
+                     var upstairs = dale.fil (H.last (rows, 2), undefined, function (p2) {
+                        if (p2 [0] < p [0] - p [2] - MARGIN) return;
+                        if (p [0] < p2 [0] - p [2] - MARGIN) return;
+                        return p [1] - p [3] - MARGIN - p2 [1];
                      });
-                     if (maxyprev > miny + (maxy - miny) * OVERLAP) {
-                        var adjustment = Math.round (maxyprev - (miny + (maxy - miny) * OVERLAP)) + 1;
-                        dale.do (H.last (rows), function (p) {
-                           if ((p [1] - p [3] - MARGIN) === miny) p [1] += adjustment;
-                        });
-                        recalculate ();
-                     }
-                  }
-                  recalculate ();
+                     return Math.min.apply (Math, upstairs);
+                  });
+
+                  dale.do (H.last (rows), function (v, k) {
+                     v [1] -= Math.min (rowup [k], OVERLAP);
+                  });
                }
 
-               var justify = function () {
+               var justify = function (lastrow) {
+                  if (lastrow) return bringup ();
                   var rightgap = width - MARGIN * (H.last (rows).length - 1);
                   dale.do (H.last (rows), function (pic) {
                      rightgap -= pic [2];
@@ -1310,24 +1306,20 @@
                   // If first row, position the image at the top.
                   if (rows.length === 1) return 0;
 
-                  // From the previous row, we build a list of images that overlap in their width with the current one.
-                  var upstairs = dale.fil (H.last (rows, 2), undefined, function (lastrowpic) {
-                     if (x > lastrowpic [0] || (x + picw + MARGIN) < (lastrowpic [0] - lastrowpic [2] - MARGIN)) return;
-                     return lastrowpic [1];
-                  });
+                  // If not the first on its row, y is the same as any other on its own row.
+                  if (H.last (rows).length) return H.last (H.last (rows)) [1] - H.last (H.last (rows)) [3] - MARGIN;
 
-                  if (upstairs.length === 0) {
-                     var lpicrow = H.last (H.last (rows));
-                     return lpicrow [1] - lpicrow [3] - MARGIN;
-                  }
+                  // If the first on its row, take the maximum y from the previous row.
+                  return Math.max.apply (null, dale.do (rows [rows.length - 2], function (pic) {
+                     return pic [1];
+                  }));
 
-                  return Math.max.apply (null, upstairs);
                }) ();
 
                // [rightmost x including margin, lowest y including margin, width, height, picture, index]
                H.last (rows).push ([x + picw + MARGIN, y + pich + MARGIN, picw, pich, pic, k]);
 
-               if (k === pics.length - 1) justify ();
+               if (k === pics.length - 1) justify (true);
             }),
             (function () {
                return dale.do (rows, function (v) {

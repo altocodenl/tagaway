@@ -183,6 +183,7 @@ Use cases:
 - Server
    - ttester add extra keys.
    - add test for get account.
+   - check/delete for loose files in disk.
    - Catch exceptions & abnormal behavior and send to notification service.
    - Infra: new bucket (with IA lifecycle), new server
 
