@@ -175,15 +175,14 @@ Use cases:
       - Edit pictures: add tags (when entering non-existing tag, add text next to it to say "XX (new tag)")
       - Edit pictures: delete with confirm
       - Canvas: size, border, caption, chevrons & x, resizing on rotation
-      - Upload view
+      - Upload view with multiple uploads
       - Initial view with no pictures
-      - Add tags to upload after some pictures were uploaded?
-      - Multiple uploads?
 
 - Server
    - ttester add extra keys.
    - add test for get account.
    - check/delete for loose files in disk.
+   - add response times to statistics
    - Catch exceptions & abnormal behavior and send to notification service.
    - Infra: new bucket (with IA lifecycle), new server
 
@@ -323,6 +322,7 @@ Use cases:
 `State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 `State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
+`State.rotating`: `{id: 1, true, ...}`. Lists the ids of all pictures being rotated.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.

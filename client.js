@@ -574,6 +574,7 @@
       return [
          ['style', [
             ['div.left', {
+               position: 'fixed',
                width: H.spaceh (7.0),
                'padding-left': H.spaceh (0.35),
                'margin-left':  H.spaceh (1),
@@ -583,6 +584,7 @@
             ['div.center', {
                width: H.spaceh (25),
                'padding-left': H.spaceh (1),
+               'margin-left': H.spaceh (8.5),
             }],
             ['.button', {
                'font-size': H.fontSize (0),
@@ -685,7 +687,7 @@
          if (! query) return;
          return B.view (x, ['Data', 'pics'], function (x, pics) {
             return B.view (x, ['State', 'selected'], function (x, selected) {
-               if (! pics || dale.keys (selected) > 0) return;
+               if (! pics || dale.keys (selected).length > 0) return;
                return [
                   ['style', [
                      ['.blueside', {
@@ -811,15 +813,6 @@
                         }),
                      ];
                   }),
-                  /*
-                  ['p', [
-                     query.sort === 'newest' ? 'By newest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'newest']), 'By newest'],
-                     [' | '],
-                     query.sort === 'oldest' ? 'By oldest'      : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'oldest']), 'By oldest'],
-                     [' | '],
-                     query.sort === 'upload' ? 'By upload date' : ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'query', 'sort'], 'upload']), 'By upload date'],
-                  ]],
-                  */
                ];
             });
          });
@@ -899,9 +892,15 @@
             var pics = dale.keys (B.get ('State', 'selected'));
             if (pics.length === 0) return;
             B.do (x, 'notify', 'yellow', 'Rotating, please wait...', true);
+            B.do (x, 'rem', 'State', 'selected');
+            dale.do (pics, function (pic) {
+               B.do (x, 'set', ['State', 'rotating', pic], true);
+            });
             var rotateOne = function () {
-               H.authajax (x, 'post', 'rotate', {}, {deg: B.get ('State', 'rotate'), id: pics.shift ()}, function (error, data) {
+               var pic = pics.shift ();
+               H.authajax (x, 'post', 'rotate', {}, {deg: B.get ('State', 'rotate'), id: pic}, function (error, data) {
                   if (error) return B.do (x, 'notify', 'red', 'There was an error rotating the picture(s).');
+                  B.do (x, 'rem', ['State', 'rotating'], pic);
                   B.do (x, 'retrieve', 'pics');
                   if (pics.length > 0) return rotateOne ();
                   B.do (x, 'rem', 'State', 'action');
@@ -927,100 +926,102 @@
          B.do (x, 'rem', 'Data', 'tags');
       }}, function (x, tags) {
          return B.view (x, ['Data', 'pics'], function (x, pics) {
-            var pics = dale.keys (B.get ('State', 'selected'));
-            if (pics.length === 0) return;
-            var picn = pics.length === 1 ? 'picture' : 'pictures';
-            return [
-               ['h3', 'Manage pics'],
-               ['h4', [
-                  [pics.length, ' ', picn, ' selected - '],
-                  ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'selected'], {}]), 'Unselect all']
-               ]],
-               ['hr'],
-               B.view (x, ['State', 'action'], function (x, action) {
-                  if (! action) return [
-                     ['br'],
-                     ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'action'], 'tag']), 'Tag ' + picn],
-                     ['br'], ['br'],
-                     ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(223, 117, 20);'}, ['onclick', 'set', ['State', 'action'], 'untag']), 'Untag ' + picn],
-                     ['br'], ['br'],
-                     ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(123, 217, 20);'}, [
-                        ['onclick', 'set', ['State', 'action'], 'rotate'],
-                        ['onclick', 'set', ['State', 'rotate'], 90],
-                     ]), 'Rotate ' + picn],
-                     ['br'], ['br'],
-                     ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(202, 60, 60);'}, ['onclick', 'delete', 'pics']), 'Delete ' + picn + ' permanently'],
-                  ];
-
-                  if (action === 'untag') {
-
-                     var tags = {};
-                     dale.do (pics, function (pic) {
-                        dale.do (pic.tags, function (tag) {
-                           tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
-                        });
-                        return pic;
-                     });
-
-                     return [
-                        dale.keys (tags).length === 0 ?
-                           ['p', 'None of the selected pictures have tags.'] :
-                           dale.do (tags, function (card, tag) {
-                              return ['p', [tag + ':', ['span', B.ev ({class: 'action'}, ['onclick', 'tag', 'pics', tag, true]), ' Untag ' + card + (card === 1 ? ' picture' : ' pictures')]]];
-                           }),
-                        ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
-                     ];
-                  }
-
-                  if (action === 'tag') return B.view (x, ['State', 'autotag'], {listen: [
-                     ['trigger', 'tag', function (x, ev) {
-                        if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
-                     }],
-                  ]}, function (x, autotag) {
-                     var matches = ! autotag ? [] : dale.fil (B.get ('Data', 'tags'), undefined, function (card, tag) {
-                        if (BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
-                     });
-                     return [
-                        ['input', B.ev ({class: 'autocomplete', placeholder: 'tag ' + picn, value: autotag}, [
-                           ['oninput', 'set', ['State', 'autotag']],
-                           ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
-                        ])],
-                        H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
-                           return ['li', B.ev ([
-                              ['onclick', 'tag', 'pics', match [0]]
-                           ]), match [0] + ' (' + match [1] + ' pics)']
-                        })]),
+            return B.view (x, ['State', 'selected'], function (x, selected) {
+               selected = dale.keys (selected).length;
+               if (selected === 0) return;
+               var picn = selected === 1 ? 'picture' : 'pictures';
+               return [
+                  ['h3', 'Manage pics'],
+                  ['h4', [
+                     [selected, ' ', picn, ' selected - '],
+                     ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'selected'], {}]), 'Unselect all']
+                  ]],
+                  ['hr'],
+                  B.view (x, ['State', 'action'], function (x, action) {
+                     if (! action) return [
+                        ['br'],
+                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'action'], 'tag']), 'Tag ' + picn],
                         ['br'], ['br'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'tag', 'pics', true]), 'Tag ' + picn],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
+                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(223, 117, 20);'}, ['onclick', 'set', ['State', 'action'], 'untag']), 'Untag ' + picn],
+                        ['br'], ['br'],
+                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(123, 217, 20);'}, [
+                           ['onclick', 'set', ['State', 'action'], 'rotate'],
+                           ['onclick', 'set', ['State', 'rotate'], 90],
+                        ]), 'Rotate ' + picn],
+                        ['br'], ['br'],
+                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(202, 60, 60);'}, ['onclick', 'delete', 'pics']), 'Delete ' + picn + ' permanently'],
                      ];
-                  });
 
-                  if (action === 'rotate') {
-                     var firstSelected = dale.stopNot (pics, undefined, function (pic) {
-                        if (B.get ('State', 'selected', pic.id)) return pic;
+                     if (action === 'untag') {
+
+                        var tags = {};
+                        dale.do (B.get ('State', 'selected'), function (t, pic) {
+                           dale.do (pic.tags, function (tag) {
+                              tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
+                           });
+                           return pic;
+                        });
+
+                        return [
+                           dale.keys (tags).length === 0 ?
+                              ['p', 'None of the selected pictures have tags.'] :
+                              dale.do (tags, function (card, tag) {
+                                 return ['p', [tag + ':', ['span', B.ev ({class: 'action'}, ['onclick', 'tag', 'pics', tag, true]), ' Untag ' + card + (card === 1 ? ' picture' : ' pictures')]]];
+                              }),
+                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
+                        ];
+                     }
+
+                     if (action === 'tag') return B.view (x, ['State', 'autotag'], {listen: [
+                        ['trigger', 'tag', function (x, ev) {
+                           if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
+                        }],
+                     ]}, function (x, autotag) {
+                        var matches = ! autotag ? [] : dale.fil (B.get ('Data', 'tags'), undefined, function (card, tag) {
+                           if (BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
+                        });
+                        return [
+                           ['input', B.ev ({class: 'autocomplete', placeholder: 'tag ' + picn, value: autotag}, [
+                              ['oninput', 'set', ['State', 'autotag']],
+                              ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
+                           ])],
+                           H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
+                              return ['li', B.ev ([
+                                 ['onclick', 'tag', 'pics', match [0]]
+                              ]), match [0] + ' (' + match [1] + ' pics)']
+                           })]),
+                           ['br'], ['br'],
+                           ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'tag', 'pics', true]), 'Tag ' + picn],
+                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
+                        ];
                      });
-                     return B.view (x, ['State', 'rotate'], function (x, rotate) {return [
-                        ['span', B.ev ({class: rotate === -90 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], -90]), 'Rotate left'],
-                        ' / ',
-                        ['span', B.ev ({class: rotate === 90  ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'],  90]), 'Rotate right'],
-                        ' / ',
-                        ['span', B.ev ({class: rotate === 180 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], 180]), 'Invert'],
-                        ['br'], ['br'], ['br'], ['br'],
-                        ['style', [
-                           ['img.rotate', {
-                              'transform, -ms-transform, -webkit-transform, -moz-transform': 'rotate(' + (rotate || 0) + 'deg)',
-                              'max-height, max-width': 130
-                           }]
-                        ]],
-                        ['div', {style: 'height: 200px, width: 200px'}, ['img', {class: 'rotate', src: H.picPath (firstSelected)}]],
-                        ['br'], ['br'], ['br'], ['br'],
-                        ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'rotate', 'pics']), 'Rotate'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
-                     ]});
-                  }
-               }),
-            ];
+
+                     if (action === 'rotate') {
+                        var firstSelected = dale.stopNot (pics, undefined, function (pic) {
+                           if (B.get ('State', 'selected', pic.id)) return pic;
+                        });
+                        return B.view (x, ['State', 'rotate'], function (x, rotate) {return [
+                           ['span', B.ev ({class: rotate === -90 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], -90]), 'Rotate left'],
+                           ' / ',
+                           ['span', B.ev ({class: rotate === 90  ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'],  90]), 'Rotate right'],
+                           ' / ',
+                           ['span', B.ev ({class: rotate === 180 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], 180]), 'Invert'],
+                           ['br'], ['br'], ['br'], ['br'],
+                           ['style', [
+                              ['img.rotate', {
+                                 'transform, -ms-transform, -webkit-transform, -moz-transform': 'rotate(' + (rotate || 0) + 'deg)',
+                                 'max-height, max-width': 130
+                              }]
+                           ]],
+                           ['div', {style: 'height: 200px, width: 200px'}, ['img', {class: 'rotate', src: H.picPath (firstSelected)}]],
+                           ['br'], ['br'], ['br'], ['br'],
+                           ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'rotate', 'pics']), 'Rotate'],
+                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
+                        ]});
+                     }
+                  }),
+               ];
+            });
          });
       });
    }
@@ -1143,11 +1144,16 @@
 
             B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
 
+            if (B.get ('State', 'rotating', id)) return;
+
             var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
                if (pic.id === last.id) return k;
             });
 
-            if (! B.get ('State', 'shift') || lastIndex === undefined) return B.do (x, 'set', ['State', 'selected', id], ! B.get ('State', 'selected', id));
+            if (! B.get ('State', 'shift') || lastIndex === undefined) {
+               if (! B.get ('State', 'selected', id)) return B.do (x, 'set', ['State', 'selected', id], ! B.get ('State', 'selected', id));
+               else                                   return B.do (x, 'rem', ['State', 'selected'], id);
+            }
 
             // Selection with shift when the previously clicked picture is still here.
             dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
@@ -1222,6 +1228,10 @@
                }],
                ['img.selected', {
                   'box-shadow': 'inset 0 0 0 1000px rgba(230,230,230,0.5)',
+                  opacity: '0.5'
+               }],
+               ['img.rotating', {
+                  'box-shadow': 'inset 0 0 0 1000px rgba(120,120,115,0.5)',
                   opacity: '0.5'
                }],
                ['div.blueoval', {
@@ -1324,21 +1334,25 @@
             (function () {
                return dale.do (rows, function (v) {
                   return dale.do (v, function (p) {
-                     return B.view (['State', 'selected'], {attrs: {
+                     return B.view (x, ['State', 'selected'], {attrs: {
                         class: 'imagecontainer',
                         style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px'
                      }}, function (x, selected) {
-                        return [
-                           ['img', B.ev ({
-                              class: 'pic ' + (selected [p [4].id] ? ' selected' : ''),
-                              src: H.picPath (p [4]),
-                           }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
-                           ['div', {class: 'imagecaption'}, [
-                              ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],
-                              ['span', {style: 'position: absolute; right: 5px'}, H.dformat (p [4].date)],
-                           ]],
-                           H.if (selected [p [4].id], ['div', {class: 'blueoval'}]),
-                        ];
+                        selected = selected || {};
+                        return B.view (x, ['State', 'rotating'], function (x, rotating) {
+                           rotating = rotating || {};
+                           return [
+                              ['img', B.ev ({
+                                 class: 'pic ' + (rotating [p [4].id] ? 'rotating ' : (selected [p [4].id] ? ' selected' : '')),
+                                 src: H.picPath (p [4]),
+                              }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
+                              ['div', {class: 'imagecaption'}, [
+                                 ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],
+                                 ['span', {style: 'position: absolute; right: 5px'}, H.dformat (p [4].date)],
+                              ]],
+                              H.if (selected [p [4].id], ['div', {class: 'blueoval'}]),
+                           ];
+                        });
                      });
                   });
                });
