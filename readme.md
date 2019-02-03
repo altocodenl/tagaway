@@ -171,31 +171,26 @@ Use cases:
 
 - Client
    - New interface!
-      - Edit pictures: rotate
-      - Edit pictures: add tags (when entering non-existing tag, add text next to it to say "XX (new tag)")
-      - Edit pictures: delete with confirm
-      - Canvas: size, border, caption, chevrons & x, resizing on rotation
+      - Edit pictures: rotate, add tags (with XX (new tag)), remove tags, delete, finish centertop
       - Upload view with multiple uploads
       - Initial view with no pictures
+      - Manage tags.
 
 - Server
-   - ttester add extra keys.
    - add test for get account.
    - check/delete for loose files in disk.
-   - add response times to statistics
-   - Catch exceptions & abnormal behavior and send to notification service.
+   - Send to notification service: exceptions, abnormal behavior, summary of OS+node+redis
    - Infra: new bucket (with IA lifecycle), new server
 
 ### Todo beta
 
 - Admin & deploy
    - Manage payments.
-   - s3del with > 1k pictures.
+   - s3list & s3del with > 1k pictures.
 
 - Account
    - Expire unused recovery tokens, avoid duplicated per user?
-   - Account view & account activity endpoint
-   - Two-cookie system with CSRF.
+   - Account view
    - Delete account.
    - Change email & password.
    - Export all data
@@ -323,6 +318,7 @@ Use cases:
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 `State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
 `State.rotating`: `{id: 1, true, ...}`. Lists the ids of all pictures being rotated.
+`State.loading`: true|undefined, to see whether pics are being loaded.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
@@ -396,6 +392,7 @@ Use cases:
 - sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
+- sti:l:DATE (string): total milliseconds for all responses, to calculate average, in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:hxxx:DATE (string): responses with status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
 - stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than ten minutes will be converted from hyperloglog to a string with a counter.
 - stp:A:DATE (hyperloglog or string): unique active users in the last 24 hours. Time is Date.now () divided by 100000. Entries older than a day will be converted from hyperloglog to a string with a counter.
@@ -409,6 +406,28 @@ Used by giz:
 
 - users:USERNAME (hash): covered above, giz only cares about `pass`.
 ```
+
+## Configuration
+
+On `/etc/sysctl.conf`:
+
+```
+# increases TCP maximum queue length to 4096
+net.core.somaxconn=4096
+# for giving more memory to redis to create background processes for saving the DB to disk
+vm.overcommit_memory=1
+```
+
+start script (must be executable, set with chmod 777):
+
+```
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+service redis-server restart
+cd /root/acpic && mg restart
+```
+
+crontab with `@reboot /root/start.sh`
 
 ## License
 

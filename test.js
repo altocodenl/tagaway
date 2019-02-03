@@ -74,6 +74,9 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
          ref [path [path.length - 1]] = types [allowed [0]] ();
       });
    });
+   var ebody = teishi.c (body);
+   ebody [type (ebody) === 'object' ? types.string () : types.float ()] = types.string ();
+   output.push ([label + ' test type #' + (output.length + 1) + ' base (random key)', method, Path, headers, ebody, allErrors ? '*' : 400, apres]);
 
    return output;
 }
@@ -179,13 +182,13 @@ var intro = [
 ];
 
 var outro = [
-   ['logout', 'get', 'auth/logout', {}, '', 302, function (state, request, response) {
+   ['logout', 'post', 'auth/logout', {}, {}, 302, function (state, request, response) {
       if (! response.headers ['set-cookie'] || ! response.headers ['set-cookie'] [0].match (/max-age/i)) return false;
       if (response.headers.location !== '/') return log ('Invalid location header');
       state.headers = {};
       return true;
    }],
-   ['double logout', 'get', 'auth/logout', {}, '', 302],
+   ['double logout', 'post', 'auth/logout', {}, {}, 302],
    ['login with valid credentials', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
@@ -200,7 +203,6 @@ var outro = [
 ];
 
 var main = [
-   // invalid getpics
    ttester ('query pics', 'post', 'query', {}, [
       [['tags', 0], 'string'],
       ['mindate', ['undefined', 'integer']],

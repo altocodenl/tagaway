@@ -257,7 +257,7 @@ H.log = function (user, ev, cb) {
    redis.lpush ('ulog:' + user, teishi.s (ev), cb || function () {});
 }
 
-H.stat = function (name, pf) {
+H.stat = function (name, pf, n) {
    var t = Date.now ();
    t = (t - (t % (1000 * 60 * 10))) / 100000;
    if (pf) {
@@ -266,7 +266,7 @@ H.stat = function (name, pf) {
       multi.sadd  ('stp',   name + ':' + t);
       multi.exec (function (error) {if (error) console.log ('H.stat error', error)});
    }
-   else redis.incr  ('sti:' + name + ':' + t, function (error) {if (error) console.log ('H.stat error', error)});
+   else redis.incrby ('sti:' + name + ':' + t, n || 1, function (error) {if (error) console.log ('H.stat error', error)});
 }
 
 H.deletePic = function (id, username, cb) {
@@ -430,7 +430,6 @@ var routes = [
    // *** AUTH WITH COOKIES & SESSIONS ***
 
    ['post', 'auth/logout', function (rq, rs) {
-      if (type (rq.body) !== 'object' || type (rq.body.action) !== 'logout') return reply (rq, 400);
       giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookiename] || '') : '', function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
@@ -1266,6 +1265,7 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ['tag', 'who', 'del'], 'eachOf', teishi.test.equal],
          function () {return [
             ['body.tag', b.tag, 'string'],
             ['body.who', b.who, 'string'],
@@ -1423,6 +1423,7 @@ cicek.options.log.body = function (log) {
 }
 
 cicek.apres = function (rs) {
+   H.stat ('l', undefined, Date.now () - rs.log.startTime);
    rs.log.startTime = new Date (rs.log.startTime).toUTCString ();
    if (rs.log.url.match (/^\/logs/)) rs.log.responseBody = 'OMITTED';
    if (rs.log.url.match (/^\/auth/)) {
