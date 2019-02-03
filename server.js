@@ -246,7 +246,6 @@ H.s3del = function (user, keys, sizes, cb) {
 }
 
 H.s3list = function (prefix, cb) {
-   // XXX this function needs to implement pagination
    s3.listObjects ({Prefix: prefix}, function (error, data) {
       if (error) return cb (error);
       cb (null, data.Contents);
@@ -430,7 +429,8 @@ var routes = [
 
    // *** AUTH WITH COOKIES & SESSIONS ***
 
-   ['get', 'auth/logout', function (rq, rs) {
+   ['post', 'auth/logout', function (rq, rs) {
+      if (type (rq.body) !== 'object' || type (rq.body.action) !== 'logout') return reply (rq, 400);
       giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookiename] || '') : '', function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
