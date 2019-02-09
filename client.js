@@ -233,6 +233,10 @@
       return H.zp (d.getUTCDate ()) + '/' + H.zp (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
    }
 
+   H.isYear = function (tag) {
+      return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
+   }
+
    // *** VIEWS ***
 
    var Views = {};
@@ -258,9 +262,13 @@
                ['h5', {
                   'font-size': H.fontSize (-1.5),
                }],
+               ['.gray1', {color: H.css.gray1}],
                ['.gray2', {color: H.css.gray2}],
                ['.gray3', {color: H.css.gray3}],
-               ['.button', {
+               ['.gray4', {color: H.css.gray4}],
+               ['.gray5', {color: H.css.gray5}],
+               ['.gray6', {color: H.css.gray6}],
+               ['button.button', {
                   cursor: 'pointer',
                   'font-family': 'Montserrat, sans-serif',
                   'background-color': H.css.blue,
@@ -268,10 +276,10 @@
                   border: 'none',
                   'font-weight': 'bold',
                   'border-radius': 25,
-                  'padding-top': 13,
-                  'padding-bottom': 14,
-                  'padding-left': 25,
-                  'padding-right': 23
+                  'padding-top': 8,
+                  'padding-bottom': 9,
+                  'padding-left': 12,
+                  'padding-right': 13
                }],
                ['.bold', {
                   'font-weight': 'bold',
@@ -580,22 +588,21 @@
          ['style', [
             ['div.left', {
                position: 'fixed',
-               width: H.spaceh (7),
-               'padding-left': H.spaceh (1),
+               'margin-left': H.spaceh (1),
                height: 1,
-               'background-color': H.css.gray6
+               'overflow-y': 'auto',
             }],
             ['div.center', {
-               'margin-left': H.spaceh (8),
-               width: H.spaceh (29),
+               'margin-left': H.spaceh (9),
+               width: H.spaceh (28),
                padding: H.spaceh (1),
             }],
             ['button.upload', {
                'font-size': H.fontSize (-1.5),
-               'padding-left, padding-right': 0.1,
-               'width': 0.7,
-               'margin-left': 0.15,
-               'text-align': 'center',
+               position: 'absolute',
+               top: H.spacev (1),
+               right: H.spaceh (1),
+               'width': 120,
             }, [
                ['i', {
                   'margin-right': 5,
@@ -620,19 +627,64 @@
             ['div.centertop', {
                'min-height, height': 130,
             }],
+            ['ul.tags', {
+               'list-style-type': 'none',
+               padding: 0,
+            }, [
+               ['li', {
+                  cursor: 'pointer',
+                  'font-size': H.fontSize (-1),
+                  'font-weight': 'bold',
+                  //color: H.css.gray2,
+                  position: 'relative',
+                  width: 0.8,
+                  'padding-left, padding-right': 0.10,
+               }],
+               ['li.selected', {
+                  color: H.css.gray1,
+               }],
+               ['i.cancel', {
+                  position: 'absolute',
+                  right: 5,
+                  top: 0,
+               }],
+            ]],
+            ['span.tag', {
+               position: 'absolute',
+               'left, top': 0,
+               'width, height': 16,
+            }],
+            ['div.input-search', {
+               position: 'relative',
+               width: H.spaceh (6.5),
+            }, [
+               ['input', {width: 1}],
+               ['i', {
+                  position: 'absolute',
+                  left: H.spaceh (6),
+                  'font-size': H.fontSize (1.5),
+                  top: 10,
+               }],
+            ]],
          ]],
          B.view (x, ['State', 'loading'], function (x, loading) {
             if (loading) return ['div', {class: 'loading'}, 'loading...'];
          }),
-         B.view (x, ['State', 'selected'], {attrs: {class: 'left'}}, function (x, selected) {
-            selected = dale.keys (selected || {}).length > 0;
-            return ['div', {style: selected ? 'background-color: ' + H.css.gray2 : ''}, [
-               Views.query  (x),
-               Views.manage (x),
-            ]];
-         }),
+         ['div', {class: 'left'}, [
+            B.view (x, ['State', 'selected'], {tag: 'style'}, function (x, selected) {
+               selected = dale.keys (selected || {}).length > 0;
+               return lith.css.g (['div.left', {
+                  'background-color': selected ? H.css.gray2 : H.css.gray6,
+                  padding:            selected ? H.spaceh (0.5) : 0,
+                  width:              selected ? H.spaceh (7) : H.spaceh (8),
+               }]);
+            }),
+            Views.query  (x),
+            Views.manage (x),
+         ]],
          ['div', {class: 'center float'}, [
             ['div', {class: 'centertop'}, [
+               ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
                B.view (x, ['State', 'selected'], function (x, selected) {
                   if (dale.keys (selected || {}).length > 0) return;
                   return B.view (x, ['State', 'query', 'tags'], function (x, qtags) {
@@ -656,8 +708,8 @@
                         else return dale.do (teishi.c (qtags).sort (H.tagsort), function (tag) {
                            return [
                               ['p', {class: 'float bold gray2'}, [
-                                 ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
-                                 ['span', {style: 'margin-left: -10px; margin-right: 15px;'}, tag],
+                                 ['span', {style: 'position: static; float: left;', class: 'opaque tag ' + murmur.v3 (tag)}],
+                                 ['span', {style: 'margin-left: 0px; margin-right: 15px;', class: 'float'}, tag],
                               ]],
                            ];
                         });
@@ -683,11 +735,10 @@
                ['br'], ['br'],
                ['hr'],
             ]],
-            Views.pics (x, ['Data', 'pics'], 30 / 40 * window.innerWidth)
+            Views.pics (x, ['Data', 'pics'], 29 / 40 * window.innerWidth)
          ]],
          /*
          ['div', {class: 'right'}, [
-            ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
          ]],
          */
       ];
@@ -737,45 +788,6 @@
                         'position': 'absolute',
                         left: H.spaceh (-0.35),
                         'border-left': 'solid 3px ' + H.css.blue,
-                     }],
-                     ['div.input-search', {
-                        position: 'relative',
-                        width: H.spaceh (6.5),
-                     }, [
-                        ['input', {width: 1}],
-                        ['i', {
-                           position: 'absolute',
-                           left: H.spaceh (6),
-                           'font-size': H.fontSize (1.5),
-                           top: 10,
-                        }],
-                     ]],
-                     ['ul', {
-                     }],
-                     ['ul.tags', {
-                        'list-style-type': 'none',
-                        padding: 0,
-                     }, [
-                        ['li', {
-                           cursor: 'pointer',
-                           'font-size': H.fontSize (-1),
-                           'font-weight': 'bold',
-                           color: H.css.gray2,
-                           position: 'relative',
-                        }],
-                        ['li.selected', {
-                           color: H.css.gray1,
-                        }],
-                        ['i.cancel', {
-                           position: 'absolute',
-                           right: 0,
-                        }],
-                     ]],
-                     ['.tag', {
-                        'width, height': 16,
-                        'margin-right': 12,
-                        display: 'block',
-                        float: 'left',
                      }],
                      ['.profile', {
                         'width, height': 30,
@@ -836,7 +848,7 @@
                               ['i', {class: 'icon ion-ios-search'}],
                            ];
                         }),
-                        H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags'}, dale.do (query.tags, function (tag, k) {
+                        H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags gray2'}, dale.do (query.tags, function (tag, k) {
                            return tagmaker (tag, k, true);
                         })]),
                         ['h5', {class: 'gray2'}, 'TAGS'],
@@ -848,7 +860,7 @@
                               if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
                            }).sort (H.tagsort);
 
-                           if (matches.length > 0) return ['ul', {class: 'gray tags'}, dale.do (matches, function (tag) {
+                           if (matches.length > 0) return ['ul', {class: 'tags gray2'}, dale.do (matches, function (tag) {
                               return tagmaker (tag);
                            })];
                         }),
@@ -913,8 +925,9 @@
          ['tag', 'pics', function (x, tag, del) {
             if (tag === true) tag = B.get ('State', 'autotag');
             if (! tag) return;
+            if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
             if (BASETAGS.indexOf (tag) !== -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
-            if (tag.match (/^\d{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
+            if (H.isYear (tag)) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             var ids = dale.keys (B.get ('State', 'selected'));
             if (ids.length === 0) return;
             var payload = {
@@ -924,14 +937,14 @@
             }
             H.authajax (x, 'post', 'tag', {}, payload, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error tagging the picture(s).');
-               B.do (x, 'notify', 'green', 'Tagging operation successful!');
+               B.do (x, 'notify', 'green', (del ? 'Untag' : 'Tag') + ' successful!');
                B.do (x, 'retrieve', 'tags');
                B.do (x, 'change', ['State', 'query', 'tags']);
                B.do (x, 'rem', 'State', 'autotag');
                B.do (x, 'rem', 'State', 'action');
             });
          }],
-         ['rotate', 'pics', function (x) {
+         ['rotate', 'pics', function (x, deg) {
             var pics = dale.keys (B.get ('State', 'selected'));
             if (pics.length === 0) return;
             B.do (x, 'notify', 'yellow', 'Rotating, please wait...', true);
@@ -941,7 +954,7 @@
             });
             var rotateOne = function () {
                var pic = pics.shift ();
-               H.authajax (x, 'post', 'rotate', {}, {deg: B.get ('State', 'rotate'), id: pic}, function (error, data) {
+               H.authajax (x, 'post', 'rotate', {}, {deg: deg, id: pic}, function (error, data) {
                   if (error) return B.do (x, 'notify', 'red', 'There was an error rotating the picture(s).');
                   B.do (x, 'rem', ['State', 'rotating'], pic);
                   B.do (x, 'retrieve', 'pics');
@@ -971,94 +984,89 @@
                if (selected === 0) return;
                var picn = selected === 1 ? 'picture' : 'pictures';
                return [
-                  ['h4', ['Edit ', picn, ' (' + selected + ')']],
-                  ['h4', [
-                     [selected, ' ', picn, ' selected - '],
-                     ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'selected'], {}]), 'Unselect all']
-                  ]],
+                  ['h4', {class: 'gray4'}, ['Edit ', picn, ' (' + selected + ')']],
                   ['hr'],
-                  B.view (x, ['State', 'action'], function (x, action) {
-                     if (! action) return [
-                        ['br'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'action'], 'tag']), 'Tag ' + picn],
-                        ['br'], ['br'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(223, 117, 20);'}, ['onclick', 'set', ['State', 'action'], 'untag']), 'Untag ' + picn],
-                        ['br'], ['br'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(123, 217, 20);'}, [
-                           ['onclick', 'set', ['State', 'action'], 'rotate'],
-                           ['onclick', 'set', ['State', 'rotate'], 90],
-                        ]), 'Rotate ' + picn],
-                        ['br'], ['br'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary', style: 'background: rgb(202, 60, 60);'}, ['onclick', 'delete', 'pics']), 'Delete ' + picn + ' permanently'],
-                     ];
-
-                     if (action === 'untag') {
-
-                        var tags = {};
-                        dale.do (B.get ('State', 'selected'), function (t, pic) {
-                           dale.do (pic.tags, function (tag) {
-                              tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
-                           });
-                           return pic;
+                  ['style', [
+                     ['div.rotate', {
+                        width: H.spaceh (5),
+                        'border-radius': 20,
+                        height: 45,
+                        'background-color': H.css.gray1,
+                        position: 'relative',
+                     }],
+                     ['i.edit', {
+                        width: 0.27,
+                        padding: 0.03,
+                        display: 'block',
+                        float: 'left',
+                        'font-size': H.fontSize (1),
+                        'text-align': 'center',
+                        'line-height': 35,
+                        color: H.css.gray5,
+                     }],
+                     ['i#delete', {
+                        right: '-' + H.spaceh (2),
+                        top: 0,
+                        position: 'absolute',
+                        'font-size': H.fontSize (2),
+                        color: '#ff0033',
+                     }],
+                  ]],
+                  ['h6', {class: 'gray4', style: 'margin-bottom: 15px'}, 'ROTATE'],
+                  ['div', {class: 'rotate'}, [
+                     ['i', B.ev ({text: 'Rotate left', class: 'edit pointer ion-arrow-left-a'},  ['onclick', 'rotate', 'pics', -90])],
+                     ['i', B.ev ({text: 'Rotate right', class: 'edit pointer ion-arrow-right-a'}, ['onclick', 'rotate', 'pics', 90])],
+                     ['i', B.ev ({text: 'Invert', class: 'edit pointer ion-arrow-down-a'},  ['onclick', 'rotate', 'pics', 180])],
+                     ['i', B.ev ({text: 'Delete', id: 'delete', class: 'edit pointer ion-android-delete'}, ['onclick', 'delete', 'pics'])],
+                  ]],
+                  ['h6', {class: 'gray4'}, 'REMOVE TAGS'],
+                  (function () {
+                     var tags = {};
+                     dale.do (B.get ('Data', 'pics'), function (pic) {
+                        if (! B.get ('State', 'selected', pic.id)) return;
+                        dale.do (pic.tags, function (tag) {
+                           if (H.isYear (tag)) return;
+                           tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
                         });
-
-                        return [
-                           dale.keys (tags).length === 0 ?
-                              ['p', 'None of the selected pictures have tags.'] :
-                              dale.do (tags, function (card, tag) {
-                                 return ['p', [tag + ':', ['span', B.ev ({class: 'action'}, ['onclick', 'tag', 'pics', tag, true]), ' Untag ' + card + (card === 1 ? ' picture' : ' pictures')]]];
-                              }),
-                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
-                        ];
-                     }
-
-                     if (action === 'tag') return B.view (x, ['State', 'autotag'], {listen: [
-                        ['trigger', 'tag', function (x, ev) {
-                           if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
-                        }],
-                     ]}, function (x, autotag) {
-                        var matches = ! autotag ? [] : dale.fil (B.get ('Data', 'tags'), undefined, function (card, tag) {
-                           if (BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
-                        });
-                        return [
-                           ['input', B.ev ({class: 'autocomplete', placeholder: 'tag ' + picn, value: autotag}, [
-                              ['oninput', 'set', ['State', 'autotag']],
-                              ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
-                           ])],
-                           H.if (matches.length > 0, ['ul', {class: 'autocomplete'}, dale.do (matches, function (match) {
-                              return ['li', B.ev ([
-                                 ['onclick', 'tag', 'pics', match [0]]
-                              ]), match [0] + ' (' + match [1] + ' pics)']
-                           })]),
-                           ['br'], ['br'],
-                           ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'tag', 'pics', true]), 'Tag ' + picn],
-                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
-                        ];
                      });
-
-                     if (action === 'rotate') {
-                        var firstSelected = dale.stopNot (pics, undefined, function (pic) {
-                           if (B.get ('State', 'selected', pic.id)) return pic;
-                        });
-                        return B.view (x, ['State', 'rotate'], function (x, rotate) {return [
-                           ['span', B.ev ({class: rotate === -90 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], -90]), 'Rotate left'],
-                           ' / ',
-                           ['span', B.ev ({class: rotate === 90  ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'],  90]), 'Rotate right'],
-                           ' / ',
-                           ['span', B.ev ({class: rotate === 180 ? 'bold' : 'action'}, ['onclick', 'set', ['State', 'rotate'], 180]), 'Invert'],
-                           ['br'], ['br'], ['br'], ['br'],
-                           ['style', [
-                              ['img.rotate', {
-                                 'transform, -ms-transform, -webkit-transform, -moz-transform': 'rotate(' + (rotate || 0) + 'deg)',
-                                 'max-height, max-width': 130
-                              }]
-                           ]],
-                           ['div', {style: 'height: 200px, width: 200px'}, ['img', {class: 'rotate', src: H.picPath (firstSelected)}]],
-                           ['br'], ['br'], ['br'], ['br'],
-                           ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'rotate', 'pics']), 'Rotate'],
-                           ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'rem', 'State', 'action']), 'Cancel']
-                        ]});
-                     }
+                     return ['ul', {class: 'tags gray4'}, dale.do (tags, function (k, tag) {
+                        var tagn = ['', tag, k ? [' (', k, ')'] : ''];
+                        return [['li', B.ev (['onclick', 'tag', 'pics', tag, true]), [
+                           ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
+                           tagn,
+                           ['i', {class: 'cancel icon ion-close'}],
+                        ]], ['br']];
+                     })];
+                  }) (),
+                  ['h6', {class: 'gray4'}, 'ADD TAGS'],
+                  (function () {
+                  B.view (x, ['State', 'autotag'], {attrs: {class: 'input-search'}, listen: [
+                     ['trigger', 'tag', function (x, ev) {
+                        if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
+                     }],
+                  ]}, function (x, autotag) {
+                     var matches = dale.obj (B.get ('Data', 'tags'), function (card, tag) {
+                        if (! H.isYear (tag) && BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
+                     });
+                     return [
+                        ['input', B.ev ({placeholder: 'Enter tag', value: autotag},
+                           ['oninput', 'set', ['State', 'autotag']],
+                           ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
+                        ), ['i', {class: 'icon ion-ios-search'}]],
+                        ['ul', {class: 'tags gray4'}, [
+                           matches [autotag] || autotag === undefined || autotag === '' ? [] : [['li', B.ev (['onclick', 'tag', 'pics', autotag]), [
+                              ['span', {class: 'opaque tag ' + murmur.v3 ('uom')}],
+                              autotag + ' (new tag)',
+                           ]], ['br']],,
+                           dale.do (matches, function (k, tag) {
+                              var tagn = ['', tag, k ? [' (', k, ')'] : ''];
+                              return [['li', B.ev (['onclick', 'tag', 'pics', tag]), [
+                                 ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
+                                 tagn,
+                              ]], ['br']];
+                           }),
+                        ]],
+                     ];
                   }),
                ];
             });
@@ -1221,7 +1229,16 @@
       ];
       return B.view (x, path, {listen: evs, attrs: {class: 'piclist'}}, function (x, pics) {
 
-         if (! pics || pics.length === 0) return;
+         if (! pics) return;
+         if (pics.length === 0) {
+            if (B.get ('State', 'query', 'tags').length === 0) return [
+               ['h2', 'Welcome to acpic!'],
+               ['img', {src: 'lib/icons/icon-image.svg'}],
+               ['h5', 'Click the upload button to startin adding pictures.'],
+               ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
+            ];
+            return;
+         }
 
          // first row starts all with top 0, left as previous end + margin. Know when to end the row because of lack of space (width, without margin)
          // next row, throughout its width check previous row pictures bottom offset (the max one). Add margin, that's your top offset. For right it is simply margin + the previous in the row, or nothing if first in row.
@@ -1468,6 +1485,7 @@
                      ['.ion-close, .ion-chevron-left, .ion-chevron-right', {
                         position: 'absolute',
                         'font-size': '40px',
+                        cursor: 'pointer',
                      }],
                      ['.ion-close', {
                         right: 10,
@@ -1478,8 +1496,8 @@
                ]],
                ['div', {class: 'canvas'}, [
                   (function () {
-                     var sidemargin = 20, topmargin = 30;
-                     var screenw = screen.w - sidemargin * 2, screenh = screen.h - topmargin * 2, picw = pic.dimw, pich = pic.dimh;
+                     var sidemargin = 20, topmargin = 10, botmargin = 30;
+                     var screenw = screen.w - sidemargin * 2, screenh = screen.h - (topmargin + botmargin), picw = pic.dimw, pich = pic.dimh;
                      if (Math.max (picw, pich, 900) === 900) var thuw = picw, thuh = pich;
                      else var thuw = picw * 900 / Math.max (picw, pich), thuh = pich * 900 / Math.max (picw, pich);
 

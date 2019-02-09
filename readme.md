@@ -171,7 +171,8 @@ Use cases:
 
 - Client
    - New interface!
-      - Edit pictures: rotate, add tags (with XX (new tag)), remove tags, delete, finish centertop
+      - wrong dates (NYE 18?)
+      - Edit pictures: add tags, fix centertop
       - Upload view with multiple uploads
       - Initial view with no pictures
       - Manage tags.
@@ -304,8 +305,6 @@ Use cases:
 `State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
 `State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
 `State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
-`State.action`: `undefined|'tag'|'untag'|'rotate'`, determines the action currently being displayed on the left part of the `organize` view.
-`State.rotate`: `undefined|90|-90|180`, determines the degrees of rotation for a `rotate` operation.
 `State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
 `State.autoquery`: `undefined|string`, used to search for tags in the query box.
 `State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
