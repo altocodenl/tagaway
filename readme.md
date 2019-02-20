@@ -170,18 +170,16 @@ Use cases:
 ### Todo alpha
 
 - Client
-   - New interface!
-      - wrong dates (NYE 18?)
-      - Edit pictures: add tags, fix centertop
-      - Upload view with multiple uploads
-      - Initial view with no pictures
-      - Manage tags.
+   - Upload view with multiple uploads
+   - Initial view with no pictures
+   - Manage tags.
 
 - Server
    - add test for get account.
    - check/delete for loose files in disk.
-   - Send to notification service: exceptions, abnormal behavior, summary of OS+node+redis
+   - wrong dates (NYE 18?)
    - Infra: new bucket (with IA lifecycle), new server
+   - Send to notification service: exceptions, abnormal behavior, summary of OS+node+redis
 
 ### Todo beta
 
@@ -408,6 +406,13 @@ Used by giz:
 
 ## Configuration
 
+On `/etc/security/limits.conf`, the following two lines to increase file handles per process:
+
+```
+* soft nofile 99999
+* hard nofile 99999
+```
+
 On `/etc/sysctl.conf`:
 
 ```
@@ -417,7 +422,7 @@ net.core.somaxconn=4096
 vm.overcommit_memory=1
 ```
 
-start script (must be executable, set with chmod 777):
+`start.sh` (must be executable, set with `chmod 777 start.sh`):
 
 ```
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"

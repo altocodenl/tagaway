@@ -686,7 +686,6 @@
             ['div', {class: 'centertop'}, [
                ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
                B.view (x, ['State', 'selected'], function (x, selected) {
-                  if (dale.keys (selected || {}).length > 0) return;
                   return B.view (x, ['State', 'query', 'tags'], function (x, qtags) {
                      return B.view (x, ['Data', 'tags'], function (x, tags) {
                         return B.view (x, ['Data', 'total'], function (x, total) {
@@ -1039,26 +1038,23 @@
                      })];
                   }) (),
                   ['h6', {class: 'gray4'}, 'ADD TAGS'],
-                  (function () {
                   B.view (x, ['State', 'autotag'], {attrs: {class: 'input-search'}, listen: [
-                     ['trigger', 'tag', function (x, ev) {
-                        if (ev.keyCode === 13) B.do (x, 'tag', 'pics', B.get ('State', 'autotag'));
-                     }],
                   ]}, function (x, autotag) {
                      var matches = dale.obj (B.get ('Data', 'tags'), function (card, tag) {
-                        if (! H.isYear (tag) && BASETAGS.indexOf (tag) === -1 && tag.match (autotag)) return [tag, card];
+                        if (H.isYear (tag) || BASETAGS.indexOf (tag) !== -1) return;
+                        if (tag.match (new RegExp (autotag || '', 'i'))) return [tag, card];
                      });
                      return [
                         ['input', B.ev ({placeholder: 'Enter tag', value: autotag},
                            ['oninput', 'set', ['State', 'autotag']],
-                           ['onkeydown', 'trigger', 'tag', {rawArgs: 'event'}]
                         ), ['i', {class: 'icon ion-ios-search'}]],
                         ['ul', {class: 'tags gray4'}, [
                            matches [autotag] || autotag === undefined || autotag === '' ? [] : [['li', B.ev (['onclick', 'tag', 'pics', autotag]), [
                               ['span', {class: 'opaque tag ' + murmur.v3 ('uom')}],
                               autotag + ' (new tag)',
                            ]], ['br']],,
-                           dale.do (matches, function (k, tag) {
+                           dale.do (dale.keys (matches).sort (H.tagsort), function (tag) {
+                              var k = matches [tag];
                               var tagn = ['', tag, k ? [' (', k, ')'] : ''];
                               return [['li', B.ev (['onclick', 'tag', 'pics', tag]), [
                                  ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],

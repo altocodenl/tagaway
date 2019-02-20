@@ -26,6 +26,7 @@ ssh $HOST mv vimrc .vimrc
 ssh $HOST apt-get install redis-server -y
 ssh $HOST apt-get install nginx -y
 ssh $HOST apt-get install imagemagick -y
-ssh $HOST apt-get autoremove && apt-get clean
+ssh $HOST apt-get autoremove -y
+ssh $HOST apt-get clean
 ssh $HOST mkdir /root/files
 ssh $HOST shutdown -r now
