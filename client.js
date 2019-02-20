@@ -328,6 +328,7 @@
                   'font-size': H.fontSize (2.5),
                }],
             ]],
+            Views.upload (x),
             Views.canvas (x),
             Views.notify (x),
             H.if (Views [view], Views [view] (x)),
@@ -564,7 +565,7 @@
       ];
 
       return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
-         if (['browse', 'upload'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
+         if (['browse'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          if (! B.get ('Data', 'account')) B.do (x, 'retrieve', 'account');
       }}, function (x, subview) {
          return Views [subview] ? Views [subview] (x) : undefined;
@@ -684,7 +685,7 @@
          ]],
          ['div', {class: 'center float'}, [
             ['div', {class: 'centertop'}, [
-               ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
+               ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'uploadModal'], true]), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
                B.view (x, ['State', 'selected'], function (x, selected) {
                   return B.view (x, ['State', 'query', 'tags'], function (x, qtags) {
                      return B.view (x, ['Data', 'tags'], function (x, tags) {
@@ -1103,75 +1104,91 @@
          }],
       ];
 
-      return [
-         ['style', [
-            ['table.smallprint', {'font-size': 0.7}],
-            ['div.progress-out', {
-               border: 'solid 2px #eeeeee',
-               'border-radius': 3,
-               width: 0.5,
-            }],
-            ['div.progress-in', {
-               'border-radius': 3,
-               'background-color': '#4CAF50',
-               padding: 5
-            }, ['p', {
-               color: 'white',
-               margin: 0,
-               'margin-left': 0.45
-            }]]
-         ]],
-         ['a', {href: '#', class: 'logout', onclick: 'H.logout ({ev: \'logoutclick\'})'}, 'Logout'],
-         ['br'], ['br'], ['br'],
-         ['a', {class: 'buttonlink', href: '#/main/browse'}, ['button', {type: 'submit', class: 'pure-button pure-button-primary'}, 'Back to main view']],
-         B.view (x, ['State', 'upload'], {listen: routes}, function (x, upload) {return [
-            ['form', {onsubmit: 'event.preventDefault ()', class: 'pure-form pure-form-aligned'}, [
-               ['br'], ['br'],
-               ['fieldset', [
-                  B.view (x, ['State', 'uploadFolder'], function (x, uploadFolder) {
-                     if (uploadFolder) return [
-                        ['h3', ['Upload a folder (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], false]), 'individual pictures'], ')']],
-                        ['input', {id: 'upload', type: 'file', name: 'pics', directory: true, webkitdirectory: true, mozdirectory: true}]
-                     ];
-                     else return [
-                        ['h3', ['Upload one or more pictures (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], true]), ' an entire folder'], ')']],
-                        ['input', {id: 'upload', type: 'file', name: 'pics', multiple: true}],
-                     ];
-                  }),
-                  ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload'],
-                  ['br'], ['br'],
-                  ['h3', 'Add a tag to the uploaded pictures'],
-                  ['input', B.ev ({placeholder: 'tags'}, ['onchange', 'set', ['State', 'upload', 'tags']])],
-                  ['br'], ['br'],
-                  ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'cancel', 'upload']), 'Cancel upload'],
-               ]]
+      return B.view (['State', 'uploadModal'], function (x, modal) {
+         if (! modal) return;
+         return [
+            ['style', [
+               ['body', {overflow: 'hidden'}],
+               ['div.uploadModal', {
+                  position: 'fixed',
+                  'top, left': 0,
+                  'height, width, min-height, min-width, max-height, max-width': 0.5,
+                  'background': 'rgba(50,50,50,0.9)',
+                  'z-index': '1',
+               }],
+               ['div.inner', {
+                  '-webkit-background-size, -moz-background-size, -o-background-size, background-size': 'cover !important',
+                  'border-radius': 14,
+                  position: 'relative',
+               }],
+               ['table.smallprint', {'font-size': 0.7}],
+               ['div.progress-out', {
+                  border: 'solid 2px #eeeeee',
+                  'border-radius': 3,
+                  width: 0.5,
+               }],
+               ['div.progress-in', {
+                  'border-radius': 3,
+                  'background-color': '#4CAF50',
+                  padding: 5
+               }, ['p', {
+                  color: 'white',
+                  margin: 0,
+                  'margin-left': 0.45
+               }]]
             ]],
-            ! upload ? [] : (function () {
-               upload.queue = upload.queue || [];
-               upload.done  = upload.done  || 0;
-               upload.error = upload.error || [];
-               upload.invalid = upload.invalid || [];
-               var perc = Math.round (upload.done / (upload.queue.length + upload.done) * 100);
-               if (perc === 0) perc = 2;
-               perc += '%';
-               return ['div', {class: 'pure-g'}, [
-                  ['div', {class: 'pure-u-5-5'}, [
+            ['div', {class: 'uploadModal'}, [
+               ['button', B.ev ({class: 'button'}, ['onclick', 'rem', 'State', 'uploadModal']), 'Back to main view'],
+               B.view (x, ['State', 'upload'], {listen: routes}, function (x, upload) {return [
+                  ['form', {onsubmit: 'event.preventDefault ()'}, [
                      ['br'], ['br'],
-                     H.if (upload.queue.length === 0 && upload.done > 0, ['h4', ['Uploaded ', upload.done, ' pictures']]),
-                     H.if (upload.queue.length > 0, ['h4', ['Uploading ', upload.queue.length, ' pictures']]),
-                     H.if (upload.queue.length > 0 || upload.done > 0, ['div', {class: 'progress-out'}, ['div', {class: 'progress-in', style: 'width: ' + perc}, ['p', perc]]]),
-                     H.if (upload.queue.length > 0, ['h4', ['While you wait, you can', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'subview'], 'browse']), ' start tagging your pictures!']]]),
-                     H.if (upload.error.length > 0, ['div', {class: 'pure-u-5-5'}, [
-                        ['p', ['There was an error uploading ' + upload.error.length + ' pictures. ', ['span', B.ev ({class: 'action'}, ['onclick', 'retry', 'upload']), 'Retry']]],
-                     ]]),
-                     H.if (upload.done > 0, ['p', ['Uploaded ' + upload.done + ' pictures successfully.']]),
-                     H.if (upload.repeated > 0, ['p', [upload.repeated + ' pictures were already uploaded before.']]),
-                     H.if (upload.invalid && upload.invalid.length > 0, ['p', [upload.invalid.length + ' pictures were of an invalid format.']]),
+                     ['fieldset', [
+                        B.view (x, ['State', 'uploadFolder'], function (x, uploadFolder) {
+                           if (uploadFolder) return [
+                              ['h3', ['Upload a folder (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], false]), 'individual pictures'], ')']],
+                              ['input', {id: 'upload', type: 'file', name: 'pics', directory: true, webkitdirectory: true, mozdirectory: true}]
+                           ];
+                           else return [
+                              ['h3', ['Upload one or more pictures (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], true]), ' an entire folder'], ')']],
+                              ['input', {id: 'upload', type: 'file', name: 'pics', multiple: true}],
+                           ];
+                        }),
+                        ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload'],
+                        ['br'], ['br'],
+                        ['h3', 'Add a tag to the uploaded pictures'],
+                        ['input', B.ev ({placeholder: 'tags'}, ['onchange', 'set', ['State', 'upload', 'tags']])],
+                        ['br'], ['br'],
+                        ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'cancel', 'upload']), 'Cancel upload'],
+                     ]]
                   ]],
-               ]];
-            }) (),
-         ]}),
-      ];
+                  ! upload ? [] : (function () {
+                     upload.queue = upload.queue || [];
+                     upload.done  = upload.done  || 0;
+                     upload.error = upload.error || [];
+                     upload.invalid = upload.invalid || [];
+                     var perc = Math.round (upload.done / (upload.queue.length + upload.done) * 100);
+                     if (perc === 0) perc = 2;
+                     perc += '%';
+                     return ['div', {class: 'pure-g'}, [
+                        ['div', {class: 'pure-u-5-5'}, [
+                           ['br'], ['br'],
+                           H.if (upload.queue.length === 0 && upload.done > 0, ['h4', ['Uploaded ', upload.done, ' pictures']]),
+                           H.if (upload.queue.length > 0, ['h4', ['Uploading ', upload.queue.length, ' pictures']]),
+                           H.if (upload.queue.length > 0 || upload.done > 0, ['div', {class: 'progress-out'}, ['div', {class: 'progress-in', style: 'width: ' + perc}, ['p', perc]]]),
+                           H.if (upload.queue.length > 0, ['h4', ['While you wait, you can', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'subview'], 'browse']), ' start tagging your pictures!']]]),
+                           H.if (upload.error.length > 0, ['div', {class: 'pure-u-5-5'}, [
+                              ['p', ['There was an error uploading ' + upload.error.length + ' pictures. ', ['span', B.ev ({class: 'action'}, ['onclick', 'retry', 'upload']), 'Retry']]],
+                           ]]),
+                           H.if (upload.done > 0, ['p', ['Uploaded ' + upload.done + ' pictures successfully.']]),
+                           H.if (upload.repeated > 0, ['p', [upload.repeated + ' pictures were already uploaded before.']]),
+                           H.if (upload.invalid && upload.invalid.length > 0, ['p', [upload.invalid.length + ' pictures were of an invalid format.']]),
+                        ]],
+                     ]];
+                  }) (),
+               ]}),
+            ]],
+         ];
+      })
    }
 
    // *** PICS VIEW ***

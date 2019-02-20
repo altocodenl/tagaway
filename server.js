@@ -22,7 +22,10 @@ var dale   = require ('dale');
 var teishi = require ('teishi');
 var lith   = require ('lith');
 var cicek  = require ('cicek');
-var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
+var redis  = require ('redis').createClient ({db: CONFIG.redisdb}).on ('error', function (error) {
+   // XXX Send notification
+   console.log ('Redis error', new Date ().toUTCString (), error);
+});
 var giz    = require ('giz');
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');

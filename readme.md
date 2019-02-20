@@ -164,6 +164,7 @@ Use cases:
 - 500s with their errors and as much info as possible.
 - Server starts.
 - Disk getting full or little RAM left or CPU usage high (requires poller).
+- Redis failure.
 
 ## Features
 
@@ -180,6 +181,7 @@ Use cases:
    - wrong dates (NYE 18?)
    - Infra: new bucket (with IA lifecycle), new server
    - Send to notification service: exceptions, abnormal behavior, summary of OS+node+redis
+   - Remove access logs.
 
 ### Todo beta
 
@@ -307,6 +309,7 @@ Use cases:
 `State.autoquery`: `undefined|string`, used to search for tags in the query box.
 `State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
 `State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
+`State.uploadModal`: `undefined|true`, if true, show the upload modal.
 `State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
 `State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
 `State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the `canvas` view.
