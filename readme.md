@@ -171,11 +171,20 @@ Use cases:
 ### Todo alpha
 
 - Client
-   - Upload view with multiple uploads
+   - Rotation is a PROPERTY, transform: rotate(90deg);
+   - Top bar (Home, Manage, Upload)
+   - Add autotag with enter
+   - Show dates in upload mode
+   - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
+   - Make remove tags as a button/tag with an integrated cross, with ... for long tags and expand on click
    - Initial view with no pictures
    - Manage tags.
+   - Mark shared & hidden tags always.
 
 - Server
+   - Altocode static.
+   - Don't reupload rotated pictures, simply change field
+   - Forbid newlines & crs in tag names, also trim double spaces.
    - add test for get account.
    - check/delete for loose files in disk.
    - wrong dates (NYE 18?)
