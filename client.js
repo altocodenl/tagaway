@@ -1284,6 +1284,9 @@
                   position: 'absolute',
                   height: MAXH,
                }],
+               ['div.selected', {
+                  'transform, -ms-transform, -webkit-transform, -o-transform, -moz-transform': 'scale(0.9, 0.9)',
+               }],
                ['div.imagecaption', {
                   'border-radius': 10,
                   opacity: 0,
@@ -1405,14 +1408,14 @@
             (function () {
                return dale.do (rows, function (v) {
                   return dale.do (v, function (p) {
-                     return B.view (x, ['State', 'selected'], {attrs: {
-                        class: 'imagecontainer',
-                        style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
-                     }}, function (x, selected) {
-                        selected = selected || {};
+                     return B.view (x, ['State', 'selected'], function (x, selected) {
                         return B.view (x, ['State', 'rotating'], function (x, rotating) {
+                           selected = selected || {};
                            rotating = rotating || {};
-                           return [
+                           return ['div', {
+                              class: 'imagecontainer ' + (selected [p [4].id] ? ' selected' : ''),
+                              style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
+                           }, [
                               ['img', B.ev ({
                                  'data-y': p [1] - p [3] - MARGIN,
                                  id: 'pic' + p [4].id,
@@ -1425,7 +1428,7 @@
                                  ['span', {style: 'position: absolute; right: 5px'}, H.dformat (p [4].date)],
                               ]],
                               H.if (selected [p [4].id], ['div', {class: 'blueoval'}]),
-                           ];
+                           ]];
                         });
                      });
                   });
