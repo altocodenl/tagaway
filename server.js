@@ -27,6 +27,7 @@ var redis  = require ('redis').createClient ({db: CONFIG.redisdb}).on ('error', 
    console.log ('Redis error', new Date ().toUTCString (), error);
 });
 var giz    = require ('giz');
+giz.config.expires = 24 * 60 * 60;
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');
 giz.redis  = redis;
