@@ -724,7 +724,6 @@
                         ['option', {selected: sort === 'oldest', value: 'oldest'}, 'Oldest'],
                         ['option', {selected: sort === 'upload', value: 'upload'}, 'Upload'],
                      ]],
-                     ['p', B.ev ({class: 'select bold pointer floatr gray2'}, ['onclick', 'set', ['State', 'selected'], {}]), 'Deselect '],
                      ['p', B.ev ({class: 'select bold pointer floatr gray2'}, ['onclick', 'selectall', []]), ' Select all'],
                   ]];
                }),
@@ -981,7 +980,10 @@
                if (selected === 0) return;
                var picn = selected === 1 ? 'picture' : 'pictures';
                return [
-                  ['h4', {class: 'gray4'}, ['Edit ', picn, ' (' + selected + ')']],
+                  ['h4', {class: 'gray4'}, [
+                     ['Edit ', picn, ' (' + selected + ')'],
+                     ['i', B.ev ({style: 'color: white', class: 'floatr icon ion-close'}, ['onclick', 'set', ['State', 'selected'], {}])],
+                  ]],
                   ['hr'],
                   ['style', [
                      ['div.rotate', {
