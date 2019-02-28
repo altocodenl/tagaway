@@ -1267,7 +1267,7 @@
 
          var rows = [[]];
 
-         var MAXWH = 185, MARGIN = 22, OVERLAP = 0;
+         var MAXH = B.get ('State', 'debug', 'height') || 160, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
 
          return [
             ['style', [
@@ -1278,10 +1278,11 @@
                }],
                ['img.pic', {
                   'border-radius': 12,
-                  'max-width, max-height': MAXWH,
+                  height: MAXH,
                }],
                ['div.imagecontainer', {
                   position: 'absolute',
+                  height: MAXH,
                }],
                ['div.imagecaption', {
                   'border-radius': 10,
@@ -1327,15 +1328,7 @@
 
                date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
 
-               var ratio = pic.dimw / pic.dimh, picw, pich;
-               if (ratio >= 1) {
-                  picw = Math.round (Math.min (MAXWH, pic.dimw));
-                  pich = Math.round (pic.dimh * picw / pic.dimw);
-               }
-               else {
-                  pich = Math.round (Math.min (MAXWH, pic.dimh));
-                  picw = Math.round (pic.dimw * pich / pic.dimh);
-               }
+               var pich = MAXH, picw = Math.round (pic.dimw / pic.dimh * MAXH);
 
                var bringup = function () {
                   if (rows.length === 1) return;
@@ -1360,6 +1353,7 @@
                }
 
                var justify = function (lastrow) {
+                  if (! B.get ('State', 'debug', 'justify')) return bringup ();
                   if (lastrow) return bringup ();
                   var rightgap = width - MARGIN * (H.last (rows).length - 1);
                   dale.do (H.last (rows), function (pic) {
@@ -1413,7 +1407,7 @@
                   return dale.do (v, function (p) {
                      return B.view (x, ['State', 'selected'], {attrs: {
                         class: 'imagecontainer',
-                        style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px'
+                        style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
                      }}, function (x, selected) {
                         selected = selected || {};
                         return B.view (x, ['State', 'rotating'], function (x, rotating) {
@@ -1424,6 +1418,7 @@
                                  id: 'pic' + p [4].id,
                                  class: 'pic ' + (rotating [p [4].id] ? 'rotating ' : (selected [p [4].id] ? ' selected' : '')),
                                  src: H.picPath (p [4]),
+                                 style: 'width: ' + p [2] + 'px',
                               }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
                               ['div', {class: 'imagecaption'}, [
                                  ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],
