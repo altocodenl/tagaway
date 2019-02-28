@@ -24,7 +24,6 @@ module.exports = {
    cookiename: 'ac-v1',
    allowedmime: ['image/jpeg', 'image/png'],
    port: 1427,
-   accesslog: 'access.log',
    errorlog:  'error.log',
    clientlog: 'client.log',
    picfolder: process.argv [2] ? '/root/files' : '/tmp',

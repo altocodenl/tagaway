@@ -284,12 +284,8 @@
                ['.bold', {
                   'font-weight': 'bold',
                }],
-               ['.float', {
-                  float: 'left',
-               }],
-               ['.floatr', {
-                  float: 'right',
-               }],
+               ['.float', {float: 'left',}],
+               ['.floatr', {float: 'right'}],
                ['p', {
                   'font-size': H.fontSize (-1),
                }],
@@ -797,6 +793,7 @@
                      ['span.action', {
                         color: H.css.blue,
                         'font-weight': 'bold',
+                        cursor: 'pointer',
                      }],
                   ]],
                   B.view (x, ['Data', 'account'], {attrs: {style: 'height: ' + H.spacev (2.5)}}, function (x, account) {
@@ -1110,39 +1107,49 @@
             ['style', [
                ['body', {overflow: 'hidden'}],
                ['div.uploadModal', {
+                  'width, height': 1,
+                  'background': 'rgba(210,210,210,0.9)',
+                  'z-index': '3',
                   position: 'fixed',
-                  'top, left': 0,
-                  'height, width, min-height, min-width, max-height, max-width': 0.5,
-                  'background': 'rgba(50,50,50,0.9)',
-                  'z-index': '1',
-               }],
+               }, [
+                  ['i.ion-close', {
+                     position: 'absolute',
+                     'top, right': 20,
+                  }],
+                  ['img', {
+                  }],
+               ]],
                ['div.inner', {
-                  '-webkit-background-size, -moz-background-size, -o-background-size, background-size': 'cover !important',
-                  'border-radius': 14,
+                  position: 'fixed',
+                  left: H.spaceh (10),
+                  width: H.spaceh (20),
+                  top: 100,
+                  'border-radius': 21,
                   position: 'relative',
                }],
-               ['table.smallprint', {'font-size': 0.7}],
-               ['div.progress-out', {
-                  border: 'solid 2px #eeeeee',
-                  'border-radius': 3,
-                  width: 0.5,
+               ['div.uploadLeft', {
+                  'padding-left': H.spaceh (1),
+                  width: H.spaceh (11),
+                  'background-color': 'white',
+                  'border-top-left-radius, border-bottom-left-radius': 21,
                }],
-               ['div.progress-in', {
-                  'border-radius': 3,
-                  'background-color': '#4CAF50',
-                  padding: 5
-               }, ['p', {
-                  color: 'white',
-                  margin: 0,
-                  'margin-left': 0.45
-               }]]
+               ['div.uploadRight', {
+                  'padding-left, padding-right': H.spaceh (0.5),
+                  width: H.spaceh (7),
+                  'background-color': H.css.gray2,
+                  'border-top-right-radius, border-bottom-right-radius': 21,
+               }],
             ]],
-            ['div', {class: 'uploadModal'}, [
-               ['button', B.ev ({class: 'button'}, ['onclick', 'rem', 'State', 'uploadModal']), 'Back to main view'],
+            ['div', {class: 'uploadModal'}, ['div', {class: 'inner'}, [
+               ['i', B.ev ({class: 'icon ion-close pointer'}, ['onclick', 'rem', 'State', 'uploadModal'])],
                B.view (x, ['State', 'upload'], {listen: routes}, function (x, upload) {return [
-                  ['form', {onsubmit: 'event.preventDefault ()'}, [
-                     ['br'], ['br'],
-                     ['fieldset', [
+                  ['div', {class: 'uploadLeft float'}, [
+                     ['h3', {style: 'color: ' + H.css.blue}, [
+                        ['img', {src: 'lib/icons/icon-camera.svg'}],
+                        'Upload pictures',
+                     ]],
+                     ['form', {onsubmit: 'event.preventDefault ()'}, [
+                        ['br'], ['br'],
                         B.view (x, ['State', 'uploadFolder'], function (x, uploadFolder) {
                            if (uploadFolder) return [
                               ['h3', ['Upload a folder (or ', ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'uploadFolder'], false]), 'individual pictures'], ')']],
@@ -1154,12 +1161,14 @@
                            ];
                         }),
                         ['button', B.ev ({type: 'submit', class: 'pure-button pure-button-primary'}, ['onclick', 'upload', 'pics']), 'Upload'],
-                        ['br'], ['br'],
-                        ['h3', 'Add a tag to the uploaded pictures'],
-                        ['input', B.ev ({placeholder: 'tags'}, ['onchange', 'set', ['State', 'upload', 'tags']])],
-                        ['br'], ['br'],
-                        ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'cancel', 'upload']), 'Cancel upload'],
-                     ]]
+                     ]],
+                  ]],
+                  ['div', {class: 'uploadRight float'}, [
+                     ['br'], ['br'],
+                     ['h3', 'Add a tag to the uploaded pictures'],
+                     ['input', B.ev ({placeholder: 'tags'}, ['onchange', 'set', ['State', 'upload', 'tags']])],
+                     ['br'], ['br'],
+                     ['button', B.ev ({type: 'submit', class: 'pure-button'}, ['onclick', 'cancel', 'upload']), 'Cancel upload'],
                   ]],
                   ! upload ? [] : (function () {
                      upload.queue = upload.queue || [];
@@ -1186,7 +1195,7 @@
                      ]];
                   }) (),
                ]}),
-            ]],
+            ]]],
          ];
       })
    }
