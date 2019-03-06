@@ -7,8 +7,8 @@ var h      = require ('hitit');
 var log    = teishi.l, type = teishi.t, eq = teishi.eq;
 
 var U = [
-   {username: 'user  \t1', password: Math.random () + ''},
-   {username: 'user2', password: Math.random () + ''},
+   {username: '   user  \t1', password: Math.random () + '', tz: new Date ().getTimezoneOffset ()},
+   {username: 'user2', password: Math.random () + '', tz: new Date ().getTimezoneOffset ()},
 ];
 
 var PICS = 'test/';
@@ -82,10 +82,9 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 }
 
 var intro = [
-   ['get stats if none present', 'get', 'admin/stats', {}, '', 200],
-   ['submit client error, invalid 1', 'post', 'clientlog', {}, '', 400],
-   ['submit client error without being logged in #1', 'post', 'clientlog', {}, ['error1'], 200],
-   ['submit client error without being logged in #2', 'post', 'clientlog', {}, {error: 'error'}, 200],
+   ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
+   ['submit client error without being logged in #1', 'post', 'error', {}, ['error1'], 200],
+   ['submit client error without being logged in #2', 'post', 'error', {}, {error: 'error'}, 200],
    ['login with no credentials', 'post', 'auth/login', {}, {}, 400],
    ['login with invalid credentials', 'post', 'auth/login', {}, [], 400],
    ttester ('login', 'post', 'auth/signup', {}, [
@@ -97,6 +96,12 @@ var intro = [
    ttester ('login', 'post', 'auth/login', {}, [
       ['username', 'string'],
       ['password', 'string'],
+      ['tz',       'integer'],
+   ]),
+   ttester ('login', 'post', 'auth/reset', {}, [
+      ['username', 'string'],
+      ['password', 'string'],
+      ['token',    'string'],
    ]),
    ttester ('create invite for user', 'post', 'admin/invites', {}, [
       ['email', 'string'],
@@ -129,7 +134,7 @@ var intro = [
       s.vtoken1 = rs.body.token;
       return true;
    }],
-   ['login with valid credentials before verification', 'post', 'auth/login', {}, {username: U [0].username, password: U [0].password}, 403, function (s, rq, rs) {
+   ['login with valid credentials before verification', 'post', 'auth/login', {}, {username: U [0].username, password: U [0].password, tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'verify'})) return log ('Invalid payload sent, expecting {error: "verify"}');
       return true;
    }],
@@ -171,14 +176,14 @@ var intro = [
       return true;
    }],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password}}, 200, function (state, request, response) {
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (state, request, response) {
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
-   ['submit client error being logged in #1', 'post', 'clientlog', {}, ['error1'], 200],
-   ['submit client error being logged in #2', 'post', 'clientlog', {}, {error: 'error'}, 200],
+   ['submit client error being logged in #1', 'post', 'error', {}, ['error1'], 200],
+   ['submit client error being logged in #2', 'post', 'error', {}, {error: 'error'}, 200],
 ];
 
 var outro = [
@@ -228,27 +233,37 @@ var main = [
    ]}, 400],
    ['upload empty picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
-      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'lastModified', value: Date.now ()},
    ]}, 400],
    ['upload invalid picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 400],
+   ['upload picture without uid', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
    ['upload picture without lastModified', 'post', 'pic', {}, {multipart: [
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'file',  name: 'pic', path: PICS + 'small.png'}
    ]}, 400],
    ['upload small picture with extra text field', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'extra', value: Date.now ()}
    ]}, 400],
    ['upload small picture with extra file field', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'file',  name: 'pic2', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
    ['upload small picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018/06/07').getTime ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -265,7 +280,7 @@ var main = [
       if (type (pic.id) !== 'string') return log ('Invalid pic.id.');
       delete pic.id;
       if (! eq (pic, {
-         owner: U [0].username.replace (' \t', ''),
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'small.png',
          dimh: 149,
          dimw: 149,
@@ -275,6 +290,7 @@ var main = [
    }],
    ['upload duplicated picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'smalldup.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 409],
    ['delete freshly uploaded picture', 'delete', function (s) {
@@ -282,10 +298,12 @@ var main = [
    }, {}, '', 200],
    ['upload small picture again', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018/06/07').getTime ()}
    ]}, 200],
    ['upload medium picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'medium.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018/06/03').getTime ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -302,7 +320,7 @@ var main = [
       if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
       delete pic.t200;
       if (! eq (pic, {
-         owner: U [0].username.replace (' \t', ''),
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'medium.jpg',
          dimh: 204,
          dimw: 248,
@@ -312,6 +330,7 @@ var main = [
    }],
    ['upload large picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'large.jpeg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -330,7 +349,7 @@ var main = [
       delete pic.t900;
       return true;
       if (! eq (pic, {
-         owner: U [0].username.replace (' \t', ''),
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'large.jpeg',
          dimh: 204,
          dimw: 248,
@@ -340,6 +359,7 @@ var main = [
    }],
    ['upload lopsided picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -361,7 +381,7 @@ var main = [
       if (type (pic.t900) !== 'string') return log ('Invalid pic.t900.');
       delete pic.t900;
       if (! eq (pic, {
-         owner: U [0].username.replace (' \t', ''),
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
@@ -390,10 +410,11 @@ var main = [
       delete pic.date;
       delete pic.dateup;
       if (! eq (pic, {
-         owner: U [0].username.replace (' \t', ''),
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'rotate.jpg',
-         dimw: 1232,
-         dimh: 2048,
+         dimh: 1232,
+         dimw: 2048,
+         deg:  90,
          tags: ['2017']
       })) return log ('Invalid pic fields.');
       return true;
@@ -615,7 +636,7 @@ var main = [
       return response.headers.cookie !== undefined;
    }],
    ['get shared tags as user2', 'get', 'share', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {shm: [[U [0].username.replace (' \t', ''), 'bla']], sho: []})) return log ('Invalid body', rs.body);
+      if (! eq (rs.body, {shm: [[U [0].username.replace (/^\s+/, '').replace (' \t', ''), 'bla']], sho: []})) return log ('Invalid body', rs.body);
       return true;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -674,16 +695,19 @@ var main = [
    }),
    ['upload lopsided picture as user2 with invalid tags #1', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '{}'}
    ]}, 400],
    ['upload lopsided picture as user2 with invalid tags #2', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '2'}
    ]}, 400],
    ['upload lopsided picture as user2 with invalid tags #3', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", 1]'}
    ]}, 400],
@@ -694,6 +718,7 @@ var main = [
    ]}, 400],
    ['upload lopsided picture as user2', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotate"]'}
    ]}, 200],
@@ -711,7 +736,7 @@ var main = [
       s.repeated = rs.body.pics [0].id;
       return true;
    }],
-   ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (' \t', '')}, 200],
+   ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', '')}, 200],
    ['get `rotate` pics as user2 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
       if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
@@ -734,7 +759,7 @@ var main = [
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
-   ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (' \t', ''), del: true}, 200],
+   ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', ''), del: true}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;

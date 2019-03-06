@@ -34,7 +34,7 @@
    // *** ERROR REPORTING ***
 
    window.onerror = function () {
-      c.ajax ('post', 'clientlog', {}, dale.do (arguments, function (v) {
+      c.ajax ('post', 'error', {}, dale.do (arguments, function (v) {
          return v.toString ();
       }).concat (B.eventlog));
    }
@@ -53,7 +53,7 @@
       if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token = path [2];
       if (path [0] === 'auth' && path [1] === 'reset' && path [2])  State.token = path [2];
       if (path [0] === 'auth' && path [1] === 'reset' && path [3])  State.username = path [3];
-      if (path [0] === 'auth' && path [1] === 'login' && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using acpic!');
+      if (path [0] === 'auth' && path [1] === 'login' && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using ac:pic!');
       B.do (x, 'set', ['State', 'view'],    path [0]);
       B.do (x, 'set', ['State', 'subview'], path [1]);
    });
@@ -387,7 +387,7 @@
                if (c ('#auth-confirm').value !== credentials.password) return B.do (x, 'notify', 'red', 'Please confirm that your password is entered correctly.');
                if (State.token) credentials.token = decodeURIComponent (State.token);
                else {
-                  if (confirm ('acpic is currently on alpha and is invitation only. Would you like to request an invitation?')) {
+                  if (confirm ('ac:pic is currently on alpha and is invitation only. Would you like to request an invitation?')) {
                      c.ajax ('post', 'requestInvite', {}, {email: credentials.email}, function (error) {
                         if (error) return alert ('Wow, we just experienced a connection error. Could you please try again?');
                         B.do (x, 'notify', 'green', 'We have successfully received your request! We\'ll get back to you ASAP.');
@@ -396,6 +396,7 @@
                   return;
                }
             }
+            if (subview === 'login') credentials.tz = new Date ().getTimezoneOffset ();
             c.ajax ('post', 'auth/' + subview, {}, credentials, function (error, rs) {
                x = H.from (x, {ev: 'ajax', method: 'post', path: 'auth/' + subview});
                if (error) {
@@ -1256,7 +1257,7 @@
          if (! pics) return;
          if (pics.length === 0) {
             if (B.get ('State', 'query', 'tags').length === 0) return [
-               ['h2', 'Welcome to acpic!'],
+               ['h2', 'Welcome to ac:pic!'],
                ['img', {src: 'lib/icons/icon-image.svg'}],
                ['h5', 'Click the upload button to startin adding pictures.'],
                ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
@@ -1269,7 +1270,7 @@
 
          var rows = [[]];
 
-         var MAXH = B.get ('State', 'debug', 'height') || 160, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
+         var MAXH = B.get ('State', 'debug', 'height') || 120, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
 
          return [
             ['style', [
@@ -1311,8 +1312,11 @@
                }],
                ['img.selected', {
                   'box-shadow': 'inset 0 0 0 1000px rgba(230,230,230,0.5)',
-                  opacity: '0.5'
+                  opacity: '0.5',
                }],
+               ['img.r90', {transform: 'rotate(90deg)'}],
+               ['img.r180', {transform: 'rotate(180deg)'}],
+               ['img.r270', {transform: 'rotate(-90deg)'}],
                ['img.rotating', {
                   'box-shadow': 'inset 0 0 0 1000px rgba(120,120,115,0.5)',
                   opacity: '0.5'

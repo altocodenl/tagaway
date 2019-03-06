@@ -1,10 +1,12 @@
 /*
-acpic - v0.1.0
+ac:pic - v0.1.0
 
 Written by Altocode (https://altocode.nl) and released into the public domain.
 
 Please refer to readme.md to read the annotated source (but not yet!).
 */
+
+// *** SETUP ***
 
 var CONFIG = require ('./config.js');
 var SECRET = require ('./secret.js');
@@ -12,43 +14,38 @@ var ENV = process.argv [2];
 
 var crypto = require ('crypto');
 var fs     = require ('fs');
-var os     = require ('os');
 var Path   = require ('path');
-var stream = require ('stream');
 var spawn  = require ('child_process').spawn;
+var stream = require ('stream');
+var os     = require ('os');
 Error.stackTraceLimit = Infinity;
 
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var lith   = require ('lith');
 var cicek  = require ('cicek');
-var redis  = require ('redis').createClient ({db: CONFIG.redisdb}).on ('error', function (error) {
-   // XXX Send notification
-   console.log ('Redis error', new Date ().toUTCString (), error);
-});
+var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var giz    = require ('giz');
-giz.config.expires = 24 * 60 * 60;
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');
-giz.redis  = redis;
 
-var bcrypt = require ('bcryptjs');
 var mailer = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
+var hash   = require ('murmurhash').v3;
+var mime   = require ('mime');
+var uuid   = require ('uuid/v4');
 
-var sendmail = function (o, cb) {
-   o.from1 = o.from1 || SECRET.emailName;
-   o.from2 = o.from2 || SECRET.emailAddress;
-   mailer.sendMail ({
-      from: o.from1 + ' <' + SECRET.emailAddress + '>',
-      to: o.to1 + ' <' + o.to2 + '>',
-      replyTo: o.from2,
-      subject: o.subject,
-      html: lith.g (o.message),
-   }, function (error, rs) {
-      if (error) console.log ('Mailer error', {error: error, options: o});
-      if (cb) cb (error);
+var type = teishi.t, log = teishi.l, reply = cicek.reply, stop = function (rs, rules) {
+   return teishi.stop (rules, function (error) {
+      reply (rs, 400, {error: error});
    });
 }
+
+// *** GIZ ***
+
+giz.redis          = redis;
+giz.config.expires = 24 * 60 * 60;
+
+// *** REDIS EXTENSIONS ***
 
 redis.keyscan = function (match, cb, cursor, keys) {
    if (! cursor) cursor = 0;
@@ -64,36 +61,49 @@ redis.keyscan = function (match, cb, cursor, keys) {
    });
 }
 
-var Redis  = function (s, action) {
+var Redis = function (s, action) {
    redis [action].apply (redis, [].slice.call (arguments, 2).concat (function (error, data) {
       s.do (data, error);
    }));
 }
 
-var aws     = require ('aws-sdk');
-var hash    = require ('murmurhash').v3;
-var mime    = require ('mime');
-var uuid    = require ('uuid/v4');
+// *** NOTIFICATIONS ***
 
-var s3 = new aws.S3 ({
-   apiVersion: '2006-03-01',
-   sslEnabled: true,
-   credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
-   region: SECRET.s3.pic.region,
-   params: {Bucket: SECRET.s3.pic.bucketName},
-});
-
-var type = teishi.t, log = teishi.l, reply = cicek.reply, stop = function (rs, rules) {
-   return teishi.stop (rules, function (error) {
-      reply (rs, 400, {error: error});
-   });
-}, hashs = function (string) {
-   return hash (string) + '';
+var notify = function (message) {
+   if (type (message) !== 'object') return console.log ('NOTIFY: message must be an object but instead is', message);
+   message.environment = ENV || 'local';
+   console.log (new Date ().toUTCString (), message);
 }
+
+// *** SENDMAIL ***
+
+var sendmail = function (o, cb) {
+   o.from1 = o.from1 || SECRET.emailName;
+   o.from2 = o.from2 || SECRET.emailAddress;
+   mailer.sendMail ({
+      from: o.from1 + ' <' + SECRET.emailAddress + '>',
+      to: o.to1 + ' <' + o.to2 + '>',
+      replyTo: o.from2,
+      subject: o.subject,
+      html: lith.g (o.message),
+   }, function (error, rs) {
+      if (error) notify ({type: 'mailer error', error: error, options: o});
+      if (cb) cb (error);
+   });
+}
+
+// *** S3 ***
+
+var s3 = new (require ('aws-sdk')).S3 ({
+   apiVersion:  '2006-03-01',
+   sslEnabled:  true,
+   credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
+   params:      {Bucket: SECRET.s3.pic.bucketName},
+});
 
 // *** KABOOT ***
 
-var k      = function (s) {
+var k = function (s) {
 
    var output = {out: '', err: ''};
 
@@ -125,6 +135,19 @@ var k      = function (s) {
 // *** HELPERS ***
 
 var H = {};
+
+H.trim = function (s) {
+   return s.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+}
+
+H.log = function (user, ev, cb) {
+   ev.t = Date.now ();
+   redis.lpush ('ulog:' + user, teishi.s (ev), cb || function () {});
+}
+
+H.hashs = function (string) {
+   return hash (string) + '';
+}
 
 H.isYear = function (tag) {
    return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
@@ -159,6 +182,14 @@ H.resizeIf = function (s, path, Max) {
          s ['t' + Max] = uuid ();
          var perc = Math.round (Max / Math.max (s.size.h, s.size.w) * 100);
          return [k, 'convert', path, '-quality', 75, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + Max])];
+      },
+      function (s) {
+         if (s.size.w <= Max && s.size.h <= Max) return s.do ();
+         fs.stat (Path.join (Path.dirname (path), s ['t' + Max]), function (error, stat) {
+            if (error) return s.do (null, error);
+            s ['t' + Max + 'size'] = stat.size;
+            s.do ();
+         });
       }
    ];
 }
@@ -194,29 +225,22 @@ H.decrypt = function (data) {
 H.s3put = function (s, user, path, key) {
    H.encrypt (path, function (error, file) {
       if (error) return s.do (null, error);
-      s.do ([
-         function (s) {
-            s3.upload ({Key: hashs (user) + '/' + key, Body: file}, function (error, data) {
-               if (error) return s.do (null, error);
-               s.do ([
-                  function (s) {
-                     s3.headObject ({Key: hashs (user) + '/' + key}, function (error, data) {
-                        if (error) return s.do (null, error);
-                        s.last = data;
-                        s.do ([
-                           [a.set, false, [Redis, 'hincrby', 'users:' + user, 's3:buse', data.ContentLength]],
-                        ]);
-                     });
-                  }
-               ]);
-            });
-         }
-      ]);
+      s3.upload ({Key: user ? (H.hashs (user) + '/' + key) : key, Body: file}, function (error, data) {
+         if (error) return s.do (null, error);
+         if (! user) return s.do ();
+         s3.headObject ({Key: H.hashs (user) + '/' + key}, function (error, data) {
+            if (error) return s.do (null, error);
+            s.last = data;
+            s.do ([
+               [a.set, false, [Redis, 'hincrby', 'users:' + user, 's3:buse', data.ContentLength]],
+            ]);
+         });
+      });
    });
 }
 
 H.s3get = function (user, key, cb) {
-   s3.getObject ({Key: hashs (user) + '/' + key}, function (error, data) {
+   s3.getObject ({Key: H.hashs (user) + '/' + key}, function (error, data) {
       if (error) return cb (error);
       redis.hincrby ('users:' + user, 's3:bget', data.ContentLength, function (error) {
          if (error) return cb (error);
@@ -231,13 +255,15 @@ H.s3del = function (user, keys, sizes, cb) {
    var counter = 0;
    if (type (keys) === 'string') keys = [keys];
 
+   if (keys.length === 0) return cb ();
+
    var batch = function () {
       s3.deleteObjects ({Delete: {Objects: dale.do (keys.slice (counter * 1000, (counter + 1) * 1000), function (key) {
-         return {Key: hashs (user) + '/' + key}
+         return {Key: user ? (H.hashs (user) + '/' + key) : key}
       })}}, function (error) {
          if (error) return cb (error);
          var multi = redis.multi ();
-         dale.do (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
+         if (user) dale.do (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
          multi.exec (function (error) {
             if (error) return cb (error);
             if (++counter === Math.ceil (keys.length / 1000)) cb ();
@@ -250,15 +276,17 @@ H.s3del = function (user, keys, sizes, cb) {
 }
 
 H.s3list = function (prefix, cb) {
-   s3.listObjects ({Prefix: prefix}, function (error, data) {
-      if (error) return cb (error);
-      cb (null, data.Contents);
-   });
-}
-
-H.log = function (user, ev, cb) {
-   ev.t = Date.now ();
-   redis.lpush ('ulog:' + user, teishi.s (ev), cb || function () {});
+   var output = [];
+   var fetch = function (marker) {
+      s3.listObjects ({Prefix: prefix, Marker: marker}, function (error, data) {
+         if (error) return cb (error);
+         output = output.concat (data.Contents);
+         delete data.Contents;
+         if (! data.IsTruncated) return cb (null, dale.do (output, function (v) {return v.Key}));
+         fetch (output [output.length - 1].Key);
+      });
+   }
+   fetch ();
 }
 
 H.stat = function (name, pf, n) {
@@ -268,13 +296,16 @@ H.stat = function (name, pf, n) {
       var multi = redis.multi ();
       multi.pfadd ('stp:' + name + ':' + t, pf);
       multi.sadd  ('stp',   name + ':' + t);
-      multi.exec (function (error) {if (error) console.log ('H.stat error', error)});
+      multi.exec (function (error) {
+         if (error) notify ({type: 'stat error', error: error});
+      });
    }
-   else redis.incrby ('sti:' + name + ':' + t, n || 1, function (error) {if (error) console.log ('H.stat error', error)});
+   else redis.incrby ('sti:' + name + ':' + t, n || 1, function (error) {
+      if (error) notify ({type: 'stat error', error: error});
+   });
 }
 
 H.deletePic = function (id, username, cb) {
-
    a.stop ([
       [function (s) {
          var multi = redis.multi ();
@@ -287,24 +318,18 @@ H.deletePic = function (id, username, cb) {
          });
       }],
       function (s) {
-         s.pic = s.last [0];
+         s.pic  = s.last [0];
          s.tags = s.last [1];
          if (! s.pic || username !== s.pic.owner) return cb ('nf');
 
-         var toDelete = [s.pic.id], toDeleteSizes = [s.pic.by];
-         if (s.pic.t200) {
-            toDelete.push (s.pic.t200);
-            toDeleteSizes.push (s.pic.by900);
-         }
-         if (s.pic.t900) {
-            toDelete.push (s.pic.t900);
-            toDeleteSizes.push (s.pic.by900);
-         }
-
-         H.s3del (username, toDelete, toDeleteSizes, function (error) {
+         H.s3del (username, s.pic.id, s.pic.by, function (error) {
             if (error) return s.do (null, error);
-            a.fork (s, toDelete, function (v) {
-               return [a.make (fs.unlink), Path.join (CONFIG.picfolder, hashs (username), v)];
+            var thumbs = [];
+            if (s.pic.t200) thumbs.push (s.pic.t200);
+            if (s.pic.t900) thumbs.push (s.pic.t900);
+            if (thumbs.length === 0) return s.do ();
+            a.fork (s, thumbs, function (v) {
+               return [a.make (fs.unlink), Path.join (CONFIG.picfolder, H.hashs (username), v)];
             });
          });
       },
@@ -340,30 +365,6 @@ H.deletePic = function (id, username, cb) {
    }});
 }
 
-if (cicek.isMaster) setInterval (function () {
-   redis.smembers ('stp', function (error, pfs) {
-      if (error) return console.log ('Stat pfcount -> counter error', error);
-      var multi = redis.multi ();
-      dale.do (pfs, function (pf) {
-         multi.pfcount (pf);
-      });
-      multi.exec (function (error, counts) {
-         if (error) return console.log ('Stat pfcount -> counter error', error);
-         var d = Date.now (), multi2 = redis.multi ();
-         dale.do (pfs, function (pf, k) {
-            var duration = pf.split (':') [0] === 'a' ? 1000 * 60 * 10 : 1000 * 60 * 60 * 24;
-            if (d - parseInt (pf.split (':') [1] + '00000') > duration) {
-               multi2.srem ('stp', pf);
-               multi2.set  (pf, counts [k]);
-            }
-         });
-         multi2.exec (function (error) {
-            if (error) return console.log ('Stat pfcount -> counter error', error);
-         });
-      });
-   });
-}, 20 * 1000);
-
 
 // *** ROUTES ***
 
@@ -381,7 +382,7 @@ var routes = [
          ['head', [
             ['meta', {charset: 'utf-8'}],
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['title', 'acpic'],
+            ['title', 'ac:pic'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
             dale.do (['ionicons.min', 'normalize.min'], function (v) {
@@ -406,7 +407,7 @@ var routes = [
          ['head', [
             ['meta', {charset: 'utf-8'}],
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['title', 'acpic admin'],
+            ['title', 'ac:pic admin'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             dale.do (['pure-min', 'ionicons.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
@@ -420,13 +421,13 @@ var routes = [
             ['script', {src: 'admin.js'}]
          ]]
       ]]
-   ])],
+   ]), 'html'],
 
    // *** REQUEST INVITE ***
 
    ['post', 'requestInvite', function (rq, rs) {
       if (type (rq.body) !== 'object' || type (rq.body.email) !== 'string') return reply (rq, 400);
-      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for acpic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
+      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac:pic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
          reply (rs, error ? 500 : 200);
       });
    }],
@@ -434,8 +435,8 @@ var routes = [
    // *** AUTH WITH COOKIES & SESSIONS ***
 
    ['post', 'auth/logout', function (rq, rs) {
-      giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookiename] || '') : '', function (error) {
-         if (error) return reply (rs, 500, {error: error});
+      if (type (rq.body) !== 'object') return reply (rq, 400);
+      giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookiename] || '') : '', function () {
          reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
       });
    }],
@@ -446,16 +447,16 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
-         ['body', b, 'string', 'each'],
-         ['keys of body', dale.keys (b), ['username', 'password'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['username', 'password', 'tz'], 'eachOf', teishi.test.equal],
          function () {return [
             dale.do (['username', 'password'], function (key) {
                return ['body.' + key, b [key], 'string']
             }),
+            ['body.tz', b.tz, 'integer'],
          ]},
       ])) return;
 
-      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+      b.username = H.trim (b.username.toLowerCase ());
 
       var login = function (username) {
          giz.login (username, b.password, function (error, session) {
@@ -467,13 +468,14 @@ var routes = [
             redis.hget ('users:' + username, 'verificationPending', function (error, pending) {
                if (error)   return reply (rs, 500, {error: error});
                if (pending) return reply (rs, 403, {error: 'verify'});
+               H.log (username, {a: 'log', ip: rq.origin, ua: rq.headers ['user-agent'], tz: b.tz});
                reply (rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookiename, session)});
             });
          });
       }
 
-      if (! username.match ('@')) login (username);
-      else redis.hget ('emails', username, function (error, username) {
+      if (! b.username.match ('@')) login (b.username);
+      else redis.hget ('emails', b.username, function (error, username) {
          if (error)      return reply (rs, 500, {error: error});
          if (! username) return reply (rs, 403, {error: 'auth'});
          login (username);
@@ -486,7 +488,6 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
-         ['body', b, 'string', 'each'],
          ['keys of body', dale.keys (b), ['username', 'password', 'email', 'token'], 'eachOf', teishi.test.equal],
          function () {return [
             dale.do (['username', 'password', 'email', 'token'], function (key) {
@@ -501,14 +502,14 @@ var routes = [
          ]},
       ])) return;
 
-      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
-      if (username.length < 3) return reply (rs, 400, {error: 'Trimmed username is less than three characters long.'});
+      b.username = H.trim (b.username.toLowerCase ());
+      if (b.username.length < 3) return reply (rs, 400, {error: 'Trimmed username is less than three characters long.'});
       var email    = b.email.toLowerCase    ().replace (/\s+$/g, '');
 
       var multi = redis.multi ();
       multi.hget ('invites', email);
       multi.hget ('emails', email);
-      multi.exists ('users:' + username);
+      multi.exists ('users:' + b.username);
       multi.exec (function (error, data) {
          if (error) return reply (rs, 500, {error: error});
          var invite = teishi.p (data [0]);
@@ -516,35 +517,40 @@ var routes = [
          if (data [1]) return reply (rs, 403, {error: 'email'});
          if (data [2]) return reply (rs, 403, {error: 'username'});
 
-         bcrypt.genSalt (20, function (error, vtoken) {
+         require ('bcryptjs').genSalt (20, function (error, vtoken) {
             if (error) return reply (rs, 500, {error: error});
 
-            giz.signup (username, b.password, function (error) {
+            giz.signup (b.username, b.password, function (error) {
                if (error) return reply (rs, 500, {error: error});
 
                var multi2 = redis.multi ();
                multi2.hset ('verify', vtoken, email);
                multi2.hset ('invites', b.email, JSON.stringify ({token: invite.token, sent: invite.sent, accepted: Date.now ()}));
 
-               multi2.hset ('emails', email, username);
+               multi2.hset ('emails', email, b.username);
 
-               multi2.hmset ('users:' + username, {username: username, email: email, type: 'tier1', created: Date.now ()});
-               if (! b.token || ! ENV) multi2.hmset ('users:' + username, {verificationPending: true});
+               multi2.hmset ('users:' + b.username, {username: b.username, email: email, type: 'tier1', created: Date.now ()});
+               if (! b.token || ! ENV) multi2.hmset ('users:' + b.username, {verificationPending: true});
 
                multi2.exec (function (error) {
                   if (error)  return reply (rs, 500, {error: error});
-                  if (! ENV) return reply (rs, 200, {token: vtoken});
+                  if (! ENV) {
+                     H.log (b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']});
+                     return reply (rs, 200, {token: vtoken});
+                  }
                   if (b.token) {
-                     return sendmail ({to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
+                     return sendmail ({to1: b.username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (b.username)}, function (error) {
                         if (error) return reply (rs, 500, {error: error});
-                        giz.login (username, b.password, function (error, session) {
+                        giz.login (b.username, b.password, function (error, session) {
                            if (error) reply (rs, 500, {error: error});
+                           H.log (b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']});
                            reply (rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookiename, session)});
                         });
                      });
                   }
-                  sendmail ({to1: username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (username, vtoken)}, function (error) {
+                  sendmail ({to1: b.username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (b.username, vtoken)}, function (error) {
                      if (error) return reply (rs, 500, {error: error});
+                     H.log (b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']});
                      reply (rs, 200);
                   });
                });
@@ -567,6 +573,7 @@ var routes = [
             multi.hdel ('verify', token);
             multi.exec (function (error) {
                if (error) return reply (rs, 500, {error: error});
+               if (! ENV) return reply (rs, 302, '', {location: '/#/auth/login/verified'});
                sendmail ({to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   reply (rs, 302, '', {location: '/#/auth/login/verified'});
@@ -584,7 +591,6 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
-         ['body', b, 'string', 'each'],
          ['keys of body', dale.keys (b), ['username'], 'eachOf', teishi.test.equal],
          function () {return [
             dale.do (['username'], function (key) {
@@ -600,7 +606,7 @@ var routes = [
                else                           return reply (rs, 500, {error: error});
             }
             redis.hgetall ('users:' + username, function (error, user) {
-               if (error)  return reply (rs, 500, {error: error});
+               if (error) return reply (rs, 500, {error: error});
                if (! ENV) return reply (rs, 200, {token: token});
                sendmail ({to1: user.username, to2: user.email, subject: CONFIG.etemplates.recover.subject, message: CONFIG.etemplates.recover.message (user.username, token)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
@@ -610,10 +616,10 @@ var routes = [
          });
       }
 
-      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+      b.username = H.trim (b.username.toLowerCase ());
 
-      if (! username.match ('@')) recover (username);
-      else redis.hget ('emails', username, function (error, username) {
+      if (! b.username.match ('@')) recover (b.username);
+      else redis.hget ('emails', b.username, function (error, username) {
          if (error)      return reply (rs, 500, {error: error});
          if (! username) return reply (rs, 403);
          recover (username);
@@ -643,19 +649,23 @@ var routes = [
                   if (type (error) === 'string') return reply (rs, 403);
                   else                           return reply (rs, 500, {error: error});
                }
-               if (! ENV) return reply (rs, 200);
+               if (! ENV) {
+                  H.log (user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
+                  return reply (rs, 200);
+               }
                sendmail ({to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
                   if (error) return reply (rs, 500, {error: error});
+                  H.log (user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
                   reply (rs, 200);
                });
             });
          });
       }
 
-      var username = b.username.toLowerCase ().replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+      b.username = H.trim (b.username.toLowerCase ());
 
-      if (! username.match ('@')) reset (username);
-      else redis.hget ('emails', username, function (error, username) {
+      if (! b.username.match ('@')) reset (b.username);
+      else redis.hget ('emails', b.username, function (error, username) {
          if (error)      return reply (rs, 500, {error: error});
          if (! username) return reply (rs, 403);
          reset (username);
@@ -666,12 +676,9 @@ var routes = [
 
    ['all', '*', function (rq, rs) {
 
-      if (rq.method === 'post' && rq.url === '/clientlog') return rs.next ();
-
-      if (rq.url.match (/^\/admin/)) {
-         if (! ENV) return rs.next ();
-         if (rq.body && rq.body.email && SECRET.admins.indexOf (rq.body.email) !== -1) return rs.next ();
-      }
+      if (rq.method === 'post' && rq.url === '/error')                  return rs.next ();
+      if (rq.method === 'get'  && rq.url === '/admin/stats')            return rs.next ();
+      if (! ENV && rq.method === 'post' && rq.url === '/admin/invites') return rs.next ();
 
       giz.auth ((rq.data.cookie || {}) [CONFIG.cookiename] || '', function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
@@ -681,15 +688,30 @@ var routes = [
          H.stat ('A', user.username);
          rs.log.user = user.username;
          rq.user = user;
+
+         if (rq.url.match (/^\/admin/) && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
+
          rs.next ();
       });
+   }],
+
+   // *** CLIENT ERRORS ***
+
+   ['post', 'error', function (rq, rs) {
+      if (teishi.simple (rq.body)) return reply (rs, 400);
+      notify ({type: 'client error', headers: rq.headers, ip: rq.origin, user: (rq.user || {}).username, error: rq.body});
+      reply (rs, 200);
    }],
 
    // *** DELETE ACCOUNT ***
 
    ['post', 'auth/delete', function (rq, rs) {
 
+      // We temporarily disable account deletions.
       if (ENV) return reply (rs, 501);
+
+      // We require a JSON body to prevent CSRF.
+      if (! teishi.eq (rq.body, {})) return reply (rs, 400);
 
       redis.get ('tag:' + rq.user.username + ':all', function (error, pics) {
          if (error) return reply (rs, 500, {error: error});
@@ -703,7 +725,7 @@ var routes = [
                multi.hdel ('invites', rq.user.email);
                dale.do (pics, function (pic) {
                   H.deletePic (pic, rq.user.username, function (error) {
-                     // XXX Report error.
+                     if (error) notify ({type: 'picture deletion error', error: error});
                   });
                });
                dale.do (tags, function (tag) {
@@ -718,7 +740,7 @@ var routes = [
                multi.exec (function (error) {
                   if (error) return reply (rs, 500, {error: error});
                   giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
-                     H.log (rq.user.username, {a: 'des'});
+                     H.log (rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']});
                      reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
                   });
                });
@@ -733,7 +755,7 @@ var routes = [
       redis.hgetall ('pic:' + rq.data.params.id, function (error, pic) {
          if (error)        return reply (rs, 500, {error: error});
          if (pic === null) return reply (rs, 404);
-         if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), pic.id), [CONFIG.picfolder]);
+         if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (H.hashs (pic.owner), pic.id), [CONFIG.picfolder]);
          redis.smembers ('pict:' + pic.id, function (error, tags) {
             if (error) return reply (rs, 500, {error: error});
             if (tags.length === 0) return reply (rs, 404);
@@ -746,7 +768,7 @@ var routes = [
                if (! dale.stop (data, true, function (v) {
                   if (! v) return;
                   redis.hincrby ('pic:' + pic.id, 'xp', 1);
-                  cicek.file (rq, rs, Path.join (hashs (pic.owner), pic.id), [CONFIG.picfolder]);
+                  cicek.file (rq, rs, Path.join (H.hashs (pic.owner), pic.id), [CONFIG.picfolder]);
                   return true;
                })) reply (rs, 404);
             });
@@ -762,7 +784,7 @@ var routes = [
             if (error)        return reply (rs, 500, {error: error});
             if (pic === null) return reply (rs, 404);
 
-            if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
+            if (rq.user.username === pic.owner) return cicek.file (rq, rs, Path.join (H.hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
             redis.smembers ('pict:' + pic.id, function (error, tags) {
                if (error) return reply (rs, 500, {error: error});
                if (tags.length === 0) return reply (rs, 404);
@@ -775,7 +797,7 @@ var routes = [
                   if (! dale.stop (data, true, function (v) {
                      if (! v) return;
                      redis.hincrby ('pic:' + pic.id, 'xt' + (rq.data.params.id === pic.t200 ? 2 : 9), 1);
-                     cicek.file (rq, rs, Path.join (hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
+                     cicek.file (rq, rs, Path.join (H.hashs (pic.owner), rq.data.params.id), [CONFIG.picfolder]);
                      return true;
                   })) reply (rs, 404);
                });
@@ -788,10 +810,11 @@ var routes = [
 
    ['post', 'pic', function (rq, rs) {
 
-      if (! rq.data.fields) return reply (rs, 400, {error: 'field'});
-      if (! rq.data.files)  return reply (rs, 400, {error: 'file'});
+      if (! rq.data.fields)      return reply (rs, 400, {error: 'field'});
+      if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
+      if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (! teishi.eq (dale.keys (rq.data.fields), ['lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
+      if (! teishi.eq (dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
       if (! teishi.eq (dale.keys (rq.data.files), ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.p (rq.data.fields.tags), error;
@@ -817,7 +840,7 @@ var routes = [
       pic.name   = path.slice (path.indexOf ('_') + 1);
       pic.dateup = Date.now ();
 
-      var newpath = Path.join (CONFIG.picfolder, hashs (rq.user.username), pic.id);
+      var newpath = Path.join (CONFIG.picfolder, H.hashs (rq.user.username), pic.id);
 
       a.stop (function (s) {
          return [
@@ -851,15 +874,7 @@ var routes = [
                      s.do ();
                   },
                   function (s) {
-                     return [
-                        [a.set, 'picdata', [H.s3put, rq.user.username, newpath, pic.id]],
-                        ! s.t200 ? [] : [
-                           [a.set, 't200data', [H.s3put, rq.user.username, Path.join (Path.dirname (newpath), s.t200), s.t200]],
-                        ],
-                        ! s.t900 ? [] : [
-                           [a.set, 't900data', [H.s3put, rq.user.username, Path.join (Path.dirname (newpath), s.t900), s.t900]],
-                        ]
-                     ];
+                     return [a.set, 'picdata', [H.s3put, rq.user.username, newpath, pic.id]];
                   },
                   function (s) {
                      var multi = redis.multi ();
@@ -888,12 +903,12 @@ var routes = [
 
                      if (s.t200) {
                         pic.t200 = s.t200;
-                        pic.by200 = s.t200data.ContentLength;
+                        pic.by200 = s.t200size;
                         multi.set ('thu:' + pic.t200, pic.id);
                      }
                      if (s.t900) {
                         pic.t900 = s.t900;
-                        pic.by900 = s.t900data.ContentLength;
+                        pic.by900 = s.t900size;
                         multi.set ('thu:' + pic.t900, pic.id);
                      }
 
@@ -919,8 +934,8 @@ var routes = [
                      multi.hmset ('pic:' + pic.id, pic);
                      multi.exec (function (error) {
                         if (error) return reply (rs, 500, {error: error});
-                        H.log (rq.user.username, {a: 'upl', id: pic.id});
                         if (! rs.connection.writable) return cicek.log (['error', 'client upload error', {pic: s.pic}]);
+                        H.log (rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined});
                         reply (rs, 200);
                      });
                   }
@@ -964,75 +979,15 @@ var routes = [
          ]}
       ])) return;
 
-      var path, tmppath;
-
-      a.stop ([
-         [a.set, 'pic', [Redis, 'hgetall', 'pic:' + b.id]],
-         function (s) {
-            if (! s.pic || s.pic.owner !== rq.user.username) return reply (rs, 404);
-            path    = Path.join (CONFIG.picfolder, hashs (s.pic.owner), s.pic.id);
-            tmppath = Path.join (os.tmpdir (), s.pic.id);
-            s.do ([
-               [k, 'cp', path, tmppath],
-               [k, 'mogrify', '-rotate', b.deg, tmppath],
-               [k, 'cp', tmppath, path],
-               [a.make (fs.unlink), tmppath],
-               [a.make (H.s3del), rq.user.username, b.id, s.pic.by],
-               [a.set, 'picdata', [H.s3put, rq.user.username, path, b.id]],
-               [H.resizeIf, path, 200],
-               [H.resizeIf, path, 900],
-               function (s) {return [
-                  ! s.t200 ? [] : [a.set, 't200data', [H.s3put, rq.user.username, path, s.t200]],
-                  ! s.t900 ? [] : [a.set, 't900data', [H.s3put, rq.user.username, path, s.t900]],
-               ]},
-            ]);
-         },
-         function (s) {
-            var toDelete = dale.fil (['t200', 't900'], undefined, function (t) {
-               return s.pic [t];
-            });
-            var toDeleteSizes = dale.fil (['by200', 'by900'], undefined, function (t) {
-               return s.pic [t];
-            });
-            if (toDelete.length === 0) return s.do ();
-            return [
-               dale.do (toDelete, function (t) {
-                  return [a.make (fs.unlink), Path.join (CONFIG.picfolder, hashs (rq.user.username), t)];
-               }),
-               [a.make (H.s3del), rq.user.username, toDelete, toDeleteSizes]
-            ];
-         },
-         function (s) {
-            var multi = redis.multi ();
-            if (s.pic.t200) {
-               multi.hdel ('pic:' + s.pic.id, 't200', 'by200');
-               multi.del ('thu:' + s.pic.t200);
-            }
-            if (s.pic.t900) {
-               multi.hdel ('pic:' + s.pic.id, 't900', 'by900');
-               multi.del ('thu:' + s.pic.t900);
-            }
-            var update = {dimh: s.size.h, dimw: s.size.w, by: s.picdata.ContentLength};
-            if (s.t200) {
-               update.t200  = s.t200;
-               update.by200 = s.t200data.ContentLength;
-               multi.set ('thu:' + update.t200, s.pic.id);
-            }
-            if (s.t900) {
-               update.t900  = s.t900;
-               update.by900 = s.t900data.ContentLength;
-               multi.set ('thu:' + update.t900, s.pic.id);
-            }
-            multi.hmset ('pic:' + s.pic.id, update);
-            multi.exec (function (error) {
-               if (error) return s.do (null, error);
-               H.log (rq.user.username, {a: 'rot', id: b.id, d: b.deg, o: s.pic.orientation});
-               reply (rs, 200);
-            });
-         },
-      ], {catch: function (s) {
-         return reply (rs, 500, {error: s.catch});
-      }});
+      redis.hgetall ('pic:' + b.id, function (error, pic) {
+         if (error) return reply (rs, 500, {error: error});
+         if (! pic) return reply (rs, 404);
+         redis.hset ('pic:' + b.id, 'deg', b.deg, function (error) {
+            if (error) return reply (rs, 500, {error: error});
+            H.log (rq.user.username, {a: 'rot', id: b.id, deg: b.deg});
+            reply (rs, 200);
+         });
+      });
 
    }],
 
@@ -1252,7 +1207,7 @@ var routes = [
                multi3.exec (function (error, tags) {
                   if (error) return reply (rs, 500, {error: error});
                   dale.do (output.pics, function (pic, k) {
-                     output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: tags [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw)};
+                     output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: tags [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined};
                   });
                   reply (rs, 200, output);
                });
@@ -1291,6 +1246,7 @@ var routes = [
          multi [b.del ? 'srem' : 'sadd'] ('shm:' + b.who,            rq.user.username + ':' + b.tag);
          multi.exec (function (error) {
             if (error) return reply (rs, 500, {error: error});
+            H.log (rq.user.username, {a: 'sha', tag: b.tag, d: b.del ? true : undefined, u: b.who});
             reply (rs, 200);
          });
       });
@@ -1327,27 +1283,6 @@ var routes = [
             logs:     dale.do (logs, JSON.parse),
          });
       });
-   }],
-
-   // *** CLIENT ERRORS ***
-
-   ['post', 'clientlog', function (rq, rs) {
-      if (teishi.simple (rq.body)) return reply (rs, 400);
-      if (! ENV || ! CONFIG.clientlog) return reply (rs, 200);
-      fs.appendFile (CONFIG.clientlog, teishi.s ({date: new Date ().toUTCString (), headers: rq.headers, user: (rq.user || {}).username, error: rq.body}) + '\n', function (error) {
-         if (error) return reply (rs, 500, {error: error});
-         reply (rs, 200);
-      });
-   }],
-
-   // *** ADMIN GATEKEEPER ***
-
-   ['all', '*', function (rq, rs) {
-      if (! ENV) return rs.next ();
-      if (rq.body && rq.body.email && SECRET.admins.indexOf (rq.body.email) !== -1) return rs.next ();
-
-      if (SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
-      rs.next ();
    }],
 
    // *** STATS ***
@@ -1400,7 +1335,7 @@ var routes = [
 
       var email = b.email.toLowerCase ().replace (/\s+$/g, '');
 
-      bcrypt.genSalt (20, function (error, itoken) {
+      require ('bcryptjs').genSalt (20, function (error, itoken) {
          if (error) return reply (rs, 500, {error: error});
          redis.hset ('invites', email, JSON.stringify ({token: itoken, sent: Date.now ()}), function (error) {
             if (error) return reply (rs, 500, {error: error});
@@ -1415,71 +1350,62 @@ var routes = [
 
 ];
 
-// *** LAUNCH SERVER ***
+// *** SERVER CONFIGURATION ***
 
-if (ENV) {
-   cicek.options.log.console = false;
-}
 cicek.options.cookieSecret = SECRET.cookie;
-cicek.options.log.body = function (log) {
-   if (log.requestBody && log.requestBody.password) return false;
-   return true;
-}
+cicek.options.log.console = false;
 
 cicek.apres = function (rs) {
-   H.stat ('l', undefined, Date.now () - rs.log.startTime);
-   rs.log.startTime = new Date (rs.log.startTime).toUTCString ();
-   if (rs.log.url.match (/^\/logs/)) rs.log.responseBody = 'OMITTED';
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
    }
-   H.stat ('h' + rs.log.code);
-   if (rs.log.code >= 400 && rs.log.code !== 409) {
-      if (CONFIG.errorlog && ENV) fs.appendFile (CONFIG.errorlog, teishi.s (rs.log) + '\n', function (error) {
-         if (error) console.log ('Error log write error', error);
-      });
-   }
-   else {
-      if (CONFIG.accesslog && ENV) fs.appendFile (CONFIG.accesslog, teishi.s (rs.log) + '\n', function (error) {
-         if (error) console.log ('Access log write error', error);
-      });
+
+   if (rs.log.code >= 400) {
+      if (['/favicon.ico', '/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify ({type: 'response error', code: rs.log.code, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], body: rs.log.requestBody, rbody: teishi.p (rs.log.responseBody) || rs.log.responseBody});
    }
    if (rs.log.code === 200 || rs.log.code === 304) {
       if (rs.log.method === 'get'  && rs.log.url.match (/^\/(pic|thumb)/)) H.stat ('d');
       if (rs.log.method === 'post' && rs.log.url.match (/^\/pic/))         H.stat ('u');
       if (rs.log.method === 'post' && rs.log.url.match (/^\/tag/))         H.stat ('t');
    }
+
+   H.stat ('l', false, Date.now () - rs.log.startTime);
+   H.stat ('h' + rs.log.code);
+
    cicek.Apres (rs);
 }
 
-if (ENV) cicek.log = function (message) {
+cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
-   console.log.apply (console, [new Date ().toUTCString (), cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id].concat (message));
+   notify ({type: 'server error', from: cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id, subtype: message [1], error: message [2]});
 }
 
 cicek.cluster ();
 
 cicek.listen ({port: CONFIG.port}, routes);
 
-// *** START LOG ***
+if (cicek.isMaster) notify ({type: 'server start'});
 
-if (cicek.isMaster) console.log ('START', ENV, new Date ().toUTCString ());
+// *** REDIS ERROR HANDLER ***
 
-// *** BACKUPS ***
+redis.on ('error', function (error) {
+   if (cicek.isMaster) notify ({type: 'redis error', error: error});
+});
+
+// *** DB BACKUPS ***
 
 if (cicek.isMaster && ENV) setInterval (function () {
-   var s3 = new aws.S3 ({
-      apiVersion: '2006-03-01',
-      sslEnabled: true,
+   var s3 = new (require ('aws-sdk')).S3 ({
+      apiVersion:  '2006-03-01',
+      sslEnabled:  true,
       credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
-      region: SECRET.s3.db.region,
-      params: {Bucket: SECRET.s3.db.bucketName},
+      params:      {Bucket: SECRET.s3.db.bucketName},
    });
 
    var cb = function (error) {
-      if (error) sendmail ({from1: 'acpic backup', to1: 'acpic admin', to2: SECRET.admins [0], subject: 'Backup failed!', message: ['pre', error.toString ()]}, function (error) {
-         if (error) console.log ('FATAL ERROR WHEN WARNING ABOUT FAILED BACKUP.', error);
-      });
+      if (! error) return;
+      notify ({type: 'backup error', error: error});
+      sendmail ({from1: 'ac:pic backup', to1: 'ac:pic admin', to2: SECRET.admins [0], subject: 'Backup failed!', message: ['pre', error.toString ()]});
    }
 
    H.encrypt (CONFIG.backup.path, function (error, file) {
@@ -1489,64 +1415,210 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 }, CONFIG.backup.frequency * 60 * 1000);
 
-// *** BOOTSTRAP USER ***
+// *** CHECK OS RESOURCES ***
+
+if (cicek.isMaster) setInterval (function () {
+   a.do ([
+      [a.fork, [
+         [k, 'mpstat'],
+         [k, 'free'],
+      ], function (v) {return v}],
+      function (s) {
+         if (s.error) return notify ({type: 'resources check error', error: s.error});
+         var cpu  = s.last [0].out;
+         cpu = cpu.split ('\n') [3].split (/\s+/);
+         cpu = Math.round (parseFloat (cpu [cpu.length - 1].replace (',', '.')));
+
+         if (cpu < 20) notify ({type: 'high CPU usage', usage: (100 - cpu) / 100});
+
+         var free = s.last [1].out.split ('\n') [1].split (/\s+/);
+         free = Math.round (100 * parseInt (free [6]) / parseInt (free [1]));
+
+         if (free < 20) notify ({type: 'high RAM usage', usage: (100 - free) / 100});
+      },
+   ]);
+}, 1000 * 60);
+
+// *** CONVERT PFCOUNT TO STRING (STATS) ***
+
+if (cicek.isMaster) setInterval (function () {
+   redis.smembers ('stp', function (error, pfs) {
+      if (error) notify ({type: 'stat pfcount -> counter error', error: error});
+      var multi = redis.multi ();
+      dale.do (pfs, function (pf) {
+         multi.pfcount (pf);
+      });
+      multi.exec (function (error, counts) {
+         if (error) notify ({type: 'stat pfcount -> counter error', error: error});
+         var d = Date.now (), multi2 = redis.multi ();
+         dale.do (pfs, function (pf, k) {
+            var duration = pf.split (':') [0] === 'a' ? 1000 * 60 * 10 : 1000 * 60 * 60 * 24;
+            if (d - parseInt (pf.split (':') [1] + '00000') > duration) {
+               multi2.srem ('stp', pf);
+               multi2.set  (pf, counts [k]);
+            }
+         });
+         multi2.exec (function (error) {
+            if (error) notify ({type: 'stat pfcount -> counter error', error: error});
+         });
+      });
+   });
+}, 20 * 1000);
+
+// *** BOOTSTRAP FIRST ADMIN USER ***
 
 if (cicek.isMaster && ENV) setTimeout (function () {
    redis.hget ('invites', SECRET.admins [0], function (error, admin) {
-      if (error) return console.log ('Bootstrap check error', error);
+      if (error) return notify ('Bootstrap check error', error);
       if (admin) return;
 
       hitit.one ({}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0]}}, function (error) {
-         if (error) console.log ('Bootstrap invite error', error);
-         else       console.log ('Bootstrap invite sent OK');
+         if (error) notify ({type: 'bootstrap invite error', error: error});
+         else       notify ({type: 'bootstrap invite OK'});
       });
    });
 }, 3000);
 
-// *** CHECK IF THERE ARE UNREFERENCED FILES IN S3 ***
+// *** CHECK CONSISTENCY BETWEEN DB, FS AND S3 (DISABLED) ***
 
-if (cicek.isMaster && ENV) H.s3list ('', function (error, data) {
-   var multi = redis.multi ();
-   dale.do (data, function (item, k) {
-      var id = item.Key.split ('/') [1];
-      multi.exists ('thu:' + id, 'pic:' + id);
-   });
-   multi.exec (function (error, exists) {
-      var toDelete = dale.fil (data, undefined, function (item, k) {
-         if (exists [k]) return;
-         console.log ('S3 blob is not on database! Deleting:', item.Key);
-         return {Key: item.Key};
+if (cicek.isMaster && ENV && false) a.do ([
+   [function (s) {
+      H.s3list ('', function (error, uploaded) {
+         if (error) return notify ({type: 's3/disk matching error', error: error});
+         s.uploaded = dale.obj (uploaded, function (v) {return [v, true]});
+         s.do ();
       });
-      if (toDelete.length === 0) return;
-      s3.deleteObjects ({Delete: {Objects: toDelete.slice (0, 1000)}}, function (error) {
-         if (error) return console.log ('Error deleting loose S3 blobs.', error);
+   }],
+   function (s) {
+      fs.readdir (CONFIG.picfolder, function (error, dirs) {
+         if (error) return notify ({type: 's3/disk matching error', error: error});
+         var counter = dirs.length;
+         s.files = {};
+         dale.do (dirs, function (dir) {
+            fs.readdir (Path.join (CONFIG.picfolder, dir), function (error, files) {
+               if (counter === false) return;
+               if (error) {
+                  counter = false;
+                  return notify ({type: 's3/disk matching error', error: error});
+               }
+               dale.do (files, function (file) {
+                  s.files [Path.join (dir, file)] = true;
+               });
+               if (--counter === 0) s.do ();
+            });
+         });
       });
-   });
-});
+   },
+   function (s) {
+      redis.keys ('pic:*', function (error, pics) {
+         if (error) return notify ({type: 's3/disk matching error', error: error});
+         var multi = redis.multi ();
+         s.pics   = {};
+         s.thumbs = {};
+         dale.do (pics, function (pic) {
+            multi.hgetall (pic);
+         });
+         multi.exec (function (error, data) {
+            if (error) return notify ({type: 's3/disk matching error', error: error});
+            dale.do (pics, function (pic, k) {
+               s.pics [pic] = data [k];
+               if (data [k].t200) s.thumbs [data [k].t200] = {owner: data [k].owner};
+               if (data [k].t900) s.thumbs [data [k].t900] = {owner: data [k].owner};
+            });
+            s.do ();
+         });
+      });
+   },
+   function (s) {
+      s.missings3 = [];
+      var extraneous = teishi.c (s.uploaded);
+      dale.do (s.pics, function (pic, k) {
+         var path = Path.join (H.hashs (pic.owner), k.replace ('pic:', ''));
+         if (! s.uploaded [path]) s.missings3.push (path);
+         delete extraneous [path];
+      });
+      if (dale.keys (extraneous).length) notify ({type: 'extraneous files in s3 error', n: dale.keys (extraneous).length, files: extraneous});
+      if (s.missings3.length)            notify ({type: 'missing pics in s3 error',     n: s.missings3.length,            files: s.missings3});
+      // Delete extraneous elements from S3 (including thumbnails)
+      H.s3del (null, dale.keys (extraneous), null, function (error) {
+         if (error) return notify ({type: 'extraneous files in s3 deletion error', error: error});
+         if (dale.keys (extraneous).length) notify ({type: 'deletion of extraneous files in s3', n: dale.keys (extraneous).length});
+         // Upload missing pics to S3
+         a.do (s, [
+            [a.fork, s.missings3, function (key) {
+               return [H.s3put, null, Path.join (CONFIG.picfolder, key), key];
+            }, {max: 5}],
+            function (s) {
+               if (s.error) return notify ({type: 'missing pics in s3 upload error', error: s.error});
+               if (s.missings3.length) notify ({type: 'uploaded missing pics to s3', n: s.missings3.length});
+               s.do ();
+            },
+         ]);
+      });
+   },
+   function (s) {
+      s.missingfs = [];
+      var extraneous = teishi.c (s.files);
+      dale.do (s.thumbs, function (thumb, k) {
+         var path = Path.join (H.hashs (thumb.owner), k);
+         if (! s.files [path]) s.missingfs.push (path);
+         delete extraneous [path];
+      });
+      if (dale.keys (extraneous).length) notify ({type: 'extraneous files in FS error', n: dale.keys (extraneous).length, files: extraneous});
+      if (s.missingfs.length)            notify ({type: 'missing pics in FS error',     n: s.missingfs.length,            files: s.missingfs});
+      // Delete extraneous files from FS (including pictures)
+      a.do (s, [
+         [a.fork, extraneous, function (v, k) {
+            return [a.make (fs.unlink), Path.join (CONFIG.picfolder, k)];
+         }, {max: 5}],
+         function (s) {
+            if (s.error) return notify ({type: 'extraneous files in FS deletion error', error: s.error});
+            if (dale.keys (extraneous).length) notify ({type: 'deleted extraneous files from FS', n: dale.keys (extraneous).length});
+            s.do ();
+         },
+      ]);
+   },
+]);
 
-// *** XXX TEMPORARY: ADD YEAR TAGS TO PICTURES ON STARTUP ***
+// *** CHECK STORED SIZES ***
 
-if (cicek.isMaster) redis.keyscan ('pic:*', function (error, pics) {
-   if (error) return console.log ('Error when retrieving pics for adding yeartags!', error);
-   var multi = redis.multi ();
-   dale.do (pics, function (pic) {
-      multi.hgetall (pic);
-      multi.sinter  (pic.replace ('pic:', 'pict:'));
-   });
-   multi.exec (function (error, data) {
-      if (error) return console.log ('Error when retrieving pics for adding yeartags!', error);
+if (cicek.isMaster && ENV) a.do ([
+   [function (s) {
+      redis.keyscan ('*', function (error, keys) {
+         if (error) return notify ({type: 'stored size check error', error: error});
+         var multi = redis.multi ();
+         dale.do (keys, function (key) {
+            if (key.match (/^(pic|users):/)) multi.hgetall (key);
+         });
+         multi.exec (function (error, data) {
+            if (error) return notify ({type: 'stored size check error', error: error});
+            s.keys = data;
+            s.do ();
+         });
+      });
+   }],
+   function (s) {
+      var pics = {}, users = {}, count = {};
+      dale.do (s.keys, function (key) {
+         if (key.owner) pics [key.id] = key;
+         if (key.username) {
+            key ['s3:buse'] = parseInt (key ['s3:buse'] || '0');
+            users [key.username] = key;
+         }
+      });
+      dale.do (pics, function (pic) {
+         if (! count [pic.owner]) count [pic.owner] = 0;
+         count [pic.owner] += parseInt (pic.by);
+      });
       var multi = redis.multi ();
-      dale.do (pics, function (pic, k) {
-         var pic = data [k * 2], tags = data [k * 2 + 1];
-         if (dale.stop (tags, true, H.isYear)) return;
-         var picyear = new Date (parseInt (pic.date)).getUTCFullYear ();
-         multi.sadd ('pict:' + pic.id, picyear);
-         multi.hincrby ('tags:' + pic.owner, picyear, 1);
-         multi.sadd ('tag:' + pic.owner + ':' + picyear, pic.id);
-         console.log ('Adding yeartag', picyear, 'to', pic.id);
+      dale.do (users, function (user) {
+         if (user ['s3:buse'] === count [user.username]) return;
+         if (count [user.username] === undefined && user ['s3:buse'] === 0) return;
+         notify ({type: 's3:buse mismatch error', u: user.username, was: user ['s3:buse'], actual: count [user.username]});
+         multi.hset ('users:' + user.username, 's3:buse', count [user.username]);
       });
       multi.exec (function (error) {
-         if (error) return console.log ('Error when updating pics with yeartags!', error);
+         if (error) return notify ({type: 's3:buse mismatch update error', error: error});
       });
-   });
-});
+   },
+]);

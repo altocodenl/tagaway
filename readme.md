@@ -1,10 +1,10 @@
-# acpic
+# ac:pic
 
 A place for your pictures.
 
 ## About
 
-acpic is an application that allows you to store and manage your pictures. acpic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
+ac:pic is an application that allows you to store and manage your pictures. ac:pic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
 
 To understand why we're sharing the source code of a commercial product, please read [our manifesto](http://federicopereiro.com/manifesto). If that's too long to read, in a nutshell: we want to share our code so that others can learn from it and contribute to us. Sharing is the way to progress.
 
@@ -22,10 +22,11 @@ The application is currently under development and has not been launched yet. We
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /auth/login`.
-   - Body must be `{username: STRING, password: STRING}`. If not, a 400 code will be returned with body `{error: ...}`.
+   - Body must be `{username: STRING, password: STRING, tz: INTEGER}`. If not, a 400 code will be returned with body `{error: ...}`.
    - `username` is lowercased and any leading & trailing space is removed from it (and intermediate spaces or space-like characters are reduced to a single space). `username` can be either the `username` or the `email` associated to a `username`.
    - If the username/password combination is not valid, a 403 code will be returned with body: `{error: 'auth'}`.
    - If the username/password combination is valid but the email hasn't been verified yet, a 403 code will be returned with body `{error: 'verify'}`.
+   - `tz` must be the output of `Date.getTimezoneOffset ()`, an integer expressing the number of minutes behind (or ahead) of UTC in the local time.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /auth/signup`.
@@ -77,9 +78,10 @@ From this point onwards, if a user is not logged in, any request will receive a 
 
 - `POST /pic`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
-   - Must contain one or two fields (otherwise, 400 with body `{error: 'field'}`).
+   - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
-   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `lastModified` and `tags`; the last one is optional.
+   - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`.
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified` and `tags`; the last one is optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
@@ -170,53 +172,52 @@ Use cases:
 
 ### Todo alpha
 
+- Server
+   - dunkerque pic date issue
+   - Trim spaces in tags & shares.
+   - Add tests: get account, trim tags, add tags in upload.
+   - Integrate with ac:ping.
+   - Hidden tags.
+   - Provision prod server.
+
 - Client
    - Rotation is a PROPERTY, transform: rotate(90deg);
+   - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - Top bar (Home, Manage, Upload)
    - Add autotag with enter
    - Show dates in upload mode
-   - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - Make remove tags as a button/tag with an integrated cross, with ... for long tags and expand on click
    - Initial view with no pictures
    - Manage tags.
    - Mark shared & hidden tags always.
 
-- Server
-   - Altocode static.
-   - Don't reupload rotated pictures, simply change field
-   - Forbid newlines & crs in tag names, also trim double spaces.
-   - add test for get account.
-   - check/delete for loose files in disk.
-   - wrong dates (NYE 18?)
-   - Infra: new bucket (with IA lifecycle), new server
-   - Send to notification service: exceptions, abnormal behavior, summary of OS+node+redis
-   - Remove access logs.
-
 ### Todo beta
 
 - Admin & deploy
    - Manage payments.
-   - s3list & s3del with > 1k pictures.
+   - Self host font.
+   - Favicon & icons.
+   - Report pictures.
 
 - Account
-   - Expire unused recovery tokens, avoid duplicated per user?
    - Account view
    - Delete account.
    - Change email & password.
-   - Export all data
+   - Export all data.
    - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
-   - Payment
+   - Payment.
    - Payment late: 2 week notice with download.
-   - Freeze me out
+   - Freeze me out.
    - API tokens.
-   - Status page.
+   - Status & stats page.
    - Languages.
 
 - Share
    - Share/unshare with authorization & automatic email.
    - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures).
    - Upload to shared tag.
-   - Tags with same name (local vs shared, put a @ or : ?)
+   - Tags with same name (local vs shared, put a @).
+   - QR code to share.
 
 - Upload
    - Client-side hashes for fast duplicate elimination.
@@ -226,31 +227,20 @@ Use cases:
 - Organize
    - Mobile/tablet view.
    - Add colors to tags.
-   - Hide certain tags when you don't search for any, unless you explicitly search for them
    - Smaller level of scale to go faster
    - Upload video.
    - Add title (based on title of pic but optional)
    - Enable GPS detection.
-   - Selection beyond what's currently on screen (operations by tag(s)!).
    - Create tag that groups tags (can also have pictures directly assigned).
    - Create group that groups people.
    - Filters.
    - Themes for the interface.
-   - Private mode on/off; when on, tags marked as private are shown.
    - Set date manually?
-   - Order pictures within tag? Set priorities!
-
-- Other
-   - Self host font.
-   - Favicon & icons.
-   - Privacy with regard to backup & debug tools
-      - Server access logs are deleted after 7 days.
-      - Error logs are kept but user info will be manually purged from them if user is deleted.
-      - DB dumps are eliminated after a month.
-   - Report pictures.
-   - QR code to share.
+   - Order pictures within tag? Set priorities! Manual order mode.
 
 ### Done
+
+XXX
 
 - Upload
    - Allow only jpeg & png.
@@ -272,14 +262,14 @@ Use cases:
    - Multiple selection with shift & ctrl.
    - Tag/untag.
    - Delete.
-   - Show latest/oldest first.
+   - Sort by newest/oldest/upload.
    - Autocomplete tags when searching.
    - Allow for more than one tag to be searched at the same time.
    - See number of tags & date below each picture.
    - Rotate pictures.
    - Consider 1900-2100 as automatic tags for search.
    - Sort by newest, oldest & upload date.
-   - Refresh list of files if there's an upload in the background.
+   - Refresh list of pictures if there's an upload in the background.
 
 - Account
    - Signup with invite.
@@ -326,7 +316,6 @@ Use cases:
 `State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 `State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
-`State.rotating`: `{id: 1, true, ...}`. Lists the ids of all pictures being rotated.
 `State.loading`: true|undefined, to see whether pics are being loaded.
 
 `Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
@@ -368,6 +357,7 @@ Use cases:
    hash: STRING,
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first),
    orientation: STRING (stringified array of orientation data) or absent
+   deg: 90|-90|180 or absent,
    date: INT (latest date within dates),
    t200: STRING or absent,
    by200: INT or absent,
@@ -388,22 +378,22 @@ Use cases:
 - tags:USERID (hash): list of all tags and the number of pictures for each. Also contains untagged field. Does not count pictures shared with the user.
 
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
-   - For login:    {t: INT, a: 'log', r: 0|1, ip: STRING, ua: STRING}
-   - For signup:   {t: INT, a: 'sig', r: 0|1, ip: STRING, ua: STRING}
-   - For destroy:  {t: INT, a: 'des', r: 0|1}
-   - For uploads:  {t: INT, a: 'upl', id: STRING}
-   - For deletes:  {t: INT, a: 'del', id: STRING}
-   - For rotates:  {t: INT, a: 'rot', id: STRING, d: 90|180|-90, o: STRING (pic orientation)}
-   - For tags:     {t: INT, a: 'tag', tag: STRING, d: true|undefined, ids: [...]}
-   - For shares:   {t: INT, a: 'sh1', tag: STRING, u: STRING}
-   - For unshares: {t: INT, a: 'sh0', tag: STRING, u: STRING}
+   - For login:      {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}
+   - For signup:     {t: INT, a: 'sig', ip: STRING, ua: STRING}
+   - For reset:      {t: INT, a: 'res', ip: STRING, ua: STRING}
+   - For destroy:    {t: INT, a: 'des', ip: STRING, ua: STRING}
+   - For uploads:    {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED}
+   - For deletes:    {t: INT, a: 'del', id: STRING}
+   - For rotates:    {t: INT, a: 'rot', id: STRING, deg: 90|180|-90}
+   - For (un)tags:   {t: INT, a: 'tag', tag: STRING, d: true|undefined (if true it means untag), ids: [...]}
+   - For (un)shares: {t: INT, a: 'sha', tag: STRING, d: true|undefined (if true it means unshare), u: STRING}
 
 - sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:l:DATE (string): total milliseconds for all responses, to calculate average, in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:hxxx:DATE (string): responses with status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
-- stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than ten minutes will be converted from hyperloglog to a string with a counter.
+- stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than 10 minutes will be converted from hyperloglog to a string with a counter.
 - stp:A:DATE (hyperloglog or string): unique active users in the last 24 hours. Time is Date.now () divided by 100000. Entries older than a day will be converted from hyperloglog to a string with a counter.
 - stp (set): list of all hyperloglog entries.
 
@@ -447,4 +437,4 @@ crontab with `@reboot /root/start.sh`
 
 ## License
 
-acpic is written by [Altocode](https://altocode.nl) and released into the public domain.
+ac:pic is written by [Altocode](https://altocode.nl) and released into the public domain.
