@@ -17,6 +17,12 @@ var getUTCTime = function (dstring) {
    return new Date (dstring).getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
 }
 
+var H = {};
+
+H.trim = function (s) {
+   return s.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+}
+
 var ttester = function (label, method, Path, headers, list, allErrors) {
    var apres = allErrors ? function (s, rq, rs) {
       return rs.code >= 400;
@@ -161,8 +167,8 @@ var intro = [
       U [0].password = 'foobar';
       return true;
    }],
-   ['reset pass with invalid token', 'post', 'auth/reset', {}, function (s) {return {username: U [0].username, password: U [0].password, token: s.rtoken + '0'}}, 403],
-   ['reset pass', 'post', 'auth/reset', {}, function (s) {return {username: U [0].username, password: U [0].password, token: s.rtoken}}, 200],
+   ['reset pass with invalid token', 'post', 'auth/reset', {}, function (s) {return {username: H.trim (U [0].username), password: U [0].password, token: s.rtoken + '0'}}, 403],
+   ['reset pass', 'post', 'auth/reset', {}, function (s) {return {username: H.trim (U [0].username), password: U [0].password, token: s.rtoken}}, 200],
    ['try to signup with existing username after verification', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [1].password, token: s.itoken2, email: 'b@b.com'};
    }, 403, function (s, rq, rs) {
