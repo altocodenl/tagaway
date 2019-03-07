@@ -173,11 +173,7 @@ Use cases:
 ### Todo alpha
 
 - Server
-   - s.catch or s.error?
-   - dunkerque pic date issue
-   - Trim spaces in tags & shares.
-   - Add tests: get account, trim tags, add tags in upload; get original from s3; feedback
-   - feedback add template and fix email
+   - feedback: add template, fix email, tests
    - Integrate with ac:ping.
    - Hidden tags.
    - Provision prod server.

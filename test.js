@@ -214,6 +214,14 @@ var outro = [
 ];
 
 var main = [
+   ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'object') return log ('Body must be object');
+      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
+      if (type (rs.body.created) !== 'integer') return log ('Invalid created field');
+      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return log ('Invalid used field.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 6 && rs.body.logs.length !== 7)) return log ('Invalid logs.');
+      return true;
+   }],
    ttester ('query pics', 'post', 'query', {}, [
       [['tags', 0], 'string'],
       ['mindate', ['undefined', 'integer']],
@@ -266,6 +274,30 @@ var main = [
       {type: 'file',  name: 'pic2', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 400],
+   ['upload small picture with invalid tags #1', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: 'foobar'},
+   ]}, 400],
+   ['upload small picture with invalid tags #2', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: JSON.stringify ([2])},
+   ]}, 400],
+   ['upload small picture with invalid tags #3', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'all'])},
+   ]}, 400],
+   ['upload small picture with invalid tags #4', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: JSON.stringify (['hello', '2017'])},
    ]}, 400],
    ['upload small picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
@@ -425,6 +457,31 @@ var main = [
       })) return log ('Invalid pic fields.');
       return true;
    }],
+   ['upload picture with different date format', 'post', 'pic', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
+   ]}, 200],
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      var pic = rs.body.pics [0];
+      if (pic.date !== 1522067014000) return log ('GPS timestamp wasn\'t ignored.');
+      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return log ('Wrong year tag.');
+      s.dunkerque = pic.id;
+      s.allpics = rs.body.pics;
+      return true;
+   }],
+   dale.do (dale.times (5, 0), function (k) {
+      return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
+         var up = Buffer.from (rs.body, 'binary');
+         var original = require ('fs').readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
+         if (Buffer.compare (up, original) !== 0) return log ('Mismatch between original and uploaded picture!');
+         return true;
+      }};
+   }),
+   ['delete freshly with different date format', 'delete', function (s) {
+      return 'pic/' + s.dunkerque;
+   }, {}, '', 200],
    ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
          return v.name;
@@ -494,11 +551,15 @@ var main = [
       [['ids', 0], 'string'],
       ['del', ['boolean', 'undefined']],
    ]),
+   ['tag invalid #1', 'post', 'tag', {}, {tag: 'all', ids: ['a']}, 400],
+   ['tag invalid #2', 'post', 'tag', {}, {tag: '\nall', ids: ['a']}, 400],
+   ['tag invalid #3', 'post', 'tag', {}, {tag: '2018', ids: ['a']}, 400],
+   ['tag invalid #3', 'post', 'tag', {}, {tag: 'untagged', ids: ['a']}, 400],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag valid #1', 'post', 'tag', {}, {tag: 'foo', ids: ['a', 'b']}, 200],
+   ['tag valid #1', 'post', 'tag', {}, {tag: 'foo ', ids: ['a', 'b']}, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
@@ -522,7 +583,7 @@ var main = [
    }),
 
    ['tag valid #3', 'post', 'tag', {}, function (s) {
-      return {tag: 'foo', ids: [s.pics [0].id, 'b']};
+      return {tag: '\tfoo', ids: [s.pics [0].id, 'b']};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return log ('Invalid tags', rs.body);
@@ -549,7 +610,7 @@ var main = [
       return true;
    }],
    ['untag #1', 'post', 'tag', {}, function (s) {
-      return {tag: 'foo', ids: ['bla', s.pics [0].id, s.pics [1].id, 'foo'], del: true};
+      return {tag: '\tfoo  ', ids: ['bla', s.pics [0].id, s.pics [1].id, 'foo'], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
@@ -564,7 +625,7 @@ var main = [
       return true;
    }],
    ['tag two pics #1', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
+      return {tag: '  bla', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log (rs.body);
@@ -599,7 +660,7 @@ var main = [
       return true;
    }],
    ['tag two pics #2', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
+      return {tag: 'bla   ', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
    }, 200],
    ['delete tagged picture', 'delete', function (s) {
       return 'pic/' + s.pics [3].id;
@@ -624,7 +685,7 @@ var main = [
       ['who', 'string'],
       ['del', ['boolean', 'undefined']],
    ]),
-   ['share invalid tag', 'post', 'share', {}, {tag: 'all', who: U [1].username}, 400],
+   ['share invalid tag', 'post', 'share', {}, {tag: 'all\n\n', who: U [1].username}, 400],
    ['share invalid tag', 'post', 'share', {}, {tag: 'untagged', who: U [1].username}, 400],
    ['share with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],
    ['share a tag with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],
@@ -632,7 +693,7 @@ var main = [
       if (! eq (rs.body, {sho: [], shm: []})) return log ('Invalid body', rs.body);
       return true;
    }],
-   ['share a tag with a user', 'post', 'share', {}, {tag: 'bla', who: U [1].username}, 200],
+   ['share a tag with a user', 'post', 'share', {}, {tag: '\n bla \t ', who: U [1].username}, 200],
    ['get shared tags after', 'get', 'share', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {sho: [[U [1].username, 'bla']], shm: []})) return log ('Invalid body', rs.body);
       return true;
@@ -666,7 +727,7 @@ var main = [
    }],
    ['tag rotated picture', 'post', 'tag', {}, function (s) {
       return dale.stopNot (s.pics, undefined, function (pic) {
-         if (pic.name === 'rotate.jpg') return {tag: 'rotate', ids: [pic.id]};
+         if (pic.name === 'rotate.jpg') return {tag: '\nrotate', ids: [pic.id]};
       });
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
@@ -800,7 +861,15 @@ var main = [
       if (! eq (rs.body, {all: 0})) return log (rs.body);
       return true;
    }],
-   ['unshare as user1 after user was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
+   ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
+   ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'object') return log ('Body must be object');
+      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
+      if (type (rs.body.created) !== 'integer') return log ('Invalid created field');
+      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return log ('Invalid used field.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 34 && rs.body.logs.length !== 35)) return log ('Invalid logs.');
+      return true;
+   }],
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'array') return log ('Invalid body', rs.body);
       return true;
@@ -817,4 +886,7 @@ h.seq ({host: CONFIG.host, port: CONFIG.port}, [
       return log ('FINISHED WITH AN ERROR', error);
    }
    log ('ALL TESTS FINISHED SUCCESSFULLY!');
-}, h.stdmap);
+}, function (test) {
+   if (type (test) === 'object') return test;
+   return h.stdmap (test);
+});

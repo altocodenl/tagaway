@@ -34,7 +34,7 @@ var hash   = require ('murmurhash').v3;
 var mime   = require ('mime');
 var uuid   = require ('uuid/v4');
 
-var type = teishi.t, log = teishi.l, reply = cicek.reply, stop = function (rs, rules) {
+var type = teishi.t, log = teishi.l, eq = teishi.eq, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    });
@@ -244,8 +244,7 @@ H.s3get = function (user, key, cb) {
       if (error) return cb (error);
       redis.hincrby ('users:' + user, 's3:bget', data.ContentLength, function (error) {
          if (error) return cb (error);
-         data.file = H.decrypt (data.Body);
-         cb (null, data);
+         cb (null, H.decrypt (data.Body));
       });
    });
 }
@@ -706,6 +705,19 @@ var routes = [
       });
    }],
 
+   // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES) ***
+
+   ['get', 'original/:id', function (rq, rs) {
+
+      if (ENV) return reply (rs, 400);
+
+      H.s3get (rq.user.username, rq.data.params.id, function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+         rs.write (data);
+         rs.end ();
+      });
+   }],
+
    // *** DELETE ACCOUNT ***
 
    ['post', 'auth/delete', function (rq, rs) {
@@ -714,7 +726,7 @@ var routes = [
       if (ENV) return reply (rs, 501);
 
       // We require a JSON body to prevent CSRF.
-      if (! teishi.eq (rq.body, {})) return reply (rs, 400);
+      if (! eq (rq.body, {})) return reply (rs, 400);
 
       redis.get ('tag:' + rq.user.username + ':all', function (error, pics) {
          if (error) return reply (rs, 500, {error: error});
@@ -817,14 +829,14 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (! teishi.eq (dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
-      if (! teishi.eq (dale.keys (rq.data.files), ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
+      if (! eq (dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
+      if (! eq (dale.keys (rq.data.files),  ['pic']))                         return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.p (rq.data.fields.tags), error;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
       tags = dale.do (tags, function (tag) {
          if (type (tag) !== 'string') return error = teishi.s (tag);
-         tag = tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+         tag = H.trim (tag);
          if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
          if (H.isYear (tag)) error = tag;
          return tag;
@@ -893,8 +905,10 @@ var routes = [
                      pic.dates = JSON.stringify (s.dates);
                      if (s.orientation.length > 0) pic.orientation = JSON.stringify (s.orientation);
 
-                     pic.date = dale.fil (s.dates, undefined, function (v) {
+                     pic.date = dale.fil (s.dates, undefined, function (v, k) {
                         if (! v) return;
+                        // Ignore GPS date stamp
+                        if (k.match (/gps/i)) return;
                         var d = new Date (v);
                         if (d.getTime ()) return d.getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
                         d = new Date (v.replace (':', '-').replace (':', '-'));
@@ -902,6 +916,7 @@ var routes = [
                      }).sort (function (a, b) {
                         return a - b;
                      });
+
                      pic.date = pic.date [0];
 
                      if (s.t200) {
@@ -1012,9 +1027,9 @@ var routes = [
          ]}
       ])) return;
 
-      b.tag = b.tag.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
-
-      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'Tag cannot be a number between 1900 and 2100.'});
+      b.tag = H.trim (b.tag);
+      if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
+      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       a.stop ([
          [function (s) {
@@ -1235,8 +1250,8 @@ var routes = [
          ]}
       ])) return;
 
-      if (b.tag === 'all' || b.tag === 'untagged') return reply (rs, 400, {error: 'tag'});
-
+      b.tag = H.trim (b.tag);
+      if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
       if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       redis.exists ('users:' + b.who, function (error, exists) {
@@ -1282,7 +1297,7 @@ var routes = [
             email:    rq.user.email,
             type:     rq.user.type,
             created:  parseInt (rq.user.created),
-            used:     [parseInt (rq.user ['s3:buse']), parseInt (CONFIG.storelimit [rq.user.type || 'tier1']) || 0],
+            used:     [parseInt (rq.user ['s3:buse']) || 0, parseInt (CONFIG.storelimit [rq.user.type || 'tier1']) || 0],
             logs:     dale.do (logs, JSON.parse),
          });
       });
@@ -1474,7 +1489,7 @@ if (cicek.isMaster) setInterval (function () {
 
 if (cicek.isMaster && ENV) setTimeout (function () {
    redis.hget ('invites', SECRET.admins [0], function (error, admin) {
-      if (error) return notify ('Bootstrap check error', error);
+      if (error) return notify ({type: 'bootstrap check error', error: error});
       if (admin) return;
 
       hitit.one ({}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0]}}, function (error) {
