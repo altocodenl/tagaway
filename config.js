@@ -125,17 +125,15 @@ module.exports = {
 // Below is a template for creating secret.js . All UPPERCASE strings must be replaced by proper values.
 /*
 module.exports = {
-   cookie: 'COOKIESECRET',
+   cookieSecret: 'COOKIESECRET',
    s3: {
       accessKeyId:     'KEY',
       secretAccessKey: 'SECRETKEY',
       pic: {
          bucketName:      'BUCKETNAME',
-         region:          'REGION',
       },
       db: {
          bucketName:      'BUCKETNAME',
-         region:          'REGION',
       }
    },
    ses: {

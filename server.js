@@ -428,7 +428,8 @@ var routes = [
    ['post', 'requestInvite', function (rq, rs) {
       if (type (rq.body) !== 'object' || type (rq.body.email) !== 'string') return reply (rq, 400);
       sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac:pic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
-         reply (rs, error ? 500 : 200);
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200);
       });
    }],
 
@@ -496,19 +497,18 @@ var routes = [
          ]},
          function () {return [
             ['body.username', b.username, /^[^@:]+$/, teishi.test.match],
-            ['body.email',    b.email,    /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
-            ['body.username length', b.username.length, {min: 3}, teishi.test.range],
             ['body.password length', b.password.length, {min: 6}, teishi.test.range],
+            ['body.email',    b.email,    /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
          ]},
       ])) return;
 
       b.username = H.trim (b.username.toLowerCase ());
       if (b.username.length < 3) return reply (rs, 400, {error: 'Trimmed username is less than three characters long.'});
-      var email    = b.email.toLowerCase    ().replace (/\s+$/g, '');
+      b.email = H.trim (b.email.toLowerCase ());
 
       var multi = redis.multi ();
-      multi.hget ('invites', email);
-      multi.hget ('emails', email);
+      multi.hget   ('invites', b.email);
+      multi.hget   ('emails',  b.email);
       multi.exists ('users:' + b.username);
       multi.exec (function (error, data) {
          if (error) return reply (rs, 500, {error: error});
@@ -517,29 +517,28 @@ var routes = [
          if (data [1]) return reply (rs, 403, {error: 'email'});
          if (data [2]) return reply (rs, 403, {error: 'username'});
 
-         require ('bcryptjs').genSalt (20, function (error, vtoken) {
+         require ('bcryptjs').genSalt (20, function (error, emailtoken) {
             if (error) return reply (rs, 500, {error: error});
 
             giz.signup (b.username, b.password, function (error) {
                if (error) return reply (rs, 500, {error: error});
 
                var multi2 = redis.multi ();
-               multi2.hset ('verify', vtoken, email);
+               multi2.hset ('emailtoken', emailtoken, b.email);
+               multi2.hset ('emails', b.email, b.username);
+               multi2.hmset ('users:' + b.username, {username: b.username, email: b.email, type: 'tier1', created: Date.now ()});
                multi2.hset ('invites', b.email, JSON.stringify ({token: invite.token, sent: invite.sent, accepted: Date.now ()}));
 
-               multi2.hset ('emails', email, b.username);
-
-               multi2.hmset ('users:' + b.username, {username: b.username, email: email, type: 'tier1', created: Date.now ()});
                if (! b.token || ! ENV) multi2.hmset ('users:' + b.username, {verificationPending: true});
 
                multi2.exec (function (error) {
                   if (error)  return reply (rs, 500, {error: error});
                   if (! ENV) {
                      H.log (b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']});
-                     return reply (rs, 200, {token: vtoken});
+                     return reply (rs, 200, {token: emailtoken});
                   }
                   if (b.token) {
-                     return sendmail ({to1: b.username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (b.username)}, function (error) {
+                     return sendmail ({to1: b.username, to2: b.email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (b.username)}, function (error) {
                         if (error) return reply (rs, 500, {error: error});
                         giz.login (b.username, b.password, function (error, session) {
                            if (error) reply (rs, 500, {error: error});
@@ -548,7 +547,7 @@ var routes = [
                         });
                      });
                   }
-                  sendmail ({to1: b.username, to2: email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (b.username, vtoken)}, function (error) {
+                  sendmail ({to1: b.username, to2: b.email, subject: CONFIG.etemplates.verify.subject, message: CONFIG.etemplates.verify.message (b.username, emailtoken)}, function (error) {
                      if (error) return reply (rs, 500, {error: error});
                      H.log (b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']});
                      reply (rs, 200);
@@ -563,14 +562,15 @@ var routes = [
 
       var token = rq.data.params [0];
 
-      redis.hget ('verify', token, function (error, email) {
+      redis.hget ('emailtoken', token, function (error, email) {
          if (error) return reply (rs, 500, {error: error});
          if (! email) return reply (rs, 403, {});
+
          redis.hget ('emails', email, function (error, username) {
             if (error) return reply (rs, 500, {error: error});
             var multi = redis.multi ();
             multi.hdel ('users:' + username, 'verificationPending');
-            multi.hdel ('verify', token);
+            multi.hdel ('emailtoken', token);
             multi.exec (function (error) {
                if (error) return reply (rs, 500, {error: error});
                if (! ENV) return reply (rs, 302, '', {location: '/#/auth/login/verified'});
@@ -641,34 +641,23 @@ var routes = [
          ]},
       ])) return;
 
-      var reset = function (username) {
-         redis.hgetall ('users:' + username, function (error, user) {
-            if (error) return reply (res, 500, {error: error});
-            giz.reset (username, b.token, b.password, function (error) {
-               if (error) {
-                  if (type (error) === 'string') return reply (rs, 403);
-                  else                           return reply (rs, 500, {error: error});
-               }
-               if (! ENV) {
-                  H.log (user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
-                  return reply (rs, 200);
-               }
-               sendmail ({to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
-                  if (error) return reply (rs, 500, {error: error});
-                  H.log (user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
-                  reply (rs, 200);
-               });
+      redis.hgetall ('users:' + b.username, function (error, user) {
+         if (error) return reply (rs, 500, {error: error});
+         giz.reset (b.username, b.token, b.password, function (error) {
+            if (error) {
+               if (type (error) === 'string') return reply (rs, 403);
+               else                           return reply (rs, 500, {error: error});
+            }
+            if (! ENV) {
+               H.log (user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
+               return reply (rs, 200);
+            }
+            sendmail ({to1: user.username, to2: user.email, subject: CONFIG.etemplates.reset.subject, message: CONFIG.etemplates.reset.message (user.username)}, function (error) {
+               if (error) return reply (rs, 500, {error: error});
+               H.log (user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
+               reply (rs, 200);
             });
          });
-      }
-
-      b.username = H.trim (b.username.toLowerCase ());
-
-      if (! b.username.match ('@')) reset (b.username);
-      else redis.hget ('emails', b.username, function (error, username) {
-         if (error)      return reply (rs, 500, {error: error});
-         if (! username) return reply (rs, 403);
-         reset (username);
       });
    }],
 
@@ -701,6 +690,20 @@ var routes = [
       if (teishi.simple (rq.body)) return reply (rs, 400);
       notify ({type: 'client error', headers: rq.headers, ip: rq.origin, user: (rq.user || {}).username, error: rq.body});
       reply (rs, 200);
+   }],
+
+   // *** FEEDBACK COLLECTION ***
+
+   ['post', 'feedback', function (rq, rs) {
+
+      notify ({type: 'feedback', user: rq.user.username, feedback: rq.body});
+
+      if (! ENV) return reply (rs, 200);
+
+      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Thank you for your feedback!', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200);
+      });
    }],
 
    // *** DELETE ACCOUNT ***
@@ -1316,7 +1319,8 @@ var routes = [
 
    ['delete', 'admin/invites/:email', function (rq, rs) {
       redis.hdel ('invites', rq.data.params.email, function (error) {
-         reply (rs, error ? 500 : 200, {error: error} || '');
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200);
       });
    }],
 
@@ -1352,7 +1356,7 @@ var routes = [
 
 // *** SERVER CONFIGURATION ***
 
-cicek.options.cookieSecret = SECRET.cookie;
+cicek.options.cookieSecret = SECRET.cookieSecret;
 cicek.options.log.console = false;
 
 cicek.apres = function (rs) {
@@ -1363,6 +1367,7 @@ cicek.apres = function (rs) {
    if (rs.log.code >= 400) {
       if (['/favicon.ico', '/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify ({type: 'response error', code: rs.log.code, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], body: rs.log.requestBody, rbody: teishi.p (rs.log.responseBody) || rs.log.responseBody});
    }
+
    if (rs.log.code === 200 || rs.log.code === 304) {
       if (rs.log.method === 'get'  && rs.log.url.match (/^\/(pic|thumb)/)) H.stat ('d');
       if (rs.log.method === 'post' && rs.log.url.match (/^\/pic/))         H.stat ('u');
@@ -1410,7 +1415,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
    H.encrypt (CONFIG.backup.path, function (error, file) {
       if (error) return cb (error);
-      s3.upload ({Key: 'dump' + Date.now () + '.rdb', Body: file}, cb);
+      s3.upload ({Key: new Date ().toUTCString () + '-dump.rdb', Body: file}, cb);
    });
 
 }, CONFIG.backup.frequency * 60 * 1000);
@@ -1510,7 +1515,7 @@ if (cicek.isMaster && ENV && false) a.do ([
       });
    },
    function (s) {
-      redis.keys ('pic:*', function (error, pics) {
+      redis.keyscan ('pic:*', function (error, pics) {
          if (error) return notify ({type: 's3/disk matching error', error: error});
          var multi = redis.multi ();
          s.pics   = {};
