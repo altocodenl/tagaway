@@ -324,7 +324,7 @@
                   'font-size': H.fontSize (2.5),
                }],
             ]],
-            Views.upload (x),
+            //Views.topbar (x),
             Views.canvas (x),
             Views.notify (x),
             H.if (Views [view], Views [view] (x)),
@@ -562,7 +562,7 @@
       ];
 
       return B.view (x, ['State', 'subview'], {listen: routes, ondraw: function (x) {
-         if (['browse'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
+         if (['browse', 'upload', 'tags', 'account'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          if (! B.get ('Data', 'account')) B.do (x, 'retrieve', 'account');
       }}, function (x, subview) {
          return Views [subview] ? Views [subview] (x) : undefined;
@@ -1108,28 +1108,6 @@
          if (! modal) return;
          return [
             ['style', [
-               ['body', {overflow: 'hidden'}],
-               ['div.uploadModal', {
-                  'width, height': 1,
-                  'background': 'rgba(210,210,210,0.9)',
-                  'z-index': '3',
-                  position: 'fixed',
-               }, [
-                  ['i.ion-close', {
-                     position: 'absolute',
-                     'top, right': 20,
-                  }],
-                  ['img', {
-                  }],
-               ]],
-               ['div.inner', {
-                  position: 'fixed',
-                  left: H.spaceh (10),
-                  width: H.spaceh (20),
-                  top: 100,
-                  'border-radius': 21,
-                  position: 'relative',
-               }],
                ['div.uploadLeft', {
                   'padding-left': H.spaceh (1),
                   width: H.spaceh (11),
@@ -1270,7 +1248,7 @@
 
          var rows = [[]];
 
-         var MAXH = B.get ('State', 'debug', 'height') || 120, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
+         var MAXH = B.get ('State', 'debug', 'height') || 150, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
 
          return [
             ['style', [
@@ -1314,9 +1292,9 @@
                   'box-shadow': 'inset 0 0 0 1000px rgba(230,230,230,0.5)',
                   opacity: '0.5',
                }],
-               ['img.r90', {transform: 'rotate(90deg)'}],
-               ['img.r180', {transform: 'rotate(180deg)'}],
-               ['img.r270', {transform: 'rotate(-90deg)'}],
+               ['.r90', {transform: 'rotate(90deg)'}],
+               ['.r180', {transform: 'rotate(180deg)'}],
+               ['.r270', {transform: 'rotate(-90deg)'}],
                ['img.rotating', {
                   'box-shadow': 'inset 0 0 0 1000px rgba(120,120,115,0.5)',
                   opacity: '0.5'
@@ -1338,6 +1316,10 @@
                date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
 
                var pich = MAXH, picw = Math.round (pic.dimw / pic.dimh * MAXH);
+               if (pic.deg === 90 || pic.deg === -90) {
+                  pich = picw;
+                  picw = MAXH;
+               }
 
                var bringup = function () {
                   if (rows.length === 1) return;
@@ -1419,7 +1401,7 @@
                            selected = selected || {};
                            rotating = rotating || {};
                            return ['div', {
-                              class: 'imagecontainer ' + (selected [p [4].id] ? ' selected' : ''),
+                              class: 'imagecontainer' + (selected [p [4].id] ? ' selected' : '') + (! p [4].deg ? '' : ' r' + (p [4].deg === -90 ? '270' : p [4].deg)),
                               style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
                            }, [
                               ['img', B.ev ({
@@ -1560,6 +1542,16 @@
             ];
          });
       });
+   }
+
+   // *** TAGS VIEW ***
+
+   Views.tags = function () {
+   }
+
+   // *** ACCOUNT VIEW ***
+
+   Views.account = function () {
    }
 
 }) ();

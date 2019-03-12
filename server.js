@@ -994,6 +994,7 @@ var routes = [
          ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['id', 'deg'], 'eachOf', teishi.test.equal],
          function () {return [
+         // XXX multipic!
             ['body.id', b.id, 'string'],
             ['body.deg', b.deg, [90, 180, -90], 'oneOf', teishi.test.equal],
          ]}
