@@ -1371,7 +1371,7 @@ var routes = [
          ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
          function () {return [
             ['body.email', b.email, 'string'],
-            ['body.firstName', b.email, 'string'],
+            ['body.firstName', b.firstName, 'string'],
             ['body.email', b.email, /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
          ]},
       ])) return;

@@ -111,13 +111,15 @@ var intro = [
    ]),
    ttester ('create invite for user', 'post', 'admin/invites', {}, [
       ['email', 'string'],
+      ['firstName', 'string'],
    ]),
    ['create invite for user, invalid email', 'post', 'admin/invites', {}, {email: 'che'}, 400],
-   ['create invite for user', 'post', 'admin/invites', {}, {email: 'a@a.com  '}, 200, function (s, rq, rs) {
+   ['create invite for user, no firstName', 'post', 'admin/invites', {}, {email: 'a@a.com'}, 400],
+   ['create invite for user', 'post', 'admin/invites', {}, {firstName: 'a', email: 'a@a.com  '}, 200, function (s, rq, rs) {
       s.itoken1 = rs.body.token;
       return true;
    }],
-   ['create invite for user', 'post', 'admin/invites', {}, {email: 'b@b.com  '}, 200, function (s, rq, rs) {
+   ['create invite for user', 'post', 'admin/invites', {}, {firstName: 'b', email: 'b@b.com  '}, 200, function (s, rq, rs) {
       s.itoken2 = rs.body.token;
       return true;
    }],
