@@ -72,7 +72,7 @@ var Redis = function (s, action) {
 var notify = function (message) {
    if (type (message) !== 'object') return console.log ('NOTIFY: message must be an object but instead is', message);
    message.environment = ENV || 'local';
-   console.log (new Date ().toUTCString (), message);
+   console.log (new Date ().toUTCString (), JSON.stringify (message));
 }
 
 // *** SENDMAIL ***
@@ -695,11 +695,13 @@ var routes = [
 
    ['post', 'feedback', function (rq, rs) {
 
-      notify ({type: 'feedback', user: rq.user.username, feedback: rq.body});
+      if (type (rq.body) !== 'object' || type (rq.body.message) !== 'string' || ! eq (dale.keys (rq.body), ['message'])) return reply (rs, 400);
+
+      notify ({type: 'feedback', user: rq.user.username, message: rq.body.message});
 
       if (! ENV) return reply (rs, 200);
 
-      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Thank you for your feedback!', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
+      sendmail ({to1: rq.user.username, to2: rq.user.email, subject: CONFIG.etemplates.feedback.subject, message: CONFIG.etemplates.feedback.message (rq.user.username, rq.body.message)}, function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200);
       });
@@ -1000,11 +1002,32 @@ var routes = [
       redis.hgetall ('pic:' + b.id, function (error, pic) {
          if (error) return reply (rs, 500, {error: error});
          if (! pic) return reply (rs, 404);
-         redis.hset ('pic:' + b.id, 'deg', b.deg, function (error) {
+         var deg = parseInt (pic.deg) || 0;
+         if (deg === 0) deg = b.deg;
+         else if (deg === -90) {
+            if (b.deg === -90) deg = 180;
+            if (b.deg === 90)  deg = 0;
+            if (b.deg === 180) deg = 90;
+         }
+         else if (deg === 90) {
+            if (b.deg === -90) deg = 0;
+            if (b.deg === 90)  deg = 180;
+            if (b.deg === 180) deg = -90;
+         }
+         else {
+            if (b.deg === -90) deg = 90;
+            if (b.deg === 90)  deg = -90;
+            if (b.deg === 180) deg = 0;
+         }
+
+         var cb = function (error) {
             if (error) return reply (rs, 500, {error: error});
             H.log (rq.user.username, {a: 'rot', id: b.id, deg: b.deg});
             reply (rs, 200);
-         });
+         }
+
+         if (deg) redis.hset ('pic:' + b.id, 'deg', deg, cb);
+         else     redis.hdel ('pic:' + b.id, 'deg', cb);
       });
 
    }],
@@ -1326,8 +1349,8 @@ var routes = [
    ['get', 'admin/invites', function (rq, rs) {
       redis.hgetall ('invites', function (error, invites) {
          if (error) return reply (rs, 500, {error: error});
-         reply (rs, 200, dale.obj (invites, function (v, k) {
-            return [k, JSON.parse (v)];
+         return reply (rs, 200, ! invites ? [] : dale.obj (invites, function (value, key) {
+            return [key, teishi.p (value)];
          }));
       });
    }],
@@ -1345,23 +1368,28 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
-         ['body', b, 'string', 'each'],
-         ['keys of body', dale.keys (b), ['email'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
          function () {return [
+            ['body.email', b.email, 'string'],
+            ['body.firstName', b.email, 'string'],
             ['body.email', b.email, /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
          ]},
       ])) return;
 
-      var email = b.email.toLowerCase ().replace (/\s+$/g, '');
+      b.email = H.trim (b.email.toLowerCase ());
 
-      require ('bcryptjs').genSalt (20, function (error, itoken) {
+      redis.hget ('emails', b.email, function (error, user) {
          if (error) return reply (rs, 500, {error: error});
-         redis.hset ('invites', email, JSON.stringify ({token: itoken, sent: Date.now ()}), function (error) {
+         if (user)  return reply (rs, 400, {error: 'User already exists'});
+         require ('bcryptjs').genSalt (20, function (error, token) {
             if (error) return reply (rs, 500, {error: error});
-            if (! ENV) return reply (rs, 200, {token: itoken});
-            sendmail ({to1: email.replace (/@.+/, ''), to2: email, subject: CONFIG.etemplates.invite.subject, message: CONFIG.etemplates.invite.message (email.replace (/@.+/, ''), itoken)}, function (error) {
+            redis.hset ('invites', b.email, JSON.stringify ({firstName: b.firstName, token: token, sent: Date.now ()}), function (error) {
                if (error) return reply (rs, 500, {error: error});
-               reply (rs, 200);
+               if (! ENV) return reply (rs, 200, {token: token});
+               sendmail ({to1: b.firstName, to2: b.email, subject: CONFIG.etemplates.invite.subject, message: CONFIG.etemplates.invite.message (b.firstName, token)}, function (error) {
+                  if (error) return reply (rs, 500, {error: error});
+                  reply (rs, 200);
+               });
             });
          });
       });
@@ -1372,7 +1400,7 @@ var routes = [
 // *** SERVER CONFIGURATION ***
 
 cicek.options.cookieSecret = SECRET.cookieSecret;
-cicek.options.log.console = false;
+cicek.options.log.console  = false;
 
 cicek.apres = function (rs) {
    if (rs.log.url.match (/^\/auth/)) {

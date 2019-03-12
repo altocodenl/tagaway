@@ -139,9 +139,13 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, used: [INTEGER_USED, INTEGER_MAXIMUM], logs: [...]}`.
    - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
+`POST /feedback`
+   - Body must be an object (otherwise 400).
+   - If successful, returns a 200.
+
 ### Debugging routes
 
-`POST /clientlog`
+`POST /error`
    - This route does not require the user to be logged in.
    - Body must be JSON, otherwise a 400 is returned.
 
@@ -152,31 +156,14 @@ All the routes below require an admin user to be logged in.
 `POST /admin/invites`
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
 
-## Notification service for admins
-
-Push into a list, to the left. Most recent is leftmost. Within list, stringified JSONs.
-
-When pushed, function is fired to go through the whole list. Function should be blocking?
-
-Function takes all items and optionally generates new ones. Each new one is a digest. A digest is a function of the rules and also of previous digests.
-
-If, for example, a digest for 500s has been sent in the last minute, the next digest will only be done in 5 minutes. After the 5 minute one, another one will be generated after an hour. Digests are stored on another list and those can be cleaned up according to other rules. Digests can also be emailed.
-
-Use cases:
-- 500s with their errors and as much info as possible.
-- Server starts.
-- Disk getting full or little RAM left or CPU usage high (requires poller).
-- Redis failure.
-
 ## Features
 
 ### Todo alpha
 
 - Server
-   - feedback: add template, fix email, tests
    - Integrate with ac:ping.
-   - Hidden tags.
    - Provision prod server.
+   - Hidden tags.
 
 - Client
    - Rotation is a PROPERTY, transform: rotate(90deg);
@@ -334,7 +321,7 @@ XXX
 
 - emails (hash): key is email, value is username
 
-- invites (hash): key is email, value is {token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
+- invites (hash): key is email, value is {firstName: STRING, token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
 
 - verify (hash): key is token, value is email. Deleted after usage.
 

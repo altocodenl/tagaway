@@ -104,7 +104,7 @@ var intro = [
       ['password', 'string'],
       ['tz',       'integer'],
    ]),
-   ttester ('login', 'post', 'auth/reset', {}, [
+   ttester ('reset', 'post', 'auth/reset', {}, [
       ['username', 'string'],
       ['password', 'string'],
       ['token',    'string'],
@@ -185,6 +185,7 @@ var intro = [
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (state, request, response) {
+      if (! response.headers.cookie || response.headers.cookie.length <= 5) return log ('Invalid cookie.');
       state.headers = {cookie: response.headers.cookie};
       return response.headers.cookie !== undefined;
    }],
@@ -214,6 +215,10 @@ var outro = [
 ];
 
 var main = [
+   ttester ('feedback', 'post', 'feedback', {}, [
+      ['message', 'string'],
+   ]),
+   ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
    ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
@@ -457,6 +462,18 @@ var main = [
       })) return log ('Invalid pic fields.');
       return true;
    }],
+   dale.do ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
+      return [
+         ['rotate pic #' + (k + 2), 'post', 'rotate', {}, function (s) {
+            return {id: s.rotateid, deg: pair [0]};
+         }, 200],
+         ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+            var pic = rs.body.pics [0];
+            if (pic.deg !== pair [1]) return log ('Rotate wasn\'t calculated properly.');
+            return true;
+         }],
+      ];
+   }),
    ['upload picture with different date format', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -867,7 +884,7 @@ var main = [
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return log ('Invalid created field');
       if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return log ('Invalid used field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 34 && rs.body.logs.length !== 35)) return log ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 42 && rs.body.logs.length !== 43)) return log ('Invalid logs.');
       return true;
    }],
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {

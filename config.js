@@ -40,6 +40,25 @@ module.exports = {
       path: '/var/lib/redis/dump.rdb',
    },
    etemplates: {
+      feedback: {
+         subject: 'Thank you for your feedback!',
+         message: function (username, feedback) {
+            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+               GREETING (username),
+               ['br'],
+               'We have received your feedback and we are ever so thankful for having received it.',
+               ['br'],
+               'For your record, this is what we received:',
+               ['br'],
+               feedback,
+
+               ['br'], ['br'],
+               'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
+               ['br'],
+               'The ', LOGO, ' team'
+            ]]);
+         }
+      },
       invite: {
          subject: 'Your invitation to join acpic',
          message: function (username, token) {
