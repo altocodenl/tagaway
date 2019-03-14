@@ -89,7 +89,7 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 
 var intro = [
    ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
-   ['submit client error without being logged in #1', 'post', 'error', {}, ['error1'], 200],
+   ['submit client error that is not an object', 'post', 'error', {}, ['error1'], 400],
    ['submit client error without being logged in #2', 'post', 'error', {}, {error: 'error'}, 200],
    ['login with no credentials', 'post', 'auth/login', {}, {}, 400],
    ['login with invalid credentials', 'post', 'auth/login', {}, [], 400],
@@ -142,6 +142,14 @@ var intro = [
       s.vtoken1 = rs.body.token;
       return true;
    }],
+   ['login with invalid credentials #1', 'post', 'auth/login', {}, {username: U [0].username, password: 'foo', tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'auth'})) return log ('Invalid payload sent, expecting {error: "auth"}');
+      return true;
+   }],
+   ['login with invalid credentials #2', 'post', 'auth/login', {}, {username: 'bar', password: 'foo', tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'auth'})) return log ('Invalid payload sent, expecting {error: "auth"}');
+      return true;
+   }],
    ['login with valid credentials before verification', 'post', 'auth/login', {}, {username: U [0].username, password: U [0].password, tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'verify'})) return log ('Invalid payload sent, expecting {error: "verify"}');
       return true;
@@ -186,34 +194,45 @@ var intro = [
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (state, request, response) {
-      if (! response.headers.cookie || response.headers.cookie.length <= 5) return log ('Invalid cookie.');
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+      if (! rs.headers.cookie || rs.headers.cookie.length <= 5) return log ('Invalid cookie.');
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
-   ['submit client error being logged in #1', 'post', 'error', {}, ['error1'], 200],
-   ['submit client error being logged in #2', 'post', 'error', {}, {error: 'error'}, 200],
+   ['submit client error that is invalid being logged in', 'post', 'error', {}, ['error1'], 400],
+   ['submit client error being logged in', 'post', 'error', {}, {error: 'error'}, 200],
 ];
 
 var outro = [
-   ['logout', 'post', 'auth/logout', {}, {}, 302, function (state, request, response) {
-      if (! response.headers ['set-cookie'] || ! response.headers ['set-cookie'] [0].match (/max-age/i)) return false;
-      if (response.headers.location !== '/') return log ('Invalid location header');
-      state.headers = {};
+   ['logout', 'post', 'auth/logout', {}, {}, 302, function (s, rq, rs) {
+      if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age/i)) return false;
+      if (rs.headers.location !== '/') return log ('Invalid location header');
+      s.headers = {};
       return true;
    }],
-   ['double logout', 'post', 'auth/logout', {}, {}, 302],
-   ['login with valid credentials', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   {tag: 'double logout', method: 'post', path: 'auth/logout', code: 403, headers: {}, body: {}, apres: function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'nocookie'})) return log ('Invalid payload sent, expecting {error: "nocookie"}');
+      return true;
+   }},
+   ['login with valid credentials', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
-   ['delete account', 'post', 'auth/delete', {}, {}, 302, function (state, request, response) {
-      if (! response.headers ['set-cookie'] || ! response.headers ['set-cookie'] [0].match (/max-age/i)) return false;
-      if (! response.headers.location || response.headers.location !== '/') return false;
-      state.headers = {};
+   ['delete account with invalid cookie', 'post', 'auth/delete', {cookie: 'foobar'}, U [0], 403, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'tampered'})) return log ('Invalid payload sent, expecting {error: "tampered"}');
       return true;
    }],
-   ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403]
+   ['delete account', 'post', 'auth/delete', {}, {}, 302, function (s, rq, rs) {
+      if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age/i)) return false;
+      if (! rs.headers.location || rs.headers.location !== '/') return false;
+      s.headers = {};
+      return true;
+   }],
+   ['delete account with no cookie', 'post', 'auth/delete', {}, U [0], 403, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'nocookie'})) return log ('Invalid payload sent, expecting {error: "nocookie"}');
+      return true;
+   }],
+   ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
 ];
 
 var main = [
@@ -237,6 +256,7 @@ var main = [
       ['from', 'integer'],
       ['to', 'integer'],
    ]),
+   {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}},
    ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -435,13 +455,18 @@ var main = [
       return true;
    }],
    ttester ('rotate pic', 'post', 'rotate', {}, [
-      ['id', 'string'],
+      ['ids', 'array'],
       ['deg', 'integer'],
    ]),
-   ['rotate pic (invalid #1)', 'post', 'rotate', {}, {id: 'hello', deg: 45}, 400],
-   ['rotate pic (invalid #2)', 'post', 'rotate', {}, {id: 'hello', deg: -90}, 404],
+   ['rotate pic (invalid #1)', 'post', 'rotate', {}, {ids: ['hello'], deg: 45}, 400],
+   ['rotate pic (invalid #2, repeated)', 'post', 'rotate', {}, {ids: ['hello', 'hello'], deg: -90}, 400],
+   ['rotate pic (invalid #3, type)', 'post', 'rotate', {}, {ids: 'hello', deg: -90}, 400],
+   ['rotate pic nonexisting #1', 'post', 'rotate', {}, {ids: ['hello'], deg: -90}, 404],
+   ['rotate pic nonexisting #2', 'post', 'rotate', {}, function (s) {
+      return {ids: [s.rotateid, 'foo'], deg: 90};
+   }, 404],
    ['rotate pic', 'post', 'rotate', {}, function (s) {
-      return {id: s.rotateid, deg: 90};
+      return {ids: [s.rotateid], deg: 90};
    }, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       var pic = rs.body.pics [0];
@@ -467,7 +492,7 @@ var main = [
    dale.do ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
       return [
          ['rotate pic #' + (k + 2), 'post', 'rotate', {}, function (s) {
-            return {id: s.rotateid, deg: pair [0]};
+            return {ids: [s.rotateid], deg: pair [0]};
          }, 200],
          ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
             var pic = rs.body.pics [0];
@@ -573,12 +598,13 @@ var main = [
    ['tag invalid #1', 'post', 'tag', {}, {tag: 'all', ids: ['a']}, 400],
    ['tag invalid #2', 'post', 'tag', {}, {tag: '\nall', ids: ['a']}, 400],
    ['tag invalid #3', 'post', 'tag', {}, {tag: '2018', ids: ['a']}, 400],
-   ['tag invalid #3', 'post', 'tag', {}, {tag: 'untagged', ids: ['a']}, 400],
+   ['tag invalid #4', 'post', 'tag', {}, {tag: 'untagged', ids: ['a']}, 400],
+   ['tag invalid #5', 'post', 'tag', {}, {tag: 'hello', ids: ['a', 'a']}, 400],
+   ['tag invalid nonexisting #1', 'post', 'tag', {}, {tag: 'hello', ids: ['a']}, 404],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag valid #1', 'post', 'tag', {}, {tag: 'foo ', ids: ['a', 'b']}, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
       return true;
@@ -600,9 +626,11 @@ var main = [
          }, {}, '', 200],
       ];
    }),
-
-   ['tag valid #3', 'post', 'tag', {}, function (s) {
+   ['tag nonexisting #2', 'post', 'tag', {}, function (s) {
       return {tag: '\tfoo', ids: [s.pics [0].id, 'b']};
+   }, 404],
+   ['tag valid #1', 'post', 'tag', {}, function (s) {
+      return {tag: '\tfoo', ids: [s.pics [0].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return log ('Invalid tags', rs.body);
@@ -612,7 +640,7 @@ var main = [
       if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag valid #4', 'post', 'tag', {}, function (s) {
+   ['tag valid #2', 'post', 'tag', {}, function (s) {
       return {tag: 'foo', ids: [s.pics [0].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
@@ -628,8 +656,11 @@ var main = [
       if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags');
       return true;
    }],
+   ['untag nonexisting', 'post', 'tag', {}, function (s) {
+      return {tag: '\tfoo  ', ids: [s.pics [0].id, s.pics [1].id], del: true};
+   }, 200],
    ['untag #1', 'post', 'tag', {}, function (s) {
-      return {tag: '\tfoo  ', ids: ['bla', s.pics [0].id, s.pics [1].id, 'foo'], del: true};
+      return {tag: '\tfoo  ', ids: [s.pics [0].id, s.pics [1].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
@@ -644,7 +675,7 @@ var main = [
       return true;
    }],
    ['tag two pics #1', 'post', 'tag', {}, function (s) {
-      return {tag: '  bla', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
+      return {tag: '  bla', ids: [s.pics [0].id, s.pics [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log (rs.body);
@@ -661,14 +692,14 @@ var main = [
       return true;
    }],
    ['untag tag two pics with tag they don\'t have', 'post', 'tag', {}, function (s) {
-      return {tag: 'blablabla', ids: ['foo', s.pics [0].id, s.pics [3].id, s.pics [3].id], del: true};
+      return {tag: 'blablabla', ids: [s.pics [0].id, s.pics [3].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log ('Invalid tags', rs.body);
       return true;
    }],
    ['untag two pics', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla', ids: ['foo', s.pics [0].id, s.pics [3].id, s.pics [3].id], del: true};
+      return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id], del: true};
    }, 200],
    ['get tagged pics after untagging', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (rs.body.total !== 0) return log ('Searching by tag does not work.');
@@ -679,7 +710,7 @@ var main = [
       return true;
    }],
    ['tag two pics #2', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla   ', ids: [s.pics [0].id, s.pics [3].id, s.pics [3].id]};
+      return {tag: 'bla   ', ids: [s.pics [0].id, s.pics [3].id]};
    }, 200],
    ['delete tagged picture', 'delete', function (s) {
       return 'pic/' + s.pics [3].id;
@@ -690,6 +721,7 @@ var main = [
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       s.pics = rs.body.pics;
+      s.cookie0 = s.headers.cookie;
       return true;
    }],
    ['signup for the first time', 'post', 'auth/signup', {}, function (s) {
@@ -698,7 +730,10 @@ var main = [
       s.vtoken2 = rs.body.token;
       return true;
    }],
-   ['verify user', 'get', function (s) {return 'auth/verify/' + s.vtoken2}, {}, '', 302],
+   ['verify user', 'get', function (s) {return 'auth/verify/' + s.vtoken2}, {}, '', 302, function (s) {
+      s.headers.cookie = s.cookie0;
+      return true;
+   }],
    ttester ('share pic', 'post', 'share', {}, [
       ['tag', 'string'],
       ['who', 'string'],
@@ -712,14 +747,18 @@ var main = [
       if (! eq (rs.body, {sho: [], shm: []})) return log ('Invalid body', rs.body);
       return true;
    }],
+   ['share a tag with yourself', 'post', 'share', {}, {tag: '\n bla \t ', who: H.trim (U [0].username)}, 400, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'self'})) return log ('Invalid body', rs.body);
+      return true;
+   }],
    ['share a tag with a user', 'post', 'share', {}, {tag: '\n bla \t ', who: U [1].username}, 200],
    ['get shared tags after', 'get', 'share', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {sho: [[U [1].username, 'bla']], shm: []})) return log ('Invalid body', rs.body);
       return true;
    }],
-   ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['get shared tags as user2', 'get', 'share', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {shm: [[U [0].username.replace (/^\s+/, '').replace (' \t', ''), 'bla']], sho: []})) return log ('Invalid body', rs.body);
@@ -740,9 +779,9 @@ var main = [
    ['fail getting nonshared pic as user2', 'get', function (s) {
       return 'pic/' + s.pics [0].id;
    }, {}, '', 404],
-   ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['tag rotated picture', 'post', 'tag', {}, function (s) {
       return dale.stopNot (s.pics, undefined, function (pic) {
@@ -753,9 +792,9 @@ var main = [
       return true;
    }],
    ['share rotate tag with a user', 'post', 'share', {}, {tag: 'rotate', who: U [1].username}, 200],
-   ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 2) return log ('user2 should have two pics.');
@@ -828,9 +867,9 @@ var main = [
       if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
       return true;
    }],
-   ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['get `rotate` pics as user1 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 1) return log ('user1 should have one `rotate` pic.');
@@ -841,31 +880,31 @@ var main = [
       if (rs.body.pics.length !== 3) return log ('user1 should have one `rotate` pic.');
       return true;
    }],
-   ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', ''), del: true}, 200],
-   ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['get `rotate` pics as user1 after unsharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 1) return log ('user1 should have one `rotate` pic.');
       if (rs.body.pics [0].id !== s.pics2 [0].id) return log ('user1 should have own picture after unsharing.');
       return true;
    }],
-   ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    ['delete pic as user2', 'delete', function (s) {
       return 'pic/' + s.rotate2.id;
    }, {}, '', 200],
    ['delete account', 'post', 'auth/delete', {}, {}, 302],
-   ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (state, request, response) {
-      state.headers = {cookie: response.headers.cookie};
-      return response.headers.cookie !== undefined;
+   ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers.cookie};
+      return rs.headers.cookie !== undefined;
    }],
    dale.do (dale.times (3, 0), function (k) {
       return ['delete pic #' + (k + 1), 'delete', function (s) {
@@ -907,5 +946,17 @@ h.seq ({host: CONFIG.host, port: CONFIG.port}, [
    log ('ALL TESTS FINISHED SUCCESSFULLY!');
 }, function (test) {
    if (type (test) === 'object') return test;
+   if (test [1] === 'post' && test [4]) {
+      var b = test [4];
+      test [4] = function (s) {
+         if (type (b) === 'function') b = b (s);
+         if (! s.headers || ! s.headers.cookie) return b;
+         if (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset'].indexOf (test [2]) !== -1) return b;
+         var b2 = teishi.c (b);
+         if (b2.multipart) b2.multipart.push ({type: 'field', name: 'cookie', value: s.headers.cookie});
+         else b2.cookie = s.headers.cookie;
+         return b2;
+      }
+   }
    return h.stdmap (test);
 });

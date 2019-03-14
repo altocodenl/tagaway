@@ -14,67 +14,78 @@ The application is currently under development and has not been launched yet. We
 
 ## Routes
 
+If any route fails with an internal error, a 500 code will be returned with body `{error: ...}`.
+
+All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /pic`, which must be of type `multipart/form-data`.
+
+All non-auth routes (unless marked otherwise) will respond with a 403 error with body `{error: 'nocookie'}` if the user is not logged in.
+
+If a cookie with invalid signature is sent along, the application will respond with a 403 error with body `{error: 'tampered'}`.
+
+If a cookie with valid signature but that has already expired is sent along, the application will respond with a 403 error with body `{error: 'session'}`.
+
+All POST requests (unless marked otherwise) must contain a `cookie` field equivalent to the `cookie` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the cookie must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
+
+## Request invite
+
+- `POST /requestInvite`.
+   - Body must be `{email: STRING}`, otherwise a 400 will be sent.
+
 ### Auth routes
 
-- `GET /auth/logout`.
-   - If a valid cookie is present, its corresponding session will be destroyed.
-   - Unless there's an error, the route will return a 302 code with the `location` header set to `/`.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
-
 - `POST /auth/login`.
+   - Does not require the user to be logged in.
    - Body must be `{username: STRING, password: STRING, tz: INTEGER}`. If not, a 400 code will be returned with body `{error: ...}`.
    - `username` is lowercased and any leading & trailing space is removed from it (and intermediate spaces or space-like characters are reduced to a single space). `username` can be either the `username` or the `email` associated to a `username`.
    - If the username/password combination is not valid, a 403 code will be returned with body: `{error: 'auth'}`.
    - If the username/password combination is valid but the email hasn't been verified yet, a 403 code will be returned with body `{error: 'verify'}`.
    - `tz` must be the output of `Date.getTimezoneOffset ()`, an integer expressing the number of minutes behind (or ahead) of UTC in the local time.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /auth/signup`.
+   - Does not require the user to be logged in.
    - Body must be `{username: STRING, password: STRING, email: STRING, token: STRING}`. The email must be a valid email. If not, a 400 code will be returned with body `{error: ...}`.
    - Both `username` and `email` are lowercased and leading & trailing space is removed from them (and intermediate spaces or space-like characters are reduced to a single space). `username` cannot contain any `@` or `:` characters.
    - If there's no invite associated with the token, a 403 is returned with body `{error: 'token'}`.
    - If there's already an account with that email, a 403 is returned with body `{error: 'email'}`.
    - If there's already an account with that username, a 403 is returned with body `{error: 'username'}`.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `GET /auth/verify/TOKEN` (for verifying email ownership).
+   - Does not require the user to be logged in.
    - If successful, a 302 is returned redirecting to `/`.
-   - If the token provided doesn't match what's on the database, a 403 is returned with an empty object as body: `{}`.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
+   - If the token provided doesn't match what's on the database, a 403 is returned.
 
 - `POST /auth/recover`.
+   - Does not require the user to be logged in.
    - Body must be `{username: STRING}`. The username can be either the username or the email.
    - If username is invalid, a 403 is returned.
    - If successful, it sends an email to the associated email address with a link for password recovery.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /auth/reset`.
+   - Does not require the user to be logged in.
    - Body must be `{username: STRING, password: STRING, token: STRING}`. The username can be either the username or the email.
    - If username is invalid, a 403 is returned.
    - If successful, it sends an email to the associated email address with a link for password recovery.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
+
+- `GET /auth/logout`.
+   - Unless there's an error, the route will return a 302 code with the `location` header set to `/`.
 
 - `POST /auth/delete`.
+   - Temporarily disabled (route always returns 501).
    - User must be logged in, otherwise a 403 is returned.
    - The body is ignored.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
    - If successful, a 302 is returned redirecting to `/`.
 
 ### App routes
-
-From this point onwards, if a user is not logged in, any request will receive a 403 with body `{error: 'session'}`.
 
 - `GET /pic/ID`
    - Pic must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `GET /thumb/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /pic`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
@@ -89,25 +100,25 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `DELETE /pic/ID`
    - If the picture is not found, or if it does not belong to the user attempting the deletion, a 404 is returned.
    - If the deletion is successful, a 200 is returned.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
-- `POST /pic/rotate`
-   - Body must be of the form `{id: STRING, deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
-   - Pic must exist and the user must own it (otherwise, 404).
+- `POST /rotate`
+   - Body must be of the form `{ids: [STRING, ...], deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
+   - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 - `POST /tag`
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
    - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated; space-like characters in the middle will be replaced with a single space).
    - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
-   - Picture must exist and user must be owner of the picture, otherwise a 404 is returned.
+   - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - If successful, returns a 200.
 
 - `GET /tags`
    - Returns an object of the form `{tag1: INT, tag2: INT, ...}`. Includes a field for `untagged` and one for `all`.
@@ -119,28 +130,25 @@ From this point onwards, if a user is not logged in, any request will receive a 
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
-      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...]}`.
+      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 `POST /share`
    - Body must be of the form `{tag: STRING, who: ID, del: BOOLEAN|UNDEFINED}`.
    - The target user (`body.who`) must exist, otherwise a 404 is returned.
    - If the tag being shared is `all` or `untagged`, a 400 is returned with body `{error: 'tag'}`.
-   - If the sharing is successful, a 200 is returned.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
+   - If try to share with yourself, a 400 is returned with body `{error: 'self'}`.
+   - If successful, returns a 200.
 
 `GET /share`
    - If successful, returns a 200 with body `{sho: [[USERNAME1, TAG1], ...], shm: [[USERNAME2, TAG2], ...]}`.
    - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, used: [INTEGER_USED, INTEGER_MAXIMUM], logs: [...]}`.
-   - If there's an internal error, a 500 is returned with body `{error: ...}`.
 
 `POST /feedback`
-   - Body must be an object (otherwise 400).
+   - Body must be an object of the form `{message: STRING}` (otherwise 400).
    - If successful, returns a 200.
 
 ### Debugging routes
@@ -153,6 +161,10 @@ All the routes below require an admin user to be logged in.
 
 ### Admin routes
 
+`POST /admin/stats`
+   - Publicly accessible.
+   - Returns all stats information.
+
 `POST /admin/invites`
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
 
@@ -161,6 +173,8 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Server
+   - data migration: convert tags: from hash to set
+   - fix 24 hour stats.
    - Integrate with ac:ping.
    - Provision prod server.
    - Hidden tags.
@@ -170,11 +184,11 @@ All the routes below require an admin user to be logged in.
    - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - Top bar (Home, Manage, Upload)
    - Add autotag with enter
-   - Show dates in upload mode
    - Make remove tags as a button/tag with an integrated cross, with ... for long tags and expand on click
    - Initial view with no pictures
    - Manage tags.
    - Mark shared & hidden tags always.
+   - Show dates in upload mode.
 
 ### Todo beta
 
@@ -183,6 +197,7 @@ All the routes below require an admin user to be logged in.
    - Self host font.
    - Favicon & icons.
    - Report pictures.
+   - Security writeup: xss routes with user input (tags, eventually picture titles; image contents are left to browsers but images have to be valid as per imagemagick), cookie as signed token, CSRF prevented by sending cookie (not by headers, https://blog.appsecco.com/exploiting-csrf-on-json-endpoints-with-flash-and-redirects-681d4ad6b31b), s3 encryption, we encrypt the cookie only for distinguishing expired cookie from attack (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786)
 
 - Account
    - Account view
@@ -225,8 +240,6 @@ All the routes below require an admin user to be logged in.
 
 ### Done
 
-XXX
-
 - Upload
    - Allow only jpeg & png.
    - Auto thumbnail generation.
@@ -236,35 +249,37 @@ XXX
    - Upload more files while uploading files.
    - Allow to go back to browse while files are being uploaded in the background.
    - Retry on error.
+   - Add one or more tags to a certain upload batch.
 
 - Carrousel
    - Full screen viewing.
    - Use etags to save bandwidth.
-   - Carrousel with wrap-around and autoloading of more pictures.
+   - Carrousel with wrap-around and preloading of the next picture.
    - Show date & tags.
 
 - Organize
    - Multiple selection with shift & ctrl.
    - Tag/untag.
-   - Delete.
-   - Sort by newest/oldest/upload.
+   - Delete pictures.
+   - Sort by newest, oldest & upload date.
    - Autocomplete tags when searching.
    - Allow for more than one tag to be searched at the same time.
    - See number of tags & date below each picture.
    - Rotate pictures.
+   - Select all pictures in query even if they were not loaded.
    - Consider 1900-2100 as automatic tags for search.
-   - Sort by newest, oldest & upload date.
    - Refresh list of pictures if there's an upload in the background.
 
 - Account
    - Signup with invite.
    - Login/logout.
-   - Recover/reset.
+   - Recover/reset password.
 
 - Admin
    - Metering requests, downloads & space stored.
    - Block further uploads if storage limits are exceeded.
    - Invites.
+   - Stats endpoint.
 
 ### Features we may never implement
 
@@ -360,7 +375,7 @@ XXX
 
 - sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
 
-- tags:USERID (hash): list of all tags and the number of pictures for each. Also contains untagged field. Does not count pictures shared with the user.
+- tags:USERID (set): list of all tags created by the user. Does not count pictures shared with the user.
 
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:      {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}
@@ -377,7 +392,7 @@ XXX
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:l:DATE (string): total milliseconds for all responses, to calculate average, in the last 10 minutes. Time is Date.now () divided by 100000.
-- sti:hxxx:DATE (string): responses with status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
+- sti:hxxx:DATE (string): responses with HTTP status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
 - stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than 10 minutes will be converted from hyperloglog to a string with a counter.
 - stp:A:DATE (hyperloglog or string): unique active users in the last 24 hours. Time is Date.now () divided by 100000. Entries older than a day will be converted from hyperloglog to a string with a counter.
 - stp (set): list of all hyperloglog entries.
@@ -419,6 +434,39 @@ cd /root/acpic && mg restart
 ```
 
 crontab with `@reboot /root/start.sh`
+
+### HTTPS configuration
+
+Installation of certbot:
+
+```
+sudo add-apt-repository ppa:certbot/certbot -y
+sudo apt-get update
+sudo apt-get install python-certbot-nginx -y
+```
+
+On your relevant nginx configuration (either at `/etc/nginx/sites-available` or `/etc/nginx/sites-enabled`), add this line:
+
+```
+   server_name YOURDOMAIN
+```
+
+Make sure your domain points to the server where you're adding these changes. Then run these commands:
+
+```
+service nginx reload
+sudo certbot --nginx -d app.onemillionloops.com
+```
+
+Add the following to your crontab, to renew the certificates at the hour HH:YY every day.
+
+```
+crontab: YY HH * * * sudo certbot renew
+```
+
+## Security
+
+If you find a security vulnerability, please disclose it to us as soon as possible (`info AT altocode.nl`). We'll work on it with the utmost priority.
 
 ## License
 

@@ -136,6 +136,8 @@ var k = function (s) {
 
 var H = {};
 
+H.email = /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+
 H.trim = function (s) {
    return s.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 }
@@ -342,14 +344,7 @@ H.deletePic = function (id, username, cb) {
          multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
          multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
 
-         if (dale.acc (s.tags, 0, function (a, b) {
-            return a + (H.isYear (b) ? 0 : 1);
-         }) === 0) multi.hincrby ('tags:' + s.pic.owner, 'untagged', -1);
-
-         s.tags = s.tags.concat (['all', 'untagged']);
-
-         dale.do (s.tags, function (tag) {
-            if (tag !== 'untagged') multi.hincrby ('tags:' + s.pic.owner, tag, -1);
+         dale.do (s.tags.concat (['all', 'untagged']), function (tag) {
             multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
          });
 
@@ -425,21 +420,25 @@ var routes = [
    // *** REQUEST INVITE ***
 
    ['post', 'requestInvite', function (rq, rs) {
-      if (type (rq.body) !== 'object' || type (rq.body.email) !== 'string') return reply (rq, 400);
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ['email'], 'eachOf', teishi.test.equal],
+         function () {return [
+            ['body.email', b.email, 'string'],
+            ['body.email', b.email, H.email, teishi.test.match],
+         ]},
+      ])) return;
+
       sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac:pic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200);
       });
    }],
 
-   // *** AUTH WITH COOKIES & SESSIONS ***
-
-   ['post', 'auth/logout', function (rq, rs) {
-      if (type (rq.body) !== 'object') return reply (rq, 400);
-      giz.logout (rq.data.cookie ? (rq.data.cookie [CONFIG.cookiename] || '') : '', function () {
-         reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
-      });
-   }],
+   // *** LOGIN & SIGNUP ***
 
    ['post', 'auth/login', function (rq, rs) {
 
@@ -497,7 +496,7 @@ var routes = [
          function () {return [
             ['body.username', b.username, /^[^@:]+$/, teishi.test.match],
             ['body.password length', b.password.length, {min: 6}, teishi.test.range],
-            ['body.email',    b.email,    /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
+            ['body.email',    b.email,    H.email, teishi.test.match],
          ]},
       ])) return;
 
@@ -557,13 +556,15 @@ var routes = [
       });
    }],
 
+   // *** EMAIL VERIFICATION ***
+
    ['get', 'auth/verify/(*)', function (rq, rs) {
 
       var token = rq.data.params [0];
 
       redis.hget ('emailtoken', token, function (error, email) {
          if (error) return reply (rs, 500, {error: error});
-         if (! email) return reply (rs, 403, {});
+         if (! email) return reply (rs, 403);
 
          redis.hget ('emails', email, function (error, username) {
             if (error) return reply (rs, 500, {error: error});
@@ -666,9 +667,12 @@ var routes = [
 
       if (rq.method === 'post' && rq.url === '/error')                  return rs.next ();
       if (rq.method === 'get'  && rq.url === '/admin/stats')            return rs.next ();
-      if (! ENV && rq.method === 'post' && rq.url === '/admin/invites') return rs.next ();
+      if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
 
-      giz.auth ((rq.data.cookie || {}) [CONFIG.cookiename] || '', function (error, user) {
+      if (! rq.data.cookie)                     return reply (rs, 403, {error: 'nocookie'});
+      if (! rq.data.cookie [CONFIG.cookiename]) return reply (rs, 403, {error: 'tampered'});
+
+      giz.auth (rq.data.cookie [CONFIG.cookiename], function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
          if (! user) return reply (rs, 403, {error: 'session'});
 
@@ -683,19 +687,97 @@ var routes = [
       });
    }],
 
+   // *** CSRF PROTECTION ***
+
+   ['post', '*', function (rq, rs) {
+
+      if (rq.method === 'post' && rq.url === '/error')                  return rs.next ();
+      if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
+
+      var ctype = rq.headers ['content-type'] || '', cookie = rq.headers.cookie;
+      if (ctype.match (/^multipart\/form-data/i)) {
+         if (rq.data.fields.cookie !== cookie) return reply (rs, 403);
+         delete rq.data.fields.cookie;
+      }
+      else {
+         if (type (rq.body) !== 'object') return reply (rs, 400);
+         if (rq.body.cookie !== cookie)   return reply (rs, 403);
+         delete rq.body.cookie;
+      }
+      rs.next ();
+   }],
+
    // *** CLIENT ERRORS ***
 
    ['post', 'error', function (rq, rs) {
-      if (teishi.simple (rq.body)) return reply (rs, 400);
+      if (type (rq.body) !== 'object') return reply (rs, 400);
       notify ({type: 'client error', headers: rq.headers, ip: rq.origin, user: (rq.user || {}).username, error: rq.body});
       reply (rs, 200);
+   }],
+
+   // *** LOGOUT ***
+
+   ['post', 'auth/logout', function (rq, rs) {
+      giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
+      });
+   }],
+
+   // *** DELETE ACCOUNT ***
+
+   ['post', 'auth/delete', function (rq, rs) {
+
+      // We temporarily disable account deletions.
+      if (ENV) return reply (rs, 501);
+
+      var multi = redis.multi ();
+
+      multi.smembers ('tag:'  + rq.user.username + ':all');
+      multi.smembers ('tags:' + rq.user.username);
+      multi.exec (function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+
+         giz.destroy (rq.user.username, function (error) {
+            if (error) return reply (rs, 500, {error: error});
+            var multi = redis.multi ();
+            multi.hdel ('emails',  rq.user.email);
+            multi.hdel ('invites', rq.user.email);
+            dale.do (data [0], function (pic) {
+               H.deletePic (pic, rq.user.username, function (error) {
+                  if (error) notify ({type: 'picture deletion error', error: error});
+               });
+            });
+            dale.do (data [1].concat (['all', 'untagged']), function (tag) {
+               multi.del ('tag:' + rq.user.username + ':' + tag);
+            });
+            multi.del ('tags:'  + rq.user.username);
+            multi.del ('upic:'  + rq.user.username);
+            multi.del ('upicd:' + rq.user.username);
+            multi.del ('shm:'   + rq.user.username);
+            multi.del ('sho:'   + rq.user.username);
+            multi.del ('ulog:'  + rq.user.username);
+            multi.exec (function (error) {
+            if (error) return reply (rs, 500, {error: error});
+               giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
+                  H.log (rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']});
+                  reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
+               });
+            });
+         });
+      });
    }],
 
    // *** FEEDBACK COLLECTION ***
 
    ['post', 'feedback', function (rq, rs) {
 
-      if (type (rq.body) !== 'object' || type (rq.body.message) !== 'string' || ! eq (dale.keys (rq.body), ['message'])) return reply (rs, 400);
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['message'], 'eachOf', teishi.test.equal],
+         ['body.message', b.message, 'string'],
+      ])) return;
 
       notify ({type: 'feedback', user: rq.user.username, message: rq.body.message});
 
@@ -715,54 +797,7 @@ var routes = [
 
       H.s3get (rq.user.username, rq.data.params.id, function (error, data) {
          if (error) return reply (rs, 500, {error: error});
-         rs.write (data);
-         rs.end ();
-      });
-   }],
-
-   // *** DELETE ACCOUNT ***
-
-   ['post', 'auth/delete', function (rq, rs) {
-
-      // We temporarily disable account deletions.
-      if (ENV) return reply (rs, 501);
-
-      // We require a JSON body to prevent CSRF.
-      if (! eq (rq.body, {})) return reply (rs, 400);
-
-      redis.get ('tag:' + rq.user.username + ':all', function (error, pics) {
-         if (error) return reply (rs, 500, {error: error});
-         redis.get ('tags:' + rq.user.username + ':', function (error, tags) {
-            if (error) return reply (rs, 500, {error: error});
-
-            giz.destroy (rq.user.username, function (error) {
-               if (error) return reply (rs, 500, {error: error});
-               var multi = redis.multi ();
-               multi.hdel ('emails',  rq.user.email);
-               multi.hdel ('invites', rq.user.email);
-               dale.do (pics, function (pic) {
-                  H.deletePic (pic, rq.user.username, function (error) {
-                     if (error) notify ({type: 'picture deletion error', error: error});
-                  });
-               });
-               dale.do (tags, function (tag) {
-                  multi.del ('tag:' + rq.user.username + ':' + tag);
-               });
-               multi.del ('upic:'  + rq.user.username);
-               multi.del ('upicd:' + rq.user.username);
-               multi.del ('shm:'   + rq.user.username);
-               multi.del ('sho:'   + rq.user.username);
-               multi.del ('tags:'  + rq.user.username);
-               multi.del ('ulog:'  + rq.user.username);
-               multi.exec (function (error) {
-                  if (error) return reply (rs, 500, {error: error});
-                  giz.logout (rq.data.cookie [CONFIG.cookiename], function (error) {
-                     H.log (rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']});
-                     reply (rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)});
-                  });
-               });
-            });
-         });
+         rs.end (data);
       });
    }],
 
@@ -934,22 +969,15 @@ var routes = [
 
                      multi.sadd ('upic:'  + rq.user.username, pic.hash);
                      multi.srem ('upicd:' + rq.user.username, pic.hash);
-                     multi.sadd ('tag:'  + rq.user.username  + ':all', pic.id);
+                     multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
 
-                     var picyear = new Date (pic.date).getUTCFullYear ();
-                     multi.sadd ('pict:' + pic.id, picyear);
-                     multi.hincrby ('tags:' + rq.user.username, picyear, 1);
-                     multi.sadd ('tag:' + rq.user.username + ':' + picyear, pic.id);
-
-                     if (tags.length > 0) dale.do (tags, function (tag) {
-                        multi.sadd    ('pict:' + pic.id, tag);
-                        multi.hincrby ('tags:' + rq.user.username, tag, 1);
-                        multi.sadd    ('tag:'  + rq.user.username + ':' + tag, pic.id);
+                     dale.do (tags.concat (new Date (pic.date).getUTCFullYear ()), function (tag) {
+                        multi.sadd ('pict:' + pic.id,                       tag);
+                        multi.sadd ('tags:' + rq.user.username,             tag);;
+                        multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic.id);
                      });
-                     else {
-                        multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
-                        multi.sadd    ('tag:'  + rq.user.username + ':untagged', pic.id);
-                     }
+
+                     if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', pic.id);
 
                      multi.hmset ('pic:' + pic.id, pic);
                      multi.exec (function (error) {
@@ -991,46 +1019,60 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['body', b, 'object'],
-         ['keys of body', dale.keys (b), ['id', 'deg'], 'eachOf', teishi.test.equal],
-         function () {return [
-         // XXX multipic!
-            ['body.id', b.id, 'string'],
-            ['body.deg', b.deg, [90, 180, -90], 'oneOf', teishi.test.equal],
-         ]}
+         ['keys of body', dale.keys (b), ['ids', 'deg'], 'eachOf', teishi.test.equal],
+         ['body.deg', b.deg, [90, 180, -90], 'oneOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+         function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
       ])) return;
 
-      redis.hgetall ('pic:' + b.id, function (error, pic) {
-         if (error) return reply (rs, 500, {error: error});
-         if (! pic) return reply (rs, 404);
-         var deg = parseInt (pic.deg) || 0;
-         if (deg === 0) deg = b.deg;
-         else if (deg === -90) {
-            if (b.deg === -90) deg = 180;
-            if (b.deg === 90)  deg = 0;
-            if (b.deg === 180) deg = 90;
-         }
-         else if (deg === 90) {
-            if (b.deg === -90) deg = 0;
-            if (b.deg === 90)  deg = 180;
-            if (b.deg === 180) deg = -90;
-         }
-         else {
-            if (b.deg === -90) deg = 90;
-            if (b.deg === 90)  deg = -90;
-            if (b.deg === 180) deg = 0;
-         }
-
-         var cb = function (error) {
-            if (error) return reply (rs, 500, {error: error});
-            H.log (rq.user.username, {a: 'rot', id: b.id, deg: b.deg});
-            reply (rs, 200);
-         }
-
-         if (deg) redis.hset ('pic:' + b.id, 'deg', deg, cb);
-         else     redis.hdel ('pic:' + b.id, 'deg', cb);
+      var multi = redis.multi (), seen = {};
+      dale.do (b.ids, function (id) {
+         seen [id] = true;
+         multi.hgetall ('pic:' + id);
       });
 
+      if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+
+      multi.exec (function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+
+         var multi = redis.multi ();
+
+         if (dale.stopNot (data, undefined, function (pic) {
+            if (pic === null || pic.owner !== rq.user.username) {
+               reply (rs, 404);
+               return true;
+            }
+
+            var deg = parseInt (pic.deg) || 0;
+            if (deg === 0) deg = b.deg;
+            else if (deg === -90) {
+               if (b.deg === -90) deg = 180;
+               if (b.deg === 90)  deg = 0;
+               if (b.deg === 180) deg = 90;
+            }
+            else if (deg === 90) {
+               if (b.deg === -90) deg = 0;
+               if (b.deg === 90)  deg = 180;
+               if (b.deg === 180) deg = -90;
+            }
+            else {
+               if (b.deg === -90) deg = 90;
+               if (b.deg === 90)  deg = -90;
+               if (b.deg === 180) deg = 0;
+            }
+
+            if (deg) multi.hset ('pic:' + pic.id, 'deg', deg);
+            else     multi.hdel ('pic:' + pic.id, 'deg');
+         })) return;
+
+         multi.exec (function (error) {
+            if (error) return reply (rs, 500, {error: error});
+            H.log (rq.user.username, {a: 'rot', id: b.ids, deg: b.deg});
+            reply (rs, 200);
+         });
+      });
    }],
 
    // *** TAGGING ***
@@ -1040,90 +1082,94 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['ids', 'tag', 'del'], 'eachOf', teishi.test.equal],
-         function () {return [
-            ['body.tag', b.tag, 'string'],
-            ['body.ids', b.ids, 'array'],
-            ['body.ids', b.ids, 'string', 'each'],
-            function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
-            ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
-         ]}
+         ['body.tag', b.tag, 'string'],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+         function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
+         ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
       ])) return;
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
       if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
-      a.stop ([
-         [function (s) {
-            var multi = redis.multi ();
-            dale.do (b.ids, function (id) {
-               multi.hget  ('pic:'  + id, 'owner');
-               multi.smembers ('pict:' + id);
+      var multi = redis.multi (), seen = {};
+      dale.do (b.ids, function (id) {
+         seen [id] = true;
+         multi.hget     ('pic:'  + id, 'owner');
+         multi.smembers ('pict:' + id);
+      });
+
+      if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+
+      multi.exec (function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+
+         var multi = redis.multi ();
+
+         if (dale.stopNot (data, undefined, function (owner, k) {
+            if (k % 2 !== 0) return;
+            if (owner !== rq.user.username) {
+               reply (rs, 404);
+               return true;
+            }
+
+            var id = b.ids [k / 2];
+
+            var extags = dale.acc (data [k + 1], 0, function (a, b) {
+               return a + (H.isYear (b) ? 0 : 1);
             });
-            multi.exec (function (error, data) {
-               if (error) return reply (rs, 500, {error: error});
-               s.last = data;
-               s.do ();
-            });
-         }],
-         function (s) {
+
+            if (b.del) {
+               if (data [k + 1].indexOf (b.tag) === -1) return;
+               multi.srem ('pict:' + id, b.tag);
+               multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
+               if (extags === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
+            }
+
+            else {
+               if (data [k + 1].indexOf (b.tag) !== -1) return;
+               multi.sadd ('pict:' + id, b.tag);
+               multi.sadd ('tags:' + rq.user.username, b.tag);
+               multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
+
+               multi.srem ('tag:'  + rq.user.username + ':untagged', id);
+            }
+         })) return;
+
+         multi.exec (function (error) {
+            if (error) return reply (rs, 500, {error: error});
+            reply (rs, 200);
+            H.log (rq.user.username, {a: 'tag', tag: b.tag, d: b.del ? true : undefined, ids: b.ids});
+         });
+      });
+   }],
+
+   ['get', 'tags', function (rq, rs) {
+      redis.smembers ('tags:' + rq.user.username, function (error, tags) {
+         if (error) return reply (rs, 500, {error: error});
+
+         var multi = redis.multi ();
+         tags = tags.concat (['all', 'untagged']);
+         dale.do (tags, function (tag) {
+            multi.scard ('tag:' + rq.user.username + ':' + tag);
+         });
+         multi.exec (function (error, cards) {
+            if (error) return reply (rs, 500, {error: error});
+
             var multi = redis.multi ();
-            var seen = {};
-            dale.do (s.last, function (v, k) {
-               if (k % 2 !== 0) return;
-               var pic = b.ids [k / 2];
-               if (seen [pic]) return;
-               else seen [pic] = true;
-               if (v === null || v !== rq.user.username) return;
-               if (b.del) {
-                  if (s.last [k + 1].indexOf (b.tag) === -1) return;
-                  multi.srem    ('pict:' + pic, b.tag);
-                  multi.hincrby ('tags:' + rq.user.username, b.tag, -1);
-                  multi.srem ('tag:'   + rq.user.username + ':' + b.tag, pic);
-                  if (dale.acc (s.last [k + 1], 0, function (a, b) {
-                     return a + (H.isYear (b) ? 0 : 1);
-                  }) === 1) {
-                     multi.hincrby ('tags:' + rq.user.username, 'untagged', 1);
-                     multi.sadd    ('tag:'  + rq.user.username + ':untagged', pic);
-                  }
-               }
+            var output = dale.obj (cards, function (card, k) {
+               if (card || tags [k] === 'all') return [tags [k], card];
                else {
-                  if (s.last [k + 1].indexOf (b.tag) !== -1) return;
-                  multi.sadd    ('pict:' + pic, b.tag);
-                  multi.hincrby ('tags:' + rq.user.username, b.tag, 1);
-                  multi.sadd ('tag:'   + rq.user.username + ':' + b.tag, pic);
-                  if (dale.acc (s.last [k + 1], 0, function (a, b) {
-                     return a + (H.isYear (b) ? 0 : 1);
-                  }) === 0) {
-                     multi.hincrby ('tags:' + rq.user.username, 'untagged', -1);
-                     multi.srem    ('tag:'  + rq.user.username + ':untagged', pic);
-                  }
+                  if (k < tags.length - 3) multi.srem ('tags:' + rq.user.username, tags [k]);
                }
             });
             multi.exec (function (error) {
                if (error) return reply (rs, 500, {error: error});
-               reply (rs, 200);
-               H.log (rq.user.username, {a: 'tag', tag: b.tag, d: b.del ? true : undefined, ids: b.ids});
-            })
-         }
-      ], {catch: function (s) {
-         return reply (rs, 500, s.catch);
-      }});
-   }],
-
-   ['get', 'tags', function (rq, rs) {
-      var multi = redis.multi ();
-      multi.hgetall ('tags:' + rq.user.username);
-      multi.scard   ('tag:'  + rq.user.username + ':all');
-      multi.exec (function (error, data) {
-         if (error) return reply (rs, 500, {error: error});
-         var output = {all: parseInt (data [1])};
-         reply (rs, 200, dale.obj (data [0], output, function (v, k) {
-            v = parseInt (v);
-            if (v > 0) return [k, v];
-         }));
+               reply (rs, 200, output);
+            });
+         });
       });
    }],
 
@@ -1134,18 +1180,16 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['body', b, 'object'],
-         function () {return [
-            ['body.tags', b.tags, 'array'],
-            ['body.tags', b.tags, 'string', 'each'],
-            ['body.mindate',  b.mindate,  ['undefined', 'integer'], 'oneOf'],
-            ['body.maxdate',  b.maxdate,  ['undefined', 'integer'], 'oneOf'],
-            ['body.sort',  b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
-            ['body.from',  b.from, 'integer'],
-            ['body.to',    b.to,   'integer'],
-            ['body.from',  b.from, {min: 1},      teishi.test.range],
-            ['body.to',    b.to,   {min: b.from}, teishi.test.range],
-         ]}
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to'], 'eachOf', teishi.test.equal],
+         ['body.tags', b.tags, 'array'],
+         ['body.tags', b.tags, 'string', 'each'],
+         ['body.mindate',  b.mindate,  ['undefined', 'integer'], 'oneOf'],
+         ['body.maxdate',  b.maxdate,  ['undefined', 'integer'], 'oneOf'],
+         ['body.sort',  b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.from',  b.from, 'integer'],
+         ['body.to',    b.to,   'integer'],
+         ['body.from',  b.from, {min: 1},      teishi.test.range],
+         ['body.to',    b.to,   {min: b.from}, teishi.test.range],
       ])) return;
 
       if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: 'all'});
@@ -1265,18 +1309,16 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['tag', 'who', 'del'], 'eachOf', teishi.test.equal],
-         function () {return [
-            ['body.tag', b.tag, 'string'],
-            ['body.who', b.who, 'string'],
-            ['body.del', b.del, ['boolean', 'undefined'], 'oneOf']
-         ]}
+         ['body.tag', b.tag, 'string'],
+         ['body.who', b.who, 'string'],
+         ['body.del', b.del, ['boolean', 'undefined'], 'oneOf']
       ])) return;
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (H.isYear (b.tag))                           return reply (rs, 400, {error: 'tag'});
+      if (b.who === rq.user.username)                 return reply (rs, 400, {error: 'self'});
 
       redis.exists ('users:' + b.who, function (error, exists) {
          if (error)    return reply (rs, 500, {error: error});
@@ -1368,13 +1410,10 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
-         function () {return [
-            ['body.email', b.email, 'string'],
-            ['body.firstName', b.firstName, 'string'],
-            ['body.email', b.email, /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/, teishi.test.match],
-         ]},
+         ['body.email', b.email, 'string'],
+         ['body.email', b.email, H.email, teishi.test.match],
+         ['body.firstName', b.firstName, 'string'],
       ])) return;
 
       b.email = H.trim (b.email.toLowerCase ());
@@ -1426,7 +1465,9 @@ cicek.apres = function (rs) {
 
 cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
-   notify ({type: 'server error', from: cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id, subtype: message [1], error: message [2]});
+
+   if (message [1] === 'Invalid signature in cookie') notify ({type: 'cookie signature error', error: message [2]});
+   else notify ({type: 'server error', from: cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id, subtype: message [1], error: message [2]});
 }
 
 cicek.cluster ();
