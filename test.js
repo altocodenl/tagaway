@@ -260,7 +260,10 @@ var main = [
       ['from', 'integer'],
       ['to', 'integer'],
    ]),
-   {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}},
+   {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'csrf'})) return log ('Invalid payload');
+      return true;
+   }},
    ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -938,7 +941,7 @@ var main = [
    }],
 ];
 
-h.seq ({host: CONFIG.host, port: CONFIG.port}, [
+h.seq ({port: CONFIG.port}, [
    intro,
    main,
    outro,

@@ -81,11 +81,11 @@ var sendmail = function (o, cb) {
    o.from1 = o.from1 || SECRET.emailName;
    o.from2 = o.from2 || SECRET.emailAddress;
    mailer.sendMail ({
-      from: o.from1 + ' <' + SECRET.emailAddress + '>',
-      to: o.to1 + ' <' + o.to2 + '>',
+      from:    o.from1 + ' <' + SECRET.emailAddress + '>',
+      to:      o.to1 + ' <' + o.to2 + '>',
       replyTo: o.from2,
       subject: o.subject,
-      html: lith.g (o.message),
+      html:    lith.g (o.message),
    }, function (error, rs) {
       if (error) notify ({type: 'mailer error', error: error, options: o});
       if (cb) cb (error);
@@ -435,7 +435,7 @@ var routes = [
          ]},
       ])) return;
 
-      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac:pic invite', message: ['p', [new Date ().toUTCString (), ' ', rq.body.email]]}, function (error) {
+      sendmail ({to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac:pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}, function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200);
       });
@@ -699,12 +699,12 @@ var routes = [
 
       var ctype = rq.headers ['content-type'] || '', cookie = rq.headers.cookie;
       if (ctype.match (/^multipart\/form-data/i)) {
-         if (rq.data.fields.cookie !== cookie) return reply (rs, 403);
+         if (rq.data.fields.cookie !== cookie) return reply (rs, 403, {error: 'csrf'});
          delete rq.data.fields.cookie;
       }
       else {
          if (type (rq.body) !== 'object') return reply (rs, 400);
-         if (rq.body.cookie !== cookie)   return reply (rs, 403);
+         if (rq.body.cookie !== cookie)   return reply (rs, 403, {error: 'csrf'});
          delete rq.body.cookie;
       }
       rs.next ();
@@ -782,11 +782,11 @@ var routes = [
          ['body.message', b.message, 'string'],
       ])) return;
 
-      notify ({type: 'feedback', user: rq.user.username, message: rq.body.message});
+      notify ({type: 'feedback', user: rq.user.username, message: b.message});
 
       if (! ENV) return reply (rs, 200);
 
-      sendmail ({to1: rq.user.username, to2: rq.user.email, subject: CONFIG.etemplates.feedback.subject, message: CONFIG.etemplates.feedback.message (rq.user.username, rq.body.message)}, function (error) {
+      sendmail ({to1: rq.user.username, to2: rq.user.email, subject: CONFIG.etemplates.feedback.subject, message: CONFIG.etemplates.feedback.message (rq.user.username, b.message)}, function (error) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200);
       });
