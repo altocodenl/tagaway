@@ -173,14 +173,12 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Server
-   - data migration: convert tags: from hash to set
-   - fix 24 hour stats.
    - Integrate with ac:ping.
    - Provision prod server.
    - Hidden tags.
 
 - Client
-   - Rotation is a PROPERTY, transform: rotate(90deg);
+   - rotation: aspect ratio issue, batch without blocking.
    - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - Top bar (Home, Manage, Upload)
    - Add autotag with enter
@@ -375,7 +373,7 @@ All the routes below require an admin user to be logged in.
 
 - sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
 
-- tags:USERID (set): list of all tags created by the user. Does not count pictures shared with the user.
+- tags:USERID (set): list of all tags created by the user. Does not count tags shared with the user.
 
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:      {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}

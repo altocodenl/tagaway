@@ -10,7 +10,7 @@ Please refer to readme.md to read the annotated source (but not yet!).
 
 var CONFIG = require ('./config.js');
 var SECRET = require ('./secret.js');
-var ENV = process.argv [2];
+var ENV    = process.argv [2];
 
 var crypto = require ('crypto');
 var fs     = require ('fs');
@@ -295,6 +295,7 @@ H.stat = function (name, pf, n) {
    t = (t - (t % (1000 * 60 * 10))) / 100000;
    if (pf) {
       var multi = redis.multi ();
+      if (name === 'A') t = new Date (new Date ().getUTCFullYear () + '-' + (new Date ().getUTCMonth () + 1) + '-' + new Date ().getUTCDate ()).getTime () / 100000;
       multi.pfadd ('stp:' + name + ':' + t, pf);
       multi.sadd  ('stp',   name + ':' + t);
       multi.exec (function (error) {
@@ -1545,7 +1546,7 @@ if (cicek.isMaster) setInterval (function () {
             var duration = pf.split (':') [0] === 'a' ? 1000 * 60 * 10 : 1000 * 60 * 60 * 24;
             if (d - parseInt (pf.split (':') [1] + '00000') > duration) {
                multi2.srem ('stp', pf);
-               multi2.set  (pf, counts [k]);
+               multi2.set  ('stp:' + pf, counts [k]);
             }
          });
          multi2.exec (function (error) {
