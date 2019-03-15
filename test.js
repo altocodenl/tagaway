@@ -207,6 +207,10 @@ var outro = [
    ['logout', 'post', 'auth/logout', {}, {}, 302, function (s, rq, rs) {
       if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age/i)) return false;
       if (rs.headers.location !== '/') return log ('Invalid location header');
+      return true;
+   }],
+   ['delete account with invalid cookie', 'post', 'auth/delete', {}, {}, 403, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'session'})) return log ('Invalid payload sent, expecting {error: "session"}');
       s.headers = {};
       return true;
    }],
@@ -218,7 +222,7 @@ var outro = [
       s.headers = {cookie: rs.headers.cookie};
       return rs.headers.cookie !== undefined;
    }],
-   ['delete account with invalid cookie', 'post', 'auth/delete', {cookie: 'foobar'}, U [0], 403, function (s, rq, rs) {
+   ['delete account with invalid cookie', 'post', 'auth/delete', {cookie: 'foobar'}, {}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'tampered'})) return log ('Invalid payload sent, expecting {error: "tampered"}');
       return true;
    }],

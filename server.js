@@ -290,12 +290,14 @@ H.s3list = function (prefix, cb) {
    fetch ();
 }
 
+H.zp = function (v) {return v < 10 ? '0' + v : v}
+
 H.stat = function (name, pf, n) {
    var t = Date.now ();
    t = (t - (t % (1000 * 60 * 10))) / 100000;
    if (pf) {
       var multi = redis.multi ();
-      if (name === 'A') t = new Date (new Date ().getUTCFullYear () + '-' + (new Date ().getUTCMonth () + 1) + '-' + new Date ().getUTCDate ()).getTime () / 100000;
+      if (name === 'A') t = new Date (new Date ().getUTCFullYear () + '-' + H.zp (new Date ().getUTCMonth () + 1) + '-' + H.zp (new Date ().getUTCDate ()) + 'T00:00:00.000Z').getTime () / 100000;
       multi.pfadd ('stp:' + name + ':' + t, pf);
       multi.sadd  ('stp',   name + ':' + t);
       multi.exec (function (error) {
@@ -1537,7 +1539,7 @@ if (cicek.isMaster) setInterval (function () {
       if (error) notify ({type: 'stat pfcount -> counter error', error: error});
       var multi = redis.multi ();
       dale.do (pfs, function (pf) {
-         multi.pfcount (pf);
+         multi.pfcount ('stp:' + pf);
       });
       multi.exec (function (error, counts) {
          if (error) notify ({type: 'stat pfcount -> counter error', error: error});
