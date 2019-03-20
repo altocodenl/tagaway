@@ -950,23 +950,10 @@
          ['rotate', 'pics', function (x, deg) {
             var pics = dale.keys (B.get ('State', 'selected'));
             if (pics.length === 0) return;
-            B.do (x, 'notify', 'yellow', 'Rotating, please wait...', true);
-            B.do (x, 'rem', 'State', 'selected');
-            dale.do (pics, function (pic) {
-               B.do (x, 'set', ['State', 'rotating', pic], true);
+            H.authajax (x, 'post', 'rotate', {}, {deg: deg, ids: pics}, function (error, data) {
+               if (error) return B.do (x, 'notify', 'red', 'There was an error rotating the picture(s).');
+               B.do (x, 'retrieve', 'pics');
             });
-            var rotateOne = function () {
-               var pic = pics.shift ();
-               H.authajax (x, 'post', 'rotate', {}, {deg: deg, id: pic}, function (error, data) {
-                  if (error) return B.do (x, 'notify', 'red', 'There was an error rotating the picture(s).');
-                  B.do (x, 'rem', ['State', 'rotating'], pic);
-                  B.do (x, 'retrieve', 'pics');
-                  if (pics.length > 0) return rotateOne ();
-                  B.do (x, 'rem', 'State', 'action');
-                  B.do (x, 'notify', 'green', 'The pictures were successfully rotated.');
-               });
-            }
-            rotateOne ();
          }],
          ['selectall', [], function (x) {
             H.authajax (x, 'post', 'query', {}, {tags: B.get ('State', 'query', 'tags'), from: 1, to: 1024 * 1024 * 1024, sort: 'newest'}, function (error, rs) {
@@ -1201,8 +1188,6 @@
 
             B.do (x, 'set', ['State', 'lastclick'], {id: id, time: Date.now ()});
 
-            if (B.get ('State', 'rotating', id)) return;
-
             var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
                if (pic.id === last.id) return k;
             });
@@ -1271,9 +1256,6 @@
                   position: 'absolute',
                   height: MAXH,
                }],
-               ['div.selected', {
-                  'transform, -ms-transform, -webkit-transform, -o-transform, -moz-transform': 'scale(0.9, 0.9)',
-               }],
                ['div.imagecaption', {
                   'border-radius': 10,
                   opacity: 0,
@@ -1298,13 +1280,6 @@
                   'box-shadow': 'inset 0 0 0 1000px rgba(230,230,230,0.5)',
                   opacity: '0.5',
                }],
-               ['.r90', {transform: 'rotate(90deg)'}],
-               ['.r180', {transform: 'rotate(180deg)'}],
-               ['.r270', {transform: 'rotate(-90deg)'}],
-               ['img.rotating', {
-                  'box-shadow': 'inset 0 0 0 1000px rgba(120,120,115,0.5)',
-                  opacity: '0.5'
-               }],
                ['div.blueoval', {
                   'border-radius': 0.5,
                   'width, height': 18,
@@ -1318,15 +1293,14 @@
             dale.do (pics, function (pic, k) {
 
                var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
-
                date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
 
-               if (pic.deg === 90 || pic.deg === -90) {
-                  var picw = MAXH, pich = Math.round (pic.dimh / pic.dimw * MAXH);
-               }
-               else {
-                  var pich = MAXH, picw = Math.round (pic.dimw / pic.dimh * MAXH);
-               }
+               if (pic.deg === 90 || pic.deg === -90) var dimw = pic.dimh, dimh = pic.dimw;
+               else                                   var dimw = pic.dimw, dimh = pic.dimh;
+
+               var pich = MAXH, picw = Math.round (dimw / dimh * MAXH);
+               var clog = console.log;
+               clog ({picdimw: pic.dimw, picdimh: pic.dimh, dimw: dimw, dimh: dimh, pich: pich, picw: picw});
 
                var bringup = function () {
                   if (rows.length === 1) return;
@@ -1404,27 +1378,29 @@
                return dale.do (rows, function (v) {
                   return dale.do (v, function (p) {
                      return B.view (x, ['State', 'selected'], function (x, selected) {
-                        return B.view (x, ['State', 'rotating'], function (x, rotating) {
-                           selected = selected || {};
-                           rotating = rotating || {};
-                           return ['div', {
-                              class: 'imagecontainer' + (selected [p [4].id] ? ' selected' : '') + (! p [4].deg ? '' : ' r' + (p [4].deg === -90 ? '270' : p [4].deg)),
-                              style: 'left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
-                           }, [
-                              ['img', B.ev ({
-                                 'data-y': p [1] - p [3] - MARGIN,
-                                 id: 'pic' + p [4].id,
-                                 class: 'pic ' + (rotating [p [4].id] ? 'rotating ' : (selected [p [4].id] ? ' selected' : '')),
-                                 src: H.picPath (p [4]),
-                                 style: 'width: ' + p [2] + 'px',
-                              }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
-                              ['div', {class: 'imagecaption'}, [
-                                 ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],
-                                 ['span', {style: 'position: absolute; right: 5px'}, H.dformat (p [4].date)],
-                              ]],
-                              H.if (selected [p [4].id], ['div', {class: 'blueoval'}]),
-                           ]];
-                        });
+                        selected = (selected || {}) [p [4].id];
+                        var transform = selected ? 'scale(0.9, 0.9)' : '';
+                        if (p [4].deg ===  90) transform += ' rotate(90deg)';
+                        if (p [4].deg === -90) transform += ' rotate(-90deg)';
+                        if (p [4].deg === 180) transform += ' rotate(180deg)';
+                        transform = 'transform, -ms-transform, -webkit-transform, -o-transform, -moz-transform: ' + transform + ';';
+                        return ['div', {
+                           class: 'imagecontainer',
+                           style: transform + ' left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
+                        }, [
+                           ['img', B.ev ({
+                              'data-y': p [1] - p [3] - MARGIN,
+                              id: 'pic' + p [4].id,
+                              class: 'pic ' + H.if (selected, 'selected', ''),
+                              src: H.picPath (p [4]),
+                              style: 'width: ' + p [2] + 'px',
+                           }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
+                           ['div', {class: 'imagecaption'}, [
+                              ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],
+                              ['span', {style: 'position: absolute; right: 5px'}, H.dformat (p [4].date)],
+                           ]],
+                           H.if (selected, ['div', {class: 'blueoval'}]),
+                        ]];
                      });
                   });
                });

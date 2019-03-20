@@ -172,13 +172,11 @@ All the routes below require an admin user to be logged in.
 
 ### Todo alpha
 
-- Server
-   - Integrate with ac:ping.
-   - Provision prod server.
-   - Hidden tags.
-
 - Client
-   - rotation: aspect ratio issue, batch without blocking.
+   - rotation:
+      - aspect ratio issue
+      - make it work while image is selected
+      - fix canvas view
    - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - Top bar (Home, Manage, Upload)
    - Add autotag with enter
@@ -187,6 +185,11 @@ All the routes below require an admin user to be logged in.
    - Manage tags.
    - Mark shared & hidden tags always.
    - Show dates in upload mode.
+
+- Server
+   - Integrate with ac:ping.
+   - Provision prod server.
+   - Hidden tags.
 
 ### Todo beta
 
@@ -296,29 +299,52 @@ All the routes below require an admin user to be logged in.
 ## Client Data/State structure
 
 `State.view`: can be `'auth'` or `'main'`.
+
 `State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
+
 `State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
+
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
+
 `State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
+
 `State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
+
 `State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
+
 `State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
+
 `State.autoquery`: `undefined|string`, used to search for tags in the query box.
+
 `State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
+
 `State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
+
 `State.uploadModal`: `undefined|true`, if true, show the upload modal.
+
 `State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
+
 `State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
+
 `State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the `canvas` view.
+
 `State.nextCanvas`: `undefined|PIC`, used to preload the next picture in the `canvas` view.
+
 `State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
+
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
+
 `State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
+
 `State.loading`: true|undefined, to see whether pics are being loaded.
 
-`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added to denote selection of the picture.
+`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added by the client to denote selection of the picture, but that never reaches the server.
+
+`Data.total`: number of pics matched by query. Also comes from `POST /query`.
+
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
-`Data.total`: number of pics matched by query.
+
+`Data.account`: `{username: STRING, email: STRING, type: STRING, created: INT, logs: [{...}, ...], used: [INT, INT]`; the body returned by `GET /account`.
 
 ## Redis structure
 
