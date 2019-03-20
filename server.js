@@ -73,6 +73,7 @@ var notify = function (message) {
    if (type (message) !== 'object') return console.log ('NOTIFY: message must be an object but instead is', message);
    message.environment = ENV || 'local';
    console.log (new Date ().toUTCString (), JSON.stringify (message));
+   if (ENV) fs.appendFile ('templog.log', new Date ().toUTCString () + '\t' + JSON.stringify (message) + '\n', function () {});
 }
 
 // *** SENDMAIL ***
@@ -1572,9 +1573,9 @@ if (cicek.isMaster && ENV) setTimeout (function () {
    });
 }, 3000);
 
-// *** CHECK CONSISTENCY BETWEEN DB, FS AND S3 (DISABLED) ***
+// *** CHECK CONSISTENCY BETWEEN DB, FS AND S3 (ENABLED ON DEV ONLY) ***
 
-if (cicek.isMaster && ENV && false) a.do ([
+if (cicek.isMaster && ENV === 'dev') a.do ([
    [function (s) {
       H.s3list ('', function (error, uploaded) {
          if (error) return notify ({type: 's3/disk matching error', error: error});

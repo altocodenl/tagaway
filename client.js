@@ -74,13 +74,15 @@
    // *** LOGOUT ***
 
    B.listen ('logout', '*', function (x) {
-      c.ajax ('post', 'auth/logout', {}, {});
-      c.cookie (false);
-      B.eventlog = [];
-      B.do (x, 'set', 'State', {});
-      B.do (x, 'set', 'Data',  {});
-      window.State = B.get ('State'), window.Data = B.get ('Data');
-      B.do (x, 'set', ['State', 'view'], 'auth');
+      c.ajax ('post', 'auth/logout', {}, {cookie: document.cookie}, function (error) {
+         if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
+         c.cookie (false);
+         B.eventlog = [];
+         B.do (x, 'set', 'State', {});
+         B.do (x, 'set', 'Data',  {});
+         window.State = B.get ('State'), window.Data = B.get ('Data');
+         B.do (x, 'set', ['State', 'view'], 'auth');
+      });
    });
 
    // *** INITIALIZATION ***
@@ -163,6 +165,10 @@
 
    H.authajax = function (x, m, p, h, b, cb) {
       x = H.from (x, {ev: 'authajax', method: m, path: p, headers: h, body: b});
+      if (m === 'post') {
+         if (type (b, true) === 'FormData') b.append ('cookie', document.cookie);
+         else                               b.cookie = document.cookie;
+      }
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
             B.do (x, 'logout', '*');
@@ -1315,10 +1321,11 @@
 
                date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
 
-               var pich = MAXH, picw = Math.round (pic.dimw / pic.dimh * MAXH);
                if (pic.deg === 90 || pic.deg === -90) {
-                  pich = picw;
-                  picw = MAXH;
+                  var picw = MAXH, pich = Math.round (pic.dimh / pic.dimw * MAXH);
+               }
+               else {
+                  var pich = MAXH, picw = Math.round (pic.dimw / pic.dimh * MAXH);
                }
 
                var bringup = function () {

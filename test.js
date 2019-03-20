@@ -240,6 +240,7 @@ var outro = [
 ];
 
 var main = [
+   ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ttester ('feedback', 'post', 'feedback', {}, [
       ['message', 'string'],
    ]),
