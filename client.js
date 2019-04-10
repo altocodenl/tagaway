@@ -3,8 +3,7 @@
    // *** SETUP ***
 
    var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-   var type = teishi.t, log = teishi.l;
-   var murmur = window.murmur;
+   var type = teishi.t, clog = console.log;
 
    // *** LOGGING ***
 

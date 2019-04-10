@@ -1,4 +1,4 @@
-if (process.argv [2] === 'prod') return console.log ('Tests cannot be run on a PROD environment, dummy!');
+if (process.argv [2]) return console.log ('Tests cannot only be run locally.');
 
 var CONFIG = require ('./config.js');
 var dale   = require ('dale');
@@ -337,7 +337,7 @@ var main = [
    ['upload small picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
-      {type: 'field',  name: 'lastModified', value: new Date ('2018/06/07').getTime ()}
+      {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
@@ -372,12 +372,12 @@ var main = [
    ['upload small picture again', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
-      {type: 'field',  name: 'lastModified', value: new Date ('2018/06/07').getTime ()}
+      {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['upload medium picture', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'medium.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
-      {type: 'field',  name: 'lastModified', value: new Date ('2018/06/03').getTime ()}
+      {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return log ('Invalid payload.');
@@ -412,7 +412,7 @@ var main = [
       if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
       if (rs.body.pics.length !== 1) return log ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
-      if (pic.date !== 1405876831000) return log ('Invalid pic.date');
+      if (pic.date !== 1405880431000) return log ('Invalid pic.date');
       delete pic.date;
       delete pic.dateup;
       delete pic.id;
@@ -517,7 +517,7 @@ var main = [
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       var pic = rs.body.pics [0];
-      if (pic.date !== 1522067014000) return log ('GPS timestamp wasn\'t ignored.');
+      if (pic.date !== 1522070614000) return log ('GPS timestamp wasn\'t ignored.');
       if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return log ('Wrong year tag.');
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
@@ -525,13 +525,13 @@ var main = [
    }],
    dale.do (dale.times (5, 0), function (k) {
       return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
-         var up = Buffer.from (rs.body, 'binary');
+         var up       = Buffer.from (rs.body, 'binary');
          var original = require ('fs').readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
          if (Buffer.compare (up, original) !== 0) return log ('Mismatch between original and uploaded picture!');
          return true;
       }};
    }),
-   ['delete freshly with different date format', 'delete', function (s) {
+   ['delete picture with different date format', 'delete', function (s) {
       return 'pic/' + s.dunkerque;
    }, {}, '', 200],
    ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {

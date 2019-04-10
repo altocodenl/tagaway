@@ -360,6 +360,8 @@ All the routes below require an admin user to be logged in.
 
 - emails (hash): key is email, value is username
 
+- emailtoken:TOKEN (hash): key is token, value is email. Used to verify email addresses.
+
 - invites (hash): key is email, value is {firstName: STRING, token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
 
 - verify (hash): key is token, value is email. Deleted after usage.
@@ -389,7 +391,7 @@ All the routes below require an admin user to be logged in.
    by900: INT or absent,
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
-   xp: INT or absent, number of pics downloaded (also includes cache)
+   xp:  INT or absent, number of pics downloaded (also includes cache)
 
 - pict:ID (set): list of all the tags belonging to a picture.
 

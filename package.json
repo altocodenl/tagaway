@@ -10,7 +10,7 @@
       "redis":   "2.8.0",
       "redport": "0.1.2",
       "teishi":  "3.13.2",
-      "aws-sdk":                  "2.394.0",
+      "aws-sdk":                  "2.424.0",
       "murmurhash":               "0.0.2",
       "nodemailer":               "5.1.1",
       "nodemailer-ses-transport": "1.5.1",
