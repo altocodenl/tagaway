@@ -760,10 +760,15 @@ var main = [
       return true;
    }],
    ['share a tag with a user', 'post', 'share', {}, {tag: '\n bla \t ', who: U [1].username}, 200],
+   ['share another tag with a user', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username}, 200],
    ['get shared tags after', 'get', 'share', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {sho: [[U [1].username, 'bla']], shm: []})) return log ('Invalid body', rs.body);
+      rs.body.sho.sort (function (a, b) {
+         return a [1] > b [1] ? 1 : -1;
+      });
+      if (! eq (rs.body, {sho: [[U [1].username, 'bla'], [U [1].username, 'foo:bar']], shm: []})) return log ('Invalid body', rs.body);
       return true;
    }],
+   ['unshare tag', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username, del: true}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers.cookie};
       return rs.headers.cookie !== undefined;
@@ -933,11 +938,14 @@ var main = [
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return log ('Invalid created field');
       if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return log ('Invalid used field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 42 && rs.body.logs.length !== 43)) return log ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 44 && rs.body.logs.length !== 45)) return log ('Invalid logs.');
       return true;
    }],
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'array') return log ('Invalid body', rs.body);
+      if (type (rs.body) !== 'object') return log ('Invalid body', rs.body);
+      if (rs.body.users !== 1) return log ('Invalid users');
+      if (rs.body.pics !== 0)  return log ('Invalid pics');
+      if (rs.body.bytes !== 0) return log ('Invalid bytes');
       return true;
    }],
 ];

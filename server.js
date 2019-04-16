@@ -794,9 +794,7 @@ var routes = [
    // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES) ***
 
    ['get', 'original/:id', function (rq, rs) {
-
       if (ENV) return reply (rs, 400);
-
       astop (rs, [
          [H.s3get, rq.user.username, rq.data.params.id],
          function (s) {
@@ -808,6 +806,7 @@ var routes = [
    // *** DOWNLOAD PICS ***
 
    ['get', 'pic/:id', function (rq, rs) {
+      if (ENV) return reply (rs, 400);
       astop (rs, [
          [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
          function (s) {
@@ -917,7 +916,7 @@ var routes = [
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
          [Redis, 'hget', 'users:' + rq.user.username, 's3:buse'],
          function (s) {
-            if (s.last !== null && (CONFIG.storelimit [rq.user.type || 'tier1'] || 0) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
+            if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
          [a.stop, [a.set, 'metadata', [k, 'identify', '-format', "'%[*]'", path]], function (s, error) {
@@ -940,6 +939,8 @@ var routes = [
          [H.resizeIf, newpath, 200],
          [H.resizeIf, newpath, 900],
          [H.s3put, rq.user.username, newpath, pic.id],
+         // Delete original image from disk.
+         ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
          function (s) {
             var multi = redis.multi ();
 
@@ -1366,19 +1367,45 @@ var routes = [
 
    ['get', 'admin/stats', function (rq, rs) {
       astop (rs, [
+         [Redis, 'get', 'cachestats'],
+         function (s) {
+            if (s.last !== null) return reply (rs, 200, JSON.parse (s.last));
+            s.next ();
+         },
          [a.set, 'keys', [redis.keyscan, 'st*']],
          function (s) {
             var multi = redis.multi ();
-            dale.do (s.last, function (key) {
+            dale.do (s.keys, function (key) {
                multi [key.match (/^sti/) ? 'get' : 'pfcount'] (key);
             });
             mexec (s, multi);
          },
          function (s) {
-            reply (rs, 200, dale.do (s.last, function (item, k) {
+            s.hits = dale.fil (s.last, undefined, function (item, k) {
+               if (s.keys [k] === 'stp') return;
                return [s.keys [k].slice (4), parseInt (item)];
-            }));
-         }
+            });
+            s.next ();
+         },
+         [redis.keyscan, 'users:*'],
+         function (s) {
+            var multi = redis.multi ();
+            dale.do (s.last, function (key) {
+               multi.hget  (key, 's3:buse');
+               multi.scard ('tag:' + key.replace ('users:', '') + ':all');
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            var output = {hits: s.hits, users: s.last.length / 2, pics: 0, bytes: 0};
+            dale.do (s.last, function (v, k) {
+               if (k % 2 === 0) output.bytes += parseInt (v);
+               else             output.pics  += v;
+            });
+            s.output = output;
+            Redis (s, 'setex', 'cachestats', 60, JSON.stringify (output));
+         },
+         [a.get, reply, rs, 200, '@output'],
       ]);
    }],
 
@@ -1654,8 +1681,9 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
       });
       dale.do (s.pics, function (pic, k) {
          var path = Path.join (H.hash (pic.owner), k.replace ('pic:', ''));
-         if (! s.files [path]) s.missingfs.push (path);
-         delete s.extraneous [path];
+         // Uncomment to keep original pictures in disk.
+         // if (! s.files [path]) s.missingfs.push (path);
+         // delete s.extraneous [path];
       });
       if (dale.keys (s.extraneous).length) notify (a.creat (), {type: 'extraneous files in FS error', n: dale.keys (s.extraneous).length, files: s.extraneous});
       if (s.missingfs.length)              notify (a.creat (), {type: 'missing pics in FS error',     n: s.missingfs.length,            files: s.missingfs});

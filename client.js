@@ -1237,7 +1237,6 @@
          // next row, throughout its width check previous row pictures bottom offset (the max one). Add margin, that's your top offset. For right it is simply margin + the previous in the row, or nothing if first in row.
 
          var rows = [[]];
-
          var MAXH = B.get ('State', 'debug', 'height') || 150, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
 
          return [
@@ -1249,7 +1248,7 @@
                }],
                ['img.pic', {
                   'border-radius': 12,
-                  height: MAXH,
+                  position: 'absolute',
                }],
                ['div.imagecontainer', {
                   position: 'absolute',
@@ -1294,50 +1293,9 @@
                var date = new Date (pic.date - new Date ().getTimezoneOffset () * 60 * 1000);
                date = date.getDate () + '/' + (date.getMonth () + 1) + '/' + date.getFullYear ();
 
-               if (pic.deg === 90 || pic.deg === -90) var dimw = pic.dimh, dimh = pic.dimw;
-               else                                   var dimw = pic.dimw, dimh = pic.dimh;
-
-               var pich = MAXH, picw = Math.round (dimw / dimh * MAXH);
-               var clog = console.log;
-               clog ({picdimw: pic.dimw, picdimh: pic.dimh, dimw: dimw, dimh: dimh, pich: pich, picw: picw});
-
-               var bringup = function () {
-                  if (rows.length === 1) return;
-
-                  // This function brings pictures "up" into gaps that there might be above.
-
-                  var maxyprev = Math.max.apply (null, dale.do (H.last (rows, 2), function (p) {return p [1]}));
-
-                  var rowup = dale.do (H.last (rows), function (p) {
-                     var left = p [0] - p [2] - MARGIN, right = p [0];
-                     var upstairs = dale.fil (H.last (rows, 2), undefined, function (p2) {
-                        if (p2 [0] < p [0] - p [2] - MARGIN) return;
-                        if (p [0] < p2 [0] - p [2] - MARGIN) return;
-                        return p [1] - p [3] - MARGIN - p2 [1];
-                     });
-                     return Math.min.apply (Math, upstairs);
-                  });
-
-                  dale.do (H.last (rows), function (v, k) {
-                     v [1] -= Math.min (rowup [k], OVERLAP);
-                  });
-               }
-
-               var justify = function (lastrow) {
-                  if (! B.get ('State', 'debug', 'justify')) return bringup ();
-                  if (lastrow) return bringup ();
-                  var rightgap = width - MARGIN * (H.last (rows).length - 1);
-                  dale.do (H.last (rows), function (pic) {
-                     rightgap -= pic [2];
-                  });
-                  var justifyoffset = Math.floor (rightgap / (H.last (rows).length - 1));
-                  if (justifyoffset === 0) return;
-                  dale.do (H.last (rows), function (v, k) {
-                     if (k === 0) return;
-                     v [0] += k * justifyoffset;
-                  });
-                  bringup ();
-               }
+               var pich = MAXH;
+               if (pic.deg === 90 || pic.deg === -90) var picw = Math.round (pic.dimh / pic.dimw * MAXH);
+               else                                   var picw = Math.round (pic.dimw / pic.dimh * MAXH);
 
                var x;
 
@@ -1349,7 +1307,6 @@
                }
                else {
                   // If there's not enough room, push the existing row and create a new one. Start at the left.
-                  justify ();
                   rows.push ([]);
                   x = 0;
                }
@@ -1370,29 +1327,39 @@
 
                // [rightmost x including margin, lowest y including margin, width, height, picture, index]
                H.last (rows).push ([x + picw + MARGIN, y + pich + MARGIN, picw, pich, pic, k]);
-
-               if (k === pics.length - 1) justify (true);
             }),
             (function () {
                return dale.do (rows, function (v) {
                   return dale.do (v, function (p) {
                      return B.view (x, ['State', 'selected'], function (x, selected) {
                         selected = (selected || {}) [p [4].id];
-                        var transform = selected ? 'scale(0.9, 0.9)' : '';
-                        if (p [4].deg ===  90) transform += ' rotate(90deg)';
-                        if (p [4].deg === -90) transform += ' rotate(-90deg)';
-                        if (p [4].deg === 180) transform += ' rotate(180deg)';
-                        transform = 'transform, -ms-transform, -webkit-transform, -o-transform, -moz-transform: ' + transform + ';';
+                        var transformOuter = selected ? 'scale(0.9, 0.9)' : '';
+                        var transformInner = '';
+                        if (p [4].deg ===  90) transformInner += ' rotate(90deg)';
+                        if (p [4].deg === -90) transformInner += ' rotate(-90deg)';
+                        if (p [4].deg === 180) transformInner += ' rotate(180deg)';
+                        transformOuter = dale.do (['', '-ms-', 'webkit-', '-o-', '-moz-'], function (k) {
+                           return k + 'transform: ' + transformOuter + ';';
+                        }).join (' ');
+                        transformInner = dale.do (['', '-ms-', 'webkit-', '-o-', '-moz-'], function (k) {
+                           return k + 'transform: ' + transformInner + ';';
+                        }).join (' ');
+                        if (p [4].deg === 90 || p [4].deg === -90) {
+                           var width = MAXH, height = p [2];
+                           transformInner += ' margin-top: '  + (MAXH - p [2]) / 2 + 'px;';
+                           transformInner += ' margin-left: ' + (p [2] - MAXH) / 2 + 'px;';
+                        }
+                        else var width = p [2], height = MAXH;
                         return ['div', {
                            class: 'imagecontainer',
-                           style: transform + ' left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
+                           style: transformOuter + ' left: ' + (p [0] - p [2] - MARGIN) + 'px; top: ' + (p [1] - p [3] - MARGIN) + 'px; width: ' + p [2] + 'px',
                         }, [
                            ['img', B.ev ({
                               'data-y': p [1] - p [3] - MARGIN,
                               id: 'pic' + p [4].id,
                               class: 'pic ' + H.if (selected, 'selected', ''),
                               src: H.picPath (p [4]),
-                              style: 'width: ' + p [2] + 'px',
+                              style: transformInner + ' width: ' + width + 'px; height: ' + height + 'px',
                            }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
                            ['div', {class: 'imagecaption'}, [
                               ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + p [4].tags.length]],

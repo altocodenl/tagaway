@@ -173,18 +173,16 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - rotation:
-      - aspect ratio issue
-      - make it work while image is selected
-      - fix canvas view
    - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
-   - Top bar (Home, Manage, Upload)
+   - show rotated pictures in canvas
+   - fix logout in firefox
    - Add autotag with enter
    - Make remove tags as a button/tag with an integrated cross, with ... for long tags and expand on click
    - Initial view with no pictures
    - Manage tags.
    - Mark shared & hidden tags always.
-   - Show dates in upload mode.
+   - Fix all icons.
+   - Notify & upload visual improvements.
 
 - Server
    - Integrate with ac:ping.
@@ -195,7 +193,6 @@ All the routes below require an admin user to be logged in.
 
 - Admin & deploy
    - Manage payments.
-   - Self host font.
    - Favicon & icons.
    - Report pictures.
    - Security writeup: xss routes with user input (tags, eventually picture titles; image contents are left to browsers but images have to be valid as per imagemagick), cookie as signed token, CSRF prevented by sending cookie (not by headers, https://blog.appsecco.com/exploiting-csrf-on-json-endpoints-with-flash-and-redirects-681d4ad6b31b), s3 encryption, we encrypt the cookie only for distinguishing expired cookie from attack (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786)
@@ -228,6 +225,7 @@ All the routes below require an admin user to be logged in.
 - Organize
    - Mobile/tablet view.
    - Add colors to tags.
+   - Show dates in upload mode.
    - Smaller level of scale to go faster
    - Upload video.
    - Add title (based on title of pic but optional)
@@ -368,7 +366,7 @@ All the routes below require an admin user to be logged in.
 
 - upic:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition.
 
-- upicd:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition when re-uploading files.
+- upicd:USERID (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files.
 
 - thu:ID (string): id of the corresponding pic.
 
@@ -422,6 +420,7 @@ All the routes below require an admin user to be logged in.
 - stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than 10 minutes will be converted from hyperloglog to a string with a counter.
 - stp:A:DATE (hyperloglog or string): unique active users in the last 24 hours. Time is Date.now () divided by 100000. Entries older than a day will be converted from hyperloglog to a string with a counter.
 - stp (set): list of all hyperloglog entries.
+- cachestats (string): stringified object with cache of /admin/stats. Lasts 60 seconds only.
 
 Used by giz:
 
