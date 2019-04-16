@@ -28,8 +28,8 @@ var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var giz    = require ('giz');
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');
-//var redmin = require ('../redmin');
-//redmin.redis = redis;
+var redmin = require ('redmin');
+redmin.redis = redis;
 
 var mailer = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
 var hash   = require ('murmurhash').v3;
@@ -693,6 +693,7 @@ var routes = [
 
       if (rq.method === 'post' && rq.url === '/error')                  return rs.next ();
       if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
+      if (rq.method === 'post' && rq.url === '/redmin')                 return rs.next ();
 
       var ctype = rq.headers ['content-type'] || '', cookie = rq.headers.cookie;
       if (ctype.match (/^multipart\/form-data/i)) {
@@ -1467,7 +1468,15 @@ var routes = [
 
    // *** REDMIN ***
 
-   //['get', 'redmin', reply, redmin.html],
+   ['get', 'redmin', reply, redmin.html ()],
+   ['post', 'redmin', function (rq, rs) {
+      redmin.api (rq.body, function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, data);
+      });
+   }],
+   ['get', 'redmin/client.js',    cicek.file, 'node_modules/redmin/client.js'],
+   ['get', 'redmin/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
 ];
 
