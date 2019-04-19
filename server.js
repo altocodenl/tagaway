@@ -86,12 +86,15 @@ var Redis = function (s, action) {
 
 // *** NOTIFICATIONS ***
 
-var notify = function (s, message) {
+var notify = function (s, message, sync) {
    if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
    message.environment = ENV || 'local';
-   clog (new Date ().toUTCString (), JSON.stringify (message) + '\n');
-   if (ENV) fs.appendFile ('templog.log', new Date ().toUTCString () + '\t' + JSON.stringify (message) + '\n', function () {});
-   s.next ();
+   if (! ENV) {
+      clog (new Date ().toUTCString (), JSON.stringify (message) + '\n');
+      return s.next ();
+   }
+   fs [sync ? 'appendFileSync' : 'appendFile'] ('templog.log', new Date ().toUTCString () + '\t' + JSON.stringify (message) + '\n', sync ? undefined : function () {s.next ()});
+   if (sync) s.next ();
 }
 
 // *** SENDMAIL ***
@@ -606,11 +609,11 @@ var routes = [
          ENV ? [] : [a.get, reply, rs, 200, {token: '@token'}],
          [a.set, 'user', [a.get, Redis, 'hgetall', 'users:@username']],
          function (s) {
-            sendmail ({
+            sendmail (s, {
                to1:     s.user.username,
                to2:     s.user.email,
                subject: CONFIG.etemplates.recover.subject,
-               message: CONFIG.etemplates.recover.message (user.username, token)
+               message: CONFIG.etemplates.recover.message (s.user.username, s.token)
             });
          },
          [reply, rs, 200],
@@ -639,7 +642,7 @@ var routes = [
          }],
          [a.set, 'user', [Redis, 'hgetall', 'users:' + b.username]],
          ! ENV ? [] : function (s) {
-            sendmail ({
+            sendmail (s, {
                to1:     s.user.username,
                to2:     s.user.email,
                subject: CONFIG.etemplates.reset.subject,
@@ -1508,9 +1511,13 @@ cicek.apres = function (rs) {
 
 cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
-
-   if (message [1] === 'Invalid signature in cookie') notify (a.creat (), {type: 'cookie signature error', error: message [2]});
-   else notify (a.creat (), {type: 'server error', from: cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id, subtype: message [1], error: message [2]});
+   if (message [1] === 'Invalid signature in cookie') return notify (a.creat (), {type: 'cookie signature error', error: message [2]});
+   notify (a.creat (), {
+      type: 'server error',
+      subtype: message [1],
+      from: cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+      error:   message [2]
+   }, ! cicek.isMaster);
 }
 
 cicek.cluster ();
