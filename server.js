@@ -196,7 +196,7 @@ H.hash = function (string) {
    return hash (string) + '';
 }
 
-H.isYear = function (tag) {
+H.isyear = function (tag) {
    return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
 }
 
@@ -206,7 +206,7 @@ H.mkdirif = function (s, path) {
    });
 }
 
-H.resizeIf = function (s, path, Max) {
+H.resizeif = function (s, path, Max) {
    a.stop (s, [
       [H.size, path],
       function (s) {
@@ -326,7 +326,7 @@ H.stat = function (s, name, pf, n) {
    });
 }
 
-H.deletePic = function (s, id, username) {
+H.deletepic = function (s, id, username) {
    a.stop (s, [
       [function (s) {
          var multi = redis.multi ();
@@ -746,7 +746,7 @@ var routes = [
          [a.make (giz.destroy), rq.user.username],
          function (s) {
             a.fork (s, s.data [0], function (pic) {
-               return [H.deletePic, pic, rq.user.username];
+               return [H.deletepic, pic, rq.user.username];
             }, {max: 5});
          },
          function (s) {
@@ -888,7 +888,7 @@ var routes = [
          if (type (tag) !== 'string') return error = teishi.s (tag);
          tag = H.trim (tag);
          if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
-         if (H.isYear (tag)) error = tag;
+         if (H.isyear (tag)) error = tag;
          return tag;
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
@@ -940,8 +940,8 @@ var routes = [
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
          [a.make (fs.unlink), path],
-         [H.resizeIf, newpath, 200],
-         [H.resizeIf, newpath, 900],
+         [H.resizeif, newpath, 200],
+         [H.resizeif, newpath, 900],
          [H.s3put, rq.user.username, newpath, pic.id],
          // Delete original image from disk.
          ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
@@ -1002,7 +1002,7 @@ var routes = [
 
    ['delete', 'pic/:id', function (rq, rs) {
       a.stop ([
-         [H.deletePic, rq.data.params.id, rq.user.username],
+         [H.deletepic, rq.data.params.id, rq.user.username],
          [reply, rs, 200],
       ], function (s, error) {
          error === 'nf' ? reply (rs, 404) : reply (rs, 500, {error: error});
@@ -1088,7 +1088,7 @@ var routes = [
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (H.isyear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       var multi = redis.multi (), seen = {};
       dale.do (b.ids, function (id) {
@@ -1114,7 +1114,7 @@ var routes = [
                var id = b.ids [k / 2];
 
                var extags = dale.acc (s.last [k + 1], 0, function (a, b) {
-                  return a + (H.isYear (b) ? 0 : 1);
+                  return a + (H.isyear (b) ? 0 : 1);
                });
 
                if (b.del) {
@@ -1192,7 +1192,7 @@ var routes = [
 
       //{tag1: [USERID], ...}
       var tags = dale.obj (b.tags, function (tag) {
-         if (! H.isYear (tag)) return [tag, [rq.user.username]];
+         if (! H.isyear (tag)) return [tag, [rq.user.username]];
          ytags.push (tag);
       });
 
@@ -1313,7 +1313,7 @@ var routes = [
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isYear (b.tag))                           return reply (rs, 400, {error: 'tag'});
+      if (H.isyear (b.tag))                           return reply (rs, 400, {error: 'tag'});
       if (b.who === rq.user.username)                 return reply (rs, 400, {error: 'self'});
 
       astop (rs, [

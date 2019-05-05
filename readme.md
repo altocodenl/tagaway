@@ -183,9 +183,11 @@ All the routes below require an admin user to be logged in.
    - Mark shared & hidden tags always.
    - Fix all icons.
    - Notify & upload visual improvements.
+   - Views.auth visual improvements
+   - Views.notify visual improvements
 
 - Server
-   - Integrate with ac:ping.
+   - Integrate with notification tools.
    - Provision prod server.
    - Hidden tags.
 
@@ -333,6 +335,8 @@ All the routes below require an admin user to be logged in.
 `State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
 
 `State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
+
+`State.slider`: true|false|undeined. If no pictures selected, falsy is all tags, truthy is selected tags. If pictures are selected, falsy is add tags, truthy is remove tags.
 
 `State.loading`: true|undefined, to see whether pics are being loaded.
 

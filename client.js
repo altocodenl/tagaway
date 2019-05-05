@@ -26,8 +26,7 @@
       console.log.apply (console, toprint);
    });
 
-   B.prod = true;
-
+   B.prod      = true;
    //B.verbose = true;
 
    // *** ERROR REPORTING ***
@@ -49,25 +48,68 @@
 
    B.listen ('change', 'hash', function (x) {
       var path = window.location.hash.replace ('#/', '').split ('/');
-      if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token = path [2];
-      if (path [0] === 'auth' && path [1] === 'reset' && path [2])  State.token = path [2];
-      if (path [0] === 'auth' && path [1] === 'reset' && path [3])  State.username = path [3];
-      if (path [0] === 'auth' && path [1] === 'login' && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using ac:pic!');
+      if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token    = path [2];
+      if (path [0] === 'auth' && path [1] === 'reset'  && path [2]) State.token    = path [2];
+      if (path [0] === 'auth' && path [1] === 'reset'  && path [3]) State.username = path [3];
+      if (path [0] === 'auth' && path [1] === 'login'  && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using ac:pic!');
       B.do (x, 'set', ['State', 'view'],    path [0]);
       B.do (x, 'set', ['State', 'subview'], path [1]);
    });
 
-   B.listen ('change', ['State', '*'], function (x) {
-      if (x.path [1] !== 'view' && x.path [1] !== 'subview') return;
+   B.listen ('change', ['State', /view|subview/], function (x) {
       var view = B.get ('State', 'view');
-      var cookie = c.cookie () ? c.cookie () [COOKIENAME] : undefined;
+      var cookie = c.cookie () [COOKIENAME];
       if (! cookie && view !== 'auth') return B.do (x, 'set', ['State', 'view'], 'auth');
       if (cookie   && view !== 'main') return B.do (x, 'set', ['State', 'view'], 'main');
       window.location.hash = ['#', B.get ('State', 'view'), B.get ('State', 'subview')].join ('/');
    });
 
-   window.addEventListener ('hashchange', function () {
-      B.do ({from: {ev: 'hashchange'}}, 'change', 'hash')
+   // *** INITIALIZATION ***
+
+   c.ready (function () {
+      B.do ({from: {ev: 'ready'}}, 'change', 'hash');
+      B.mount ('body', Views.base ({from: {ev: 'ready'}}));
+
+      window.addEventListener ('hashchange', function () {
+         B.do ({from: {ev: 'hashchange'}}, 'change', 'hash')
+      });
+
+      document.onscroll = function (e) {
+         B.do ({from: {ev: 'onscroll'}}, 'document', 'scroll', e);
+      }
+
+      window.onresize = function (e) {
+         B.do ({from: {ev: 'onresize'}}, 'change', ['State', 'subview']);
+         B.do ({from: {ev: 'onresize'}}, 'change', ['State', 'notify']);
+         B.do ({from: {ev: 'onresize'}}, 'change', ['State', 'canvas']);
+      }
+
+      document.onbeforeunload = function () {
+         var q = B.get ('State', 'upload', 'queue');
+         if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
+      }
+
+      dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
+         document.addEventListener (v, function () {
+            if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
+               B.do ({ev: 'onkeydown', key: 27}, 'rem', 'State', 'canvas');
+            }
+         });
+      });
+
+      document.onkeydown = function (e) {
+         e = e || document.event;
+         if (e.keyCode === 16) B.do ({ev: 'onkeydown', key: 16}, 'set', ['State', 'shift'], true);
+         if (e.keyCode === 17) B.do ({ev: 'onkeydown', key: 17}, 'set', ['State', 'ctrl'],  true);
+         if (e.keyCode === 37) B.do ({ev: 'onkeydown', key: 37}, 'canvas', 'prev');
+         if (e.keyCode === 39) B.do ({ev: 'onkeydown', key: 39}, 'canvas', 'next');
+      };
+
+      document.onkeyup = function (e) {
+         e = e || document.event;
+         if (e.keyCode === 16) B.do ({ev: 'onkeyup', key: 16}, 'set', ['State', 'shift'], false);
+         if (e.keyCode === 17) B.do ({ev: 'onkeyup', key: 17}, 'set', ['State', 'ctrl'],  false);
+      };
    });
 
    // *** LOGOUT ***
@@ -84,63 +126,32 @@
       });
    });
 
-   // *** INITIALIZATION ***
-
-   c.ready (function () {
-      B.do ({from: {ev: 'ready'}}, 'change', 'hash');
-      B.mount ('body', Views.base ({from: {ev: 'ready'}}));
-      document.onscroll = function (e) {
-         B.do ({from: {ev: 'onscroll'}}, 'document', 'scroll', e);
-      }
-      window.onresize = function (e) {
-         B.do ({from: {ev: 'onresize'}}, 'change', ['State', 'subview']);
-         B.do ({from: {ev: 'onresize'}}, 'change', ['State', 'canvas']);
-      }
-      window.onbeforeunload = function () {
-         var q = B.get ('State', 'upload', 'queue');
-         if (q && q.length > 0) return 'Refreshing the page will stop the upload process. Are you sure?';
-      }
-      dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
-         document.addEventListener (v, function () {
-            if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
-               B.do ({ev: 'onkeydown', key: 27}, 'rem', 'State', 'canvas');
-            }
-         });
-      });
-      document.onkeydown = function (e) {
-         e = e || window.event;
-         if (e.keyCode === 16) B.do ({ev: 'onkeydown', key: 16}, 'set', ['State', 'shift'], true);
-         if (e.keyCode === 17) B.do ({ev: 'onkeydown', key: 17}, 'set', ['State', 'ctrl'],  true);
-         if (e.keyCode === 37) B.do ({ev: 'onkeydown', key: 37}, 'canvas', 'prev');
-         if (e.keyCode === 39) B.do ({ev: 'onkeydown', key: 39}, 'canvas', 'next');
-      };
-      document.onkeyup = function (e) {
-         e = e || window.event;
-         if (e.keyCode === 16) B.do ({ev: 'onkeyup', key: 16}, 'set', ['State', 'shift'], false);
-         if (e.keyCode === 17) B.do ({ev: 'onkeyup', key: 17}, 'set', ['State', 'ctrl'],  false);
-      };
-   });
-
    // *** HELPERS ***
 
    var H = window.H = {};
 
    H.css = {
-      blue:  '#4562FF',
-      gray1: '#3A3A3A',
-      gray2: '#484848',
-      gray3: '#8B8B8B',
-      gray4: '#DEDEDE',
-      gray5: '#F2F2F2',
-      gray6: '#FBFBFB',
-      tagc0: '#FECB5F',
-      tagc1: '#BE5764',
-      tagc2: '#5DE3C2',
-      tagc3: '#8B572A',
-      tagc4: '#6B6DF9',
-      tagc5: '#FA7E5C',
-      tagc6: '#4EDEF8',
-      font: 'Montserrat, sans-serif',
+      highlight: '#5B6EFF',
+      neutral:   '#D8EEFF',
+      selection: '#FFECCC',
+      add:       '#CFEFDD',
+      remove:    '#FFD3D3',
+      good:      '#87D7AB',
+      bad:       '#FC201F',
+      gray1:     '#3A3A3A',
+      gray2:     '#484848',
+      gray3:     '#8B8B8B',
+      gray4:     '#DEDEDE',
+      gray5:     '#F2F2F2',
+      gray6:     '#FBFBFB',
+      tagc0:     '#FECB5F',
+      tagc1:     '#BE5764',
+      tagc2:     '#5DE3C2',
+      tagc3:     '#8B572A',
+      tagc4:     '#6B6DF9',
+      tagc5:     '#FA7E5C',
+      tagc6:     '#4EDEF8',
+      font:      'Montserrat, sans-serif',
    }
 
    H.icons = {
@@ -178,13 +189,13 @@
       });
    }
 
-   H.picPath = function (pic, size) {
+   H.picpath = function (pic, size) {
       if (! size && pic.t200) return 'thumb/' + pic.t200;
       if (pic.t900) return 'thumb/' + pic.t900;
       return 'pic/' + pic.id;
    }
 
-   H.fullScreen = function (x, exit) {
+   H.fullscreen = function (x, exit) {
       // https://www.sitepoint.com/use-html5-full-screen-api/
       // https://stackoverflow.com/a/10082234
       if (! exit) {
@@ -206,9 +217,8 @@
          }
       }
       setTimeout (function () {
-         B.do (H.from (x, {ev: 'fullScreen'}), 'set', ['State', 'screen'], {w: window.innerWidth, h: window.innerHeight});
+         B.do (H.from (x, {ev: 'fullscreen'}), 'set', ['State', 'screen'], {w: window.innerWidth, h: window.innerHeight});
       }, 50);
-
    }
 
    H.spaceh = function (cols) {
@@ -221,7 +231,7 @@
       return number * (lineHeight || TYPELINEHEIGHT) + 'rem';
    }
 
-   H.fontSize = function (value, ratio, base) {
+   H.fontsize = function (value, ratio, base) {
       var TYPEBASE = 1, TYPERATIO = 1.2;
       return Math.pow (ratio || TYPERATIO, value) * (base || TYPEBASE) + 'rem';
    }
@@ -238,8 +248,23 @@
       return H.zp (d.getUTCDate ()) + '/' + H.zp (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
    }
 
-   H.isYear = function (tag) {
+   H.isyear = function (tag) {
       return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
+   }
+
+   H.style = function (a, b) {
+      var output = arguments.length === 2 ? arguments [0] : {};
+      output.style = '';
+      dale.do (arguments [arguments.length - 1], function (v, k) {
+         if (! v && v !== 0) return;
+         var typeV = type (v);
+         if (typeV === 'integer' && (v < 0 || v > 1)) v += 'px';
+         if (typeV === 'float' || v === 1) v = (v * 100) + '%';
+         dale.do (k.split (/,\s*/), function (v2) {
+            output.style += v2 + ':' + v + ';';
+         });
+      });
+      return output;
    }
 
    // *** VIEWS ***
@@ -249,67 +274,35 @@
    Views.base = function (x) {
       return B.view (x, ['State', 'view'], function (x, view) {
          return [
+            Views.notify (x),
+            Views [view] ? Views [view] (x) : [],
             ['style', [
                ['html', {
-                  'font-size': H.fontSize (0.5),
+                  'font-size': H.fontsize (0.5),
                   'font-family': 'Montserrat, sans-serif',
                }],
                ['h1', {
-                  'font-size':     H.fontSize (3),
+                  'font-size':     H.fontsize (3),
                   'margin-bottom': H.spacev (2),
                   'margin-top':    H.spacev (1),
                }],
                ['h2', {
-                  'font-size':     H.fontSize (3),
+                  'font-size':     H.fontsize (3),
                   'margin-bottom': H.spacev (1),
                   'margin-top':    H.spacev (0.5),
                }],
                ['h5', {
-                  'font-size': H.fontSize (-1.5),
+                  'font-size': H.fontsize (-1.5),
                }],
-               ['.gray1', {color: H.css.gray1}],
-               ['.gray2', {color: H.css.gray2}],
-               ['.gray3', {color: H.css.gray3}],
-               ['.gray4', {color: H.css.gray4}],
-               ['.gray5', {color: H.css.gray5}],
-               ['.gray6', {color: H.css.gray6}],
-               ['button.button', {
-                  cursor: 'pointer',
-                  'font-family': 'Montserrat, sans-serif',
-                  'background-color': H.css.blue,
-                  color: 'white',
-                  border: 'none',
-                  'font-weight': 'bold',
-                  'border-radius': 25,
-                  'padding-top': 8,
-                  'padding-bottom': 9,
-                  'padding-left': 12,
-                  'padding-right': 13
+               ['p', {
+                  'font-size': H.fontsize (-1),
                }],
                ['.bold', {
                   'font-weight': 'bold',
                }],
-               ['.float', {float: 'left',}],
+               ['.float',  {float: 'left'}],
                ['.floatr', {float: 'right'}],
-               ['p', {
-                  'font-size': H.fontSize (-1),
-               }],
-               ['.pointer', {
-                  cursor: 'pointer',
-               }],
-               ['i.inline', {
-                  'margin-right': 5,
-               }],
-               ['input', {
-                  height: 41,
-                  'border-radius': 20,
-                  border: 0,
-                  'background-color': H.css.gray5,
-                  'padding-left': 16,
-                  'line-height': 0.7,
-                  'font-family': H.css.font,
-                  'font-size': H.fontSize (-1),
-               }],
+               ['.pointer', {cursor: 'pointer'}],
                dale.do (['::-webkit-input-placeholder', '::-moz-placeholder', ':-ms-input-placeholder', ':-moz-placeholder'], function (v) {
                   return [v, {
                      'font-style': 'italic',
@@ -318,21 +311,10 @@
                ['input:focus, select:focus, textarea:focus, button:focus', {
                   outline: 'none',
                }],
-               ['a.logout i', {
-                  'font-size': H.fontSize (1.4),
-                  'font-weight': 'bold',
-                  color: H.css.blue,
-               }],
-               ['.logo', {
-                  'font-family': '\'Kadwa\', serif',
-                  'font-weight': 'bold',
-                  'font-size': H.fontSize (2.5),
-               }],
+               dale.fil (H.css, undefined, function (v, k) {
+                  if (v.match (/^#/)) ['.' + k, {color: v}];
+               }),
             ]],
-            //Views.topbar (x),
-            Views.canvas (x),
-            Views.notify (x),
-            H.if (Views [view], Views [view] (x)),
          ];
       });
    }
@@ -352,24 +334,21 @@
          if (! notify) return;
          var colormap = {red: '#ff0033'};
          return [
-            ['style', [
-               ['div.notify', {
-                  position: 'fixed',
-                  'bottom, left': 0,
-                  margin: '0 auto',
-                  color: 'white',
-                  border: 'solid 4px ' + (colormap [notify.color] || notify.color),
-                  'background-color': '#333333',
-                  height: '1.6em',
-                  width: 1,
-                  'z-index': '2',
-                  padding: '0.5em',
-                  opacity: notify ? 1 : 0,
-                  'text-align': 'center',
-                  'font-size': H.fontSize (1),
-               }]
-            ]],
-            ['div', B.ev ({class: 'notify'}, ['onclick', 'rem', 'State', 'notify']), notify.message],
+            ['div', B.ev (H.style ({
+               position: 'fixed',
+               'bottom, left': 0,
+               margin: '0 auto',
+               color: 'white',
+               border: 'solid 4px ' + (colormap [notify.color] || notify.color),
+               'background-color': '#333333',
+               height: '1.6em',
+               width: 1,
+               'z-index': '2',
+               padding: '0.5em',
+               opacity: notify ? 1 : 0,
+               'text-align': 'center',
+               'font-size': H.fontsize (1),
+            }), ['onclick', 'rem', 'State', 'notify']), notify.message],
          ];
       });
    }
@@ -483,43 +462,56 @@
          } [subview];
 
          return [
-            ['style', [
-               ['label', {display: 'inline-block'}],
-               ['a.blue', {color: 'blue'}],
-               ['form', {
-                  width: H.spaceh (20),
-                  'margin-left': H.spaceh (5),
-               }],
-               ['fieldset', {
-                  width: H.spaceh (16),
-               }],
-               ['legend', {
-                  'font-size': H.fontSize (1.3),
-               }],
-               ['label', {
-                  width: H.spaceh (3),
-               }],
-            ]],
-            ['form', {onsubmit: 'event.preventDefault ()'}, [
-               ['fieldset', [
-                  ['legend', {class: 'bold'}, {login: 'Login', signup: 'Sign in', recover: 'Recover password', reset: 'Reset password'} [subview]],
+            ['form', H.style ({onsubmit: 'event.preventDefault ()'}, {
+               width:         H.spaceh (20),
+               'margin-left': H.spaceh (5),
+            }), [
+               ['fieldset', H.style ({width: H.spaceh (16)}), [
+                  ['legend', H.style ({class: 'bold'}, {'font-size': H.fontsize (1.3)}), {login: 'Login', signup: 'Sign in', recover: 'Recover password', reset: 'Reset password'} [subview]],
                   ['br'],
                   dale.do (fields, function (V) {
                      var v = V.toLowerCase ();
                      return ['div', [
-                        ['label', {class: 'bold', for: 'auth-' + v}, V],
-                        ['input', {id:  'auth-' + v, type: (v === 'password' || v === 'confirm') ? 'password' : 'text', placeholder: v}],
+                        ['label', H.style ({class: 'bold', for: 'auth-' + v}, {
+                           display: 'inline-block',
+                           width:   H.spaceh (3),
+                        }), V],
+                        ['input', H.style ({
+                           id: 'auth-' + v,
+                           type: (v === 'password' || v === 'confirm') ? 'password' : 'text',
+                           placeholder: v
+                        }, {
+                           height: 41,
+                           'border-radius': 20,
+                           border: 0,
+                           'background-color': H.css.gray5,
+                           'padding-left': 16,
+                           'line-height': 0.7,
+                           'font-family': H.css.font,
+                           'font-size': H.fontsize (-1),
+                        })],
                         ['br'], ['br'],
                      ]];
                   }),
                   ['div', [
-                     ['button', B.ev ({class: 'button'}, ['onclick', 'submit', (subview === 'login' || subview === 'signup') ? 'auth' : subview || 'auth']), 'Submit'],
+                     ['button', B.ev (H.style ({
+                        'background-color': H.css.highlight,
+                        cursor: 'pointer',
+                        color: 'white',
+                        border: 'none',
+                        'font-weight': 'bold',
+                        'border-radius':  25,
+                        'padding-top':    8,
+                        'padding-bottom': 9,
+                        'padding-left':   12,
+                        'padding-right':  13
+                     }), ['onclick', 'submit', (subview === 'login' || subview === 'signup') ? 'auth' : subview || 'auth']), 'Submit'],
                      ['br'], ['br'],
                      subview === 'login' ? [
-                        ['a', {class: 'bold blue', href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.'],
+                        ['a', {class: 'bold', href: '#/auth/signup'}, 'Don\'t have an account yet? Create one.'],
                         ['br'], ['br'],
-                        ['a', {class: 'bold blue', href: '#/auth/recover'}, 'Forgot your password?'],
-                     ] : ['a', {class: 'bold blue', href: '#/auth/login'},  'Already have an account? Log in.'],
+                        ['a', {class: 'bold', href: '#/auth/recover'}, 'Forgot your password?'],
+                     ] : ['a', {class: 'bold', href: '#/auth/login'},  'Already have an account? Log in.'],
                   ]]
                ]]
             ]]
@@ -570,51 +562,124 @@
          if (['browse', 'upload', 'tags', 'account'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'browse');
          if (! B.get ('Data', 'account')) B.do (x, 'retrieve', 'account');
       }}, function (x, subview) {
-         return Views [subview] ? Views [subview] (x) : undefined;
+         if (window.innerWidth < 1024 && window.innerWidth < window.innerHeight) return ['div', H.style ({
+            'width, height': 1,
+            'background-color': 'white',
+            padding: 20,
+            filter: 'invert(100%)',
+         }), [
+            ['h3', {class: 'logo'}, [
+               ['span', H.style ({color: H.css.highlight}),                                  'ac:'],
+               ['span', H.style ({color: H.css ['tagc' + Math.floor (Math.random () * 8)]}), 'pic'],
+            ]],
+            ['p', 'Please turn your device sideways :)'],
+         ]];
+         return [
+            Views.topbar (x),
+            Views.canvas (x),
+            Views [subview] ? Views [subview] (x) : [],
+         ];
       });
+   }
+
+   // *** TOP BAR ***
+
+   Views.topbar = function (x) {
+      var mobile = window.innerWidth < 1024;
+      return [
+         ['div', H.style ({
+            width: 1,
+            height: 50,
+            'padding-left': H.spaceh (1),
+            'padding-top':  H.spacev (0.5),
+            position: 'fixed',
+            'z-index': '2',
+            'background-color': 'white',
+         }), [
+            ['div', H.style ({class: 'float'}, {width: H.spaceh (mobile ? 15 : 9)}), [
+               ['h3', H.style ({margin: 0}), [
+                  ['span', H.style ({color: H.css.highlight}),                                  'ac:'],
+                  ['span', H.style ({color: H.css ['tagc' + Math.floor (Math.random () * 8)]}), 'pic'],
+               ]],
+            ]],
+            ['div', H.style ({class: 'float'}, {width: H.spaceh (mobile ? 13 : 24)}), [
+               ['style', ['div.nav span', {
+                  cursor: 'pointer',
+                  'margin-right': H.spaceh (0.5),
+                  'font-size': H.fontsize (-1),
+               }]],
+               ['span', B.ev (H.if (B.get ('State', 'subview') === 'browse', H.style ({color: H.css.highlight}), {}), ['onclick', 'set', ['State', 'subview'], 'browse']), 'Pictures'],
+               ['span', B.ev (H.if (B.get ('State', 'subview') === 'tags',   H.style ({color: H.css.highlight}), {}), ['onclick', 'set', ['State', 'subview'], 'tags']), 'Tags'],
+            ]],
+            ['div', H.style ({class: 'float'}, {width: H.spaceh (mobile ? 11 : 6)}), [
+               ['div', {class: 'account float'}, [
+                  ['style', ['div.account i', {
+                     display: 'inline-block',
+                     'margin-top, margin-right': 10,
+                  }]],
+                  ['span', H.style ({class: 'bold'}, {'margin-left': 8, 'font-size': H.fontsize (-0.8)}), [
+                     ['i', B.ev ({title: 'Log Out', class: 'pointer ion-log-out'}, ['onclick', 'logout', '*'])],
+                     ['i', {onclick: 'alert ("Coming soon!")', title: 'Account', class: 'pointer ion-android-person'}],
+                  ]],
+               ]],
+               ['div', B.ev ({class: 'upload float pointer'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [
+                  ['i', {class: 'ion-ios-plus-outline'}],
+                  ['span', 'Upload'],
+               ]],
+            ]],
+         ]],
+         ['style', [
+            ['div.upload', {
+               height: 32,
+               'line-height': 32,
+               'background-color': H.css.highlight,
+               color: 'white',
+               border: 'none',
+               'font-weight': 'bold',
+               'border-radius': 25,
+               'display': 'flex',
+               'align-items': 'center',
+               'justify-content': 'center',
+               'font-size': H.fontsize (-1.5),
+               width: 91,
+               padding: 3,
+               display: 'inline-flex',
+               'align-items': 'flex-end',
+            }, [
+               ['i', {
+                  margin: 0,
+                  'margin-right': 5,
+                  color: 'white',
+                  'font-weight': 'bold',
+                  'font-size': H.fontsize (1),
+                  'vertical-align': 'baseline',
+               }],
+            ]],
+         ]],
+      ];
    }
 
    // *** BROWSE VIEW ***
 
    Views.browse = function (x) {
       var mobile = window.innerWidth < 1024;
-      if (mobile && window.innerWidth < window.innerHeight) return [
-         ['div', {style: 'padding: ' + H.spaceh (1)}, [
-            ['h2', {class: 'logo-container'}, [
-                ['span', {class: 'logo', style: 'color: ' + H.css.tagc4}, 'ac:'],
-                ['span', {class: 'logo', style: 'color: ' + H.css.tagc1}, 'pic'],
-            ]],
-            ['p', 'Please turn your device sideways :)'],
-         ]]
-      ];
       return [
          ['style', [
             ['div.left', {
+               'margin-top': 50,
                position: 'fixed',
                'margin-left': H.spaceh (1),
+               width:         H.spaceh (mobile ? 14 : 8),
                height: 1,
-               'overflow-y': 'auto',
+               'border-top': 'solid 1px ' + H.css.gray5,
             }],
             ['div.center', {
-               'margin-left': H.spaceh (9),
-               width: H.spaceh (28),
+               'margin-top': 50,
+               'margin-left': H.spaceh (mobile ? 15 : 9),
+               width: H.spaceh (mobile ? 22 : 28),
                padding: H.spaceh (1),
+               'border-top, border-left': 'solid 1px ' + H.css.gray5,
             }],
-            ['button.upload', {
-               'font-size': H.fontSize (-1.5),
-               position: 'absolute',
-               top: H.spacev (1),
-               right: H.spaceh (1),
-               'width': 120,
-            }, [
-               ['i', {
-                  'margin-right': 5,
-                  color: 'white',
-                  'font-weight': 'bold',
-                  'font-size': H.fontSize (1),
-                  'vertical-align': 'baseline',
-               }],
-            ]],
             ['div.loading', {
                position: 'fixed',
                bottom: 25,
@@ -633,15 +698,16 @@
             ['ul.tags', {
                'list-style-type': 'none',
                padding: 0,
+               margin: 0,
             }, [
                ['li', {
                   cursor: 'pointer',
-                  'font-size': H.fontSize (-1),
+                  'font-size': H.fontsize (-1),
                   'font-weight': 'bold',
                   //color: H.css.gray2,
                   position: 'relative',
                   width: 0.8,
-                  'padding-left, padding-right': 0.10,
+                  'padding-left, padding-right': 24,
                }],
                ['li.selected', {
                   color: H.css.gray1,
@@ -665,7 +731,7 @@
                ['i', {
                   position: 'absolute',
                   left: H.spaceh (6),
-                  'font-size': H.fontSize (1.5),
+                  'font-size': H.fontsize (1.5),
                   top: 10,
                }],
             ]],
@@ -674,27 +740,18 @@
             if (loading) return ['div', {class: 'loading'}, 'loading...'];
          }),
          ['div', {class: 'left'}, [
-            B.view (x, ['State', 'selected'], {tag: 'style'}, function (x, selected) {
-               selected = dale.keys (selected || {}).length > 0;
-               return lith.css.g (['div.left', {
-                  'background-color': selected ? H.css.gray2 : H.css.gray6,
-                  padding:            selected ? H.spaceh (0.5) : 0,
-                  width:              selected ? H.spaceh (7) : H.spaceh (8),
-               }]);
-            }),
             Views.query  (x),
             Views.manage (x),
          ]],
          ['div', {class: 'center float'}, [
             ['div', {class: 'centertop'}, [
-               ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'uploadModal'], true]), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],
                B.view (x, ['State', 'selected'], function (x, selected) {
                   return B.view (x, ['State', 'query', 'tags'], function (x, qtags) {
                      return B.view (x, ['Data', 'tags'], function (x, tags) {
                         return B.view (x, ['Data', 'total'], function (x, total) {
                            total = total || 0;
-                           var style = {class: 'gray2', style: 'margin-top: 0.5rem; margin-bottom: 1.5rem'};
-                           if (! qtags || qtags.length === 0)        return ['h1', style, 'All Photos (' + total  + ')'];
+                           var style = H.style ({class: 'gray2'}, {'margin-top': '0.5rem', 'margin-bottom': '1.5rem'});
+                           if (! qtags || qtags.length === 0)        return ['h1', style, 'All Pictures (' + total  + ')'];
                            else if (teishi.eq (['untagged'], qtags)) return ['h1', style, 'Untagged (' + total + ')'];
                            else if (qtags.length === 1)              return ['h1', style, qtags [0] + ' (' + total + ')'];
                            else                                      return ['h1', style, 'Multiple tags (' + total + ')'];
@@ -748,15 +805,8 @@
    // *** QUERY VIEW ***
 
    Views.query = function (x) {
-      return B.view (x, ['State', 'query'], {ondraw: function (x) {
-         if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-         if (! B.get ('State', 'refreshQuery')) {
-            B.do (x, 'set', ['State', 'refreshQuery'], setInterval (function () {
-               var queue = B.get ('State', 'upload', 'queue');
-               if (queue && queue.length > 0) B.do (H.from (x, {from: {ev: 'refreshQuery'}}), 'retrieve', 'pics');
-            }, 1000));
-         }
-      }, listen: [
+      var mobile = window.innerWidth < 1024;
+      var routes = [
          ['change', ['State', 'query'], function (x) {
             var untaggedIndex = (B.get ('State', 'query', 'tags') || []).indexOf ('untagged');
             if (untaggedIndex !== -1 && B.get ('State', 'query', 'tags').length > 1) return B.do (x, 'rem', ['State', 'query', 'tags'], untaggedIndex);
@@ -770,57 +820,96 @@
                el.innerHTML = H.icons.tag (color);
             });
          }],
-      ]}, function (x, query) {
+      ];
+      return B.view (x, ['State', 'query'], {listen: routes, ondraw: function (x) {
+         if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
+         if (! B.get ('State', 'refreshQuery')) {
+            B.do (x, 'set', ['State', 'refreshQuery'], setInterval (function () {
+               var queue = B.get ('State', 'upload', 'queue');
+               if (queue && queue.length > 0) B.do (H.from (x, {from: {ev: 'refreshQuery'}}), 'retrieve', 'pics');
+            }, 1000));
+         }
+      }}, function (x, query) {
          if (! query) return;
          return B.view (x, ['Data', 'pics'], function (x, pics) {
             return B.view (x, ['State', 'selected'], function (x, selected) {
-               if (! pics || dale.keys (selected).length > 0) return;
+               var selected = dale.keys (selected).length;
                return [
-                  ['h2', {class: 'logo-container'}, [
-                      ['span', {class: 'logo', style: 'color: ' + H.css.tagc4}, 'ac:'],
-                      ['span', {class: 'logo', style: 'color: ' + H.css.tagc1}, 'pic'],
-                  ]],
-                  ['style', [
-                     ['.blueside', {
-                        'position': 'relative',
-                     }],
-                     ['.blueside div.blueside', {
-                        height: 1,
-                        'position': 'absolute',
-                        left: H.spaceh (-0.35),
-                        'border-left': 'solid 3px ' + H.css.blue,
-                     }],
-                     ['.profile', {
-                        'width, height': 30,
-                        'font-size': 30,
-                        'border-radius': 0.5,
-                     }],
-                     ['span.action', {
-                        color: H.css.blue,
-                        'font-weight': 'bold',
-                        cursor: 'pointer',
-                     }],
-                  ]],
-                  B.view (x, ['Data', 'account'], {attrs: {style: 'height: ' + H.spacev (2.5)}}, function (x, account) {
-                     if (! account) return;
+                  ['h4', {class: 'gray2', style: 'font-weight: normal; margin-top: ' + H.spacev (0.5)}, 'Pictures'],
+                  B.view (x, ['State', 'slider'], function (x, slider) {
+                     var color = H.if (selected, H.if (slider, H.css.bad, H.css.good), H.if (slider, 'rgba(255,162,0,0.2)', 'rgba(60,172,255,0.2)'));
+                     var hide = mobile ? 'hidden' : ''
                      return [
-                        ['i', {class: 'profile float icon ion-android-person'}],
-                        ['p', {class: 'float'}, [
-                           account.username,
-                           ['span', B.ev ({title: 'Log out', class: 'action pointer', style: 'margin-left: 8px; font-weight: bold; font-size: ' + H.fontSize (-0.8)}, ['onclick', 'logout', '*']), ['i', {class: 'icon ion-log-out'}]],
+                        ['style', [
+                           ['div.slider', {
+                              height: 44,
+                              'border-radius': 22,
+                              width: 0.9,
+                              cursor: 'pointer',
+                           }],
+                           ['div.slider div', {
+                              float: 'left',
+                              'border-radius': 18,
+                              height: 36,
+                              'margin-top': 4,
+                              display: 'flex',
+                              'align-items': 'center',
+                              'padding-left, padding-right': 10,
+                              'margin-left, margin-right': 8,
+                              color: H.css.gray2,
+                           }],
+                           ['div.selected', {
+                              'background-color': 'white',
+                              color: 'black',
+                           }],
+                           ['div.hidden', {
+                              display: 'none',
+                           }],
+                           ['div.slider p', {
+                              'font-size': H.fontsize (-1.7),
+                              'margin-left': 5,
+                           }],
+                        ]],
+                        ['div', B.ev ({class: 'slider', style: 'background-color: ' + color}, ['onclick', 'set', ['State', 'slider'], ! slider]), [
+                           H.if (selected, [
+                              ['div', {style: 'margin-left: 5px', class: H.if (slider, 'selected', hide)}, [
+                                 ['i', {class: 'float ion-android-add'}],
+                                 ['p', 'Add tags']
+                              ]],
+                              ['div', {style: 'float: right', class: H.if (slider, hide, 'selected')}, [
+                                 ['i', {class: 'float ion-scissors'}],
+                                 ['p', 'Remove tags']
+                              ]],
+                           ], [
+                              ['div', {style: 'margin-left: 5px',  class: H.if (slider, hide, 'selected')}, [
+                                 ['i', {class: 'float ion-ios-pricetags-outline'}],
+                                 ['p', 'All tags']
+                              ]],
+                              ['div', {style: 'float: right', class: H.if (slider, 'selected', hide)}, [
+                                 ['i', {class: 'float ion-eye'}],
+                                 ['p', 'Selected tags']
+                              ]],
+                           ]),
                         ]],
                      ];
                   }),
-                  ['h5', {class: 'gray2', style: 'margin-top: 0.5rem'}, 'OVERVIEW'],
-                  B.view (x, ['Data', 'tags'], function (x, tags) {
+                  ['br'],
+                  ['style', ['div.tags', {
+                     'padding-left, padding-right': H.spaceh (0.25),
+                  }]],
+                  B.view (x, ['Data', 'tags'], {attrs: {class: 'tags'}}, function (x, tags) {
                      if (! tags) return;
+
                      var tagmaker = function (tag, k, active) {
+
                         var tagn = ['', tag, tags [tag] ? [' (', tags [tag], ')'] : ''];
+
                         if (active) return [['li', B.ev (['onclick', 'rem', ['State', 'query', 'tags'], k]), [
                            ['span', {class: 'opaque tag ' + murmur.v3 (tag)}],
                            tagn,
                            ['i', {class: 'cancel icon ion-close'}],
                         ]], ['br']];
+
                         return [['li', B.ev ([
                            ['onclick', 'add', ['State', 'query', 'tags'], tag],
                            ['onclick', 'rem', 'State', 'autoquery'],
@@ -829,42 +918,44 @@
                            tagn,
                         ]], ['br']];
                      }
+
                      return [
-                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.length === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], []]), [
-                           H.if (query.tags.length === 0, ['div', {class: 'blueside'}]),
+                        ['style', ['i.inline', {'margin-right': 10}]],
+                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.length === 0, 'bold')}, ['onclick', 'set', ['State', 'query', 'tags'], []]), [
+                           H.if (query.tags.length === 0, ['div']),
                            ['i', {class: 'float inline icon ion-camera'}],
-                           ['All photos (', tags.all + ')']
+                           ['All pictures (', tags.all + ')']
                         ]],
-                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.indexOf ('untagged') === 0, 'blueside bold')}, ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']]), [
-                           H.if (query.tags.indexOf ('untagged') === 0, ['div', {class: 'blueside'}]),
+                        ['p', B.ev ({class: 'pointer ' + H.if (query.tags.indexOf ('untagged') === 0, 'bold')}, ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']]), [
+                           H.if (query.tags.indexOf ('untagged') === 0, ['div']),
                            ['i', {class: 'float inline icon ion-ios-pricetag-outline'}],
                            ['Untagged (' + tags.untagged + ')'],
                         ]],
                         ['div', {style: 'height: 2px'}],
+                        H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags gray2'}, dale.do (query.tags, function (tag, k) {
+                           return tagmaker (tag, k, true);
+                        })]),
+                        H.if (tags.length === 0, ['p', 'No tags yet! Click the upload button to add pictures and tags.']),
+                        B.view (x, ['State', 'autoquery'], function (x, autoquery) {
+                           return B.view (x, ['State', 'slider'], function (x, slider) {
+                              var matches = dale.fil (dale.keys (tags), undefined, function (tag) {
+                                 if (tag === 'all' || tag === 'untagged') return;
+                                 if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
+                              }).sort (H.tagsort);
+
+                              if (matches.length > 0) return ['ul', {class: 'tags gray2'}, dale.do (matches, function (tag) {
+                                 return tagmaker (tag);
+                              })];
+                           });
+                        }),
                         query.tags.length > 0 && query.tags [0] !== 'untagged' ?
-                           ['h5', {class: 'gray2 blueside'}, [['div', {class: 'blueside'}], 'FILTER']] :
+                           ['h5', {class: 'gray2'}, [['div'], 'FILTER']] :
                            ['h5', {class: 'gray2'}, 'FILTER'],
-                           B.view (x, ['State', 'autoquery'], {attrs: {class: 'input-search'}}, function (x, autoquery) {
+                        B.view (x, ['State', 'autoquery'], {attrs: {class: 'input-search'}}, function (x, autoquery) {
                            return [
                               ['input', B.ev ({placeholder: 'Filter by tag', value: autoquery}, ['oninput', 'set', ['State', 'autoquery']])],
                               ['i', {class: 'icon ion-ios-search'}],
                            ];
-                        }),
-                        H.if (query.tags.length > 0 && query.tags [0] !== 'untagged', ['ul', {class: 'tags gray2'}, dale.do (query.tags, function (tag, k) {
-                           return tagmaker (tag, k, true);
-                        })]),
-                        ['h5', {class: 'gray2'}, 'TAGS'],
-                        H.if (tags.length === 0, ['p', 'No tags yet! Click the upload button to add pictures and tags.']),
-                        B.view (x, ['State', 'autoquery'], function (x, autoquery) {
-
-                           var matches = dale.fil (dale.keys (tags), undefined, function (tag) {
-                              if (tag === 'all' || tag === 'untagged') return;
-                              if (tag.match (new RegExp (autoquery || '', 'i')) && query.tags.indexOf (tag) === -1) return tag;
-                           }).sort (H.tagsort);
-
-                           if (matches.length > 0) return ['ul', {class: 'tags gray2'}, dale.do (matches, function (tag) {
-                              return tagmaker (tag);
-                           })];
                         }),
                      ];
                   }),
@@ -929,7 +1020,7 @@
             if (! tag) return;
             if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
             if (BASETAGS.indexOf (tag) !== -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
-            if (H.isYear (tag)) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
+            if (H.isyear (tag)) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             var ids = dale.keys (B.get ('State', 'selected'));
             if (ids.length === 0) return;
             var payload = {
@@ -991,7 +1082,7 @@
                         padding: 0.03,
                         display: 'block',
                         float: 'left',
-                        'font-size': H.fontSize (1),
+                        'font-size': H.fontsize (1),
                         'text-align': 'center',
                         'line-height': 35,
                         color: H.css.gray5,
@@ -1000,7 +1091,7 @@
                         right: '-' + H.spaceh (2),
                         top: 0,
                         position: 'absolute',
-                        'font-size': H.fontSize (2),
+                        'font-size': H.fontsize (2),
                         color: '#ff0033',
                      }],
                   ]],
@@ -1017,7 +1108,7 @@
                      dale.do (B.get ('Data', 'pics'), function (pic) {
                         if (! B.get ('State', 'selected', pic.id)) return;
                         dale.do (pic.tags, function (tag) {
-                           if (H.isYear (tag)) return;
+                           if (H.isyear (tag)) return;
                            tags [tag] = tags [tag] ? tags [tag] + 1 : 1;
                         });
                      });
@@ -1034,7 +1125,7 @@
                   B.view (x, ['State', 'autotag'], {attrs: {class: 'input-search'}, listen: [
                   ]}, function (x, autotag) {
                      var matches = dale.obj (B.get ('Data', 'tags'), function (card, tag) {
-                        if (H.isYear (tag) || BASETAGS.indexOf (tag) !== -1) return;
+                        if (H.isyear (tag) || BASETAGS.indexOf (tag) !== -1) return;
                         if (tag.match (new RegExp (autotag || '', 'i'))) return [tag, card];
                      });
                      return [
@@ -1117,7 +1208,7 @@
                ['i', B.ev ({class: 'icon ion-close pointer'}, ['onclick', 'rem', 'State', 'uploadModal'])],
                B.view (x, ['State', 'upload'], {listen: routes}, function (x, upload) {return [
                   ['div', {class: 'uploadLeft float'}, [
-                     ['h3', {style: 'color: ' + H.css.blue}, [
+                     ['h3', {style: 'color: ' + H.css.highlight}, [
                         ['img', {src: 'lib/icons/icon-camera.svg'}],
                         'Upload pictures',
                      ]],
@@ -1176,7 +1267,8 @@
    // *** PICS VIEW ***
 
    Views.pics = function (x, path, width) {
-      var evs = [
+      var mobile = window.innerWidth < 1024;
+      var routes = [
          ['click', 'pic', function (x, id, k) {
             var last = B.get ('State', 'lastclick') || {time: 0};
             if (last.id === id && Date.now () - B.get ('State', 'lastclick').time < 400) {
@@ -1220,7 +1312,7 @@
             B.do ({from: {ev: 'scroll'}}, 'retrieve', 'pics');
          }],
       ];
-      return B.view (x, path, {listen: evs, attrs: {class: 'piclist'}}, function (x, pics) {
+      return B.view (x, path, {listen: routes, attrs: {class: 'piclist'}}, function (x, pics) {
 
          if (! pics) return;
          if (pics.length === 0) {
@@ -1237,7 +1329,7 @@
          // next row, throughout its width check previous row pictures bottom offset (the max one). Add margin, that's your top offset. For right it is simply margin + the previous in the row, or nothing if first in row.
 
          var rows = [[]];
-         var MAXH = B.get ('State', 'debug', 'height') || 150, MARGIN = B.get ('State', 'debug', 'margin') || 22, OVERLAP = 0;
+         var MAXH = B.get ('State', 'debug', 'height') || (mobile ? 100 : 150), MARGIN = B.get ('State', 'debug', 'margin') || (mobile ? 11 : 22), OVERLAP = 0;
 
          return [
             ['style', [
@@ -1281,7 +1373,7 @@
                ['div.blueoval', {
                   'border-radius': 0.5,
                   'width, height': 18,
-                  'background-color': H.css.blue,
+                  'background-color': H.css.highlight,
                   position: 'absolute',
                   top: -6,
                   right: -6,
@@ -1302,6 +1394,7 @@
                // If first item on row, start at the left.
                if (H.last (rows).length === 0) x = 0;
                // If there's enough room, put it on the same row.
+
                else if (width >= H.last (H.last (rows)) [0] + picw) {
                   x = H.last (H.last (rows)) [0];
                }
@@ -1358,7 +1451,7 @@
                               'data-y': p [1] - p [3] - MARGIN,
                               id: 'pic' + p [4].id,
                               class: 'pic ' + H.if (selected, 'selected', ''),
-                              src: H.picPath (p [4]),
+                              src: H.picpath (p [4]),
                               style: transformInner + ' width: ' + width + 'px; height: ' + height + 'px',
                            }, ['onclick', 'click', 'pic', p [4].id, p [5]])],
                            ['div', {class: 'imagecaption'}, [
@@ -1390,8 +1483,8 @@
             if (action === 'next') B.do (x, 'set', ['State', 'nextCanvas'], B.get ('Data', 'pics', index + 2));
          }]
       ], ondraw: function (x) {
-         if (B.get ('State', 'canvas')) H.fullScreen (x);
-         else                           H.fullScreen (x, true);
+         if (B.get ('State', 'canvas')) H.fullscreen (x);
+         else                           H.fullscreen (x, true);
          B.do (x, 'set', ['State', 'showPictureInfo'], true);
       }}, function (x, pic) {
          if (! pic) return;
@@ -1474,7 +1567,7 @@
                         ['i', B.ev ({class: 'icon ion-close'}, ['onclick', 'set', ['State', 'canvas'], undefined])],
                         ['i', B.ev ({style: 'top: ' + (Math.round (screenh / 2) - 10) + 'px', class: 'icon ion-chevron-left'},  ['onclick', 'canvas', 'prev'])],
                         ['i', B.ev ({style: 'top: ' + (Math.round (screenh / 2) - 10) + 'px', class: 'icon ion-chevron-right'}, ['onclick', 'canvas', 'next'])],
-                        ['div', {class: 'inner', style: style + 'background: url(' + H.picPath (pic, 900) + ')'}, [
+                        ['div', {class: 'inner', style: style + 'background: url(' + H.picpath (pic, 900) + ')'}, [
                            B.view (x, ['State', 'showPictureInfo'], function (x, show) {
                               if (! show) return;
                               return ['div', {class: 'info'}, [
@@ -1485,7 +1578,7 @@
                      ];
                   }) (),
                   B.view (x, ['State', 'nextCanvas'], function (x, next) {
-                     if (next) return ['img', {style: 'width: 1px; height: 1px;', src: H.picPath (next, 900)}];
+                     if (next) return ['img', {style: 'width: 1px; height: 1px;', src: H.picpath (next, 900)}];
                   }),
                ]]
             ];
