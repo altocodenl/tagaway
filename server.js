@@ -1572,7 +1572,9 @@ cicek.cluster ();
 
 cicek.listen ({port: CONFIG.port}, routes);
 
-if (cicek.isMaster) notify (a.creat (), {type: 'server start'});
+if (cicek.isMaster) setTimeout (function () {
+   notify (a.creat (), {type: 'server start'});
+}, 1500);
 
 // *** REDIS ERROR HANDLER ***
 
