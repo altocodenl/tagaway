@@ -24,7 +24,7 @@ module.exports = {
    cookiename: 'ac-v1',
    allowedmime: ['image/jpeg', 'image/png'],
    port: 1427,
-   picfolder: process.argv [2] ? '/root/files' : '/tmp',
+   basepath: process.argv [2] ? '/root/files' : '/tmp',
    redisdb: 15,
    crypto: {
       algorithm: 'aes-256-gcm',
@@ -165,5 +165,8 @@ module.exports = {
    admins: ['EMAIL1', 'EMAIL2', ...],
    emailAddress: 'EMAIL',
    emailName: 'NAME',
+   ping: {
+      // Your cells credentials here. Cells hasn't been published yet, so you can use an empty object instead.
+   }
 }
 */

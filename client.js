@@ -34,7 +34,7 @@
    window.onerror = function () {
       c.ajax ('post', 'error', {}, dale.do (arguments, function (v) {
          return v.toString ();
-      }).concat (B.eventlog));
+      }).concat (B.eventlog.slice (0, 5)));
    }
 
    // *** INITIALIZATION OF STATE/DATA ***
@@ -114,15 +114,18 @@
 
    // *** LOGOUT ***
 
-   B.listen ('logout', '*', function (x) {
-      c.ajax ('post', 'auth/logout', {}, {cookie: document.cookie}, function (error) {
-         if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
-         c.cookie (false);
+   B.listen ('logout', [], function (x, norequest) {
+      var cb = function () {
          B.eventlog = [];
          B.do (x, 'set', 'State', {});
          B.do (x, 'set', 'Data',  {});
          window.State = B.get ('State'), window.Data = B.get ('Data');
          B.do (x, 'set', ['State', 'view'], 'auth');
+      }
+      if (norequest) return cb ();
+      c.ajax ('post', 'auth/logout', {}, {cookie: document.cookie}, function (error) {
+         if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
+         cb ();
       });
    });
 
@@ -176,12 +179,12 @@
    H.authajax = function (x, m, p, h, b, cb) {
       x = H.from (x, {ev: 'authajax', method: m, path: p, headers: h, body: b});
       if (m === 'post') {
-         if (type (b, true) === 'FormData') b.append ('cookie', document.cookie);
+         if (type (b, true) === 'formdata') b.append ('cookie', document.cookie);
          else                               b.cookie = document.cookie;
       }
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
-            B.do (x, 'logout', '*');
+            B.do (x, 'logout', [], true);
             return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
          }
          if (error) console.log (error.responseText);
@@ -396,12 +399,7 @@
                   c ('#auth-password').value = '';
                }
 
-               if (dale.stopNot (rs.headers, undefined, function (v, k) {
-                  if (k.match (/^cookie/i)) {
-                     document.cookie = v;
-                     return true;
-                  }
-               })) {
+               if (c.cookie () [COOKIENAME]) {
                   B.do (x, 'notify', 'green', 'Welcome!');
                   B.do (x, 'set', ['State', 'view'], 'main');
                }
@@ -618,7 +616,7 @@
                      'margin-top, margin-right': 10,
                   }]],
                   ['span', H.style ({class: 'bold'}, {'margin-left': 8, 'font-size': H.fontsize (-0.8)}), [
-                     ['i', B.ev ({title: 'Log Out', class: 'pointer ion-log-out'}, ['onclick', 'logout', '*'])],
+                     ['i', B.ev ({title: 'Log Out', class: 'pointer ion-log-out'}, ['onclick', 'logout', []])],
                      ['i', {onclick: 'alert ("Coming soon!")', title: 'Account', class: 'pointer ion-android-person'}],
                   ]],
                ]],

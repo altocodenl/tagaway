@@ -26,8 +26,6 @@
       console.log.apply (console, toprint);
    });
 
-   B.verbose = true;
-
    // *** ERROR REPORTING ***
 
    window.onerror = function () {

@@ -31,13 +31,13 @@ var a      = require ('./lib/astack.js');
 var redmin = require ('redmin');
 redmin.redis = redis;
 
+var uuid   = require ('uuid/v4');
 var mailer = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
 var hash   = require ('murmurhash').v3;
 var mime   = require ('mime');
-var uuid   = require ('uuid/v4');
 
 var type = teishi.t, clog = console.log, eq = teishi.eq, reply = function () {
-   cicek.reply.apply (null, dale.fil (arguments, undefined, function (v) {
+   cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
       if (k === 0 && v && v.path && v.last && v.vars) return;
       return v;
    }));
@@ -54,6 +54,12 @@ var type = teishi.t, clog = console.log, eq = teishi.eq, reply = function () {
       if (error) return s.next (0, error);
       s.next (data);
    });
+}, cbreply = function (rs, cb) {
+   return function (error, result) {
+      if (error)       return reply (rs, 500, {error: error});
+      if (cb === true) return reply (rs, 200);
+      if (cb) cb (result);
+   };
 }
 
 // *** GIZ ***
@@ -86,15 +92,57 @@ var Redis = function (s, action) {
 
 // *** NOTIFICATIONS ***
 
-var notify = function (s, message, sync) {
+SECRET.ping.send = function (payload, CB) {
+   CB = CB || clog;
+   var login = function (cb) {
+      hitit.one ({}, {
+         host:   SECRET.ping.host,
+         port:   SECRET.ping.port,
+         https:  SECRET.ping.https,
+         method: 'post',
+         path:   require ('path').join (SECRET.ping.path || '', 'auth/login'),
+         body: {username: SECRET.ping.username, password: SECRET.ping.password, tz: new Date ().getTimezoneOffset ()}
+      }, function (error, data) {
+         if (error) return CB (error);
+         SECRET.ping.cookie = data.headers ['set-cookie'] [0];
+         cb ();
+      });
+   }
+   var send = function (retry) {
+      hitit.one ({}, {
+         host:   SECRET.ping.host,
+         port:   SECRET.ping.port,
+         https:  SECRET.ping.https,
+         method: 'post',
+         path: require ('path').join (SECRET.ping.path || '', 'data'),
+         headers: {cookie: SECRET.ping.cookie},
+         body:    payload,
+      }, function (error) {
+         if (error && error.code === 403 && ! retry) return login (function () {send (true)});
+         if (error) return CB (error);
+      });
+   }
+   if (SECRET.ping.cookie) {
+      payload.cookie = SECRET.ping.cookie;
+      send ();
+   }
+   else login (function () {
+      payload.cookie = SECRET.ping.cookie;
+      send (true);
+   });
+}
+
+var notify = function (s, message) {
    if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
    message.environment = ENV || 'local';
    if (! ENV) {
-      clog (new Date ().toUTCString (), JSON.stringify (message) + '\n');
+      clog (new Date ().toUTCString (), message);
       return s.next ();
    }
-   fs [sync ? 'appendFileSync' : 'appendFile'] ('templog.log', new Date ().toUTCString () + '\t' + JSON.stringify (message) + '\n', sync ? undefined : function () {s.next ()});
-   if (sync) s.next ();
+   SECRET.ping.send (message, function (error) {
+      if (error) return s.next (null, error);
+      else s.next ();
+   });
 }
 
 // *** SENDMAIL ***
@@ -121,6 +169,7 @@ var k = function (s) {
    var output = {stdout: '', stderr: ''};
 
    var command = [].slice.call (arguments, 1);
+
    var proc = spawn (command [0], command.slice (1));
 
    var wait = 3;
@@ -170,10 +219,7 @@ H.trim = function (string) {
 
 H.log = function (s, user, ev) {
    ev.t = Date.now ();
-   a.stop (s, [
-      [Redis, 'lpush', 'ulog:' + user, teishi.s (ev)],
-      function (s) {s.next ()}
-   ]);
+   Redis (s, 'lpush', 'ulog:' + user, teishi.s (ev));
 }
 
 H.size = function (s, path) {
@@ -346,7 +392,7 @@ H.deletepic = function (s, id, username) {
          if (s.pic.t200) thumbs.push (s.pic.t200);
          if (s.pic.t900) thumbs.push (s.pic.t900);
          a.fork (s, thumbs, function (v) {
-            return [a.make (fs.unlink), Path.join (CONFIG.picfolder, H.hash (username), v)];
+            return [a.make (fs.unlink), Path.join (CONFIG.basepath, H.hash (username), v)];
          });
       },
       function (s) {
@@ -447,6 +493,15 @@ var routes = [
       ]);
    }],
 
+   // *** CLIENT ERRORS ***
+
+   ['post', 'error', function (rq, rs) {
+      astop (rs, [
+         [notify, {type: 'client error', headers: rq.headers, ip: rq.origin, user: (rq.user || {}).username, error: rq.body}],
+         [reply, rs, 200],
+      ]);
+   }],
+
    // *** LOGIN & SIGNUP ***
 
    ['post', 'auth/login', function (rq, rs) {
@@ -481,7 +536,7 @@ var routes = [
             true: [reply, rs, 403, {error: 'verify'}],
             else: function (s) {a.seq (s, [
                [H.log, s.username, {a: 'log', ip: rq.origin, ua: rq.headers ['user-agent'], tz: b.tz}],
-               [reply, rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookiename, s.session)}],
+               [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})}],
             ])},
          }],
       ]);
@@ -668,7 +723,10 @@ var routes = [
       }
 
       if (! rq.data.cookie)                     return reply (rs, 403, {error: 'nocookie'});
-      if (! rq.data.cookie [CONFIG.cookiename]) return reply (rs, 403, {error: 'tampered'});
+      if (! rq.data.cookie [CONFIG.cookiename]) {
+         if (rq.headers.cookie.match (CONFIG.cookiename)) return reply (rs, 403, {error: 'tampered'});
+                                                          return reply (rs, 403, {error: 'noappcookie'});
+      }
 
       giz.auth (rq.data.cookie [CONFIG.cookiename], function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
@@ -694,7 +752,6 @@ var routes = [
 
    ['post', '*', function (rq, rs) {
 
-      if (rq.method === 'post' && rq.url === '/error')                  return rs.next ();
       if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
       if (rq.method === 'post' && rq.url === '/redmin')                 return rs.next ();
 
@@ -711,22 +768,12 @@ var routes = [
       rs.next ();
    }],
 
-   // *** CLIENT ERRORS ***
-
-   ['post', 'error', function (rq, rs) {
-      if (type (rq.body) !== 'object') return reply (rs, 400);
-      astop (rs, [
-         [notify, {type: 'client error', headers: rq.headers, ip: rq.origin, user: (rq.user || {}).username, error: rq.body}],
-         [reply, rs, 200],
-      ]);
-   }],
-
    // *** LOGOUT ***
 
    ['post', 'auth/logout', function (rq, rs) {
       astop (rs, [
          [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
-         [reply, rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)}],
+         [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {path: '/'})}],
       ]);
    }],
 
@@ -766,7 +813,7 @@ var routes = [
          },
          [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
          [H.log, rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']}],
-         [reply, rs, 302, '', {location: '/', 'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)}],
+         [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)}],
       ]);
    }],
 
@@ -834,7 +881,7 @@ var routes = [
          },
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
          function (s) {
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.picfolder]);
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath]);
          }
       ]);
    }],
@@ -866,7 +913,7 @@ var routes = [
             Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt' + (rq.data.params.id === s.pic.t200 ? 2 : 9), 1);
          },
          function (s) {
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), rq.data.params.id), [CONFIG.picfolder]);
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), rq.data.params.id), [CONFIG.basepath]);
          }
       ]);
    }],
@@ -908,7 +955,7 @@ var routes = [
          dateup: Date.now (),
       };
 
-      var newpath = Path.join (CONFIG.picfolder, H.hash (rq.user.username), pic.id);
+      var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic.id);
 
       astop (rs, [
          [a.set, 'hash', function (s) {
@@ -1367,7 +1414,65 @@ var routes = [
       ]);
    }],
 
-   // *** STATS ***
+   // *** ADMIN AREA ***
+
+   // *** ADMIN: INVITES ***
+
+   ['get', 'admin/invites', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'hgetall', 'invites'],
+         function (s) {
+            reply (rs, 200, ! s.last ? [] : dale.obj (s.last, function (value, key) {
+               return [key, teishi.p (value)];
+            }));
+         },
+      ]);
+   }],
+
+   ['delete', 'admin/invites/:email', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'hdel', 'invites', rq.data.params.email],
+         [reply, rs, 200],
+      ]);
+   }],
+
+   ['post', 'admin/invites', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
+         ['body.email', b.email, 'string'],
+         ['body.email', b.email, H.email, teishi.test.match],
+         ['body.firstName', b.firstName, 'string'],
+      ])) return;
+
+      b.email = H.trim (b.email.toLowerCase ());
+
+      astop (rs, [
+         [a.set, 'user', [Redis, 'hget', 'emails', b.email]],
+         function (s) {
+            if (s.user) return reply (rs, 400, {error: 'User already exists'});
+            s.next ();
+         },
+         [a.set, 'token', [a.make (require ('bcryptjs').genSalt), 20]],
+         function (s) {
+            Redis (s, 'hset', 'invites', b.email, JSON.stringify ({firstName: b.firstName, token: s.token, sent: Date.now ()}));
+         },
+         ENV ? [] : [a.get, reply, rs, 200, {token: '@token'}],
+         function (s) {
+            sendmail (s, {
+               to1:     b.firstName,
+               to2:     b.email,
+               subject: CONFIG.etemplates.invite.subject,
+               message: CONFIG.etemplates.invite.message (b.firstName, s.token)
+            });
+         },
+         [reply, rs, 200],
+      ]);
+   }],
+
+   // *** ADMIN: STATS (ALSO PUBLIC) ***
 
    ['get', 'admin/stats', function (rq, rs) {
       astop (rs, [
@@ -1413,70 +1518,13 @@ var routes = [
       ]);
    }],
 
-   // *** INVITES ***
-
-   ['get', 'admin/invites', function (rq, rs) {
-      astop (rs, [
-         [Redis, 'hgetall', 'invites'],
-         function (s) {
-            reply (rs, 200, ! invites ? [] : dale.obj (invites, function (value, key) {
-               return [key, teishi.p (value)];
-            }));
-         }
-      ]);
-   }],
-
-   ['delete', 'admin/invites/:email', function (rq, rs) {
-      astop (rs, [
-         [Redis, 'hdel', 'invites', rq.data.params.email],
-         [reply, rs, 200],
-      ]);
-   }],
-
-   ['post', 'admin/invites', function (rq, rs) {
-
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
-         ['body.email', b.email, 'string'],
-         ['body.email', b.email, H.email, teishi.test.match],
-         ['body.firstName', b.firstName, 'string'],
-      ])) return;
-
-      b.email = H.trim (b.email.toLowerCase ());
-
-      astop (rs, [
-         [Redis, 'hget', 'emails', b.email],
-         function (s) {
-            if (s.last) return reply (rs, 400, {error: 'User already exists'});
-            s.next ();
-         },
-         [a.set, 'token', [a.make (require ('bcryptjs').genSalt), 20]],
-         function (s) {
-            Redis (s, 'hset', 'invites', b.email, JSON.stringify ({firstName: b.firstName, token: s.token, sent: Date.now ()}));
-         },
-         ! ENV ? [a.get, reply, rs, 200, {token: '@token'}] : [],
-         function (s) {
-            sendmail (s, {
-               to1:     b.firstName,
-               to2:     b.email,
-               subject: CONFIG.etemplates.invite.subject,
-               message: CONFIG.etemplates.invite.message (b.firstName, s.token)
-            });
-         },
-         [reply, rs, 200],
-      ]);
-   }],
-
-   // *** REDMIN ***
+   // *** ADMIN: REDMIN ***
 
    ['get', 'redmin', reply, redmin.html ()],
    ['post', 'redmin', function (rq, rs) {
-      redmin.api (rq.body, function (error, data) {
-         if (error) return reply (rs, 500, {error: error});
+      redmin.api (rq.body, cbreply (rs, function (data) {
          reply (rs, 200, data);
-      });
+      }));
    }],
    ['get', 'redmin/client.js',    cicek.file, 'node_modules/redmin/client.js'],
    ['get', 'redmin/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
@@ -1494,7 +1542,7 @@ cicek.apres = function (rs) {
    }
 
    if (rs.log.code >= 400) {
-      if (['/favicon.ico', '/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {type: 'response error', code: rs.log.code, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], body: rs.log.requestBody, rbody: teishi.p (rs.log.responseBody) || rs.log.responseBody});
+      if (['/favicon.ico', '/assets/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.p (rs.log.responseBody) || rs.log.responseBody});
    }
 
    if (rs.log.code === 200 || rs.log.code === 304) {
@@ -1511,13 +1559,13 @@ cicek.apres = function (rs) {
 
 cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
-   if (message [1] === 'Invalid signature in cookie') return notify (a.creat (), {type: 'cookie signature error', error: message [2]});
+   if (message [1] === 'Invalid signature in cookie') return;
    notify (a.creat (), {
-      type: 'server error',
+      type:    'server error',
       subtype: message [1],
-      from: cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
       error:   message [2]
-   }, ! cicek.isMaster);
+   });
 }
 
 cicek.cluster ();
@@ -1630,10 +1678,10 @@ if (cicek.isMaster && ENV) setTimeout (function () {
 
 if (cicek.isMaster && ENV === 'dev') a.stop ([
    [a.set, 'uploaded', [H.s3list, '']],
-   [a.set, 'dirs', [a.make (fs.readdir), CONFIG.picfolder]],
+   [a.set, 'dirs', [a.make (fs.readdir), CONFIG.basepath]],
    [a.set, 'files', [a.get, a.fork, '@dirs', function (dir) {
       return [
-         [a.make (fs.readdir), Path.join (CONFIG.picfolder, dir)],
+         [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)],
          function (s) {
             s.next (dale.do (s.last, function (file) {
                return Path.join (dir, file);
@@ -1684,7 +1732,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
    },
    // Upload missing pics to S3
    [a.get, a.fork, '@missingsthree', function (key) {
-      return [H.s3put, null, Path.join (CONFIG.picfolder, key), key];
+      return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
    }, {max: 5}],
    function (s) {
       if (s.missingsthree.length) notify (a.creat (), {type: 'uploaded missing pics to s3', n: s.missingsthree.length});
@@ -1715,13 +1763,13 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
          },
          [a.log, 'writing ' + path],
          function (s) {
-            a.make (fs.writeFile) (s, Path.join (CONFIG.picfolder, path), s.last, 'binary');
+            a.make (fs.writeFile) (s, Path.join (CONFIG.basepath, path), s.last, 'binary');
          }
       ];
    }, {max: 5}],
    // Delete extraneous files from FS
    [a.get, a.fork, '@extraneous', function (v, k) {
-      return [a.make (fs.unlink), Path.join (CONFIG.picfolder, k)];
+      return [a.make (fs.unlink), Path.join (CONFIG.basepath, k)];
    }, {max: 5}],
    function (s) {
       if (dale.keys (s.extraneous).length) notify (a.creat (), {type: 'deleted extraneous files from FS', n: dale.keys (s.extraneous).length});

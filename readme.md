@@ -26,7 +26,7 @@ If a cookie with valid signature but that has already expired is sent along, the
 
 All POST requests (unless marked otherwise) must contain a `cookie` field equivalent to the `cookie` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the cookie must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
 
-## Request invite
+### Request invite
 
 - `POST /requestInvite`.
    - Body must be `{email: STRING}`, otherwise a 400 will be sent.
@@ -76,6 +76,10 @@ All POST requests (unless marked otherwise) must contain a `cookie` field equiva
    - If successful, a 302 is returned redirecting to `/`.
 
 ### App routes
+
+`POST /feedback`
+   - Body must be an object of the form `{message: STRING}` (otherwise 400).
+   - If successful, returns a 200.
 
 - `GET /pic/ID`
    - Pic must exist and the user must have permissions to see it (otherwise, 404).
@@ -147,10 +151,6 @@ All POST requests (unless marked otherwise) must contain a `cookie` field equiva
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, used: [INTEGER_USED, INTEGER_MAXIMUM], logs: [...]}`.
 
-`POST /feedback`
-   - Body must be an object of the form `{message: STRING}` (otherwise 400).
-   - If successful, returns a 200.
-
 ### Debugging routes
 
 `POST /error`
@@ -175,7 +175,6 @@ All the routes below require an admin user to be logged in.
 - Client
    - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - show rotated pictures in canvas
-   - fix logout in firefox
    - Add autotag with enter
    - Make remove tags as a button/tag with an integrated cross, with ... for long tags and expand on click
    - Initial view with no pictures
@@ -187,7 +186,6 @@ All the routes below require an admin user to be logged in.
    - Views.notify visual improvements
 
 - Server
-   - Integrate with notification tools.
    - Provision prod server.
    - Hidden tags.
 
@@ -484,7 +482,7 @@ Make sure your domain points to the server where you're adding these changes. Th
 
 ```
 service nginx reload
-sudo certbot --nginx -d app.onemillionloops.com
+sudo certbot --nginx -d YOURDOMAIN
 ```
 
 Add the following to your crontab, to renew the certificates at the hour HH:YY every day.
