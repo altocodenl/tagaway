@@ -1,6 +1,4 @@
-# ac:pic
-
-A place for your pictures.
+# ac:pic :: a home for your pictures
 
 ## About
 
@@ -173,6 +171,11 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
+   - gotoB 2 & style
+      - [], not '*'
+      - B.from
+      - style, time, last
+      - navigation
    - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
    - show rotated pictures in canvas
    - Add autotag with enter
@@ -186,8 +189,10 @@ All the routes below require an admin user to be logged in.
    - Views.notify visual improvements
 
 - Server
-   - Provision prod server.
    - Hidden tags.
+   - Change password.
+   - Oauth login.
+   - Provision prod infrastructure.
 
 ### Todo beta
 

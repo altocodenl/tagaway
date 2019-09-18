@@ -75,7 +75,7 @@ redis.keyscan = function (s, match, cursor, keys) {
    redis.scan (cursor, 'MATCH', match, function (error, result) {
       if (error) return s.next (0, error);
       cursor = result [0];
-      dale.do (result [1], function (key) {
+      dale.go (result [1], function (key) {
          keys [key] = true;
       });
       if (cursor !== '0') return redis.keyscan (s, match, cursor, keys);
@@ -120,6 +120,7 @@ SECRET.ping.send = function (payload, CB) {
       }, function (error) {
          if (error && error.code === 403 && ! retry) return login (function () {send (true)});
          if (error) return CB (error);
+         CB ();
       });
    }
    if (SECRET.ping.cookie) {
@@ -180,7 +181,7 @@ var k = function (s) {
       else                                      s.next (0, output);
    }
 
-   dale.do (['stdout', 'stderr'], function (v) {
+   dale.go (['stdout', 'stderr'], function (v) {
       proc [v].on ('data', function (chunk) {
          output [v] += chunk;
       });
@@ -326,12 +327,12 @@ H.s3del = function (s, user, keys, sizes) {
    if (keys.length === 0) return s.next ();
 
    var batch = function () {
-      s3.deleteObjects ({Delete: {Objects: dale.do (keys.slice (counter * 1000, (counter + 1) * 1000), function (key) {
+      s3.deleteObjects ({Delete: {Objects: dale.go (keys.slice (counter * 1000, (counter + 1) * 1000), function (key) {
          return {Key: user ? (H.hash (user) + '/' + key) : key}
       })}}, function (error) {
          if (error) return s.next (0, error);
          var multi = redis.multi ();
-         if (user) dale.do (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
+         if (user) dale.go (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
          multi.exec (function (error) {
             if (error) return s.next (0, error);
             if (++counter === Math.ceil (keys.length / 1000)) s.next ();
@@ -350,7 +351,7 @@ H.s3list = function (s, prefix) {
          if (error) return s.next (0, error);
          output = output.concat (data.Contents);
          delete data.Contents;
-         if (! data.IsTruncated) return s.next (dale.do (output, function (v) {return v.Key}));
+         if (! data.IsTruncated) return s.next (dale.go (output, function (v) {return v.Key}));
          fetch (output [output.length - 1].Key);
       });
    }
@@ -405,7 +406,7 @@ H.deletepic = function (s, id, username) {
          multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
          multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
 
-         dale.do (s.tags.concat (['all', 'untagged']), function (tag) {
+         dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
             multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
          });
 
@@ -434,12 +435,12 @@ var routes = [
             ['title', 'ac:pic'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-            dale.do (['ionicons.min', 'normalize.min'], function (v) {
+            dale.go (['ionicons.min', 'normalize.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
             })
          ]],
          ['body', [
-            dale.do (['gotoB.min', 'murmurhash'], function (v) {
+            dale.go (['gotoB.min', 'murmurhash'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
             ['script', 'var COOKIENAME  = \'' + CONFIG.cookiename + '\';'],
@@ -458,12 +459,12 @@ var routes = [
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
             ['title', 'ac:pic admin'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
-            dale.do (['pure-min', 'ionicons.min'], function (v) {
+            dale.go (['pure-min', 'ionicons.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
             })
          ]],
          ['body', [
-            dale.do (['gotoB.min'], function (v) {
+            dale.go (['gotoB.min'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
             ['script', 'var COOKIENAME = \'' + CONFIG.cookiename + '\';'],
@@ -512,7 +513,7 @@ var routes = [
          ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['username', 'password', 'tz'], 'eachOf', teishi.test.equal],
          function () {return [
-            dale.do (['username', 'password'], function (key) {
+            dale.go (['username', 'password'], function (key) {
                return ['body.' + key, b [key], 'string']
             }),
             ['body.tz', b.tz, 'integer'],
@@ -528,7 +529,9 @@ var routes = [
                null: [reply, rs, 403, {error: 'auth'}],
             });
          }],
-         [a.stop, [a.set, 'session', [a.get, a.make (giz.login), '@username', b.password]], function (s, error) {
+         [a.stop, [a.set, 'session', function (s) {
+            a.make (giz.login) (s, s.username, b.password);
+         }], function (s, error) {
             if (type (error) === 'string') reply (rs, 403, {error: 'auth'});
             else                           reply (rs, 500, {error: error});
          }],
@@ -550,7 +553,7 @@ var routes = [
          ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['username', 'password', 'email', 'token'], 'eachOf', teishi.test.equal],
          function () {return [
-            dale.do (['username', 'password', 'email', 'token'], function (key) {
+            dale.go (['username', 'password', 'email', 'token'], function (key) {
                return ['body.' + key, b [key], 'string']
             }),
          ]},
@@ -620,7 +623,10 @@ var routes = [
 
       astop (rs, [
          [a.cond, [a.set, 'emailtoken', [Redis, 'hget', 'emailtoken', token], true], {
-            null: [reply, rs, 403],
+            null: [
+               [notify, {type: 'bad emailtoken', token: token, ip: rq.origin, ua: rq.headers ['user-agent']}],
+               [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/badtoken'}],
+            ],
          }],
          [a.set, 'username', [a.get, Redis, 'hget', 'emails', '@emailtoken']],
          function (s) {
@@ -671,6 +677,9 @@ var routes = [
                message: CONFIG.etemplates.recover.message (s.user.username, s.token)
             });
          },
+         function (s) {
+            H.log (s, s.user.username, {a: 'rec', ip: rq.origin, ua: rq.headers ['user-agent'], token: s.token});
+         },
          [reply, rs, 200],
       ]);
    }],
@@ -684,10 +693,11 @@ var routes = [
          ['body', b, 'string', 'each'],
          ['keys of body', dale.keys (b), ['username', 'password', 'token'], 'eachOf', teishi.test.equal],
          function () {return [
-            dale.do (['username', 'password', 'token'], function (key) {
+            dale.go (['username', 'password', 'token'], function (key) {
                return ['body.' + key, b [key], 'string']
             }),
          ]},
+         function () {return ['body.password length', b.password.length, {min: 6}, teishi.test.range]}
       ])) return;
 
       astop (rs, [
@@ -705,7 +715,7 @@ var routes = [
             });
          },
          function (s) {
-            H.log (s, s.user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent']});
+            H.log (s, s.user.username, {a: 'res', ip: rq.origin, ua: rq.headers ['user-agent'], token: b.token});
          },
          [reply, rs, 200],
       ]);
@@ -800,7 +810,7 @@ var routes = [
             var multi = redis.multi ();
             multi.hdel ('emails',  rq.user.email);
             multi.hdel ('invites', rq.user.email);
-            dale.do (s.data [1].concat (['all', 'untagged']), function (tag) {
+            dale.go (s.data [1].concat (['all', 'untagged']), function (tag) {
                multi.del ('tag:' + rq.user.username + ':' + tag);
             });
             multi.del ('tags:'  + rq.user.username);
@@ -831,7 +841,6 @@ var routes = [
       astop (rs, [
          [notify, {type: 'feedback', user: rq.user.username, message: b.message}],
          ENV ? [] : [reply, rs, 200],
-         [a.set, 'template', [H.getTemplate, 'feedback received', {firstName: rq.user.firstName || rq.user.username}]],
          [sendmail, {
             to1:     rq.user.username,
             to2:     rq.user.email,
@@ -867,7 +876,7 @@ var routes = [
                function (s) {
                   if (s.tags.length === 0) return reply (rs, 404);
                   var multi = redis.multi ();
-                  dale.do (s.tags, function (tag) {
+                  dale.go (s.tags, function (tag) {
                      multi.sismember ('shm:' + rq.user.username, s.pic.owner + ':' + tag);
                   });
                   mexec (s, multi);
@@ -897,7 +906,7 @@ var routes = [
                function (s) {
                   if (s.tags.length === 0) return reply (rs, 404);
                   var multi = redis.multi ();
-                  dale.do (s.tags, function (tag) {
+                  dale.go (s.tags, function (tag) {
                      multi.sismember ('shm:' + rq.user.username, s.pic.owner + ':' + tag);
                   });
                   mexec (s, multi);
@@ -931,7 +940,7 @@ var routes = [
 
       var tags = teishi.p (rq.data.fields.tags), error;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
-      tags = dale.do (tags, function (tag) {
+      tags = dale.go (tags, function (tag) {
          if (type (tag) !== 'string') return error = teishi.s (tag);
          tag = H.trim (tag);
          if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
@@ -1029,7 +1038,7 @@ var routes = [
             multi.srem ('upicd:' + rq.user.username, pic.hash);
             multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
 
-            dale.do (tags.concat (new Date (pic.date).getUTCFullYear ()), function (tag) {
+            dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()), function (tag) {
                multi.sadd ('pict:' + pic.id,                       tag);
                multi.sadd ('tags:' + rq.user.username,             tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic.id);
@@ -1071,7 +1080,7 @@ var routes = [
       ])) return;
 
       var multi = redis.multi (), seen = {};
-      dale.do (b.ids, function (id) {
+      dale.go (b.ids, function (id) {
          seen [id] = true;
          multi.hgetall ('pic:' + id);
       });
@@ -1138,7 +1147,7 @@ var routes = [
       if (H.isyear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       var multi = redis.multi (), seen = {};
-      dale.do (b.ids, function (id) {
+      dale.go (b.ids, function (id) {
          seen [id] = true;
          multi.hget     ('pic:'  + id, 'owner');
          multi.smembers ('pict:' + id);
@@ -1194,7 +1203,7 @@ var routes = [
          function (s) {
             var multi = redis.multi ();
             s.tags = ['all', 'untagged'].concat (s.tags);
-            dale.do (s.tags, function (tag) {
+            dale.go (s.tags, function (tag) {
                multi.scard ('tag:' + rq.user.username + ':' + tag);
             });
             mexec (s, multi);
@@ -1250,7 +1259,7 @@ var routes = [
 
             if (allmode) tags.all = [rq.user.username];
 
-            dale.do (s.last, function (sharedTag) {
+            dale.go (s.last, function (sharedTag) {
                var tag = sharedTag.replace (/[^:]+:/, '');
                if (allmode || tags [tag]) {
                   if (! tags [tag]) tags [tag] = [];
@@ -1261,22 +1270,22 @@ var routes = [
 
             // for each tag (or all tags if all is there) list users per tag that share it with you. run a sunion per tag, also including your own username. then do a sinter of the whole thing.
             var multi = redis.multi (), qid = 'query:' + uuid ();
-            if (ytags.length) multi.sunionstore (qid, dale.do (ytags, function (ytag) {
+            if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
                return 'tag:' + rq.user.username + ':' + ytag;
             }));
 
-            dale.do (tags, function (users, tag) {
-               multi.sunionstore (qid + ':' + tag, dale.do (users, function (user) {
+            dale.go (tags, function (users, tag) {
+               multi.sunionstore (qid + ':' + tag, dale.go (users, function (user) {
                   return 'tag:' + user + ':' + tag;
                }));
             });
 
-            multi [allmode ? 'sunion' : 'sinter'] (dale.do (tags, function (users, tag) {
+            multi [allmode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
                return qid + ':' + tag;
             }).concat (ytags.length ? qid : []));
 
             if (ytags.length) multi.del (qid);
-            dale.do (tags, function (users, tag) {
+            dale.go (tags, function (users, tag) {
                multi.del (qid + ':' + tag);
             });
 
@@ -1285,7 +1294,7 @@ var routes = [
          function (s) {
             var pics = s.last [dale.keys (tags).length + (ytags.length ? 1 : 0)];
             var multi = redis.multi ();
-            dale.do (pics, function (pic) {
+            dale.go (pics, function (pic) {
                multi.hgetall ('pic:' + pic);
             });
             mexec (s, multi);
@@ -1297,7 +1306,7 @@ var routes = [
 
             var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
 
-            dale.do (pics, function (pic) {
+            dale.go (pics, function (pic) {
                var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
                if (d >= mindate && d <= maxdate) output.pics.push (pic);
             });
@@ -1330,14 +1339,14 @@ var routes = [
             output.pics = output.pics.slice (b.from - 1, b.to);
 
             var multi = redis.multi ();
-            dale.do (output.pics, function (pic) {
+            dale.go (output.pics, function (pic) {
                multi.smembers ('pict:' + pic.id);
             });
             s.output = output;
             mexec (s, multi);
          },
          function (s) {
-            dale.do (s.output.pics, function (pic, k) {
+            dale.go (s.output.pics, function (pic, k) {
                s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined};
             });
             reply (rs, 200, s.output);
@@ -1385,10 +1394,10 @@ var routes = [
          [mexec, multi],
          function (s) {
             reply (rs, 200, {
-               sho: dale.do (s.last [0], function (i) {
+               sho: dale.go (s.last [0], function (i) {
                   return [i.split (':') [0], i.split (':').slice (1).join (':')];
                }),
-               shm: dale.do (s.last [1], function (i) {
+               shm: dale.go (s.last [1], function (i) {
                   return [i.split (':') [0], i.split (':').slice (1).join (':')];
                }),
             });
@@ -1408,7 +1417,7 @@ var routes = [
                type:     rq.user.type,
                created:  parseInt (rq.user.created),
                used:     [parseInt (rq.user ['s3:buse']) || 0, parseInt (CONFIG.storelimit [rq.user.type || 'tier1']) || 0],
-               logs:     dale.do (s.last, JSON.parse),
+               logs:     dale.go (s.last, JSON.parse),
             });
          }
       ]);
@@ -1484,7 +1493,7 @@ var routes = [
          [a.set, 'keys', [redis.keyscan, 'st*']],
          function (s) {
             var multi = redis.multi ();
-            dale.do (s.keys, function (key) {
+            dale.go (s.keys, function (key) {
                multi [key.match (/^sti/) ? 'get' : 'pfcount'] (key);
             });
             mexec (s, multi);
@@ -1499,7 +1508,7 @@ var routes = [
          [redis.keyscan, 'users:*'],
          function (s) {
             var multi = redis.multi ();
-            dale.do (s.last, function (key) {
+            dale.go (s.last, function (key) {
                multi.hget  (key, 's3:buse');
                multi.scard ('tag:' + key.replace ('users:', '') + ':all');
             });
@@ -1507,7 +1516,7 @@ var routes = [
          },
          function (s) {
             var output = {hits: s.hits, users: s.last.length / 2, pics: 0, bytes: 0};
-            dale.do (s.last, function (v, k) {
+            dale.go (s.last, function (v, k) {
                if (k % 2 === 0) output.bytes += parseInt (v);
                else             output.pics  += v;
             });
@@ -1640,14 +1649,14 @@ if (cicek.isMaster) setInterval (function () {
       [a.set, 'pfs', [Redis, 'smembers', 'stp']],
       function (s) {
          var multi = redis.multi ();
-         dale.do (s.pfs, function (pf) {
+         dale.go (s.pfs, function (pf) {
             multi.pfcount ('stp:' + pf);
          });
          mexec (s, multi);
       },
       function (s) {
          var d = Date.now (), multi = redis.multi ();
-         dale.do (s.pfs, function (pf, k) {
+         dale.go (s.pfs, function (pf, k) {
             var duration = pf.split (':') [0] === 'a' ? 1000 * 60 * 10 : 1000 * 60 * 60 * 24;
             if (d - parseInt (pf.split (':') [1] + '00000') > duration) {
                multi.srem ('stp', pf);
@@ -1685,7 +1694,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
       return [
          [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)],
          function (s) {
-            s.next (dale.do (s.last, function (file) {
+            s.next (dale.go (s.last, function (file) {
                return Path.join (dir, file);
             }));
          }
@@ -1694,7 +1703,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
    [a.set, 'picids', [redis.keyscan, 'pic:*']],
    function (s) {
       var multi = redis.multi ();
-      dale.do (s.picids, function (picid) {
+      dale.go (s.picids, function (picid) {
          multi.hgetall (picid);
       });
       mexec (s, multi);
@@ -1702,7 +1711,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
    function (s) {
       s.thumbs = {};
       s.pics   = {};
-      dale.do (s.last, function (pic) {
+      dale.go (s.last, function (pic) {
          s.pics [pic.id] = pic;
          if (pic.t200) s.thumbs [pic.t200] = {owner: pic.owner};
          if (pic.t900) s.thumbs [pic.t900] = {owner: pic.owner};
@@ -1711,8 +1720,8 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
    },
    function (s) {
       var files = {};
-      dale.do (s.files, function (v) {
-         dale.do (v, function (v2) {
+      dale.go (s.files, function (v) {
+         dale.go (v, function (v2) {
             files [v2] = true;
          });
       });
@@ -1722,7 +1731,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
          return [path, true];
       });
       var extraneous = teishi.c (s.uploaded);
-      dale.do (s.pics, function (pic, k) {
+      dale.go (s.pics, function (pic, k) {
          var path = Path.join (H.hash (pic.owner), k.replace ('pic:', ''));
          if (! s.uploaded [path]) s.missingsthree.push (path);
          delete extraneous [path];
@@ -1740,12 +1749,12 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
       if (s.missingsthree.length) notify (a.creat (), {type: 'uploaded missing pics to s3', n: s.missingsthree.length});
       s.missingfs = [];
       s.extraneous = teishi.c (s.files);
-      dale.do (s.thumbs, function (thumb, k) {
+      dale.go (s.thumbs, function (thumb, k) {
          var path = Path.join (H.hash (thumb.owner), k);
          if (! s.files [path]) s.missingfs.push (path);
          delete s.extraneous [path];
       });
-      dale.do (s.pics, function (pic, k) {
+      dale.go (s.pics, function (pic, k) {
          var path = Path.join (H.hash (pic.owner), k.replace ('pic:', ''));
          // Uncomment to keep original pictures in disk.
          // if (! s.files [path]) s.missingfs.push (path);
@@ -1787,26 +1796,26 @@ if (cicek.isMaster && ENV) a.stop ([
    [a.set, 'keys', [redis.keyscan, '*']],
    function (s) {
       var multi = redis.multi ();
-      dale.do (s.keys, function (key) {
+      dale.go (s.keys, function (key) {
          if (key.match (/^(pic|users):/)) multi.hgetall (key);
       });
       mexec (s, multi);
    },
    function (s) {
       var pics = {}, users = {}, count = {};
-      dale.do (s.last, function (key) {
+      dale.go (s.last, function (key) {
          if (key.owner) pics [key.id] = key;
          if (key.username) {
             key ['s3:buse'] = parseInt (key ['s3:buse'] || '0');
             users [key.username] = key;
          }
       });
-      dale.do (pics, function (pic) {
+      dale.go (pics, function (pic) {
          if (! count [pic.owner]) count [pic.owner] = 0;
          count [pic.owner] += parseInt (pic.by);
       });
       var multi = redis.multi ();
-      dale.do (users, function (user) {
+      dale.go (users, function (user) {
          if (user ['s3:buse'] === count [user.username]) return;
          if (count [user.username] === undefined && user ['s3:buse'] === 0) return;
          notify (a.creat (), {type: 's3:buse mismatch error', u: user.username, was: user ['s3:buse'], actual: count [user.username]});

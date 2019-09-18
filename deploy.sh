@@ -33,10 +33,6 @@ fi
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
 echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
-# Remove after upgrading cicek
-#ssh $HOST "cd $FOLDER && npm i --no-save && mg restart"
-ssh $HOST "cd $FOLDER && npm i --no-save"
-scp /media/veracrypt1/now/denk/hack/cicek/cicek.js $HOST:$FOLDER/node_modules/cicek
-ssh $HOST "cd $FOLDER && mg restart"
+ssh $HOST "cd $FOLDER && npm i --no-save && mg restart"
 ssh $HOST rm $TAR
 rm $TAR

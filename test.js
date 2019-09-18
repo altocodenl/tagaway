@@ -7,8 +7,8 @@ var h      = require ('hitit');
 var log    = teishi.l, type = teishi.t, eq = teishi.eq;
 
 var U = [
-   {username: '   user  \t1', password: Math.random () + '', tz: new Date ().getTimezoneOffset ()},
-   {username: 'user2', password: Math.random () + '', tz: new Date ().getTimezoneOffset ()},
+   {username: '   user  \t1', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
+   {username: 'user2', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
 ];
 
 var PICS = 'test/';
@@ -43,11 +43,11 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 
    var tests = {}, longest = 0;
 
-   dale.do (list, function (v) {
+   dale.go (list, function (v) {
       var path = v [0], allowed = v [1];
       if (type (path) !== 'array') path = [path];
       if (path.length > longest) longest = path.length;
-      dale.do (dale.times (path.length), function (k) {
+      dale.go (dale.times (path.length), function (k) {
          if (k < path.length) {
             return tests [JSON.stringify (path.slice (0, k))] = [type (path [k]) === 'integer' ? 'array' : 'object'];
          }
@@ -58,22 +58,22 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
    var output = [];
    var body = type (JSON.parse (dale.keys (tests) [0]) [0]) === 'string' ? {} : [];
 
-   dale.do (dale.times (longest), function (length) {
-      dale.do (tests, function (allowed, path) {
+   dale.go (dale.times (longest), function (length) {
+      dale.go (tests, function (allowed, path) {
          path = JSON.parse (path);
          if (path.length !== length) return;
          if (output.length === 0) {
             // base object test
-            dale.do (types, function (tfun, t) {
+            dale.go (types, function (tfun, t) {
                if (t !== type (body)) output.push ([label + ' test type #' + (output.length + 1) + ' base - ' + t, method, Path, headers, tfun (), allErrors ? '*' : 400, apres]);
             });
          }
          var ref = body;
-         dale.do (dale.times (path.length - 1, 0), function (k) {
+         dale.go (dale.times (path.length - 1, 0), function (k) {
             if (! ref [path [k]]) ref [path [k]] = type (path [k + 1]) === 'integer' ? [] : {};
             ref = ref [path [k]];
          });
-         dale.do (types, function (tfun, t) {
+         dale.go (types, function (tfun, t) {
             ref [path [path.length - 1]] = tfun ();
             if (allowed.indexOf (t) === -1) output.push ([label + ' test type #' + (output.length + 1) + ' ' + path.join ('.') + ' - ' + t, method, Path, headers, teishi.c (body), allErrors ? '*' : 400, apres]);
          });
@@ -177,6 +177,7 @@ var intro = [
       return true;
    }],
    ['reset pass with invalid token', 'post', 'auth/reset', {}, function (s) {return {username: H.trim (U [0].username), password: U [0].password, token: s.rtoken + '0'}}, 403],
+   ['reset pass with invalid password', 'post', 'auth/reset', {}, function (s) {return {username: H.trim (U [0].username), password: 'abc', token: s.rtoken}}, 400],
    ['reset pass', 'post', 'auth/reset', {}, function (s) {return {username: H.trim (U [0].username), password: U [0].password, token: s.rtoken}}, 200],
    ['try to signup with existing username after verification', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [1].password, token: s.itoken2, email: 'b@b.com'};
@@ -497,7 +498,7 @@ var main = [
       })) return log ('Invalid pic fields.');
       return true;
    }],
-   dale.do ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
+   dale.go ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
       return [
          ['rotate pic #' + (k + 2), 'post', 'rotate', {}, function (s) {
             return {ids: [s.rotateid], deg: pair [0]};
@@ -523,7 +524,7 @@ var main = [
       s.allpics = rs.body.pics;
       return true;
    }],
-   dale.do (dale.times (5, 0), function (k) {
+   dale.go (dale.times (5, 0), function (k) {
       return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
          var original = require ('fs').readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
@@ -535,61 +536,61 @@ var main = [
       return 'pic/' + s.dunkerque;
    }, {}, '', 200],
    ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['small.png', 'medium.jpg', 'rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['small.png', 'medium.jpg', 'rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by oldest', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['large.jpeg', 'rotate.jpg', 'medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['large.jpeg', 'rotate.jpg', 'medium.jpg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq (['rotate.jpg', 'medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['rotate.jpg', 'medium.jpg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq (['rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
-      if (! eq (['large.jpeg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['large.jpeg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['small.png', 'medium.jpg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['small.png', 'medium.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['medium.jpg', 'small.png'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['medium.jpg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #3', 'post', 'query', {}, {tags: ['2017', '2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #4', 'post', 'query', {}, {tags: ['2017', '2014', '2015'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['rotate.jpg', 'large.jpeg'], dale.do (rs.body.pics, function (v) {
+      if (! eq (['rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return log ('Invalid pic date sorting');
       return true;
@@ -621,7 +622,7 @@ var main = [
       s.pics = rs.body.pics;
       return true;
    }],
-   dale.do (dale.times (4, 0), function (k) {
+   dale.go (dale.times (4, 0), function (k) {
       return [
          ['get pic #' + (k + 1), 'get', function (s) {
             return 'pic/' + s.pics [k].id;
@@ -818,7 +819,7 @@ var main = [
       if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
       return true;
    }],
-   dale.do (dale.times (2, 0), function (k) {
+   dale.go (dale.times (2, 0), function (k) {
       return [
          ['get pic #' + (k + 1), 'get', function (s) {
             return 'pic/' + s.pics2 [k].id;
@@ -919,7 +920,7 @@ var main = [
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
       return s.headers.cookie !== undefined;
    }],
-   dale.do (dale.times (3, 0), function (k) {
+   dale.go (dale.times (3, 0), function (k) {
       return ['delete pic #' + (k + 1), 'delete', function (s) {
          return 'pic/' + s.pics [k].id;
       }, {}, '', 200];
