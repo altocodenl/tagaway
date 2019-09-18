@@ -411,7 +411,8 @@ All the routes below require an admin user to be logged in.
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:      {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}
    - For signup:     {t: INT, a: 'sig', ip: STRING, ua: STRING}
-   - For reset:      {t: INT, a: 'res', ip: STRING, ua: STRING}
+   - For recover:    {t: INT, a: 'rec', ip: STRING, ua: STRING, token: STRING}
+   - For reset:      {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For destroy:    {t: INT, a: 'des', ip: STRING, ua: STRING}
    - For uploads:    {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED}
    - For deletes:    {t: INT, a: 'del', id: STRING}
