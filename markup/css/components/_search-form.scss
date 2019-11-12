@@ -1,0 +1,48 @@
+// -------------------------
+// Drag and drop
+// -------------------------
+.search-form {
+  display: flex;
+  width: 100%;
+  position: relative;
+}
+
+.search-form__input {
+  display: block;
+  height: 42px;
+  line-height: 42px;
+  border-radius: 100px;
+  border: 1px solid $border-color--dark;
+}
+
+.search-form__icon {
+  position: absolute;
+  right: $padding--s;
+  top: 50%;
+  margin-top: -12px;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+
+  path {
+    fill: $grey--link;
+  }
+}
+
+.search-form__dropdown {
+  position: absolute;
+  z-index: 1;
+  left: 2%;
+  top: 41px; // height input
+  width: 96%;
+  height: auto;
+  max-height: 120px;
+  overflow-y: auto;
+  border-radius: $border-radius--m;
+  box-shadow: 0 0 10px rgba(0,0,0, 0.15);
+  display: none;
+}
+
+.search-form:hover .search-form__dropdown{
+ display: block;
+}

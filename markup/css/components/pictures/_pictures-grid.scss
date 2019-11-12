@@ -1,0 +1,69 @@
+// -------------------------
+// Pictures
+// -------------------------
+.pictures-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.pictures-grid__item {
+  display: inline-flex;
+  height: 140px;
+  padding-right: 16px;
+  padding-bottom: 18px;
+  position: relative;
+}
+
+.pictures-grid__item {
+  width: 100px; 
+}
+
+.pictures-grid__item:nth-child(4n+12) {
+  width: 240px;
+}
+
+.pictures-grid__item:nth-child(3n+0) {
+  width: 180px;
+}
+
+.pictures-grid__item:nth-child(5n+7) {
+  width: 140px;
+}
+
+.pictures-grid__item-picture {
+  background: $grey--light;
+  width: 100%;
+  height: 100%;
+  border-radius: $border-radius--l;
+  position: relative;
+  transition: $easeOutQuart;
+  transition-duration: 200ms;
+  cursor: pointer;
+}
+
+.pictures-grid__item-picture::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 20px;
+  display: inline-block;
+  background: $color--one;
+  opacity: 0;
+  transition: 100ms linear;
+}
+
+.pictures-grid__item-picture.selected {
+  transform: scale(0.8);
+
+  &::after {
+    opacity: 1;
+    transition: 100ms linear;
+  }
+}
+

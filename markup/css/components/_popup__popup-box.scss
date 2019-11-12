@@ -1,0 +1,14 @@
+// -------------------------
+// Popup
+// -------------------------
+.popup-box {
+  background:rgba(#fff, 0.9);
+  max-width: 520px;
+  width: 100%;
+  min-height: 100px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(#000, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

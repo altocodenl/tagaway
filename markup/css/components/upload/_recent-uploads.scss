@@ -1,0 +1,13 @@
+// -------------------------
+// Recent uploads
+// -------------------------
+.recent-uploads__title {
+ font-size: fontSize(5);
+ line-height: spaceVer(1.5);
+  margin-bottom: spaceVer(1);
+}
+
+.recent-uploads__list-item {
+  display: block;
+  margin-bottom: spaceVer(1);
+}

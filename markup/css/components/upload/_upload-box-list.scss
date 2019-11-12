@@ -1,0 +1,13 @@
+// -------------------------
+// Upload list
+// -------------------------
+.upload-box-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: spaceVer(3);
+}
+
+.upload-box-list__item {
+  display: block;
+  margin-bottom: spaceVer(2);
+}

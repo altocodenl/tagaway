@@ -1,0 +1,78 @@
+// -------------------------
+// Account menu
+// -------------------------
+.account-menu__item {
+  position: relative;
+  padding-left: 10px;
+  padding-right: 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 33.3334%;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 4px 4px 0 4px;
+    border-color: $grey transparent transparent transparent;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .account-menu__item:hover::after {
+    border-color: $grey--darker transparent transparent transparent;
+  }
+}
+
+.account-menu__item-icon {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+
+  path {
+    fill: $grey--link;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .account-menu__item:hover .account-menu__item-icon path {
+    fill: $grey--darker;
+  }
+}
+
+.account-sub-menu {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 23px;
+  right: -10px;
+  width: 200px;
+  background: #fff;
+  padding-left: $padding--m;
+  padding-right: $padding--m;
+  padding-top: spaceVer(0.6);
+  padding-bottom: spaceVer(0.7);
+  border-radius: $border-radius--m;
+  box-shadow: 0 0 20px rgba(0,0,0, 0.15)
+}
+
+.account-menu__item:hover > .account-sub-menu {
+  display: flex;
+}
+
+.account-sub-menu__item-link {
+  color: $grey--link;
+  transition: $easeOutQuart;
+}
+
+@media screen and (min-width: 1025px) {
+  .account-sub-menu__item-link:hover {
+    color: $color--one;
+  }
+}
+

@@ -1,0 +1,35 @@
+// -------------------------
+// Drag and drop
+// -------------------------
+.drag-and-drop {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  border: 1px dashed $border-color--dark;
+  border-radius: $border-radius--m;
+  padding-left: $padding--m;
+  padding-right: $padding--m;
+  padding-top: spaceVer(1.5);
+  padding-bottom: spaceVer(1.5);
+
+}
+
+.drag-and-drop__icon {
+  display: inline-block;
+  width: 25px;
+  height: 33px;
+  margin-bottom: spaceVer(0.25);
+
+  path {
+    fill: $grey--light;
+  }
+}
+
+.drag-and-drop__text {
+  color: $grey;
+  text-align: center;
+  display: inline-block;
+  max-width: 230px;
+}

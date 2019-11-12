@@ -1,0 +1,23 @@
+// -------------------------
+// Pictures
+// -------------------------
+.pictures-header {
+  margin-bottom: spaceVer(2);
+  padding-right: $padding--m;
+}
+
+.pictures-header__action-bar {
+  margin-top: spaceVer(0.5);
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.pictures-header__selected-tags {
+  display: inline-flex;
+}
+
+.pictures-header__sort {
+  display: inline-flex;
+  margin-left: auto;
+}

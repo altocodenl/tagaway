@@ -1,0 +1,96 @@
+@import './css/utils/reset.scss';
+@import './css/utils/pow.scss';
+
+/* Setup ACPIC */
+
+@import './css/global/variables.scss';
+@import './css/global/mixins.scss';
+@import './css/global/typography_setup.scss';
+@import './css/global/typography.scss';
+@import './css/global/main-styles.scss';
+@import './css/global/colors.scss';
+@import './css/global/buttons.scss';
+@import './css/global/structure.scss';
+
+
+/* Forms */
+@import './css/global/forms.scss';
+
+
+/* Header */
+
+@import './css/components/header/header.scss';
+@import './css/components/header/logo.scss';
+@import './css/components/header/main-menu.scss';
+@import './css/components/header/main-menu-mobile.scss';
+@import './css/components/header/account-menu.scss';
+@import './css/components/header/hamburger.scss';
+
+/* Sidebar */
+
+@import './css/components/sidebar/sidebar.scss';
+@import './css/components/sidebar/sidebar-header.scss';
+@import './css/components/sidebar/sidebar-search.scss';
+@import './css/components/sidebar/switch.scss';
+@import './css/components/sidebar/attach-form.scss';
+
+
+/* Main */
+@import './css/components/main.scss';
+@import './css/components/main-centered.scss';
+@import './css/components/guide.scss';
+
+
+/* Page structure */
+@import './css/components/page-header.scss';
+@import './css/components/page-section.scss';
+
+
+/* Components */
+
+@import './css/components/tip.scss';
+@import './css/components/search-form.scss';
+@import './css/components/tag-list-horizontal.scss';
+@import './css/components/tag-list-extended.scss';
+@import './css/components/tag-list-dropdown.scss';
+@import './css/components/tag-list.scss';
+@import './css/components/tag.scss';
+@import './css/components/tag-actions.scss';
+@import './css/components/tag-share.scss';
+@import './css/components/back-link.scss';
+@import './css/components/dropdown.scss';
+
+
+/* Upload page */
+@import './css/components/upload/upload-box-list.scss';
+@import './css/components/upload/upload-box.scss';
+@import './css/components/upload/drag-and-drop.scss';
+@import './css/components/upload/upload-progress.scss';
+@import './css/components/upload/progress-bar.scss';
+@import './css/components/upload/recent-uploads.scss';
+@import './css/components/upload/upload-selection.scss';
+
+
+/* Pictures */
+@import './css/components/pictures/pictures-header.scss';
+@import './css/components/pictures/pictures-grid.scss';
+@import './css/components/pictures/organise-bar.scss';
+@import './css/components/pictures/selected-box.scss';
+
+/* Manage tags */
+@import './css/components/manage-tags/show-hidden.scss';
+@import './css/components/manage-tags/tags-search-bar.scss';
+
+
+/* Footer */
+
+@import './css/components/footer.scss';
+
+
+/* Popup */
+
+@import './css/components/popup.scss';
+@import './css/components/popup__popup-box.scss';
+@import './css/components/close-button.scss';
+@import './css/components/cross.scss';
+

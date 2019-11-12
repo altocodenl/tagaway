@@ -1,0 +1,89 @@
+// -------------------------
+// Upload box
+// -------------------------
+.upload-box {
+  display: flex;
+  border: 1px solid $border-color--dark;
+  border-radius: $border-radius--m;
+  padding-left: $padding--m;
+  padding-right: $padding--l;
+  padding-top: spaceVer(1);
+  padding-bottom: spaceVer(1);
+}
+
+.upload-box__image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin-right: $padding--l;
+  border-radius: 100px;
+  background: $grey--lighter;
+}
+
+.upload-box__image-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  transform: scale(1.5);
+
+  path {
+    fill: $grey;
+  }
+}
+
+.upload-box__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-top: 5px;
+}
+
+.upload-box__section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: spaceVer(1.25);
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.upload-box--recent-uploads .upload-box__section {
+  margin-bottom: spaceVer(0.5);
+}
+
+.upload-box__selection {
+  display: block;
+  margin-top: spaceVer(1);
+}
+
+.upload-box__search {
+  margin-bottom: spaceVer(0.25);
+}
+
+.upload-box__section--buttons {
+  margin-bottom: spaceVer(1);
+}
+
+.upload-box__section-title {
+  font-size: fontSize(1);
+  line-height: spaceVer(1.25);
+  margin-bottom: spaceVer(0.5);
+}
+
+.upload-box--recent-uploads .upload-box__section-title {
+  margin-bottom: 0;
+}
+
+.upload-box__section-title-note {
+  @include fontPrimaryItalic;
+  color: $grey;
+}
+
+.upload-box__upload-button {
+  margin-left: auto;
+}
+

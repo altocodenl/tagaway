@@ -1,0 +1,26 @@
+// -------------------------
+// Guide
+// -------------------------
+.guide {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  max-width: 510px;
+  width: 100%;
+}
+
+.guide__image {
+  margin-bottom: spaceVer(0.5);
+}
+
+.guide__title {
+  font-size: fontSize(7);
+  line-height: spaceVer(1.75);
+  margin-bottom: spaceVer(0.5);
+}
+
+.guide__text {
+  font-size: fontSize(1);
+  margin-bottom: spaceVer(1);
+}

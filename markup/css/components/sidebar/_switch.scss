@@ -1,0 +1,93 @@
+.switch {
+ padding: 4px;
+ display: inline-block;
+ position: relative;
+ border-radius: 100px;
+ background: $highlight--neutral;
+ transition: $easeOutQuart;
+}
+
+.app-selected-tags .switch {
+  background: $highlight--selection;
+}
+
+.app-attach-tags .switch {
+  background: $highlight--positive;
+}
+
+.app-untag-tags .switch {
+  background: $highlight--negative;
+}
+
+.switch::after {
+  content: '' ;
+  background: #fff;
+  border-radius: 100px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  height: calc(100% - 8px);
+  z-index: 0;
+  transition: $easeOutQuart;
+}
+
+.app-all-tags .switch::after {
+  left: 4px;
+  width: 98px;
+}
+
+.app-selected-tags .switch::after{
+  left: 101px;
+  width: 130px;
+}
+
+.app-attach-tags .switch::after {
+  left: 4px;
+  width: 125px;
+}
+
+.app-untag-tags .switch::after {
+  left: 128px;
+  width: 110px;
+}
+
+
+.switch-list {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.switch-list__button {
+  height: 38px;
+  padding-left: $padding--xs;
+  padding-right: $padding--m;
+  display: flex;
+  align-items: center;
+  color: $grey--link;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.switch-list__button-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  margin-right: 2px;
+
+  path {
+    fill: $grey--link;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .switch-list__button:hover .switch-list__button-text {
+    color: $grey--darker;
+
+    .switch-list__button-icon path {
+      fill: $grey--darker;
+    }
+  }
+}

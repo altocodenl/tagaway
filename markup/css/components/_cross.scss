@@ -1,0 +1,53 @@
+// -------------------------
+// Crosses
+// -------------------------
+.cross-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+
+  .cross-button__cross {
+    @include cross($size: 16px, $color: $grey);
+  }
+
+  &:hover .cross-button__cross {
+    @include crossHover($color: $grey--darker);
+  }
+}
+
+// ------ Cross button big (in sidebar) ------ //
+.cross-button--big {
+  width: 48px;
+  height: 48px;
+
+  .cross-button__cross {
+    @include cross($size: 24px, $color: $grey);
+  }
+}
+
+
+// ------ Remove tag ( in upload-box ) ------ //
+
+.cross-button--remove-tag {
+  width: 24px;
+  height: 24px;
+  background: $grey--lighter;
+  border-radius: 100px;
+  transition: $easeOutQuart;
+  margin-left: 5px;
+
+  .cross-button__cross {
+    @include cross($size: 10px, $color: $grey);
+  }
+}
+
+.cross-button--remove-tag:hover {
+  background: $grey--light;
+
+  .cross-button__cross {
+    @include crossHover($color: $grey--darker);
+  }
+}

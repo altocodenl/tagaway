@@ -1,0 +1,39 @@
+// -------------------------
+// Back link
+// -------------------------
+.back-link--uploads {
+  border-bottom: $grey 1px solid;
+  padding-bottom: spaceVer(1);
+}
+
+.back-link__link {
+  display: flex;
+  align-items: center;
+  color: $grey--darker;
+  transition: $easeOutQuart;
+}
+
+.back-link__icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  transition: $easeOutQuart;
+
+  path {
+    fill: $grey--darker;
+    transition: $easeOutQuart;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .back-link__link:hover {
+    color: $color--one;
+
+    .back-link__icon {
+      transform: translateX(-4px);
+      path {
+        fill: $color--one;
+      }
+    }
+  }
+}

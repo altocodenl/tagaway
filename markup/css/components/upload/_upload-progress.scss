@@ -1,0 +1,20 @@
+// -------------------------
+// Upload progress
+// -------------------------
+.upload-progress {
+  color: $color--one;
+  display: flex;
+  align-items: center;
+  @include fontPrimaryMedium;
+}
+
+.upload-progress__icon {
+  display: inline-block;
+  width: 24px; 
+  height: 24px;
+  margin-right: 7px;
+
+  path {
+    fill: $color--one;
+  }
+}

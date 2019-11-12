@@ -1,0 +1,67 @@
+// -------------------------
+// Show hidden
+// -------------------------
+.tags-search-bar {
+  position: relative;
+  display: block;
+  margin-bottom: spaceVer(2);
+}
+
+.tags-search-bar__search-input {
+  border: 1px solid $border-color;
+  border-radius: 100px;
+  padding-left: 42px;
+  @include fontPrimaryItalic;
+  line-height: 46px;
+  height: 46px;
+}
+
+.tags-search-bar__search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  pointer-events: none;
+}
+
+.tags-search-bar__search-icon path {
+  fill: $grey;
+}
+
+.tags-search-bar__shared {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: $grey--darker;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.app-shared-tags-filtered {
+  .tags-search-bar__shared {
+    opacity: 1;
+    color: $color--one;
+  }
+}
+
+.tags-search-bar__shared-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  margin-right: 4px;
+
+  path {
+    fill: $grey--darker;
+  }
+}
+
+.app-shared-tags-filtered {
+  .tags-search-bar__shared-icon path {
+    fill: $color--one;
+  }
+}

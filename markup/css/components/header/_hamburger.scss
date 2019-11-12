@@ -1,0 +1,65 @@
+// -------------------------
+// Hamburger
+// -------------------------
+.hamburger {
+  position: relative;
+  display: none;
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+
+  @media screen and (max-width: 767px) {
+    display: flex;
+  }
+}
+
+.hamburger__inner {
+  position: absolute;
+  display: inline-block;
+  height: 14px;
+  width: 28px;
+  left: 11px;
+  transition: all $easeOutQuart;
+}
+
+.hamburger__stroke {
+  background: #fff;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  position: absolute;
+  left: 0px;
+  transition: transform $easeOutQuart 0.45s, opacity 0.3s linear;
+}
+
+.hamburger__stroke-1 {
+  top: 0;
+}
+
+.hamburger__stroke-2 {
+  top: 6px;
+}
+
+.hamburger__stroke-3 {
+  top: 12px;
+}
+
+.active-mobile-menu {
+  .hamburger__inner {
+    transform: rotate(180deg);
+  }
+
+  .hamburger__stroke-1 {
+    transform: rotate(-45deg) translateY(5px) translateX(-4px);
+  }
+
+  .hamburger__stroke-2 {
+    transform: rotate(45deg);
+    opacity: 0.2;
+  }
+
+  .hamburger__stroke-3 {
+    transform: rotate(45deg) translateY(-4px) translateX(-4px);
+  }
+}

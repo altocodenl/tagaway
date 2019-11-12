@@ -1,0 +1,30 @@
+// -------------------------
+// Popup
+// -------------------------
+.popup {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background: rgba(#fff, 0.9);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  pointer-events: none;
+  opacity: 0;
+  transition: all $easeOutQuart;
+}
+
+.app-popup .popup{
+  opacity: 1;
+  pointer-events: all;
+}
+
+.popup__close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+}

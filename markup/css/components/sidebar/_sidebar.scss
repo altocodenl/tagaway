@@ -1,0 +1,128 @@
+.sidebar {
+  position: fixed;
+  z-index: 99;
+  left: 0;
+  top: 58px; // height main header
+  padding-bottom: 54px; // height sidebar search
+  width: $sidebar-width;
+  display: flex;
+  flex-direction: column;
+  border-right: $border-color 1px solid;
+  height: calc(100vh - 58px);
+  background-color: #fff;
+  overflow-x: hidden;
+}
+
+.sidebar__inner {
+  width: 200%;
+  display: flex;
+  flex-wrap: nowrap;
+  transition: $easeOutQuad;
+  transition-duration: 500ms;
+}
+
+.app-organise .sidebar__inner {
+  transform: translateX(-50%);
+}
+
+.sidebar__inner-section {
+  width: 50%;
+  position: relative;
+}
+
+// -------------------------
+// Sidebar coherent paddings
+// -------------------------
+.sidebar__header,
+.sidebar__tags,
+.sidebar__tip{
+  padding-left: $padding--m;
+  padding-right: $padding--m;
+}
+
+.sidebar__attach-form,
+.sidebar__switch {
+  padding-left: calc(#{$padding--m} - 6px); // has smaller padding for 
+  padding-right: calc(#{$padding--m} - 6px); // optic correction of round shape
+}
+
+// -------------------------
+// Sidebar close section
+// -------------------------
+
+.sidebar__close-section-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
+
+// -------------------------
+// Sidebar header
+// -------------------------
+
+.sidebar__header {
+  padding-top: spaceVer(1.5);
+  padding-bottom: spaceVer(1.5);
+}
+
+// -------------------------
+// Sidebar title
+// -------------------------
+
+.sidebar__section-title {
+  margin-bottom: spaceVer(0.5);
+  padding-left: $padding--xs;
+}
+
+.sidebar__attach-form {
+  margin-top: spaceVer(1);
+  margin-bottom: spaceVer(1);
+}
+
+// -------------------------
+// Sidebar switch
+// -------------------------
+
+.sidebar__switch {
+  margin-bottom: spaceVer(1);
+}
+
+// -------------------------
+// Sidebar footer
+// -------------------------
+
+.sidebar__footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 54px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid $border-color;
+}
+
+// -------------------------
+// Sidebar -- Attach tags
+// -------------------------
+.app-attach-tags {
+  .sidebar__attach-form {
+    display: block;
+  }
+  .sidebar__section-title--untag {
+    display: none;
+  }
+}
+
+// -------------------------
+// Sidebar -- untag tags
+// -------------------------
+.app-untag-tags {
+  .sidebar__attach-form {
+    display: none;
+  }
+  .sidebar__section-title--attach {
+    display: none;
+  }
+}

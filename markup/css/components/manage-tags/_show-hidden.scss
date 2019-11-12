@@ -1,0 +1,48 @@
+// -------------------------
+// Show hidden
+// -------------------------
+.show-hidden {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+  margin-bottom: spaceVer(0.5);
+}
+
+.show-hidden__icon {
+  display: none;
+  width: 24px;
+  height: 24px;
+
+  path {
+    fill: $grey--darker;
+  }
+}
+
+.show-hidden__icon--open {
+  path {
+    fill: $color--one;
+  }
+}
+
+.show-hidden__title-status {
+  display: none;
+}
+
+.app-tags-hidden {
+  .show-hidden__icon--closed {
+    display: inline-block;
+  }
+  .show-hidden__title-status--show {
+    display: inline-block;
+  }
+}
+
+.app-tags-hidden-open {
+  .show-hidden__icon--open {
+    display: inline-block;
+  }
+  .show-hidden__title-status--closed {
+    display: inline-block;
+  }
+}

@@ -1,0 +1,19 @@
+// -------------------------
+// Tag list dropdown
+// -------------------------
+.tag-list-dropdown {
+  background: #fff;
+  width: 100%;
+  list-style-type: none;
+  
+  .tag-list-dropdown__item {
+    display: flex;
+    padding-left: $padding--s;
+    padding-top: spaceVer(0.5);
+    padding-bottom: spaceVer(0.5);
+  }
+
+  .tag-list-dropdown__item:hover {
+    background: $grey--lightest;
+  }
+}

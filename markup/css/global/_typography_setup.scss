@@ -1,0 +1,27 @@
+// -------------------------
+// Typography setup
+// -------------------------
+// -------------
+// Rhythm Variables
+// -------------
+$typeBase: 13px;
+$typeRatio: 1.125; // major second
+$typeLineHeight: 1.5;
+
+// -------------
+// Typographic scale
+// -------------
+@function fontSize($number, $ratio: $typeRatio){
+  $size: pow($ratio, $number);
+  @return #{$size + 'rem'};
+}
+
+// -------------
+// Vertical Rhythm
+// for line-height and vertical spaces
+// https://betterwebtype.com/rhythm-in-web-typography
+// -------------
+@function spaceVer($number, $lineHeight:$typeLineHeight) {
+  $height: $number * $lineHeight;
+  @return #{$height + 'rem'};
+}

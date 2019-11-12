@@ -1,0 +1,48 @@
+// -------------------------
+// Tag shared
+// -------------------------
+.tag-share {
+  display: flex;
+  width: 100%;
+  margin-top: spaceVer(0.5);
+  margin-bottom: spaceVer(1);
+}
+
+.tag-share__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 4px;
+  background-color: rgba($grey, 0.1);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.tag-share__item:hover {
+  background-color: rgba($grey, 0.15);
+}
+
+.tag-share__item-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+
+  path {
+    fill: rgba($grey--darker, 0.7);
+    transition: 250ms linear all;
+  }
+}
+
+.tag-share__item:hover {
+  path {
+    fill: rgba($grey--darker, 1);
+  }
+}
+
+.tag-share__item-img {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+}

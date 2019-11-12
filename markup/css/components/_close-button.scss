@@ -1,0 +1,56 @@
+// -------------------------
+// Close button
+// -------------------------
+.close-button {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+// --- close  button--small --- //
+.close-button--small {
+  width: 22px;
+  height: 22px;
+}
+
+.close-button__inner {
+  display: inline-block;
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+// --- close  button--small inner --- //
+
+.close-button--small .close-button__inner {
+  width: 12px;
+  height: 12px;
+}
+
+.close-button__line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -50%;
+  display: inline-block;
+  width: 100%;
+  height: 1px;
+  background-color: #000;
+  transform: rotate(-45deg);
+  transition: all $easeOutQuart;
+}
+
+.close-button__line:last-child {
+  transform: rotate(45deg);
+}
+@media screen and (min-width: 1025px) {
+  .close-button:hover {
+    .close-button__line {
+      background-color: #ccc;
+    }
+  }
+}

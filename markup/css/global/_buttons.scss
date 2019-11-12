@@ -1,0 +1,82 @@
+// -------------------------
+// Buttons
+// -------------------------
+.button {
+  outline: 0;
+  border-radius: 100px;
+  @include fontPrimaryMedium;
+  line-height: 40px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding-left: $padding--m;
+  padding-right: $padding--m;
+  text-align: center;
+  transition: $easeOutQuart;
+}
+
+.button--one {
+  border: 1px solid $color--one;
+  background-color: $color--one;
+  color: #fff;
+}
+
+
+@media screen and (min-width: 1025px) {
+  .button--one:hover {
+    background-color: #fff;
+    color: $color--one;
+  }
+}
+
+.button--two {
+  border: 1px solid $grey;
+  background-color: #fff;
+  color: $grey;
+}
+
+@media screen and (min-width: 1025px) {
+  .button--two:hover {
+    background: $grey;
+    color: #fff;
+  }
+}
+
+// -------------------------
+// Buttons icon
+// -------------------------
+
+.button__icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  margin-left: -4px;
+}
+
+.button--one .button__icon {
+  path {
+    fill: #fff;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .button--one:hover .button__icon {
+    path {
+      fill: $color--one;
+    }
+  }
+}
+
+.button--two .button__icon {
+  path {
+    fill: $grey;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .button--two:hover .button__icon {
+    path {
+      fill: #fff;
+    }
+  }
+}

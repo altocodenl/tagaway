@@ -1,0 +1,27 @@
+// -------------------------
+// Form styling
+// -------------------------
+input {
+  border: 0;
+  font-size: fontSize(1);
+  width: 100%;
+}
+
+input.search-input {
+  padding-left: $padding--m;
+  padding-right: $padding--l;
+}
+
+input.search-input::placeholder {
+  @include fontPrimaryItalic;
+}
+
+input.attach-input {
+  line-height: 46px;
+  height: 46px;
+  border: 1px solid $border-color--dark;
+  border-radius: 100px;
+  padding-left: 15px;
+  padding-right: 10px;
+
+}

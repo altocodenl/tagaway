@@ -1,0 +1,43 @@
+// -------------------------
+// Tag list -- Sidebar
+// -------------------------
+.tag-list {
+  display: block;
+  width: 100%;
+  list-style-type: none;
+  
+}
+
+.tag-list__item {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: spaceVer(0.5);
+}
+
+
+// -------------------------
+// Tag list -- Sidebar -- Only selected tags
+// -------------------------
+.app-selected-tags .tag-list--sidebar {
+  .tag {
+    display: none;
+  }
+
+  .tag--selected {
+    display: flex;
+  }
+}
+
+// -------------------------
+// Tag list -- Sidebar -- only attached tags (Untag)
+// -------------------------
+.app-untag-tags .tag-list--attach {
+  .tag {
+    display: none;
+  }
+
+  .tag--attached {
+    display: flex;
+  }
+}

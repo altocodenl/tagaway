@@ -1,0 +1,25 @@
+.sidebar-search {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-search__input {
+  padding-left: $padding--m;
+  padding-right: $padding--m;
+}
+
+.sidebar-search__icon {
+  position: absolute;
+  right: $padding--s;
+  top: 50%;
+  margin-top: -12px;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+
+  path {
+    fill: $grey--link;
+  }
+}

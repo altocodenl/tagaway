@@ -1,0 +1,158 @@
+// -------------------------
+// Tag actions
+// -------------------------
+.tag-actions {
+  position: absolute;
+  display: inline-block;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 20px;
+  transition: $easeOutQuart;
+}
+
+// tag list horizontal
+.tag-list-horizontal .tag-actions {
+  position: relative;
+  top: auto;
+  right: auto;
+  transform: none;
+}
+
+.tag-actions__item {
+  display: none;
+  cursor: pointer;
+  border-radius: 100px;
+}
+
+// tag list horizontal
+.tag-list-horizontal .tag-actions__item {
+  display: inline-block;
+  margin-left: $padding--xs;
+}
+
+
+// -------------------------
+// Tag actions - items
+// -------------------------
+
+.tag-actions__item--attach {
+  background-color: $grey--lighter;
+  fill: $grey;
+  
+  &:hover {  
+    fill: $grey--darker;
+  }
+}
+
+.tag-actions__item--deselect {
+  background-color: $grey--lighter;
+  fill: $grey;
+  
+  &:hover {  
+    fill: $grey--darker;
+  }
+}
+
+.tag-actions__item--attached {
+  background-color: $color--attach;
+  fill: #fff;
+}
+
+.tag-actions__item--untag {
+  background-color: $color--remove;
+  fill: #fff;
+}
+
+.tag-actions__item-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+
+// -------------------------
+// Tag actions -- View pictures
+// -------------------------
+.app-pictures {
+  // Selected tag
+  .tag--selected .tag-actions__item--selected {
+    display: flex;
+  }
+
+  // Deselect tag
+  .tag--selected .tag-actions:hover {
+    .tag-actions__item--selected {
+      display: none;
+    }
+
+    .tag-actions__item--deselect {
+      display: flex;
+    }
+  }
+
+  // All pictures tag 
+  // (has no hover because you can't deselect it)
+  .tag--all-pictures.tag--selected:hover {
+    .tag-actions__item--selected {
+      display: flex;
+    }
+
+    .tag-actions__item--deselect {
+      display: none;
+    }
+  }
+}
+
+// -------------------------
+// Tag actions -- Attach tags
+// -------------------------
+.app-attach-tags {
+
+  .tag-actions__item--attach {
+    display: flex;
+  }
+
+  // tag hover
+  .tag-actions:hover {
+    .tag-actions__item--attach {
+      display: none;
+    }
+    
+    .tag-actions__item--attached {
+      display: flex;
+    }
+  }
+
+  // tag attached
+  .tag--attached {
+    .tag-actions__item--attach {
+      display: none;
+    }
+    
+    .tag-actions__item--attached {
+      display: flex;
+    }
+  }
+}
+
+// -------------------------
+// Tag actions -- Untag
+// -------------------------
+
+.app-untag-tags {
+  .tag-actions__item--attached {
+    display: flex;
+  }
+
+  .tag-actions:hover {
+    .tag-actions__item--attached {
+      display: none;
+    }
+    
+    .tag-actions__item--untag {
+      display: flex;
+    }
+  }
+}

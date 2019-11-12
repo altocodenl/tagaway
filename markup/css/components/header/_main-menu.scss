@@ -1,0 +1,31 @@
+// -------------------------
+// Main menu
+// -------------------------
+.main-menu {
+  display: flex;
+}
+
+.main-menu__item {
+  margin-right: $padding--m;
+}
+
+.main-menu__item-link {
+  color: $grey--link;
+  font-size: fontSize(1);
+  transition: $easeOutQuart;
+}
+
+@media screen and (min-width: 1025px) {
+  .main-menu__item-link:hover {
+    color: $color--one;
+  }
+}
+
+
+// ---- Active menu item ---- //
+.app-organise .main-menu__item--organise,
+.app-pictures .main-menu__item--pictures {
+  .main-menu__item-link {
+    color: $color--one;
+  }
+}

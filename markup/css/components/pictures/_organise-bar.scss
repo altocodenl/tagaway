@@ -1,0 +1,89 @@
+// -------------------------
+// Pictures
+// -------------------------
+.organise-bar {
+  position: fixed;
+  z-index: 1;
+  top: 58px; // header height
+  left: 0;
+  width: 100%;
+  height: auto;
+  transform: translateY(-100%);
+  transition: $easeOutQuart;
+}
+
+.app-show-organise-bar .organise-bar {
+  transform: none;
+}
+
+.organise-bar__inner {
+  background: white;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  border-bottom: 1px solid $grey--lighter;
+  padding-left: $sidebar-width + $padding--l;
+  padding-right: $padding--m;
+}
+
+.organise-bar__selected {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.organise-bar__selected-title {
+  margin-left: $padding--xs;
+}
+
+.organise-bar__button {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: linear 250ms all;
+  cursor: pointer;
+  margin-left: $padding--m;
+}
+
+.organise-bar__button--delete {
+  margin-left: auto;
+  background-color: rgba($color--remove, 0.05);
+  padding-left: 10px;
+  padding-right: 14px;
+  border-radius: 100px;
+  height: 32px;
+  color: rgba($color--remove, 0.7);
+  opacity: 1;
+
+  &:hover {
+    background-color: rgba($color--remove, 0.1);
+  }
+
+  .organise-bar__button-icon path {
+    fill: rgba($color--remove, 0.7);
+  }
+}
+
+.organise-bar__button:hover {
+  opacity: 1;
+}
+
+.organise-bar__button-title {
+  margin-left: 4px;
+}
+
+.organise-bar__button-icon-container {
+  border-radius: 100px;
+  background-color: $grey--lighter;
+  height: 24px;
+  width: 24px;
+  display: inline-block;
+}
+
+.organise-bar__button-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  fill: $grey--darker;  
+}

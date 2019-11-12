@@ -1,0 +1,16 @@
+// -------------------------
+// Main (where all the content comes)
+// -------------------------
+.main-centered {
+  padding-top: 58px; // header height
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+.main-centered__inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}

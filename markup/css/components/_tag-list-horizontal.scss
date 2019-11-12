@@ -1,0 +1,16 @@
+// -------------------------
+// Tag list bar (above pictures)
+// -------------------------
+.tag-list-horizontal {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  
+  .tag-list-horizontal__item {
+    width: auto;
+    margin-right: $padding--m;
+    display: inline-flex;
+    white-space: nowrap;
+    margin-top: spaceVer(0.25);
+  }
+}

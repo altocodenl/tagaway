@@ -1,0 +1,47 @@
+// -------------------------
+// Selected box (in organise bar)
+// -------------------------
+.selected-box {
+  position: relative;
+  background: $color--one;
+  border-radius: 12px;
+  min-width: 22px;
+  min-height: 22px;
+  padding-top: 1px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selected-box__close {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  margin-left: -12px;
+  display: none;
+  cursor: pointer;
+}
+
+.selected-box__close-icon {
+  path {
+    fill: #fff;
+  }
+}
+
+.selected-box:hover {
+  .selected-box__close {
+    display: inline-block;
+  }
+
+  .selected-box__count {
+    opacity: 0;
+  }
+}
+

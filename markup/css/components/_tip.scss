@@ -1,0 +1,38 @@
+// -------------------------
+// tip
+// -------------------------
+.tip {
+  display: flex;
+  flex-direction: column;
+  color: $grey--darker;
+}
+
+.tip__header {
+  display: flex;
+  align-items: center;
+  margin-bottom: spaceVer(0.25);
+}
+
+.tip__icon {
+  margin-right: $padding--xs;
+}
+
+.tip__title {
+  @include fontPrimaryMedium;
+  margin-top: 1px;
+}
+
+.tip__text {
+  @include fontPrimaryItalic;
+
+  a {
+    color: $grey--darker;
+    text-decoration: underline;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .tip__text a:hover {
+    color: $color--one;
+  }
+}

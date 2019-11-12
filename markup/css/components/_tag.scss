@@ -1,0 +1,79 @@
+// -------------------------
+// Tag
+// -------------------------
+.tag {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  color: rgba($grey--darker, 0.8);
+  transition: 250ms linear color;
+}
+
+.sidebar .tag:hover,
+.tag--selected {
+  color: $grey--darker;
+  fill: $grey--darker;
+}
+
+.tags-list-extended .tag {
+  color: $grey--darker;
+}
+
+// -------------------------
+// Tag icon
+// -------------------------
+
+.tag__icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  margin-right: 3px;
+}
+
+.tag__icon--all{
+  path {
+    fill: $grey--darker;
+  }
+}
+
+.tag__icon--untagged {
+  path {
+    fill: transparent;
+    stroke: $grey--darker;
+  }
+}
+
+// -------------------------
+// Tag title
+// -------------------------
+.tag__title {
+  @include fontPrimaryMedium;
+  margin-right: $padding--xs;
+}
+
+// -------------------------
+// Tag title - amount
+// -------------------------
+
+.tag__title-amount {
+  white-space: nowrap;
+  @include fontPrimaryRegular;
+}
+
+// -------------------------
+// Tag info
+// -------------------------
+.tag__status {
+  display: flex;
+}
+
+.tag__status-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+
+  path {
+    fill: $grey--darker;
+  }
+}

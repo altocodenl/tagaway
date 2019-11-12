@@ -1,0 +1,41 @@
+// -------------------------
+// Tag list extended
+// -------------------------
+.tag-list-extended {
+  width: 100%;
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+}
+  
+.tag-list-extended__item {
+  display: flex;    
+  align-items: flex-start;
+  padding-left: $padding--s;
+  padding-top: spaceVer(0.5);
+  padding-bottom: spaceVer(0.5);
+  border-bottom: 1px $border-color solid;
+  cursor: pointer;
+  position: relative;
+  transition: $easeOutQuart;
+  overflow: hidden;
+  font-size: fontSize(1);
+}
+
+.tag-list-extended__item-info {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: auto;
+  top: spaceVer(1);
+  padding-left: 27px;
+  padding-right: $padding--m;
+  font-size: fontSize(0);
+}
+
+.tag-list-extended__item-info-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: spaceVer(1.5);
+}

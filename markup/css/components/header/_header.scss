@@ -1,0 +1,35 @@
+// -------------------------
+// Header
+// -------------------------
+.header {
+  background: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-bottom: 1px solid $border-color;
+  height: spaceVer(3);
+}
+
+.header__brand {
+  width: $sidebar-width;
+  display: inline-block;
+  padding-left: $padding--m;
+}
+
+.header__menu {
+  padding-left: $padding--l;
+}
+
+.header__user {
+  margin-left: auto;
+  
+}
+
+.header__upload-button {
+  margin-left: $padding--m;
+  margin-right: $padding--m;
+}

@@ -1,0 +1,43 @@
+// -------------------------
+// Typography 
+// -------------------------
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap');
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: $typeBase;
+}
+
+html,
+body {
+  line-height: spaceVer(1);
+  @include fontPrimaryRegular;
+}
+
+p,
+a,
+li {
+  line-height: spaceVer(1);
+  @include fontPrimaryRegular;
+
+}
+
+// -------------------------
+// Global typographic styles
+// -------------------------
+.page-title {
+  font-size: fontSize(7);
+  line-height: spaceVer(1.75);
+  margin-bottom: spaceVer(0.25);
+  @include fontPrimaryRegular;
+}
+
+.page-subtitle {
+  font-size: fontSize(1);
+  @include fontPrimaryItalic;
+  color: $grey;
+}
