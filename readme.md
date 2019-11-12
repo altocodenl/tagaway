@@ -1,14 +1,14 @@
-# ac:pic :: a home for your pictures
+# ac;pic :: a home for your pictures
 
 ## About
 
-ac:pic is an application that allows you to store and manage your pictures. ac:pic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
+ac;pic is an application that allows you to store and manage your pictures. ac;pic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
 
 To understand why we're sharing the source code of a commercial product, please read [our manifesto](http://federicopereiro.com/manifesto). If that's too long to read, in a nutshell: we want to share our code so that others can learn from it and contribute to us. Sharing is the way to progress.
 
 ## Status
 
-The application is currently under development and has not been launched yet. We estimate to have an alpha by September 2018 and a beta before the end of 2018.
+The application is currently under development and has not been launched yet. We estimate to have an alpha by the end of 2019.
 
 ## Routes
 
@@ -190,8 +190,7 @@ All the routes below require an admin user to be logged in.
 
 - Server
    - Hidden tags.
-   - Change password.
-   - Oauth login.
+   - ac;id
    - Provision prod infrastructure.
 
 ### Todo beta
@@ -217,7 +216,7 @@ All the routes below require an admin user to be logged in.
 
 - Share
    - Share/unshare with authorization & automatic email.
-   - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures).
+   - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
    - Upload to shared tag.
    - Tags with same name (local vs shared, put a @).
    - QR code to share.
@@ -503,4 +502,4 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## License
 
-ac:pic is written by [Altocode](https://altocode.nl) and released into the public domain.
+ac;pic is written by [Altocode](https://altocode.nl) and released into the public domain.
