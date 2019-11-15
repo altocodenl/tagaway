@@ -90,7 +90,10 @@
 /* Popup */
 
 @import './css/components/popup.scss';
-@import './css/components/popup__popup-box.scss';
+@import './css/components/popup-box.scss';
 @import './css/components/close-button.scss';
 @import './css/components/cross.scss';
 
+/* Fullscreen image */
+
+@import './css/components/fullscreen.scss';

@@ -538,7 +538,7 @@
 
       <div class="pictures-grid">
         
-        <div class="pictures-grid__item"><div class="pictures-grid__item-picture"></div></div>
+        <div class="pictures-grid__item"><div class="pictures-grid__item-picture js_open-fullscreen"></div></div>
         <div class="pictures-grid__item"><div class="pictures-grid__item-picture"></div></div>
         <div class="pictures-grid__item"><div class="pictures-grid__item-picture"></div></div>
         <div class="pictures-grid__item"><div class="pictures-grid__item-picture"></div></div>
@@ -589,9 +589,57 @@
         <div class="pictures-grid__item"><div class="pictures-grid__item-picture"></div></div>
         
       </div>
+    </div>
+  </div>
 
-
-
+  <!-- ====================
+    Popup
+  ==================== -->
+  <div class="fullscreen">
+    <div class="fullscreen__close js_cancel-fullscreen">
+      <svg class="fullscreen__close-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" >
+        <path d="M11.5,18.8c0,0.4-0.3,0.8-0.7,0.8c0,0,0,0-0.1,0c-0.4,0-0.7-0.3-0.7-0.7l-0.3-3.6l-6.8,6.8c-0.1,0.1-0.3,0.2-0.5,0.2
+        s-0.4-0.1-0.5-0.2c-0.3-0.3-0.3-0.8,0-1.1l6.8-6.8L5,14c-0.4,0-0.7-0.4-0.7-0.8c0-0.4,0.4-0.7,0.8-0.7l4.4,0.3
+        c0.4,0,0.8,0.2,1.1,0.5c0.3,0.3,0.5,0.7,0.5,1.1L11.5,18.8z M22.6,1.1c-0.3-0.3-0.8-0.3-1.1,0l-6.8,6.8l-0.3-3.6
+        c0-0.4-0.4-0.7-0.8-0.7c-0.4,0-0.7,0.4-0.7,0.8l0.3,4.4c0,0.4,0.2,0.8,0.5,1.1c0.3,0.3,0.7,0.5,1.1,0.5l4.4,0.3c0,0,0,0,0.1,0
+        c0.4,0,0.7-0.3,0.7-0.7c0-0.4-0.3-0.8-0.7-0.8L15.8,9l6.8-6.8C22.9,1.8,22.9,1.4,22.6,1.1z"/>
+      </svg>
+    </div>  
+    <div class="fullscreen__nav fullscreen__nav--left">
+      <svg class="fullscreen__nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36">
+        <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5
+        l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/>
+      </svg>
+    </div>
+    <div class="fullscreen__nav fullscreen__nav--right">
+      <svg class="fullscreen__nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36">
+        <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5
+        l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/>
+      </svg>
+    </div>
+    <div class="fullscreen__date">
+      <span class="fullscreen__date-text">
+        10-12-2017
+      </span>
+    </div>
+    <div class="fullscreen__image-container">
+      <img class="fullscreen__image" src="img/dog.jpg" alt="picture">
+    </div>  
+    <div class="fullscreen__actions">
+      <div class="fullscreen__action">
+        <div class="fullscreen__action-icon-container">
+          <svg class="fullscreen__action-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 11.5c-.3 0-.5.2-.5.5 0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6c1.5 0 3 .6 4.1 1.6l-.7.7c-.1.1-.1.2-.1.3 0 .3.2.5.5.5l2.4.2c.3 0 .5-.2.4-.4l-.2-2.4c0-.1-.1-.2-.2-.3-.2-.2-.5-.2-.7 0l-.8.8c-1.2-1.3-2.9-2-4.7-2-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7c0-.3-.2-.5-.5-.5z"/></svg>
+        </div>
+        <div class="fullscreen__action-text">
+          rotate
+        </div>
+      </div>      
+    </div>
+    <div class="fullscreen__count">
+      <span class="fullscreen__count-current">29</span>
+      /
+      <span class="fullscreen__count-total">52</span>
+      
     </div>
   </div>
   <script src="js/main.js" ></script>

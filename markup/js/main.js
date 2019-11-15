@@ -296,3 +296,25 @@ expandTagInfoTriggers.forEach(trigger => {
     console.log(expanded);
   });
 });
+
+// -------------------------
+// Open picture fullscreen
+// -------------------------
+var OpenPopupPicTriggers = document.querySelectorAll('.js_open-fullscreen');
+
+OpenPopupPicTriggers.forEach( function(trigger) {
+  trigger.addEventListener('click', function(){
+    document.body.classList.add('app-fullscreen');
+  })
+})
+
+// -------------------------
+// Open picture
+// -------------------------
+var CanelPopupPicTriggers = document.querySelectorAll('.js_cancel-fullscreen');
+
+CanelPopupPicTriggers.forEach( function(trigger) {
+  trigger.addEventListener('click', function(){
+    document.body.classList.remove('app-fullscreen');
+  })
+})
