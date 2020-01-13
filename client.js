@@ -567,7 +567,7 @@
             filter: 'invert(100%)',
          }), [
             ['h3', {class: 'logo'}, [
-               ['span', H.style ({color: H.css.highlight}),                                  'ac:'],
+               ['span', H.style ({color: H.css.highlight}),                                  'ac;'],
                ['span', H.style ({color: H.css ['tagc' + Math.floor (Math.random () * 8)]}), 'pic'],
             ]],
             ['p', 'Please turn your device sideways :)'],
@@ -596,7 +596,7 @@
          }), [
             ['div', H.style ({class: 'float'}, {width: H.spaceh (mobile ? 15 : 9)}), [
                ['h3', H.style ({margin: 0}), [
-                  ['span', H.style ({color: H.css.highlight}),                                  'ac:'],
+                  ['span', H.style ({color: H.css.highlight}),                                  'ac;'],
                   ['span', H.style ({color: H.css ['tagc' + Math.floor (Math.random () * 8)]}), 'pic'],
                ]],
             ]],
