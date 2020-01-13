@@ -1,5 +1,5 @@
 /*
-ac:pic - v0.1.0
+ac;pic - v0.1.0
 
 Written by Altocode (https://altocode.nl) and released into the public domain.
 
@@ -15,7 +15,6 @@ var ENV    = process.argv [2];
 var crypto = require ('crypto');
 var fs     = require ('fs');
 var Path   = require ('path');
-var spawn  = require ('child_process').spawn;
 var stream = require ('stream');
 var os     = require ('os');
 Error.stackTraceLimit = Infinity;
@@ -28,15 +27,17 @@ var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var giz    = require ('giz');
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');
-var redmin = require ('redmin');
-redmin.redis = redis;
 
 var uuid   = require ('uuid/v4');
 var mailer = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
 var hash   = require ('murmurhash').v3;
 var mime   = require ('mime');
 
-var type = teishi.t, clog = console.log, eq = teishi.eq, reply = function () {
+var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () {
+   var rs = dale.stopNot (arguments, undefined, function (arg) {
+      if (arg && type (arg.log) === 'object') return arg;
+   });
+   if (! rs.connection.writable) return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
    cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
       if (k === 0 && v && v.path && v.last && v.vars) return;
       return v;
@@ -158,7 +159,7 @@ var sendmail = function (s, o) {
       subject: o.subject,
       html:    lith.g (o.message),
    }, function (error, rs) {
-      if (! error) return s.next ();
+      if (! error) return notify (s, {type: 'email sent', to: o.to2, subject: o.subject});
       a.stop (s, [notify, {type: 'mailer error', error: error, options: o}]);
    });
 }
@@ -171,7 +172,7 @@ var k = function (s) {
 
    var command = [].slice.call (arguments, 1);
 
-   var proc = spawn (command [0], command.slice (1));
+   var proc = require ('child_process').spawn (command [0], command.slice (1));
 
    var wait = 3;
 
@@ -220,7 +221,7 @@ H.trim = function (string) {
 
 H.log = function (s, user, ev) {
    ev.t = Date.now ();
-   Redis (s, 'lpush', 'ulog:' + user, teishi.s (ev));
+   Redis (s, 'lpush', 'ulog:' + user, teishi.str (ev));
 }
 
 H.size = function (s, path) {
@@ -430,9 +431,9 @@ var routes = [
       ['!DOCTYPE HTML'],
       ['html', [
          ['head', [
-            ['meta', {charset: 'utf-8'}],
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['title', 'ac:pic'],
+            ['meta', {charset: 'utf-8'}],
+            ['title', 'ac;pic'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
             dale.go (['ionicons.min', 'normalize.min'], function (v) {
@@ -455,9 +456,9 @@ var routes = [
       ['!DOCTYPE HTML'],
       ['html', [
          ['head', [
-            ['meta', {charset: 'utf-8'}],
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['title', 'ac:pic admin'],
+            ['meta', {charset: 'utf-8'}],
+            ['title', 'ac;pic admin'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             dale.go (['pure-min', 'ionicons.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
@@ -489,7 +490,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [sendmail, {to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac:pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
+         [sendmail, {to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
          [reply, rs, 200],
       ]);
    }],
@@ -498,7 +499,7 @@ var routes = [
 
    ['post', 'error', function (rq, rs) {
       astop (rs, [
-         [notify, {type: 'client error', headers: rq.headers, ip: rq.origin, user: (rq.user || {}).username, error: rq.body}],
+         [notify, {type: 'client error', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
          [reply, rs, 200],
       ]);
    }],
@@ -575,7 +576,7 @@ var routes = [
       astop (rs, [
          [mexec, multi],
          function (s) {
-            s.invite = teishi.p (s.last [0]);
+            s.invite = teishi.parse (s.last [0]);
             if (! s.invite || s.invite.token !== b.token) return reply (rs, 403, {error: 'token'});
             if (s.last [1]) return reply (rs, 403, {error: 'email'});
             if (s.last [2]) return reply (rs, 403, {error: 'username'});
@@ -634,6 +635,9 @@ var routes = [
             multi.hdel ('users:' + s.username, 'verificationPending');
             multi.hdel ('emailtoken', token);
             mexec (s, multi);
+         },
+         function (s) {
+            notify (s, {type: 'verify', user: s.username});
          },
          ! ENV ? [] : [sendmail, {to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}],
          [reply, rs, 302, {location: '/#auth/login/verified'}],
@@ -732,7 +736,7 @@ var routes = [
          if (eq (rq.body, {email: SECRET.admins [0], firstName: 'admin'})) return rs.next ();
       }
 
-      if (! rq.data.cookie)                     return reply (rs, 403, {error: 'nocookie'});
+      if (! rq.data.cookie)                               return reply (rs, 403, {error: 'nocookie'});
       if (! rq.data.cookie [CONFIG.cookiename]) {
          if (rq.headers.cookie.match (CONFIG.cookiename)) return reply (rs, 403, {error: 'tampered'});
                                                           return reply (rs, 403, {error: 'noappcookie'});
@@ -746,7 +750,6 @@ var routes = [
          rq.user         = user;
 
          if (rq.url.match (/^\/admin/)  && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
-         if (rq.url.match (/^\/redmin/) && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
 
          astop (rs, [
             [H.stat, 'a', user.username],
@@ -763,7 +766,6 @@ var routes = [
    ['post', '*', function (rq, rs) {
 
       if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
-      if (rq.method === 'post' && rq.url === '/redmin')                 return rs.next ();
 
       var ctype = rq.headers ['content-type'] || '', cookie = rq.headers.cookie;
       if (ctype.match (/^multipart\/form-data/i)) {
@@ -825,6 +827,38 @@ var routes = [
          [H.log, rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']}],
          [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)}],
       ]);
+   }],
+
+   // *** CHANGE PASSWORD ***
+
+   ['post', 'auth/changePassword', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ['old', 'new'], 'eachOf', teishi.test.equal],
+         function () {return [
+            ['body.old', b.old,     'string'],
+            ['body.new', b ['new'], 'string']
+         ]},
+         function () {return ['password', b ['new'].length, {min: 6}, teishi.test.range]},
+      ])) return;
+
+      giz.db.hget ('users', rq.user.username, 'pass', function (error, hash) {
+         if (error) return reply (rs, 500, {error: error});
+         if (hash === null) return reply (rs, 500, {error: 'User doesn\'t exist.'});
+         require ('bcryptjs').compare (b ['old'], hash, function (error, result) {
+            if (error || ! result) return reply (rs, 403);
+            giz.reset (rq.user.username, true, b ['new'], function (error) {
+               if (error) return reply (rs, 500, {error: error});
+               astop (rs, [
+                  [H.log, rq.user.username, {a: 'chp', ip: rq.origin, ua: rq.headers ['user-agent']}],
+                  [reply, rs, 200],
+               ]);
+            });
+         });
+      });
    }],
 
    // *** FEEDBACK COLLECTION ***
@@ -938,10 +972,10 @@ var routes = [
       if (! eq (dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
       if (! eq (dale.keys (rq.data.files),  ['pic']))                         return reply (rs, 400, {error: 'invalidFile'});
 
-      var tags = teishi.p (rq.data.fields.tags), error;
+      var tags = teishi.parse (rq.data.fields.tags), error;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
       tags = dale.go (tags, function (tag) {
-         if (type (tag) !== 'string') return error = teishi.s (tag);
+         if (type (tag) !== 'string') return error = teishi.str (tag);
          tag = H.trim (tag);
          if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
          if (H.isyear (tag)) error = tag;
@@ -1000,7 +1034,7 @@ var routes = [
          [H.resizeif, newpath, 900],
          [H.s3put, rq.user.username, newpath, pic.id],
          // Delete original image from disk.
-         ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
+         // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
          function (s) {
             var multi = redis.multi ();
 
@@ -1432,7 +1466,7 @@ var routes = [
          [Redis, 'hgetall', 'invites'],
          function (s) {
             reply (rs, 200, ! s.last ? [] : dale.obj (s.last, function (value, key) {
-               return [key, teishi.p (value)];
+               return [key, teishi.parse (value)];
             }));
          },
       ]);
@@ -1526,18 +1560,6 @@ var routes = [
          [a.get, reply, rs, 200, '@output'],
       ]);
    }],
-
-   // *** ADMIN: REDMIN ***
-
-   ['get', 'redmin', reply, redmin.html ()],
-   ['post', 'redmin', function (rq, rs) {
-      redmin.api (rq.body, cbreply (rs, function (data) {
-         reply (rs, 200, data);
-      }));
-   }],
-   ['get', 'redmin/client.js',    cicek.file, 'node_modules/redmin/client.js'],
-   ['get', 'redmin/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
-
 ];
 
 // *** SERVER CONFIGURATION ***
@@ -1551,7 +1573,7 @@ cicek.apres = function (rs) {
    }
 
    if (rs.log.code >= 400) {
-      if (['/favicon.ico', '/assets/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.p (rs.log.responseBody) || rs.log.responseBody});
+      if (['/favicon.ico', '/assets/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
    }
 
    if (rs.log.code === 200 || rs.log.code === 304) {
@@ -1609,8 +1631,8 @@ if (cicek.isMaster && ENV) setInterval (function () {
          [notify, {type: 'backup error', error: error}],
          [a.fork, [SECRET.admins [0]], function (v) {
             return [sendmail, {
-               from1:   'ac:pic backup',
-               to1:     'ac:pic admin',
+               from1:   'ac;pic backup',
+               to1:     'ac;pic admin',
                to2:     SECRET.admins [0],
                subject: 'Backup failed!',
                message: ['pre', error.toString ()],
@@ -1730,7 +1752,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
       s.uploaded = dale.obj (s.uploaded, function (path) {
          return [path, true];
       });
-      var extraneous = teishi.c (s.uploaded);
+      var extraneous = teishi.copy (s.uploaded);
       dale.go (s.pics, function (pic, k) {
          var path = Path.join (H.hash (pic.owner), k.replace ('pic:', ''));
          if (! s.uploaded [path]) s.missingsthree.push (path);
@@ -1748,7 +1770,7 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
    function (s) {
       if (s.missingsthree.length) notify (a.creat (), {type: 'uploaded missing pics to s3', n: s.missingsthree.length});
       s.missingfs = [];
-      s.extraneous = teishi.c (s.files);
+      s.extraneous = teishi.copy (s.files);
       dale.go (s.thumbs, function (thumb, k) {
          var path = Path.join (H.hash (thumb.owner), k);
          if (! s.files [path]) s.missingfs.push (path);

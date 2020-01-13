@@ -5,7 +5,7 @@ var DOMAIN = {
 
 var LOGO = [
    ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #6B6DF9;'}, 'ac:'],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #6B6DF9;'}, 'ac;'],
    ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #BE5764;'}, 'pic'],
 ];
 

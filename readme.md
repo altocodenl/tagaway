@@ -73,6 +73,9 @@ All POST requests (unless marked otherwise) must contain a `cookie` field equiva
    - The body is ignored.
    - If successful, a 302 is returned redirecting to `/`.
 
+- `POST /auth/changePassword`.
+   - Body must be `{old: STRING, new: STRING}`.
+
 ### App routes
 
 `POST /feedback`
@@ -171,29 +174,18 @@ All the routes below require an admin user to be logged in.
 ### Todo alpha
 
 - Client
-   - gotoB 2 & style
-      - [], not '*'
-      - B.from
-      - style, time, last
-      - navigation
-   - Upload view: multiple uploads, tags are readonly afterwards, can add/remove tags before triggering upload.
-   - show rotated pictures in canvas
-   - Add autotag with enter
-   - Make remove tags as a button/tag with an integrated cross, with ... for long tags and expand on click
-   - Initial view with no pictures
-   - Manage tags.
-   - Mark shared & hidden tags always.
-   - Fix all icons.
-   - Notify & upload visual improvements.
-   - Views.auth visual improvements
-   - Views.notify visual improvements
-
-- Server
-   - Hidden tags.
-   - ac;id
-   - Provision prod infrastructure.
+   - New interface.
 
 ### Todo beta
+
+- gotoB 2 & style
+   - > -1 instead of !== -1
+   - [], not `*`
+   - style, time, last
+   - navigation
+
+- Server
+   - ac;tools
 
 - Admin & deploy
    - Manage payments.
@@ -227,6 +219,7 @@ All the routes below require an admin user to be logged in.
    - Folder upload on Android & mobile.
 
 - Organize
+   - Hidden tags.
    - Mobile/tablet view.
    - Add colors to tags.
    - Show dates in upload mode.
@@ -276,7 +269,7 @@ All the routes below require an admin user to be logged in.
 - Account
    - Signup with invite.
    - Login/logout.
-   - Recover/reset password.
+   - Recover/reset/change password.
 
 - Admin
    - Metering requests, downloads & space stored.
@@ -285,11 +278,6 @@ All the routes below require an admin user to be logged in.
    - Stats endpoint.
 
 ### Features we may never implement
-
-- Account
-   - Login with FB.
-   - Login with gmail.
-   - Multiple users.
 
 - Share
    - Comments.
@@ -408,16 +396,17 @@ All the routes below require an admin user to be logged in.
 - tags:USERID (set): list of all tags created by the user. Does not count tags shared with the user.
 
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
-   - For login:      {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}
-   - For signup:     {t: INT, a: 'sig', ip: STRING, ua: STRING}
-   - For recover:    {t: INT, a: 'rec', ip: STRING, ua: STRING, token: STRING}
-   - For reset:      {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
-   - For destroy:    {t: INT, a: 'des', ip: STRING, ua: STRING}
-   - For uploads:    {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED}
-   - For deletes:    {t: INT, a: 'del', id: STRING}
-   - For rotates:    {t: INT, a: 'rot', id: STRING, deg: 90|180|-90}
-   - For (un)tags:   {t: INT, a: 'tag', tag: STRING, d: true|undefined (if true it means untag), ids: [...]}
-   - For (un)shares: {t: INT, a: 'sha', tag: STRING, d: true|undefined (if true it means unshare), u: STRING}
+   - For login:           {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}
+   - For signup:          {t: INT, a: 'sig', ip: STRING, ua: STRING}
+   - For recover:         {t: INT, a: 'rec', ip: STRING, ua: STRING, token: STRING}
+   - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
+   - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
+   - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING}
+   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED}
+   - For deletes:         {t: INT, a: 'del', id: STRING}
+   - For rotates:         {t: INT, a: 'rot', id: STRING, deg: 90|180|-90}
+   - For (un)tags:        {t: INT, a: 'tag', tag: STRING, d: true|undefined (if true it means untag), ids: [...]}
+   - For (un)shares:      {t: INT, a: 'sha', tag: STRING, d: true|undefined (if true it means unshare), u: STRING}
 
 - sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.

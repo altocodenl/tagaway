@@ -4,17 +4,17 @@ var CONFIG = require ('./config.js');
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var h      = require ('hitit');
-var log    = teishi.l, type = teishi.t, eq = teishi.eq;
+var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
 
 var U = [
    {username: '   user  \t1', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
-   {username: 'user2', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
+   {username: 'user2',        password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
 ];
 
 var PICS = 'test/';
 
 var getUTCTime = function (dstring) {
-   return new Date (dstring).getTime () - new Date ().getTimezoneOffset () * 60 * 1000;
+   return new Date (dstring.replace (/\//g, '-') + 'T00:00:00.000Z').getTime ();
 }
 
 var H = {};
@@ -75,12 +75,12 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
          });
          dale.go (types, function (tfun, t) {
             ref [path [path.length - 1]] = tfun ();
-            if (allowed.indexOf (t) === -1) output.push ([label + ' test type #' + (output.length + 1) + ' ' + path.join ('.') + ' - ' + t, method, Path, headers, teishi.c (body), allErrors ? '*' : 400, apres]);
+            if (allowed.indexOf (t) === -1) output.push ([label + ' test type #' + (output.length + 1) + ' ' + path.join ('.') + ' - ' + t, method, Path, headers, teishi.copy (body), allErrors ? '*' : 400, apres]);
          });
          ref [path [path.length - 1]] = types [allowed [0]] ();
       });
    });
-   var ebody = teishi.c (body);
+   var ebody = teishi.copy (body);
    ebody [type (ebody) === 'object' ? types.string () : types.float ()] = types.string ();
    output.push ([label + ' test type #' + (output.length + 1) + ' base (random key)', method, Path, headers, ebody, allErrors ? '*' : 400, apres]);
 
@@ -131,38 +131,38 @@ var intro = [
    ['signup for the first time with invalid token', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [0].password, token: s.itoken1 + 'a', email: 'a@a.com'};
    }, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'token'})) return log ('Invalid body.');
+      if (! eq (rs.body, {error: 'token'})) return clog ('Invalid body.');
       return true;
    }],
    ['signup for the first time', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [0].password, token: s.itoken1, email: 'a@a.com'};
    }, 200, function (s, rq, rs) {
-      if (! rs.body.token) return log ('No token returned after signup!');
+      if (! rs.body.token) return clog ('No token returned after signup!');
       s.vtoken1 = rs.body.token;
       return true;
    }],
    ['login with invalid credentials #1', 'post', 'auth/login', {}, {username: U [0].username, password: 'foo', tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'auth'})) return log ('Invalid payload sent, expecting {error: "auth"}');
+      if (! eq (rs.body, {error: 'auth'})) return clog ('Invalid payload sent, expecting {error: "auth"}');
       return true;
    }],
    ['login with invalid credentials #2', 'post', 'auth/login', {}, {username: 'bar', password: 'foo', tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'auth'})) return log ('Invalid payload sent, expecting {error: "auth"}');
+      if (! eq (rs.body, {error: 'auth'})) return clog ('Invalid payload sent, expecting {error: "auth"}');
       return true;
    }],
    ['login with valid credentials before verification', 'post', 'auth/login', {}, {username: U [0].username, password: U [0].password, tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'verify'})) return log ('Invalid payload sent, expecting {error: "verify"}');
+      if (! eq (rs.body, {error: 'verify'})) return clog ('Invalid payload sent, expecting {error: "verify"}');
       return true;
    }],
    ['try to signup with existing username', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [1].password, token: s.itoken2, email: 'b@b.com'};
    }, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'username'})) return log ('Invalid payload received.');
+      if (! eq (rs.body, {error: 'username'})) return clog ('Invalid payload received.');
       return true;
    }],
    ['try to signup with existing email', 'post', 'auth/signup', {}, function (s) {
       return {username: U [1].username, password: U [1].password, token: s.itoken2, email: 'a@a.com'};
    }, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'token'})) return log ('Invalid payload received.');
+      if (! eq (rs.body, {error: 'token'})) return clog ('Invalid payload received.');
       return true;
    }],
    ['verify user', 'get', function (s) {return 'auth/verify/' + s.vtoken1}, {}, '', 302],
@@ -182,22 +182,35 @@ var intro = [
    ['try to signup with existing username after verification', 'post', 'auth/signup', {}, function (s) {
       return {username: U [0].username, password: U [1].password, token: s.itoken2, email: 'b@b.com'};
    }, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'username'})) return log ('Invalid payload received.');
+      if (! eq (rs.body, {error: 'username'})) return clog ('Invalid payload received.');
       return true;
    }],
    ['try to signup with existing email after verification', 'post', 'auth/signup', {}, function (s) {
       return {username: U [1].username, password: U [0].password, token: s.itoken2, email: 'a@a.com'};
    }, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'token'})) return log ('Invalid payload received.');
+      if (! eq (rs.body, {error: 'token'})) return clog ('Invalid payload received.');
       return true;
    }],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
-      if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0] || rs.headers ['set-cookie'] [0].length <= 5) return log ('Invalid cookie.');
+      if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0] || rs.headers ['set-cookie'] [0].length <= 5) return clog ('Invalid cookie.');
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
       return s.headers.cookie !== undefined;
+   }],
+   ttester ('change password', 'post', 'auth/changePassword', {}, [
+      ['old', 'string'],
+      ['new', 'string'],
+   ]),
+   ['change password (invalid new password #1)', 'post', 'auth/changePassword', {}, {old: U [0].password, 'new': '12345'}, 400],
+   ['change password (invalid new password #2)', 'post', 'auth/changePassword', {}, {old: U [0].password, 'new': 12345}, 400],
+   ['change password (invalid old password)', 'post', 'auth/changePassword', {}, {old: 'foo', 'new': '123456'}, 403],
+   ['change password', 'post', 'auth/changePassword', {}, function (s) {return {old: U [0].password, 'new': '123456'}}, 200],
+   ['change password again', 'post', 'auth/changePassword', {}, function (s) {return {old: '123456', 'new': U [0].password}}, 200],
+   ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      return true;
    }],
    ['submit client error being logged in', 'post', 'error', {}, {error: 'error'}, 200],
 ];
@@ -208,12 +221,12 @@ var outro = [
       return true;
    }],
    ['delete account with invalid cookie', 'post', 'auth/delete', {}, {}, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'session'})) return log ('Invalid payload sent, expecting {error: "session"}');
+      if (! eq (rs.body, {error: 'session'})) return clog ('Invalid payload sent, expecting {error: "session"}');
       s.headers = {};
       return true;
    }],
    {tag: 'double logout', method: 'post', path: 'auth/logout', code: 403, headers: {}, body: {}, apres: function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'nocookie'})) return log ('Invalid payload sent, expecting {error: "nocookie"}');
+      if (! eq (rs.body, {error: 'nocookie'})) return clog ('Invalid payload sent, expecting {error: "nocookie"}');
       return true;
    }},
    ['login with valid credentials', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
@@ -221,11 +234,11 @@ var outro = [
       return s.headers.cookie !== undefined;
    }],
    ['delete account with invalid cookie', 'post', 'auth/delete', {cookie: 'foobar'}, {}, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'noappcookie'})) return log ('Invalid payload sent, expecting {error: "noappcookie"}');
+      if (! eq (rs.body, {error: 'noappcookie'})) return clog ('Invalid payload sent, expecting {error: "noappcookie"}');
       return true;
    }],
    ['delete account with tampered cookie', 'post', 'auth/delete', {cookie: 'oml-session=foobar'}, {}, 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'noappcookie'})) return log ('Invalid payload sent, expecting {error: "noappcookie"}');
+      if (! eq (rs.body, {error: 'noappcookie'})) return clog ('Invalid payload sent, expecting {error: "noappcookie"}');
       return true;
    }],
    ['delete account', 'post', 'auth/delete', {}, {}, 200, function (s, rq, rs) {
@@ -234,7 +247,7 @@ var outro = [
       return true;
    }],
    ['delete account with no cookie', 'post', 'auth/delete', {}, U [0], 403, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'nocookie'})) return log ('Invalid payload sent, expecting {error: "nocookie"}');
+      if (! eq (rs.body, {error: 'nocookie'})) return clog ('Invalid payload sent, expecting {error: "nocookie"}');
       return true;
    }],
    ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
@@ -247,11 +260,11 @@ var main = [
    ]),
    ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
    ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Body must be object');
-      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
-      if (type (rs.body.created) !== 'integer') return log ('Invalid created field');
-      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return log ('Invalid used field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 6 && rs.body.logs.length !== 7)) return log ('Invalid logs.');
+      if (type (rs.body) !== 'object') return clog ('Body must be object');
+      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
+      if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
+      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return clog ('Invalid used field.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
       return true;
    }],
    ttester ('query pics', 'post', 'query', {}, [
@@ -263,13 +276,13 @@ var main = [
       ['to', 'integer'],
    ]),
    {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'csrf'})) return log ('Invalid payload');
+      if (! eq (rs.body, {error: 'csrf'})) return clog ('Invalid payload');
       return true;
    }},
    ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq (rs.body, {total: 0, pics: []})) return log ('Invalid payload');
+      if (! eq (rs.body, {total: 0, pics: []})) return clog ('Invalid payload');
       return true;
    }],
    ['upload invalid payload #1', 'post', 'pic', {}, '', 400],
@@ -341,17 +354,17 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Invalid payload.');
-      if (rs.body.total !== 1) return log ('Invalid total count.');
-      if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 1) return clog ('Invalid total count.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
-      s.smallpic = teishi.c (pic);
-      if (pic.date !== getUTCTime ('2018/06/07')) return log ('Invalid pic.date');
-      if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
-      if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
+      s.smallpic = teishi.copy (pic);
+      if (pic.date !== getUTCTime ('2018/06/07')) return clog ('Invalid pic.date');
+      if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
+      if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
       delete pic.date;
       delete pic.dateup;
-      if (type (pic.id) !== 'string') return log ('Invalid pic.id.');
+      if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
       delete pic.id;
       if (! eq (pic, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
@@ -359,7 +372,7 @@ var main = [
          dimh: 149,
          dimw: 149,
          tags: ['2018']
-      })) return log ('Invalid pic fields.');
+      })) return clog ('Invalid pic fields.');
       return true;
    }],
    ['upload duplicated picture', 'post', 'pic', {}, {multipart: [
@@ -381,17 +394,17 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Invalid payload.');
-      if (rs.body.total !== 2) return log ('Invalid total count.');
-      if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
-      if (pic.date !== getUTCTime ('2018/06/03')) return log ('Invalid pic.date');
-      if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
+      if (pic.date !== getUTCTime ('2018/06/03')) return clog ('Invalid pic.date');
+      if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
       delete pic.date;
       delete pic.dateup;
-      if (type (pic.id) !== 'string') return log ('Invalid pic.id.');
+      if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
       delete pic.id;
-      if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
+      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
       delete pic.t200;
       if (! eq (pic, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
@@ -399,7 +412,7 @@ var main = [
          dimh: 204,
          dimw: 248,
          tags: ['2018']
-      })) return log ('Invalid pic fields.');
+      })) return clog ('Invalid pic fields.');
       return true;
    }],
    ['upload large picture', 'post', 'pic', {}, {multipart: [
@@ -408,17 +421,17 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Invalid payload.');
-      if (rs.body.total !== 3) return log ('Invalid total count.');
-      if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
-      if (rs.body.pics.length !== 1) return log ('Invalid amount of pictures returned.');
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 3) return clog ('Invalid total count.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
+      if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
-      if (pic.date !== 1405880431000) return log ('Invalid pic.date');
+      if (pic.date !== 1405880431000) return clog ('Invalid pic.date');
       delete pic.date;
       delete pic.dateup;
       delete pic.id;
-      if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
-      if (type (pic.t900) !== 'string') return log ('Invalid pic.t900.');
+      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
+      if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
       delete pic.t200;
       delete pic.t900;
       return true;
@@ -428,7 +441,7 @@ var main = [
          dimh: 204,
          dimw: 248,
          tags: ['2014']
-      })) return log ('Invalid pic fields.');
+      })) return clog ('Invalid pic fields.');
       return true;
    }],
    ['upload lopsided picture', 'post', 'pic', {}, {multipart: [
@@ -437,22 +450,22 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Invalid payload.');
-      if (rs.body.total !== 4) return log ('Invalid total count.');
-      if (type (rs.body.pics) !== 'array') return log ('Invalid pic array.');
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 4) return clog ('Invalid total count.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
-      if (type (pic.date)   !== 'integer') return log ('Invalid pic.date.');
-      if (type (pic.dateup) !== 'integer') return log ('Invalid pic.dateup.');
-      if (pic.date !== 1490204120000) return log ('Invalid date.');
+      if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
+      if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
+      if (pic.date !== 1490204120000) return clog ('Invalid date.');
       s.rotateid = pic.id;
-      s.rotatepic = teishi.c (pic);
+      s.rotatepic = teishi.copy (pic);
       delete pic.date;
       delete pic.dateup;
-      if (type (pic.id) !== 'string') return log ('Invalid pic.id.');
+      if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
       delete pic.id;
-      if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
+      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
       delete pic.t200;
-      if (type (pic.t900) !== 'string') return log ('Invalid pic.t900.');
+      if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
       delete pic.t900;
       if (! eq (pic, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
@@ -460,7 +473,7 @@ var main = [
          dimh: 1232,
          dimw: 2048,
          tags: ['2017']
-      })) return log ('Invalid pic fields.');
+      })) return clog ('Invalid pic fields.');
       return true;
    }],
    ttester ('rotate pic', 'post', 'rotate', {}, [
@@ -480,12 +493,12 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       var pic = rs.body.pics [0];
       delete pic.id;
-      if (type (pic.t200) !== 'string') return log ('Invalid pic.t200.');
+      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
       delete pic.t200;
-      if (type (pic.t900) !== 'string') return log ('Invalid pic.t900.');
+      if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
       delete pic.t900;
-      if (s.rotatepic.date !== pic.date)     return log ('date changed after rotate.');
-      if (s.rotatepic.dateup !== pic.dateup) return log ('dateup changed after rotate.');
+      if (s.rotatepic.date !== pic.date)     return clog ('date changed after rotate.');
+      if (s.rotatepic.dateup !== pic.dateup) return clog ('dateup changed after rotate.');
       delete pic.date;
       delete pic.dateup;
       if (! eq (pic, {
@@ -495,7 +508,7 @@ var main = [
          dimw: 2048,
          deg:  90,
          tags: ['2017']
-      })) return log ('Invalid pic fields.');
+      })) return clog ('Invalid pic fields.');
       return true;
    }],
    dale.go ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
@@ -505,7 +518,7 @@ var main = [
          }, 200],
          ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
             var pic = rs.body.pics [0];
-            if (pic.deg !== pair [1]) return log ('Rotate wasn\'t calculated properly.');
+            if (pic.deg !== pair [1]) return clog ('Rotate wasn\'t calculated properly.');
             return true;
          }],
       ];
@@ -518,8 +531,8 @@ var main = [
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       var pic = rs.body.pics [0];
-      if (pic.date !== 1522070614000) return log ('GPS timestamp wasn\'t ignored.');
-      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return log ('Wrong year tag.');
+      if (pic.date !== 1522070614000) return clog ('GPS timestamp wasn\'t ignored.');
+      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Wrong year tag.');
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
       return true;
@@ -528,7 +541,7 @@ var main = [
       return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
          var original = require ('fs').readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
-         if (Buffer.compare (up, original) !== 0) return log ('Mismatch between original and uploaded picture!');
+         if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded picture!');
          return true;
       }};
    }),
@@ -538,65 +551,65 @@ var main = [
    ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by oldest', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['large.jpeg', 'rotate.jpg', 'medium.jpg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'medium.jpg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
       if (! eq (['large.jpeg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['medium.jpg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #3', 'post', 'query', {}, {tags: ['2017', '2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get pics by year #4', 'post', 'query', {}, {tags: ['2017', '2014', '2015'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
-      }))) return log ('Invalid pic date sorting');
+      }))) return clog ('Invalid pic date sorting');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ttester ('tag pic', 'post', 'tag', {}, [
@@ -611,11 +624,11 @@ var main = [
    ['tag invalid #5', 'post', 'tag', {}, {tag: 'hello', ids: ['a', 'a']}, 400],
    ['tag invalid nonexisting #1', 'post', 'tag', {}, {tag: 'hello', ids: ['a']}, 404],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
@@ -642,27 +655,27 @@ var main = [
       return {tag: '\tfoo', ids: [s.pics [0].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['tag valid #2', 'post', 'tag', {}, function (s) {
       return {tag: 'foo', ids: [s.pics [0].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 3, foo: 1})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return clog ('Invalid tags');
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (rs.body.total !== 1) return log ('Searching by tag does not work.');
-      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return log ('Invalid tags');
+      if (rs.body.total !== 1) return clog ('Searching by tag does not work.');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'foo'])) return clog ('Invalid tags');
       return true;
    }],
    ['untag nonexisting', 'post', 'tag', {}, function (s) {
@@ -672,50 +685,50 @@ var main = [
       return {tag: '\tfoo  ', ids: [s.pics [0].id, s.pics [1].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['get pic after untagging', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['2018'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018'])) return clog ('Invalid tags');
       return true;
    }],
    ['get tagged pic after untagging', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (rs.body.total !== 0) return log ('Searching by tag does not work.');
+      if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
    ['tag two pics #1', 'post', 'tag', {}, function (s) {
       return {tag: '  bla', ids: [s.pics [0].id, s.pics [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log (rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return clog (rs.body);
       return true;
    }],
    ['get tagged pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['2018', 'bla'])) return log ('Invalid tags');
-      if (! eq (rs.body.pics [3].tags, ['2014', 'bla'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2018', 'bla'])) return clog ('Invalid tags');
+      if (! eq (rs.body.pics [3].tags, ['2014', 'bla'])) return clog ('Invalid tags');
       return true;
    }],
    ['get tagged pics again', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['2014', 'bla'])) return log ('Invalid tags');
-      if (! eq (rs.body.pics [3].tags, ['2018', 'bla'])) return log ('Invalid tags');
+      if (! eq (rs.body.pics [0].tags, ['2014', 'bla'])) return clog ('Invalid tags');
+      if (! eq (rs.body.pics [3].tags, ['2018', 'bla'])) return clog ('Invalid tags');
       return true;
    }],
    ['untag tag two pics with tag they don\'t have', 'post', 'tag', {}, function (s) {
       return {tag: 'blablabla', ids: [s.pics [0].id, s.pics [3].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 2, bla: 2})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['untag two pics', 'post', 'tag', {}, function (s) {
       return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id], del: true};
    }, 200],
    ['get tagged pics after untagging', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (rs.body.total !== 0) return log ('Searching by tag does not work.');
+      if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return log ('Invalid tags', rs.body);
+      if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['tag two pics #2', 'post', 'tag', {}, function (s) {
@@ -725,7 +738,7 @@ var main = [
       return 'pic/' + s.pics [3].id;
    }, {}, '', 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {2017: 1, 2018: 2, all: 3, untagged: 2, bla: 1})) return log (rs.body);
+      if (! eq (rs.body, {2017: 1, 2018: 2, all: 3, untagged: 2, bla: 1})) return clog (rs.body);
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -753,11 +766,11 @@ var main = [
    ['share with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],
    ['share a tag with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],
    ['get shared tags before sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {sho: [], shm: []})) return log ('Invalid body', rs.body);
+      if (! eq (rs.body, {sho: [], shm: []})) return clog ('Invalid body', rs.body);
       return true;
    }],
    ['share a tag with yourself', 'post', 'share', {}, {tag: '\n bla \t ', who: H.trim (U [0].username)}, 400, function (s, rq, rs) {
-      if (! eq (rs.body, {error: 'self'})) return log ('Invalid body', rs.body);
+      if (! eq (rs.body, {error: 'self'})) return clog ('Invalid body', rs.body);
       return true;
    }],
    ['share a tag with a user', 'post', 'share', {}, {tag: '\n bla \t ', who: U [1].username}, 200],
@@ -766,7 +779,7 @@ var main = [
       rs.body.sho.sort (function (a, b) {
          return a [1] > b [1] ? 1 : -1;
       });
-      if (! eq (rs.body, {sho: [[U [1].username, 'bla'], [U [1].username, 'foo:bar']], shm: []})) return log ('Invalid body', rs.body);
+      if (! eq (rs.body, {sho: [[U [1].username, 'bla'], [U [1].username, 'foo:bar']], shm: []})) return clog ('Invalid body', rs.body);
       return true;
    }],
    ['unshare tag', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username, del: true}, 200],
@@ -775,16 +788,16 @@ var main = [
       return s.headers.cookie !== undefined;
    }],
    ['get shared tags as user2', 'get', 'share', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {shm: [[U [0].username.replace (/^\s+/, '').replace (' \t', ''), 'bla']], sho: []})) return log ('Invalid body', rs.body);
+      if (! eq (rs.body, {shm: [[U [0].username.replace (/^\s+/, '').replace (' \t', ''), 'bla']], sho: []})) return clog ('Invalid body', rs.body);
       return true;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user2 should have one pic');
+      if (rs.body.pics.length !== 1) return clog ('user2 should have one pic');
       s.shared = rs.body.pics [0];
       return true;
    }],
    ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user2 should have one pic with this tag');
+      if (rs.body.pics.length !== 1) return clog ('user2 should have one pic with this tag');
       return true;
    }],
    ['get shared pic as user2', 'get', function (s) {
@@ -811,12 +824,12 @@ var main = [
       return s.headers.cookie !== undefined;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 2) return log ('user2 should have two pics.');
+      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics.');
       s.pics2 = rs.body.pics;
       return true;
    }],
    ['get `rotate` pics as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
+      if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
       return true;
    }],
    dale.go (dale.times (2, 0), function (k) {
@@ -862,23 +875,23 @@ var main = [
       {type: 'field',  name: 'tags', value: '["rotate"]'}
    ]}, 200],
    ['get all pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 2) return log ('user2 should have two pics.');
-      if (rs.body.total !== 2) return log ('total not computed properly with repeated pics.');
-      if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
+      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics.');
+      if (rs.body.total !== 2) return clog ('total not computed properly with repeated pics.');
+      if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
       s.rotate2 = rs.body.pics [0];
       return true;
    }],
    ['get `rotate` pics as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
-      if (rs.body.total !== 1) return log ('total not computed properly with repeated pics.');
-      if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
+      if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
+      if (rs.body.total !== 1) return clog ('total not computed properly with repeated pics.');
+      if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
       s.repeated = rs.body.pics [0].id;
       return true;
    }],
    ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', '')}, 200],
    ['get `rotate` pics as user2 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user2 should have one `rotate` pic.');
-      if (rs.body.pics [0].id === s.pics2 [0].id) return log ('user2 should have own picture as priority.');
+      if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
+      if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
       return true;
    }],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
@@ -886,12 +899,12 @@ var main = [
       return s.headers.cookie !== undefined;
    }],
    ['get `rotate` pics as user1 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user1 should have one `rotate` pic.');
-      if (rs.body.pics [0].id !== s.pics2 [0].id) return log ('user1 should have own picture as priority.');
+      if (rs.body.pics.length !== 1) return clog ('user1 should have one `rotate` pic.');
+      if (rs.body.pics [0].id !== s.pics2 [0].id) return clog ('user1 should have own picture as priority.');
       return true;
    }],
    ['get all pics as user1 after sharing', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 3) return log ('user1 should have one `rotate` pic.');
+      if (rs.body.pics.length !== 3) return clog ('user1 should have one `rotate` pic.');
       return true;
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
@@ -904,8 +917,8 @@ var main = [
       return s.headers.cookie !== undefined;
    }],
    ['get `rotate` pics as user1 after unsharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return log ('user1 should have one `rotate` pic.');
-      if (rs.body.pics [0].id !== s.pics2 [0].id) return log ('user1 should have own picture after unsharing.');
+      if (rs.body.pics.length !== 1) return clog ('user1 should have one `rotate` pic.');
+      if (rs.body.pics [0].id !== s.pics2 [0].id) return clog ('user1 should have own picture after unsharing.');
       return true;
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
@@ -926,27 +939,27 @@ var main = [
       }, {}, '', 200];
    }),
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.total !== 0) return log ('Some pictures were not deleted.');
+      if (rs.body.total !== 0) return clog ('Some pictures were not deleted.');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {all: 0})) return log (rs.body);
+      if (! eq (rs.body, {all: 0})) return clog (rs.body);
       return true;
    }],
    ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
    ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Body must be object');
-      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return log ('Invalid values in fields.');
-      if (type (rs.body.created) !== 'integer') return log ('Invalid created field');
-      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return log ('Invalid used field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 44 && rs.body.logs.length !== 45)) return log ('Invalid logs.');
+      if (type (rs.body) !== 'object') return clog ('Body must be object');
+      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
+      if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
+      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return clog ('Invalid used field.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 47 && rs.body.logs.length !== 48)) return clog ('Invalid logs.');
       return true;
    }],
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
-      if (type (rs.body) !== 'object') return log ('Invalid body', rs.body);
-      if (rs.body.users !== 1) return log ('Invalid users');
-      if (rs.body.pics !== 0)  return log ('Invalid pics');
-      if (rs.body.bytes !== 0) return log ('Invalid bytes');
+      if (type (rs.body) !== 'object') return clog ('Invalid body', rs.body);
+      if (rs.body.users !== 1) return clog ('Invalid users');
+      if (rs.body.pics !== 0)  return clog ('Invalid pics');
+      if (rs.body.bytes !== 0) return clog ('Invalid bytes');
       return true;
    }],
 ];
@@ -958,9 +971,9 @@ h.seq ({port: CONFIG.port}, [
 ], function (error) {
    if (error) {
       if (error.request && error.request.body && type (error.request.body) === 'string') error.request.body = error.request.body.slice (0, 1000) + (error.request.body.length > 1000 ? '... OMITTING REMAINDER' : '');
-      return log ('FINISHED WITH AN ERROR', error);
+      return clog ('FINISHED WITH AN ERROR', error);
    }
-   log ('ALL TESTS FINISHED SUCCESSFULLY!');
+   clog ('ALL TESTS FINISHED SUCCESSFULLY!');
 }, function (test) {
    if (type (test) === 'object') return test;
    if (test [1] === 'post' && test [4]) {
@@ -969,7 +982,7 @@ h.seq ({port: CONFIG.port}, [
          if (type (b) === 'function') b = b (s);
          if (! s.headers || ! s.headers.cookie) return b;
          if (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset'].indexOf (test [2]) !== -1) return b;
-         var b2 = teishi.c (b);
+         var b2 = teishi.copy (b);
          if (b2.multipart) b2.multipart.push ({type: 'field', name: 'cookie', value: s.headers.cookie});
          else b2.cookie = s.headers.cookie;
          return b2;
