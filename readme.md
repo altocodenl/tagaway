@@ -6,6 +6,8 @@ ac;pic is an application that allows you to store and manage your pictures. ac;p
 
 To understand why we're sharing the source code of a commercial product, please read [our manifesto](http://federicopereiro.com/manifesto). If that's too long to read, in a nutshell: we want to share our code so that others can learn from it and contribute to us. Sharing is the way to progress.
 
+All non-code documents related to the project are published in this [open folder](https://drive.google.com/drive/u/1/folders/11UPZHrHUT_ce2baN9s0K-CtfXYQOewG3).
+
 ## Status
 
 The application is currently under development and has not been launched yet. We estimate to have an alpha by the end of 2019.
