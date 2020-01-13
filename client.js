@@ -14,13 +14,13 @@
       if (arguments.length > 1) B.eventlog [0].args = [].slice.call (arguments, 1);
       if (! B.verbose) return;
       var toprint = ['event #' + B.eventlog.length, B.eventlog [0].verb, B.eventlog [0].path];
-      if (dale.keys (B.eventlog [0]).indexOf ('args') !== -1) toprint.push (JSON.stringify (B.eventlog [0].args).slice (0, 500));
+      if (dale.keys (B.eventlog [0]).indexOf ('args') > -1) toprint.push (JSON.stringify (B.eventlog [0].args).slice (0, 500));
       if (B.eventlog [0].from [1]) {
          toprint.push ('FROM');
          dale.do (['ev', 'verb', 'path'], function (i) {
             if (B.eventlog [0].from [1].verb && 'ev' === i) return;
             if (B.eventlog [0].from [1] [i]) toprint.push (B.eventlog [0].from [1] [i]);
-            if (dale.keys (B.eventlog [0].from [1]).indexOf ('args') !== -1) toprint.push (JSON.stringify (B.eventlog [0].from [1].args).slice (0, 500));
+            if (dale.keys (B.eventlog [0].from [1]).indexOf ('args') > -1) toprint.push (JSON.stringify (B.eventlog [0].from [1].args).slice (0, 500));
          });
       }
       console.log.apply (console, toprint);
@@ -51,7 +51,7 @@
       if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token    = path [2];
       if (path [0] === 'auth' && path [1] === 'reset'  && path [2]) State.token    = path [2];
       if (path [0] === 'auth' && path [1] === 'reset'  && path [3]) State.username = path [3];
-      if (path [0] === 'auth' && path [1] === 'login'  && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using ac:pic!');
+      if (path [0] === 'auth' && path [1] === 'login'  && path [2] === 'verified') B.do (x, 'notify', 'green', 'You have successfully verified your email address. Please login to start using ac;pic!');
       B.do (x, 'set', ['State', 'view'],    path [0]);
       B.do (x, 'set', ['State', 'subview'], path [1]);
    });
@@ -374,7 +374,7 @@
                if (c ('#auth-confirm').value !== credentials.password) return B.do (x, 'notify', 'red', 'Please confirm that your password is entered correctly.');
                if (State.token) credentials.token = decodeURIComponent (State.token);
                else {
-                  if (confirm ('ac:pic is currently on alpha and is invitation only. Would you like to request an invitation?')) {
+                  if (confirm ('ac;pic is currently on alpha and is invitation only. Would you like to request an invitation?')) {
                      c.ajax ('post', 'requestInvite', {}, {email: credentials.email}, function (error) {
                         if (error) return alert ('Wow, we just experienced a connection error. Could you please try again?');
                         B.do (x, 'notify', 'green', 'We have successfully received your request! We\'ll get back to you ASAP.');
@@ -807,7 +807,7 @@
       var routes = [
          ['change', ['State', 'query'], function (x) {
             var untaggedIndex = (B.get ('State', 'query', 'tags') || []).indexOf ('untagged');
-            if (untaggedIndex !== -1 && B.get ('State', 'query', 'tags').length > 1) return B.do (x, 'rem', ['State', 'query', 'tags'], untaggedIndex);
+            if (untaggedIndex > -1 && B.get ('State', 'query', 'tags').length > 1) return B.do (x, 'rem', ['State', 'query', 'tags'], untaggedIndex);
             B.do (x, 'retrieve', 'pics');
          }],
          // We update the tag svgs whenever a change fires on the page. We use priority -1000 so that we run this after the views are updated.
@@ -1017,7 +1017,7 @@
             if (tag === true) tag = B.get ('State', 'autotag');
             if (! tag) return;
             if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
-            if (BASETAGS.indexOf (tag) !== -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
+            if (BASETAGS.indexOf (tag) > -1) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             if (H.isyear (tag)) return B.do (x, 'notify', 'yellow', 'Sorry, you can not use that tag.');
             var ids = dale.keys (B.get ('State', 'selected'));
             if (ids.length === 0) return;
@@ -1123,7 +1123,7 @@
                   B.view (x, ['State', 'autotag'], {attrs: {class: 'input-search'}, listen: [
                   ]}, function (x, autotag) {
                      var matches = dale.obj (B.get ('Data', 'tags'), function (card, tag) {
-                        if (H.isyear (tag) || BASETAGS.indexOf (tag) !== -1) return;
+                        if (H.isyear (tag) || BASETAGS.indexOf (tag) > -1) return;
                         if (tag.match (new RegExp (autotag || '', 'i'))) return [tag, card];
                      });
                      return [
@@ -1163,7 +1163,7 @@
             if (pics.files.length === 0) return B.do (x, 'notify', 'yellow', 'Please select one or more pics.');
 
             dale.do (pics.files, function (file, k) {
-               if (ALLOWEDMIME.indexOf (file.type) !== -1) {
+               if (ALLOWEDMIME.indexOf (file.type) > -1) {
                   B.do (x, 'add', ['State', 'upload', 'queue'], file);
                }
                else B.do (x, 'add', ['State', 'upload', 'invalid'], file.name);
@@ -1315,7 +1315,7 @@
          if (! pics) return;
          if (pics.length === 0) {
             if (B.get ('State', 'query', 'tags').length === 0) return [
-               ['h2', 'Welcome to ac:pic!'],
+               ['h2', 'Welcome to ac;pic!'],
                ['img', {src: 'lib/icons/icon-image.svg'}],
                ['h5', 'Click the upload button to startin adding pictures.'],
                ['button', B.ev ({class: 'button upload'}, ['onclick', 'set', ['State', 'subview'], 'upload']), [['i', {class: 'ion-ios-plus-outline'}], 'Upload']],

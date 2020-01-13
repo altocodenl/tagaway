@@ -14,13 +14,13 @@
       if (arguments.length > 1) B.eventlog [0].args = [].slice.call (arguments, 1);
       if (! B.verbose) return;
       var toprint = ['event #' + B.eventlog.length, B.eventlog [0].verb, B.eventlog [0].path];
-      if (dale.keys (B.eventlog [0]).indexOf ('args') !== -1) toprint.push (JSON.stringify (B.eventlog [0].args).slice (0, 500));
+      if (dale.keys (B.eventlog [0]).indexOf ('args') > -1) toprint.push (JSON.stringify (B.eventlog [0].args).slice (0, 500));
       if (B.eventlog [0].from [1]) {
          toprint.push ('FROM');
          dale.do (['ev', 'verb', 'path'], function (i) {
             if (B.eventlog [0].from [1].verb && 'ev' === i) return;
             if (B.eventlog [0].from [1] [i]) toprint.push (B.eventlog [0].from [1] [i]);
-            if (dale.keys (B.eventlog [0].from [1]).indexOf ('args') !== -1) toprint.push (JSON.stringify (B.eventlog [0].from [1].args).slice (0, 500));
+            if (dale.keys (B.eventlog [0].from [1]).indexOf ('args') > -1) toprint.push (JSON.stringify (B.eventlog [0].from [1].args).slice (0, 500));
          });
       }
       console.log.apply (console, toprint);
@@ -198,6 +198,7 @@
                username: c ('#auth-username').value,
                password: c ('#auth-password').value
             };
+            if (subview === 'login') credentials.tz = new Date ().getTimezoneOffset ();
             c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, credentials, function (error, rs) {
                if (error) return B.do (x, 'notify', 'red', 'There was an error logging in.');
                else              B.do (x, 'notify', 'green', 'Welcome!');
