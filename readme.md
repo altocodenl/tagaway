@@ -10,7 +10,127 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-The application is currently under development and has not been launched yet. We estimate to have an alpha by the end of 2019.
+The application is currently under development and has not been launched yet. We estimate to have an alpha by 2020.
+
+The author wishes to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
+
+<a href="https://www.browserstack.com"><img src="https://bstacksupport.zendesk.com/attachments/token/kkjj6piHDCXiWrYlNXjKbFveo/?name=Logo-01.svg" width="150px" height="33px"></a>
+
+### Todo alpha
+
+- Client
+   - New interface.
+
+### Todo v1
+
+- gotoB 2 & style
+   - > -1 instead of !== -1
+   - [], not `*`
+   - style, time, last
+   - navigation
+
+- Server
+   - httponly cookie & csrf token
+   - ac;tools
+
+- Admin & deploy
+   - Manage payments.
+   - Favicon & icons.
+   - Report pictures.
+   - Security writeup: xss routes with user input (tags, eventually picture titles; image contents are left to browsers but images have to be valid as per imagemagick), cookie as signed token, CSRF prevented by sending cookie (not by headers, https://blog.appsecco.com/exploiting-csrf-on-json-endpoints-with-flash-and-redirects-681d4ad6b31b), s3 encryption, we encrypt the cookie only for distinguishing expired cookie from attack (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786)
+
+- Account
+   - Account view
+   - Delete account.
+   - Change email & password.
+   - Export all data.
+   - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
+   - Payment.
+   - Payment late: 2 week notice with download.
+   - Freeze me out.
+   - API tokens.
+   - Status & stats page.
+   - Languages.
+
+- Share
+   - Share/unshare with authorization & automatic email.
+   - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
+   - Upload to shared tag.
+   - Tags with same name (local vs shared, put a @).
+   - QR code to share.
+
+- Upload
+   - Client-side hashes for fast duplicate elimination.
+   - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
+   - Folder upload on Android & mobile.
+
+- Organize
+   - Hidden tags.
+   - Mobile/tablet view.
+   - Add colors to tags.
+   - Show dates in upload mode.
+   - Smaller level of scale to go faster
+   - Upload video.
+   - Add title (based on title of pic but optional)
+   - Enable GPS detection.
+   - Create tag that groups tags (can also have pictures directly assigned).
+   - Create group that groups people.
+   - Filters.
+   - Themes for the interface.
+   - Set date manually?
+   - Order pictures within tag? Set priorities! Manual order mode.
+
+### Done
+
+- Upload
+   - Allow only jpeg & png.
+   - Auto thumbnail generation.
+   - Server-side encryption.
+   - See progress when uploading files, using a progress bar.
+   - Ignore images that already were uploaded (by hash check).
+   - Upload more files while uploading files.
+   - Allow to go back to browse while files are being uploaded in the background.
+   - Retry on error.
+   - Add one or more tags to a certain upload batch.
+
+- Carrousel
+   - Full screen viewing.
+   - Use etags to save bandwidth.
+   - Carrousel with wrap-around and preloading of the next picture.
+   - Show date & tags.
+
+- Organize
+   - Multiple selection with shift & ctrl.
+   - Tag/untag.
+   - Delete pictures.
+   - Sort by newest, oldest & upload date.
+   - Autocomplete tags when searching.
+   - Allow for more than one tag to be searched at the same time.
+   - See number of tags & date below each picture.
+   - Rotate pictures.
+   - Select all pictures in query even if they were not loaded.
+   - Consider 1900-2100 as automatic tags for search.
+   - Refresh list of pictures if there's an upload in the background.
+
+- Account
+   - Signup with invite.
+   - Login/logout.
+   - Recover/reset/change password.
+
+- Admin
+   - Metering requests, downloads & space stored.
+   - Block further uploads if storage limits are exceeded.
+   - Invites.
+   - Stats endpoint.
+
+### Features we may never implement
+
+- Share
+   - Comments.
+   - Share to social platforms.
+   - Serve images as hosting.
+   - Share certain tags only on shared pictures.
+   - Home pages.
 
 ## Routes
 
@@ -172,121 +292,6 @@ All the routes below require an admin user to be logged in.
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
 
 ## Features
-
-### Todo alpha
-
-- Client
-   - New interface.
-
-### Todo beta
-
-- gotoB 2 & style
-   - > -1 instead of !== -1
-   - [], not `*`
-   - style, time, last
-   - navigation
-
-- Server
-   - ac;tools
-
-- Admin & deploy
-   - Manage payments.
-   - Favicon & icons.
-   - Report pictures.
-   - Security writeup: xss routes with user input (tags, eventually picture titles; image contents are left to browsers but images have to be valid as per imagemagick), cookie as signed token, CSRF prevented by sending cookie (not by headers, https://blog.appsecco.com/exploiting-csrf-on-json-endpoints-with-flash-and-redirects-681d4ad6b31b), s3 encryption, we encrypt the cookie only for distinguishing expired cookie from attack (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786)
-
-- Account
-   - Account view
-   - Delete account.
-   - Change email & password.
-   - Export all data.
-   - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
-   - Payment.
-   - Payment late: 2 week notice with download.
-   - Freeze me out.
-   - API tokens.
-   - Status & stats page.
-   - Languages.
-
-- Share
-   - Share/unshare with authorization & automatic email.
-   - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
-   - Upload to shared tag.
-   - Tags with same name (local vs shared, put a @).
-   - QR code to share.
-
-- Upload
-   - Client-side hashes for fast duplicate elimination.
-   - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
-   - Folder upload on Android & mobile.
-
-- Organize
-   - Hidden tags.
-   - Mobile/tablet view.
-   - Add colors to tags.
-   - Show dates in upload mode.
-   - Smaller level of scale to go faster
-   - Upload video.
-   - Add title (based on title of pic but optional)
-   - Enable GPS detection.
-   - Create tag that groups tags (can also have pictures directly assigned).
-   - Create group that groups people.
-   - Filters.
-   - Themes for the interface.
-   - Set date manually?
-   - Order pictures within tag? Set priorities! Manual order mode.
-
-### Done
-
-- Upload
-   - Allow only jpeg & png.
-   - Auto thumbnail generation.
-   - Server-side encryption.
-   - See progress when uploading files, using a progress bar.
-   - Ignore images that already were uploaded (by hash check).
-   - Upload more files while uploading files.
-   - Allow to go back to browse while files are being uploaded in the background.
-   - Retry on error.
-   - Add one or more tags to a certain upload batch.
-
-- Carrousel
-   - Full screen viewing.
-   - Use etags to save bandwidth.
-   - Carrousel with wrap-around and preloading of the next picture.
-   - Show date & tags.
-
-- Organize
-   - Multiple selection with shift & ctrl.
-   - Tag/untag.
-   - Delete pictures.
-   - Sort by newest, oldest & upload date.
-   - Autocomplete tags when searching.
-   - Allow for more than one tag to be searched at the same time.
-   - See number of tags & date below each picture.
-   - Rotate pictures.
-   - Select all pictures in query even if they were not loaded.
-   - Consider 1900-2100 as automatic tags for search.
-   - Refresh list of pictures if there's an upload in the background.
-
-- Account
-   - Signup with invite.
-   - Login/logout.
-   - Recover/reset/change password.
-
-- Admin
-   - Metering requests, downloads & space stored.
-   - Block further uploads if storage limits are exceeded.
-   - Invites.
-   - Stats endpoint.
-
-### Features we may never implement
-
-- Share
-   - Comments.
-   - Share to social platforms.
-   - Serve images as hosting.
-   - Share certain tags only on shared pictures.
-   - Home pages.
 
 ## Client Data/State structure
 
