@@ -31,6 +31,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 - Server
    - httponly cookie & csrf token
+   - Security: figure out if workaround for package-lock is necessary with nested dependencies that are not pegged.
    - ac;tools
 
 - Admin & deploy
