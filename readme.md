@@ -23,11 +23,8 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 ### Todo v1
 
-- gotoB 2 & style
-   - > -1 instead of !== -1
-   - [], not `*`
-   - style, time, last
-   - navigation
+- Migrate to gotoB v2
+- Add logic & endpoint to send to server latency of `query` requests.
 
 - Server
    - httponly cookie & csrf token
