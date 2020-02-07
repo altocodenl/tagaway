@@ -30,9 +30,10 @@ if [ "$2" == "fast" ] ; then
 else
    cd .. && tar --exclude="$FOLDER/*.swp" --exclude="$FOLDER/node_modules" -czvf $TAR $FOLDER
 fi
+
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
 echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
-ssh $HOST "cd $FOLDER && npm i --no-save && mg restart"
+ssh $HOST "cd $FOLDER && npm i --no-save --production && mg restart"
 ssh $HOST rm $TAR
 rm $TAR
