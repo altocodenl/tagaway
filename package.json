@@ -17,6 +17,10 @@
       "nodemailer-ses-transport": "1.5.1",
       "uuid":                     "3.3.3"
    },
+   "devDependencies": {
+      "css":       "2.2.4",
+      "node-sass": "4.13.0"
+   },
    "main": "server.js",
    "author": "Federico Pereiro <fpereiro@gmail.com>",
    "contributors": ["Ruben Meines (http://rubenmeines.com)"],
