@@ -24,6 +24,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 ### Todo v1
 
 - Migrate to gotoB v2
+- return false on preventdefault?
 - Add logic & endpoint to send to server latency of `query` requests.
 
 - Server
@@ -362,6 +363,8 @@ All the routes below require an admin user to be logged in.
 - invites (hash): key is email, value is {firstName: STRING, token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
 
 - verify (hash): key is token, value is email. Deleted after usage.
+
+- csrf:SESSION (string): key is session, value is associated CSRF token.
 
 - upic:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition.
 

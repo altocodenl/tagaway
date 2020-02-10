@@ -444,7 +444,6 @@ var routes = [
             dale.go (['gotoB.min', 'murmurhash'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
-            ['script', 'var COOKIENAME  = \'' + CONFIG.cookiename + '\';'],
             ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedmime) + ';'],
             ['script', 'var BASETAGS    = ' + JSON.stringify (['all', 'untagged']) + ';'],
             ['script', {src: 'client.js'}]
@@ -539,9 +538,18 @@ var routes = [
          [a.cond, [a.get, Redis, 'hget', 'users:@username', 'verificationPending'], {
             true: [reply, rs, 403, {error: 'verify'}],
             else: function (s) {a.seq (s, [
+               [function (s) {
+                  require ('bcryptjs').genSalt (20, function (error, csrf) {
+                     if (error) return s.next (null, error);
+                     s.csrf = csrf;
+                     a.seq (s, [Redis, 'setex', 'csrf:' + s.session, giz.config.expires, csrf]);
+                  });
+               }],
                [H.log, s.username, {a: 'log', ip: rq.origin, ua: rq.headers ['user-agent'], tz: b.tz}],
-               [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})}],
-            ])},
+               function (s) {
+                  reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+               }
+            ])}
          }],
       ]);
    }],
@@ -754,7 +762,10 @@ var routes = [
          astop (rs, [
             [H.stat, 'a', user.username],
             [H.stat, 'A', user.username],
+            [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookiename], giz.config.expires],
+            [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookiename]],
             function (s) {
+               rq.csrf = s.last;
                rs.next ();
             }
          ]);
@@ -763,19 +774,23 @@ var routes = [
 
    // *** CSRF PROTECTION ***
 
+   ['get', 'csrf', function (rq, rs) {
+      reply (rs, 200, {csrf: rq.csrf});
+   }],
+
    ['post', '*', function (rq, rs) {
 
       if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
 
-      var ctype = rq.headers ['content-type'] || '', cookie = rq.headers.cookie;
+      var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
-         if (rq.data.fields.cookie !== cookie) return reply (rs, 403, {error: 'csrf'});
-         delete rq.data.fields.cookie;
+         if (rq.data.fields.csrf !== rq.csrf) return reply (rs, 403, {error: 'csrf'});
+         delete rq.data.fields.csrf;
       }
       else {
          if (type (rq.body) !== 'object') return reply (rs, 400);
-         if (rq.body.cookie !== cookie)   return reply (rs, 403, {error: 'csrf'});
-         delete rq.body.cookie;
+         if (rq.body.csrf !== rq.csrf)    return reply (rs, 403, {error: 'csrf'});
+         delete rq.body.csrf;
       }
       rs.next ();
    }],
@@ -785,6 +800,7 @@ var routes = [
    ['post', 'auth/logout', function (rq, rs) {
       astop (rs, [
          [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
+         [Redis, 'del', 'csrf:' + rq.data.cookie [CONFIG.cookiename]],
          [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {path: '/'})}],
       ]);
    }],
@@ -810,6 +826,7 @@ var routes = [
          },
          function (s) {
             var multi = redis.multi ();
+            multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
             multi.hdel ('emails',  rq.user.email);
             multi.hdel ('invites', rq.user.email);
             dale.go (s.data [1].concat (['all', 'untagged']), function (tag) {

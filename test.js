@@ -191,13 +191,20 @@ var intro = [
       if (! eq (rs.body, {error: 'token'})) return clog ('Invalid payload received.');
       return true;
    }],
+   ['get CSRF token without being logged in', 'get', 'csrf', {}, '', 403],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0] || rs.headers ['set-cookie'] [0].length <= 5) return clog ('Invalid cookie.');
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
-      return s.headers.cookie !== undefined;
+      if (! rs.body || ! rs.body.csrf) return clog ('Invalid CSRF token');
+      s.csrf = rs.body.csrf;
+      return s.headers.cookie !== undefined && s.headers.cookie.match ('HttpOnly');
+   }],
+   ['get CSRF token after being logged in', 'get', 'csrf', {}, '', 200, function (s, rq, rs) {
+      if (! eq (rs.body, {csrf: s.csrf})) return clog ('Invalid payload');
+      return true;
    }],
    ttester ('change password', 'post', 'auth/changePassword', {}, [
       ['old', 'string'],
@@ -210,6 +217,7 @@ var intro = [
    ['change password again', 'post', 'auth/changePassword', {}, function (s) {return {old: '123456', 'new': U [0].password}}, 200],
    ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return true;
    }],
    ['submit client error being logged in', 'post', 'error', {}, {error: 'error'}, 200],
@@ -220,6 +228,7 @@ var outro = [
       if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age/i)) return false;
       return true;
    }],
+   ['get CSRF token without being logged in', 'get', 'csrf', {}, '', 403],
    ['delete account with invalid cookie', 'post', 'auth/delete', {}, {}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'session'})) return clog ('Invalid payload sent, expecting {error: "session"}');
       s.headers = {};
@@ -231,6 +240,7 @@ var outro = [
    }},
    ['login with valid credentials', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['delete account with invalid cookie', 'post', 'auth/delete', {cookie: 'foobar'}, {}, 403, function (s, rq, rs) {
@@ -276,6 +286,10 @@ var main = [
       ['to', 'integer'],
    ]),
    {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'csrf'})) return clog ('Invalid payload');
+      return true;
+   }},
+   {tag: 'query pics with invalid csrf token', method: 'post', path: 'query', code: 403, body: {csrf: 'foobar', tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
       if (! eq (rs.body, {error: 'csrf'})) return clog ('Invalid payload');
       return true;
    }},
@@ -785,6 +799,7 @@ var main = [
    ['unshare tag', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username, del: true}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['get shared tags as user2', 'get', 'share', {}, '', 200, function (s, rq, rs) {
@@ -808,6 +823,7 @@ var main = [
    }, {}, '', 404],
    ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['tag rotated picture', 'post', 'tag', {}, function (s) {
@@ -821,6 +837,7 @@ var main = [
    ['share rotate tag with a user', 'post', 'share', {}, {tag: 'rotate', who: U [1].username}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -896,6 +913,7 @@ var main = [
    }],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['get `rotate` pics as user1 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -909,11 +927,13 @@ var main = [
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', ''), del: true}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['get `rotate` pics as user1 after unsharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -923,6 +943,7 @@ var main = [
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['delete pic as user2', 'delete', function (s) {
@@ -931,6 +952,7 @@ var main = [
    ['delete account', 'post', 'auth/delete', {}, {}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    dale.go (dale.times (3, 0), function (k) {
@@ -983,8 +1005,8 @@ h.seq ({port: CONFIG.port}, [
          if (! s.headers || ! s.headers.cookie) return b;
          if (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset'].indexOf (test [2]) !== -1) return b;
          var b2 = teishi.copy (b);
-         if (b2.multipart) b2.multipart.push ({type: 'field', name: 'cookie', value: s.headers.cookie});
-         else b2.cookie = s.headers.cookie;
+         if (b2.multipart) b2.multipart.push ({type: 'field', name: 'csrf', value: s.csrf});
+         else b2.csrf = s.csrf;
          return b2;
       }
    }
