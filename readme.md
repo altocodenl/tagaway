@@ -10,33 +10,28 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-The application is currently under development and has not been launched yet. We estimate to have an alpha by 2020.
+ac;pic is currently under development and has not been launched yet. We estimate to have an alpha by 2020.
 
 The author wishes to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
-<a href="https://www.browserstack.com"><img src="https://bstacksupport.zendesk.com/attachments/token/kkjj6piHDCXiWrYlNXjKbFveo/?name=Logo-01.svg" width="150px" height="33px"></a>
-
-### Todo alpha
+### Todo v0
 
 - Client
-   - New interface.
+   - Implement new UI.
 
 ### Todo v1
 
 - Migrate to gotoB v2
-- return false on preventdefault?
-- Add logic & endpoint to send to server latency of `query` requests.
 
 - Server
-   - httponly cookie & csrf token
-   - Security: figure out if workaround for package-lock is necessary with nested dependencies that are not pegged.
-   - ac;tools
+   - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
+   - Security writeup: httponly cookies to prevent xss, csrf tokens bound to session lifecycle but independent secret (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786), cookie encrypted with secret per user to distinguish expired session from invalid.
+   - ac;tools integration.
 
-- Admin & deploy
-   - Manage payments.
+- Assorted
    - Favicon & icons.
-   - Report pictures.
-   - Security writeup: xss routes with user input (tags, eventually picture titles; image contents are left to browsers but images have to be valid as per imagemagick), cookie as signed token, CSRF prevented by sending cookie (not by headers, https://blog.appsecco.com/exploiting-csrf-on-json-endpoints-with-flash-and-redirects-681d4ad6b31b), s3 encryption, we encrypt the cookie only for distinguishing expired cookie from attack (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786)
+   - Status & stats page.
+   - Spanish support.
 
 - Account
    - Account view
@@ -44,64 +39,72 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Change email & password.
    - Export all data.
    - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
+   - Log me out of all sessions.
+   - Freeze me out (includes log me out of all sessions).
+
+- Payment
    - Payment.
    - Payment late: 2 week notice with download.
-   - Freeze me out.
-   - API tokens.
-   - Status & stats page.
-   - Languages.
 
 - Share
    - Share/unshare with authorization & automatic email.
    - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
    - Upload to shared tag.
    - Tags with same name (local vs shared, put a @).
-   - QR code to share.
 
 - Upload
    - Client-side hashes for fast duplicate elimination.
    - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
-   - Folder upload on Android & mobile.
-
-- Organize
-   - Hidden tags.
-   - Mobile/tablet view.
-   - Add colors to tags.
-   - Show dates in upload mode.
-   - Smaller level of scale to go faster
+   - Folder upload on mobile.
    - Upload video.
-   - Add title (based on title of pic but optional)
+
+- Tag
+   - Hidden tags.
+   - Add colors to tags?
    - Enable GPS detection.
-   - Create tag that groups tags (can also have pictures directly assigned).
-   - Create group that groups people.
+   - Set date manually.
+
+- See
+   - Add logic & endpoint to send to server latency of `query` requests.
+   - Mobile/tablet view.
+
+### Todo maybe
+
+- See
    - Filters.
    - Themes for the interface.
-   - Set date manually?
+
+- Tag
+   - Create tag that groups tags (can also have pictures directly assigned).
    - Order pictures within tag? Set priorities! Manual order mode.
 
-### Done
+- Share
+   - QR code to share.
+   - Create group that groups people.
+
+### Todo done
 
 - Upload
    - Allow only jpeg & png.
    - Auto thumbnail generation.
-   - Server-side encryption.
+   - Server-side encryption (onto S3).
    - See progress when uploading files, using a progress bar.
    - Ignore images that already were uploaded (by hash check).
    - Upload more files while uploading files.
    - Allow to go back to browse while files are being uploaded in the background.
    - Retry on error.
    - Add one or more tags to a certain upload batch.
+   - Delete pictures.
 
-- Carrousel
+- See
    - Full screen viewing.
    - Use etags to save bandwidth.
    - Carrousel with wrap-around and preloading of the next picture.
    - Show date & tags.
 
-- Organize
+- Tag
    - Multiple selection with shift & ctrl.
    - Tag/untag.
-   - Delete pictures.
    - Sort by newest, oldest & upload date.
    - Autocomplete tags when searching.
    - Allow for more than one tag to be searched at the same time.
@@ -122,16 +125,37 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Invites.
    - Stats endpoint.
 
-### Features we may never implement
+### Never
 
 - Share
    - Comments.
    - Share to social platforms.
    - Serve images as hosting.
    - Share certain tags only on shared pictures.
-   - Home pages.
+   - Public profile pages.
 
-## Routes
+## Functions
+
+### Core functions
+
+1. **Upload**. Converse operation is **delete**.
+2. **Tag**. Converse operation is **untag**. Complementary operation is **rotate**.
+3. **Share**. Converse operation is **unshare**. Complementary operations are **accepting a shared tag** and **deleting a shared tag**.
+4. **See**. No converse operation. Complementary operation is **download**.
+
+Functions 1 through 3 modify the data; the last function is purely passive.
+
+### Complementary functions
+
+1. **Auth**.
+2. **Account**. Complementary functions are **export** and **import**.
+3. **Payment**.
+
+## Server
+
+General server approach outlined [here](https://github.com/fpereiro/backendlore).
+
+### Routes
 
 If any route fails with an internal error, a 500 code will be returned with body `{error: ...}`.
 
@@ -145,12 +169,12 @@ If a cookie with valid signature but that has already expired is sent along, the
 
 All POST requests (unless marked otherwise) must contain a `cookie` field equivalent to the `cookie` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the cookie must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
 
-### Request invite
+#### Request invite
 
 - `POST /requestInvite`.
    - Body must be `{email: STRING}`, otherwise a 400 will be sent.
 
-### Auth routes
+#### Auth routes
 
 - `POST /auth/login`.
    - Does not require the user to be logged in.
@@ -197,7 +221,7 @@ All POST requests (unless marked otherwise) must contain a `cookie` field equiva
 - `POST /auth/changePassword`.
    - Body must be `{old: STRING, new: STRING}`.
 
-### App routes
+#### App routes
 
 `POST /feedback`
    - Body must be an object of the form `{message: STRING}` (otherwise 400).
@@ -273,7 +297,7 @@ All POST requests (unless marked otherwise) must contain a `cookie` field equiva
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, used: [INTEGER_USED, INTEGER_MAXIMUM], logs: [...]}`.
 
-### Debugging routes
+#### Debugging routes
 
 `POST /error`
    - This route does not require the user to be logged in.
@@ -281,7 +305,7 @@ All POST requests (unless marked otherwise) must contain a `cookie` field equiva
 
 All the routes below require an admin user to be logged in.
 
-### Admin routes
+#### Admin routes
 
 `POST /admin/stats`
    - Publicly accessible.
@@ -289,60 +313,6 @@ All the routes below require an admin user to be logged in.
 
 `POST /admin/invites`
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
-
-## Features
-
-## Client Data/State structure
-
-`State.view`: can be `'auth'` or `'main'`.
-
-`State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
-
-`State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
-
-`State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
-
-`State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
-
-`State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
-
-`State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
-
-`State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
-
-`State.autoquery`: `undefined|string`, used to search for tags in the query box.
-
-`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
-
-`State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
-
-`State.uploadModal`: `undefined|true`, if true, show the upload modal.
-
-`State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
-
-`State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
-
-`State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the `canvas` view.
-
-`State.nextCanvas`: `undefined|PIC`, used to preload the next picture in the `canvas` view.
-
-`State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
-
-`State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
-
-`State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
-
-`State.slider`: true|false|undeined. If no pictures selected, falsy is all tags, truthy is selected tags. If pictures are selected, falsy is add tags, truthy is remove tags.
-
-`State.loading`: true|undefined, to see whether pics are being loaded.
-
-`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added by the client to denote selection of the picture, but that never reaches the server.
-
-`Data.total`: number of pics matched by query. Also comes from `POST /query`.
-
-`Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
-
-`Data.account`: `{username: STRING, email: STRING, type: STRING, created: INT, logs: [{...}, ...], used: [INT, INT]`; the body returned by `GET /account`.
 
 ## Redis structure
 
@@ -435,63 +405,61 @@ Used by giz:
 - users:USERNAME (hash): covered above, giz only cares about `pass`.
 ```
 
-## Configuration
+## Client
 
-On `/etc/security/limits.conf`, the following two lines to increase file handles per process:
+### Listeners
 
-```
-* soft nofile 99999
-* hard nofile 99999
-```
+### Data/State structure
 
-On `/etc/sysctl.conf`:
+`State.view`: can be `'auth'` or `'main'`.
 
-```
-# increases TCP maximum queue length to 4096
-net.core.somaxconn=4096
-# for giving more memory to redis to create background processes for saving the DB to disk
-vm.overcommit_memory=1
-```
+`State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
 
-`start.sh` (must be executable, set with `chmod 777 start.sh`):
+`State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
 
-```
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
-echo never > /sys/kernel/mm/transparent_hugepage/enabled
-service redis-server restart
-cd /root/acpic && mg restart
-```
+`State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
 
-crontab with `@reboot /root/start.sh`
+`State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
 
-### HTTPS configuration
+`State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
 
-Installation of certbot:
+`State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
 
-```
-sudo add-apt-repository ppa:certbot/certbot -y
-sudo apt-get update
-sudo apt-get install python-certbot-nginx -y
-```
+`State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
 
-On your relevant nginx configuration (either at `/etc/nginx/sites-available` or `/etc/nginx/sites-enabled`), add this line:
+`State.autoquery`: `undefined|string`, used to search for tags in the query box.
 
-```
-   server_name YOURDOMAIN
-```
+`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
 
-Make sure your domain points to the server where you're adding these changes. Then run these commands:
+`State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
 
-```
-service nginx reload
-sudo certbot --nginx -d YOURDOMAIN
-```
+`State.uploadModal`: `undefined|true`, if true, show the upload modal.
 
-Add the following to your crontab, to renew the certificates at the hour HH:YY every day.
+`State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
 
-```
-crontab: YY HH * * * sudo certbot renew
-```
+`State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
+
+`State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the `canvas` view.
+
+`State.nextCanvas`: `undefined|PIC`, used to preload the next picture in the `canvas` view.
+
+`State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
+
+`State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
+
+`State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
+
+`State.slider`: true|false|undeined. If no pictures selected, falsy is all tags, truthy is selected tags. If pictures are selected, falsy is add tags, truthy is remove tags.
+
+`State.loading`: true|undefined, to see whether pics are being loaded.
+
+`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added by the client to denote selection of the picture, but that never reaches the server.
+
+`Data.total`: number of pics matched by query. Also comes from `POST /query`.
+
+`Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
+
+`Data.account`: `{username: STRING, email: STRING, type: STRING, created: INT, logs: [{...}, ...], used: [INT, INT]`; the body returned by `GET /account`.
 
 ## Security
 
