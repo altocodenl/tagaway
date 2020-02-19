@@ -17,7 +17,13 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 ### Todo v0
 
 - Client
-   - Implement new UI.
+   - Implement new UI:
+      - See.
+      - Upload.
+      - Tag.
+      - Hash navigation.
+      - check status 0 ajax.
+      - Remaining auth views.
 
 ### Todo v1
 
@@ -167,7 +173,7 @@ If a cookie with invalid signature is sent along, the application will respond w
 
 If a cookie with valid signature but that has already expired is sent along, the application will respond with a 403 error with body `{error: 'session'}`.
 
-All POST requests (unless marked otherwise) must contain a `cookie` field equivalent to the `cookie` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the cookie must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
+All POST requests (unless marked otherwise) must contain a `csrf` field equivalent to the `csrf` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the `csrf` field must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
 
 #### Request invite
 
@@ -409,9 +415,38 @@ Used by giz:
 
 ### Listeners
 
+1. Global:
+   1. `initialize`: mounts `Views.base ()` in the body. Executed at the end of the script. Burns after being matched.
+
+2. Bound to `base` view:
+   1. `get` & `post`: wrapper for ajax functions.
+      - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
+      - Takes `headers`, `body` and optional `cb`.
+      - Removes last log to excise password or token information from `B.r.log`.
+      - Adds `Data.csrf` to `POST` requests.
+      - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` and `notify`.
+   2. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
+   3. `notify`: sets `State.notify` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
+   4. `reset store`: takes no arguments. (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
+   5. `logout`: takes no arguments. Invokes `post /auth/logout`). In case of error, invokes `notify`; otherwise, invokes `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security).
+   6. `retrieve csrf`: takes no arguments. Invokes `get /csrf`. In case of non-403 error, invokes `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403.
+   7. `ondraw (this view)`: invokes `reset store` and `retrieve csrf`. Sets `State.view` if absent.
+
+### Views
+
+1. `base`: Depends on `Data.csrf` and `State.view`. Will only draw something if the client attempted to retrieve `Data.csrf`.
+
 ### Data/State structure
 
-`State.view`: can be `'auth'` or `'main'`.
+`Data.csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
+
+`State.notify`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.notify` after a number of seconds. Set by `notify` event.
+
+`State.view`: determines the current view.
+
+
+
+
 
 `State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
 
