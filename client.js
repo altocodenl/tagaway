@@ -3,6 +3,9 @@
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
 var type = teishi.t, clog = teishi.l, media = lith.css.media;
 
+// TODOv2 remove
+var T = teishi.time ();
+
 // *** CSS ***
 
 var CSS = {
@@ -1526,12 +1529,21 @@ Views.logo = function (size) {
 
 Views.base = function () {
    return B.view ('noRedraw', {listen: [
+      ['notify', [], function (x, notify) {
+         var existing = B.get ('State', 'notify');
+         if (existing) clearTimeout (existing.timeout);
+         var colors = {green: '#04E762', red: '#D33E43'};
+         var timeout = setTimeout (function () {
+            B.do (x, 'rem', 'State', 'notify');
+         }, 4000);
+         B.do (x, 'set', ['State', 'notify'], {color: colors [x.path [0]] || x.path [0], message: notify, timeout: timeout});
+      }],
       [/get|post/, [], function (x, headers, body, cb) {
          // CSRF protection
          if (x.verb === 'post') body.csrf = B.get ('Data', 'csrf');
          var authRequest = x.path [0].match (/^auth/);
-         // TODOv2 replace with teishi.last
-         //if (authRequest) B.r.log [B.r.log.length - 1].args [1] = 'OMITTED';
+         // TODOv2 uncomment
+         //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
          c.ajax (x.verb, x.path [0], headers, body, ! cb ? undefined : function (error, rs) {
             if (! authRequest && x.path [0] !== 'csrf' && error && error.status === 403) {
                B.do (x, 'reset', 'store');
@@ -1543,14 +1555,26 @@ Views.base = function () {
       ['error', [], function (x) {
          B.do (x, 'post', 'error', {}, dale.do (arguments, teishi.s).slice (1));
       }],
-      ['notify', [], function (x, notify) {
-         var existing = B.get ('State', 'notify');
-         if (existing) clearTimeout (existing.timeout);
-         var colors = {green: '#04E762', red: '#D33E43'};
-         var timeout = setTimeout (function () {
-            B.do (x, 'rem', 'State', 'notify');
-         }, 4000);
-         B.do (x, 'set', ['State', 'notify'], {color: colors [x.path [0]] || x.path [0], message: notify, timeout: timeout});
+      ['load', 'hash', function (x) {
+         var hash = window.location.hash.replace ('#/', '').split ('/');
+         B.do (x, 'set', ['State', 'view'], hash [0]);
+      }],
+      ['change', ['State', 'view'], function (x) {
+         if (! teishi.eq (x.path, ['State', 'view'])) return;
+
+         var view = B.get ('State', 'view'), logged = B.get ('Data', 'csrf');
+
+         var allowed = logged ? ['tag', 'upload', 'manage'] : ['login', 'signup', 'recover', 'reset'];
+
+         if (allowed.indexOf (view) === -1) {
+            if (! logged) B.do (x, 'set', ['State', 'redirect'], view);
+            B.do (x, 'set', ['State', 'view'], allowed [0]);
+            return;
+         }
+
+         document.title = ['ac;pic', view].join (' - ');
+
+         if (window.location.hash.replace ('#/', '').split ('/') [0] !== view) window.location.hash = '#/' + view;
       }],
       ['reset', 'store', function (x) {
          B.do (x, 'set', 'State', {});
@@ -1559,7 +1583,6 @@ Views.base = function () {
       }],
       ['logout', [], function (x) {
          B.do (x, 'post', 'auth/logout', {}, '', function (error) {
-            clog (error);
             if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
             B.do (x, 'reset', 'store');
             B.r.log = [];
@@ -1569,21 +1592,26 @@ Views.base = function () {
          B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
             if (error && error.status !== 403) return B.do (x, 'notify', 'red', 'Connection or server error.');
             B.do (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
+            // TODO fix redirect
+            B.do (x, 'set', ['State', 'view'], B.get ('State', 'redirect') || (error ? 'login' : 'tag'));
          });
+      }],
+      // TODOv2 remove
+      ['*', [], function (x) {
+         clog (teishi.time () - T, x.verb, x.path, x.args);
       }],
    ], ondraw: function (x) {
       B.do (x, 'reset', 'store');
+      B.do (x, 'load', 'hash');
       B.do (x, 'retrieve', 'csrf');
    }}, function () {
       return [
          ['style', CSS.litc],
-         // TODOV2 put both in one view
+         // TODOV2 merge nested views into one view
          B.view (['Data', 'csrf'], function (x, csrf) {
             if (csrf === undefined) return;
-            return B.view (['State', 'view'], {ondraw: function (x) {
-               B.do (x, 'set', ['State', 'view'], csrf ? 'tag' : 'login');
-            }}, function (x, view) {
-               return (Views [view] || function () {}) ();
+            return B.view (['State', 'view'], function (x, view) {
+               if (Views [view]) return Views [view] ();
             });
          }),
       ];
@@ -1809,7 +1837,11 @@ Views.tag = function () {
     });
 }
 
-// *** ERROR REPORTING ***
+// *** NATIVE EVENT LISTENERS ***
+
+window.addEventListener ('hashchange', function () {
+   B.do ('load', 'hash');
+});
 
 window.onerror = function () {
    B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));

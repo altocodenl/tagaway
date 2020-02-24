@@ -419,18 +419,20 @@ Used by giz:
    1. `initialize`: mounts `Views.base ()` in the body. Executed at the end of the script. Burns after being matched.
 
 2. Bound to `base` view:
-   1. `get` & `post`: wrapper for ajax functions.
+   1. `notify`: sets `State.notify` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
+   2. `get` & `post`: wrapper for ajax functions.
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
       - Adds `Data.csrf` to `POST` requests.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` and `notify`.
-   2. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
-   3. `notify`: sets `State.notify` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
-   4. `reset store`: takes no arguments. (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
-   5. `logout`: takes no arguments. Invokes `post /auth/logout`). In case of error, invokes `notify`; otherwise, invokes `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security).
-   6. `retrieve csrf`: takes no arguments. Invokes `get /csrf`. In case of non-403 error, invokes `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403.
-   7. `ondraw (this view)`: invokes `reset store` and `retrieve csrf`. Sets `State.view` if absent.
+   3. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
+   4. `load hash`: places `window.location.hash` into the relevant parts of the store (`State.view`).
+   5. `change State.view`: validates whether a certain view can be shown, based on 1) whether the view exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets `State.view` and overwrites `window.location.hash`.
+   6. `reset store`: takes no arguments. (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
+   7. `logout`: takes no arguments. Invokes `post /auth/logout`). In case of error, invokes `notify`; otherwise, invokes `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security).
+   8. `retrieve csrf`: takes no arguments. Invokes `get /csrf`. In case of non-403 error, invokes `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also updates `State.view` depending on whether there's a valid session or not.
+   9. `ondraw (this view)`: invokes `reset store`, `load hash` (to retrieve the target view from the hash) and `retrieve csrf`.
 
 ### Views
 
@@ -443,6 +445,8 @@ Used by giz:
 `State.notify`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.notify` after a number of seconds. Set by `notify` event.
 
 `State.view`: determines the current view.
+
+`State.redirect`: determines the view to be taken after logging in, if present on the original `window.location.hash`.
 
 
 
