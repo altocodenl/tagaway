@@ -17,12 +17,13 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 ### Todo v0
 
 - Client
+   - CSS fonts.
+   - Update docs for events.
    - Implement new UI:
       - See.
       - Upload.
       - Tag.
       - Hash navigation.
-      - check status 0 ajax.
       - Remaining auth views.
 
 ### Todo v1
@@ -430,9 +431,10 @@ Used by giz:
    4. `load hash`: places `window.location.hash` into the relevant parts of the store (`State.view`).
    5. `change State.view`: validates whether a certain view can be shown, based on 1) whether the view exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets `State.view` and overwrites `window.location.hash`.
    6. `reset store`: takes no arguments. (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
-   7. `logout`: takes no arguments. Invokes `post /auth/logout`). In case of error, invokes `notify`; otherwise, invokes `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security).
-   8. `retrieve csrf`: takes no arguments. Invokes `get /csrf`. In case of non-403 error, invokes `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also updates `State.view` depending on whether there's a valid session or not.
-   9. `ondraw (this view)`: invokes `reset store`, `load hash` (to retrieve the target view from the hash) and `retrieve csrf`.
+   7. `logout`: takes no arguments. Invokes `post /auth/logout`). In case of error, invokes `notify`; otherwise, invokes `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security). Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
+   8. `retrieve csrf`: takes no arguments. Invokes `get /csrf`. In case of non-403 error, invokes `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
+   9. `change Data.csrf`: when it changes, it triggers a change in `State.view` to potentially update the current view.
+   10. `ondraw (this view)`: invokes `reset store`, `load hash` (to retrieve the target view from the hash) and `retrieve csrf`.
 
 ### Views
 

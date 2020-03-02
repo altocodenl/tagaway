@@ -19,6 +19,11 @@ if [ "$2" == "client" ] ; then
    exit 0
 fi
 
+if [ "$2" == "gotoB" ] ; then
+   scp lib/gotoB.min.js $HOST:$FOLDER/lib
+   exit 0
+fi
+
 if [ "$2" == "server" ] ; then
    scp server.js $HOST:$FOLDER
    ssh $HOST "cd $FOLDER && mg restart"

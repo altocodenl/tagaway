@@ -37,6 +37,7 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
    var rs = dale.stopNot (arguments, undefined, function (arg) {
       if (arg && type (arg.log) === 'object') return arg;
    });
+   // TODO remove this when fixed in cicek
    if (! rs.connection.writable) return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
    cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
       if (k === 0 && v && v.path && v.last && v.vars) return;
@@ -55,12 +56,6 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
       if (error) return s.next (0, error);
       s.next (data);
    });
-}, cbreply = function (rs, cb) {
-   return function (error, result) {
-      if (error)       return reply (rs, 500, {error: error});
-      if (cb === true) return reply (rs, 200);
-      if (cb) cb (result);
-   };
 }
 
 // *** GIZ ***
@@ -424,6 +419,8 @@ var routes = [
    // *** STATIC ASSETS ***
 
    ['get', 'lib/murmurhash.js', cicek.file, 'node_modules/murmurhash/murmurhash.js'],
+
+   ['get', 'img/*', cicek.file, ['markup']],
 
    ['get', ['lib/*', 'client.js', 'admin.js'], cicek.file],
 
