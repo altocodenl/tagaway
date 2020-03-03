@@ -16,15 +16,12 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 ### Todo v0
 
-- Client
-   - CSS fonts.
-   - Update docs for events.
-   - Implement new UI:
-      - See.
-      - Upload.
-      - Tag.
-      - Hash navigation.
-      - Remaining auth views.
+- Implement new UI:
+   - Tag.
+   - See.
+   - Upload.
+   - Remaining auth views.
+   - Manage.
 
 ### Todo v1
 
@@ -32,7 +29,6 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 - Server
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
-   - Security writeup: httponly cookies to prevent xss, csrf tokens bound to session lifecycle but independent secret (https://hueniverse.com/on-securing-web-session-ids-b90f566b3786), cookie encrypted with secret per user to distinguish expired session from invalid.
    - ac;tools integration.
 
 - Assorted
@@ -70,8 +66,6 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Add colors to tags?
    - Enable GPS detection.
    - Set date manually.
-
-- See
    - Add logic & endpoint to send to server latency of `query` requests.
    - Mobile/tablet view.
 
@@ -416,29 +410,37 @@ Used by giz:
 
 ### Listeners
 
-1. Global:
-   1. `initialize`: mounts `Views.base ()` in the body. Executed at the end of the script. Burns after being matched.
-
-2. Bound to `base` view:
-   1. `notify`: sets `State.notify` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
-   2. `get` & `post`: wrapper for ajax functions.
+1. General
+   1. `initialize`: calls `reset store`, `load hash` and `retrieve csrf`. Finally mounts `Views.base` in the body. Executed at the end of the script. Burns after being matched.
+   2. `reset store`: takes no arguments. (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
+   3. `clear notify`: clears the timeout in `State.notify.timeout` (if present) and removes `State.notify`.
+   4. `notify`: calls `clear notify` and sets `State.notify` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
+   5. `get` & `post`: wrapper for ajax functions.
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
       - Adds `Data.csrf` to `POST` requests.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` and `notify`.
-   3. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
-   4. `load hash`: places `window.location.hash` into the relevant parts of the store (`State.view`).
-   5. `change State.view`: validates whether a certain view can be shown, based on 1) whether the view exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets `State.view` and overwrites `window.location.hash`.
-   6. `reset store`: takes no arguments. (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
-   7. `logout`: takes no arguments. Invokes `post /auth/logout`). In case of error, invokes `notify`; otherwise, invokes `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security). Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
-   8. `retrieve csrf`: takes no arguments. Invokes `get /csrf`. In case of non-403 error, invokes `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
-   9. `change Data.csrf`: when it changes, it triggers a change in `State.view` to potentially update the current view.
-   10. `ondraw (this view)`: invokes `reset store`, `load hash` (to retrieve the target view from the hash) and `retrieve csrf`.
+   6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
+   7. `load hash`: places the first part of `window.location.hash` into (`State.view`).
+   8. `change State.view`: validates whether a certain view can be shown, based on 1) whether the view exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.view` and overwrites `window.location.hash`.
+
+2. Auth
+   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
+   2. `change Data.csrf`: when it changes, it triggers a change in `State.view` to potentially update the current view.
+   3. `login`: calls `post /auth/login
+   4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `notify`; otherwise, calls `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security). Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
+
+3. Tag
+   1. `change []`: stopgap to add svg elements to the view until gotoB v2 (with `LITERAL` support) is available.
 
 ### Views
 
-1. `base`: Depends on `Data.csrf` and `State.view`. Will only draw something if the client attempted to retrieve `Data.csrf`.
+1. `logo`: returns a lithbag with the ac;pic logo.
+2. `base`: depends on `Data.csrf` and `State.view`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other views.
+3. `notify`: depends on `State.notify`. An element can call `clear notify` if clicked. Prints messages, errors and warnings.
+4. `login`: doesn't depend on the state. An element can call `login` if clicked.
+5. `header`: doesn't depend on the state. An element can call `logout` if clicked. Contained by `Views.tag`.
 
 ### Data/State structure
 

@@ -1541,6 +1541,11 @@ dale.do ([
       B.do (x, 'retrieve', 'csrf');
       B.mount ('body', Views.base ());
    }],
+   ['reset', 'store', function (x) {
+      B.do (x, 'set', 'State', {});
+      B.do (x, 'set', 'Data',  {});
+      window.State = B.get ('State'), window.Data = B.get ('Data');
+   }],
    ['clear', 'notify', function (x) {
       var existing = B.get ('State', 'notify');
       if (! existing) return;
@@ -1579,36 +1584,21 @@ dale.do ([
       B.do (x, 'set', ['State', 'view'], hash [0]);
    }],
    ['change', ['State', 'view'], function (x) {
-      // TODOv2: remove conditional
-      if (! teishi.eq (x.path, ['State', 'view'])) return;
-
-      var view = B.get ('State', 'view'), logged = B.get ('Data', 'csrf');
+      var view = B.get ('State', 'redirect') || B.get ('State', 'view'), logged = B.get ('Data', 'csrf');
+      if (B.get ('State', 'redirect')) B.do (x, 'rem', 'State', 'redirect');
 
       var allowed = logged ? ['tag', 'upload', 'manage'] : ['login', 'signup', 'recover', 'reset'];
 
       if (allowed.indexOf (view) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], view);
-         B.do (x, 'set', ['State', 'view'], allowed [0]);
-         return;
+         return B.do (x, 'set', ['State', 'view'], allowed [0]);
       }
 
       document.title = ['ac;pic', view].join (' - ');
 
       if (window.location.hash.replace ('#/', '').split ('/') [0] !== view) window.location.hash = '#/' + view;
    }],
-   ['reset', 'store', function (x) {
-      B.do (x, 'set', 'State', {});
-      B.do (x, 'set', 'Data',  {});
-      window.State = B.get ('State'), window.Data = B.get ('Data');
-   }],
-   ['logout', [], function (x) {
-      B.do (x, 'post', 'auth/logout', {}, {}, function (x, error) {
-         if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
-         B.do (x, 'reset', 'store');
-         B.r.log = [];
-         B.do (x, 'set', ['Data', 'csrf'], false);
-      });
-   }],
+   // *** AUTH EVENTS ***
    ['retrieve', 'csrf', function (x) {
       B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
          if (error && error.status !== 403) return B.do (x, 'notify', 'red', 'Connection or server error.');
@@ -1618,8 +1608,7 @@ dale.do ([
    ['change', ['Data', 'csrf'], function (x) {
       B.do (x, 'change', ['State', 'view']);
    }],
-   // *** AUTH EVENTS ***
-   ['submit', 'login', function (x) {
+   ['login', [], function (x) {
       B.do (x, 'post', 'auth/login', {}, {
          username: c ('#auth-username').value,
          password: c ('#auth-password').value,
@@ -1627,6 +1616,14 @@ dale.do ([
       }, function (x, error, rs) {
          if (error) return B.do (x, 'notify', 'red', 'Please submit valid credentials.');
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+      });
+   }],
+   ['logout', [], function (x) {
+      B.do (x, 'post', 'auth/logout', {}, {}, function (x, error) {
+         if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
+         B.do (x, 'reset', 'store');
+         B.r.log = [];
+         B.do (x, 'set', ['Data', 'csrf'], false);
       });
    }],
    // *** TAG EVENTS ***
@@ -1888,10 +1885,12 @@ Views.login = function () {
                   ['p', {class: 'auth-card__header-logo'}, Views.logo (28)],
                   ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
                ]],
-               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
+               // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
+               // By setting the form to be opaque, we prevent them being recycled.
+               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
-                  ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'submit', 'login'])],
+                  ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'login', []])],
                   ['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
                ]]
             ]]
@@ -1905,7 +1904,7 @@ Views.login = function () {
 Views.header = function () {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-          ['div', {class: 'logo'}, [
+          ['div', {class: 'logo', style: 'height: 19px'}, [
              // TODOv2: remove span
              ['a', {href: '#', class: 'logo__link', opaque: true}, ['span']]
           ]],

@@ -431,7 +431,7 @@ var routes = [
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
             ['meta', {charset: 'utf-8'}],
             ['title', 'ac;pic'],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
+            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
             dale.go (['ionicons.min', 'normalize.min'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
