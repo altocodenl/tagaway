@@ -9,7 +9,7 @@ B.forget ('eventlog');
 var T = teishi.time ();
 var Do = B.do;
 B.listen ('*', [], {priority: 1000000}, function (x) {
-   x.args ? clog (teishi.time () - T, x.verb, x.path, x.args) : clog (teishi.time () - T, x.verb, x.path);
+   //x.args ? clog (teishi.time () - T, x.verb, x.path, x.args) : clog (teishi.time () - T, x.verb, x.path);
 });
 
 // *** CSS ***
@@ -1584,10 +1584,15 @@ dale.do ([
       B.do (x, 'set', ['State', 'view'], hash [0]);
    }],
    ['change', ['State', 'view'], function (x) {
-      var view = B.get ('State', 'redirect') || B.get ('State', 'view'), logged = B.get ('Data', 'csrf');
-      if (B.get ('State', 'redirect')) B.do (x, 'rem', 'State', 'redirect');
+      // TODO v2: add B.compare check
+      var view = B.get ('State', 'view'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
 
-      var allowed = logged ? ['tag', 'upload', 'manage'] : ['login', 'signup', 'recover', 'reset'];
+      if (logged && redirect) {
+         view = redirect;
+         B.do (x, 'rem', 'State', 'redirect');
+      }
+
+      var allowed = logged ? ['pictures', 'upload', 'manage'] : ['login', 'signup', 'recover', 'reset'];
 
       if (allowed.indexOf (view) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], view);
@@ -1606,6 +1611,7 @@ dale.do ([
       });
    }],
    ['change', ['Data', 'csrf'], function (x) {
+      // TODO v2: add B.compare check
       B.do (x, 'change', ['State', 'view']);
    }],
    ['login', [], function (x) {
@@ -1632,6 +1638,7 @@ dale.do ([
       c.place ('.logo__link', 'afterBegin', '<svg class="logo__img" enable-background="new 0 0 54 19" viewBox="0 0 54 19" xmlns="http://www.w3.org/2000/svg"><path d="m8.3 4.7v1.2c-.7-.9-1.8-1.5-3.3-1.5-2.6 0-4.8 2.3-4.8 5.3s2.3 5.3 4.9 5.3c1.5 0 2.5-.6 3.3-1.5v1.2h2.6v-10zm-2.8 7.8c-1.6 0-2.8-1.1-2.8-2.8s1.3-2.8 2.8-2.8 2.8 1.1 2.8 2.8-1.2 2.8-2.8 2.8zm12-.1c-1.5 0-2.7-1.1-2.7-2.7s1.1-2.7 2.7-2.7c1 0 1.9.5 2.3 1.3l2.2-1.3c-.8-1.5-2.5-2.6-4.5-2.6-3 0-5.3 2.3-5.3 5.3s2.2 5.3 5.3 5.3c2 0 3.7-1 4.5-2.6l-2.2-1.3c-.4.8-1.3 1.3-2.3 1.3zm7-8c-.9 0-1.7.8-1.7 1.7s.8 1.7 1.7 1.7 1.7-.8 1.7-1.7-.8-1.7-1.7-1.7zm0 7.2c-.9 0-1.7.8-1.7 1.7s.8 1.7 1.7 1.7 1.7-.8 1.7-1.7-.8-1.7-1.7-1.7zm9.3-7.2c-1.5 0-2.5.5-3.2 1.5v-1.2h-2.6v14h2.6v-5.2c.7.9 1.8 1.5 3.2 1.5 2.7 0 4.9-2.3 4.9-5.3s-2.2-5.3-4.9-5.3zm-.5 8.1c-1.6 0-2.8-1.1-2.8-2.8s1.2-2.8 2.8-2.8c1.5 0 2.7 1.1 2.7 2.8s-1.2 2.8-2.7 2.8zm7.9-12.2c-.9 0-1.6.7-1.6 1.6s.7 1.6 1.6 1.6 1.6-.7 1.6-1.6c0-.8-.7-1.6-1.6-1.6zm-1.2 4.4h2.6v10h-2.6zm11.5 6.4c-.4.8-1.3 1.3-2.3 1.3-1.5 0-2.7-1.1-2.7-2.7s1.1-2.7 2.7-2.7c1 0 1.9.5 2.3 1.3l2.2-1.3c-.8-1.5-2.5-2.6-4.5-2.6-3 0-5.3 2.3-5.3 5.3s2.2 5.3 5.3 5.3c2 0 3.7-1 4.5-2.6z" /></svg>');
       c.place ('.account-menu__item', 'afterBegin', '<svg class="account-menu__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 2h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3zm0 1c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2z"/></svg>');
       c.place ('.sidebar-search', 'beforeEnd', '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
+      c.place ('.sidebar-header__filter-selected', 'afterBegin', '<svg class="sidebar-header__filter-selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
    }],
 ], function (v) {
    B.listen.apply (null, v);
@@ -1904,22 +1911,24 @@ Views.login = function () {
 Views.header = function () {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-          ['div', {class: 'logo', style: 'height: 19px'}, [
-             // TODOv2: remove span
-             ['a', {href: '#', class: 'logo__link', opaque: true}, ['span']]
-          ]],
-       ]],
-       // MAIN MENU
-       ['div', {class: 'header__menu'}, [
-          ['ul', {class: 'main-menu'}, [
-             ['li', {class: 'main-menu__item active'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'View pictures']],
-             ['li', {class: 'main-menu__item'},        ['a', {href: '#', class: 'main-menu__item-link'}, 'Organise']],
-             ['li', {class: 'main-menu__item'},        ['a', {href: '#', class: 'main-menu__item-link'}, 'Manage tags']],
-          ]]
+         ['div', {class: 'logo', style: 'height: 19px'}, [
+            // TODOv2: remove span
+            // TODOv2: add inline SVG
+            ['a', {href: '#', class: 'logo__link', opaque: true}, ['span']]
+         ]],
+      ]],
+      // MAIN MENU
+      ['div', {class: 'header__menu'}, [
+         ['ul', {class: 'main-menu'}, [
+            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'View pictures']],
+            ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'Organise']],
+            ['li', {class: 'main-menu__item'},                           ['a', {href: '#', class: 'main-menu__item-link'}, 'Manage tags']],
+         ]]
       ]],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
+            // TODOv2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#', class: 'account-sub-menu__item-link'}, 'My account']],
@@ -1933,11 +1942,10 @@ Views.header = function () {
    ]];
 }
 
-// *** TAG VIEW ***
+// *** NO PICTURES VIEW ***
 
-Views.tag = function () {
-   return ['div', {class: 'app-pictures'}, [
-      Views.header (),
+Views.empty = function () {
+   return [
       // SIDEBAR
       ['div', {class: 'sidebar'}, [
          ['div', {class: 'sidebar__header'}, [
@@ -1956,7 +1964,8 @@ Views.tag = function () {
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
-            ['div', {class: 'sidebar-search'}, [
+            // TODOv2: add inline SVG
+            ['div', {class: 'sidebar-search', opaque: true}, [
                ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
             ]],
          ]],
@@ -1973,6 +1982,34 @@ Views.tag = function () {
             ]],
          ]],
       ]],
+   ];
+}
+
+// *** PICTURES VIEW ***
+
+Views.pictures = function () {
+   return ['div', {class: 'app-pictures app-all-tags'}, [
+      Views.header (),
+      B.view (['Data', 'pics'], function (x, pics) {
+         if (! pics) return;
+         if (pics.length === 0) return Views.empty ();
+         return [
+            ['div', {class: 'sidebar'}, [
+               ['div', {class: 'sidebar__inner'}, [
+                  // Sidebar section View pictures
+                  ['div', {class: 'sidebar__inner-section'}, [
+                     ['div', {class: 'sidebar__header'}, [
+                        ['div', {class: 'sidebar-header'}, [
+                           ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
+                           // TODOv2: add inline SVG
+                           ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
+                        ]],
+                     ]],
+                  ]],
+               ]],
+            ]],
+         ];
+      })
    ]];
 }
 

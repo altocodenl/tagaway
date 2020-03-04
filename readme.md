@@ -10,18 +10,18 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-ac;pic is currently under development and has not been launched yet. We estimate to have an alpha by 2020.
+ac;pic is currently under development and has not been launched yet. We aim to launch it in 2020.
 
 The author wishes to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
 ### Todo v0
 
 - Implement new UI:
-   - Tag.
-   - See.
+   - Pictures.
+   - Picture.
    - Upload.
-   - Remaining auth views.
    - Manage.
+   - Remaining auth views.
 
 ### Todo v1
 
@@ -61,7 +61,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Folder upload on mobile.
    - Upload video.
 
-- Tag
+- Pictures
    - Hidden tags.
    - Add colors to tags?
    - Enable GPS detection.
@@ -75,8 +75,10 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Filters.
    - Themes for the interface.
 
-- Tag
+- Manage
    - Create tag that groups tags (can also have pictures directly assigned).
+
+- Pictures
    - Order pictures within tag? Set priorities! Manual order mode.
 
 - Share
@@ -103,7 +105,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Carrousel with wrap-around and preloading of the next picture.
    - Show date & tags.
 
-- Tag
+- Pictures
    - Multiple selection with shift & ctrl.
    - Tag/untag.
    - Sort by newest, oldest & upload date.
@@ -431,8 +433,8 @@ Used by giz:
    3. `login`: calls `post /auth/login
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `notify`; otherwise, calls `reset store` and clears out `B.r.log` by setting it to an empty array (this is done to eliminate local state after logging out for the users' security). Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
 
-3. Tag
-   1. `change []`: stopgap to add svg elements to the view until gotoB v2 (with `LITERAL` support) is available.
+3. Pictures
+   1. `change []`: stopgap listener to add svg elements to the view until gotoB v2 (with `LITERAL` support) is available.
 
 ### Views
 
@@ -442,16 +444,20 @@ Used by giz:
 4. `login`: doesn't depend on the state. An element can call `login` if clicked.
 5. `header`: doesn't depend on the state. An element can call `logout` if clicked. Contained by `Views.tag`.
 
-### Data/State structure
+### State/Data structure
 
-`Data.csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
+- `State`:
+   - `notify`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.notify` after a number of seconds. Set by `notify` event.
+   - `view`: determines the current view.
+   - `redirect`: determines the view to be taken after logging in, if present on the original `window.location.hash`.
 
-`State.notify`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.notify` after a number of seconds. Set by `notify` event.
+- `Data`:
+   - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
+   - `pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added by the client to denote whether a picture is selected, but those booleans never reach the server.
 
-`State.view`: determines the current view.
+`Data.total`: number of pics matched by query. Also comes from `POST /query`.
 
-`State.redirect`: determines the view to be taken after logging in, if present on the original `window.location.hash`.
-
+`Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
 
 
 
