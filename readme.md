@@ -17,6 +17,10 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 ### Todo v0
 
 - Implement new UI:
+   - Tests:
+      - set valid|invalid window.location.hash for redirect
+      - invalid view after login
+      - logout from button
    - Pictures.
    - Picture.
    - Upload.
@@ -426,6 +430,7 @@ Used by giz:
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
    7. `load hash`: places the first part of `window.location.hash` into (`State.view`).
    8. `change State.view`: validates whether a certain view can be shown, based on 1) whether the view exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.view` and overwrites `window.location.hash`.
+   9. `test`: loads test suite.
 
 2. Auth
    1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.

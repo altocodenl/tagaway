@@ -3,7 +3,7 @@
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
 var type = teishi.t, clog = teishi.l, media = lith.css.media;
 
-// TODOv2 remove
+// TODO v2: remove
 B.forget ('eventlog');
 
 var T = teishi.time ();
@@ -1566,7 +1566,7 @@ dale.do ([
       // CSRF protection
       if (x.verb === 'post' && ['auth/login', 'auth/signup'].indexOf (path) === -1) body.csrf = B.get ('Data', 'csrf');
       var authRequest = x.path [0].match (/^auth/);
-      // TODOv2 uncomment
+      // TODO v2: uncomment
       //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
       c.ajax (x.verb, x.path [0], headers, body, ! cb ? undefined : function (error, rs) {
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
@@ -1584,7 +1584,6 @@ dale.do ([
       B.do (x, 'set', ['State', 'view'], hash [0]);
    }],
    ['change', ['State', 'view'], function (x) {
-      // TODO v2: add B.compare check
       var view = B.get ('State', 'view'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
 
       if (logged && redirect) {
@@ -1603,6 +1602,15 @@ dale.do ([
 
       if (window.location.hash.replace ('#/', '').split ('/') [0] !== view) window.location.hash = '#/' + view;
    }],
+   ['test', [], function (x) {
+      // TODO v2: use c.loadScript
+      //c.loadScript ('testclient.js');
+      c.ajax ('get', 'testclient.js', {}, '', function (error, data) {
+         var script = document.createElement ('script');
+         script.appendChild (document.createTextNode (data.body));
+         document.body.appendChild (script);
+      });
+   }],
    // *** AUTH EVENTS ***
    ['retrieve', 'csrf', function (x) {
       B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
@@ -1611,7 +1619,6 @@ dale.do ([
       });
    }],
    ['change', ['Data', 'csrf'], function (x) {
-      // TODO v2: add B.compare check
       B.do (x, 'change', ['State', 'view']);
    }],
    ['login', [], function (x) {
@@ -1633,7 +1640,7 @@ dale.do ([
       });
    }],
    // *** TAG EVENTS ***
-   // TODOv2: remove, use literals
+   // TODO v2: remove, use literals
    ['change', [], {priority: -10000}, function () {
       c.place ('.logo__link', 'afterBegin', '<svg class="logo__img" enable-background="new 0 0 54 19" viewBox="0 0 54 19" xmlns="http://www.w3.org/2000/svg"><path d="m8.3 4.7v1.2c-.7-.9-1.8-1.5-3.3-1.5-2.6 0-4.8 2.3-4.8 5.3s2.3 5.3 4.9 5.3c1.5 0 2.5-.6 3.3-1.5v1.2h2.6v-10zm-2.8 7.8c-1.6 0-2.8-1.1-2.8-2.8s1.3-2.8 2.8-2.8 2.8 1.1 2.8 2.8-1.2 2.8-2.8 2.8zm12-.1c-1.5 0-2.7-1.1-2.7-2.7s1.1-2.7 2.7-2.7c1 0 1.9.5 2.3 1.3l2.2-1.3c-.8-1.5-2.5-2.6-4.5-2.6-3 0-5.3 2.3-5.3 5.3s2.2 5.3 5.3 5.3c2 0 3.7-1 4.5-2.6l-2.2-1.3c-.4.8-1.3 1.3-2.3 1.3zm7-8c-.9 0-1.7.8-1.7 1.7s.8 1.7 1.7 1.7 1.7-.8 1.7-1.7-.8-1.7-1.7-1.7zm0 7.2c-.9 0-1.7.8-1.7 1.7s.8 1.7 1.7 1.7 1.7-.8 1.7-1.7-.8-1.7-1.7-1.7zm9.3-7.2c-1.5 0-2.5.5-3.2 1.5v-1.2h-2.6v14h2.6v-5.2c.7.9 1.8 1.5 3.2 1.5 2.7 0 4.9-2.3 4.9-5.3s-2.2-5.3-4.9-5.3zm-.5 8.1c-1.6 0-2.8-1.1-2.8-2.8s1.2-2.8 2.8-2.8c1.5 0 2.7 1.1 2.7 2.8s-1.2 2.8-2.7 2.8zm7.9-12.2c-.9 0-1.6.7-1.6 1.6s.7 1.6 1.6 1.6 1.6-.7 1.6-1.6c0-.8-.7-1.6-1.6-1.6zm-1.2 4.4h2.6v10h-2.6zm11.5 6.4c-.4.8-1.3 1.3-2.3 1.3-1.5 0-2.7-1.1-2.7-2.7s1.1-2.7 2.7-2.7c1 0 1.9.5 2.3 1.3l2.2-1.3c-.8-1.5-2.5-2.6-4.5-2.6-3 0-5.3 2.3-5.3 5.3s2.2 5.3 5.3 5.3c2 0 3.7-1 4.5-2.6z" /></svg>');
       c.place ('.account-menu__item', 'afterBegin', '<svg class="account-menu__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 2h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3zm0 1c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2z"/></svg>');
@@ -1664,7 +1671,7 @@ Views.base = function () {
    return [
       ['style', CSS.litc],
       Views.snackbar (),
-      // TODOv2 merge two views into one
+      // TODO v2: merge two views into one
       B.view (['Data', 'csrf'], function (x, csrf) {
          if (csrf !== undefined) return B.view (['State', 'view'], function (x, view) {
             if (Views [view]) return Views [view] ();
@@ -1912,8 +1919,8 @@ Views.header = function () {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
          ['div', {class: 'logo', style: 'height: 19px'}, [
-            // TODOv2: remove span
-            // TODOv2: add inline SVG
+            // TODO v2: remove span
+            // TODO v2: add inline SVG
             ['a', {href: '#', class: 'logo__link', opaque: true}, ['span']]
          ]],
       ]],
@@ -1928,7 +1935,7 @@ Views.header = function () {
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
-            // TODOv2: add inline SVG
+            // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#', class: 'account-sub-menu__item-link'}, 'My account']],
@@ -1964,7 +1971,7 @@ Views.empty = function () {
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
-            // TODOv2: add inline SVG
+            // TODO v2: add inline SVG
             ['div', {class: 'sidebar-search', opaque: true}, [
                ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
             ]],
@@ -2001,7 +2008,7 @@ Views.pictures = function () {
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
                            ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
-                           // TODOv2: add inline SVG
+                           // TODO v2: add inline SVG
                            ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
                         ]],
                      ]],

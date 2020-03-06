@@ -422,7 +422,7 @@ var routes = [
 
    ['get', 'img/*', cicek.file, ['markup']],
 
-   ['get', ['lib/*', 'client.js', 'admin.js'], cicek.file],
+   ['get', ['lib/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
       ['!DOCTYPE HTML'],
