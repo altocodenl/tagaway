@@ -1520,7 +1520,7 @@ CSS.litc = [
 // *** NATIVE EVENT LISTENERS ***
 
 window.addEventListener ('hashchange', function () {
-   B.do ('load', 'hash');
+   B.do ('read', 'hash');
 });
 
 window.onerror = function () {
@@ -1541,9 +1541,13 @@ dale.do ([
       B.do (x, 'retrieve', 'csrf');
       B.mount ('body', Views.base ());
    }],
-   ['reset', 'store', function (x) {
+   ['reset', 'store', function (x, logout) {
       B.do (x, 'set', 'State', {});
       B.do (x, 'set', 'Data',  {});
+      if (logout) {
+         B.r.log = [];
+         B.do (x, 'set', ['Data', 'csrf'], false);
+      }
       window.State = B.get ('State'), window.Data = B.get ('Data');
    }],
    ['clear', 'notify', function (x) {
@@ -1568,18 +1572,18 @@ dale.do ([
       var authRequest = x.path [0].match (/^auth/);
       // TODO v2: uncomment
       //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
-      c.ajax (x.verb, x.path [0], headers, body, ! cb ? undefined : function (error, rs) {
+      c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
-            B.do (x, 'reset', 'store');
+            B.do (x, 'reset', 'store', true);
             return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
          }
          if (cb) cb (x, error, rs);
       });
    }],
    ['error', [], function (x) {
-      B.do (x, 'post', 'error', {}, dale.do (arguments, teishi.s).slice (1));
+      B.do (x, 'post', 'error', {}, {log: B.r.log, error: dale.do (arguments, teishi.s).slice (1)});
    }],
-   ['load', 'hash', function (x) {
+   ['read', 'hash', function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/');
       B.do (x, 'set', ['State', 'view'], hash [0]);
    }],
@@ -1634,9 +1638,7 @@ dale.do ([
    ['logout', [], function (x) {
       B.do (x, 'post', 'auth/logout', {}, {}, function (x, error) {
          if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
-         B.do (x, 'reset', 'store');
-         B.r.log = [];
-         B.do (x, 'set', ['Data', 'csrf'], false);
+         B.do (x, 'reset', 'store', true);
       });
    }],
    // *** TAG EVENTS ***
@@ -2017,6 +2019,14 @@ Views.pictures = function () {
             ]],
          ];
       })
+   ]];
+}
+
+// *** UPLOAD VIEW ***
+
+Views.upload = function () {
+   return ['div', [
+      Views.header (),
    ]];
 }
 
