@@ -124,6 +124,7 @@ c.test ([
       wait (150);
    }, function () {
       if (! B.get ('State', 'notify')) return clog ('No error message shown.');
+      if (B.get ('State', 'notify', 'message') !== 'Your session has expired. Please login again.') return clog ('Wrong error message shown.');
       return B.get ('State', 'view') === 'login' && window.location.hash === '#/login';
    }],
    // *** NOTIFY ***

@@ -1648,6 +1648,18 @@ dale.do ([
       c.place ('.account-menu__item', 'afterBegin', '<svg class="account-menu__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 2h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3zm0 1c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2z"/></svg>');
       c.place ('.sidebar-search', 'beforeEnd', '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
       c.place ('.sidebar-header__filter-selected', 'afterBegin', '<svg class="sidebar-header__filter-selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+      c.place ('.tag--all-pictures', 'afterBegin', '<svg class="tag__icon tag__icon--all" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm0-6c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5zm-4.5-.5c0-.3-.2-.5-.5-.5h-1c-.3 0-.5.2-.5.5s.2.5.5.5h1c.3 0 .5-.2.5-.5zm10.5-3v-1c0-.3-.2-.5-.5-.5s-.5.2-.5.5v1h-2v-.5c0-.8-.6-1.5-1.3-1.5h-3.3c-.8 0-1.4.7-1.4 1.5v.5h-2.5c-1.9 0-3.5 1.6-3.5 3.5v5c0 1.9 1.6 3.5 3.5 3.5h11c1.9 0 3.5-1.6 3.5-3.5v-5c0-1.8-1.3-3.2-3-3.5zm-8-.5c0-.3.2-.5.3-.5h3.3c.2 0 .4.2.4.5v.5h-4zm10 9c0 1.4-1.1 2.5-2.5 2.5h-11c-1.4 0-2.5-1.1-2.5-2.5v-5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5z"/></svg>');
+      c.place ('.tag-actions__item--selected', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--selected tag-actions__selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+      c.place ('.tag-actions__item--deselect', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--deselect" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>');
+      c.place ('.tag-actions__item--attach', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--attach" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 7h-1v4.5h-4.5v1h4.5v4.5h1v-4.5h4.5v-1h-4.5z"/></svg>');
+      c.place ('.tag-actions__item--attached', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--attached" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.3 15.7c-.1 0-.3-.1-.4-.1l-3-3c-.2-.2-.2-.5 0-.7s.5-.2.7 0l2.6 2.6 6.1-6.1c.2-.2.5-.2.7 0s.2.5 0 .7l-6.4 6.4c-.1.2-.2.2-.3.2z"/></svg>');
+      c.place ('.tag-actions__item--untag', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--untag" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 9.4c-.1-.3-.4-.4-.6-.3l-6.5 1.9 1.9-6.4c.1-.3 0-.5-.3-.6s-.5.1-.6.3l-2.1 7.1-2.6.8c.3-.9.1-1.9-.6-2.6-1-1-2.6-1-3.5 0s-1 2.6 0 3.5c.5.5 1.1.7 1.8.7.4 0 .7-.1 1-.2h.1l3.4-1-1 3.4v.2c-.2.3-.2.7-.2 1 0 .7.3 1.3.7 1.8.5.5 1.1.7 1.8.7.6 0 1.3-.2 1.8-.7s.7-1.1.7-1.8-.3-1.3-.7-1.8c-.7-.7-1.7-.9-2.6-.6l.8-2.6 7.1-2.1c.1-.1.3-.4.2-.7zm-14.2 3c-.6-.6-.6-1.5 0-2.1.3-.3.6-.5 1-.5s.8.2 1.1.4c.6.6.6 1.5 0 2.1s-1.6.6-2.1.1zm7.9 3.7c.3.3.4.7.4 1.1s-.2.8-.4 1.1c-.6.6-1.5.6-2.1 0-.3-.3-.4-.7-.4-1.1s.2-.8.4-1.1c.3-.3.7-.4 1.1-.4.4-.1.7.1 1 .4z"/></svg>');
+      c.place ('.tag-list__item--untagged', 'afterBegin', '<svg class="tag__icon tag__icon--untagged" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
+      dale.do (['green', 'red', 'blue'], function (color) {
+         c.place ('.tag-list__item--' + color, 'afterBegin', '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
+      });
+      c.place ('.switch-list__button--attach', 'afterBegin', '<svg class="switch-list__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m20.5 11.5c0 .3-.2.5-.5.5h-2.5v2.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5v-2.5h-2.5c-.3 0-.5-.2-.5-.5s.2-.5.5-.5h2.5v-2.5c0-.3.2-.5.5-.5s.5.2.5.5v2.5h2.5c.3 0 .5.2.5.5zm-6.8 1.9-2.6 3.1c-.4.4-1 .5-1.4.1l-3.8-3.2c-.4-.4-.5-1-.1-1.4l5-5.9c.2-.2.4-.3.7-.4l3.5-.3c.6-.1 1 .4 1.1.9 0 .3.3.5.5.5.3 0 .5-.3.5-.5-.1-1.1-1.1-1.9-2.2-1.8l-3.5.3c-.5.1-1 .3-1.3.7l-5 5.9c-.7.8-.6 2.1.2 2.8l3.7 3.3c.4.3.8.5 1.3.5.6 0 1.1-.2 1.5-.7l2.6-3.2c.2-.2.1-.5-.1-.7-.1-.2-.4-.2-.6 0z"/></svg>');
+      c.place ('.switch-list__button--untag', 'afterBegin', '<svg class="switch-list__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 9.4c-.1-.3-.4-.4-.6-.3l-6.5 1.9 1.9-6.4c.1-.3 0-.5-.3-.6s-.5.1-.6.3l-2.1 7.1-2.6.8c.3-.9.1-1.9-.6-2.6-1-1-2.6-1-3.5 0s-1 2.6 0 3.5c.5.5 1.1.7 1.8.7.4 0 .7-.1 1-.2h.1l3.4-1-1 3.4v.2c-.2.3-.2.7-.2 1 0 .7.3 1.3.7 1.8.5.5 1.1.7 1.8.7.6 0 1.3-.2 1.8-.7s.7-1.1.7-1.8-.3-1.3-.7-1.8c-.7-.7-1.7-.9-2.6-.6l.8-2.6 7.1-2.1c.1-.1.3-.4.2-.7zm-14.2 3c-.6-.6-.6-1.5 0-2.1.3-.3.6-.5 1-.5s.8.2 1.1.4c.6.6.6 1.5 0 2.1s-1.6.6-2.1.1zm7.9 3.7c.3.3.4.7.4 1.1s-.2.8-.4 1.1c-.6.6-1.5.6-2.1 0-.3-.3-.4-.7-.4-1.1s.2-.8.4-1.1c.3-.3.7-.4 1.1-.4.4-.1.7.1 1 .4z"/></svg>');
    }],
 ], function (v) {
    B.listen.apply (null, v);
@@ -1920,9 +1932,9 @@ Views.login = function () {
 Views.header = function () {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
+         // TODO: why must specify height so it looks exactly the same as markup?
          ['div', {class: 'logo', style: 'height: 19px'}, [
-            // TODO v2: remove span
-            // TODO v2: add inline SVG
+            // TODO v2: add inline SVG & remove span
             ['a', {href: '#', class: 'logo__link', opaque: true}, ['span']]
          ]],
       ]],
@@ -1930,7 +1942,7 @@ Views.header = function () {
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'Organise']],
+            ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'Organize']],
             ['li', {class: 'main-menu__item'},                           ['a', {href: '#', class: 'main-menu__item-link'}, 'Manage tags']],
          ]]
       ]],
@@ -1997,11 +2009,18 @@ Views.empty = function () {
 // *** PICTURES VIEW ***
 
 Views.pictures = function () {
-   return ['div', {class: 'app-pictures app-all-tags'}, [
+   var classes = {
+      view:     ['app-pictures',  'app-all-tags'],
+      organise: ['app-organise', 'app-attach-tags'],
+   }
+
+   //return ['div', {class: classes.view.join (' ')}, [
+   return ['div', {class: classes.organise.join (' ')}, [
       Views.header (),
       B.view (['Data', 'pics'], function (x, pics) {
-         if (! pics) return;
-         if (pics.length === 0) return Views.empty ();
+         // TODO
+         //if (! pics) return;
+         //if (pics.length === 0) return Views.empty ();
          return [
             ['div', {class: 'sidebar'}, [
                ['div', {class: 'sidebar__inner'}, [
@@ -2010,10 +2029,112 @@ Views.pictures = function () {
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
                            ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
-                           // TODO v2: add inline SVG
-                           ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
+                           // TODO v2: add inline SVG & remove span
+                           // TODO: why must specify height so it looks exactly the same as markup?
+                           ['div', {class: 'sidebar-header__filter-selected', opaque: true}, ['span']],
                         ]],
                      ]],
+                     ['div', {class: 'sidebar__tags'}, [
+                        ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
+                           // TODO v2: add inline SVG
+                           ['li', {class: 'tag-list__item tag tag--all-pictures tag--selected', opaque: true}, [
+                              ['span', {class: 'tag__title'}, 'All pictures'],
+                              ['div', {class: 'tag__actions'}, [
+                                 ['div', {class: 'tag-actions'}, [
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
+                                 ]],
+                              ]],
+                           ]],
+                           // TODO v2: add inline SVG
+                           ['li', {class: 'tag-list__item tag-list__item--untagged tag', opaque: true}, [
+                              ['span', {class: 'tag__title'}, 'Untagged'],
+                              ['div', {class: 'tag__actions'}, [
+                                 ['div', {class: 'tag-actions'}, [
+                                    // TODO v2: add inline SVG
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
+                                 ]],
+                              ]],
+                           ]],
+                           ['li', {class: 'tag-list__item tag-list__item--green tag', opaque: true}, [
+                              ['span', {class: 'tag__title'}, 'Barcelona'],
+                              ['div', {class: 'tag__actions'}, [
+                                 ['div', {class: 'tag-actions'}, [
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
+                                    // TODO v2: add inline SVG & remove span
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
+                                 ]],
+                              ]],
+                           ]],
+                        ]]
+                     ]]
+                  ]],
+                  // Sidebar section -- Organise pictures
+                  ['div', {class: 'sidebar__inner-section'}, [
+                     ['div', {class: 'sidebar__close-section-button'}, [
+                        ['div', {class: 'cross-button cross-button--big'}, [
+                           ['span', {class: 'cross-button__cross'}],
+                        ]],
+                     ]],
+                     ['div', {class: 'sidebar__header'}, [
+                        ['div', {class: 'sidebar-header'}, [
+                           ['h1', {class: 'sidebar-header__title'}, [
+                              'Organize pictures ',
+                              ['span', ['(', ['em', 0], ')']],
+                           ]],
+                        ]],
+                     ]],
+                     ['div', {class: 'sidebar__switch'}, [
+                        // Switch
+                        ['div', {class: 'switch'}, [
+                           ['ul', {class: 'switch-list'}, [
+                              ['li', {class: 'switch-list__item'}, [
+                                 // TODO v2: add inline SVG
+                                 ['div', {class: 'switch-list__button switch-list__button--attach', opaque: true}, [
+                                    ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
+                                 ]],
+                              ]],
+                              ['li', {class: 'switch-list__item'}, [
+                                 // TODO v2: add inline SVG
+                                 ['div', {class: 'switch-list__button switch-list__button--untag', opaque: true}, [
+                                    ['span', {class: 'switch-list__button-text'}, 'Untag'],
+                                    ['span', {class: 'switch-list__button-text-amount'}, ' (2)'],
+                                 ]],
+                              ]],
+                           ]],
+                        ]],
+                     ]]
+
+
+
                   ]],
                ]],
             ]],
