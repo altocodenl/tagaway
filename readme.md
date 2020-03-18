@@ -17,11 +17,11 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 ### Todo v0
 
 - Implement new UI:
-   - Pictures.
-   - Picture.
+   - Pics.
    - Upload.
+   - Share.
    - Manage.
-   - Remaining auth views.
+   - Remaining auth pages.
 
 ### Todo v1
 
@@ -37,7 +37,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Spanish support.
 
 - Account
-   - Account view
+   - Account page.
    - Delete account.
    - Change email & password.
    - Export all data.
@@ -51,7 +51,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 - Share
    - Share/unshare with authorization & automatic email.
-   - Share/unshare tag with a link (takes you to special view even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
+   - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
    - Upload to shared tag.
    - Tags with same name (local vs shared, put a @).
 
@@ -62,18 +62,19 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Upload video.
 
 - Pictures
+   - Load on scroll
    - Hidden tags.
-   - Add colors to tags?
    - Enable GPS detection.
    - Set date manually.
    - Add logic & endpoint to send to server latency of `query` requests.
-   - Mobile/tablet view.
+   - Mobile/tablet design.
 
 ### Todo maybe
 
-- See
+- Pictures
    - Filters.
    - Themes for the interface.
+   - Add colors to tags?
 
 - Manage
    - Create tag that groups tags (can also have pictures directly assigned).
@@ -128,7 +129,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Invites.
    - Stats endpoint.
 
-### Never
+### Todo never
 
 - Share
    - Comments.
@@ -413,48 +414,79 @@ Used by giz:
 ### Listeners
 
 1. General
-   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `Views.base` in the body. Executed at the end of the script. Burns after being matched.
-   2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current view should be `login`).
-   3. `clear notify`: clears the timeout in `State.notify.timeout` (if present) and removes `State.notify`.
-   4. `notify`: calls `clear notify` and sets `State.notify` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
+   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched.
+   2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current page should be `login`).
+   3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
+   4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
    5. `get` & `post`: wrapper for ajax functions.
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
       - Adds `Data.csrf` to `POST` requests.
-      - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` (with truthy `logout` argument) and `notify`.
+      - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` (with truthy `logout` argument) and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
-   7. `read hash`: places the first part of `window.location.hash` into (`State.view`).
-   8. `change State.view`: validates whether a certain view can be shown, based on 1) whether the view exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.view` and overwrites `window.location.hash`.
+   7. `read hash`: places the first part of `window.location.hash` into (`State.page`).
+   8. `change State.page`: validates whether a certain page can be shown, based on 1) whether the page exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.page` and overwrites `window.location.hash`.
    9. `test`: loads test suite.
 
 2. Auth
-   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `notify`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.view` so that the listener that handles view changes gets fired.
-   2. `change Data.csrf`: when it changes, it triggers a change in `State.view` to potentially update the current view.
+   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.page` so that the listener that handles page changes gets fired.
+   2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
    3. `login`: calls `post /auth/login
-   4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `notify`; otherwise, calls `reset store` (with truthy `logout` argument).
+   4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
 
 3. Pictures
-   1. `change []`: stopgap listener to add svg elements to the view until gotoB v2 (with `LITERAL` support) is available.
+   1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
+   2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`.
+   3. `change State.query`: invokes `query pics`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
 
-### Views
+### Elements
 
-1. `logo`: returns a lithbag with the ac;pic logo.
-2. `base`: depends on `Data.csrf` and `State.view`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other views.
-3. `notify`: depends on `State.notify`. An element can call `clear notify` if clicked. Prints messages, errors and warnings.
-4. `login`: doesn't depend on the state. An element can call `login` if clicked.
-5. `header`: doesn't depend on the state. An element can call `logout` if clicked. Contained by `Views.tag`.
+**Container**: `E.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other elements.
+
+**Pages**:
+
+1. `E.pics`
+   - Depends on: `Data.pics` and `State.query`.
+2. `E.upload`
+3. `E.share`
+4. `E.tags`
+5. Auth:
+   5.1 `E.login`
+   5.2 `E.signup`
+   5.3 `E.recover`
+   5.4 `E.reset`
+
+**Other**:
+
+1. `E.logo`
+   - Contained by: `E.header`.
+2. `E.snackbar`
+   - Depends on: `State.snackbar`.
+   - Events: `click -> clear snackbar`.
+   - Contained by: `E.base`.
+3. `E.header`
+   - Events: `click -> logout`
+   - Contained by: `E.pics`, `E.upload`, `E.share`, `E.tags`.
+4. `E.empty`
+   - Contained by: `E.pics`.
+5. `E.grid`
+   - Contained by: `E.pics`.
+6. `E.see`
+   - Contained by: `E.pics`.
 
 ### State/Data structure
 
 - `State`:
-   - `notify`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.notify` after a number of seconds. Set by `notify` event.
-   - `view`: determines the current view.
-   - `redirect`: determines the view to be taken after logging in, if present on the original `window.location.hash`.
+   - `page`: determines the current page.
+   - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
+   - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
+   - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
+
 
 - `Data`:
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
-   - `pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added by the client to denote whether a picture is selected, but those booleans never reach the server.
+   - `pics`: `[...]`; comes from `body.pics` from `query pics`. A `selected` boolean can be added by the client to denote whether a picture is selected, but those booleans fields never reach the server.
 
 `Data.total`: number of pics matched by query. Also comes from `POST /query`.
 
@@ -462,10 +494,6 @@ Used by giz:
 
 
 
-
-`State.subview`: for view `'auth'`:  `'login'`/`'signup'`. For view `'main'`, `'browse'`/`'upload'`.
-
-`State.notify`: for printing messages, `{color: STRING, message: STRING, timeout: TIMEOUT FOR CLEARING State.notify}`.
 
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
 
