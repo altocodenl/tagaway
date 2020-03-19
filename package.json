@@ -8,14 +8,14 @@
       "giz":     "0.3.1",
       "hitit":   "1.2.7",
       "lith":    "6.0.3",
-      "redis":   "2.8.0",
+      "redis":   "3.0.2",
       "redport": "0.1.2",
       "teishi":  "5.0.2",
       "aws-sdk":                  "2.602.0",
       "murmurhash":               "0.0.2",
-      "nodemailer":               "6.4.2",
+      "nodemailer":               "6.4.5",
       "nodemailer-ses-transport": "1.5.1",
-      "uuid":                     "3.3.3"
+      "uuid":                     "3.4.0"
    },
    "devDependencies": {
       "css":       "2.2.4",
