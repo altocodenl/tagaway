@@ -422,7 +422,7 @@ var routes = [
 
    ['get', 'img/*', cicek.file, ['markup']],
 
-   ['get', ['lib/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['lib/*', 'client.js', 'testclient.js', 'clientold.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
       ['!DOCTYPE HTML'],
@@ -441,9 +441,31 @@ var routes = [
             dale.go (['gotoB.min', 'murmurhash'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
+            ['script', {src: 'client.js'}]
+         ]]
+      ]]
+   ])],
+
+   ['get', '/old', reply, lith.g ([
+      ['!DOCTYPE HTML'],
+      ['html', [
+         ['head', [
+            ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
+            ['meta', {charset: 'utf-8'}],
+            ['title', 'ac;pic'],
+            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
+            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+            dale.go (['ionicons.min', 'normalize.min'], function (v) {
+               return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
+            })
+         ]],
+         ['body', [
+            dale.go (['gotoB.min', 'murmurhash'], function (v) {
+               return ['script', {src: 'lib/' + v + '.js'}];
+            }),
             ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedmime) + ';'],
             ['script', 'var BASETAGS    = ' + JSON.stringify (['all', 'untagged']) + ';'],
-            ['script', {src: 'client.js'}]
+            ['script', {src: 'clientold.js'}]
          ]]
       ]]
    ])],

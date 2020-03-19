@@ -26,7 +26,7 @@
       console.log.apply (console, toprint);
    });
 
-   B.prod      = true;
+   //B.prod      = true;
    //B.verbose = true;
 
    // *** ERROR REPORTING ***
@@ -58,9 +58,9 @@
 
    B.listen ('change', ['State', /view|subview/], function (x) {
       var view = B.get ('State', 'view');
-      var cookie = c.cookie () [COOKIENAME];
-      if (! cookie && view !== 'auth') return B.do (x, 'set', ['State', 'view'], 'auth');
-      if (cookie   && view !== 'main') return B.do (x, 'set', ['State', 'view'], 'main');
+      var csrf = B.get ('Data', 'csrf');
+      if (! csrf && view !== 'auth') return B.do (x, 'set', ['State', 'view'], 'auth');
+      if (csrf && view !== 'main') return B.do (x, 'set', ['State', 'view'], 'main');
       window.location.hash = ['#', B.get ('State', 'view'), B.get ('State', 'subview')].join ('/');
    });
 
@@ -123,7 +123,7 @@
          B.do (x, 'set', ['State', 'view'], 'auth');
       }
       if (norequest) return cb ();
-      c.ajax ('post', 'auth/logout', {}, {cookie: document.cookie}, function (error) {
+      c.ajax ('post', 'auth/logout', {}, {csrf: B.get ('Data', 'csrf')}, function (error) {
          if (error) return B.do (x, 'notify', 'red', 'There was an error logging you out.');
          cb ();
       });
@@ -179,8 +179,8 @@
    H.authajax = function (x, m, p, h, b, cb) {
       x = H.from (x, {ev: 'authajax', method: m, path: p, headers: h, body: b});
       if (m === 'post') {
-         if (type (b, true) === 'formdata') b.append ('cookie', document.cookie);
-         else                               b.cookie = document.cookie;
+         if (type (b, true) === 'formdata') b.append ('csrf', B.get ('Data', 'csrf'));
+         else                               b.csrf = B.get ('Data', 'csrf');
       }
       return c.ajax (m, p, h, b, function (error, rs) {
          if (error && error.status === 403) {
@@ -398,8 +398,9 @@
                   c ('#auth-username').value = '';
                   c ('#auth-password').value = '';
                }
+               if (subview === 'login') B.do ('set', ['Data', 'csrf'], rs.body.csrf);
 
-               if (c.cookie () [COOKIENAME]) {
+               if (B.get ('Data', 'csrf')) {
                   B.do (x, 'notify', 'green', 'Welcome!');
                   B.do (x, 'set', ['State', 'view'], 'main');
                }
