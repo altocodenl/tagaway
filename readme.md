@@ -23,6 +23,27 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Manage.
    - Remaining auth pages.
 
+- Pictures
+   - Show all pictures.
+   - Sort by newest, oldest & upload date.
+
+   - Hover on picture and see details.
+   - Show untagged pictures.
+   - See list of tags.
+   - Query by tag or tags.
+   - Show pictures according to the selected tags.
+   - Select/unselect picture by clicking on it.
+   - If query changes but selected pictures are still there, maintain their selection.
+   - If there are selected pictures, toggle between browse mode & organize mode.
+   - Multiple selection with shift & ctrl.
+   - See number of tags & date below each picture on hover.
+   - Autocomplete tags when searching.
+   - Select/unselect tags for searching.
+   - Tag/untag.
+   - Rotate pictures: multiple queries at the same time?
+   - Delete pictures.
+   - Refresh list of pictures if there's an upload in the background.
+
 ### Todo v1
 
 - Migrate to gotoB v2
@@ -75,12 +96,10 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Filters.
    - Themes for the interface.
    - Add colors to tags?
+   - Order pictures within tag? Set priorities! Manual order mode.
 
 - Manage
    - Create tag that groups tags (can also have pictures directly assigned).
-
-- Pictures
-   - Order pictures within tag? Set priorities! Manual order mode.
 
 - Share
    - QR code to share.
@@ -98,25 +117,11 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Allow to go back to browse while files are being uploaded in the background.
    - Retry on error.
    - Add one or more tags to a certain upload batch.
-   - Delete pictures.
 
 - See
    - Full screen viewing.
-   - Use etags to save bandwidth.
    - Carrousel with wrap-around and preloading of the next picture.
    - Show date & tags.
-
-- Pictures
-   - Multiple selection with shift & ctrl.
-   - Tag/untag.
-   - Sort by newest, oldest & upload date.
-   - Autocomplete tags when searching.
-   - Allow for more than one tag to be searched at the same time.
-   - See number of tags & date below each picture.
-   - Rotate pictures.
-   - Select all pictures in query even if they were not loaded.
-   - Consider 1900-2100 as automatic tags for search.
-   - Refresh list of pictures if there's an upload in the background.
 
 - Account
    - Signup with invite.
@@ -281,6 +286,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last picture to be returned from a certain query. If both are equal to 1, the first picture for the query will be returned. If they are 1 & 10 respectively, the first ten pictures for the query will be returned.
    - `all` cannot be included on `body.tags`. If you want to search for all available pictures, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
+   - `untagged` can be included on `body.tags` to retrieve untagged pictures.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
@@ -438,7 +444,8 @@ Used by giz:
 3. Pictures
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`.
-   3. `change State.query`: invokes `query pics`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
+   3. `change State.query`: invokes `query pics`.
+   4. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
 
 ### Elements
 
@@ -447,7 +454,7 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.pics` and `State.query`.
+   - Depends on: `Data.pics`, `State.query`, `State.query.pics`.
 2. `E.upload`
 3. `E.share`
 4. `E.tags`

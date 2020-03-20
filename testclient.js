@@ -1,18 +1,22 @@
 // TODO v2: remove
-c.test = function (tests) {
+c.test  = function (tests) {
    var t = teishi.time ();
    // TODO: add validations
    var runNext = function (tests, k) {
       var test = tests [k];
+
       if (! test) return clog ('Done with tests in', teishi.time () - t, 'ms');
+
+      var action = test.length === 2 ? function () {return true} : test [1];
+      var checkf = test [test.length === 2 ? 1 : 2];
       var check = function () {
-         var result = test [2] ();
+         var result = checkf ();
          if (result === false) throw new Error ('c.test: Test failed: ' + test [0]);
          runNext (tests, k + 1);
       }
 
       clog ('c.test', 'Running test:', test [0]);
-      var result = test [1] (function (wait) {
+      var result = action (function (wait) {
          if (type (wait) !== 'integer') throw new Error ('c.test: wait parameter must be an integer but instead is ' + wait);
          setTimeout (check, wait);
       });
@@ -28,9 +32,12 @@ c.fire = function (element, eventType) {
    element.dispatchEvent (ev);
 }
 
-var password = prompt ('Password?');
+// TODO uncomment
+// var password = prompt ('Password?');
 
 c.test ([
+   // TODO uncomment
+   /*
    // *** AUTH & NAVIGATION ***
    ['Logout if logged in', function (wait) {
       if (! B.get ('Data', 'csrf')) return true;
@@ -143,4 +150,70 @@ c.test ([
    }, function () {
       return B.get ('State', 'page') === 'pics' && window.location.hash === '#/pics';
    }],
+   */
+   // This assumes that the user has already uploaded pictures
+   ['See that pictures are displayed with the right heading', function () {
+      var picNumber = c ('.pictures-grid__item-picture').length;
+      var heading = c ('.pictures-header__title') [0].innerHTML;
+      if (heading !== picNumber + ' pictures') return clog ('Invalid heading.');
+      if (picNumber < 1) return clog ('No pictures.');
+      return true;
+   }],
+   ['Check default sort is `newest`', function () {
+      if (B.get ('State', 'query', 'sort') !== 'newest') return clog ('Invalid default sort.');
+      var dates = dale.do (B.get ('Data', 'pics'), function (v) {
+         return v.date;
+      });
+      var sortedDates = teishi.c (dates).sort (function (a, b) {
+         return b - a;
+      });
+      if (! teishi.eq (dates, sortedDates)) return clog ('Pictures shown in invalid order.');
+      return true;
+   }],
+   ['Change sort to `oldest`', function (wait) {
+      var sortItems = c ('li.dropdown__list-item');
+      c.fire (sortItems [1], 'click');
+      wait (100);
+   }, function () {
+      if (B.get ('State', 'query', 'sort') !== 'oldest') return clog ('Sort didn\'t change to `oldest`.');
+      var dates = dale.do (B.get ('Data', 'pics'), function (v) {
+         return v.date;
+      });
+      var sortedDates = teishi.c (dates).sort (function (a, b) {
+         return a - b;
+      });
+      if (! teishi.eq (dates, sortedDates)) return clog ('Pictures shown in invalid order.');
+      return true;
+   }],
+   ['Change sort to `upload`', function (wait) {
+      var sortItems = c ('li.dropdown__list-item');
+      c.fire (sortItems [2], 'click');
+      wait (100);
+   }, function () {
+      if (B.get ('State', 'query', 'sort') !== 'upload') return clog ('Sort didn\'t change to `upload`.');
+      var dates = dale.do (B.get ('Data', 'pics'), function (v) {
+         return v.dateup;
+      });
+      var sortedDates = teishi.c (dates).sort (function (a, b) {
+         return b - a;
+      });
+      if (! teishi.eq (dates, sortedDates)) return clog ('Pictures shown in invalid order.');
+      return true;
+   }],
+   ['Change sort to `newest`', function (wait) {
+      var sortItems = c ('li.dropdown__list-item');
+      c.fire (sortItems [0], 'click');
+      wait (100);
+   }, function () {
+      if (B.get ('State', 'query', 'sort') !== 'newest') return clog ('Sort didn\'t change to `newest`.');
+      var dates = dale.do (B.get ('Data', 'pics'), function (v) {
+         return v.date;
+      });
+      var sortedDates = teishi.c (dates).sort (function (a, b) {
+         return b - a;
+      });
+      if (! teishi.eq (dates, sortedDates)) return clog ('Pictures shown in invalid order.');
+      return true;
+   }],
+
 ]);

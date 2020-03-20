@@ -1255,7 +1255,6 @@ var routes = [
                   multi.sadd ('pict:' + id, b.tag);
                   multi.sadd ('tags:' + rq.user.username, b.tag);
                   multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
-
                   multi.srem ('tag:'  + rq.user.username + ':untagged', id);
                }
             })) return;
