@@ -26,16 +26,16 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 - Pictures
    - Show all pictures.
    - Sort by newest, oldest & upload date.
+   - Select/unselect picture by clicking on it.
+   - Multiple selection with shift.
 
    - Hover on picture and see details.
    - Show untagged pictures.
    - See list of tags.
    - Query by tag or tags.
    - Show pictures according to the selected tags.
-   - Select/unselect picture by clicking on it.
    - If query changes but selected pictures are still there, maintain their selection.
    - If there are selected pictures, toggle between browse mode & organize mode.
-   - Multiple selection with shift & ctrl.
    - See number of tags & date below each picture on hover.
    - Autocomplete tags when searching.
    - Select/unselect tags for searching.
@@ -43,6 +43,14 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Rotate pictures: multiple queries at the same time?
    - Delete pictures.
    - Refresh list of pictures if there's an upload in the background.
+
+- Open
+   - Open picture.
+   - Show date, tags & index.
+   - Use caret icons to move forward & backward.
+   - Use arrow keys to move forward & backward.
+   - Preload the next picture.
+   - Wrap-around if there are no more pictures.
 
 ### Todo v1
 
@@ -117,11 +125,6 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Allow to go back to browse while files are being uploaded in the background.
    - Retry on error.
    - Add one or more tags to a certain upload batch.
-
-- See
-   - Full screen viewing.
-   - Carrousel with wrap-around and preloading of the next picture.
-   - Show date & tags.
 
 - Account
    - Signup with invite.
@@ -417,7 +420,56 @@ Used by giz:
 
 ## Client
 
+### Elements
+
+**Container**: `E.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other elements.
+
+**Pages**:
+
+1. `E.pics`
+   - Depends on: `Data.pics`, `State.query`, `State.query.pics`, `State.selected`.
+   - Events: `click -> rem State.selected`.
+2. `E.upload`
+3. `E.share`
+4. `E.tags`
+5. Auth:
+   5.1 `E.login`
+   5.2 `E.signup`
+   5.3 `E.recover`
+   5.4 `E.reset`
+
+**Other**:
+
+1. `E.logo`
+   - Contained by: `E.header`.
+2. `E.snackbar`
+   - Depends on: `State.snackbar`.
+   - Events: `click -> clear snackbar`.
+   - Contained by: `E.base`.
+3. `E.header`
+   - Events: `click -> logout`
+   - Contained by: `E.pics`, `E.upload`, `E.share`, `E.tags`.
+4. `E.empty`
+   - Contained by: `E.pics`.
+5. `E.grid`
+   - Contained by: `E.pics`.
+   - Depends on `Data.pics` and `State.selected`.
+   - Events: `click -> click pic`.
+6. `E.open`
+   - Contained by: `E.pics`.
+   - Depends on `State.open`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> rem State.open`, `rotate id`.
+
 ### Listeners
+
+1. Native
+   1. `error` -> `error`
+   2. `hashchange` -> `read hash`
+   3. `keydown` -> `key down KEYCODE`
+   4. `keyup` -> `key up KEYCODE`
+   5. `scroll` -> `scroll [] EVENT`
+   6. `beforeunload` -> `exit app`
+   7. `webkitfullscreenchange|mozfullscreenchange|fullscreenchange|MSFullscreenChange` -> `exit fullscreen`
 
 1. General
    1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched.
@@ -445,49 +497,20 @@ Used by giz:
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`.
    3. `change State.query`: invokes `query pics`.
-   4. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
+   4. `change State.selected`: adds & removes classes from `#pics`.
+   5. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
+   6. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
+   7. `key down|up`: if `keyCode` is 16, toggle `State.shift`.
 
-### Elements
-
-**Container**: `E.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other elements.
-
-**Pages**:
-
-1. `E.pics`
-   - Depends on: `Data.pics`, `State.query`, `State.query.pics`.
-2. `E.upload`
-3. `E.share`
-4. `E.tags`
-5. Auth:
-   5.1 `E.login`
-   5.2 `E.signup`
-   5.3 `E.recover`
-   5.4 `E.reset`
-
-**Other**:
-
-1. `E.logo`
-   - Contained by: `E.header`.
-2. `E.snackbar`
-   - Depends on: `State.snackbar`.
-   - Events: `click -> clear snackbar`.
-   - Contained by: `E.base`.
-3. `E.header`
-   - Events: `click -> logout`
-   - Contained by: `E.pics`, `E.upload`, `E.share`, `E.tags`.
-4. `E.empty`
-   - Contained by: `E.pics`.
-5. `E.grid`
-   - Contained by: `E.pics`.
-6. `E.see`
-   - Contained by: `E.pics`.
-
-### State/Data structure
+### Store
 
 - `State`:
+   - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
+   - `open`: id of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
+   - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
 
 

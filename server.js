@@ -354,7 +354,7 @@ H.s3list = function (s, prefix) {
    fetch ();
 }
 
-H.zp = function (v) {return v < 10 ? '0' + v : v}
+H.pad = function (v) {return v < 10 ? '0' + v : v}
 
 H.stat = function (s, name, pf, n) {
    var t = Date.now ();
@@ -362,7 +362,7 @@ H.stat = function (s, name, pf, n) {
    if (! pf) a.seq (s, [Redis, 'incrby', 'sti:' + name + ':' + t, n || 1]);
    else      a.seq (s, function (s) {
       var multi = redis.multi ();
-      if (name === 'A') t = new Date (new Date ().getUTCFullYear () + '-' + H.zp (new Date ().getUTCMonth () + 1) + '-' + H.zp (new Date ().getUTCDate ()) + 'T00:00:00.000Z').getTime () / 100000;
+      if (name === 'A') t = new Date (new Date ().getUTCFullYear () + '-' + H.pad (new Date ().getUTCMonth () + 1) + '-' + H.pad (new Date ().getUTCDate ()) + 'T00:00:00.000Z').getTime () / 100000;
       multi.pfadd ('stp:' + name + ':' + t, pf);
       multi.sadd  ('stp',   name + ':' + t);
       mexec (s, multi);

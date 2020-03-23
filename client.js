@@ -1,4 +1,6 @@
+// *** GOTOB V2 SHIM ***
 // TODO v2: remove
+
 B.forget ('eventlog');
 
 var T = teishi.time ();
@@ -1526,22 +1528,53 @@ CSS.litc = [
 
 var H = {};
 
+// TODO what is size for?
 H.path = function (pic, size) {
    if (! size && pic.t200) return 'thumb/' + pic.t200;
    if (pic.t900) return 'thumb/' + pic.t900;
    return 'pic/' + pic.id;
 }
 
+H.pad = function (v) {return v < 10 ? '0' + v : v}
 
-// *** NATIVE EVENT LISTENERS ***
+H.dateFormat = function (d) {
+   d = new Date (d);
+   return H.pad (d.getUTCDate ()) + '/' + H.pad (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
+}
+
+// *** NATIVE LISTENERS ***
+
+window.addEventListener ('error', function () {
+   B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
+});
 
 window.addEventListener ('hashchange', function () {
    B.do ('read', 'hash');
 });
 
-window.onerror = function () {
-   B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
-}
+window.addEventListener ('keydown', function (e) {
+   B.do ('key', 'down', (e || document.event).keyCode);
+});
+
+window.addEventListener ('keyup', function (e) {
+   B.do ('key', 'up', (e || document.event).keyCode);
+});
+
+window.addEventListener ('scroll', function (e) {
+   B.do ('scroll', [], e);
+});
+
+window.addEventListener ('beforeunload', function () {
+   B.do ('exit', 'app');
+});
+
+dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
+   document.addEventListener (v, function () {
+      if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
+         B.do ('exit', 'fullscreen');
+      }
+   });
+});
 
 // *** ELEMENTS ***
 
@@ -1550,7 +1583,9 @@ var E = {};
 // *** LISTENERS ***
 
 dale.do ([
+
    // *** GENERAL LISTENERS ***
+
    ['initialize', [], {burn: true}, function (x) {
       B.do (x, 'reset',    'store');
       B.do (x, 'load',     'hash');
@@ -1630,7 +1665,9 @@ dale.do ([
          document.body.appendChild (script);
       });
    }],
+
    // *** AUTH LISTENERS ***
+
    ['retrieve', 'csrf', function (x) {
       B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
          if (error && error.status !== 403) return B.do (x, 'snackbar', 'red', 'Connection or server error.');
@@ -1656,7 +1693,9 @@ dale.do ([
          B.do (x, 'reset', 'store', true);
       });
    }],
+
    // *** PICTURES LISTENERS ***
+
    // TODO v2: remove, use literals
    ['change', [], {priority: -10000}, function (x) {
       var putSvg = function (selector, where, svg) {
@@ -1698,6 +1737,21 @@ dale.do ([
    ['change', ['State', 'query'], function (x) {
       B.do (x, 'query', 'pics');
    }],
+   ['change', ['State', 'selected'], function (x) {
+      var selectedPictures = dale.keys (B.get ('State', 'selected')).length > 0;
+      var classes = {
+         browse:   ['app-pictures',  'app-all-tags'],
+         organise: ['app-organise', 'app-attach-tags'],
+      }
+      var target = c ('#pics');
+      if (! target) return;
+      dale.do (classes, function (classes, mode) {
+         dale.do (classes, function (v) {
+            if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
+            if (mode === 'organise') target.classList [selectedPictures ? 'add'    : 'remove'] (v);
+         });
+      });
+   }],
    ['query', 'pics', function (x) {
       var query = B.get ('State', 'query');
       if (! query) return;
@@ -1711,21 +1765,54 @@ dale.do ([
          B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
       });
    }],
-   // TODO document
-   ['change', ['State', 'selected'], function (x) {
-      var selectedPictures = B.get ('State', 'selected') && B.get ('State', 'selected').length;
-      var classes = {
-         browse:   ['app-pictures',  'app-all-tags'],
-         organise: ['app-organise', 'app-attach-tags'],
+   ['click', 'pic', function (x, id, k) {
+      var last = B.get ('State', 'lastClick') || {time: 0};
+      // If the last click was also on this picture and happened less than 400ms ago, we open the picture in fullscreen.
+      if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 400) {
+         B.do (x, 'rem', ['State', 'selected'], id);
+         B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', k));
+         return;
       }
-      var target = c ('#pics');
-      if (! target) return;
-      dale.do (classes, function (classes, mode) {
-         dale.do (classes, function (v) {
-            if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
-            if (mode === 'organise') target.classList [selectedPictures ? 'add'    : 'remove'] (v);
-         });
+
+      B.do (x, 'set', ['State', 'lastClick'], {id: id, time: teishi.time ()});
+
+      var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
+         if (pic.id === last.id) return k;
       });
+
+      // Single select/unselect
+      if (! B.get ('State', 'shift') || lastIndex === undefined) {
+         if (! B.get ('State', 'selected', id)) return B.do (x, 'set', ['State', 'selected', id], true);
+         else                                   return B.do (x, 'rem', ['State', 'selected'], id);
+      }
+
+      // Multiple select/unselect
+      dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
+         // Instead of triggering events for each picture, we directly override the value (to avoid triggering n redraws for n pictures).
+         B.set (['State', 'selected', B.get ('Data', 'pics', k, 'id')], true);
+      });
+      // We manually trigger the change event.
+      B.do (x, 'change', ['State', 'selected']);
+   }],
+   ['key', /down|up/, function (x, keyCode) {
+      if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
+   }],
+
+   // *** OPEN ***
+
+   ['key', 'down', function (x, keyCode) {
+      if (keyCode === 37) B.do (x, 'open', 'prev');
+      if (keyCode === 39) B.do (x, 'open', 'next');
+   }],
+   ['exit', 'fullscreen', function (x) {
+      if (B.get ('State', 'open')) B.do (x, 'rem', 'State', 'open');
+   }],
+
+   // *** UPLOAD ***
+
+   ['exit', 'app', function () {
+      var q = B.get ('State', 'upload', 'queue');
+      if (q && q.length > 0) return prompt ('Refreshing the page will stop the upload process. Are you sure?');
    }],
 ], function (v) {
    B.listen.apply (null, v);
@@ -2072,7 +2159,6 @@ E.empty = function () {
 
 E.pics = function () {
    return ['div', {id: 'pics', class: 'app-pictures app-all-tags'}, [
-   //return ['div', {class: classes.organise.join (' ')}, [
       E.header (),
       B.view (['Data', 'pics'], function (x, pics) {
          if (! pics) return;
@@ -2127,17 +2213,19 @@ E.pics = function () {
                   ]],
                   // Sidebar section -- Organise pictures
                   ['div', {class: 'sidebar__inner-section'}, [
-                     ['div', {class: 'sidebar__close-section-button'}, [
+                     ['div', B.ev ({class: 'sidebar__close-section-button'}, ['onclick', 'rem', 'State', 'selected']), [
                         ['div', {class: 'cross-button cross-button--big'}, [
                            ['span', {class: 'cross-button__cross'}],
                         ]],
                      ]],
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, [
-                              'Organize pictures ',
-                              ['span', ['(', ['em', 0], ')']],
-                           ]],
+                           B.view (['State', 'selected'], {tag: 'h1', attrs: {class: 'sidebar-header__title'}}, function (x, selected) {
+                              return ['h1', {class: 'sidebar-header__title'}, [
+                                 'Organize pictures ',
+                                 ['span', ['(', ['em', dale.keys (selected).length], ')']],
+                              ]];
+                           }),
                         ]],
                      ]],
                      ['div', {class: 'sidebar__switch'}, [
@@ -2278,27 +2366,58 @@ E.pics = function () {
 // *** GRID ***
 
 E.grid = function () {
-   return B.view (['Data', 'pics'], function (x, pics) {
-      return dale.do (pics, function (pic) {
-         return ['div', {class: 'pictures-grid__item'}, [
-            ['div', {
-               class: 'pictures-grid__item-picture',
-               style: style ({
-                  'background-image': 'url(' + H.path (pic) + ')',
-                  'background-position': 'center',
-                  'background-repeat': 'no-repeat',
-                  'background-size': 'cover',
-               }),
-            }],
-         ]];
-      });
-   });
+   return [
+      ['style', [
+         ['div.caption', {
+            'border-radius': 10,
+            opacity: 0,
+            width: 1,
+            height: 25,
+            padding: 5,
+            background: 'rgba(0,0,0,.8)',
+            color: 'white',
+            position: 'absolute',
+            bottom: 3,
+            left: 0,
+            'vertical-align': 'bottom',
+            'font-size': 0.7,
+            transition: 'opacity',
+         }],
+         ['div.pictures-grid__item:hover div.caption', {
+            'transition-delay': '0.4s',
+            opacity: '1',
+            '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
+         }],
+      ]],
+      // TODO merge two views into one
+      B.view (['Data', 'pics'], function (x, pics) {
+         return B.view (['State', 'selected'], function (x, selected) {
+            selected = selected || {};
+            return dale.do (pics, function (pic, k) {
+               return ['div', {class: 'pictures-grid__item'}, [
+                  ['div', B.ev ({
+                     class: 'pictures-grid__item-picture' + (selected [pic.id] ? ' selected' : ''),
+                     style: style ({
+                        'background-image': 'url(' + H.path (pic) + ')',
+                        'background-position': 'center',
+                        'background-repeat': 'no-repeat',
+                        'background-size': 'cover',
+                     }),
+                  }, ['onclick', 'click', 'pic', pic.id, k])],
+                  ['div', {class: 'caption'}, [
+                     ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
+                     ['span', {style: 'position: absolute; right: 5px'}, H.dateFormat (pic.date)],
+                  ]],
+               ]];
+            });
+         });
+      }),
+   ];
 }
 
+// *** OPEN ***
 
-// *** SEE ***
-
-E.see = function () {
+E.open = function () {
    return ['div', {class: 'fullscreen app-fullscreen'}, [
       // TODO v2: add inline SVG & remove span
       ['div', {class: 'fullscreen__close', opaque: true}, ['span']],
