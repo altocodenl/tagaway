@@ -635,7 +635,9 @@ var main = [
    ['tag invalid #2', 'post', 'tag', {}, {tag: '\nall', ids: ['a']}, 400],
    ['tag invalid #3', 'post', 'tag', {}, {tag: '2018', ids: ['a']}, 400],
    ['tag invalid #4', 'post', 'tag', {}, {tag: 'untagged', ids: ['a']}, 400],
-   ['tag invalid #5', 'post', 'tag', {}, {tag: 'hello', ids: ['a', 'a']}, 400],
+   ['tag invalid #5', 'post', 'tag', {}, {tag: 'Untagged', ids: ['a']}, 400],
+   ['tag invalid #6', 'post', 'tag', {}, {tag: 'ALL', ids: ['a']}, 400],
+   ['tag invalid #7', 'post', 'tag', {}, {tag: 'hello', ids: ['a', 'a']}, 400],
    ['tag invalid nonexisting #1', 'post', 'tag', {}, {tag: 'hello', ids: ['a']}, 404],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 2, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);

@@ -23,22 +23,21 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Manage.
    - Remaining auth pages.
 
-- Pictures
+- Pics
    - Show all pictures.
    - Sort by newest, oldest & upload date.
    - Select/unselect picture by clicking on it.
    - Multiple selection with shift.
-
-   - Hover on picture and see details.
+   - When selecting pictures, see selection bar.
+   - Hover on picture and see date.
    - Show untagged pictures.
    - See list of tags.
    - Query by tag or tags.
    - Show pictures according to the selected tags.
-   - If query changes but selected pictures are still there, maintain their selection.
    - If there are selected pictures, toggle between browse mode & organize mode.
-   - See number of tags & date below each picture on hover.
+   - If query changes but selected pictures are still there, maintain their selection.
+
    - Autocomplete tags when searching.
-   - Select/unselect tags for searching.
    - Tag/untag.
    - Rotate pictures: multiple queries at the same time?
    - Delete pictures.
@@ -276,7 +275,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /tag`
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
    - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated; space-like characters in the middle will be replaced with a single space).
-   - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`.
+   - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`, or any tag that when lowercased equals `all` or `untagged`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
    - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
@@ -427,8 +426,8 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.pics`, `State.query`, `State.query.pics`, `State.selected`.
-   - Events: `click -> rem State.selected`.
+   - Depends on: `Data.pics`, `State.query`, `State.selected`, `Data.tags`.
+   - Events: `click -> rem State.selected`, `click -> set State.query.tags []|['untagged']`, `click -> toggle tag`, `click -> select all`.
 2. `E.upload`
 3. `E.share`
 4. `E.tags`
@@ -458,7 +457,7 @@ Used by giz:
 6. `E.open`
    - Contained by: `E.pics`.
    - Depends on `State.open`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> rem State.open`, `rotate id`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> rem State.open`, `rotate pic id`.
 
 ### Listeners
 
@@ -495,12 +494,15 @@ Used by giz:
 
 3. Pictures
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`.
+   2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`.
    5. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
    6. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    7. `key down|up`: if `keyCode` is 16, toggle `State.shift`.
+   8. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
+   9. `select all`: sets `State.selected` to all the pictures in the current query.
+   10. `query tags`: invokes `get tags` and sets `Data.tags`.
 
 ### Store
 
@@ -517,13 +519,16 @@ Used by giz:
 - `Data`:
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`. A `selected` boolean can be added by the client to denote whether a picture is selected, but those booleans fields never reach the server.
+   - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
+
+
+
+
+
 
 `Data.total`: number of pics matched by query. Also comes from `POST /query`.
 
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
-
-
-
 
 `State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
 

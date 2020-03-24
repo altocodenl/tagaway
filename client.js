@@ -28,6 +28,7 @@ var CSS = {
    },
    // *** variables.scss ***
    vars: {
+      tagColors: ['green', 'blue', 'yellow', 'orange', 'coral', 'indigo'],
       // Layout sizes
       'sidebar-width': 300,
       // Colors
@@ -1542,6 +1543,14 @@ H.dateFormat = function (d) {
    return H.pad (d.getUTCDate ()) + '/' + H.pad (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
 }
 
+H.color = function (tag, a) {
+   if (tag.match (/^untagged$/i)) return 'untagged';
+   var r = dale.acc (tag.split (''), tag [0].charCodeAt (), function (a, b) {
+      return a + b.charCodeAt ();
+   });
+   return CSS.vars.tagColors [r % CSS.vars.tagColors.length];
+}
+
 // *** NATIVE LISTENERS ***
 
 window.addEventListener ('error', function () {
@@ -1714,7 +1723,8 @@ dale.do ([
       putSvg ('.tag-actions__item--attached', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--attached" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.3 15.7c-.1 0-.3-.1-.4-.1l-3-3c-.2-.2-.2-.5 0-.7s.5-.2.7 0l2.6 2.6 6.1-6.1c.2-.2.5-.2.7 0s.2.5 0 .7l-6.4 6.4c-.1.2-.2.2-.3.2z"/></svg>');
       putSvg ('.tag-actions__item--untag', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--untag" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 9.4c-.1-.3-.4-.4-.6-.3l-6.5 1.9 1.9-6.4c.1-.3 0-.5-.3-.6s-.5.1-.6.3l-2.1 7.1-2.6.8c.3-.9.1-1.9-.6-2.6-1-1-2.6-1-3.5 0s-1 2.6 0 3.5c.5.5 1.1.7 1.8.7.4 0 .7-.1 1-.2h.1l3.4-1-1 3.4v.2c-.2.3-.2.7-.2 1 0 .7.3 1.3.7 1.8.5.5 1.1.7 1.8.7.6 0 1.3-.2 1.8-.7s.7-1.1.7-1.8-.3-1.3-.7-1.8c-.7-.7-1.7-.9-2.6-.6l.8-2.6 7.1-2.1c.1-.1.3-.4.2-.7zm-14.2 3c-.6-.6-.6-1.5 0-2.1.3-.3.6-.5 1-.5s.8.2 1.1.4c.6.6.6 1.5 0 2.1s-1.6.6-2.1.1zm7.9 3.7c.3.3.4.7.4 1.1s-.2.8-.4 1.1c-.6.6-1.5.6-2.1 0-.3-.3-.4-.7-.4-1.1s.2-.8.4-1.1c.3-.3.7-.4 1.1-.4.4-.1.7.1 1 .4z"/></svg>');
       putSvg ('.tag-list__item--untagged', 'afterBegin', '<svg class="tag__icon tag__icon--untagged" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
-      dale.do (['green', 'red', 'blue'], function (color) {
+      putSvg ('.tag-list-horizontal__item--untagged', 'afterBegin', '<svg class="tag__icon tag__icon--untagged" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
+      dale.do (CSS.vars.tagColors, function (color) {
          putSvg ('.tag-list__item--' + color,           'afterBegin', '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
          putSvg ('.tag-list-horizontal__item--' + color, 'afterBegin', '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
       });
@@ -1733,6 +1743,7 @@ dale.do ([
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
+      if (! B.get ('Data', 'tags'))   B.do (x, 'query', 'tags');
    }],
    ['change', ['State', 'query'], function (x) {
       B.do (x, 'query', 'pics');
@@ -1741,7 +1752,7 @@ dale.do ([
       var selectedPictures = dale.keys (B.get ('State', 'selected')).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
-         organise: ['app-organise', 'app-attach-tags'],
+         organise: ['app-organise', 'app-show-organise-bar', 'app-attach-tags'],
       }
       var target = c ('#pics');
       if (! target) return;
@@ -1757,7 +1768,7 @@ dale.do ([
       if (! query) return;
 
       B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: 10000}, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures');
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          var selected = dale.obj (rs.body.pics, function (pic) {
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
@@ -1796,6 +1807,26 @@ dale.do ([
    }],
    ['key', /down|up/, function (x, keyCode) {
       if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
+   }],
+   ['toggle', 'tag', function (x, tag) {
+      var index = B.get ('State', 'query', 'tags').indexOf (tag);
+      var untagged = B.get ('State', 'query', 'tags', 0) === 'untagged';
+      if (index > -1) B.do (x, 'rem', ['State', 'query', 'tags'], index);
+      else {
+         if (untagged) B.do (x, 'set', ['State', 'query', 'tags'], [tag]);
+         else          B.do (x, 'add', ['State', 'query', 'tags'], tag);
+      }
+   }],
+   ['select', 'all', function (x) {
+      B.do (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pics'), function (pic) {
+         return [pic.id, true];
+      }));
+   }],
+   ['query', 'tags', function (x) {
+      B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
+         B.do (x, 'set', ['Data', 'tags'], rs.body);
+      });
    }],
 
    // *** OPEN ***
@@ -1892,7 +1923,7 @@ E.snackbar = function () {
       ]],
       B.view (['State', 'snackbar'], function (x, snackbar) {
          if (! snackbar) return;
-         var bcolor = 'rgba(' + CSS.toRGBA (snackbar.color) + ', 0.75)';
+         var bcolor = 'rgba(' + CSS.toRGBA (snackbar.color) + ', 0.9)';
          return ['div', {class: 'snackbar', style: 'bottom: 0; background-color: ' + bcolor}, [
             ['p', {class: 'snackbar__text'}, [
                ['span', {class: 'snackbar__text-concept'}, snackbar.message],
@@ -2092,7 +2123,7 @@ E.header = function () {
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'View pictures']],
             ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'Organize']],
-            ['li', {class: 'main-menu__item'},                           ['a', {href: '#', class: 'main-menu__item-link'}, 'Manage tags']],
+            ['li', {class: 'main-menu__item'},                           ['a', B.ev ({href: '#', class: 'main-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Manage tags']],
          ]]
       ]],
       // ACCOUNT MENU
@@ -2101,7 +2132,7 @@ E.header = function () {
             // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#', class: 'account-sub-menu__item-link'}, 'My account']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({href: '#', class: 'account-sub-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'My account']],
                   ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({href: '#', class: 'account-sub-menu__item-link'}, ['onclick', 'logout', []]), 'Logout']],
                ]],
             ]],
@@ -2160,205 +2191,212 @@ E.empty = function () {
 E.pics = function () {
    return ['div', {id: 'pics', class: 'app-pictures app-all-tags'}, [
       E.header (),
+      // TODO v2: merge two views into one
       B.view (['Data', 'pics'], function (x, pics) {
-         if (! pics) return;
-         if (pics.length === 0) return E.empty ();
-         return [
-            ['div', {class: 'sidebar'}, [
-               ['div', {class: 'sidebar__inner'}, [
-                  // Sidebar section View pictures
-                  ['div', {class: 'sidebar__inner-section'}, [
-                     ['div', {class: 'sidebar__header'}, [
-                        ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
-                           // TODO v2: add inline SVG & remove span
-                           // TODO: why must specify height so it looks exactly the same as markup?
-                           ['div', {class: 'sidebar-header__filter-selected', opaque: true}, ['span']],
-                        ]],
-                     ]],
-                     ['div', {class: 'sidebar__tags'}, [
-                        B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, tags) {
-                           var untagged = teishi.eq (tags, ['untagged']);
-                           var makeTag = function (which) {
-                              if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures tag--selected', tag = 'All pictures';
-                              else if (which === 'untagged') var Class = 'tag-list__item tag-list__item--untagged tag', tag = 'Untagged';
-                              else                           var Class = 'tag-list__item tag-list__item--green tag', tag = which;
-
-                              // TODO v2: add inline SVG
-                              return ['li', {class: Class, opaque: true}, [
-                                 ['span', {class: 'tag__title'}, tag],
-                                 ['div', {class: 'tag__actions'}, [
-                                    ['div', {class: 'tag-actions'}, [
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
-                                    ]]
-                                 ]]
-                              ]];
-                           }
-                           return [
-                              makeTag ('all'),
-                              makeTag ('untagged'),
-                              untagged ? [] : dale.do (tags, makeTag)
-                           ];
-                        }),
-                     ]]
-                  ]],
-                  // Sidebar section -- Organise pictures
-                  ['div', {class: 'sidebar__inner-section'}, [
-                     ['div', B.ev ({class: 'sidebar__close-section-button'}, ['onclick', 'rem', 'State', 'selected']), [
-                        ['div', {class: 'cross-button cross-button--big'}, [
-                           ['span', {class: 'cross-button__cross'}],
-                        ]],
-                     ]],
-                     ['div', {class: 'sidebar__header'}, [
-                        ['div', {class: 'sidebar-header'}, [
-                           B.view (['State', 'selected'], {tag: 'h1', attrs: {class: 'sidebar-header__title'}}, function (x, selected) {
-                              return ['h1', {class: 'sidebar-header__title'}, [
-                                 'Organize pictures ',
-                                 ['span', ['(', ['em', dale.keys (selected).length], ')']],
-                              ]];
-                           }),
-                        ]],
-                     ]],
-                     ['div', {class: 'sidebar__switch'}, [
-                        // Switch
-                        ['div', {class: 'switch'}, [
-                           ['ul', {class: 'switch-list'}, [
-                              ['li', {class: 'switch-list__item'}, [
-                                 // TODO v2: add inline SVG
-                                 ['div', {class: 'switch-list__button switch-list__button--attach', opaque: true}, [
-                                    ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
-                                 ]],
-                              ]],
-                              ['li', {class: 'switch-list__item'}, [
-                                 // TODO v2: add inline SVG
-                                 ['div', {class: 'switch-list__button switch-list__button--untag', opaque: true}, [
-                                    ['span', {class: 'switch-list__button-text'}, 'Untag'],
-                                    ['span', {class: 'switch-list__button-text-amount'}, ' (2)'],
-                                 ]],
-                              ]],
+         return B.view (['Data', 'tags'], function (x, tags) {
+            if (! pics || ! tags) return;
+            if (tags.all === 0) return E.empty ();
+            return [
+               ['div', {class: 'sidebar'}, [
+                  ['div', {class: 'sidebar__inner'}, [
+                     // Sidebar section View pictures
+                     ['div', {class: 'sidebar__inner-section'}, [
+                        ['div', {class: 'sidebar__header'}, [
+                           ['div', {class: 'sidebar-header'}, [
+                              ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
+                              // TODO v2: add inline SVG & remove span
+                              // TODO: why must specify height so it looks exactly the same as markup?
+                              ['div', {class: 'sidebar-header__filter-selected', opaque: true}, ['span']],
                            ]],
                         ]],
-                     ]],
-                     ['div', {class: 'sidebar__attach-form'}, [
-                        ['div', {class: 'attach-form'}, [
-                           ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
-                           ['input', {class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name'}],
-                        ]],
-                     ]],
-                     ['div', {class: 'sidebar__tags'}, [
-                        ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
-                        B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, tags) {
-                           if (teishi.eq (tags, ['untagged'])) tags = [];
-                           return dale.do (tags, function (tag) {
-                              // TODO v2: add inline SVG
-                              return ['li', {class: 'tag-list__item tag-list__item--green tag tag--attached', opaque: true}, [
-                                 ['span', {class: 'tag__title'}, tag],
-                                 ['div', {class: 'tag__actions'}, [
-                                    ['div', {class: 'tag-actions'}, [
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
-                                       // TODO v2: add inline SVG & remove span
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
-                                    ]],
-                                 ]],
-                              ]];
+                        // TODO v2: merge two views into one
+                        B.view (['Data', 'tags'], {attrs: {class: 'sidebar__tags'}}, function (x, tags) {
+                           tags = dale.fil (tags, undefined, function (v, tag) {
+                              if (tag !== 'all' && tag !== 'untagged') return tag;
                            });
-                        }),
-                     ]]
-                  ]],
-               ]],
-               // SIDEBAR SEARCH
-               ['div', {class: 'sidebar__footer'}, [
-                  // TODO v2: add inline SVG
-                  ['div', {class: 'sidebar-search', opaque: true}, [
-                     ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
-                  ]],
-               ]],
-            ]],
-            // ORGANISE BAR
-            ['div', {class: 'organise-bar'}, [
-               ['div', {class: 'organise-bar__inner'}, [
-                  ['div', {class: 'organise-bar__selected'}, [
-                     ['div', {class: 'selected-box'}, [
-                        // TODO v2: add inline SVG & remove span
-                        ['span', {class: 'selected-box__close', opaque: true}, ['span']],
-                        ['span', {class: 'selected-box__count'}],
-                     ]],
-                     ['p', {class: 'organise-bar__selected-title'}, 'Selected'],
-                  ]],
-                  // TODO v2: add inline SVG
-                  ['div', {class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, [
-                     ['span', {class: 'organise-bar__button-title'}, 'Select all'],
-                  ]],
-                  ['div', {class: 'organise-bar__button organise-bar__button--rotate'}, [
-                     // TODO v2: add inline SVG & remove span
-                     ['div', {class: 'organise-bar__button-icon-container', opaque: true}, ['span']],
-                     ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
-                  ]],
-                  // TODO v2: add inline SVG
-                  ['div', {class: 'organise-bar__button organise-bar__button--delete', opaque: true}, [
-                     ['span', {class: 'organise-bar__button-title'}, 'Delete'],
-                  ]],
-               ]]
-            ]],
-            // MAIN
-            ['div', {class: 'main main--pictures'}, [
-               ['div', {class: 'main__inner'}, [
-                  ['div', {class: 'pictures-header'}, [
-                     ['h2', {class: 'pictures-header__title page-title'}, pics.length + ' pictures'],
-                     ['div', {class: 'pictures-header__action-bar'}, [
-                        ['div', {class: 'pictures-header__selected-tags'}, [
-                           B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list-horizontal'}}, function (x, tags) {
-                              if (teishi.eq (tags, ['untagged'])) tags = [];
-                              return dale.do (tags, function (tag) {
+                           return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
+                              var all      = teishi.eq (selected, []);
+                              var untagged = teishi.eq (selected, ['untagged']);
+                              var makeTag  = function (which) {
+                                 if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : ''), tag = 'All pictures', action = ['onclick', 'set', ['State', 'query', 'tags'], []];
+                                 else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']];
+                                 else                           var Class = 'tag-list__item tag tag-list__item--' + H.color (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
+
                                  // TODO v2: add inline SVG
-                                 return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--green tag', opaque: true}, [
+                                 return ['li', B.ev ({class: Class, opaque: true}, action), [
                                     ['span', {class: 'tag__title'}, tag],
                                     ['div', {class: 'tag__actions'}, [
                                        ['div', {class: 'tag-actions'}, [
                                           // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
                                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
+                                       ]]
+                                    ]]
+                                 ]];
+                              }
+                              return [
+                                 makeTag ('all'),
+                                 makeTag ('untagged'),
+                                 dale.do (tags, makeTag)
+                              ];
+                           });
+                        }),
+                     ]],
+                     // Sidebar section -- Organise pictures
+                     ['div', {class: 'sidebar__inner-section'}, [
+                        ['div', B.ev ({class: 'sidebar__close-section-button'}, ['onclick', 'rem', 'State', 'selected']), [
+                           ['div', {class: 'cross-button cross-button--big'}, [
+                              ['span', {class: 'cross-button__cross'}],
+                           ]],
+                        ]],
+                        ['div', {class: 'sidebar__header'}, [
+                           ['div', {class: 'sidebar-header'}, [
+                              B.view (['State', 'selected'], {tag: 'h1', attrs: {class: 'sidebar-header__title'}}, function (x, selected) {
+                                 return [
+                                    'Organize pictures ',
+                                    ['span', ['(', ['em', dale.keys (selected).length], ')']],
+                                 ];
+                              }),
+                           ]],
+                        ]],
+                        ['div', {class: 'sidebar__switch'}, [
+                           // Switch
+                           ['div', {class: 'switch'}, [
+                              ['ul', {class: 'switch-list'}, [
+                                 ['li', {class: 'switch-list__item'}, [
+                                    // TODO v2: add inline SVG
+                                    ['div', {class: 'switch-list__button switch-list__button--attach', opaque: true}, [
+                                       ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
+                                    ]],
+                                 ]],
+                                 ['li', {class: 'switch-list__item'}, [
+                                    // TODO v2: add inline SVG
+                                    ['div', {class: 'switch-list__button switch-list__button--untag', opaque: true}, [
+                                       ['span', {class: 'switch-list__button-text'}, 'Untag'],
+                                       ['span', {class: 'switch-list__button-text-amount'}, ' (2)'],
+                                    ]],
+                                 ]],
+                              ]],
+                           ]],
+                        ]],
+                        ['div', {class: 'sidebar__attach-form'}, [
+                           ['div', {class: 'attach-form'}, [
+                              ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
+                              ['input', {class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name'}],
+                           ]],
+                        ]],
+                        ['div', {class: 'sidebar__tags'}, [
+                           ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
+                           B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, tags) {
+                              if (teishi.eq (tags, ['untagged'])) tags = [];
+                              return dale.do (tags, function (tag) {
+                                 // TODO v2: add inline SVG
+                                 return ['li', {class: 'tag-list__item tag-list__item--green tag tag--attached', opaque: true}, [
+                                    ['span', {class: 'tag__title'}, tag],
+                                    ['div', {class: 'tag__actions'}, [
+                                       ['div', {class: 'tag-actions'}, [
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['span']],
+                                          // TODO v2: add inline SVG & remove span
+                                          ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}, ['span']],
                                        ]],
                                     ]],
                                  ]];
                               });
                            }),
-                        ]],
-                        ['div', {class: 'pictures-header__sort'}, [
-                           B.view (['State', 'query'], {attrs: {class: 'dropdown'}}, function (x, query) {
-                              if (! query) return;
-                              return [
-                                 ['div', {class: 'dropdown__button'}, query.sort],
-                                 ['ul', {class: 'dropdown__list'}, [
-                                    dale.do (['newest', 'oldest', 'upload'], function (sort) {
-                                       return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort];
-                                    })
-                                 ]],
-                              ];
-                           }),
-                        ]],
+                        ]]
                      ]],
                   ]],
-                  // PICTURES GRID
-                  ['div', {class: 'pictures-grid'}, E.grid ()],
+                  // SIDEBAR SEARCH
+                  ['div', {class: 'sidebar__footer'}, [
+                     // TODO v2: add inline SVG
+                     ['div', {class: 'sidebar-search', opaque: true}, [
+                        ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
+                     ]],
+                  ]],
                ]],
-            ]],
-         ];
+               // ORGANISE BAR
+               B.view (['State', 'selected'], {tag: 'div', attrs: {class: 'organise-bar'}}, function (x, selected) {
+                  return ['div', {class: 'organise-bar__inner'}, [
+                     ['div', {class: 'organise-bar__selected'}, [
+                        ['div', {class: 'selected-box'}, [
+                           // TODO v2: add inline SVG & remove span
+                           ['span', B.ev ({class: 'selected-box__close', opaque: true}, ['onclick', 'rem', 'State', 'selected']), ['span']],
+                           ['span', {class: 'selected-box__count'}, dale.keys (selected).length],
+                        ]],
+                        ['p', {class: 'organise-bar__selected-title'}, 'Selected'],
+                     ]],
+                     // TODO v2: add inline SVG
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, ['onclick', 'select', 'all']), [
+                        ['span', {class: 'organise-bar__button-title'}, 'Select all'],
+                     ]],
+                     ['div', {class: 'organise-bar__button organise-bar__button--rotate'}, [
+                        // TODO v2: add inline SVG & remove span
+                        ['div', {class: 'organise-bar__button-icon-container', opaque: true}, ['span']],
+                        ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
+                     ]],
+                     // TODO v2: add inline SVG
+                     ['div', {class: 'organise-bar__button organise-bar__button--delete', opaque: true}, [
+                        ['span', {class: 'organise-bar__button-title'}, 'Delete'],
+                     ]],
+                  ]];
+               }),
+               // MAIN
+               ['div', {class: 'main main--pictures'}, [
+                  ['div', {class: 'main__inner'}, [
+                     ['div', {class: 'pictures-header'}, [
+                        ['h2', {class: 'pictures-header__title page-title'}, pics.length + ' pictures'],
+                        ['div', {class: 'pictures-header__action-bar'}, [
+                           ['div', {class: 'pictures-header__selected-tags'}, [
+                              B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list-horizontal'}}, function (x, tags) {
+                                 return dale.do (tags, function (tag) {
+                                    // TODO v2: add inline SVG
+                                    return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.color (tag) + ' tag', opaque: true}, [
+                                       ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag],
+                                       ['div', {class: 'tag__actions'}, [
+                                          ['div', {class: 'tag-actions'}, [
+                                             // TODO v2: add inline SVG & remove span
+                                             ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['onclick', 'toggle', 'tag', tag]), ['span']],
+                                          ]],
+                                       ]],
+                                    ]];
+                                 });
+                              }),
+                           ]],
+                           ['div', {class: 'pictures-header__sort'}, [
+                              B.view (['State', 'query'], {attrs: {class: 'dropdown'}}, function (x, query) {
+                                 if (! query) return;
+                                 return [
+                                    ['div', {class: 'dropdown__button'}, query.sort],
+                                    ['ul', {class: 'dropdown__list'}, [
+                                       dale.do (['newest', 'oldest', 'upload'], function (sort) {
+                                          return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort];
+                                       })
+                                    ]],
+                                 ];
+                              }),
+                           ]],
+                        ]],
+                     ]],
+                     // PICTURES GRID
+                     ['div', {class: 'pictures-grid'}, E.grid ()],
+                  ]],
+               ]],
+            ];
+         });
       })
    ]];
 }
@@ -2372,18 +2410,18 @@ E.grid = function () {
             'border-radius': 10,
             opacity: 0,
             width: 1,
-            height: 25,
+            height: 30,
             padding: 5,
             background: 'rgba(0,0,0,.8)',
             color: 'white',
             position: 'absolute',
-            bottom: 3,
+            bottom: 0,
             left: 0,
             'vertical-align': 'bottom',
-            'font-size': 0.7,
+            'font-size': CSS.typography.fontSize (-1),
             transition: 'opacity',
          }],
-         ['div.pictures-grid__item:hover div.caption', {
+         ['div.pictures-grid__item-picture:hover div.caption', {
             'transition-delay': '0.4s',
             opacity: '1',
             '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
@@ -2403,10 +2441,11 @@ E.grid = function () {
                         'background-repeat': 'no-repeat',
                         'background-size': 'cover',
                      }),
-                  }, ['onclick', 'click', 'pic', pic.id, k])],
-                  ['div', {class: 'caption'}, [
-                     ['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
-                     ['span', {style: 'position: absolute; right: 5px'}, H.dateFormat (pic.date)],
+                  }, ['onclick', 'click', 'pic', pic.id, k]), [
+                     ['div', {class: 'caption'}, [
+                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
+                        ['span', {style: 'position: absolute; right: 5px'}, H.dateFormat (pic.date)],
+                     ]],
                   ]],
                ]];
             });

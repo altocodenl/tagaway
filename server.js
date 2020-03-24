@@ -239,7 +239,7 @@ H.hash = function (string) {
    return hash (string) + '';
 }
 
-H.isyear = function (tag) {
+H.isYear = function (tag) {
    return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
 }
 
@@ -1013,8 +1013,8 @@ var routes = [
       tags = dale.go (tags, function (tag) {
          if (type (tag) !== 'string') return error = teishi.str (tag);
          tag = H.trim (tag);
-         if (['all', 'untagged'].indexOf (tag) !== -1) return error = tag;
-         if (H.isyear (tag)) error = tag;
+         if (['all', 'untagged'].indexOf (tag.toLowerCase ()) !== -1) return error = tag;
+         if (H.isYear (tag)) error = tag;
          return tag;
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
@@ -1214,7 +1214,7 @@ var routes = [
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isyear (b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       var multi = redis.multi (), seen = {};
       dale.go (b.ids, function (id) {
@@ -1240,7 +1240,7 @@ var routes = [
                var id = b.ids [k / 2];
 
                var extags = dale.acc (s.last [k + 1], 0, function (a, b) {
-                  return a + (H.isyear (b) ? 0 : 1);
+                  return a + (H.isYear (b) ? 0 : 1);
                });
 
                if (b.del) {
@@ -1317,7 +1317,7 @@ var routes = [
 
       //{tag1: [USERID], ...}
       var tags = dale.obj (b.tags, function (tag) {
-         if (! H.isyear (tag)) return [tag, [rq.user.username]];
+         if (! H.isYear (tag)) return [tag, [rq.user.username]];
          ytags.push (tag);
       });
 
@@ -1438,7 +1438,7 @@ var routes = [
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isyear (b.tag))                           return reply (rs, 400, {error: 'tag'});
+      if (H.isYear (b.tag))                           return reply (rs, 400, {error: 'tag'});
       if (b.who === rq.user.username)                 return reply (rs, 400, {error: 'self'});
 
       astop (rs, [
