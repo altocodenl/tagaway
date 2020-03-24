@@ -2210,9 +2210,15 @@ E.pics = function () {
                            ]],
                         ]],
                         // TODO v2: merge two views into one
-                        B.view (['Data', 'tags'], {attrs: {class: 'sidebar__tags'}}, function (x, tags) {
-                           tags = dale.fil (tags, undefined, function (v, tag) {
-                              if (tag !== 'all' && tag !== 'untagged') return tag;
+                        B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
+                           var taglist = dale.fil (tags, undefined, function (v, tag) {
+                              if (tag === 'all' || tag === 'untagged') return;
+                              if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
+                              if ((filter || '').trim ().length === 0) return tag;
+                              var regex = new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
+                              if (tag.match (regex)) return tag;
+                           }).sort (function (a, b) {
+                              return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                            });
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
                               var all      = teishi.eq (selected, []);
@@ -2244,7 +2250,7 @@ E.pics = function () {
                               return [
                                  makeTag ('all'),
                                  makeTag ('untagged'),
-                                 dale.do (tags, makeTag)
+                                 dale.do (taglist, makeTag)
                               ];
                            });
                         }),
@@ -2323,9 +2329,9 @@ E.pics = function () {
                   // SIDEBAR SEARCH
                   ['div', {class: 'sidebar__footer'}, [
                      // TODO v2: add inline SVG
-                     ['div', {class: 'sidebar-search', opaque: true}, [
-                        ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
-                     ]],
+                     B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
+                        return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
+                     }),
                   ]],
                ]],
                // ORGANISE BAR

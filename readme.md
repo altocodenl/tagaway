@@ -36,15 +36,16 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Show pictures according to the selected tags.
    - If there are selected pictures, toggle between browse mode & organize mode.
    - If query changes but selected pictures are still there, maintain their selection.
+   - Filter tags.
 
-   - Autocomplete tags when searching.
    - Tag/untag.
    - Rotate pictures: multiple queries at the same time?
    - Delete pictures.
    - Refresh list of pictures if there's an upload in the background.
 
 - Open
-   - Open picture.
+   - Open picture and trigger fullscreen.
+   - If exit fullscreen, exit picture too.
    - Show date, tags & index.
    - Use caret icons to move forward & backward.
    - Use arrow keys to move forward & backward.
@@ -426,7 +427,7 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.pics`, `State.query`, `State.selected`, `Data.tags`.
+   - Depends on: `Data.pics`, `State.query`, `State.selected`, `Data.tags`, `State.filter`.
    - Events: `click -> rem State.selected`, `click -> set State.query.tags []|['untagged']`, `click -> toggle tag`, `click -> select all`.
 2. `E.upload`
 3. `E.share`
@@ -507,6 +508,7 @@ Used by giz:
 ### Store
 
 - `State`:
+   - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `open`: id of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
