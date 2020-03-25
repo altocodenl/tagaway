@@ -14,14 +14,30 @@ ac;pic is currently under development and has not been launched yet. We aim to l
 
 The author wishes to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
-### Todo v0
+## Functionality
 
-- Implement new UI:
-   - Pics.
-   - Upload.
-   - Share.
-   - Manage.
-   - Remaining auth pages.
+### Core functions
+
+1. **Upload**. Converse operation is **delete**.
+2. **Tag**. Converse operation is **untag**. Complementary operation is **rotate**.
+3. **Share**. Converse operation is **unshare**. Complementary operations are **accepting a shared tag** and **deleting a shared tag**.
+4. **See**. No converse operation. Complementary operation is **download**.
+
+Functions 1 through 3 modify the data; the last function is purely passive.
+
+### Complementary functions
+
+1. **Auth**.
+2. **Account**. Complementary functions are **export** and **import**.
+3. **Payment**.
+
+## Security
+
+If you find a security vulnerability, please disclose it to us as soon as possible (`info AT altocode.nl`). We'll work on it with the utmost priority.
+
+## Features
+
+### Todo v0
 
 - Pics
    - Show all pictures.
@@ -39,7 +55,7 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Filter tags.
 
    - Tag/untag.
-   - Rotate pictures: multiple queries at the same time?
+   - Rotate pictures.
    - Delete pictures.
    - Refresh list of pictures if there's an upload in the background.
 
@@ -52,69 +68,6 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Preload the next picture.
    - Wrap-around if there are no more pictures.
 
-### Todo v1
-
-- Migrate to gotoB v2
-
-- Server
-   - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
-   - ac;tools integration.
-
-- Assorted
-   - Favicon & icons.
-   - Status & stats page.
-   - Spanish support.
-
-- Account
-   - Account page.
-   - Delete account.
-   - Change email & password.
-   - Export all data.
-   - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
-   - Log me out of all sessions.
-   - Freeze me out (includes log me out of all sessions).
-
-- Payment
-   - Payment.
-   - Payment late: 2 week notice with download.
-
-- Share
-   - Share/unshare with authorization & automatic email.
-   - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
-   - Upload to shared tag.
-   - Tags with same name (local vs shared, put a @).
-
-- Upload
-   - Client-side hashes for fast duplicate elimination.
-   - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
-   - Folder upload on mobile.
-   - Upload video.
-
-- Pictures
-   - Load on scroll
-   - Hidden tags.
-   - Enable GPS detection.
-   - Set date manually.
-   - Add logic & endpoint to send to server latency of `query` requests.
-   - Mobile/tablet design.
-
-### Todo maybe
-
-- Pictures
-   - Filters.
-   - Themes for the interface.
-   - Add colors to tags?
-   - Order pictures within tag? Set priorities! Manual order mode.
-
-- Manage
-   - Create tag that groups tags (can also have pictures directly assigned).
-
-- Share
-   - QR code to share.
-   - Create group that groups people.
-
-### Todo done
-
 - Upload
    - Allow only jpeg & png.
    - Auto thumbnail generation.
@@ -126,16 +79,78 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Retry on error.
    - Add one or more tags to a certain upload batch.
 
-- Account
+- Share & manage
+   - Share/unshare with email & authorization to see or ignore.
+   - Mark tags shared with user with something.
+   - If two shared tags from different users have the same name, put "@email"
+
+- Account & payment
    - Signup with invite.
    - Login/logout.
    - Recover/reset/change password.
+   - Keep auth log.
 
 - Admin
-   - Metering requests, downloads & space stored.
+   - Meter requests, downloads & space stored.
    - Block further uploads if storage limits are exceeded.
-   - Invites.
+   - See & send invites.
    - Stats endpoint.
+
+- Other
+   - Frontend tests.
+   - dev & prod environments.
+   - S3 & SES setup.
+
+### Todo v1
+
+- Pics
+   - Load on scroll.
+   - Hidden tags.
+   - Enable GPS detection.
+   - Set date manually.
+   - Mobile/tablet design.
+
+- Upload
+   - Client-side hashes for fast duplicate elimination.
+   - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
+   - Folder upload on mobile.
+   - Upload video.
+
+- Share & manage
+   - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
+   - Upload to shared tag.
+
+- Account & payment
+   - Account page.
+   - Delete account.
+   - Change email & password.
+   - Export all data.
+   - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
+   - Log me out of all sessions.
+   - Freeze me out (includes log me out of all sessions).
+   - Payment.
+   - Payment late: 2 week notice with download.
+
+- Other
+   - Migrate to gotoB v2
+   - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
+   - ac;tools integration.
+   - Favicon & icons.
+   - Status & stats page.
+   - Spanish support.
+
+### Todo maybe
+
+- Pics
+   - Filters.
+   - Themes for the interface.
+   - Add colors to tags?
+   - Order pictures within tag? Set priorities! Manual order mode.
+
+- Share & manage
+   - QR code to share.
+   - Create group that groups people.
+   - Create tag that groups tags (can also have pictures directly assigned).
 
 ### Todo never
 
@@ -145,23 +160,6 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
    - Serve images as hosting.
    - Share certain tags only on shared pictures.
    - Public profile pages.
-
-## Functions
-
-### Core functions
-
-1. **Upload**. Converse operation is **delete**.
-2. **Tag**. Converse operation is **untag**. Complementary operation is **rotate**.
-3. **Share**. Converse operation is **unshare**. Complementary operations are **accepting a shared tag** and **deleting a shared tag**.
-4. **See**. No converse operation. Complementary operation is **download**.
-
-Functions 1 through 3 modify the data; the last function is purely passive.
-
-### Complementary functions
-
-1. **Auth**.
-2. **Account**. Complementary functions are **export** and **import**.
-3. **Payment**.
 
 ## Server
 
@@ -327,7 +325,7 @@ All the routes below require an admin user to be logged in.
 `POST /admin/invites`
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
 
-## Redis structure
+### Redis structure
 
 ```
 - users:USERNAME (hash):
@@ -493,7 +491,7 @@ Used by giz:
    3. `login`: calls `post /auth/login
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
 
-3. Pictures
+3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
@@ -516,7 +514,6 @@ Used by giz:
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
-
 
 - `Data`:
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
@@ -575,10 +572,6 @@ Used by giz:
 `Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
 
 `Data.account`: `{username: STRING, email: STRING, type: STRING, created: INT, logs: [{...}, ...], used: [INT, INT]`; the body returned by `GET /account`.
-
-## Security
-
-If you find a security vulnerability, please disclose it to us as soon as possible (`info AT altocode.nl`). We'll work on it with the utmost priority.
 
 ## License
 
