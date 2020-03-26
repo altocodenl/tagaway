@@ -52,12 +52,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Show pictures according to the selected tags.
    - If there are selected pictures, toggle between browse mode & organize mode.
    - If query changes but selected pictures are still there, maintain their selection.
-   - Filter tags.
-
-   - show selected tags at top
-   - current tags show at top; tags that are on some, put below with +, then put the rest
+   - Filter tags when browsing.
 
    - Tag/untag.
+   - Filter tags when tagging/untagging.
    - Rotate pictures.
    - Delete pictures.
    - Refresh list of pictures if there's an upload in the background.
@@ -429,8 +427,17 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.pics`, `State.query`, `State.selected`, `Data.tags`, `State.filter`, `State.untag`.
-   - Events: `click -> rem State.selected`, `click -> set State.query.tags []|['untagged']`, `click -> toggle tag`, `click -> select all`, `click -> rem State.untag`, `click -> set State.untag true`, `click -> tag TAG`, `click -> untag TAG`.
+   - Depends on: `Data.tags`, `Data.pics`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
+   - Events:
+      - `click -> rem State.selected`
+      - `click -> set State.query.tags []|['untagged']`
+      - `click -> toggle tag`
+      - `click -> select all`
+      - `click -> rem State.untag`
+      - `click -> set State.untag true`
+      - `click -> tag TAG`
+      - `click -> untag TAG`
+      - `oninput -> set State.newTag`
 2. `E.upload`
 3. `E.share`
 4. `E.tags`
@@ -503,16 +510,19 @@ Used by giz:
    5. `change State.untag`: adds & removes classes from `#pics`.
    6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
-   8. `key down|up`: if `keyCode` is 16, toggle `State.shift`.
+   8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
    10. `select all`: sets `State.selected` to all the pictures in the current query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`.
+   12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
+   13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. Also invokes `snackbar`.
 
 ### Store
 
 - `State`:
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
+   - `newTag`: the name of a new tag to be posted.
    - `open`: id of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
