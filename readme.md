@@ -54,6 +54,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If query changes but selected pictures are still there, maintain their selection.
    - Filter tags.
 
+   - show selected tags at top
+   - current tags show at top; tags that are on some, put below with +, then put the rest
+
    - Tag/untag.
    - Rotate pictures.
    - Delete pictures.
@@ -80,7 +83,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Add one or more tags to a certain upload batch.
 
 - Share & manage
-   - Share/unshare with email & authorization to see or ignore.
+   - Share/unshare with email: signup, login, or go straight if there's a session.
    - Mark tags shared with user with something.
    - If two shared tags from different users have the same name, put "@email"
 
@@ -117,6 +120,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Upload video.
 
 - Share & manage
+   - Authorization to see or ignore share.
    - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
    - Upload to shared tag.
 
@@ -425,8 +429,8 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.pics`, `State.query`, `State.selected`, `Data.tags`, `State.filter`.
-   - Events: `click -> rem State.selected`, `click -> set State.query.tags []|['untagged']`, `click -> toggle tag`, `click -> select all`.
+   - Depends on: `Data.pics`, `State.query`, `State.selected`, `Data.tags`, `State.filter`, `State.untag`.
+   - Events: `click -> rem State.selected`, `click -> set State.query.tags []|['untagged']`, `click -> toggle tag`, `click -> select all`, `click -> rem State.untag`, `click -> set State.untag true`, `click -> tag TAG`, `click -> untag TAG`.
 2. `E.upload`
 3. `E.share`
 4. `E.tags`
@@ -495,13 +499,14 @@ Used by giz:
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
-   4. `change State.selected`: adds & removes classes from `#pics`.
-   5. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
-   6. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
-   7. `key down|up`: if `keyCode` is 16, toggle `State.shift`.
-   8. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
-   9. `select all`: sets `State.selected` to all the pictures in the current query.
-   10. `query tags`: invokes `get tags` and sets `Data.tags`.
+   4. `change State.selected`: adds & removes classes from `#pics` and optionally removes `State.untag`.
+   5. `change State.untag`: adds & removes classes from `#pics`.
+   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
+   7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
+   8. `key down|up`: if `keyCode` is 16, toggle `State.shift`.
+   9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
+   10. `select all`: sets `State.selected` to all the pictures in the current query.
+   11. `query tags`: invokes `get tags` and sets `Data.tags`.
 
 ### Store
 
@@ -514,10 +519,11 @@ Used by giz:
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
+   - `untag`: flag to mark that we're untagging pictures instead of tagging them.
 
 - `Data`:
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
-   - `pics`: `[...]`; comes from `body.pics` from `query pics`. A `selected` boolean can be added by the client to denote whether a picture is selected, but those booleans fields never reach the server.
+   - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
 
 
