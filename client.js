@@ -1759,7 +1759,6 @@ dale.do ([
          organise: ['app-organise', 'app-show-organise-bar', 'app-attach-tags'],
       }
       var target = c ('#pics');
-      //if (! target) return;
       dale.do (classes, function (classes, mode) {
          dale.do (classes, function (v) {
             if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
@@ -2247,11 +2246,12 @@ E.pics = function () {
                         ]],
                         // TODO v2: merge two views into one
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
+                           filter = (filter || '').trim ();
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
                               var taglist = dale.fil (tags, undefined, function (v, tag) {
                                  if (tag === 'all' || tag === 'untagged') return;
                                  if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
-                                 if ((filter || '').trim ().length === 0) return tag;
+                                 if (! filter) return tag;
                                  var regex = new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
                                  if (tag.match (regex)) return tag;
                               }).sort (function (a, b) {
@@ -2341,49 +2341,56 @@ E.pics = function () {
                         ]],
                         // TODO v2: merge two views into one
                         B.view (['State', 'untag'], {attrs: {class: 'sidebar__tags'}}, function (x, untag) {
-                           return [
-                              ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
-                              B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
-                                 var selectedTags = {};
-                                 if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
-                                    if (! selected [pic.id]) return;
-                                    dale.do (pic.tags, function (tag) {
-                                       if (! selectedTags [tag]) selectedTags [tag] = 0;
-                                       selectedTags [tag]++;
+                           return B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
+                              filter = (filter || '').trim ();
+                              return [
+                                 ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
+                                 B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
+                                    var selectedTags = {};
+                                    if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
+                                       if (! selected [pic.id]) return;
+                                       dale.do (pic.tags, function (tag) {
+                                          if (! selectedTags [tag]) selectedTags [tag] = 0;
+                                          selectedTags [tag]++;
+                                       });
                                     });
-                                 });
-                                 var editTags = dale.fil (tags, undefined, function (number, tag) {
-                                    if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
-                                    if (! selectedTags [tag]) selectedTags [tag] = 0;
-                                    return tag;
-                                 }).sort (function (a, b) {
-                                    if (selectedTags [a] !== selectedTags [b]) return selectedTags [b] - selectedTags [a];
-                                    return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
-                                 });
+                                    var editTags = dale.fil (tags, undefined, function (number, tag) {
+                                       if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
+                                       if (filter) {
+                                          var regex = new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
+                                          if (! tag.match (regex)) return;
+                                       }
+                                       if (! selectedTags [tag]) selectedTags [tag] = 0;
+                                       return tag;
+                                    }).sort (function (a, b) {
+                                       if (selectedTags [a] !== selectedTags [b]) return selectedTags [b] - selectedTags [a];
+                                       return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                    });
 
-                                 return dale.do (editTags, function (tag) {
-                                    var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
-                                    // TODO v2: add inline SVG
-                                    return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, [
-                                       ['span', {class: 'tag__title'}, tag],
-                                       ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag]), [
-                                          ['div', {class: 'tag-actions'}, [
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                    return dale.do (editTags, function (tag) {
+                                       var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
+                                       // TODO v2: add inline SVG
+                                       return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, [
+                                          ['span', {class: 'tag__title'}, tag],
+                                          ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag]), [
+                                             ['div', {class: 'tag-actions'}, [
+                                                // TODO v2: add inline SVG
+                                                ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
+                                                // TODO v2: add inline SVG
+                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
+                                                // TODO v2: add inline SVG
+                                                ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
+                                                // TODO v2: add inline SVG
+                                                ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
+                                                // TODO v2: add inline SVG
+                                                ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                             ]],
                                           ]],
-                                       ]],
-                                    ]];
-                                 });
-                              }),
-                           ];
+                                       ]];
+                                    });
+                                 }),
+                              ];
+                           });
                         })
                      ]],
                   ]],
@@ -2410,7 +2417,7 @@ E.pics = function () {
                      ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, ['onclick', 'select', 'all']), [
                         ['span', {class: 'organise-bar__button-title'}, 'Select all'],
                      ]],
-                     ['div', {class: 'organise-bar__button organise-bar__button--rotate'}, [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--rotate'}, ['onclick', 'rotate', 'pics', 90]), [
                         // TODO v2: add inline SVG
                         ['div', {class: 'organise-bar__button-icon-container', opaque: true}],
                         ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
@@ -2499,16 +2506,58 @@ E.grid = function () {
          return B.view (['State', 'selected'], function (x, selected) {
             selected = selected || {};
             return dale.do (pics, function (pic, k) {
-               return ['div', {class: 'pictures-grid__item'}, [
+               var askance = pic.deg === 90 || pic.deg === -90;
+               var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
+               });
+               rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+                  if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+                  if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
+               });
+               // 122w 224h 102m-left
+
+               // If following the CSS rules only:
+               // 140: 6, 11, 16, 21, 26
+               // 180: 2, 5, 8, 14, 17, 20, 23
+               // 240: 15, 19, 27
+               // 100: rest
+               //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
+               //if (((k + 1) % 3) === 0)           frameWidth = 180;
+               //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
+
+               var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
+               var picRatio = picWidth / picHeight;
+
+               // padding right: 16px, padding left: 18px
+               var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
+               if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
+               else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
+               else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
+               else    frameWidth = sizes [3];
+
+               // TODO: understand this magic number.
+               if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
+                  return [v [0], v [1]];
+               });
+
+               return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
                   ['div', B.ev ({
                      class: 'pictures-grid__item-picture' + (selected [pic.id] ? ' selected' : ''),
-                     style: style ({
-                        'background-image': 'url(' + H.path (pic) + ')',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-size': 'cover',
-                     }),
                   }, ['onclick', 'click', 'pic', pic.id, k]), [
+                     ['div', {
+                        class: 'inner',
+                        style: style ({
+                           'border-radius': 'inherit',
+                           width: askance ? frameHeight : frameWidth,
+                           height: askance ? frameWidth : frameHeight,
+                           'background-image': 'url(' + H.path (pic) + ')',
+                           'background-position': 'center',
+                           'background-repeat': 'no-repeat',
+                           'background-size': 'cover',
+                           'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
+                           rotation: rotation,
+                        }),
+                     }],
                      ['div', {class: 'caption'}, [
                         //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
                         ['span', {style: 'position: absolute; right: 5px'}, H.dateFormat (pic.date)],

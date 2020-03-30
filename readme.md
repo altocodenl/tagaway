@@ -53,11 +53,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If there are selected pictures, toggle between browse mode & organize mode.
    - If query changes but selected pictures are still there, maintain their selection.
    - Filter tags when browsing.
-
    - Tag/untag.
    - Filter tags when tagging/untagging.
    - Rotate pictures.
-   - Delete pictures.
+
+   - Delete pictures (delete from disk too)
    - Refresh list of pictures if there's an upload in the background.
 
 - Open
@@ -71,6 +71,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upload
    - Allow only jpeg & png.
+   - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - See progress when uploading files, using a progress bar.
