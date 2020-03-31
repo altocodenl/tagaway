@@ -56,8 +56,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Tag/untag.
    - Filter tags when tagging/untagging.
    - Rotate pictures.
+   - Delete pictures.
 
-   - Delete pictures (delete from disk too)
    - Refresh list of pictures if there's an upload in the background.
 
 - Open
@@ -519,7 +519,8 @@ Used by giz:
    10. `select all`: sets `State.selected` to all the pictures in the current query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`.
    12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
-   13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. Also invokes `snackbar`.
+   13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`.
+   14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`.
 
 ### Store
 
