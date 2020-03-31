@@ -441,7 +441,10 @@ Used by giz:
       - `click -> set State.untag true`
       - `click -> tag TAG`
       - `click -> untag TAG`
+      - `click -> rotate pics`
+      - `click -> delete pics`
       - `oninput -> set State.newTag`
+      - `oninput -> set State.filter`
 2. `E.upload`
 3. `E.share`
 4. `E.tags`
@@ -522,13 +525,18 @@ Used by giz:
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`.
 
+4. Open
+   1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
+   2.
+   3.
+
 ### Store
 
 - `State`:
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `newTag`: the name of a new tag to be posted.
-   - `open`: id of the picture to be shown in full-screen mode.
+   - `open`: picture to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.

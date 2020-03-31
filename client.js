@@ -1590,7 +1590,7 @@ window.addEventListener ('beforeunload', function () {
 dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
    document.addEventListener (v, function () {
       if (! document.fullscreenElement && ! document.webkitIsFullScreen && ! document.mozFullScreen && ! document.msFullscreenElement) {
-         B.do ('exit', 'fullscreen');
+         B.do ('exit', 'fullscreen', true);
       }
    });
 });
@@ -1869,7 +1869,6 @@ dale.do ([
       var pics = dale.keys (B.get ('State', 'selected'));
       if (pics.length === 0) return;
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
-         if (error) clog (error.responseText);
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          B.do (x, 'query', 'pics');
       });
@@ -1878,11 +1877,35 @@ dale.do ([
    // *** OPEN ***
 
    ['key', 'down', function (x, keyCode) {
+      if (! B.get ('State', 'open')) return;
       if (keyCode === 37) B.do (x, 'open', 'prev');
       if (keyCode === 39) B.do (x, 'open', 'next');
    }],
-   ['exit', 'fullscreen', function (x) {
+   ['exit', 'fullscreen', function (x, exited) {
       if (B.get ('State', 'open')) B.do (x, 'rem', 'State', 'open');
+      if (exited) return;
+      dale.do (['exitFullScreen', 'webkitExitFullscreen', 'mozCancelFullScreen', 'msExitFullscreen'], function (v) {
+         if (type (document [v]) === 'function') document [v] ();
+      });
+      if (! window.ActiveXObject) return;
+      var wscript = new ActiveXObject ('WScript.Shell');
+      if (wscript) wscript.SendKeys ('{ESC}');
+   }],
+   ['enter', 'fullscreen', function (x) {
+      dale.do (['requestFullScreen', 'webkitRequestFullscreen', 'mozRequestFullScreen', 'msRequestFullscreen'], function (v) {
+         if (type (document.documentElement [v]) === 'function') document.documentElement [v] ();
+      });
+      if (! window.ActiveXObject) return;
+      var wscript = new ActiveXObject ('WScript.Shell');
+      if (wscript) wscript.SendKeys ('{F11}');
+   }],
+   ['change', ['State', 'open'], function (x) {
+      var target = c ('#pics');
+      if (B.get ('State', 'open')) {
+         target.classList.add    ('app-fullscreen');
+         B.do (x, 'enter', 'fullscreen');
+      }
+      else                         target.classList.remove ('app-fullscreen');
    }],
 
    // *** UPLOAD ***
@@ -1891,6 +1914,7 @@ dale.do ([
       var q = B.get ('State', 'upload', 'queue');
       if (q && q.length > 0) return prompt ('Refreshing the page will stop the upload process. Are you sure?');
    }],
+
 ], function (v) {
    B.listen.apply (null, v);
 });
@@ -2237,6 +2261,7 @@ E.empty = function () {
 E.pics = function () {
    return ['div', {id: 'pics', class: 'app-pictures app-all-tags'}, [
       E.header (),
+      E.open (),
       // TODO v2: merge two views into one
       B.view (['Data', 'pics'], function (x, pics) {
          return B.view (['Data', 'tags'], function (x, tags) {
@@ -2584,32 +2609,35 @@ E.grid = function () {
 // *** OPEN ***
 
 E.open = function () {
-   return ['div', {class: 'fullscreen app-fullscreen'}, [
-      // TODO v2: add inline SVG
-      ['div', {class: 'fullscreen__close', opaque: true}],
-      // TODO v2: add inline SVG
-      ['div', {class: 'fullscreen__nav fullscreen__nav--left', opaque: true}],
-      // TODO v2: add inline SVG
-      ['div', {class: 'fullscreen__nav fullscreen__nav--right', opaque: true}],
-      ['div', {class: 'fullscreen__date'}, [
-         ['span', {class: 'fullscreen__date-text'}, '10-12-2017'],
-      ]],
-      ['div', {class: 'fullscreen__image-container'}, [
-         ['img', {class: 'fullscreen__image', src: 'img/dog.jpg', alt: 'picture'}],
-      ]],
-      ['div', {class: 'fullscreen__actions'}, [
-         ['div', {class: 'fullscreen__action'}, [
-            // TODO v2: add inline SVG
-            ['div', {class: 'fullscreen__action-icon-container', opaque: true}],
-            ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
+   return B.view (['State', 'open'], {attrs: {class: 'fullscreen'}}, function (x, open) {
+      if (! open) return;
+      return [
+         // TODO v2: add inline SVG
+         ['div', B.ev ({class: 'fullscreen__close', opaque: true}, ['onclick', 'exit', 'fullscreen'])],
+         // TODO v2: add inline SVG
+         ['div', {class: 'fullscreen__nav fullscreen__nav--left', opaque: true}],
+         // TODO v2: add inline SVG
+         ['div', {class: 'fullscreen__nav fullscreen__nav--right', opaque: true}],
+         ['div', {class: 'fullscreen__date'}, [
+            ['span', {class: 'fullscreen__date-text'}, '10-12-2017'],
          ]],
-      ]],
-      ['div', {class: 'fullscreen__count'}, [
-         ['span', {class: 'fullscreen__count-current'}, 29],
-         '/',
-         ['span', {class: 'fullscreen__count-total'}, 29],
-      ]],
-   ]];
+         ['div', {class: 'fullscreen__image-container'}, [
+            ['img', {class: 'fullscreen__image', src: 'img/dog.jpg', alt: 'picture'}],
+         ]],
+         ['div', {class: 'fullscreen__actions'}, [
+            ['div', {class: 'fullscreen__action'}, [
+               // TODO v2: add inline SVG
+               ['div', {class: 'fullscreen__action-icon-container', opaque: true}],
+               ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
+            ]],
+         ]],
+         ['div', {class: 'fullscreen__count'}, [
+            ['span', {class: 'fullscreen__count-current'}, 29],
+            '/',
+            ['span', {class: 'fullscreen__count-total'}, 29],
+         ]],
+      ];
+   });
 }
 
 // *** UPLOAD ***
