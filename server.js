@@ -936,7 +936,6 @@ var routes = [
    // *** DOWNLOAD PICS ***
 
    ['get', 'pic/:id', function (rq, rs) {
-      if (ENV) return reply (rs, 400);
       astop (rs, [
          [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
          function (s) {
