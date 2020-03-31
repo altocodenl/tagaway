@@ -394,9 +394,9 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 409],
-   ['delete freshly uploaded picture', 'delete', function (s) {
-      return 'pic/' + s.smallpic.id;
-   }, {}, '', 200],
+   ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
+      return {ids: [s.smallpic.id]};
+   }, 200],
    ['upload small picture again', 'post', 'pic', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -559,9 +559,9 @@ var main = [
          return true;
       }};
    }),
-   ['delete picture with different date format', 'delete', function (s) {
-      return 'pic/' + s.dunkerque;
-   }, {}, '', 200],
+   ['delete picture with different date format', 'post', 'delete', {}, function (s) {
+      return {ids: [s.dunkerque]};
+   }, 200],
    ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'medium.jpg', 'rotate.jpg', 'large.jpeg'], dale.go (rs.body.pics, function (v) {
          return v.name;
@@ -750,9 +750,19 @@ var main = [
    ['tag two pics #2', 'post', 'tag', {}, function (s) {
       return {tag: 'bla   ', ids: [s.pics [0].id, s.pics [3].id]};
    }, 200],
-   ['delete tagged picture', 'delete', function (s) {
-      return 'pic/' + s.pics [3].id;
-   }, {}, '', 200],
+   ['invalid delete #1', 'post', 'delete', {}, '', 400],
+   ['invalid delete #2', 'post', 'delete', {}, [], 400],
+   ['invalid delete #3', 'post', 'delete', {}, {ids: [1]}, 400],
+   ['invalid delete #4', 'post', 'delete', {}, {ids: [['1']]}, 400],
+   ['invalid delete #5', 'post', 'delete', {}, {ids: ['1', 2]}, 400],
+   ['empty delete', 'post', 'delete', {}, {ids: []}, 200],
+   ['delete no such picture', 'post', 'delete', {}, {ids: ['foo']}, 404],
+   ['delete tagged picture (repeated)', 'post', 'delete', {}, function (s) {
+      return {ids: [s.pics [3].id, s.pics [3].id]};
+   }, 400],
+   ['delete tagged picture', 'post', 'delete', {}, function (s) {
+      return {ids: [s.pics [3].id]};
+   }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2017: 1, 2018: 2, all: 3, untagged: 2, bla: 1})) return clog (rs.body);
       return true;
@@ -948,20 +958,18 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['delete pic as user2', 'delete', function (s) {
-      return 'pic/' + s.rotate2.id;
-   }, {}, '', 200],
+   ['delete pic as user2', 'post', 'delete', {}, function (s) {
+      return {ids: [s.rotate2.id]};
+   }, 200],
    ['delete account', 'post', 'auth/delete', {}, {}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   dale.go (dale.times (3, 0), function (k) {
-      return ['delete pic #' + (k + 1), 'delete', function (s) {
-         return 'pic/' + s.pics [k].id;
-      }, {}, '', 200];
-   }),
+   ['delete multiple pics', 'post', 'delete', {}, function (s) {
+      return {ids: [s.pics [0].id, s.pics [1].id, s.pics [2].id]};
+   }, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.total !== 0) return clog ('Some pictures were not deleted.');
       return true;
@@ -976,7 +984,7 @@ var main = [
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return clog ('Invalid used field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 47 && rs.body.logs.length !== 48)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 45 && rs.body.logs.length !== 46)) return clog ('Invalid logs.');
       return true;
    }],
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {

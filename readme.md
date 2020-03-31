@@ -264,8 +264,11 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned.
 
-- `DELETE /pic/ID`
-   - If the picture is not found, or if it does not belong to the user attempting the deletion, a 404 is returned.
+- `POST /delete`
+   - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
+   - Array with ids can be empty.
+   - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the deletion is successful, a 200 is returned.
 
 - `POST /rotate`
@@ -395,10 +398,10 @@ All the routes below require an admin user to be logged in.
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING}
    - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED}
-   - For deletes:         {t: INT, a: 'del', id: STRING}
-   - For rotates:         {t: INT, a: 'rot', id: STRING, deg: 90|180|-90}
-   - For (un)tags:        {t: INT, a: 'tag', tag: STRING, d: true|undefined (if true it means untag), ids: [...]}
-   - For (un)shares:      {t: INT, a: 'sha', tag: STRING, d: true|undefined (if true it means unshare), u: STRING}
+   - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
+   - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
+   - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
+   - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
 
 - sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
 - sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.

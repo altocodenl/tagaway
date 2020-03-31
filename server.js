@@ -392,6 +392,7 @@ H.deletepic = function (s, id, username) {
             return [a.make (fs.unlink), Path.join (CONFIG.basepath, H.hash (username), v)];
          });
       },
+      [a.make (fs.unlink), Path.join (CONFIG.basepath, H.hash (username), id)],
       function (s) {
          var multi = redis.multi ();
 
@@ -408,7 +409,6 @@ H.deletepic = function (s, id, username) {
 
          mexec (s, multi);
       },
-      [H.log, username, {a: 'del', id: id}],
    ]);
 }
 
@@ -1068,6 +1068,7 @@ var routes = [
          [a.make (fs.unlink), path],
          [H.resizeif, newpath, 200],
          [H.resizeif, newpath, 900],
+         // We only store the original pictures in S3
          [H.s3put, rq.user.username, newpath, pic.id],
          // Delete original image from disk.
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
@@ -1126,9 +1127,24 @@ var routes = [
 
    // *** DELETE PICS ***
 
-   ['delete', 'pic/:id', function (rq, rs) {
+   ['post', 'delete', function (rq, rs) {
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body', b.ids, 'string', 'each'],
+      ])) return;
+
+      if (dale.keys (dale.obj (b.ids, function (id) {
+         return [id, true];
+      })).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+
       a.stop ([
-         [H.deletepic, rq.data.params.id, rq.user.username],
+         [a.fork, b.ids, function (id) {
+            return [H.deletepic, id, rq.user.username];
+         }, {max: 5}],
+         [H.log, rq.user.username, {a: 'del', ids: b.ids}],
          [reply, rs, 200],
       ], function (s, error) {
          error === 'nf' ? reply (rs, 404) : reply (rs, 500, {error: error});
@@ -1149,10 +1165,9 @@ var routes = [
          function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
       ])) return;
 
-      var multi = redis.multi (), seen = {};
-      dale.go (b.ids, function (id) {
-         seen [id] = true;
+      var multi = redis.multi (), seen = dale.obj (b.ids, function (id) {
          multi.hgetall ('pic:' + id);
+         return [id, true];
       });
 
       if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
@@ -1192,7 +1207,7 @@ var routes = [
 
             mexec (s, multi);
          },
-         [H.log, rq.user.username, {a: 'rot', id: b.ids, deg: b.deg}],
+         [H.log, rq.user.username, {a: 'rot', ids: b.ids, deg: b.deg}],
          [reply, rs, 200],
       ]);
    }],
@@ -1213,7 +1228,7 @@ var routes = [
       ])) return;
 
       b.tag = H.trim (b.tag);
-      if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
+      if (['all', 'untagged'].indexOf (b.tag.toLowerCase ()) !== -1) return reply (rs, 400, {error: 'tag'});
       if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       var multi = redis.multi (), seen = {};
