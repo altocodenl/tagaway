@@ -1,30 +1,39 @@
 // TODO v2: remove
-c.test  = function (tests) {
-   var t = teishi.time ();
-   // TODO: add validations
-   var runNext = function (tests, k) {
-      var test = tests [k];
 
-      if (! test) return clog ('Done with tests in', teishi.time () - t, 'ms');
+   c.test = function (tests) {
 
-      var action = test.length === 2 ? function () {return true} : test [1];
-      var checkf = test [test.length === 2 ? 1 : 2];
-      var check = function () {
-         var result = checkf ();
-         if (result === false) throw new Error ('c.test: Test failed: ' + test [0]);
-         runNext (tests, k + 1);
+      if (teishi.stop ('c.test', [
+         ['tests', tests, 'array'],
+         ['tests', tests, 'array', 'each'],
+         dale.do (tests, function (test, k) {return [
+            ['test length', test.length, {min: 2, max: 3}, teishi.test.range],
+            ['test #' + (k + 1) + ' tag', test [0], 'string'],
+            test.length === 2 ? ['test #' + (k + 1) + ' check', test [1], 'function'] : [
+               ['test #' + (k + 1) + ' action', test [1], 'function'],
+               ['test #' + (k + 1) + ' check',  test [2], 'function'],
+            ]
+         ]})
+      ])) return false;
+
+      var start = teishi.time (), runNext = function (tests, k) {
+         var test = tests [k];
+
+         if (! test) return clog ('c.test', 'All tests finished successfully (' + (teishi.time () - start) + ' ms)');
+
+         var check = function () {
+            var result = test [test.length === 2 ? 1 : 2] ();
+            if (result === false) throw new Error ('c.test: Test failed: ' + test [0]);
+            runNext (tests, k + 1);
+         }
+
+         clog ('c.test', 'Running test:', test [0]);
+         if (test.length === 2 || test [1] (function (wait) {
+            if (type (wait) !== 'integer') throw new Error ('c.test: wait parameter must be an integer but instead is ' + wait);
+            wait === undefined ? check () : setTimeout (check, wait);
+         }) !== undefined) check ();
       }
-
-      clog ('c.test', 'Running test:', test [0]);
-      var result = action (function (wait) {
-         if (type (wait) !== 'integer') throw new Error ('c.test: wait parameter must be an integer but instead is ' + wait);
-         setTimeout (check, wait);
-      });
-      if (result === false) throw new Error ('c.test: Test failed: ' + test [0]);
-      if (result !== undefined) check ();
+      runNext (tests, 0);
    }
-   runNext (tests, 0);
-}
 
 // TODO v2: remove
 c.fire = function (element, eventType) {
@@ -32,12 +41,9 @@ c.fire = function (element, eventType) {
    element.dispatchEvent (ev);
 }
 
-// TODO uncomment
-// var password = prompt ('Password?');
+var password = prompt ('Password?');
 
 c.test ([
-   // TODO uncomment
-   /*
    // *** AUTH & NAVIGATION ***
    ['Logout if logged in', function (wait) {
       if (! B.get ('Data', 'csrf')) return true;
@@ -150,7 +156,6 @@ c.test ([
    }, function () {
       return B.get ('State', 'page') === 'pics' && window.location.hash === '#/pics';
    }],
-   */
    // This assumes that the user has already uploaded pictures
    ['See that pictures are displayed with the right heading', function () {
       var picNumber = c ('.pictures-grid__item-picture').length;

@@ -63,11 +63,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Open
    - Open picture and trigger fullscreen.
    - If exit fullscreen, exit picture too.
-   - Show date, tags & index.
+   - Show date & picture position.
    - Use caret icons to move forward & backward.
    - Use arrow keys to move forward & backward.
-   - Preload the next picture.
    - Wrap-around if there are no more pictures.
+   - Preload the next picture.
+   - If exiting fullscreen, also exit picture.
+   - Hide scrollbar on fullscreen and hide it again on exit.
 
 - Upload
    - Allow only jpeg & png.
@@ -81,16 +83,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Retry on error.
    - Add one or more tags to a certain upload batch.
 
-- Share & manage
-   - Share/unshare with email: signup, login, or go straight if there's a session.
-   - Mark tags shared with user with something.
-   - If two shared tags from different users have the same name, put "@email"
-
 - Account & payment
    - Signup with invite.
    - Login/logout.
    - Recover/reset/change password.
-   - Keep auth log.
+   - Store auth log.
 
 - Admin
    - Meter requests, downloads & space stored.
@@ -99,7 +96,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Stats endpoint.
 
 - Other
-   - Frontend tests.
    - dev & prod environments.
    - S3 & SES setup.
 
@@ -112,6 +108,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Set date manually.
    - Mobile/tablet design.
 
+- Open
+   - Show tags
+
 - Upload
    - Client-side hashes for fast duplicate elimination.
    - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
@@ -119,6 +118,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Upload video.
 
 - Share & manage
+   - Share/unshare with email: signup, login, or go straight if there's a session.
+   - Mark tags shared with user with something.
+   - If two shared tags from different users have the same name, put "@email"
    - Authorization to see or ignore share.
    - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
    - Upload to shared tag.
@@ -135,6 +137,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Payment late: 2 week notice with download.
 
 - Other
+   - Frontend tests.
    - Migrate to gotoB v2
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
    - ac;tools integration.
@@ -474,7 +477,7 @@ Used by giz:
 6. `E.open`
    - Contained by: `E.pics`.
    - Depends on `State.open`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> rem State.open`, `rotate pic id`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`.
 
 ### Listeners
 
@@ -522,13 +525,15 @@ Used by giz:
    10. `select all`: sets `State.selected` to all the pictures in the current query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`.
    12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
-   13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`.
+   13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
-   2.
-   3.
+   2. `enter fullscreen`: enter fullscreen using the native browser methods and set the `<body>` `overflow` to `hidden`.
+   3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
+   4. `change State.open`: remove or add `app-fullscreen` class from `#pics`, depending on whether `State.open` is defined. If `State.open` is defined, it invokes `enter fullscreen`.
+   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture.
 
 ### Store
 
@@ -536,7 +541,7 @@ Used by giz:
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `newTag`: the name of a new tag to be posted.
-   - `open`: picture to be shown in full-screen mode.
+   - `open`: index of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.

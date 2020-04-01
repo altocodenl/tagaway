@@ -6,7 +6,7 @@ B.forget ('eventlog');
 var T = teishi.time ();
 var Do = B.do;
 B.listen ('*', [], {priority: 1000000}, function (x) {
-   //x.args ? clog (teishi.time () - T, x.verb, x.path, x.args) : clog (teishi.time () - T, x.verb, x.path);
+   //x.args ? console.log (teishi.time () - T, x.verb, x.path, x.args) : console.log (teishi.time () - T, x.verb, x.path);
 });
 
 lith.css.style = function (attributes, prod) {
@@ -1531,10 +1531,9 @@ CSS.litc = [
 
 var H = {};
 
-// TODO what is size for?
-H.path = function (pic, size) {
-   if (! size && pic.t200) return 'thumb/' + pic.t200;
-   if (pic.t900) return 'thumb/' + pic.t900;
+H.path = function (pic, large) {
+   if (! large && pic.t200) return 'thumb/' + pic.t200;
+   if (pic.t900)            return 'thumb/' + pic.t900;
    return 'pic/' + pic.id;
 }
 
@@ -1793,7 +1792,7 @@ dale.do ([
       // If the last click was also on this picture and happened less than 400ms ago, we open the picture in fullscreen.
       if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 400) {
          B.do (x, 'rem', ['State', 'selected'], id);
-         B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', k));
+         B.do (x, 'set', ['State', 'open'], k);
          return;
       }
 
@@ -1857,8 +1856,8 @@ dale.do ([
          if (tag === B.get ('State', 'newTag')) B.do (x, 'rem', 'State', 'newTag');
       });
    }],
-   ['rotate', 'pics', function (x, deg) {
-      var pics = dale.keys (B.get ('State', 'selected'));
+   ['rotate', 'pics', function (x, deg, pic) {
+      var pics = pic ? [pic.id] : dale.keys (B.get ('State', 'selected'));
       if (pics.length === 0) return;
       B.do (x, 'post', 'rotate', {}, {deg: deg, ids: pics}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error rotating the picture(s).');
@@ -1877,12 +1876,22 @@ dale.do ([
    // *** OPEN ***
 
    ['key', 'down', function (x, keyCode) {
-      if (! B.get ('State', 'open')) return;
+      if (B.get ('State', 'open') === undefined) return;
       if (keyCode === 37) B.do (x, 'open', 'prev');
       if (keyCode === 39) B.do (x, 'open', 'next');
    }],
+   ['enter', 'fullscreen', function (x) {
+      document.body.style.overflow = 'hidden';
+      dale.do (['requestFullScreen', 'webkitRequestFullscreen', 'mozRequestFullScreen', 'msRequestFullscreen'], function (v) {
+         if (type (document.documentElement [v]) === 'function') document.documentElement [v] ();
+      });
+      if (! window.ActiveXObject) return;
+      var wscript = new ActiveXObject ('WScript.Shell');
+      if (wscript) wscript.SendKeys ('{F11}');
+   }],
    ['exit', 'fullscreen', function (x, exited) {
-      if (B.get ('State', 'open')) B.do (x, 'rem', 'State', 'open');
+      document.body.style.overflow = '';
+      if (B.get ('State', 'open') !== undefined) B.do (x, 'rem', 'State', 'open');
       if (exited) return;
       dale.do (['exitFullScreen', 'webkitExitFullscreen', 'mozCancelFullScreen', 'msExitFullscreen'], function (v) {
          if (type (document [v]) === 'function') document [v] ();
@@ -1891,21 +1900,16 @@ dale.do ([
       var wscript = new ActiveXObject ('WScript.Shell');
       if (wscript) wscript.SendKeys ('{ESC}');
    }],
-   ['enter', 'fullscreen', function (x) {
-      dale.do (['requestFullScreen', 'webkitRequestFullscreen', 'mozRequestFullScreen', 'msRequestFullscreen'], function (v) {
-         if (type (document.documentElement [v]) === 'function') document.documentElement [v] ();
-      });
-      if (! window.ActiveXObject) return;
-      var wscript = new ActiveXObject ('WScript.Shell');
-      if (wscript) wscript.SendKeys ('{F11}');
-   }],
    ['change', ['State', 'open'], function (x) {
-      var target = c ('#pics');
-      if (B.get ('State', 'open')) {
-         target.classList.add    ('app-fullscreen');
-         B.do (x, 'enter', 'fullscreen');
-      }
-      else                         target.classList.remove ('app-fullscreen');
+      var target = c ('#pics'), open = B.get ('State', 'open') !== undefined;
+      if (! open) return target.classList.remove ('app-fullscreen');
+      target.classList.add ('app-fullscreen');
+      B.do (x, 'enter', 'fullscreen');
+   }],
+   ['open', /prev|next/, function (x) {
+      var open = B.get ('State', 'open');
+      if (x.path [0] === 'next') B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 1);
+      else                       B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open - 1) ? open - 1 : B.get ('Data', 'pics').length - 1);
    }],
 
    // *** UPLOAD ***
@@ -2610,33 +2614,48 @@ E.grid = function () {
 
 E.open = function () {
    return B.view (['State', 'open'], {attrs: {class: 'fullscreen'}}, function (x, open) {
-      if (! open) return;
-      return [
-         // TODO v2: add inline SVG
-         ['div', B.ev ({class: 'fullscreen__close', opaque: true}, ['onclick', 'exit', 'fullscreen'])],
-         // TODO v2: add inline SVG
-         ['div', {class: 'fullscreen__nav fullscreen__nav--left', opaque: true}],
-         // TODO v2: add inline SVG
-         ['div', {class: 'fullscreen__nav fullscreen__nav--right', opaque: true}],
-         ['div', {class: 'fullscreen__date'}, [
-            ['span', {class: 'fullscreen__date-text'}, '10-12-2017'],
-         ]],
-         ['div', {class: 'fullscreen__image-container'}, [
-            ['img', {class: 'fullscreen__image', src: 'img/dog.jpg', alt: 'picture'}],
-         ]],
-         ['div', {class: 'fullscreen__actions'}, [
-            ['div', {class: 'fullscreen__action'}, [
-               // TODO v2: add inline SVG
-               ['div', {class: 'fullscreen__action-icon-container', opaque: true}],
-               ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
+      if (open === undefined) return;
+      // TODO v2: merge two views into one
+      return B.view (['Data', 'pics'], {attrs: {class: 'fullscreen'}}, function (x, pics) {
+         var pic = pics [open], next = pics [open + 1];
+
+         var askance = pic.deg === 90 || pic.deg === -90;
+         var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+            //return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
+            return [v + 'transform', 'rotate(' + pic.deg + 'deg)'];
+         });
+         rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+            return ['transform-origin', 'center center'];
+         });
+
+         return [
+            // TODO v2: add inline SVG
+            ['div', B.ev ({class: 'fullscreen__close', opaque: true}, ['onclick', 'exit', 'fullscreen'])],
+            // TODO v2: add inline SVG
+            ['div', B.ev ({class: 'fullscreen__nav fullscreen__nav--left', opaque: true}, ['onclick', 'open', 'prev'])],
+            // TODO v2: add inline SVG
+            ['div', B.ev ({class: 'fullscreen__nav fullscreen__nav--right', opaque: true}, ['onclick', 'open', 'next'])],
+            ['div', {class: 'fullscreen__date'}, [
+               ['span', {class: 'fullscreen__date-text'}, H.dateFormat (pic.date)],
             ]],
-         ]],
-         ['div', {class: 'fullscreen__count'}, [
-            ['span', {class: 'fullscreen__count-current'}, 29],
-            '/',
-            ['span', {class: 'fullscreen__count-total'}, 29],
-         ]],
-      ];
+            ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, [
+               ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}],
+            ]],
+            ['div', {class: 'fullscreen__actions'}, [
+               ['div', B.ev ({class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
+                  // TODO v2: add inline SVG
+                  ['div', {class: 'fullscreen__action-icon-container', opaque: true}],
+                  ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
+               ]],
+            ]],
+            ['div', {class: 'fullscreen__count'}, [
+               ['span', {class: 'fullscreen__count-current'}, open + 1],
+               '/',
+               ['span', {class: 'fullscreen__count-total'}, pics.length],
+            ]],
+            ! next ? [] : ['img', {src: H.path (next, true), style: style ({display: 'none'})}],
+         ];
+      });
    });
 }
 
