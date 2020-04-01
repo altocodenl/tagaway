@@ -1708,7 +1708,7 @@ dale.do ([
       });
    }],
 
-   // *** PICTURES LISTENERS ***
+   // *** PICS LISTENERS ***
 
    // TODO v2: remove, use literals
    ['change', [], {priority: -10000}, function (x) {
@@ -1744,6 +1744,9 @@ dale.do ([
       putSvg ('.fullscreen__nav--left', 'afterBegin', '<svg class="fullscreen__nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>');
       putSvg ('.fullscreen__nav--right', 'afterBegin', '<svg class="fullscreen__nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>');
       putSvg ('.fullscreen__action-icon-container', 'afterBegin', '<svg class="fullscreen__action-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 11.5c-.3 0-.5.2-.5.5 0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6c1.5 0 3 .6 4.1 1.6l-.7.7c-.1.1-.1.2-.1.3 0 .3.2.5.5.5l2.4.2c.3 0 .5-.2.4-.4l-.2-2.4c0-.1-.1-.2-.2-.3-.2-.2-.5-.2-.7 0l-.8.8c-1.2-1.3-2.9-2-4.7-2-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7c0-.3-.2-.5-.5-.5z"/></svg>');
+      putSvg ('.upload-box__image', 'afterBegin', '<svg class="upload-box__image-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
+      putSvg ('.drag-and-drop', 'afterBegin', '<svg class="drag-and-drop__icon" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>');
+      putSvg ('.upload-selection', 'afterBegin', '<svg class="upload-selection__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
    }],
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -1873,7 +1876,7 @@ dale.do ([
       });
    }],
 
-   // *** OPEN ***
+   // *** OPEN LISTENERS ***
 
    ['key', 'down', function (x, keyCode) {
       if (B.get ('State', 'open') === undefined) return;
@@ -1912,7 +1915,7 @@ dale.do ([
       else                       B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open - 1) ? open - 1 : B.get ('Data', 'pics').length - 1);
    }],
 
-   // *** UPLOAD ***
+   // *** UPLOAD LISTENERS ***
 
    ['exit', 'app', function () {
       var q = B.get ('State', 'upload', 'queue');
@@ -1923,7 +1926,7 @@ dale.do ([
    B.listen.apply (null, v);
 });
 
-// *** LOGO ***
+// *** LOGO ELEMENT ***
 
 E.logo = function (size) {
    return [
@@ -1933,7 +1936,7 @@ E.logo = function (size) {
    ];
 }
 
-// *** BASE ***
+// *** BASE ELEMENT ***
 
 E.base = function () {
    return [
@@ -1948,7 +1951,7 @@ E.base = function () {
    ];
 }
 
-// *** SNACKBAR ***
+// *** SNACKBAR ELEMENT ***
 
 E.snackbar = function () {
    return [
@@ -2015,7 +2018,7 @@ E.snackbar = function () {
    ];
 }
 
-// *** LOGIN ***
+// *** LOGIN ELEMENT ***
 
 E.login = function () {
    return [
@@ -2181,9 +2184,9 @@ E.login = function () {
    ];
 }
 
-// *** HEADER ***
+// *** HEADER ELEMENT ***
 
-E.header = function () {
+E.header = function (showUploadButton) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
          // TODO: why must specify height so it looks exactly the same as markup?
@@ -2195,9 +2198,9 @@ E.header = function () {
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
-            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {href: '#', class: 'main-menu__item-link'}, 'Organize']],
-            ['li', {class: 'main-menu__item'},                           ['a', B.ev ({href: '#', class: 'main-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Manage tags']],
+            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#/pics', class: 'main-menu__item-link'}, 'View pictures']],
+            ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {class: 'main-menu__item-link'}, 'Organize']],
+            ['li', {class: 'main-menu__item'},                           ['a', B.ev ({class: 'main-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Manage tags']],
          ]]
       ]],
       // ACCOUNT MENU
@@ -2206,18 +2209,18 @@ E.header = function () {
             // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
-                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({href: '#', class: 'account-sub-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'My account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({href: '#', class: 'account-sub-menu__item-link'}, ['onclick', 'logout', []]), 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'My account']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, ['onclick', 'logout', []]), 'Logout']],
                ]],
             ]],
          ]],
       ]],
       // UPLOAD BUTTON
-      ['div', {class: 'header__upload-button'}, ['a', {href: '#', class: 'button button--one'}, 'Upload']],
+      ['div', {class: 'header__upload-button', style: style ({opacity: showUploadButton ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
    ]];
 }
 
-// *** NO PICTURES ***
+// *** EMPTY ELEMENT ***
 
 E.empty = function () {
    return [
@@ -2260,11 +2263,11 @@ E.empty = function () {
    ];
 }
 
-// *** PICTURES ***
+// *** PICS ELEMENT ***
 
 E.pics = function () {
    return ['div', {id: 'pics', class: 'app-pictures app-all-tags'}, [
-      E.header (),
+      E.header (true),
       E.open (),
       // TODO v2: merge two views into one
       B.view (['Data', 'pics'], function (x, pics) {
@@ -2515,7 +2518,7 @@ E.pics = function () {
    ]];
 }
 
-// *** GRID ***
+// *** GRID ELEMENT ***
 
 E.grid = function () {
    return [
@@ -2610,7 +2613,7 @@ E.grid = function () {
    ];
 }
 
-// *** OPEN ***
+// *** OPEN ELEMENT ***
 
 E.open = function () {
    return B.view (['State', 'open'], {attrs: {class: 'fullscreen'}}, function (x, open) {
@@ -2659,11 +2662,57 @@ E.open = function () {
    });
 }
 
-// *** UPLOAD ***
+// *** UPLOAD ELEMENT ***
 
 E.upload = function () {
    return ['div', [
       E.header (),
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            // PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures'],
+            ]],
+            ['div', {class: 'page-section'}, [
+               ['ul', {class: 'upload-box-list'}, [
+                  ['li', {class: 'upload-box-list__item'}, [
+                     // UPLOAD BOX
+                     ['div', {class: 'upload-box'}, [
+                        // TODO v2: add inline SVG
+                        ['div', {class: 'upload-box__image', opaque: true}],
+                        ['div', {class: 'upload-box__main'}, [
+                           // UPLOAD BOX SECTION
+                           ['div', {class: 'upload-box__section'}, [
+                              ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
+                              // DRAG & DROP
+                              // TODO v2: add inline SVG
+                              ['div', {class: 'drag-and-drop', opaque: true}, [
+                                 ['p', {class: 'drag-and-drop__text'}, [
+                                    'Drag and drop photos here or upload ',
+                                    ['a', 'files'],
+                                    ' or a ',
+                                    ['a', 'folder'],
+                                 ]],
+                              ]],
+                              // UPLOAD SELECTION
+                              ['div', {class: 'upload-box__selection'}, [
+                                 // TODO v2: add inline SVG
+                                 ['div', {class: 'upload-selection', opaque: true}, [
+                                    ['p', {class: 'upload-selection__text'}, '37 pictures selcted'],
+                                    ['div', {class: 'upload-selection__remove'}, [
+                                       ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
+                                    ]],
+                                 ]],
+                              ]],
+                           ]],
+                        ]],
+                     ]],
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]]
    ]];
 }
 
