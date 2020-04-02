@@ -998,7 +998,7 @@ var routes = [
 
    // *** UPLOAD PICTURES ***
 
-   ['post', 'pic', function (rq, rs) {
+   ['post', 'upload', function (rq, rs) {
 
       if (! rq.data.fields)      return reply (rs, 400, {error: 'field'});
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
@@ -1627,7 +1627,7 @@ cicek.apres = function (rs) {
 
    if (rs.log.code === 200 || rs.log.code === 304) {
       if (rs.log.method === 'get'  && rs.log.url.match (/^\/(pic|thumb)/)) H.stat (a.creat (), 'd');
-      if (rs.log.method === 'post' && rs.log.url.match (/^\/pic/))         H.stat (a.creat (), 'u');
+      if (rs.log.method === 'post' && rs.log.url.match (/^\/upload/))      H.stat (a.creat (), 'u');
       if (rs.log.method === 'post' && rs.log.url.match (/^\/tag/))         H.stat (a.creat (), 't');
    }
 

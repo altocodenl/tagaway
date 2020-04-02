@@ -15,7 +15,7 @@
          ]})
       ])) return false;
 
-      var start = teishi.time (), runNext = function (tests, k) {
+      var start = teishi.time (), runNext = function (k) {
          var test = tests [k];
 
          if (! test) return clog ('c.test', 'All tests finished successfully (' + (teishi.time () - start) + ' ms)');
@@ -23,16 +23,19 @@
          var check = function () {
             var result = test [test.length === 2 ? 1 : 2] ();
             if (result === false) throw new Error ('c.test: Test failed: ' + test [0]);
-            runNext (tests, k + 1);
+            runNext (k + 1);
          }
 
          clog ('c.test', 'Running test:', test [0]);
-         if (test.length === 2 || test [1] (function (wait) {
-            if (type (wait) !== 'integer') throw new Error ('c.test: wait parameter must be an integer but instead is ' + wait);
-            wait === undefined ? check () : setTimeout (check, wait);
+         if (test.length === 2) return check ();
+         if (test [1] (function (wait) {
+            if (wait === undefined) return check ();
+            if (type (wait) !== 'integer' || wait < 0) throw new Error ('c.test: wait parameter must zero or a positive integer but instead is ' + wait);
+            setTimeout (check, wait);
          }) !== undefined) check ();
       }
-      runNext (tests, 0);
+
+      runNext (0);
    }
 
 // TODO v2: remove

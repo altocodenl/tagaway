@@ -299,70 +299,70 @@ var main = [
       if (! eq (rs.body, {total: 0, pics: []})) return clog ('Invalid payload');
       return true;
    }],
-   ['upload invalid payload #1', 'post', 'pic', {}, '', 400],
-   ['upload invalid payload #2', 'post', 'pic', {}, 1, 400],
-   ['upload invalid payload #3', 'post', 'pic', {}, [], 400],
-   ['upload invalid payload #4', 'post', 'pic', {}, {}, 400],
-   ['upload invalid payload #5', 'post', 'pic', {}, {file: {}}, 400],
-   ['upload video (no support)', 'post', 'pic', {}, {multipart: [
+   ['upload invalid payload #1', 'post', 'upload', {}, '', 400],
+   ['upload invalid payload #2', 'post', 'upload', {}, 1, 400],
+   ['upload invalid payload #3', 'post', 'upload', {}, [], 400],
+   ['upload invalid payload #4', 'post', 'upload', {}, {}, 400],
+   ['upload invalid payload #5', 'post', 'upload', {}, {file: {}}, 400],
+   ['upload video (no support)', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
-   ['upload empty picture', 'post', 'pic', {}, {multipart: [
+   ['upload empty picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field', name: 'lastModified', value: Date.now ()},
    ]}, 400],
-   ['upload invalid picture', 'post', 'pic', {}, {multipart: [
+   ['upload invalid picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
-   ['upload picture without uid', 'post', 'pic', {}, {multipart: [
+   ['upload picture without uid', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
-   ['upload picture without lastModified', 'post', 'pic', {}, {multipart: [
+   ['upload picture without lastModified', 'post', 'upload', {}, {multipart: [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'file',  name: 'pic', path: PICS + 'small.png'}
    ]}, 400],
-   ['upload small picture with extra text field', 'post', 'pic', {}, {multipart: [
+   ['upload small picture with extra text field', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'extra', value: Date.now ()}
    ]}, 400],
-   ['upload small picture with extra file field', 'post', 'pic', {}, {multipart: [
+   ['upload small picture with extra file field', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'file',  name: 'pic2', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400],
-   ['upload small picture with invalid tags #1', 'post', 'pic', {}, {multipart: [
+   ['upload small picture with invalid tags #1', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: 'foobar'},
    ]}, 400],
-   ['upload small picture with invalid tags #2', 'post', 'pic', {}, {multipart: [
+   ['upload small picture with invalid tags #2', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify ([2])},
    ]}, 400],
-   ['upload small picture with invalid tags #3', 'post', 'pic', {}, {multipart: [
+   ['upload small picture with invalid tags #3', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'all'])},
    ]}, 400],
-   ['upload small picture with invalid tags #4', 'post', 'pic', {}, {multipart: [
+   ['upload small picture with invalid tags #4', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', '2017'])},
    ]}, 400],
-   ['upload small picture', 'post', 'pic', {}, {multipart: [
+   ['upload small picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
@@ -389,7 +389,7 @@ var main = [
       })) return clog ('Invalid pic fields.');
       return true;
    }],
-   ['upload duplicated picture', 'post', 'pic', {}, {multipart: [
+   ['upload duplicated picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'smalldup.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -397,12 +397,12 @@ var main = [
    ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
       return {ids: [s.smallpic.id]};
    }, 200],
-   ['upload small picture again', 'post', 'pic', {}, {multipart: [
+   ['upload small picture again', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
-   ['upload medium picture', 'post', 'pic', {}, {multipart: [
+   ['upload medium picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'medium.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
@@ -429,7 +429,7 @@ var main = [
       })) return clog ('Invalid pic fields.');
       return true;
    }],
-   ['upload large picture', 'post', 'pic', {}, {multipart: [
+   ['upload large picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'large.jpeg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -458,7 +458,7 @@ var main = [
       })) return clog ('Invalid pic fields.');
       return true;
    }],
-   ['upload lopsided picture', 'post', 'pic', {}, {multipart: [
+   ['upload lopsided picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -537,7 +537,7 @@ var main = [
          }],
       ];
    }),
-   ['upload picture with different date format', 'post', 'pic', {}, {multipart: [
+   ['upload picture with different date format', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -874,30 +874,30 @@ var main = [
          }, {}, '', 200],
       ];
    }),
-   ['upload lopsided picture as user2 with invalid tags #1', 'post', 'pic', {}, {multipart: [
+   ['upload lopsided picture as user2 with invalid tags #1', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '{}'}
    ]}, 400],
-   ['upload lopsided picture as user2 with invalid tags #2', 'post', 'pic', {}, {multipart: [
+   ['upload lopsided picture as user2 with invalid tags #2', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '2'}
    ]}, 400],
-   ['upload lopsided picture as user2 with invalid tags #3', 'post', 'pic', {}, {multipart: [
+   ['upload lopsided picture as user2 with invalid tags #3', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", 1]'}
    ]}, 400],
-   ['upload lopsided picture as user2 with invalid tags #4', 'post', 'pic', {}, {multipart: [
+   ['upload lopsided picture as user2 with invalid tags #4', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", "all"]'}
    ]}, 400],
-   ['upload lopsided picture as user2', 'post', 'pic', {}, {multipart: [
+   ['upload lopsided picture as user2', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -984,7 +984,7 @@ var main = [
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return clog ('Invalid used field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 45 && rs.body.logs.length !== 46)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 46 && rs.body.logs.length !== 47)) return clog ('Invalid logs.');
       return true;
    }],
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
