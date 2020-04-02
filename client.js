@@ -1747,6 +1747,9 @@ dale.do ([
       putSvg ('.upload-box__image', 'afterBegin', '<svg class="upload-box__image-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
       putSvg ('.drag-and-drop', 'afterBegin', '<svg class="drag-and-drop__icon" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>');
       putSvg ('.upload-selection', 'afterBegin', '<svg class="upload-selection__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
+      putSvg ('.search-form-svg', 'afterBegin', '<svg class="search-form__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path  d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
+      putSvg ('.upload-progress', 'afterBegin', '<svg class="upload-progress__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
+      putSvg ('.back-link__link', 'afterBegin', '<svg class="back-link__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 12c0 .3-.2.5-.5.5h-12.2l3.4 3.4c.2.2.2.5 0 .7-.1.1-.2.1-.4.1-.1 0-.3 0-.4-.1l-3.5-3.5c-.3-.3-.4-.7-.4-1.1s.2-.8.5-1.1l3.5-3.5c.2-.2.5-.2.7 0s.2.5 0 .7l-3.4 3.4h12.2c.3 0 .5.2.5.5z" /></svg>');
    }],
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -1931,8 +1934,8 @@ dale.do ([
 E.logo = function (size) {
    return [
       ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-      ['span', {style: 'font-weight: bold; color: #BE5764; font-size: ' + size + 'px'}, 'ac;'],
-      ['span', {style: 'font-weight: bold; color: black;   font-size: ' + size + 'px'}, 'pic'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#BE5764', 'font-size': size})}, 'ac;'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'black',   'font-size': size})}, 'pic'],
    ];
 }
 
@@ -2001,7 +2004,7 @@ E.snackbar = function () {
       B.view (['State', 'snackbar'], function (x, snackbar) {
          if (! snackbar) return;
          var bcolor = 'rgba(' + CSS.toRGBA (snackbar.color) + ', 0.9)';
-         return ['div', {class: 'snackbar', style: 'bottom: 0; background-color: ' + bcolor}, [
+         return ['div', {class: 'snackbar', style: style ({bottom: 0, 'background-color': bcolor})}, [
             ['p', {class: 'snackbar__text'}, [
                ['span', {class: 'snackbar__text-concept'}, snackbar.message],
             ]],
@@ -2190,7 +2193,7 @@ E.header = function (showUploadButton) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
          // TODO: why must specify height so it looks exactly the same as markup?
-         ['div', {class: 'logo', style: 'height: 19px'}, [
+         ['div', {class: 'logo', style: style ({height: 19})}, [
             // TODO v2: add inline SVG
             ['a', {href: '#', class: 'logo__link', opaque: true}],
          ]],
@@ -2364,7 +2367,7 @@ E.pics = function () {
                                        ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
                                     ]],
                                  ]],
-                                 ['li', B.ev ({class: 'switch-list__item', style: 'width: 110px'}, ['onclick', 'set', ['State', 'untag'], true]), [
+                                 ['li', B.ev ({class: 'switch-list__item', style: style ({width: 110})}, ['onclick', 'set', ['State', 'untag'], true]), [
                                     // TODO v2: add inline SVG
                                     ['div', {class: 'switch-list__button switch-list__button--untag', opaque: true}, [
                                        ['span', {class: 'switch-list__button-text'}, 'Untag '],
@@ -2603,7 +2606,7 @@ E.grid = function () {
                      }],
                      ['div', {class: 'caption'}, [
                         //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
-                        ['span', {style: 'position: absolute; right: 5px'}, H.dateFormat (pic.date)],
+                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
                      ]],
                   ]],
                ]];
@@ -2693,23 +2696,154 @@ E.upload = function () {
                                     ['a', 'files'],
                                     ' or a ',
                                     ['a', 'folder'],
+                                    '.',
                                  ]],
                               ]],
                               // UPLOAD SELECTION
                               ['div', {class: 'upload-box__selection'}, [
                                  // TODO v2: add inline SVG
                                  ['div', {class: 'upload-selection', opaque: true}, [
-                                    ['p', {class: 'upload-selection__text'}, '37 pictures selcted'],
+                                    ['p', {class: 'upload-selection__text'}, '37 pictures selected'],
                                     ['div', {class: 'upload-selection__remove'}, [
                                        ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
                                     ]],
                                  ]],
                               ]],
                            ]],
+                           // UPLOAD BOX SECTION
+                           ['div', {class: 'upload-box__section'}, [
+                              ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
+                              ['div', {class: 'upload-box__search'}, [
+                                 // SEARCH FORM
+                                 ['div', {class: 'search-form'}, [
+                                    ['input', {class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}],
+                                    // TODO v2: add inline SVG, remove span
+                                    ['span', {class: 'search-form-svg', opaque: true}],
+                                    ['div', {class: 'search-form__dropdown'}, [
+                                       // TAG LIST DROPDOWN
+                                       ['ul', {class: 'tag-list-dropdown'}, [
+                                          ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, [
+                                             // TODO v2: add inline SVG
+                                             ['div', {class: 'tag tag-list__item--' + H.tagColor ('Barcelona'), opaque: true}, [
+                                                ['span', {class: 'tag__title'}, 'Barcelona']
+                                             ]],
+                                          ]],
+                                       ]],
+                                    ]],
+                                 ]],
+                              ]],
+                              // TAG LIST HORIZONTAL
+                              ['ul', {class: 'tag-list-horizontal'}, [
+                                 // TODO v2: add inline SVG
+                                 ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor ('Barcelona')}, [
+                                    ['span', {class: 'tag__title'}, 'Barcelona'],
+                                    // TODO: why must specify height so it looks exactly the same as markup?
+                                    ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                       ['div', {class: 'tag-actions'}, [
+                                          // TODO v2: add inline SVG
+                                          // TODO: why must specify height so it looks exactly the same as markup?
+                                          ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}],
+                                       ]],
+                                    ]],
+                                 ]],
+                              ]],
+                           ]],
+                           // UPLOAD BOX SECTION
+                           ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
+                              ['a', {class: 'upload-box__upload-button button button--one'}, 'Upload 37 files'],
+                           ]],
                         ]],
                      ]],
+                  ]],
+                  ['li', {class: 'upload-box-list__item'}, [
+                     // UPLOAD BOX
+                     ['div', {class: 'upload-box upload-box--recent-uploads'}, [
+                        // TODO v2: add inline SVG
+                        ['div', {class: 'upload-box__image', opaque: true}],
+                        ['div', {class: 'upload-box__main'}, [
+                           ['div', {class: 'upload-box__section'}, [
+                              // TODO v2: add inline SVG
+                              ['p', {class: 'upload-progress', opaque: true}, [
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, 10],
+                                 '/',
+                                 ['span', {class: 'upload-progress__amount'}, '37'],
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
+                              ]],
+                              // UPLOAD BAR
+                              ['div', {class: 'progress-bar'}, [
+                                 ['span', {class: 'progress-bar__progress', style: style ({width: 0.2})}],
+                              ]],
+                           ]],
+                           ['div', {class: 'upload-box__section'}, [
+                              ['h3', {class: 'upload-box__section-title'}, [
+                                 'Tags ',
+                                 ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
+                              ]],
+                              // TAG LIST HORIZONTAL
+                              ['ul', {class: 'tag-list-horizontal'}, [
+                                 // TODO v2: add inline SVG
+                                 ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor ('Barcelona')}, [
+                                    ['span', {class: 'tag__title'}, 'Barcelona'],
+                                 ]],
+                              ]],
+                           ]],
+                           ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
+                              ['a', {class: 'upload-box__upload-button button button--two'}, 'Cancel'],
+                           ]],
+                        ]],
+                     ]]
                   ]]
-               ]]
+               ]],
+               // RECENT UPLOADS
+               ['div', {class: 'page-section'}, [
+                  ['div', {class: 'recent-uploads'}, [
+                     ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
+                     ['ul', {class: 'recent-uploads__list'}, [
+                        ['li', {class: 'recent-uploads__list-item'}, [
+                           // UPLOAD BOX
+                           ['div', {class: 'upload-box upload-box--recent-uploads'}, [
+                              ['div', {class: 'upload-box__image', opaque: true}],
+                              ['div', {class: 'upload-box__main'}, [
+                                 // UPLOAD BOX SECTION
+                                 ['div', {class: 'upload-box__section'}, [
+                                    // TODO v2: add inline SVG
+                                    ['p', {class: 'upload-progress', opaque: true}, [
+                                       ['span', {class: 'upload-progress__amount-uploaded'}, 10],
+                                       '/',
+                                       ['span', {class: 'upload-progress__amount'}, '37'],
+                                       ['LITERAL', '&nbsp'],
+                                       ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'upload-box__section'}, [
+                                    ['h3', {class: 'upload-box__section-title'}, [
+                                       'Tags ',
+                                       ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
+                                    ]],
+                                    // TAG LIST HORIZONTAL
+                                    ['ul', {class: 'tag-list-horizontal'}, [
+                                       // TODO v2: add inline SVG
+                                       ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor ('Barcelona')}, [
+                                          ['span', {class: 'tag__title'}, 'Barcelona'],
+                                       ]],
+                                    ]],
+                                 ]],
+                              ]]
+                           ]]
+                        ]]
+                     ]]
+                  ]]
+               ]],
+               ['div', {class: 'page-section'}, [
+                  // BACK LINK
+                  ['div', {class: 'back-link back-link--uploads'}, [
+                     // TODO v2: add inline SVG
+                     ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
+                        ['span', {class: 'back-link__link-text'}, 'See all photos'],
+                     ]],
+                  ]],
+               ]],
             ]]
          ]]
       ]]

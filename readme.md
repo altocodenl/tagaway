@@ -58,8 +58,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Rotate pictures.
    - Delete pictures.
 
-   - Refresh list of pictures if there's an upload in the background.
-
 - Open
    - Open picture and trigger fullscreen.
    - If exit fullscreen, exit picture too.
@@ -79,9 +77,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - See progress when uploading files, using a progress bar.
    - Ignore images that already were uploaded (by hash check).
    - Upload more files while uploading files.
-   - Allow to go back to browse while files are being uploaded in the background.
    - Retry on error.
    - Add one or more tags to a certain upload batch.
+   - Allow to go back to browse while files are being uploaded in the background.
+   - Refresh list of pics periodically if there's an upload in the background.
 
 - Account & payment
    - Signup with invite.
@@ -175,7 +174,7 @@ General server approach outlined [here](https://github.com/fpereiro/backendlore)
 
 If any route fails with an internal error, a 500 code will be returned with body `{error: ...}`.
 
-All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /pic`, which must be of type `multipart/form-data`.
+All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /upload`, which must be of type `multipart/form-data`.
 
 All non-auth routes (unless marked otherwise) will respond with a 403 error with body `{error: 'nocookie'}` if the user is not logged in.
 
@@ -253,11 +252,11 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
-- `POST /pic`
+- `POST /upload`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
-   - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`.
+   - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified` and `tags`; the last one is optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
