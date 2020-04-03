@@ -535,7 +535,7 @@
                f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
                f.append ('pic', file);
                if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
-               H.authajax (x, 'post', 'pic', {}, f, function (error, rs) {
+               H.authajax (x, 'post', 'upload', {}, f, function (error, rs) {
                   dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
                      if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
                   });

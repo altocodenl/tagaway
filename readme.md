@@ -71,20 +71,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upload
    - Allow only jpeg & png.
-   - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - See progress when uploading files, using a progress bar.
    - Ignore images that already were uploaded (by hash check).
-   - Upload more files while uploading files.
-   - Retry on error.
-   - Add one or more tags to a certain upload batch.
+   - Add one or more tags to the next upload batch.
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pics periodically if there's an upload in the background.
+   - See previous uploads.
 
 - Account & payment
-   - Signup with invite.
    - Login/logout.
+   - Signup with invite.
    - Recover/reset/change password.
    - Store auth log.
 
@@ -95,7 +93,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Stats endpoint.
 
 - Other
-   - dev & prod environments.
+   - Set up dev & prod environments.
    - S3 & SES setup.
 
 ### Todo v1
@@ -108,9 +106,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Mobile/tablet design.
 
 - Open
-   - Show tags
+   - Show tags.
 
 - Upload
+   - Retry on error.
+   - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Client-side hashes for fast duplicate elimination.
    - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
    - Folder upload on mobile.
@@ -119,7 +119,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Share & manage
    - Share/unshare with email: signup, login, or go straight if there's a session.
    - Mark tags shared with user with something.
-   - If two shared tags from different users have the same name, put "@email"
+   - If two shared tags from different users have the same name, put "@email".
    - Authorization to see or ignore share.
    - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
    - Upload to shared tag.
@@ -488,6 +488,8 @@ Used by giz:
    5. `scroll` -> `scroll [] EVENT`
    6. `beforeunload` -> `exit app`
    7. `webkitfullscreenchange|mozfullscreenchange|fullscreenchange|MSFullscreenChange` -> `exit fullscreen`
+   8. `dragover` -> do nothing
+   9. `drop` -> `drop files EVENT`
 
 1. General
    1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched.
@@ -533,6 +535,9 @@ Used by giz:
    3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
    4. `change State.open`: remove or add `app-fullscreen` class from `#pics`, depending on whether `State.open` is defined. If `State.open` is defined, it invokes `enter fullscreen`.
    5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture.
+
+5. Upload
+   1. `drop files`: if `State.page` is upload, access dropped files or folders and put them on the upload file input.
 
 ### Store
 

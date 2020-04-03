@@ -441,6 +441,7 @@ var routes = [
             dale.go (['gotoB.min', 'murmurhash'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
+            ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
             ['script', {src: 'client.js'}]
          ]]
       ]]
@@ -463,7 +464,7 @@ var routes = [
             dale.go (['gotoB.min', 'murmurhash'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
-            ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedmime) + ';'],
+            ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
             ['script', 'var BASETAGS    = ' + JSON.stringify (['all', 'untagged']) + ';'],
             ['script', {src: 'clientold.js'}]
          ]]
@@ -1020,7 +1021,7 @@ var routes = [
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
-      if (CONFIG.allowedmime.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
+      if (CONFIG.allowedFormats.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
       var path = rq.data.files.pic;
 

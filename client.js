@@ -1594,6 +1594,15 @@ dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', '
    });
 });
 
+window.addEventListener ('dragover', function (e) {
+   e.preventDefault ();
+});
+
+window.addEventListener ('drop', function (e) {
+   B.do ('drop', 'files', e);
+   e.preventDefault ();
+});
+
 // *** LISTENERS ***
 
 dale.do ([
@@ -1630,10 +1639,12 @@ dale.do ([
       B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/get|post/, [], function (x, headers, body, cb) {
-      var path = x.path [0];
+      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout';
       // CSRF protection
-      if (x.verb === 'post' && ['auth/login', 'auth/signup'].indexOf (path) === -1) body.csrf = B.get ('Data', 'csrf');
-      var authRequest = x.path [0].match (/^auth/);
+      if (x.verb === 'post' && ! authRequest) {
+         if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
+         else                                  body.csrf = B.get ('Data', 'csrf');
+      }
       // TODO v2: uncomment
       //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
@@ -1920,10 +1931,59 @@ dale.do ([
 
    // *** UPLOAD LISTENERS ***
 
+   ['drop', 'files', function (x, ev) {
+      if (B.get ('State', 'page') !== 'upload') return;
+      dale.do (ev.dataTransfer.files, function (file) {
+         if (window.allowedFormats.indexOf (file.type) === -1) return;
+         B.add (['State', 'uploads', 'new', 'pics'], file);
+      });
+      B.do (x, 'change', ['State', 'uploads', 'new']);
+   }],
+   ['upload', /files|folder/, function (x) {
+      var input = c ('#' + x.path [0] + '-upload');
+      dale.do (input.files, function (file) {
+         if (window.allowedFormats.indexOf (file.type) === -1) return;
+         B.add (['State', 'uploads', 'new', 'pics'], file);
+      });
+      B.do (x, 'change', ['State', 'uploads', 'new']);
+      input.value = '';
+   }],
+
    ['exit', 'app', function () {
       var q = B.get ('State', 'upload', 'queue');
       if (q && q.length > 0) return prompt ('Refreshing the page will stop the upload process. Are you sure?');
    }],
+   ['a', 'b', function (x) {
+      // lastModified || lastModifiedDate
+   }],
+         ['change', ['State', 'upload', 'queue'], function (x) {
+            return;
+            var queue = B.get ('State', 'upload', 'queue');
+            var MAXSIMULT = 2, uploading = 0;
+            dale.do (queue, function (file) {
+               if (uploading === MAXSIMULT) return;
+               if (file.uploading) return uploading++;
+               file.uploading = true;
+               uploading++;
+
+               var f = new FormData ();
+               f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
+               f.append ('pic', file);
+               if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
+               H.authajax (x, 'post', 'upload', {}, f, function (error, rs) {
+                  dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
+                     if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                  });
+                  if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do (x, 'set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
+                  if (error && error.status === 409 && error.responseText.match ('capacity')) {
+                     B.do (x, 'set', ['State', 'upload', 'queue'], []);
+                     return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
+                  }
+                  if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
+                  B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
+               });
+            });
+         }],
 
 ], function (v) {
    B.listen.apply (null, v);
@@ -2681,79 +2741,85 @@ E.upload = function () {
                ['ul', {class: 'upload-box-list'}, [
                   ['li', {class: 'upload-box-list__item'}, [
                      // UPLOAD BOX
-                     ['div', {class: 'upload-box'}, [
-                        // TODO v2: add inline SVG
-                        ['div', {class: 'upload-box__image', opaque: true}],
-                        ['div', {class: 'upload-box__main'}, [
-                           // UPLOAD BOX SECTION
-                           ['div', {class: 'upload-box__section'}, [
-                              ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
-                              // DRAG & DROP
-                              // TODO v2: add inline SVG
-                              ['div', {class: 'drag-and-drop', opaque: true}, [
-                                 ['p', {class: 'drag-and-drop__text'}, [
-                                    'Drag and drop photos here or upload ',
-                                    ['a', 'files'],
-                                    ' or a ',
-                                    ['a', 'folder'],
-                                    '.',
-                                 ]],
-                              ]],
-                              // UPLOAD SELECTION
-                              ['div', {class: 'upload-box__selection'}, [
+                     B.view (['State', 'uploads', 'new'], {attrs: {class: 'upload-box'}}, function (x, newUpload) {
+                        return [
+                           ['input', B.ev ({id: 'files-upload',  type: 'file', multiple:  true, style: style ({display: 'none'})}, ['onchange', 'upload', 'files'])],
+                           ['input', B.ev ({id: 'folder-upload', type: 'file', directory: true, webkitdirectory: true, mozdirectory: true, style: style ({display: 'none'})}, ['onchange', 'upload', 'folder'])],
+                           // TODO v2: add inline SVG
+                           ['div', {class: 'upload-box__image', opaque: true}],
+                           ['div', {class: 'upload-box__main'}, [
+                              // UPLOAD BOX SECTION
+                              ['div', {class: 'upload-box__section'}, [
+                                 ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
+                                 // DRAG & DROP
                                  // TODO v2: add inline SVG
-                                 ['div', {class: 'upload-selection', opaque: true}, [
-                                    ['p', {class: 'upload-selection__text'}, '37 pictures selected'],
-                                    ['div', {class: 'upload-selection__remove'}, [
-                                       ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
+                                 ['div', {class: 'drag-and-drop', opaque: true}, [
+                                    ['p', {class: 'drag-and-drop__text'}, [
+                                       'Drag and drop photos here or upload ',
+                                       ['a', {onclick: 'c ("#files-upload").click ()'}, 'files'],
+                                       ' or a ',
+                                       ['a', {onclick: 'c ("#folder-upload").click ()'}, 'folder'],
+                                       '.',
+                                    ]],
+                                 ]],
+                                 // UPLOAD SELECTION
+                                 ['div', {class: 'upload-box__selection'}, [
+                                    // TODO v2: add inline SVG
+                                    ['div', {class: 'upload-selection', opaque: true}, [
+                                       ['p', {class: 'upload-selection__text'}, (newUpload ? newUpload.files.length : 'No') + ' pictures selected'],
+                                       ['div', {class: 'upload-selection__remove'}, [
+                                          ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
+                                       ]],
                                     ]],
                                  ]],
                               ]],
-                           ]],
-                           // UPLOAD BOX SECTION
-                           ['div', {class: 'upload-box__section'}, [
-                              ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
-                              ['div', {class: 'upload-box__search'}, [
-                                 // SEARCH FORM
-                                 ['div', {class: 'search-form'}, [
-                                    ['input', {class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}],
-                                    // TODO v2: add inline SVG, remove span
-                                    ['span', {class: 'search-form-svg', opaque: true}],
-                                    ['div', {class: 'search-form__dropdown'}, [
-                                       // TAG LIST DROPDOWN
-                                       ['ul', {class: 'tag-list-dropdown'}, [
-                                          ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, [
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag tag-list__item--' + H.tagColor ('Barcelona'), opaque: true}, [
-                                                ['span', {class: 'tag__title'}, 'Barcelona']
+                              // UPLOAD BOX SECTION
+                              ['div', {class: 'upload-box__section'}, [
+                                 ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
+                                 ['div', {class: 'upload-box__search'}, [
+                                    // SEARCH FORM
+                                    ['div', {class: 'search-form'}, [
+                                       ['input', {class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}],
+                                       // TODO v2: add inline SVG, remove span
+                                       ['span', {class: 'search-form-svg', opaque: true}],
+                                       ['div', {class: 'search-form__dropdown'}, [
+                                          // TAG LIST DROPDOWN
+                                          ['ul', {class: 'tag-list-dropdown'}, [
+                                             ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, [
+                                                // TODO v2: add inline SVG
+                                                ['div', {class: 'tag tag-list__item--' + H.tagColor ('Barcelona'), opaque: true}, [
+                                                   ['span', {class: 'tag__title'}, 'Barcelona']
+                                                ]],
                                              ]],
                                           ]],
                                        ]],
                                     ]],
                                  ]],
-                              ]],
-                              // TAG LIST HORIZONTAL
-                              ['ul', {class: 'tag-list-horizontal'}, [
-                                 // TODO v2: add inline SVG
-                                 ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor ('Barcelona')}, [
-                                    ['span', {class: 'tag__title'}, 'Barcelona'],
-                                    // TODO: why must specify height so it looks exactly the same as markup?
-                                    ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                       ['div', {class: 'tag-actions'}, [
-                                          // TODO v2: add inline SVG
+                                 // TAG LIST HORIZONTAL
+                                 ['ul', {class: 'tag-list-horizontal'}, [
+                                    // TODO v2: add inline SVG
+                                    dale.do ((newUpload || {}).tags, function (tag) {
+                                       return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          ['span', {class: 'tag__title'}, tag],
                                           // TODO: why must specify height so it looks exactly the same as markup?
-                                          ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}],
-                                       ]],
-                                    ]],
+                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                             ['div', {class: 'tag-actions'}, [
+                                                // TODO v2: add inline SVG
+                                                // TODO: why must specify height so it looks exactly the same as markup?
+                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}],
+                                             ]],
+                                          ]],
+                                       ]];
+                                    }),
                                  ]],
                               ]],
+                              // UPLOAD BOX SECTION
+                              newUpload ? ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
+                                 ['a', {class: 'upload-box__upload-button button button--one'}, 'Upload ' + newUpload.files.length + ' files'],
+                              ]] : [],
                            ]],
-                           // UPLOAD BOX SECTION
-                           ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
-                              ['a', {class: 'upload-box__upload-button button button--one'}, 'Upload 37 files'],
-                           ]],
-                        ]],
-                     ]],
+                        ];
+                     })
                   ]],
                   ['li', {class: 'upload-box-list__item'}, [
                      // UPLOAD BOX
