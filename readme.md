@@ -73,9 +73,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Allow only jpeg & png.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
+   - Store original pictures in S3 and pictures + thumbnails locally.
    - See progress when uploading files, using a progress bar.
    - Ignore images that already were uploaded (by hash check).
-   - Add one or more tags to the next upload batch.
+   - Add one or more tags to the upcoming upload batch.
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pics periodically if there's an upload in the background.
    - See previous uploads.
@@ -83,18 +84,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Account & payment
    - Login/logout.
    - Signup with invite.
-   - Recover/reset/change password.
    - Store auth log.
 
 - Admin
-   - Meter requests, downloads & space stored.
+   - Statistics: store requests, space stored, total pics & users.
    - Block further uploads if storage limits are exceeded.
    - See & send invites.
-   - Stats endpoint.
 
 - Other
-   - Set up dev & prod environments.
    - S3 & SES setup.
+   - Set up dev & prod environments.
 
 ### Todo v1
 
@@ -104,12 +103,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Enable GPS detection.
    - Set date manually.
    - Mobile/tablet design.
+   - Download picture.
 
 - Open
    - Show tags.
 
 - Upload
    - Retry on error.
+   - Notify of ignored files in upload.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Client-side hashes for fast duplicate elimination.
    - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
@@ -125,6 +126,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Upload to shared tag.
 
 - Account & payment
+   - Recover/reset/change password.
    - Account page.
    - Delete account.
    - Change email & password.
@@ -135,13 +137,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Payment.
    - Payment late: 2 week notice with download.
 
+- Admin
+   - Retrieve stats & test.
+   - User management.
+
 - Other
    - Frontend tests.
+   - Report slow queries & slow redraws.
    - Migrate to gotoB v2
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
    - ac;tools integration.
    - Favicon & icons.
-   - Status & stats page.
+   - Status & stats public page.
    - Spanish support.
 
 ### Todo maybe
@@ -314,7 +321,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
 
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, used: [INTEGER_USED, INTEGER_MAXIMUM], logs: [...]}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
 
 #### Debugging routes
 
@@ -324,11 +331,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 All the routes below require an admin user to be logged in.
 
-#### Admin routes
+#### Stats route
 
-`POST /admin/stats`
+`GET /stats`
    - Publicly accessible.
-   - Returns all stats information.
+   - Returns all public stats information.
+
+#### Admin routes
 
 `POST /admin/invites`
    - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
@@ -337,13 +346,11 @@ All the routes below require an admin user to be logged in.
 
 ```
 - users:USERNAME (hash):
-   pass: STRING,
-   username: STRING,
-   email: STRING,
-   type: STRING (one of tier1|tier2),
+   pass: STRING
+   username: STRING
+   email: STRING
+   type: STRING (one of tier1|tier2)
    created: INT
-   s3:bget: INT (bytes GET from s3),
-   s3:buse: INT (space used in S3),
 
 - emails (hash): key is email, value is username
 
@@ -362,22 +369,23 @@ All the routes below require an admin user to be logged in.
 - thu:ID (string): id of the corresponding pic.
 
 - pic:ID (hash)
-   id: STRING (uuid),
-   owner: STRING (user id),
-   name: STRING,
-   dateup: INT (millis),
-   dimw: INT (width in pixels),
-   dimh: INT (height in pixels),
-   by:   INT (size in bytes)
-   hash: STRING,
-   dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first),
+   id: STRING (uuid)
+   owner: STRING (user id)
+   name: STRING
+   dateup: INT (millis)
+   dimw: INT (width in pixels)
+   dimh: INT (height in pixels)
+   bys3: INT (size in bytes in S3)
+   byfs: INT (size in bytes in FS)
+   hash: STRING
+   dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
    orientation: STRING (stringified array of orientation data) or absent
-   deg: 90|-90|180 or absent,
-   date: INT (latest date within dates),
-   t200: STRING or absent,
-   by200: INT or absent,
-   t900: STRING or absent,
-   by900: INT or absent,
+   deg: 90|-90|180 or absent
+   date: INT (latest date within dates)
+   t200: STRING or absent
+   by200: INT or absent (size of 200 thumbnail in FS)
+   t900: STRING or absent
+   by900: INT or absent (size of 900 thumbnail in FS)
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pics downloaded (also includes cache)
@@ -405,15 +413,62 @@ All the routes below require an admin user to be logged in.
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
 
-- sti:d:DATE (string): picture/thumb downloads in the last 10 minutes. Time is Date.now () divided by 100000.
-- sti:u:DATE (string): uploads in the last 10 minutes. Time is Date.now () divided by 100000.
-- sti:t:DATE (string): tag operations in the last 10 minutes. Time is Date.now () divided by 100000.
-- sti:l:DATE (string): total milliseconds for all responses, to calculate average, in the last 10 minutes. Time is Date.now () divided by 100000.
-- sti:hxxx:DATE (string): responses with HTTP status code XXX in the last 10 minutes. Time is Date.now () divided by 100000.
-- stp:a:DATE (hyperloglog or string): unique active users in the last 10 minutes. Time is Date.now () divided by 100000. Entries older than 10 minutes will be converted from hyperloglog to a string with a counter.
-- stp:A:DATE (hyperloglog or string): unique active users in the last 24 hours. Time is Date.now () divided by 100000. Entries older than a day will be converted from hyperloglog to a string with a counter.
-- stp (set): list of all hyperloglog entries.
-- cachestats (string): stringified object with cache of /admin/stats. Lasts 60 seconds only.
+- stat:...: statistics
+   - stat:ft:ID:DATE: flow total
+   - stat:fm:ID:DATE: flow min
+   - stat:fM:ID:DATE: flow max
+   - stat:s:ID: stock
+   - stat:s:ID:DATE: stock change
+   - stat:u:ID:PERIOD:DATE uniques
+
+- stat:u (uniques)
+   - stat:u:users:DATE:PERIOD: active users
+
+- stat:s:ID & stat:s:ID:DATE (stock)
+   - stat:s:byfs:          total bytes stored in FS
+   - stat:s:bys3:          total bytes stored in S3
+   - stat:s:byfs-USERNAME: total bytes stored in FS for USERNAME
+   - stat:s:bys3-USERNAME: total bytes stored in S3 for USERNAME
+   - stat:s:pics:  total pics
+   - stat:s:users: total users
+   - stat:s:t200:  total thumbnails of size 200
+   - stat:s:t900:  total thumbnails of size 900
+
+- stat:fM:ID:DATE (flow maximums)
+   - stat:fM:ms-all:DATE:    maximum milliseconds for all requests for all endpoints
+   - stat:fM:ms-auth:DATE:   maximum milliseconds for all requests for /auth
+   - stat:fM:ms-pic:DATE:    maximum milliseconds for all requests for /pic
+   - stat:fM:ms-thumb:DATE:  maximum milliseconds for all requests for /thumb
+   - stat:fM:ms-upload:DATE: maximum milliseconds for all requests for /upload
+   - stat:fM:ms-delete:DATE: maximum milliseconds for all requests for /delete
+   - stat:fM:ms-rotate:DATE: maximum milliseconds for all requests for /rotate
+   - stat:fM:ms-tag:DATE:    maximum milliseconds for all requests for /tag
+   - stat:fM:ms-query:DATE:  maximum milliseconds for all requests for /query
+   - stat:fM:ms-share:DATE:  maximum milliseconds for all requests for /share
+
+- stat:ft (flow totals)
+   - stat:ft:code-NNN:DATE:  total requests responded with HTTP code NNN
+   - stat:ft:rq-USERNAME:DATE: total requests from USERNAME
+   - stat:ft:rq-all:DATE:    total requests for all endpoints
+   - stat:ft:rq-auth:DATE:   total requests for /auth
+   - stat:ft:rq-pic:DATE:    total requests for /pic
+   - stat:ft:rq-thumb:DATE:  total requests for /thumb
+   - stat:ft:rq-upload:DATE: total requests for /upload
+   - stat:ft:rq-delete:DATE: total requests for /delete
+   - stat:ft:rq-rotate:DATE: total requests for /rotate
+   - stat:ft:rq-tag:DATE:    total requests for /tag
+   - stat:ft:rq-query:DATE:  total requests for /query
+   - stat:ft:rq-share:DATE:  total requests for /share
+   - stat:ft:ms-all:DATE:    total milliseconds for all requests for all endpoints
+   - stat:ft:ms-auth:DATE:   total milliseconds for all requests for /auth
+   - stat:ft:ms-pic:DATE:    total milliseconds for all requests for /pic
+   - stat:ft:ms-thumb:DATE:  total milliseconds for all requests for /thumb
+   - stat:ft:ms-upload:DATE: total milliseconds for all requests for /upload
+   - stat:ft:ms-delete:DATE: total milliseconds for all requests for /delete
+   - stat:ft:ms-rotate:DATE: total milliseconds for all requests for /rotate
+   - stat:ft:ms-tag:DATE:    total milliseconds for all requests for /tag
+   - stat:ft:ms-query:DATE:  total milliseconds for all requests for /query
+   - stat:ft:ms-share:DATE:  total milliseconds for all requests for /share
 
 Used by giz:
 

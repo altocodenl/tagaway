@@ -131,11 +131,11 @@ SECRET.ping.send = function (payload, CB) {
 
 var notify = function (s, message) {
    if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
-   message.environment = ENV || 'local';
    if (! ENV) {
       clog (new Date ().toUTCString (), message);
       return s.next ();
    }
+   message.environment = ENV;
    SECRET.ping.send (message, function (error) {
       if (error) return s.next (null, error);
       else s.next ();
@@ -297,7 +297,8 @@ H.s3put = function (s, user, path, key) {
       ! user ? [] : [
          [a.make (s3.headObject, s3), {Key: H.hash (user) + '/' + key}],
          function (s) {
-            a.set (s, false, [Redis, 'hincrby', 'users:' + user, 's3:buse', s.last.ContentLength]);
+            // TODO: replace with stat function
+            a.set (s, false, [Redis, 'hincrby', 'users:' + user, 'bys3', s.last.ContentLength]);
          },
       ]
    ]);
@@ -328,7 +329,8 @@ H.s3del = function (s, user, keys, sizes) {
       })}}, function (error) {
          if (error) return s.next (0, error);
          var multi = redis.multi ();
-         if (user) dale.go (sizes, function (size) {multi.hincrby ('users:' + user, 's3:buse', - size)});
+         // TODO replace with stat function
+         if (user) dale.go (sizes, function (size) {multi.hincrby ('users:' + user, 'bys3', - size)});
          multi.exec (function (error) {
             if (error) return s.next (0, error);
             if (++counter === Math.ceil (keys.length / 1000)) s.next ();
@@ -382,7 +384,7 @@ H.deletepic = function (s, id, username) {
          s.tags = s.last [1];
          if (! s.pic || username !== s.pic.owner) return s.next (0, 'nf');
 
-         H.s3del (s, username, s.pic.id, s.pic.by);
+         H.s3del (s, username, s.pic.id, s.pic.bys3);
       },
       function (s) {
          var thumbs = [];
@@ -402,6 +404,8 @@ H.deletepic = function (s, id, username) {
          if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
          multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
          multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
+         // TODO replace with stat function
+         multi.hincrby ('users:' + s.pic.owner, 'byfs', - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0));
 
          dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
             multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
@@ -422,7 +426,7 @@ var routes = [
 
    ['get', 'img/*', cicek.file, ['markup']],
 
-   ['get', ['lib/*', 'client.js', 'testclient.js', 'clientold.js', 'admin.js'], cicek.file],
+   ['get', ['lib/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
       ['!DOCTYPE HTML'],
@@ -443,30 +447,6 @@ var routes = [
             }),
             ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
             ['script', {src: 'client.js'}]
-         ]]
-      ]]
-   ])],
-
-   ['get', '/old', reply, lith.g ([
-      ['!DOCTYPE HTML'],
-      ['html', [
-         ['head', [
-            ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['meta', {charset: 'utf-8'}],
-            ['title', 'ac;pic'],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-            dale.go (['ionicons.min', 'normalize.min'], function (v) {
-               return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
-            })
-         ]],
-         ['body', [
-            dale.go (['gotoB.min', 'murmurhash'], function (v) {
-               return ['script', {src: 'lib/' + v + '.js'}];
-            }),
-            ['script', 'var ALLOWEDMIME = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
-            ['script', 'var BASETAGS    = ' + JSON.stringify (['all', 'untagged']) + ';'],
-            ['script', {src: 'clientold.js'}]
          ]]
       ]]
    ])],
@@ -757,8 +737,8 @@ var routes = [
 
    ['all', '*', function (rq, rs) {
 
-      if (rq.method === 'post' && rq.url === '/error')                  return rs.next ();
-      if (rq.method === 'get'  && rq.url === '/admin/stats')            return rs.next ();
+      if (rq.method === 'post' && rq.url === '/error') return rs.next ();
+      if (rq.method === 'get'  && rq.url === '/stats') return rs.next ();
       if (rq.method === 'post' && rq.url === '/admin/invites') {
          if (! ENV)                                                        return rs.next ();
          if (eq (rq.body, {email: SECRET.admins [0], firstName: 'admin'})) return rs.next ();
@@ -844,6 +824,7 @@ var routes = [
                return [H.deletepic, pic, rq.user.username];
             }, {max: 5});
          },
+         // TODO: delete user stats
          function (s) {
             var multi = redis.multi ();
             multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
@@ -1044,7 +1025,7 @@ var routes = [
             });
          }],
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
-         [Redis, 'hget', 'users:' + rq.user.username, 's3:buse'],
+         [Redis, 'hget', 'users:' + rq.user.username, 'fs:use'],
          function (s) {
             if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
             s.next ();
@@ -1065,19 +1046,22 @@ var routes = [
          },
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
+         [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
          [H.resizeif, newpath, 200],
          [H.resizeif, newpath, 900],
          // We only store the original pictures in S3
          [H.s3put, rq.user.username, newpath, pic.id],
          // Delete original image from disk.
+         // TODO: enable when moving FS to ac;file
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
          function (s) {
             var multi = redis.multi ();
 
             pic.dimw = s.size.w;
             pic.dimh = s.size.h;
-            pic.by   = s.last.ContentLength;
+            pic.bys3 = s.last.ContentLength;
+            pic.byfs = s.byfs.size;
             pic.hash = s.hash;
 
             s.dates ['upload:date'] = lastModified;
@@ -1108,6 +1092,8 @@ var routes = [
             multi.sadd ('upic:'  + rq.user.username, pic.hash);
             multi.srem ('upicd:' + rq.user.username, pic.hash);
             multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
+            // TODO replace with stat function
+            multi.hincrby ('users:' + rq.user.username, 'byfs', pic.byfs + (pic.by200 || 0) + (pic.by900 || 0));
 
             dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()), function (tag) {
                multi.sadd ('pict:' + pic.id,                       tag);
@@ -1500,7 +1486,8 @@ var routes = [
                email:    rq.user.email,
                type:     rq.user.type,
                created:  parseInt (rq.user.created),
-               used:     [parseInt (rq.user ['s3:buse']) || 0, parseInt (CONFIG.storelimit [rq.user.type || 'tier1']) || 0],
+               // TODO replace with stat function
+               usage:    {limit: CONFIG.storelimit [rq.user.type], used: parseInt (rq.user ['byfs']) || 0, s3used: ENV ? undefined : parseInt (rq.user ['bys3']) || 0},
                logs:     dale.go (s.last, JSON.parse),
             });
          }
@@ -1552,6 +1539,7 @@ var routes = [
          function (s) {
             Redis (s, 'hset', 'invites', b.email, JSON.stringify ({firstName: b.firstName, token: s.token, sent: Date.now ()}));
          },
+         // When running locally, the token is returned instead of being sent to the associated email address. This also avoids the bootstrap invite being sent when running the server locally.
          ENV ? [] : [a.get, reply, rs, 200, {token: '@token'}],
          function (s) {
             sendmail (s, {
@@ -1562,52 +1550,6 @@ var routes = [
             });
          },
          [reply, rs, 200],
-      ]);
-   }],
-
-   // *** ADMIN: STATS (ALSO PUBLIC) ***
-
-   ['get', 'admin/stats', function (rq, rs) {
-      astop (rs, [
-         [Redis, 'get', 'cachestats'],
-         function (s) {
-            if (s.last !== null) return reply (rs, 200, JSON.parse (s.last));
-            s.next ();
-         },
-         [a.set, 'keys', [redis.keyscan, 'st*']],
-         function (s) {
-            var multi = redis.multi ();
-            dale.go (s.keys, function (key) {
-               multi [key.match (/^sti/) ? 'get' : 'pfcount'] (key);
-            });
-            mexec (s, multi);
-         },
-         function (s) {
-            s.hits = dale.fil (s.last, undefined, function (item, k) {
-               if (s.keys [k] === 'stp') return;
-               return [s.keys [k].slice (4), parseInt (item)];
-            });
-            s.next ();
-         },
-         [redis.keyscan, 'users:*'],
-         function (s) {
-            var multi = redis.multi ();
-            dale.go (s.last, function (key) {
-               multi.hget  (key, 's3:buse');
-               multi.scard ('tag:' + key.replace ('users:', '') + ':all');
-            });
-            mexec (s, multi);
-         },
-         function (s) {
-            var output = {hits: s.hits, users: s.last.length / 2, pics: 0, bytes: 0};
-            dale.go (s.last, function (v, k) {
-               if (k % 2 === 0) output.bytes += parseInt (v);
-               else             output.pics  += v;
-            });
-            s.output = output;
-            Redis (s, 'setex', 'cachestats', 60, JSON.stringify (output));
-         },
-         [a.get, reply, rs, 200, '@output'],
       ]);
    }],
 ];
@@ -1714,37 +1656,9 @@ if (cicek.isMaster) setInterval (function () {
    ]);
 }, 1000 * 60);
 
-// *** CONVERT PFCOUNT TO STRING (STATS) ***
-
-if (cicek.isMaster) setInterval (function () {
-   a.stop ([
-      [a.set, 'pfs', [Redis, 'smembers', 'stp']],
-      function (s) {
-         var multi = redis.multi ();
-         dale.go (s.pfs, function (pf) {
-            multi.pfcount ('stp:' + pf);
-         });
-         mexec (s, multi);
-      },
-      function (s) {
-         var d = Date.now (), multi = redis.multi ();
-         dale.go (s.pfs, function (pf, k) {
-            var duration = pf.split (':') [0] === 'a' ? 1000 * 60 * 10 : 1000 * 60 * 60 * 24;
-            if (d - parseInt (pf.split (':') [1] + '00000') > duration) {
-               multi.srem ('stp', pf);
-               multi.set  ('stp:' + pf, s.last [k]);
-            }
-         });
-         mexec (s, multi);
-      },
-   ], function (s, error) {
-      notify (s, {type: 'stat pfcount -> counter error', error: error});
-   });
-}, 20 * 1000);
-
 // *** BOOTSTRAP FIRST ADMIN USER ***
 
-if (cicek.isMaster && ENV) setTimeout (function () {
+if (cicek.isMaster) setTimeout (function () {
    a.stop ([
       [Redis, 'hget', 'invites', SECRET.admins [0]],
       function (s) {
@@ -1757,21 +1671,44 @@ if (cicek.isMaster && ENV) setTimeout (function () {
    });
 }, 3000);
 
-// *** CHECK CONSISTENCY BETWEEN DB, FS AND S3 (ENABLED ON DEV ONLY) ***
+// *** CHECK CONSISTENCY OF FILES BETWEEN DB, FS AND S3 ***
 
-if (cicek.isMaster && ENV === 'dev') a.stop ([
-   [a.set, 'uploaded', [H.s3list, '']],
-   [a.set, 'dirs', [a.make (fs.readdir), CONFIG.basepath]],
-   [a.set, 'files', [a.get, a.fork, '@dirs', function (dir) {
+if (cicek.isMaster) a.stop ([
+   // Get list of files from S3
+   [a.set, 's3files', [H.s3list, '']],
+   function (s) {
+      s.s3files = dale.obj (s.s3files, function (path) {
+         return [path, true];
+      });
+      s.next ();
+   },
+   // Get list of files from FS
+   [a.make (fs.readdir), CONFIG.basepath],
+   [a.get, a.fork, '@last', function (dir) {
       return [
-         [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)],
+         [a.stop, [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)], function (s, error) {
+            if (ENV) return s.next (null, error);
+            // If errors happen locally, ignore them.
+            if (error) return s.next (false);
+         }],
          function (s) {
+            if (s.last === false) s.next ([]);
             s.next (dale.go (s.last, function (file) {
                return Path.join (dir, file);
             }));
          }
       ];
-   }, {max: 5}]],
+   }, {max: 5}],
+   function (s) {
+      s.fsfiles = {};
+      dale.go (s.last, function (folder) {
+         dale.go (folder, function (file) {
+            s.fsfiles [file] = true;
+         });
+      });
+      s.next ();
+   },
+   // Get list of pics and thumbs
    [a.set, 'picids', [redis.keyscan, 'pic:*']],
    function (s) {
       var multi = redis.multi ();
@@ -1781,120 +1718,64 @@ if (cicek.isMaster && ENV === 'dev') a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      s.thumbs = {};
-      s.pics   = {};
+      s.dbfiles = {};
       dale.go (s.last, function (pic) {
-         s.pics [pic.id] = pic;
-         if (pic.t200) s.thumbs [pic.t200] = {owner: pic.owner};
-         if (pic.t900) s.thumbs [pic.t900] = {owner: pic.owner};
+         var prefix = H.hash (pic.owner) + '/';
+         s.dbfiles [prefix + pic.id] = 'pic';
+         if (pic.t200) s.dbfiles [prefix + pic.t200] = 'thumb';
+         if (pic.t900) s.dbfiles [prefix + pic.t900] = 'thumb';
       });
       s.next ();
    },
+   // Check consistency. DB data is the measure of everything, the single source of truth.
    function (s) {
-      var files = {};
-      dale.go (s.files, function (v) {
-         dale.go (v, function (v2) {
-            files [v2] = true;
-         });
+      // Note: All file lists (s.s3files, s.fsfiles, s.dbfiles) were initialized as objects for quick lookups; if stored as arrays instead, we'd be iterating the array N times when performing the checks below.
+
+      s.fsextra   = [];
+      s.fsmissing = [];
+      s.s3extra   = [];
+      s.s3missing = [];
+
+      dale.go (s.dbfiles, function (type, dbfile) {
+         // S3 only holds original pictures
+         if (type === 'pic' && ! s.s3files [dbfile]) s3missing.push (dbfile);
+         // FS holds both original pictures and thumbnails
+         if (! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
       });
-      s.files = files;
-      s.missingsthree = [];
-      s.uploaded = dale.obj (s.uploaded, function (path) {
-         return [path, true];
+      dale.go (s.s3files, function (v, s3file) {
+         if (! s.dbfiles [s3file]) s.s3extra.push (s3file);
       });
-      var extraneous = teishi.copy (s.uploaded);
-      dale.go (s.pics, function (pic, k) {
-         var path = Path.join (H.hash (pic.owner), k.replace ('pic:', ''));
-         if (! s.uploaded [path]) s.missingsthree.push (path);
-         delete extraneous [path];
+      dale.go (s.fsfiles, function (v, fsfile) {
+         if (! s.dbfiles [fsfile]) s.fsextra.push (fsfile);
       });
-      if (dale.keys (extraneous).length) notify (a.creat (), {type: 'extraneous files in s3 error', n: dale.keys (extraneous).length, files: extraneous});
-      if (s.missingsthree.length)        notify (a.creat (), {type: 'missing pics in s3 error',     n: s.missingsthree.length,            files: s.missingsthree});
-      // Delete extraneous elements from S3 (including thumbnails)
-      H.s3del (s, null, dale.keys (extraneous), null);
+
+      if (s.s3extra.length)   notify (a.creat (), {type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra});
+      if (s.fsextra.length)   notify (a.creat (), {type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra});
+      if (s.s3missing.length) notify (a.creat (), {type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing});
+      if (s.fsmissing.length) notify (a.creat (), {type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing});
+
+      if (process.argv [3] !== 'makeConsistent') return clog ('File consistency check', '`makeConsistent` flag not passed, exiting.');
+
+      s.next ();
    },
-   // Upload missing pics to S3
-   [a.get, a.fork, '@missingsthree', function (key) {
+   // Extraneous S3 files: delete.
+   function (s) {
+      H.s3del (s, null, s.s3extra);
+   },
+   // Extraneous FS files: delete.
+   [a.get, a.fork, '@fsextra', function (v, k) {
+      return [a.make (fs.unlink), Path.join (CONFIG.basepath, k)];
+   }, {max: 5}],
+   // Missing S3 files: upload from disk.
+   [a.get, a.fork, '@s3missing', function (key) {
       return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
    }, {max: 5}],
    function (s) {
-      if (s.missingsthree.length) notify (a.creat (), {type: 'uploaded missing pics to s3', n: s.missingsthree.length});
-      s.missingfs = [];
-      s.extraneous = teishi.copy (s.files);
-      dale.go (s.thumbs, function (thumb, k) {
-         var path = Path.join (H.hash (thumb.owner), k);
-         if (! s.files [path]) s.missingfs.push (path);
-         delete s.extraneous [path];
+      var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {type: 'File consistency check success.'}, function (k) {
+         if (s [k]) return [k, s [k]];
       });
-      dale.go (s.pics, function (pic, k) {
-         var path = Path.join (H.hash (pic.owner), k.replace ('pic:', ''));
-         // Uncomment to keep original pictures in disk.
-         // if (! s.files [path]) s.missingfs.push (path);
-         // delete s.extraneous [path];
-      });
-      if (dale.keys (s.extraneous).length) notify (a.creat (), {type: 'extraneous files in FS error', n: dale.keys (s.extraneous).length, files: s.extraneous});
-      if (s.missingfs.length)              notify (a.creat (), {type: 'missing pics in FS error',     n: s.missingfs.length,            files: s.missingfs});
-      s.next ();
-   },
-   // Download missing files from S3
-   [a.get, a.fork, '@missingfs', function (path) {
-      return [
-         [a.log, 'getting ' + path],
-         [a.make (s3.getObject, s3), {Key: path}],
-         function (s) {
-            s.next (H.decrypt (s.last.Body));
-         },
-         [a.log, 'writing ' + path],
-         function (s) {
-            a.make (fs.writeFile) (s, Path.join (CONFIG.basepath, path), s.last, 'binary');
-         }
-      ];
-   }, {max: 5}],
-   // Delete extraneous files from FS
-   [a.get, a.fork, '@extraneous', function (v, k) {
-      return [a.make (fs.unlink), Path.join (CONFIG.basepath, k)];
-   }, {max: 5}],
-   function (s) {
-      if (dale.keys (s.extraneous).length) notify (a.creat (), {type: 'deleted extraneous files from FS', n: dale.keys (s.extraneous).length});
-      notify (s, {type: 'All DB/FS/S3 file consistency checks performed.'});
+      notify (s, message);
    },
 ], function (s, error) {
-   notify (s, {type: 's3 consistency check error', error: error});
-});
-
-// *** CHECK STORED SIZES ***
-
-if (cicek.isMaster && ENV) a.stop ([
-   [a.set, 'keys', [redis.keyscan, '*']],
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.keys, function (key) {
-         if (key.match (/^(pic|users):/)) multi.hgetall (key);
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      var pics = {}, users = {}, count = {};
-      dale.go (s.last, function (key) {
-         if (key.owner) pics [key.id] = key;
-         if (key.username) {
-            key ['s3:buse'] = parseInt (key ['s3:buse'] || '0');
-            users [key.username] = key;
-         }
-      });
-      dale.go (pics, function (pic) {
-         if (! count [pic.owner]) count [pic.owner] = 0;
-         count [pic.owner] += parseInt (pic.by);
-      });
-      var multi = redis.multi ();
-      dale.go (users, function (user) {
-         if (user ['s3:buse'] === count [user.username]) return;
-         if (count [user.username] === undefined && user ['s3:buse'] === 0) return;
-         notify (a.creat (), {type: 's3:buse mismatch error', u: user.username, was: user ['s3:buse'], actual: count [user.username]});
-         multi.hset ('users:' + user.username, 's3:buse', count [user.username]);
-      });
-      mexec (s, multi);
-   },
-], function (s, error) {
-   notify (s, {type: 'check stored size error', error: error});
+   notify (s, {type: 'File consistency check error.', error: error});
 });

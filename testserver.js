@@ -273,7 +273,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return clog ('Invalid used field.');
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 0})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
       return true;
    }],
@@ -367,6 +367,11 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
+   ['check usage after uploading small picture', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.usage.used   !== 3370) return clog ('Invalid FS usage.');
+      if (rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
+      return true;
+   }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 1) return clog ('Invalid total count.');
@@ -407,6 +412,11 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
+   ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.usage.used   !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
+      if (rs.body.usage.s3used !== 3402 + 22676)        return clog ('Invalid S3 usage.');
+      return true;
+   }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
@@ -983,10 +993,12 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.used) !== 'array' || rs.body.used.length !== 2 || rs.body.used [0] !== 0) return clog ('Invalid used field.');
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 0})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 46 && rs.body.logs.length !== 47)) return clog ('Invalid logs.');
       return true;
    }],
+   // TODO: add admin/stats test
+   /*
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid body', rs.body);
       if (rs.body.users !== 1) return clog ('Invalid users');
@@ -994,6 +1006,7 @@ var main = [
       if (rs.body.bytes !== 0) return clog ('Invalid bytes');
       return true;
    }],
+   */
 ];
 
 h.seq ({port: CONFIG.port}, [
