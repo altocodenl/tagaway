@@ -294,13 +294,7 @@ H.s3put = function (s, user, path, key) {
    a.stop (s, [
       [a.make (H.encrypt), path],
       [a.get, a.make (s3.upload, s3), {Key: user ? (H.hash (user) + '/' + key) : key, Body: '@last'}],
-      ! user ? [] : [
-         [a.make (s3.headObject, s3), {Key: H.hash (user) + '/' + key}],
-         function (s) {
-            // TODO: replace with stat function
-            a.set (s, false, [Redis, 'hincrby', 'users:' + user, 'bys3', s.last.ContentLength]);
-         },
-      ]
+      ! user ? [] : [a.make (s3.headObject, s3), {Key: H.hash (user) + '/' + key}],
    ]);
 }
 
@@ -1057,8 +1051,8 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (! eq (dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags'])) return reply (rs, 400, {error: 'invalidField'});
-      if (! eq (dale.keys (rq.data.files),  ['pic']))                         return reply (rs, 400, {error: 'invalidFile'});
+      if (! eq (dale.keys (rq.data.fields).sort (), ['uid', 'lastModified', 'tags'].sort ())) return reply (rs, 400, {error: 'invalidField'});
+      if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});

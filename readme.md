@@ -74,12 +74,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pictures in S3 and pictures + thumbnails locally.
-   - See progress when uploading files, using a progress bar.
    - Ignore images that already were uploaded (by hash check).
+   - Upload files from folder selection, files selection & drop.
+   - See progress when uploading files, using a progress bar.
    - Add one or more tags to the upcoming upload batch.
+   - See previous uploads.
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pics periodically if there's an upload in the background.
-   - See previous uploads.
+   - Cancel current upload.
+
+   - Document upload element & listeners
 
 - Account & payment
    - Login/logout.
@@ -111,6 +115,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Retry on error.
    - Notify of ignored files in upload.
+   - Warn of leaving page if upload is going.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Client-side hashes for fast duplicate elimination.
    - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
@@ -508,9 +513,12 @@ Used by giz:
       - `click -> untag TAG`
       - `click -> rotate pics`
       - `click -> delete pics`
-      - `oninput -> set State.newTag`
-      - `oninput -> set State.filter`
+      - `input -> set State.newTag`
+      - `input -> set State.filter`
 2. `E.upload`
+   - Depends on: `Data.account`, `State.currentUpload`.
+   - Events:
+      - `click -> upload`
 3. `E.share`
 4. `E.tags`
 5. Auth:
@@ -619,8 +627,13 @@ Used by giz:
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
+   - `upload`:
+      - `new`: {files: [...], tags: [...]|UNDEFINED}
+      - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
+      - `tag`: content of input to filter tag or add a new one.
 
 - `Data`:
+   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.

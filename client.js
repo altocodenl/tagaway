@@ -1556,6 +1556,9 @@ H.isYear = function (tag) {
    return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
 }
 
+H.makeRegex = function (filter) {
+   return new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
+}
 // *** ELEMENTS ***
 
 var E = {};
@@ -1902,6 +1905,7 @@ dale.do ([
    ['delete', 'pics', function (x, deg) {
       var pics = dale.keys (B.get ('State', 'selected'));
       if (pics.length === 0) return;
+      if (! confirm ('Are you sure you want to delete the selected pictures?')) return;
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          B.do (x, 'query', 'pics');
@@ -1949,59 +1953,104 @@ dale.do ([
 
    // *** UPLOAD LISTENERS ***
 
+   ['exit', 'app', function () {
+      alert ('exit');
+      var q = B.get ('State', 'upload', 'queue');
+      if (q && q.length > 0 && ! confirm ('Refreshing the page will interrupt the upload process. Are you sure?')) return;
+   }],
    ['drop', 'files', function (x, ev) {
       if (B.get ('State', 'page') !== 'upload') return;
       dale.do (ev.dataTransfer.files, function (file) {
          if (window.allowedFormats.indexOf (file.type) === -1) return;
-         B.add (['State', 'uploads', 'new', 'pics'], file);
+         B.add (['State', 'upload', 'new', 'files'], file);
       });
-      B.do (x, 'change', ['State', 'uploads', 'new']);
+      // TODO: why do we need this timeout?
+      setTimeout (function () {
+         B.do (x, 'change', ['State', 'upload', 'new']);
+      }, 0);
    }],
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
-      dale.do (input.files, function (file) {
-         if (window.allowedFormats.indexOf (file.type) === -1) return;
-         B.add (['State', 'uploads', 'new', 'pics'], file);
+      var toUpload = dale.fil (input.files, undefined, function (file) {
+         if (window.allowedFormats.indexOf (file.type) !== -1) return file;
       });
-      B.do (x, 'change', ['State', 'uploads', 'new']);
+      if (toUpload.length === 0) return;
+      dale.do (toUpload, function (file) {
+         B.add (['State', 'upload', 'new', 'files'], file);
+      });
+      B.do (x, 'change', ['State', 'upload', 'queue']);
       input.value = '';
    }],
-
-   ['exit', 'app', function () {
-      var q = B.get ('State', 'upload', 'queue');
-      if (q && q.length > 0) return prompt ('Refreshing the page will stop the upload process. Are you sure?');
+   ['upload', 'start', function (x) {
+      var uid = Date.now ();
+      dale.do (B.get ('State', 'upload', 'new', 'files'), function (file) {
+         B.add (['State', 'upload', 'queue'], {uid: uid, file: file, tags: B.get ('State', 'upload', 'new', 'tags')});
+      });
+      B.do (x, 'rem', ['State', 'upload'], 'new');
+      B.do (x, 'change', ['State', 'upload', 'queue']);
    }],
-   ['a', 'b', function (x) {
-      // lastModified || lastModifiedDate
+   ['upload', 'cancel', function (x, uid) {
+      B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
+         if (file.uid !== uid) return file;
+      }));
    }],
-         ['change', ['State', 'upload', 'queue'], function (x) {
-            return;
-            var queue = B.get ('State', 'upload', 'queue');
-            var MAXSIMULT = 2, uploading = 0;
-            dale.do (queue, function (file) {
-               if (uploading === MAXSIMULT) return;
-               if (file.uploading) return uploading++;
-               file.uploading = true;
-               uploading++;
+   ['upload', 'tag', function (x, tag) {
+      if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return B.do (x, 'snackbar', 'yellow', 'Sorry, you can not use that tag.');
+      B.do (x, 'add', ['State', 'upload', 'new', 'tags'], tag);
+   }],
+   ['key', 'down', function (x, keyCode) {
+      if (keyCode === 13 && document.activeElement === c ('#uploadTag')) {
+         B.do (x, 'upload', 'tag', c ('#uploadTag').value);
+         B.do (x, 'rem', ['State', 'upload'], 'tag');
+      }
+   }],
+   ['change', ['State', 'upload', 'queue'], function (x) {
+      var queue = B.get ('State', 'upload', 'queue');
+      var MAXSIMULT = 2, uploading = 0;
+      dale.stopNot (queue, false, function (file) {
+         if (uploading === MAXSIMULT) return false;
+         if (file.uploading) return uploading++;
+         file.uploading = true;
+         uploading++;
 
-               var f = new FormData ();
-               f.append ('lastModified', (file.lastModified || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
-               f.append ('pic', file);
-               if (B.get ('State', 'upload', 'tags')) f.append ('tags', teishi.s ([B.get ('State', 'upload', 'tags')]));
-               H.authajax (x, 'post', 'upload', {}, f, function (error, rs) {
-                  dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
-                     if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
-                  });
-                  if (error && error.status === 409 && error.responseText.match ('repeated')) return B.do (x, 'set', ['State', 'upload', 'repeated'], (B.get ('State', 'upload', 'repeated') || 0) + 1);
-                  if (error && error.status === 409 && error.responseText.match ('capacity')) {
-                     B.do (x, 'set', ['State', 'upload', 'queue'], []);
-                     return B.do (x, 'notify', 'yellow', 'You\'ve exceeded the maximum capacity of your plan so you cannot upload any more pictures.');
-                  }
-                  if (error) return B.do (x, 'add', ['State', 'upload', 'error'], [error, file]);
-                  B.do (x, 'set', ['State', 'upload', 'done'], (B.get ('State', 'upload', 'done') || 0) + 1);
-               });
+         var f = new FormData ();
+         f.append ('lastModified', (file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
+         f.append ('uid', file.uid);
+         f.append ('pic', file.file);
+         if (file.tags) f.append ('tags', JSON.stringify (file.tags));
+         B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
+            dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
+               if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
             });
-         }],
+            if (error) {
+               if (error.status === 409) {
+                  if (error.responseText.match ('repeated')) return;
+                  B.do (x, 'set', ['State', 'upload', 'queue'], []);
+                  return B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
+               }
+               return B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
+            }
+            B.do (x, 'query', 'account');
+            B.do (x, 'query', 'tags');
+            // If we're back in the pics page, refresh the query after each successful upload
+            if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
+         });
+      });
+   }],
+   ['change', ['State', 'page'], function (x) {
+      if (B.get ('State', 'page') !== 'upload') return;
+      if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
+      if (! B.get ('Data', 'tags'))    B.do (x, 'query', 'tags');
+   }],
+
+   // *** ACCOUNT LISTENERS ***
+
+   ['query', 'account', function (x) {
+      B.do (x, 'get', 'account', {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your account information.');
+         B.do (x, 'set', ['Data', 'account'], rs.body);
+      });
+   }],
 
 ], function (v) {
    B.listen.apply (null, v);
@@ -2543,8 +2592,7 @@ E.pics = function () {
                                  if (tag === 'all' || tag === 'untagged') return;
                                  if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
                                  if (! filter) return tag;
-                                 var regex = new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
-                                 if (tag.match (regex)) return tag;
+                                 if (tag.match (H.makeRegex (filter))) return tag;
                               }).sort (function (a, b) {
                                  var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
                                  var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
@@ -2648,8 +2696,7 @@ E.pics = function () {
                                     var editTags = dale.fil (tags, undefined, function (number, tag) {
                                        if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
                                        if (filter) {
-                                          var regex = new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
-                                          if (! tag.match (regex)) return;
+                                          if (! tag.match (H.makeRegex (filter))) return;
                                        }
                                        if (! selectedTags [tag]) selectedTags [tag] = 0;
                                        return tag;
@@ -2915,19 +2962,39 @@ E.open = function () {
 E.upload = function () {
    return ['div', [
       E.header (),
-      ['div', {class: 'main-centered'}, [
-         ['div', {class: 'main-centered__inner max-width--m'}, [
-            // PAGE HEADER
-            ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures'],
-            ]],
-            ['div', {class: 'page-section'}, [
-               ['ul', {class: 'upload-box-list'}, [
-                  ['li', {class: 'upload-box-list__item'}, [
-                     // UPLOAD BOX
-                     B.view (['State', 'uploads', 'new'], {attrs: {class: 'upload-box'}}, function (x, newUpload) {
-                        return [
+      // TODO v2: merge two views into one
+      B.view (['Data', 'account'], {attrs: {class: 'main-centered'}}, function (x, account) {
+         return B.view (['State', 'upload'], {attrs: {class: 'main-centered__inner max-width--m'}}, function (x, upload) {
+
+            var logs = (account || {}).logs;
+
+            var uploads = {};
+            dale.do (logs, function (log) {
+               if (log.a !== 'upl') return;
+               if (! uploads [log.uid]) uploads [log.uid] = {tags: log.tags, uploaded: 0, t: 0};
+               uploads [log.uid].uploaded++;
+               if (uploads [log.uid].t < log.t) uploads [log.uid].t = log.t;
+            });
+
+            var newUpload = B.get ('State', 'upload', 'new') || {files: []};
+
+            var pending = {};
+            dale.do (B.get ('State', 'upload', 'queue'), function (file) {
+               if (! pending [file.uid]) pending [file.uid] = {files: [], tags: file.tags};
+               pending [file.uid].files.push (file);
+            });
+
+            return [
+               // PAGE HEADER
+               ['div', {class: 'page-header'}, [
+                  ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
+                  ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures'],
+               ]],
+               ['div', {class: 'page-section'}, [
+                  ['ul', {class: 'upload-box-list'}, [
+                     ['li', {class: 'upload-box-list__item'}, [
+                        // UPLOAD BOX
+                        ['div', {class: 'upload-box'}, [
                            ['input', B.ev ({id: 'files-upload',  type: 'file', multiple:  true, style: style ({display: 'none'})}, ['onchange', 'upload', 'files'])],
                            ['input', B.ev ({id: 'folder-upload', type: 'file', directory: true, webkitdirectory: true, mozdirectory: true, style: style ({display: 'none'})}, ['onchange', 'upload', 'folder'])],
                            // TODO v2: add inline SVG
@@ -2951,8 +3018,8 @@ E.upload = function () {
                                  ['div', {class: 'upload-box__selection'}, [
                                     // TODO v2: add inline SVG
                                     ['div', {class: 'upload-selection', opaque: true}, [
-                                       ['p', {class: 'upload-selection__text'}, (newUpload ? newUpload.files.length : 'No') + ' pictures selected'],
-                                       ['div', {class: 'upload-selection__remove'}, [
+                                       ['p', {class: 'upload-selection__text'}, ((! newUpload.files || ! newUpload.files.length) ? 'No' : newUpload.files.length) + ' pictures selected'],
+                                       ! newUpload.files || ! newUpload.files.length ? [] : ['div', B.ev ({class: 'upload-selection__remove'}, ['onclick', 'rem', ['State', 'upload'], 'new']), [
                                           ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
                                        ]],
                                     ]],
@@ -2961,33 +3028,42 @@ E.upload = function () {
                               // UPLOAD BOX SECTION
                               ['div', {class: 'upload-box__section'}, [
                                  ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
-                                 ['div', {class: 'upload-box__search'}, [
+                                 // TODO v2: merge two views into one
+                                 B.view (['Data', 'tags'], {attrs: {class: 'upload-box__search'}}, function (x, tags) {
                                     // SEARCH FORM
-                                    ['div', {class: 'search-form'}, [
-                                       ['input', {class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}],
-                                       // TODO v2: add inline SVG, remove span
-                                       ['span', {class: 'search-form-svg', opaque: true}],
-                                       ['div', {class: 'search-form__dropdown'}, [
-                                          // TAG LIST DROPDOWN
-                                          ['ul', {class: 'tag-list-dropdown'}, [
-                                             ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, [
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag tag-list__item--' + H.tagColor ('Barcelona'), opaque: true}, [
-                                                   ['span', {class: 'tag__title'}, 'Barcelona']
-                                                ]],
-                                             ]],
+                                    return B.view (['State', 'upload', 'tag'], {attrs: {class: 'search-form'}}, function (x, filter) {
+                                       tags = dale.fil (tags, undefined, function (v, tag) {
+                                          if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
+                                          if (upload && upload ['new'] && upload ['new'].tags && upload ['new'].tags.indexOf (tag) > -1) return;
+                                          if (filter === undefined || filter.length === 0) return tag;
+                                          if (tag.match (H.makeRegex (filter))) return tag;
+                                       });
+                                       return [
+                                          ['input', B.ev ({value: filter, id: 'uploadTag', class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}, ['oninput', 'set', ['State', 'upload', 'tag']])],
+                                          // TODO v2: add inline SVG, remove span
+                                          ['span', {class: 'search-form-svg', opaque: true}],
+                                          ['div', {class: 'search-form__dropdown'}, [
+                                             // TAG LIST DROPDOWN
+                                             ['ul', {class: 'tag-list-dropdown'}, dale.do (tags, function (tag) {
+                                                return ['li', B.ev ({class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, ['onclick', 'upload', 'tag', tag]), [
+                                                   // TODO v2: add inline SVG
+                                                   ['div', {class: 'tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
+                                                      ['span', {class: 'tag__title'}, tag]
+                                                   ]],
+                                                ]];
+                                             })],
                                           ]],
-                                       ]],
-                                    ]],
-                                 ]],
+                                       ];
+                                    });
+                                 }),
                                  // TAG LIST HORIZONTAL
                                  ['ul', {class: 'tag-list-horizontal'}, [
                                     // TODO v2: add inline SVG
-                                    dale.do ((newUpload || {}).tags, function (tag) {
+                                    dale.do (newUpload.tags, function (tag, k) {
                                        return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
                                           ['span', {class: 'tag__title'}, tag],
                                           // TODO: why must specify height so it looks exactly the same as markup?
-                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                          ['div', B.ev ({class: 'tag__actions', style: style ({height: 24})}, ['onclick', 'rem', ['State', 'upload', 'new', 'tags'], k]), [
                                              ['div', {class: 'tag-actions'}, [
                                                 // TODO v2: add inline SVG
                                                 // TODO: why must specify height so it looks exactly the same as markup?
@@ -2999,72 +3075,33 @@ E.upload = function () {
                                  ]],
                               ]],
                               // UPLOAD BOX SECTION
-                              newUpload ? ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
+                              ! newUpload.files || ! newUpload.files.length ? [] : ['div', B.ev ({class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'start']), [
                                  ['a', {class: 'upload-box__upload-button button button--one'}, 'Upload ' + newUpload.files.length + ' files'],
-                              ]] : [],
-                           ]],
-                        ];
-                     })
-                  ]],
-                  ['li', {class: 'upload-box-list__item'}, [
-                     // UPLOAD BOX
-                     ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                        // TODO v2: add inline SVG
-                        ['div', {class: 'upload-box__image', opaque: true}],
-                        ['div', {class: 'upload-box__main'}, [
-                           ['div', {class: 'upload-box__section'}, [
-                              // TODO v2: add inline SVG
-                              ['p', {class: 'upload-progress', opaque: true}, [
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, 10],
-                                 '/',
-                                 ['span', {class: 'upload-progress__amount'}, '37'],
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
-                              ]],
-                              // UPLOAD BAR
-                              ['div', {class: 'progress-bar'}, [
-                                 ['span', {class: 'progress-bar__progress', style: style ({width: 0.2})}],
                               ]],
                            ]],
-                           ['div', {class: 'upload-box__section'}, [
-                              ['h3', {class: 'upload-box__section-title'}, [
-                                 'Tags ',
-                                 ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
-                              ]],
-                              // TAG LIST HORIZONTAL
-                              ['ul', {class: 'tag-list-horizontal'}, [
-                                 // TODO v2: add inline SVG
-                                 ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor ('Barcelona')}, [
-                                    ['span', {class: 'tag__title'}, 'Barcelona'],
-                                 ]],
-                              ]],
-                           ]],
-                           ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
-                              ['a', {class: 'upload-box__upload-button button button--two'}, 'Cancel'],
-                           ]],
-                        ]],
-                     ]]
-                  ]]
-               ]],
-               // RECENT UPLOADS
-               ['div', {class: 'page-section'}, [
-                  ['div', {class: 'recent-uploads'}, [
-                     ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
-                     ['ul', {class: 'recent-uploads__list'}, [
-                        ['li', {class: 'recent-uploads__list-item'}, [
+                        ]]
+                     ]],
+                     // PENDING UPLOADS
+                     dale.do (pending, function (pending, uid) {
+                        var alreadyUploaded = uploads [uid] ? uploads [uid].uploaded : 0;
+                        return ['li', {class: 'upload-box-list__item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
+                              // TODO v2: add inline SVG
                               ['div', {class: 'upload-box__image', opaque: true}],
                               ['div', {class: 'upload-box__main'}, [
-                                 // UPLOAD BOX SECTION
                                  ['div', {class: 'upload-box__section'}, [
                                     // TODO v2: add inline SVG
                                     ['p', {class: 'upload-progress', opaque: true}, [
-                                       ['span', {class: 'upload-progress__amount-uploaded'}, 10],
+                                       ['span', {class: 'upload-progress__amount-uploaded'}, alreadyUploaded],
                                        '/',
-                                       ['span', {class: 'upload-progress__amount'}, '37'],
+                                       ['span', {class: 'upload-progress__amount'}, alreadyUploaded + pending.files.length],
                                        ['LITERAL', '&nbsp'],
-                                       ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
+                                       ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
+                                    ]],
+                                    // UPLOAD BAR
+                                    ['div', {class: 'progress-bar'}, [
+                                       ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * alreadyUploaded / (alreadyUploaded + pending.files.length)) + '%'})}],
                                     ]],
                                  ]],
                                  ['div', {class: 'upload-box__section'}, [
@@ -3073,31 +3110,77 @@ E.upload = function () {
                                        ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
                                     ]],
                                     // TAG LIST HORIZONTAL
-                                    ['ul', {class: 'tag-list-horizontal'}, [
+                                    ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
                                        // TODO v2: add inline SVG
-                                       ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor ('Barcelona')}, [
-                                          ['span', {class: 'tag__title'}, 'Barcelona'],
-                                       ]],
-                                    ]],
+                                       return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          ['span', {class: 'tag__title'}, tag],
+                                       ]];
+                                    })],
                                  ]],
-                              ]]
+                                 ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
+                                    ['a', B.ev ({class: 'upload-box__upload-button button button--two'}, ['onclick', 'upload', 'cancel', parseInt (uid)]), 'Cancel'],
+                                 ]],
+                              ]],
                            ]]
                         ]]
+                     }),
+                  ]],
+                  // RECENT UPLOADS
+                  ['div', {class: 'page-section'}, [
+                     ['div', {class: 'recent-uploads'}, [
+                        ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
+                        ['ul', {class: 'recent-uploads__list'}, dale.do (uploads, function (upload, uid) {
+                           if (pending [uid]) return;
+                           return ['li', {class: 'recent-uploads__list-item'}, [
+                              // UPLOAD BOX
+                              ['div', {class: 'upload-box upload-box--recent-uploads'}, [
+                                 ['div', {class: 'upload-box__image', opaque: true}],
+                                 ['div', {class: 'upload-box__main'}, [
+                                    // UPLOAD BOX SECTION
+                                    ['div', {class: 'upload-box__section'}, [
+                                       // TODO v2: add inline SVG
+                                       ['p', {class: 'upload-progress', opaque: true}, [
+                                          ['span', {class: 'upload-progress__amount-uploaded'}, upload.uploaded],
+                                          //'/',
+                                          //['span', {class: 'upload-progress__amount'}, '37'],
+                                          ['LITERAL', '&nbsp'],
+                                          ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
+                                          ['LITERAL', '&nbsp'],
+                                          ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - upload.t) / 60000) + ' minutes ago)'],
+                                       ]],
+                                    ]],
+                                    ['div', {class: 'upload-box__section'}, [
+                                       ['h3', {class: 'upload-box__section-title'}, [
+                                          'Tags ',
+                                          ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
+                                       ]],
+                                       // TAG LIST HORIZONTAL
+                                       ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
+                                          // TODO v2: add inline SVG
+                                          return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                             ['span', {class: 'tag__title'}, tag],
+                                          ]];
+                                       })],
+                                    ]],
+                                 ]]
+                              ]]
+                           ]]
+                        })],
                      ]]
-                  ]]
-               ]],
-               ['div', {class: 'page-section'}, [
-                  // BACK LINK
-                  ['div', {class: 'back-link back-link--uploads'}, [
-                     // TODO v2: add inline SVG
-                     ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
-                        ['span', {class: 'back-link__link-text'}, 'See all photos'],
+                  ]],
+                  ['div', {class: 'page-section'}, [
+                     // BACK LINK
+                     ['div', {class: 'back-link back-link--uploads'}, [
+                        // TODO v2: add inline SVG
+                        ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
+                           ['span', {class: 'back-link__link-text'}, 'See all photos'],
+                        ]],
                      ]],
                   ]],
-               ]],
-            ]]
-         ]]
-      ]]
+               ]]
+            ];
+         });
+      })
    ]];
 }
 
