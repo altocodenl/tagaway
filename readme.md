@@ -672,6 +672,10 @@ Only things that differ from client are noted.
 - `Data`:
    - `invites`: `{EMAIL: {firstName: STRING, token: STRING, sent: INT, accepted: INT|UNDEFINED}, ...}`.
 
+## Version history
+
+- Alpha/v0: bfa9ad50b5e54c78ba804ba35fe1f6310e55dced
+
 ## License
 
 ac;pic is written by [Altocode](https://altocode.nl) and released into the public domain.
