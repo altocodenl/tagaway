@@ -3058,9 +3058,9 @@ E.upload = function () {
                                  }),
                                  // TAG LIST HORIZONTAL
                                  ['ul', {class: 'tag-list-horizontal'}, [
-                                    // TODO v2: add inline SVG
                                     dale.do (newUpload.tags, function (tag, k) {
-                                       return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                       // TODO v2: add inline SVG
+                                       return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
                                           ['span', {class: 'tag__title'}, tag],
                                           // TODO: why must specify height so it looks exactly the same as markup?
                                           ['div', B.ev ({class: 'tag__actions', style: style ({height: 24})}, ['onclick', 'rem', ['State', 'upload', 'new', 'tags'], k]), [
@@ -3110,7 +3110,7 @@ E.upload = function () {
                                        ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
                                     ]],
                                     // TAG LIST HORIZONTAL
-                                    ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
+                                    ['ul', {class: 'tag-list-horizontal'}, dale.do (pending.tags, function (tag) {
                                        // TODO v2: add inline SVG
                                        return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
                                           ['span', {class: 'tag__title'}, tag],
