@@ -143,7 +143,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Payment late: 2 week notice with download.
 
 - Admin
-   - Retrieve stats & test.
+   - Logout.
+   - Invites: fix visual & clear boxes when done.
+   - Retrieve stats & test endpoint.
    - User management.
 
 - Other
