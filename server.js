@@ -329,13 +329,18 @@ H.s3del = function (s, user, keys, sizes) {
       })}}, function (error) {
          if (error) return s.next (0, error);
          var multi = redis.multi ();
-         // TODO replace with stat function
-         if (user) dale.go (sizes, function (size) {multi.hincrby ('users:' + user, 'bys3', - size)});
-         multi.exec (function (error) {
-            if (error) return s.next (0, error);
-            if (++counter === Math.ceil (keys.length / 1000)) s.next ();
-            else batch ();
-         });
+         if (user) sizes = dale.acc (sizes, function (a, b) {return a + b});
+         a.seq (s, [
+            ! user ? [] : [H.stat, [
+               ['stock', 'bys3',         - sizes],
+               ['stock', 'bys3-' + user, - s.pic.bys3],
+            ]],
+            function (s) {
+               if (error) return s.next (0, error);
+               if (++counter === Math.ceil (keys.length / 1000)) s.next ();
+               else batch ();
+            }
+         ]);
       });
    }
 
@@ -358,20 +363,7 @@ H.s3list = function (s, prefix) {
 
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
-H.stat = function (s, name, pf, n) {
-   var t = Date.now ();
-   t = (t - (t % (1000 * 60 * 10))) / 100000;
-   if (! pf) a.seq (s, [Redis, 'incrby', 'sti:' + name + ':' + t, n || 1]);
-   else      a.seq (s, function (s) {
-      var multi = redis.multi ();
-      if (name === 'A') t = new Date (new Date ().getUTCFullYear () + '-' + H.pad (new Date ().getUTCMonth () + 1) + '-' + H.pad (new Date ().getUTCDate ()) + 'T00:00:00.000Z').getTime () / 100000;
-      multi.pfadd ('stp:' + name + ':' + t, pf);
-      multi.sadd  ('stp',   name + ':' + t);
-      mexec (s, multi);
-   });
-}
-
-H.deletepic = function (s, id, username) {
+H.deletePic = function (s, id, username) {
    a.stop (s, [
       [function (s) {
          var multi = redis.multi ();
@@ -404,8 +396,6 @@ H.deletepic = function (s, id, username) {
          if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
          multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
          multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
-         // TODO replace with stat function
-         multi.hincrby ('users:' + s.pic.owner, 'byfs', - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0));
 
          dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
             multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
@@ -413,7 +403,81 @@ H.deletepic = function (s, id, username) {
 
          mexec (s, multi);
       },
+      function (s) {
+         H.stat (s, [
+            ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
+            ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
+            ['stock', 'pics', -1],
+            s.pic.by200 ? ['stock', 't200', -1] : [],
+            s.pic.by900 ? ['stock', 't900', -1] : [],
+         ]);
+      }
    ]);
+}
+
+// *** STATISTICS ***
+
+redis.script ('load', [
+   'local v = tonumber (redis.call ("get", KEYS [1]));',
+   'if (v == nil or (v < tonumber (ARGV [1]))) then',
+      'redis.call ("set", KEYS [1], ARGV [1])',
+      'return 1',
+      'else return 0',
+      'end'
+].join ('\n'), function (error, sha) {
+   H.statmax = sha;
+});
+
+redis.script ('load', [
+   'local v = tonumber (redis.call ("get", KEYS [1]));',
+   'if (v == nil or (v > tonumber (ARGV [1]))) then',
+      'redis.call ("set", KEYS [1], ARGV [1])',
+      'return 1',
+      'else return 0',
+      'end'
+].join ('\n'), function (error, sha) {
+   H.statmin = sha;
+});
+
+H.stat = function (s) {
+   var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
+   var t = Date.now (), multi = redis.multi ();
+   t = t - t % 1000;
+   // TODO: validations, add when exposing as a service. For each of the ops:
+      // op must be array of length 3 or 0 (for no-op)
+      // type is one of: flow, max, min, stock, unique
+      // name must be a string and cannot contain a colon
+      // if type is `unique`, value can be a string, integer or float
+      // if type is not `unique`, value can only be an integer or float
+   dale.go (ops, function (op) {
+      if (op.length === 0) return;
+      var type = op [0], name = op [1], value = op [2];
+      if (type === 'unique') {
+         var d = new Date (t);
+         // year, month, day, hour, minute, second
+         dale.go ({
+            y: new Date (d.getUTCFullYear () + '-01-01T00:00:00.000Z').getTime (),
+            M: new Date (d.getUTCFullYear () + '-' + H.pad (d.getUTCMonth () + 1) + '-01T00:00:00.000Z').getTime (),
+            d: d - d % (1000 * 60 * 60 * 24),
+            h: d - d % (1000 * 60 * 60),
+            m: d - d % (1000 * 60),
+            s: t,
+         }, function (date, period) {
+            multi.pfadd ('stat:u:' + name + ':' + (date + '').slice (0, -3) + ':' + period, value);
+         });
+      }
+      else if (type === 'stock') {
+         multi.incrbyfloat ('stat:s:' + name,                                value);
+         multi.incrbyfloat ('stat:s:' + name + ':' + (t + '').slice (0, -3), value);
+      }
+      else if (type === 'max' || type === 'min') {
+         multi.evalsha (H ['stat' + type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + (t + '').slice (0, -3), value);
+      }
+      else {
+         multi.incrbyfloat ('stat:f:' + name + ':' + (t + '').slice (0, -3), value);
+      }
+   });
+   mexec (s, multi);
 }
 
 // *** ROUTES ***
@@ -606,6 +670,7 @@ var routes = [
             multi.hset  ('invites', b.email, JSON.stringify ({accepted: Date.now ()}));
             mexec (s, multi);
          },
+         [H.stat, 'stock', 'users', 1],
          [H.log, b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']}],
          ! ENV ? [
             [a.get, reply, rs, 200, {token: '@emailtoken'}],
@@ -760,8 +825,10 @@ var routes = [
          if (rq.url.match (/^\/admin/)  && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
 
          astop (rs, [
-            [H.stat, 'a', user.username],
-            [H.stat, 'A', user.username],
+            [H.stat, [
+               ['unique',    'active', user.username],
+               ['flowTotal', 'rquser-' + user.username, 1],
+            ]],
             [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookiename], giz.config.expires],
             [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookiename]],
             function (s) {
@@ -821,10 +888,10 @@ var routes = [
          [a.make (giz.destroy), rq.user.username],
          function (s) {
             a.fork (s, s.data [0], function (pic) {
-               return [H.deletepic, pic, rq.user.username];
+               return [H.deletePic, pic, rq.user.username];
             }, {max: 5});
          },
-         // TODO: delete user stats
+         [H.stat, 'stock', 'users', -1],
          function (s) {
             var multi = redis.multi ();
             multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
@@ -1092,8 +1159,6 @@ var routes = [
             multi.sadd ('upic:'  + rq.user.username, pic.hash);
             multi.srem ('upicd:' + rq.user.username, pic.hash);
             multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
-            // TODO replace with stat function
-            multi.hincrby ('users:' + rq.user.username, 'byfs', pic.byfs + (pic.by200 || 0) + (pic.by900 || 0));
 
             dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()), function (tag) {
                multi.sadd ('pict:' + pic.id,                       tag);
@@ -1105,6 +1170,17 @@ var routes = [
 
             multi.hmset ('pic:' + pic.id, pic);
             mexec (s, multi);
+         },
+         function (s) {
+            H.stat (s, [
+               ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
+               ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
+               ['stock', 'bys3',                     pic.bys3],
+               ['stock', 'bys3-' + rq.user.username, pic.bys3],
+               ['stock', 'pics', 1],
+               pic.by200 ? ['stock', 't200', 1] : [],
+               pic.by900 ? ['stock', 't900', 1] : [],
+            ]);
          },
          [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined}],
          [reply, rs, 200],
@@ -1128,7 +1204,7 @@ var routes = [
 
       a.stop ([
          [a.fork, b.ids, function (id) {
-            return [H.deletepic, id, rq.user.username];
+            return [H.deletePic, id, rq.user.username];
          }, {max: 5}],
          [H.log, rq.user.username, {a: 'del', ids: b.ids}],
          [reply, rs, 200],
@@ -1479,16 +1555,25 @@ var routes = [
 
    ['get', 'account', function (rq, rs) {
       astop (rs, [
-         [Redis, 'lrange', 'ulog:' + rq.user.username, 0, -1],
+         [function (s) {
+            var multi = redis.multi ();
+            multi.lrange ('ulog:' + rq.user.username, 0, -1);
+            multi.get    ('stat:s:byfs-' + rq.user.username);
+            if (! ENV) multi.get ('stat:s:bys3-' + rq.user.username);
+            mexec (s, multi);
+         }],
          function (s) {
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
                type:     rq.user.type,
                created:  parseInt (rq.user.created),
-               // TODO replace with stat function
-               usage:    {limit: CONFIG.storelimit [rq.user.type], used: parseInt (rq.user ['byfs']) || 0, s3used: ENV ? undefined : parseInt (rq.user ['bys3']) || 0},
-               logs:     dale.go (s.last, JSON.parse),
+               usage:    {
+                  limit: CONFIG.storelimit [rq.user.type],
+                  used: parseInt (s.last [1]) || 0,
+                  s3used: ENV ? undefined : parseInt (s.last [2]) || 0
+               },
+               logs:     dale.go (s.last [0], JSON.parse),
             });
          }
       ]);
@@ -1560,22 +1645,33 @@ cicek.options.cookieSecret = SECRET.cookieSecret;
 cicek.options.log.console  = false;
 
 cicek.apres = function (rs) {
+   var t = Date.now ();
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
    }
 
+   var logs = [
+      ['flow', 'code-' + rs.log.code, 1],
+   ];
+
    if (rs.log.code >= 400) {
       if (['/favicon.ico', '/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+      logs.push (['flow', 'rq-bad', 1]);
+   }
+   else {
+      logs.push (['flow', 'rq-all', 1]);
+      logs.push (['flow', 'ms-all', t - rs.log.startTime]);
+      logs.push (['max',  'ms-all', t - rs.log.startTime]);
+      dale.go (['auth', 'pic', 'thumb', 'upload', 'delete', 'rotate', 'tag', 'query', 'share'], function (path) {
+         if (rs.log.method !== ((path === 'pic' || path === 'thumb') ? 'get' : 'post')) return;
+         if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
+         logs.push (['flow', 'rq-' + path, 1]);
+         logs.push (['flow', 'ms-' + path, rs.log.startTime]);
+         logs.push (['max',  'ms-' + path, rs.log.startTime]);
+      });
    }
 
-   if (rs.log.code === 200 || rs.log.code === 304) {
-      if (rs.log.method === 'get'  && rs.log.url.match (/^\/(pic|thumb)/)) H.stat (a.creat (), 'd');
-      if (rs.log.method === 'post' && rs.log.url.match (/^\/upload/))      H.stat (a.creat (), 'u');
-      if (rs.log.method === 'post' && rs.log.url.match (/^\/tag/))         H.stat (a.creat (), 't');
-   }
-
-   H.stat (a.creat (), 'l', false, Date.now () - rs.log.startTime);
-   H.stat (a.creat (), 'h' + rs.log.code);
+   H.stat (a.creat (), logs);
 
    cicek.Apres (rs);
 }

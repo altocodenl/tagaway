@@ -87,7 +87,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Store auth log.
 
 - Admin
-   - Statistics: store requests, space stored, total pics & users.
+   - Store statistics.
    - Block further uploads if storage limits are exceeded.
    - See & send invites.
 
@@ -414,61 +414,62 @@ All the routes below require an admin user to be logged in.
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
 
 - stat:...: statistics
-   - stat:ft:ID:DATE: flow total
-   - stat:fm:ID:DATE: flow min
-   - stat:fM:ID:DATE: flow max
-   - stat:s:ID: stock
-   - stat:s:ID:DATE: stock change
-   - stat:u:ID:PERIOD:DATE uniques
+   - stat:f:NAME:DATE: flow
+   - stat:m:NAME:DATE: min
+   - stat:M:NAME:DATE: max
+   - stat:s:NAME: stock
+   - stat:s:NAME:DATE: stock change
+   - stat:u:NAME:PERIOD:DATE: unique
 
-- stat:u (uniques)
+- stat:u (unique)
    - stat:u:users:DATE:PERIOD: active users
 
-- stat:s:ID & stat:s:ID:DATE (stock)
-   - stat:s:byfs:          total bytes stored in FS
-   - stat:s:bys3:          total bytes stored in S3
-   - stat:s:byfs-USERNAME: total bytes stored in FS for USERNAME
-   - stat:s:bys3-USERNAME: total bytes stored in S3 for USERNAME
-   - stat:s:pics:  total pics
-   - stat:s:users: total users
-   - stat:s:t200:  total thumbnails of size 200
-   - stat:s:t900:  total thumbnails of size 900
+- stat:s:NAME & stat:s:NAME:DATE (stock)
+   - stat:s:byfs[:DATE]:          total bytes stored in FS
+   - stat:s:bys3[:DATE]:          total bytes stored in S3
+   - stat:s:byfs-USERNAME[:DATE]: total bytes stored in FS for USERNAME
+   - stat:s:bys3-USERNAME[:DATE]: total bytes stored in S3 for USERNAME
+   - stat:s:pics[:DATE]:  total pics
+   - stat:s:t200[:DATE]:  total thumbnails of size 200
+   - stat:s:t900[:DATE]:  total thumbnails of size 900
+   - stat:s:users[:DATE]: total users
 
-- stat:fM:ID:DATE (flow maximums)
-   - stat:fM:ms-all:DATE:    maximum milliseconds for all requests for all endpoints
-   - stat:fM:ms-auth:DATE:   maximum milliseconds for all requests for /auth
-   - stat:fM:ms-pic:DATE:    maximum milliseconds for all requests for /pic
-   - stat:fM:ms-thumb:DATE:  maximum milliseconds for all requests for /thumb
-   - stat:fM:ms-upload:DATE: maximum milliseconds for all requests for /upload
-   - stat:fM:ms-delete:DATE: maximum milliseconds for all requests for /delete
-   - stat:fM:ms-rotate:DATE: maximum milliseconds for all requests for /rotate
-   - stat:fM:ms-tag:DATE:    maximum milliseconds for all requests for /tag
-   - stat:fM:ms-query:DATE:  maximum milliseconds for all requests for /query
-   - stat:fM:ms-share:DATE:  maximum milliseconds for all requests for /share
+- stat:M:NAME:DATE (max)
+   - stat:M:ms-all:DATE:    maximum milliseconds for successful requests for all endpoints
+   - stat:M:ms-auth:DATE:   maximum milliseconds for successful requests for POST /auth
+   - stat:M:ms-pic:DATE:    maximum milliseconds for successful requests for GET /pic
+   - stat:M:ms-thumb:DATE:  maximum milliseconds for successful requests for GET /thumb
+   - stat:M:ms-upload:DATE: maximum milliseconds for successful requests for POST /upload
+   - stat:M:ms-delete:DATE: maximum milliseconds for successful requests for POST /delete
+   - stat:M:ms-rotate:DATE: maximum milliseconds for successful requests for POST /rotate
+   - stat:M:ms-tag:DATE:    maximum milliseconds for successful requests for POST /tag
+   - stat:M:ms-query:DATE:  maximum milliseconds for successful requests for POST /query
+   - stat:M:ms-share:DATE:  maximum milliseconds for successful requests for POST /share
 
-- stat:ft (flow totals)
-   - stat:ft:code-NNN:DATE:  total requests responded with HTTP code NNN
-   - stat:ft:rq-USERNAME:DATE: total requests from USERNAME
-   - stat:ft:rq-all:DATE:    total requests for all endpoints
-   - stat:ft:rq-auth:DATE:   total requests for /auth
-   - stat:ft:rq-pic:DATE:    total requests for /pic
-   - stat:ft:rq-thumb:DATE:  total requests for /thumb
-   - stat:ft:rq-upload:DATE: total requests for /upload
-   - stat:ft:rq-delete:DATE: total requests for /delete
-   - stat:ft:rq-rotate:DATE: total requests for /rotate
-   - stat:ft:rq-tag:DATE:    total requests for /tag
-   - stat:ft:rq-query:DATE:  total requests for /query
-   - stat:ft:rq-share:DATE:  total requests for /share
-   - stat:ft:ms-all:DATE:    total milliseconds for all requests for all endpoints
-   - stat:ft:ms-auth:DATE:   total milliseconds for all requests for /auth
-   - stat:ft:ms-pic:DATE:    total milliseconds for all requests for /pic
-   - stat:ft:ms-thumb:DATE:  total milliseconds for all requests for /thumb
-   - stat:ft:ms-upload:DATE: total milliseconds for all requests for /upload
-   - stat:ft:ms-delete:DATE: total milliseconds for all requests for /delete
-   - stat:ft:ms-rotate:DATE: total milliseconds for all requests for /rotate
-   - stat:ft:ms-tag:DATE:    total milliseconds for all requests for /tag
-   - stat:ft:ms-query:DATE:  total milliseconds for all requests for /query
-   - stat:ft:ms-share:DATE:  total milliseconds for all requests for /share
+- stat:f (flow)
+   - stat:f:rquser-USERNAME:DATE: total requests from USERNAME
+   - stat:f:code-NNN:DATE:  total requests responded with HTTP code NNN
+   - stat:f:rq-bad:DATE:    total unsuccessful requests for all endpoints
+   - stat:f:rq-all:DATE:    total successful requests for all endpoints
+   - stat:f:rq-auth:DATE:   total successful requests for /auth
+   - stat:f:rq-pic:DATE:    total successful requests for /pic
+   - stat:f:rq-thumb:DATE:  total successful requests for /thumb
+   - stat:f:rq-upload:DATE: total successful requests for /upload
+   - stat:f:rq-delete:DATE: total successful requests for /delete
+   - stat:f:rq-rotate:DATE: total successful requests for /rotate
+   - stat:f:rq-tag:DATE:    total successful requests for /tag and /tags
+   - stat:f:rq-query:DATE:  total successful requests for /query
+   - stat:f:rq-share:DATE:  total successful requests for /share
+   - stat:f:ms-all:DATE:    total milliseconds for successful requests for all endpoints
+   - stat:f:ms-auth:DATE:   total milliseconds for successful requests for POST /auth
+   - stat:f:ms-pic:DATE:    total milliseconds for successful requests for GET /pic
+   - stat:f:ms-thumb:DATE:  total milliseconds for successful requests for GET /thumb
+   - stat:f:ms-upload:DATE: total milliseconds for successful requests for POST /upload
+   - stat:f:ms-delete:DATE: total milliseconds for successful requests for POST /delete
+   - stat:f:ms-rotate:DATE: total milliseconds for successful requests for POST /rotate
+   - stat:f:ms-tag:DATE:    total milliseconds for successful requests for POST /tag
+   - stat:f:ms-query:DATE:  total milliseconds for successful requests for POST /query
+   - stat:f:ms-share:DATE:  total milliseconds for successful requests for POST /share
 
 Used by giz:
 
