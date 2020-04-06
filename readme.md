@@ -340,7 +340,13 @@ All the routes below require an admin user to be logged in.
 #### Admin routes
 
 `POST /admin/invites`
-   - Body must be `{email: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
+   - Body must be `{email: STRING, firstName: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
+
+`GET /admin/invites`
+   - Returns an object where each key is an email and each value is an object of the form `{token: STRING, firstName: STRING, sent: INT, accepted: INT|undefined}`.
+
+`POST /admin/invites/delete`
+   - Body must be `{email: STRING}`.
 
 ### Redis structure
 
@@ -575,7 +581,7 @@ Used by giz:
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is `State.pictures` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
+   2. `change State.page`: if current page is `pics` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics` and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`.
@@ -618,6 +624,39 @@ Used by giz:
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
+
+## Admin
+
+Only things that differ from client are noted.
+
+### Elements
+
+**Pages**:
+
+1. `E.dashboard`
+2. `E.invites`
+   - Depends on: `Data.invites`, `State.newInvite`
+   - Events:
+      - `click -> create invite`
+      - `click -> delete invite`
+      - `change -> set State.newInvite.*`
+      - `click -> del State.newInvite`
+
+### Listeners
+
+1. Invites
+   1. `retrieve invites`: invokes `get admin/invites`.
+   2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites`, otherwise it invokes `snackbar`.
+   3. `delete invite`: invokes `delete admin/invites/EMAIL`; if successful, invokes `retrieve invites`, otherwise it invokes `snackbar`.
+   2. `change State.page`: if current page is `invites` and there's no `Data.invites`, it invokes `retrieve invites`.
+
+### Store
+
+- `State`:
+   - `newInvite`: `{email: STRING, firstName: STRING}`.
+
+- `Data`:
+   - `invites`: `{EMAIL: {firstName: STRING, token: STRING, sent: INT, accepted: INT|UNDEFINED}, ...}`.
 
 ## License
 

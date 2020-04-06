@@ -501,12 +501,9 @@ var routes = [
             ['title', 'ac;pic'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-            dale.go (['ionicons.min', 'normalize.min'], function (v) {
-               return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
-            })
          ]],
          ['body', [
-            dale.go (['gotoB.min', 'murmurhash'], function (v) {
+            dale.go (['gotoB.min'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
             ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
@@ -531,11 +528,10 @@ var routes = [
             dale.go (['gotoB.min'], function (v) {
                return ['script', {src: 'lib/' + v + '.js'}];
             }),
-            ['script', 'var COOKIENAME = \'' + CONFIG.cookiename + '\';'],
             ['script', {src: 'admin.js'}]
          ]]
       ]]
-   ]), 'html'],
+   ])],
 
    // *** REQUEST INVITE ***
 
@@ -667,7 +663,8 @@ var routes = [
                created:             Date.now (),
             });
             if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
-            multi.hset  ('invites', b.email, JSON.stringify ({accepted: Date.now ()}));
+            s.invite.accepted = Date.now ();
+            multi.hset  ('invites', b.email, JSON.stringify (s.invite));
             mexec (s, multi);
          },
          [H.stat, 'stock', 'users', 1],
@@ -1601,9 +1598,18 @@ var routes = [
       ]);
    }],
 
-   ['delete', 'admin/invites/:email', function (rq, rs) {
+   ['post', 'admin/invites/delete', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
+         ['body.email', b.email, 'string'],
+         ['body.email', b.email, H.email, teishi.test.match],
+      ])) return;
+
       astop (rs, [
-         [Redis, 'hdel', 'invites', rq.data.params.email],
+         [Redis, 'hdel', 'invites', rq.body.email],
          [reply, rs, 200],
       ]);
    }],
@@ -1874,6 +1880,7 @@ if (cicek.isMaster) a.stop ([
          return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
       }, {max: 5});
    },
+   // Missing FS files: nothing to do but report.
    function (s) {
       var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {type: 'File consistency check success.'}, function (k) {
          if (s [k]) return [k, s [k]];

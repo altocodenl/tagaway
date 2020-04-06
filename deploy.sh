@@ -20,6 +20,11 @@ if [ "$2" == "client" ] ; then
    exit 0
 fi
 
+if [ "$2" == "admin" ] ; then
+   scp admin.js $HOST:$FOLDER
+   exit 0
+fi
+
 if [ "$2" == "gotoB" ] ; then
    scp lib/gotoB.min.js $HOST:$FOLDER/lib
    exit 0

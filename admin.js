@@ -1,324 +1,563 @@
-(function () {
+// *** GOTOB V2 SHIM ***
+// TODO v2: remove
 
-   // *** SETUP ***
+B.forget ('eventlog');
 
-   var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-   var type = teishi.t, log = teishi.l;
+var T = teishi.time ();
+var Do = B.do;
+B.listen ('*', [], {priority: 1000000}, function (x) {
+   //x.args ? console.log (teishi.time () - T, x.verb, x.path, x.args) : console.log (teishi.time () - T, x.verb, x.path);
+});
 
-   // *** LOGGING ***
+lith.css.style = function (attributes, prod) {
+   var result = lith.css.g (['', attributes], prod);
+   return result === false ? result : result.slice (1, -1);
+}
 
-   B.forget ('eventlog');
+B.perflogs = true;
 
-   B.listen ({id: 'eventlog', verb: '*', path: [], priority: 1}, function (x) {
-      B.eventlog.unshift ({verb: x.verb, path: x.path, from: x.from});
-      if (arguments.length > 1) B.eventlog [0].args = [].slice.call (arguments, 1);
-      if (! B.verbose) return;
-      var toprint = ['event #' + B.eventlog.length, B.eventlog [0].verb, B.eventlog [0].path];
-      if (dale.keys (B.eventlog [0]).indexOf ('args') > -1) toprint.push (JSON.stringify (B.eventlog [0].args).slice (0, 500));
-      if (B.eventlog [0].from [1]) {
-         toprint.push ('FROM');
-         dale.do (['ev', 'verb', 'path'], function (i) {
-            if (B.eventlog [0].from [1].verb && 'ev' === i) return;
-            if (B.eventlog [0].from [1] [i]) toprint.push (B.eventlog [0].from [1] [i]);
-            if (dale.keys (B.eventlog [0].from [1]).indexOf ('args') > -1) toprint.push (JSON.stringify (B.eventlog [0].from [1].args).slice (0, 500));
-         });
+// *** SETUP ***
+
+var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
+var type = teishi.t, clog = teishi.l, media = lith.css.media, style = lith.css.style;
+
+// *** CSS ***
+
+var CSS = {
+   toRGBA: function (hex) {
+      hex = hex.slice (1);
+      return parseInt (hex.slice (0, 2), 16) + ', ' + parseInt (hex.slice (2, 4), 16) + ', ' + parseInt (hex.slice (4, 6), 16);
+   },
+   // *** variables.scss ***
+   vars: {
+      tagColors: ['green', 'blue', 'yellow', 'orange', 'coral', 'indigo'],
+      // Layout sizes
+      'sidebar-width': 300,
+      // Colors
+      'color--one': '#5b6eff',
+      'color--attach': '#87D7AB',
+      'color--remove': '#FC201F',
+      'highlight--neutral': '#d8eeff',
+      'highlight--selection': '#ffeccc',
+      'highlight--positive': '#cfefdd',
+      'highlight--negative': '#ffd3d3',
+      // Greys
+      'grey--darkest': '#3a3a3a',
+      'grey--darker': '#484848',
+      'grey': '#8b8b8b',
+      'grey--light': '#dedede',
+      'grey--lighter': '#f2f2f2',
+      'grey--lightest': '#fbfbfb',
+      // typefaces
+      fontPrimarySemiBold: {
+         'font-family': '\'Montserrat\'',
+         'font-weight': '600',
+         'font-style': 'normal',
+      },
+      fontPrimarySemiBoldItalic: {
+         'font-family': '\'Montserrat\'',
+         'font-weight': '600',
+         'font-style': 'italic',
+      },
+      fontPrimaryMedium: {
+         'font-family': '\'Montserrat\'',
+         'font-weight': '500',
+         'font-style': 'normal',
+      },
+      fontPrimaryMediumItalic: {
+         'font-family': '\'Montserrat\'',
+         'font-weight': '500',
+         'font-style': 'italic',
+      },
+      fontPrimaryRegular: {
+         'font-family': '\'Montserrat\'',
+         'font-weight': '400',
+         'font-style': 'normal',
+      },
+      fontPrimaryItalic: {
+         'font-family': '\'Montserrat\'',
+         'font-weight': '400',
+         'font-style': 'italic',
+      },
+      // border radius
+      'border-radius--s': 3,
+      'border-radius--m': 6,
+      'border-radius--l': 12,
+      // padding
+      'padding--xs': 6,
+      'padding--s': 10,
+      'padding--m': 22,
+      'padding--l': 34,
+      'padding--xl': 50,
+      'padding--xxl': 74,
+      // transition easings
+      easeOutQuad:  'all 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      easeInQuad:   'all 400ms cubic-bezier(0.55, 0.085, 0.68, 0.53)',
+      easeOutQuart: 'all 400ms cubic-bezier(0.165, 0.84, 0.44, 1)',
+      easeInQuart:  'all 400ms cubic-bezier(0.895, 0.03, 0.685, 0.22)',
+   },
+   // *** typography_setup.scss ***
+   typography: {
+      typeBase: 13,
+      typeRatio: 1.125,
+      typeLineHeight: 1.5,
+      fontSize: function (number, ratio) {
+         return (Math.round (Math.pow (ratio || CSS.typography.typeRatio, number) * 100000) / 100000) + 'rem';
+      },
+      spaceVer: function (number, lineHeight) {
+         return (Math.round (number * (lineHeight || CSS.typography.typeLineHeight) * 100000) / 100000) + 'rem';
+      },
+   },
+};
+
+CSS.litc = [
+   ['body', {
+      padding: 50,
+      mixin1: CSS.vars.fontPrimaryRegular,
+   }],
+   ['.action', {
+      color: 'blue',
+      cursor: 'pointer',
+      'font-weight': 'bold',
+   }],
+];
+
+// *** ELEMENTS ***
+
+var E = {};
+
+// *** NATIVE LISTENERS ***
+
+window.addEventListener ('error', function () {
+   B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
+});
+
+window.addEventListener ('hashchange', function () {
+   B.do ('read', 'hash');
+});
+
+// *** LISTENERS ***
+
+dale.do ([
+
+   // *** GENERAL LISTENERS ***
+
+   ['initialize', [], {burn: true}, function (x) {
+      B.do (x, 'reset',    'store');
+      B.do (x, 'read',     'hash');
+      B.do (x, 'retrieve', 'csrf');
+      B.mount ('body', E.base ());
+   }],
+   ['reset', 'store', function (x, logout) {
+      B.do (x, 'set', 'State', {});
+      B.do (x, 'set', 'Data',  {});
+      if (logout) {
+         B.r.log = [];
+         B.do (x, 'set', ['Data', 'csrf'], false);
       }
-      console.log.apply (console, toprint);
-   });
-
-   // *** ERROR REPORTING ***
-
-   window.onerror = function () {
-      c.ajax ('post', 'api/error', {}, dale.do (arguments, function (v) {
-         return v.toString ();
-      }));
-   }
-
-   // *** INITIALIZATION OF STATE/DATA ***
-
-   B.do ({from: {ev: 'initialize'}}, 'set', 'State', {});
-   B.do ({from: {ev: 'initialize'}}, 'set', 'Data',  {});
-   window.State = B.get ('State'), window.Data = B.get ('Data');
-
-   // *** NAVIGATION ***
-
-   B.listen ('change', 'hash', function (x) {
-      var path = window.location.hash.replace ('#/', '').split ('/');
-      if (path [0] === 'auth' && path [1] === 'signup' && path [2]) State.token = path [2];
-      B.do (x, 'set', ['State', 'view'],    path [0]);
-      B.do (x, 'set', ['State', 'subview'], path [1]);
-   });
-
-   B.listen ('change', ['State', '*'], function (x) {
-      if (x.path [1] !== 'view' && x.path [1] !== 'subview') return;
-      var view = B.get ('State', 'view');
-      var cookie = c.cookie () ? c.cookie () [COOKIENAME] : undefined;
-      if (! cookie && view !== 'auth') return B.do (x, 'set', ['State', 'view'], 'auth');
-      if (cookie   && view !== 'main') return B.do (x, 'set', ['State', 'view'], 'main');
-      window.location.hash = ['#', B.get ('State', 'view'), B.get ('State', 'subview')].join ('/');
-   });
-
-   window.addEventListener ('hashchange', function () {
-      B.do ({from: {ev: 'hashchange'}}, 'change', 'hash')
-   });
-
-   // *** INITIALIZATION ***
-
-   c.ready (function () {
-      B.do ({from: {ev: 'ready'}}, 'change', 'hash');
-      B.mount ('body', Views.base ({from: {ev: 'ready'}}));
-   });
-
-   // *** HELPERS ***
-
-   var H = window.H = {};
-
-   H.if = function (cond, then, Else) {
-      return cond ? then : Else;
-   }
-
-   H.from = function (x, o) {
-      x.from.unshift (o);
-      return x;
-   }
-
-   H.logout = function () {
-      c.ajax ('get', 'auth/logout');
-      B.eventlog = [];
-      B.do ({from: {ev: 'logout'}}, 'set', 'State', {});
-      B.do ({from: {ev: 'logout'}}, 'set', 'Data',  {});
       window.State = B.get ('State'), window.Data = B.get ('Data');
-      c.cookie (false);
-      B.do ({from: {ev: 'logout'}}, 'set', ['State', 'view'], 'auth');
-   }
-
-   H.authajax = function (x, m, p, h, b, cb) {
-      return c.ajax (m, p, h, b, function (error, rs) {
-         if (error && error.status === 403) {
-            H.logout ();
-            return B.do (x, 'notify', 'red', 'Your session has expired. Please login again.');
-         }
-         cb (error, rs);
-      });
-   }
-
-   H.picPath = function (pic, size) {
-      if (! size && pic.t200) return 'thumb/' + pic.t200;
-      if (pic.t900) return 'thumb/' + pic.t900;
-      return 'pic/' + pic.id;
-   }
-
-   H.fullScreen = function (x, exit) {
-      // https://www.sitepoint.com/use-html5-full-screen-api/
-      // https://stackoverflow.com/a/10082234
-      if (! exit) {
-         dale.do (['requestFullScreen', 'webkitRequestFullscreen', 'mozRequestFullScreen', 'msRequestFullscreen'], function (v) {
-            if (type (document.documentElement [v]) === 'function') document.documentElement [v] ();
-         });
-         if (window.ActiveXObject) {
-            var wscript = new ActiveXObject ('WScript.Shell');
-            if (wscript) wscript.SendKeys ('{F11}');
-         }
+   }],
+   ['clear', 'snackbar', function (x) {
+      var existing = B.get ('State', 'snackbar');
+      if (! existing) return;
+      clearTimeout (existing.timeout);
+      B.do (x, 'rem', 'State', 'snackbar');
+   }],
+   ['snackbar', [], function (x, snackbar) {
+      B.do (x, 'clear', 'snackbar');
+      var colors = {green: '#04E762', red: '#D33E43', yellow: '#ffff00'};
+      var timeout = setTimeout (function () {
+         B.do (x, 'rem', 'State', 'snackbar');
+      }, 4000);
+      B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
+   }],
+   [/get|post/, [], function (x, headers, body, cb) {
+      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout';
+      // CSRF protection
+      if (x.verb === 'post' && ! authRequest) {
+         if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
+         else                                  body.csrf = B.get ('Data', 'csrf');
       }
-      else {
-         dale.do (['exitFullScreen', 'webkitExitFullscreen', 'mozCancelFullScreen', 'msExitFullscreen'], function (v) {
-            if (type (document [v]) === 'function') document [v] ();
-         });
-         if (window.ActiveXObject) {
-            var wscript = new ActiveXObject ('WScript.Shell');
-            if (wscript) wscript.SendKeys ('{ESC}');
+      // TODO v2: uncomment
+      //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
+      c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
+         if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
+            B.do (x, 'reset', 'store', true);
+            return B.do (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
          }
+         if (cb) cb (x, error, rs);
+      });
+   }],
+   ['error', [], function (x) {
+      B.do (x, 'post', 'error', {}, {log: B.r.log, error: dale.do (arguments, teishi.s).slice (1)});
+   }],
+   ['read', 'hash', function (x) {
+      var hash = window.location.hash.replace ('#/', '').split ('/');
+      B.do (x, 'set', ['State', 'page'], hash [0]);
+   }],
+   ['change', ['State', 'page'], function (x) {
+      var page = B.get ('State', 'page'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
+
+      if (logged && redirect) {
+         page = redirect;
+         B.do (x, 'rem', 'State', 'redirect');
       }
-      setTimeout (function () {
-         B.do (H.from (x, {ev: 'fullScreen'}), 'set', ['State', 'screen'], {w: window.innerWidth, h: window.innerHeight});
-      }, 1);
 
-   }
+      var allowed = logged ? ['dashboard', 'invites'] : ['login'];
 
-   // *** VIEWS ***
+      if (allowed.indexOf (page) === -1) {
+         if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
+         return B.do (x, 'set', ['State', 'page'], allowed [0]);
+      }
 
-   var Views = {};
+      document.title = ['ac;pic admin', page].join (' - ');
 
-   Views.base = function (x) {
-      return B.view (x, ['State', 'view'], function (x, view) {
-         return ['div', {class: 'pure-g'}, [
-            ['div', {class: 'pure-u-1-24'}],
-            ['div', {class: 'pure-u-22-24'}, [
-               Views.notify (x),
-               Views [view] ? Views [view] (x) : undefined,
-            ]],
-            ['div', {class: 'pure-u-1-24'}],
-          ]];
+      if (window.location.hash.replace ('#/', '').split ('/') [0] !== page) window.location.hash = '#/' + page;
+   }],
+
+   // *** AUTH LISTENERS ***
+
+   ['retrieve', 'csrf', function (x) {
+      B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
+         if (error && error.status !== 403) return B.do (x, 'snackbar', 'red', 'Connection or server error.');
+         B.do (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
       });
-   }
-
-   // *** NOTIFY ***
-
-   Views.notify = function (x) {
-      return B.view (x, ['State', 'notify'], {listen: [
-         ['notify', '*', function (x, message, notimeout) {
-            if (B.get ('State', 'notify', 'timeout')) clearTimeout (B.get ('State', 'notify', 'timeout'));
-            B.do (x, 'set', ['State', 'notify'], {color: x.path [0], message: message});
-            if (! notimeout) B.do (x, 'set', ['State', 'notify', 'timeout'], setTimeout (function () {
-               B.do (x, 'rem', 'State', 'notify');
-            }, 3000));
-         }],
-      ]}, function (x, notify) {
-         if (! notify) return;
-         var colormap = {red: '#ff0033'};
-         return [
-            ['style', [
-               ['div.notify', {
-                  position: 'fixed',
-                  'bottom, left': 0,
-                  margin: '0 auto',
-                  color: 'white',
-                  border: 'solid 4px ' + (colormap [notify.color] || notify.color),
-                  'background-color': '#333333',
-                  height: '1.6em',
-                  width: 1,
-                  'z-index': '2',
-                  padding: '0.5em',
-                  opacity: notify ? 1 : 0,
-                  'text-align': 'center',
-                  'font-size': '1.2em'
-               }]
-            ]],
-            ['div', B.ev ({class: 'notify'}, ['onclick', 'rem', 'State', 'notify']), notify.message],
-         ];
+   }],
+   ['change', ['Data', 'csrf'], function (x) {
+      B.do (x, 'change', ['State', 'page']);
+   }],
+   ['login', [], function (x) {
+      B.do (x, 'post', 'auth/login', {}, {
+         username: c ('#auth-username').value,
+         password: c ('#auth-password').value,
+         tz:       new Date ().getTimezoneOffset ()
+      }, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'Please submit valid credentials.');
+         B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
       });
-   }
+   }],
 
-   // *** AUTH ***
+   // *** INVITE LISTENERS ***
 
-   Views.auth = function (x) {
-      return B.view (x, ['State', 'subview'], {listen: [
-         ['submit', 'auth', function (x) {
-            var credentials = {
-               username: c ('#auth-username').value,
-               password: c ('#auth-password').value
-            };
-            if (subview === 'login') credentials.tz = new Date ().getTimezoneOffset ();
-            c.ajax ('post', 'auth/' + B.get ('State', 'subview'), {}, credentials, function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error logging in.');
-               else              B.do (x, 'notify', 'green', 'Welcome!');
-               dale.do (rs.headers, function (v, k) {
-                  if (k.match (/^cookie/i)) document.cookie = v;
-               });
-               B.do (x, 'set', ['State', 'view'], 'main');
-            });
+   ['retrieve', 'invites', function (x) {
+      B.do (x, 'get', 'admin/invites', {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving data.');
+         B.do (x, 'set', ['Data', 'invites'], rs.body);
+      });
+   }],
+   ['create', 'invite', function (x) {
+      B.do (x, 'post', 'admin/invites', {}, B.get ('State', 'newInvite'), function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error creating the invite.');
+         B.do (x, 'retrieve', 'invites');
+      });
+   }],
+   ['delete', 'invite', function (x, email) {
+      if (! confirm ('Are you sure you want to delete the invite?')) return;
+      B.do (x, 'post', 'admin/invites/delete', {}, {email: email}, function (x, error, rs) {
+         clog (error.responseText);
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the invite.');
+         B.do (x, 'retrieve', 'invites');
+      });
+   }],
+   ['change', ['State', 'page'], function (x) {
+      if (B.get ('State', 'page') !== 'invites') return;
+      if (! B.get ('Data', 'invites')) B.do (x, 'retrieve', 'invites');
+   }],
+
+], function (v) {
+   B.listen.apply (null, v);
+});
+
+// *** BASE ELEMENT ***
+
+E.base = function () {
+   return [
+      ['style', CSS.litc],
+      E.snackbar (),
+      // TODO v2: merge two elements into one
+      B.view (['Data', 'csrf'], function (x, csrf) {
+         if (csrf !== undefined) return B.view (['State', 'page'], function (x, page) {
+            if (E [page]) return E [page] ();
+         });
+      })
+   ];
+}
+
+// *** SNACKBAR ELEMENT ***
+
+E.snackbar = function () {
+   return [
+      ['style', [
+         ['.snackbar', {
+            position: 'fixed',
+            bottom: 70,
+            left: 0,
+            'z-index': '1000',
+            display: 'flex',
+            'align-items, justify-content': 'center',
+            width: 1,
+            'min-height': 50,
+            'padding-top, padding-bottom': CSS.typography.spaceVer (1),
+            'padding-left, padding-right': 60, // give the close button space
+            color: CSS.vars ['highlight-100'],
+            transition: CSS.vars.easeOutQuad,
          }],
-      ], ondraw: function (x) {
-         if (['login'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'login');
-      }}, function (x, subview) {
-         var fields = ['Username', 'Password'];
-         return [
-            ['style', [
-               ['label', {width: 80, display: 'inline-block'}]
+         media ('screen and (max-width: 767px)', ['.snackbar', {
+            'justify-content': 'flex-start',
+            'padding-left': CSS.vars ['padding--m'],
+            'padding-right': 60,
+         }]),
+         ['.markup-state_snackbar-closed .snackbar', {
+            opacity: '0',
+            'pointer-events': 'none',
+            transform: 'translateY(100%)',
+         }],
+         ['.markup-state_snackbar-open .snackbar', {
+            opacity: '1',
+            'pointer-events': 'all',
+            transform: 'none',
+         }],
+         ['.snackbar__close', {
+            position: 'absolute',
+            top: 0.5,
+            right: CSS.vars ['padding--s'],
+            transform: 'translateY(-50%)',
+         }],
+         media ('screen and (max-width: 767px)', ['.snackbar__close', {right: 0}]),
+         ['.snackbar__text', {
+            'font-size': CSS.typography.fontSize (2),
+            mixin1: CSS.vars.fontPrimaryRegular,
+         }],
+         ['.snackbar__text-concept', {mixin1: CSS.vars.fontPrimarySemiBold}],
+      ]],
+      B.view (['State', 'snackbar'], function (x, snackbar) {
+         if (! snackbar) return;
+         var bcolor = 'rgba(' + CSS.toRGBA (snackbar.color) + ', 0.9)';
+         return ['div', {class: 'snackbar', style: style ({bottom: 0, 'background-color': bcolor})}, [
+            ['p', {class: 'snackbar__text'}, [
+               ['span', {class: 'snackbar__text-concept'}, snackbar.message],
             ]],
-            ['form', {class: 'pure-form pure-form-aligned', onsubmit: 'event.preventDefault ()'}, [
-               ['fieldset', [
-                  ['legend', subview],
-                  ['br'],
-                  dale.do (fields, function (V) {
-                     var v = V.toLowerCase ();
-                     return ['div', {class: 'pure-control-group'}, [
-                        ['label', {for: 'auth-' + v}, V],
-                        ['input', {id:  'auth-' + v, type: v === 'password' ? v : 'text', placeholder: v}]
-                     ]];
-                  }),
-                  ['div', {class: 'pure-controls'}, [
-                     ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'submit', 'auth']), 'Submit'],
-                     ['br'], ['br'],
-                  ]]
+            ['div', B.ev ({class: 'snackbar__close'}, ['onclick', 'clear', 'snackbar']), [
+               ['div', {class: 'close-button close-button--snackbar'}, [
+                  ['div', {class: 'close-button__inner'}, [
+                     ['span', {class: 'close-button__line'}],
+                     ['span', {class: 'close-button__line'}],
+                  ]],
+               ]],
+            ]],
+         ]];
+      })
+   ];
+}
+
+// *** LOGIN ELEMENT ***
+
+E.login = function () {
+   return [
+      ['style', [
+         ['input', {'font-size': 24}],
+         // *** enter ***
+         ['.enter', {
+            display: 'flex',
+            'flex-direction': 'column',
+            'justify-content, align-items': 'center',
+            width: 1,
+            'padding-top': CSS.typography.spaceVer (4),
+            'padding-left, padding-right': CSS.vars ['padding--m'],
+            'padding-bottom': CSS.typography.spaceVer (6),
+         }],
+         media ('screen and (max-width: 767px)', ['.enter', {'padding-top': CSS.typography.spaceVer (3)}]),
+         ['.enter--signup', {'padding-top': CSS.typography.spaceVer (4)}],
+         ['.enter__header', {'margin-bottom': CSS.typography.spaceVer (2)}],
+         ['.enter__footer', {
+            'margin-top': CSS.typography.spaceVer (1.5),
+            'font-size': CSS.typography.fontSize (1),
+            'line-height': CSS.typography.spaceVer (1),
+            color: CSS.vars ['highlight-60'],
+            'text-align': 'center',
+         }],
+         ['.enter__footer-link', {
+            color: CSS.vars ['highlight-60'],
+            transition: CSS.vars.easeOutQuart,
+            'text-decoration': 'underline',
+         }],
+         media ('screen and (min-width: 1025px)', ['.enter__footer-link:hover', {color: CSS.vars ['color--one']}]),
+         // *** enter-form ***
+         ['.enter-form', {
+            display: 'flex',
+            'flex-direction': 'column',
+            'justify-content': 'center',
+         }],
+         ['.enter-form__input', {
+            'border, background': 'none',
+            'border-bottom': '1px solid ' + CSS.vars.darkest,
+            'font-size': 16,
+            width: 1,
+            'padding-top, padding-bottom': CSS.typography.spaceVer (1),
+            'padding-left, padding-right': 2,
+            color: CSS.vars ['highlight-100'],
+            'margin-bottom': CSS.typography.spaceVer (0.5),
+         }, ['&:focus', {'border-color': CSS.vars ['highlight-60']}]],
+         media ('screen and (max-width: 767px)', ['.enter-form__input', {'min-width': 0}]),
+         ['.enter-form__forgot-password', {
+            color: CSS.vars ['highlight-60'],
+            'font-size': CSS.typography.fontSize (1),
+            'text-decoration': 'underline',
+            transition: CSS.vars.easeOutQuart,
+            'text-align': 'center',
+            'margin-top': CSS.typography.spaceVer (1.5),
+            'margin-bottom': CSS.typography.spaceVer (1),
+         }],
+         media ('screen and (min-width: 1025px)', ['.enter-form__forgot-password:hover', {color: CSS.vars ['color--one']}]),
+         // Login form - Buttons
+         ['.enter-form__button', {
+            display: 'flex',
+            'align-items, justify-content': 'center',
+            height: 48,
+            'font-size': 16,
+            mixin1: CSS.vars.fontPrimaryMedium,
+            border: 'none',
+            outline: '0',
+            'background-color': 'transparent',
+            width: 1,
+            'border-radius': 100,
+            'margin-top': CSS.typography.spaceVer (1),
+            transition: CSS.vars.easeOutQuart,
+         }],
+         media ('screen and (max-width: 767px)', ['.enter-form__button', {'font-size': CSS.typography.fontSize (2)}]),
+         ['.enter-form__button-icon', {
+            display: 'inline-block',
+            'height, width': 20,
+            'margin-right': CSS.vars ['padding--xs'],
+         }],
+         ['.enter-form__button--submit', {'margin-top': CSS.typography.spaceVer (1.5)}],
+         // Login form - Button 1
+         ['.enter-form__button--1', {
+            'background-color': CSS.vars ['color--one'],
+            color: CSS.vars ['highlight-100'],
+         }],
+         media ('screen and (min-width: 1025px)', [
+            ['.enter-form__button--1:hover',  {'background-color': CSS.vars ['color--one']}],
+            ['.enter-form__button--1:active', {'background-color': CSS.vars ['color--one'], opacity: '0.8'}],
+         ]),
+         // Login form - Button 2
+         ['.enter-form__button--2', {
+            border: CSS.vars ['color--one'] + ' 1px solid',
+            color: CSS.vars ['color--one'],
+         }],
+         media ('screen and (min-width: 1025px)', [
+            ['.enter-form__button--2:hover', {
+               'background-color': CSS.vars ['color--one'],
+               color: CSS.vars ['highlight-100'],
+            }],
+            ['.enter-form__button--2:active', {
+               background: CSS.vars ['color--one'],
+               opacity: '0.8',
+            }],
+         ]),
+         // *** auth-card ***
+         ['.auth-card', {
+            width: 1,
+            'max-width': 400,
+         }],
+         ['.auth-card__inner', {
+            display: 'flex',
+            'flex-direction': 'column',
+            'justify-content': 'center',
+            'background-color': CSS.vars ['highlight--selection'],
+            'padding-top': CSS.typography.spaceVer (3),
+            'padding-bottom': CSS.typography.spaceVer (3.5),
+            'padding-left, padding-right': 60,
+            'border-radius': CSS.vars ['border-radius--m'],
+         }],
+         media ('screen and (max-width: 767px)', ['.auth-card__inner', {
+            'padding-top': CSS.typography.spaceVer (2.25),
+            'padding-bottom': CSS.typography.spaceVer (2.5),
+            'padding-left, padding-right': CSS.vars ['padding--xl'],
+         }]),
+         ['.auth-card__header', {
+            width: 1,
+            display: 'flex',
+            'flex-direction': 'column',
+            'justify-content, align-items': 'center',
+            'margin-bottom': CSS.typography.spaceVer (2),
+         }],
+         ['.auth-card__header-logo', {
+            'margin-bottom': CSS.typography.spaceVer (1),
+            width: 200,
+            height: 'auto',
+         }],
+         ['.auth-card__header-text', {
+            'text-align': 'center',
+            'font-size': CSS.typography.fontSize (3),
+            'line-height': CSS.typography.spaceVer (1.5),
+            color: CSS.vars ['highlight-60'],
+            mixin1: CSS.vars.fontPrimaryRegular,
+         }],
+      ]],
+      ['div', {class: 'enter'}, [
+         ['div', {class: 'auth-card'}, [
+            ['div', {class: 'auth-card__inner'}, [
+               ['div', {class: 'auth-card__header'}, [
+                  ['p', {class: 'auth-card__header-text'}, 'ac;pic admin'],
+               ]],
+               // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
+               // By setting the form to be opaque, we prevent them being recycled.
+               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
+                  ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
+                  ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
+                  ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'login', []])],
+                  //['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
+                  ['a', B.ev ({class: 'enter-form__forgot-password'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Forgot password?'],
                ]]
             ]]
-         ]
-      });
-   }
+         ]],
+      ]],
+   ];
+}
 
-   // *** MAIN VIEW ***
+// *** DASHBOARD VIEW ***
 
-   Views.main = function (x) {
-      return B.view (x, ['State', 'subview'], {listen: [
-      ], ondraw: function (x) {
-         if (['dashboard'].indexOf (B.get ('State', 'subview')) === -1) B.do (x, 'set', ['State', 'subview'], 'dashboard');
-      }}, function (x, subview) {
-         return [
-            ['style', [
-               ['a.logout', {
-                  'letter-spacing': 'normal',
-                  position: 'absolute',
-                  'left, top': 0.05,
-                  'font-weight': 'bold',
-                  'text-decoration': 'none'
-               }],
-               ['span.action', {
-                  color: 'blue',
-                  'text-decoration': 'underlined',
-                  cursor: 'pointer'
-               }],
-               ['.icon', {
-                  cursor: 'pointer',
-               }],
-            ]],
-            Views [subview] ? Views [subview] (x) : undefined,
-         ];
-      });
-   }
+E.dashboard = function (x) {
+   return [
+      ['h2', 'ac;pic admin'],
+      ['h3', ['a', {href: '#/invites'}, 'Invites']],
+   ];
+}
 
-   // *** DASHBOARD VIEW ***
+// *** INVITES VIEW ***
 
-   Views.dashboard = function (x) {
-      var evs = dale.do (['stats', 'invites'], function (v) {
-         return ['retrieve', v, function (x) {
-            H.authajax (x, 'get', 'admin/' + v, {}, '', function (error, rs) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error retrieving ' + v + '.');
-               B.do (x, 'set', ['Data', v], rs.body);
-            });
-         }];
-      }).concat ([
-         ['create', 'invite', function (x) {
-            H.authajax (x, 'post', 'admin/invites', {}, B.get ('State', 'new', 'invite'), function (error) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error creating the invite.');
-               B.do (x, 'retrieve', 'invites');
-            });
-         }],
-         ['delete', 'invite', function (x, email) {
-            H.authajax (x, 'delete', 'admin/invites/' + email, {}, '', function (error) {
-               if (error) return B.do (x, 'notify', 'red', 'There was an error deleting the invite.');
-               B.do (x, 'retrieve', 'invites');
-            });
-         }],
-      ]);
-
-      return B.view (x, ['Data'], {listen: evs, ondraw: function (x) {
-         dale.do (['stats', 'invites'], function (v) {
-            if (! B.get ('Data', v)) B.do (x, 'retrieve', v);
-         });
-      }}, function (x, Data) {
-         return [
-            ['h3', 'Stats'],
-            ['pre', JSON.stringify (Data.stats)],
-            ['h3', 'Invites'],
-            ['table', {class: 'pure-table pure-table-striped'}, dale.do (Data.invites, function (invite, email) {
+E.invites = function () {
+   return B.view (['Data', 'invites'], function (x, invites) {
+      return [
+         ['h3', 'Invites'],
+         ['table', {class: 'pure-table pure-table-striped'}, [
+            ['tr', dale.do (['email', 'firstName', 'token', 'sent', 'accepted', 'delete'], function (v) {return ['th', v]})],
+            dale.do (Data.invites, function (invite, email) {
                return ['tr', [
                   ['td', email],
+                  ['td', invite.firstName],
                   ['td', invite.token],
                   ['td', new Date (invite.sent).toUTCString ()],
                   ['td', invite.accepted ? new Date (invite.accepted).toUTCString () : ''],
                   ['td', ['span', B.ev ({class: 'action'}, ['onclick', 'delete', 'invite', email]), 'Delete']],
                ]];
-            })],
-            B.view (['State', 'new', 'invite'], function (x, ninvite) {
-               if (! ninvite) return ['span', B.ev ({class: 'action'}, ['onclick', 'set', ['State', 'new', 'invite'], {email: ''}]), 'Create invite'];
-               return [
-                  ['input', B.ev ({value: ninvite.email}, ['onchange', 'set', ['State', 'new', 'invite', 'email']])],
-                  ['span', B.ev ({class: 'action'}, ['onclick', 'create', 'invite']), 'Create invite'],
-                  ['span', B.ev ({class: 'action'}, ['onclick', 'rem', ['State', 'new'], 'invite']), 'Cancel'],
-               ];
             }),
-         ];
-      });
-   }
-}) ();
+         ]],
+         ['br'],
+         B.view (['State', 'newInvite'], function (x, newInvite) {
+            if (! newInvite) return ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'newInvite'], {email: 'email', firstName: 'firstName'}]), 'Create invite'];
+            return [
+               ['input', B.ev ({value: newInvite.email}, ['onchange', 'set', ['State', 'newInvite', 'email']])],
+               ['input', B.ev ({value: newInvite.firstName}, ['onchange', 'set', ['State', 'newInvite', 'firstName']])],
+               ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'create', 'invite']), 'Create invite'],
+               ['span', B.ev ({class: 'action'}, ['onclick', 'rem', ['State', 'newInvite']]), 'Cancel'],
+            ];
+         }),
+      ];
+   });
+}
+
+// *** INITIALIZATION ***
+
+B.do ('initialize', []);
