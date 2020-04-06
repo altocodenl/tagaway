@@ -254,7 +254,6 @@ dale.do ([
    ['delete', 'invite', function (x, email) {
       if (! confirm ('Are you sure you want to delete the invite?')) return;
       B.do (x, 'post', 'admin/invites/delete', {}, {email: email}, function (x, error, rs) {
-         clog (error.responseText);
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the invite.');
          B.do (x, 'retrieve', 'invites');
       });
