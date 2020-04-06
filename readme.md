@@ -508,7 +508,10 @@ Used by giz:
 4. `E.tags`
 5. Auth:
    5.1 `E.login`
+      - Events: `click -> login`
    5.2 `E.signup`
+      - Depends on: `Data.signup.username`.
+      - Events: `click -> signup`
    5.3 `E.recover`
    5.4 `E.reset`
 
@@ -559,15 +562,16 @@ Used by giz:
       - Adds `Data.csrf` to `POST` requests.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` (with truthy `logout` argument) and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
-   7. `read hash`: places the first part of `window.location.hash` into (`State.page`).
+   7. `read hash`: places the first part of `window.location.hash` into (`State.page`). If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
    8. `change State.page`: validates whether a certain page can be shown, based on 1) whether the page exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.page` and overwrites `window.location.hash`.
    9. `test`: loads test suite.
 
 2. Auth
    1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.page` so that the listener that handles page changes gets fired.
    2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
-   3. `login`: calls `post /auth/login
+   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
+   5. `signup`: calls `post /auth/signup. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
@@ -612,60 +616,8 @@ Used by giz:
 - `Data`:
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
+   - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
-
-
-
-
-
-
-`Data.total`: number of pics matched by query. Also comes from `POST /query`.
-
-`Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
-
-`State.query`: `{tags: [...], sort: 'newest'/'oldest'/'upload'}`.
-
-`State.shift`: `true|false|undefined`, truthy when the `shift` key is depressed.
-
-`State.ctrl`: `true|false|undefined`, truthy when the `ctrl` key is depressed.
-
-`State.autotag`: STRING denoting the tag being entered by the user for tagging pictures or searching for an existing tag with which to tag pictures.
-
-`State.refreshQuery`: `undefined|timeout`. If there are pending uploads in `State.upload.queue`, this timeout retrieves pics. It's executed once per second.
-
-`State.autoquery`: `undefined|string`, used to search for tags in the query box.
-
-`State.upload`: used for queuing uploads `{queue: [FILE1, FILE2, ...], error: [[error, file], ...], invalid: [filename, ...], done: INT, repeated: INT, tags: [...]}`.
-
-`State.uploadFolder`: `undefined|boolean`. If `true`, the input for uploading files will upload entire directories instead.
-
-`State.uploadModal`: `undefined|true`, if true, show the upload modal.
-
-`State.lastClick`: `undefined|{id: PICID, time: INT}`, marks the last picture clicked and the time when it happened, to implement the folllowing: picture selection, picture selection by range, opening canvas view.
-
-`State.lastScroll`: `undefined|{y: INT, time: INT}`, marks the time of the last scroll, and the last Y position of the window (`window.scrollY`).
-
-`State.canvas`: `undefined|PIC`, if not undefined contains the picture object that's being shown on the `canvas` view.
-
-`State.nextCanvas`: `undefined|PIC`, used to preload the next picture in the `canvas` view.
-
-`State.showPictureInfo`: `undefined|boolean`, if truthy, picture information is shown on the `canvas` view.
-
-`State.screen`: `{w: window.innerWidth, h: window.innerHeight}`. Used by the `canvas` view.
-
-`State.selected`: `{id1: true, id2: true, ...}`. Lists the ids all of selected pictures.
-
-`State.slider`: true|false|undeined. If no pictures selected, falsy is all tags, truthy is selected tags. If pictures are selected, falsy is add tags, truthy is remove tags.
-
-`State.loading`: true|undefined, to see whether pics are being loaded.
-
-`Data.pics`: `[...]`; comes from `body.pics` from `POST /query`. A `selected` boolean can be added by the client to denote selection of the picture, but that never reaches the server.
-
-`Data.total`: number of pics matched by query. Also comes from `POST /query`.
-
-`Data.tags`: `{all: INT, untagged: INT, ...}`; the body returned by `GET /tags`.
-
-`Data.account`: `{username: STRING, email: STRING, type: STRING, created: INT, logs: [{...}, ...], used: [INT, INT]`; the body returned by `GET /account`.
 
 ## License
 

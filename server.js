@@ -682,8 +682,15 @@ var routes = [
                message: CONFIG.etemplates.welcome.message (b.username)
             }],
             [a.set, 'session', [a.make (giz.login), b.username, b.password]],
+            [function (s) {
+               require ('bcryptjs').genSalt (20, function (error, csrf) {
+                  if (error) return s.next (null, error);
+                  s.csrf = csrf;
+                  a.seq (s, [Redis, 'setex', 'csrf:' + s.session, giz.config.expires, csrf]);
+               });
+            }],
             function (s) {
-               reply (rs, 200, '', {cookie: cicek.cookie.write (CONFIG.cookiename, s.session)});
+               reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
             },
          ],
       ]);
@@ -1631,7 +1638,7 @@ var routes = [
                to1:     b.firstName,
                to2:     b.email,
                subject: CONFIG.etemplates.invite.subject,
-               message: CONFIG.etemplates.invite.message (b.firstName, s.token)
+               message: CONFIG.etemplates.invite.message (b.firstName, s.token, b.email)
             });
          },
          [reply, rs, 200],
@@ -1761,7 +1768,6 @@ if (cicek.isMaster) setTimeout (function () {
          if (s.last) return;
          a.make (hitit.one) (s, {}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0], firstName: 'admin'}});
       },
-      [a.log, 'Bootstrap invite OK.'],
    ], function (s, error) {
       notify (s, {type: 'bootstrap invite error', error: error});
    });
@@ -1863,9 +1869,11 @@ if (cicek.isMaster) a.stop ([
       return [a.make (fs.unlink), Path.join (CONFIG.basepath, k)];
    }, {max: 5}],
    // Missing S3 files: upload from disk.
-   [a.get, a.fork, '@s3missing', function (key) {
-      return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
-   }, {max: 5}],
+   function (s) {
+      a.fork (s, s.s3missing, function (key) {
+         return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
+      }, {max: 5});
+   },
    function (s) {
       var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {type: 'File consistency check success.'}, function (k) {
          if (s [k]) return [k, s [k]];
