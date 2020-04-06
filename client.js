@@ -2032,8 +2032,8 @@ dale.do ([
             }
             B.do (x, 'query', 'account');
             B.do (x, 'query', 'tags');
-            // If we're back in the pics page, refresh the query after each successful upload
-            if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
+            // If we're back in the pics page but not in full screen, refresh the query after each successful upload
+            if (B.get ('State', 'page') === 'pics' && ! B.get ('State', 'open')) B.do (x, 'query', 'pics');
          });
       });
    }],
