@@ -3,7 +3,7 @@ if [ "$2" != "confirm" ] ; then
    exit 1
 fi
 if [ "$1" == "prod" ] ; then
-   HOST="root@104.248.38.85"
+   HOST="root@88.198.89.151"
 elif [ "$1" == "dev" ] ; then
    HOST="root@207.154.244.76"
 else
