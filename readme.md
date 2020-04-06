@@ -143,6 +143,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Frontend tests.
+   - Test for maximum capacity.
    - Report slow queries & slow redraws.
    - Migrate to gotoB v2
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.

@@ -1096,7 +1096,7 @@ var routes = [
             });
          }],
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
-         [Redis, 'hget', 'users:' + rq.user.username, 'fs:use'],
+         [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
             if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
             s.next ();
