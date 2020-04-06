@@ -1909,6 +1909,7 @@ dale.do ([
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'tags');
       });
    }],
 
@@ -2535,7 +2536,7 @@ E.empty = function () {
                   ['img', {class: 'tip__icon', src: 'img/icon-tip.svg'}],
                   ['h5', {class: 'tip__title'}, 'Tip!'],
                ]],
-               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {href: '#'}, 'Upload'], ' some photos and add some tags.']],
+               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {href: '#/upload'}, 'Upload'], ' some photos and add some tags.']],
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
@@ -2553,7 +2554,7 @@ E.empty = function () {
                ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
                ['p', {class: 'guide__text'}, 'Click the upload button and start adding pictures.'],
-               ['a', {href: '#', class: 'button button--one'}, 'Upload pictures']
+               ['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures']
             ]],
          ]],
       ]],
