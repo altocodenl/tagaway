@@ -88,14 +88,6 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 }
 
 var intro = [
-   // TODO: remove after debugging feature
-   ['get stats', 'post', 'admin/stats', {}, [], 200, function (s, rq, rs) {
-      dale.go (rs.body, function (v) {
-         clog (v);
-      });
-      //return true;
-   }],
-
    ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
    ['submit client error without being logged in #2', 'post', 'error', {}, {error: 'error'}, 200],
    ['login with no credentials', 'post', 'auth/login', {}, {}, 400],

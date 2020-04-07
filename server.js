@@ -491,6 +491,16 @@ H.stat.r = function (s) {
          });
       },
       function (s) {
+         // CSV export of all
+         var CSV = [];
+         dale.go (s.last, function (v, k) {
+            var type = {u: 'unique', f: 'flow', s: 'stock', M: 'max', m: 'min'} [k [5]];
+            k = k.slice (7);
+            var name = k.split (':') [0];
+            CSV.push ([type, name, k.replace (name + ':', ''), v].join ('\t'));
+         });
+         s.next (CSV.join ('\n'));
+         return;
          return s.next (dale.go (s.last, function (v, k) {
             return [k, v];
          }).sort (function (a, b) {
@@ -516,15 +526,6 @@ H.stat.r = function (s) {
 // *** ROUTES ***
 
 var routes = [
-
-   // TODO: remove after debugging feature
-   ['post', 'admin/stats', function (rq, rs) {
-      if (ENV) return rs.next ();
-      astop (rs, [
-         [H.stat.r, rs.body],
-         [a.get, reply, rs, 200, '@last'],
-      ]);
-   }],
 
    // *** STATIC ASSETS ***
 
@@ -1956,19 +1957,3 @@ if (cicek.isMaster) a.stop ([
 ], function (s, error) {
    notify (s, {type: 'File consistency check error.', error: error});
 });
-
-if (cicek.isMaster && process.argv [3] === 'updateStats') a.seq ([
-   [redis.keyscan, 'stat:*'],
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (stat) {
-         if (stat.match (/^stat:(f|M):ms-(auth|pic|thumb|upload|delete|rotate|tag|query|share)/)) multi.del (stat);
-         if (stat.match ('rquser')) multi.rename (stat, stat.replace ('rquser', 'rq-user'));
-         if (stat.match ('code'))   multi.rename (stat, stat.replace ('code', 'rq'));
-      });
-      multi.exec (function (error, data) {
-         if (error) throw new Error (error);
-         notify (s, {type: 'Update stats.', ops: data.length});
-      });
-   }
-]);

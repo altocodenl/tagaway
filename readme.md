@@ -41,9 +41,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - attach tag by clicking on attach
 - snackbar when tagging successful
-- upload size uploaded
-- bug untagging and no pictures, I think it's the svgs
-- get rid of organize
+- show bytes progress in upload
+- bug svgs after untagging and no pictures left
+- get rid of "organize"
 - unselect button at the top of the bar
 - when having entered text on tag in upload and click "upload", use that as tag
 - split upload to s3, t200 & t900
