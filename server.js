@@ -1082,6 +1082,11 @@ var routes = [
 
       var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic.id);
 
+      var perf = [['init', Date.now ()]], perfTrack = function (s, label) {
+         perf.push ([label, Date.now ()]);
+         s.next (s.last);
+      }
+
       astop (rs, [
          [a.set, 'hash', function (s) {
             fs.readFile (path, function (error, file) {
@@ -1090,11 +1095,13 @@ var routes = [
             });
          }],
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
+         [perfTrack, 'hash'],
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
             if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
+         [perfTrack, 'capacity'],
          [a.stop, [a.set, 'metadata', [k, 'identify', '-format', "'%[*]'", path]], function (s, error) {
             reply (rs, 400, {error: 'Invalid image: ' + error.toString ()});
          }],
@@ -1109,16 +1116,20 @@ var routes = [
             });
             s.next ();
          },
+         [perfTrack, 'format'],
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
          [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
+         [perfTrack, 'fs'],
          [H.resizeif, newpath, 200],
+         [perfTrack, 'resize200'],
          [H.resizeif, newpath, 900],
+         [perfTrack, 'resize900'],
          // We only store the original pictures in S3
          [H.s3put, rq.user.username, newpath, pic.id],
+         [perfTrack, 's3'],
          // Delete original image from disk.
-         // TODO: enable when moving FS to ac;file
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
          function (s) {
             var multi = redis.multi ();
@@ -1169,6 +1180,8 @@ var routes = [
             multi.hmset ('pic:' + pic.id, pic);
             mexec (s, multi);
          },
+         [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined}],
+         [perfTrack, 'db'],
          function (s) {
             H.stat (s, [
                ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
@@ -1178,9 +1191,10 @@ var routes = [
                ['stock', 'pics', 1],
                pic.by200 ? ['stock', 't200', 1] : [],
                pic.by900 ? ['stock', 't900', 1] : [],
-            ]);
+            ].concat (dale.fil (perf, undefined, function (item, k) {
+               if (k > 0) return ['flow', 'ms-upload-' + item [0], item [1] - perf [k - 1] [1]];
+            })));
          },
-         [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined}],
          [reply, rs, 200],
       ]);
    }],

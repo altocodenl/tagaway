@@ -37,6 +37,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
+### Todo next
+
+- attach tag by clicking on attach
+- snackbar when tagging successful
+- upload size uploaded
+- bug untagging and no pictures, I think it's the svgs
+- get rid of organize
+- unselect button at the top of the bar
+- when having entered text on tag in upload and click "upload", use that as tag
+- split upload to s3, t200 & t900
+
 ### Todo v0
 
 - Pics
@@ -356,6 +367,65 @@ All the routes below require an admin user to be logged in.
 `POST /admin/invites/delete`
    - Body must be `{email: STRING}`.
 
+### Statistics
+
+1. uniques:
+   - users: active users
+
+2. stock:
+   - byfs:          total bytes stored in FS
+   - bys3:          total bytes stored in S3
+   - byfs-USERNAME: total bytes stored in FS for USERNAME
+   - bys3-USERNAME: total bytes stored in S3 for USERNAME
+   - pics:          total pics
+   - t200:          total thumbnails of size 200
+   - t900:          total thumbnails of size 900
+   - users:         total users
+
+3. maximum:
+   - ms-all:    maximum ms for successful requests for all endpoints
+   - ms-auth:   maximum ms for successful requests for POST /auth
+   - ms-pic:    maximum ms for successful requests for GET /pic
+   - ms-thumb:  maximum ms for successful requests for GET /thumb
+   - ms-upload: maximum ms for successful requests for POST /upload
+   - ms-delete: maximum ms for successful requests for POST /delete
+   - ms-rotate: maximum ms for successful requests for POST /rotate
+   - ms-tag:    maximum ms for successful requests for POST /tag
+   - ms-query:  maximum ms for successful requests for POST /query
+   - ms-share:  maximum ms for successful requests for POST /share
+
+4. stat:f (flow)
+   - rquser-USERNAME: total requests from USERNAME
+   - code-NNN:  total requests responded with HTTP code NNN
+   - rq-bad:    total unsuccessful requests for all endpoints
+   - rq-all:    total successful requests for all endpoints
+   - rq-auth:   total successful requests for /auth
+   - rq-pic:    total successful requests for /pic - rq-thumb:  total successful requests for /thumb
+   - rq-upload: total successful requests for /upload
+   - rq-delete: total successful requests for /delete
+   - rq-rotate: total successful requests for /rotate
+   - rq-tag:    total successful requests for /tag and /tags
+   - rq-query:  total successful requests for /query
+   - rq-share:  total successful requests for /share
+   - ms-all:    total ms for successful requests for all endpoints
+   - ms-auth:   total ms for successful requests for POST /auth
+   - ms-pic:    total ms for successful requests for GET /pic
+   - ms-thumb:  total ms for successful requests for GET /thumb
+   - ms-upload: total ms for successful requests for POST /upload
+   - ms-delete: total ms for successful requests for POST /delete
+   - ms-rotate: total ms for successful requests for POST /rotate
+   - ms-tag:    total ms for successful requests for POST /tag
+   - ms-query:  total ms for successful requests for POST /query
+   - ms-share:  total ms for successful requests for POST /share
+   - ms-upload-hash:      total ms for hash check in POST /upload
+   - ms-upload-capacity:  total ms for capacity check in POST /upload
+   - ms-upload-format:    total ms for format check in POST /upload
+   - ms-upload-fs:        total ms for FS operations in POST /upload
+   - ms-upload-resize200: total ms for 200 resize operation in POST /upload
+   - ms-upload-resize900: total ms for 900 resize operation in POST /upload
+   - ms-upload-s3:        total ms for S3 upload in POST /upload
+   - ms-upload-db:        total ms for info storage & DB processing in POST /upload
+
 ### Redis structure
 
 ```
@@ -434,56 +504,6 @@ All the routes below require an admin user to be logged in.
    - stat:s:NAME: stock
    - stat:s:NAME:DATE: stock change
    - stat:u:NAME:PERIOD:DATE: unique
-
-- stat:u (unique)
-   - stat:u:users:DATE:PERIOD: active users
-
-- stat:s:NAME & stat:s:NAME:DATE (stock)
-   - stat:s:byfs[:DATE]:          total bytes stored in FS
-   - stat:s:bys3[:DATE]:          total bytes stored in S3
-   - stat:s:byfs-USERNAME[:DATE]: total bytes stored in FS for USERNAME
-   - stat:s:bys3-USERNAME[:DATE]: total bytes stored in S3 for USERNAME
-   - stat:s:pics[:DATE]:  total pics
-   - stat:s:t200[:DATE]:  total thumbnails of size 200
-   - stat:s:t900[:DATE]:  total thumbnails of size 900
-   - stat:s:users[:DATE]: total users
-
-- stat:M:NAME:DATE (max)
-   - stat:M:ms-all:DATE:    maximum milliseconds for successful requests for all endpoints
-   - stat:M:ms-auth:DATE:   maximum milliseconds for successful requests for POST /auth
-   - stat:M:ms-pic:DATE:    maximum milliseconds for successful requests for GET /pic
-   - stat:M:ms-thumb:DATE:  maximum milliseconds for successful requests for GET /thumb
-   - stat:M:ms-upload:DATE: maximum milliseconds for successful requests for POST /upload
-   - stat:M:ms-delete:DATE: maximum milliseconds for successful requests for POST /delete
-   - stat:M:ms-rotate:DATE: maximum milliseconds for successful requests for POST /rotate
-   - stat:M:ms-tag:DATE:    maximum milliseconds for successful requests for POST /tag
-   - stat:M:ms-query:DATE:  maximum milliseconds for successful requests for POST /query
-   - stat:M:ms-share:DATE:  maximum milliseconds for successful requests for POST /share
-
-- stat:f (flow)
-   - stat:f:rquser-USERNAME:DATE: total requests from USERNAME
-   - stat:f:code-NNN:DATE:  total requests responded with HTTP code NNN
-   - stat:f:rq-bad:DATE:    total unsuccessful requests for all endpoints
-   - stat:f:rq-all:DATE:    total successful requests for all endpoints
-   - stat:f:rq-auth:DATE:   total successful requests for /auth
-   - stat:f:rq-pic:DATE:    total successful requests for /pic
-   - stat:f:rq-thumb:DATE:  total successful requests for /thumb
-   - stat:f:rq-upload:DATE: total successful requests for /upload
-   - stat:f:rq-delete:DATE: total successful requests for /delete
-   - stat:f:rq-rotate:DATE: total successful requests for /rotate
-   - stat:f:rq-tag:DATE:    total successful requests for /tag and /tags
-   - stat:f:rq-query:DATE:  total successful requests for /query
-   - stat:f:rq-share:DATE:  total successful requests for /share
-   - stat:f:ms-all:DATE:    total milliseconds for successful requests for all endpoints
-   - stat:f:ms-auth:DATE:   total milliseconds for successful requests for POST /auth
-   - stat:f:ms-pic:DATE:    total milliseconds for successful requests for GET /pic
-   - stat:f:ms-thumb:DATE:  total milliseconds for successful requests for GET /thumb
-   - stat:f:ms-upload:DATE: total milliseconds for successful requests for POST /upload
-   - stat:f:ms-delete:DATE: total milliseconds for successful requests for POST /delete
-   - stat:f:ms-rotate:DATE: total milliseconds for successful requests for POST /rotate
-   - stat:f:ms-tag:DATE:    total milliseconds for successful requests for POST /tag
-   - stat:f:ms-query:DATE:  total milliseconds for successful requests for POST /query
-   - stat:f:ms-share:DATE:  total milliseconds for successful requests for POST /share
 
 Used by giz:
 
