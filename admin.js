@@ -557,6 +557,8 @@ E.invites = function () {
    });
 }
 
+// *** STATS VIEW ***
+
 // *** INITIALIZATION ***
 
 B.do ('initialize', []);

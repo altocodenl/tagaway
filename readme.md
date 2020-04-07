@@ -47,6 +47,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - unselect button at the top of the bar
 - when having entered text on tag in upload and click "upload", use that as tag
 - split upload to s3, t200 & t900
+- when going back to uploads, if upload is done, pictures are not updated
+- Reference users internaly by id, not username.
 
 ### Todo v0
 
@@ -145,7 +147,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Recover/reset/change password.
    - Account page.
    - Delete account.
-   - Change email & password.
+   - Change email, password & username.
    - Export all data.
    - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
    - Log me out of all sessions.
@@ -395,12 +397,13 @@ All the routes below require an admin user to be logged in.
    - ms-share:  maximum ms for successful requests for POST /share
 
 4. stat:f (flow)
-   - rquser-USERNAME: total requests from USERNAME
-   - code-NNN:  total requests responded with HTTP code NNN
+   - rq-user-USERNAME: total requests from USERNAME
+   - rq-NNN:    total requests responded with HTTP code NNN
    - rq-bad:    total unsuccessful requests for all endpoints
    - rq-all:    total successful requests for all endpoints
    - rq-auth:   total successful requests for /auth
-   - rq-pic:    total successful requests for /pic - rq-thumb:  total successful requests for /thumb
+   - rq-pic:    total successful requests for /pic
+   - rq-thumb:  total successful requests for /thumb
    - rq-upload: total successful requests for /upload
    - rq-delete: total successful requests for /delete
    - rq-rotate: total successful requests for /rotate
@@ -501,7 +504,7 @@ All the routes below require an admin user to be logged in.
    - stat:f:NAME:DATE: flow
    - stat:m:NAME:DATE: min
    - stat:M:NAME:DATE: max
-   - stat:s:NAME: stock
+   - stat:s:NAME:      stock
    - stat:s:NAME:DATE: stock change
    - stat:u:NAME:PERIOD:DATE: unique
 

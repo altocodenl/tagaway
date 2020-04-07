@@ -310,7 +310,7 @@ H.s3get = function (s, user, key) {
    ]);
 }
 
-H.s3del = function (s, user, keys, sizes) {
+H.s3del = function (s, user, keys) {
 
    var counter = 0;
    if (type (keys) === 'string') keys = [keys];
@@ -322,19 +322,8 @@ H.s3del = function (s, user, keys, sizes) {
          return {Key: user ? (H.hash (user) + '/' + key) : key}
       })}}, function (error) {
          if (error) return s.next (0, error);
-         var multi = redis.multi ();
-         if (user) sizes = dale.acc (sizes, function (a, b) {return a + b});
-         a.seq (s, [
-            ! user ? [] : [H.stat, [
-               ['stock', 'bys3',         - sizes],
-               ['stock', 'bys3-' + user, - s.pic.bys3],
-            ]],
-            function (s) {
-               if (error) return s.next (0, error);
-               if (++counter === Math.ceil (keys.length / 1000)) s.next ();
-               else batch ();
-            }
-         ]);
+         if (++counter === Math.ceil (keys.length / 1000)) s.next ();
+         else batch ();
       });
    }
 
@@ -370,7 +359,7 @@ H.deletePic = function (s, id, username) {
          s.tags = s.last [1];
          if (! s.pic || username !== s.pic.owner) return s.next (0, 'nf');
 
-         H.s3del (s, username, s.pic.id, s.pic.bys3);
+         H.s3del (s, username, s.pic.id);
       },
       function (s) {
          var thumbs = [];
@@ -398,9 +387,11 @@ H.deletePic = function (s, id, username) {
          mexec (s, multi);
       },
       function (s) {
-         H.stat (s, [
+         H.stat.w (s, [
             ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
             ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
+            ['stock', 'bys3',             - s.pic.bys3],
+            ['stock', 'bys3-' + username, - s.pic.bys3],
             ['stock', 'pics', -1],
             s.pic.by200 ? ['stock', 't200', -1] : [],
             s.pic.by900 ? ['stock', 't900', -1] : [],
@@ -411,6 +402,8 @@ H.deletePic = function (s, id, username) {
 
 // *** STATISTICS ***
 
+H.stat = {};
+
 redis.script ('load', [
    'local v = tonumber (redis.call ("get", KEYS [1]));',
    'if (v == nil or (v < tonumber (ARGV [1]))) then',
@@ -419,7 +412,7 @@ redis.script ('load', [
       'else return 0',
       'end'
 ].join ('\n'), function (error, sha) {
-   H.statmax = sha;
+   H.stat.max = sha;
 });
 
 redis.script ('load', [
@@ -430,10 +423,10 @@ redis.script ('load', [
       'else return 0',
       'end'
 ].join ('\n'), function (error, sha) {
-   H.statmin = sha;
+   H.stat.min = sha;
 });
 
-H.stat = function (s) {
+H.stat.w = function (s) {
    var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
    var t = Date.now (), multi = redis.multi ();
    t = t - t % 1000;
@@ -465,7 +458,7 @@ H.stat = function (s) {
          multi.incrbyfloat ('stat:s:' + name + ':' + (t + '').slice (0, -3), value);
       }
       else if (type === 'max' || type === 'min') {
-         multi.evalsha (H ['stat' + type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + (t + '').slice (0, -3), value);
+         multi.evalsha (H.stat [type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + (t + '').slice (0, -3), value);
       }
       else {
          multi.incrbyfloat ('stat:f:' + name + ':' + (t + '').slice (0, -3), value);
@@ -474,9 +467,64 @@ H.stat = function (s) {
    mexec (s, multi);
 }
 
+H.stat.r = function (s) {
+   var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
+   // TODO: validations, add when exposing as a service. For each of the ops:
+      // op must be array of length 3 or 0 (for no-op)
+      // type is one of: flow, max, min, stock, unique
+      // name must be a string and cannot contain a colon
+      // options must be an object
+      // options should be {min: *|INT, max: *|INT, aggregateBy: s|m|h|d|M|y}
+   a.seq (s, [
+      // Here we're reading all stats into memory. Definitely room for improvement, but probably it makes sense to offload most stats to disk first.
+      [redis.keyscan, 'stat:*'],
+      function (s) {
+         var multi = redis.multi ();
+         dale.go (s.last, function (key) {
+            multi [key.match ('stat:u') ? 'pfcount' : 'get'] (key);
+         });
+         multi.exec (function (error, data) {
+            if (error) return s.next (null, error);
+            s.next (dale.obj (s.last, function (key, k) {
+               return [key, parseInt (data [k])];
+            }));
+         });
+      },
+      function (s) {
+         return s.next (dale.go (s.last, function (v, k) {
+            return [k, v];
+         }).sort (function (a, b) {
+            return a [0] > b [0] ? 1 : -1;
+         }));
+         var output = [];
+         dale.go (ops, function (op) {
+            if (op.length === 0) return;
+            var type = op [0], name = op [1], value = op [2];
+            // min inclusive, max exclusive
+            // TODO: implement My aggregation
+            // get all keys
+            // track for time range, min/max. if *, 0 or infinity
+            // aggregate:
+               // if unique, return all matching by specified, there's no aggregation
+               // otherwise, aggregate (sum or min/max) by unit specified
+            // if stock, also add current value
+         });
+      },
+   ]);
+}
+
 // *** ROUTES ***
 
 var routes = [
+
+   // TODO: remove after debugging feature
+   ['post', 'admin/stats', function (rq, rs) {
+      if (ENV) return rs.next ();
+      astop (rs, [
+         [H.stat.r, rs.body],
+         [a.get, reply, rs, 200, '@last'],
+      ]);
+   }],
 
    // *** STATIC ASSETS ***
 
@@ -661,7 +709,7 @@ var routes = [
             multi.hset  ('invites', b.email, JSON.stringify (s.invite));
             mexec (s, multi);
          },
-         [H.stat, 'stock', 'users', 1],
+         [H.stat.w, 'stock', 'users', 1],
          [H.log, b.username, {a: 'sig', ip: rq.origin, ua: rq.headers ['user-agent']}],
          ! ENV ? [
             [a.get, reply, rs, 200, {token: '@emailtoken'}],
@@ -823,9 +871,9 @@ var routes = [
          if (rq.url.match (/^\/admin/)  && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
 
          astop (rs, [
-            [H.stat, [
-               ['unique',    'active', user.username],
-               ['flowTotal', 'rquser-' + user.username, 1],
+            [H.stat.w, [
+               ['unique', 'active',    user.username],
+               ['flow',   'rq-user-' + user.username, 1],
             ]],
             [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookiename], giz.config.expires],
             [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookiename]],
@@ -889,7 +937,7 @@ var routes = [
                return [H.deletePic, pic, rq.user.username];
             }, {max: 5});
          },
-         [H.stat, 'stock', 'users', -1],
+         [H.stat.w, 'stock', 'users', -1],
          function (s) {
             var multi = redis.multi ();
             multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
@@ -1183,7 +1231,7 @@ var routes = [
          [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined}],
          [perfTrack, 'db'],
          function (s) {
-            H.stat (s, [
+            H.stat.w (s, [
                ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', 'bys3',                     pic.bys3],
@@ -1658,6 +1706,16 @@ var routes = [
          [reply, rs, 200],
       ]);
    }],
+
+   // *** ADMIN: STATS ***
+
+   ['post', 'admin/stats', function (rq, rs) {
+      astop (rs, [
+         [H.stat.r, rs.body],
+         [a.get, reply, rs, 200, '@last'],
+      ]);
+   }],
+
 ];
 
 // *** SERVER CONFIGURATION ***
@@ -1672,7 +1730,7 @@ cicek.apres = function (rs) {
    }
 
    var logs = [
-      ['flow', 'code-' + rs.log.code, 1],
+      ['flow', 'rq-' + rs.log.code, 1],
    ];
 
    if (rs.log.code >= 400) {
@@ -1687,12 +1745,12 @@ cicek.apres = function (rs) {
          if (rs.log.method !== ((path === 'pic' || path === 'thumb') ? 'get' : 'post')) return;
          if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
          logs.push (['flow', 'rq-' + path, 1]);
-         logs.push (['flow', 'ms-' + path, rs.log.startTime]);
-         logs.push (['max',  'ms-' + path, rs.log.startTime]);
+         logs.push (['flow', 'ms-' + path, t - rs.log.startTime]);
+         logs.push (['max',  'ms-' + path, t - rs.log.startTime]);
       });
    }
 
-   H.stat (a.creat (), logs);
+   H.stat.w (a.creat (), logs);
 
    cicek.Apres (rs);
 }
@@ -1854,7 +1912,7 @@ if (cicek.isMaster) a.stop ([
 
       dale.go (s.dbfiles, function (type, dbfile) {
          // S3 only holds original pictures
-         if (type === 'pic' && ! s.s3files [dbfile]) s3missing.push (dbfile);
+         if (type === 'pic' && ! s.s3files [dbfile]) s.s3missing.push (dbfile);
          // FS holds both original pictures and thumbnails
          if (! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
       });
@@ -1898,3 +1956,19 @@ if (cicek.isMaster) a.stop ([
 ], function (s, error) {
    notify (s, {type: 'File consistency check error.', error: error});
 });
+
+if (cicek.isMaster && process.argv [3] === 'updateStats') a.seq ([
+   [redis.keyscan, 'stat:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (stat) {
+         if (stat.match (/^stat:(f|M):ms-(auth|pic|thumb|upload|delete|rotate|tag|query|share)/)) multi.del (stat);
+         if (stat.match ('rquser')) multi.rename (stat, stat.replace ('rquser', 'rq-user'));
+         if (stat.match ('code'))   multi.rename (stat, stat.replace ('code', 'rq'));
+      });
+      multi.exec (function (error, data) {
+         if (error) throw new Error (error);
+         notify (s, {type: 'Update stats.', ops: data.length});
+      });
+   }
+]);
