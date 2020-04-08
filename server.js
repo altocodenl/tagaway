@@ -497,9 +497,13 @@ H.stat.r = function (s) {
             var type = {u: 'unique', f: 'flow', s: 'stock', M: 'max', m: 'min'} [k [5]];
             k = k.slice (7);
             var name = k.split (':') [0];
-            CSV.push ([type, name, k.replace (name + ':', ''), v].join ('\t'));
+            CSV.push ([type, name, k.replace (name + ':', ''), v]);
          });
-         s.next (CSV.join ('\n'));
+         s.next (dale.go (CSV.sort (function (a, b) {
+            if (a [0] !== b [0]) return a [0] > b [0] ? 1 : -1;
+            if (a [1] !== b [1]) return a [1] > b [1] ? 1 : -1;
+            if (a [2] !== b [2]) return a [2] > b [2] ? 1 : -1;
+         }), function (v) {return v.join ('\t')}).join ('\n'));
          return;
          return s.next (dale.go (s.last, function (v, k) {
             return [k, v];
@@ -1171,13 +1175,12 @@ var routes = [
          [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
          [perfTrack, 'fs'],
-         [H.resizeif, newpath, 200],
-         [perfTrack, 'resize200'],
-         [H.resizeif, newpath, 900],
-         [perfTrack, 'resize900'],
-         // We only store the original pictures in S3
-         [H.s3put, rq.user.username, newpath, pic.id],
-         [perfTrack, 's3'],
+         [a.fork, [
+            [[H.resizeif, newpath, 200], [perfTrack, 'resize200']],
+            [[H.resizeif, newpath, 900], [perfTrack, 'resize900']],
+            // We store only the original pictures in S3, not the thubnails
+            [[a.set, 's3', [H.s3put, rq.user.username, newpath, pic.id]], [perfTrack, 's3']],
+         ], function (v) {return v}],
          // Delete original image from disk.
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
          function (s) {
@@ -1185,7 +1188,7 @@ var routes = [
 
             pic.dimw = s.size.w;
             pic.dimh = s.size.h;
-            pic.bys3 = s.last.ContentLength;
+            pic.bys3 = s.s3.ContentLength;
             pic.byfs = s.byfs.size;
             pic.hash = s.hash;
 
