@@ -98,7 +98,7 @@ module.exports = {
                ['br'],
                'Welcome to ', LOGO, ' ! We are thrilled to have you with us.',
                ['br'],
-               LOGO, ' is just getting started; we would love to have your feedback. Feel free to tell us how we can make ', LOGO, ' work better for you.',
+               LOGO, ' is just getting started; we would love to have your feedback. Feel free to tell us how we can make ', LOGO, ' work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
