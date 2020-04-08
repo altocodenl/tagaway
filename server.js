@@ -1774,9 +1774,16 @@ cicek.cluster ();
 
 cicek.listen ({port: CONFIG.port}, routes);
 
-if (cicek.isMaster) setTimeout (function () {
-   notify (a.creat (), {type: 'server start'});
-}, 1500);
+if (cicek.isMaster) a.seq ([
+   [k, 'git', 'rev-parse', 'HEAD'],
+   function (s) {
+      if (s.error) return notify (a.creat (), {type: 'server start', error: s.error});
+      // TODO: remove timeout after implementing separate log service
+      setTimeout (function () {
+         notify (a.creat (), {type: 'server start', sha: s.last.stdout});
+      }, ENV === 'dev' ? 1500 : 0);
+   }
+]);
 
 // *** REDIS ERROR HANDLER ***
 
