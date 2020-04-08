@@ -2497,7 +2497,6 @@ E.header = function (showUploadButton) {
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#/pics', class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item main-menu__item--organise'}, ['a', {class: 'main-menu__item-link'}, 'Organize']],
             ['li', {class: 'main-menu__item'},                           ['a', B.ev ({class: 'main-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Manage tags']],
          ]]
       ]],
