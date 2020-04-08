@@ -1941,8 +1941,8 @@ if (cicek.isMaster) a.stop ([
       H.s3del (s, null, s.s3extra);
    },
    // Extraneous FS files: delete.
-   [a.get, a.fork, '@fsextra', function (v, k) {
-      return [a.make (fs.unlink), Path.join (CONFIG.basepath, k)];
+   [a.get, a.fork, '@fsextra', function (v) {
+      return [a.make (fs.unlink), Path.join (CONFIG.basepath, v)];
    }, {max: 5}],
    // Missing S3 files: upload from disk.
    function (s) {
