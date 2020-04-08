@@ -1780,7 +1780,7 @@ if (cicek.isMaster) a.seq ([
       if (s.error) return notify (a.creat (), {type: 'server start', error: s.error});
       // TODO: remove timeout after implementing separate log service
       setTimeout (function () {
-         notify (a.creat (), {type: 'server start', sha: s.last.stdout});
+         notify (a.creat (), {type: 'server start', sha: s.last.stdout.slice (0, -1)});
       }, ENV === 'dev' ? 1500 : 0);
    }
 ]);
