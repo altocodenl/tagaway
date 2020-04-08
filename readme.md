@@ -39,16 +39,33 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo next
 
-- attach tag by clicking on attach
-- snackbar when tagging successful
-- show bytes progress in upload
-- bug svgs after untagging and no pictures left
-- get rid of "organize"
-- unselect button at the top of the bar
-- when having entered text on tag in upload and click "upload", use that as tag
-- split upload to s3, t200 & t900
-- when going back to uploads, if upload is done, pictures are not updated
-- Reference users internaly by id, not username.
+- pics
+   - when clicking on no man's land, unselect
+   - when clicking on tag on attach/unattach, go to tag
+   - attach tag by clicking on attach
+   - snackbar when tagging successful
+   - unselect button at the top of the bar
+   - bug svgs after untagging and no pictures left
+   - when going back from uploads, if upload is done, pictures are not updated
+   - fix moving pic grid when going from/to selecting/unselecting
+   - paint picture a bit when selected
+   - when removing tag, if no pictures left with that tag, remove tag from query
+- upload
+   - put two buttons for downloading files or folder
+   - put two buttons for adding a tag or skipping/done adding tags
+   - hide recent uploads
+   - remove space top margin
+   - show ETA
+   - show thumbnails of last 3 pictures on upload
+   - fix number of pictures in upload when going
+   - show number of duplicates skipped
+- manage
+   - delete tag, rename tag
+- server
+   - auto rotate with orientation
+   - s3 uploads in background
+   - Reference users internaly by id, not username.
+   - fix email going into spam
 
 ### Todo v0
 
