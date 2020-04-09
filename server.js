@@ -302,9 +302,6 @@ H.s3get = function (s, user, key) {
    a.stop (s, [
       [a.set, 'data', [a.make (s3.getObject, s3), {Key: H.hash (user) + '/' + key}]],
       function (s) {
-         Redis (s, 'hincrby', 'users:' + user, 's3:bget', s.data.ContentLength);
-      },
-      function (s) {
          s.next (H.decrypt (s.data.Body));
       }
    ]);
@@ -1945,6 +1942,7 @@ if (cicek.isMaster) a.stop ([
    },
    // Extraneous S3 files: delete.
    function (s) {
+      // This operation won't update the S3 usage statistics
       H.s3del (s, null, s.s3extra);
    },
    // Extraneous FS files: delete.
@@ -1953,6 +1951,7 @@ if (cicek.isMaster) a.stop ([
    }, {max: 5}],
    // Missing S3 files: upload from disk.
    function (s) {
+      // This operation won't update the S3 usage statistics
       a.fork (s, s.s3missing, function (key) {
          return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
       }, {max: 5});
