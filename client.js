@@ -1881,7 +1881,8 @@ dale.do ([
          B.do (x, 'set', ['Data', 'tags'], rs.body);
       });
    }],
-   ['tag', 'pics', function (x, tag, del) {
+   ['tag', 'pics', function (x, tag, del, ev) {
+      ev.stopPropagation ();
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
@@ -1892,6 +1893,7 @@ dale.do ([
       var payload = {tag: tag, ids: ids, del: del}
       B.do (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+         if (! del) B.do (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
          B.do (x, 'query', 'pics');
          B.do (x, 'query', 'tags');
          if (tag === B.get ('State', 'newTag')) B.do (x, 'rem', 'State', 'newTag');
@@ -2717,7 +2719,7 @@ E.pics = function () {
                                        // TODO v2: add inline SVG
                                        return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, ['onclick', 'goto', 'tag', tag]), [
                                           ['span', {class: 'tag__title'}, tag],
-                                          ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag]), [
+                                          ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}]), [
                                              ['div', {class: 'tag-actions'}, [
                                                 // TODO v2: add inline SVG
                                                 ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
