@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo next
 
 - Pics
-   - unselect button at the top of the bar
    - fix scroll height when having many tags
    - bug svgs after untagging and no pictures left
    - when going back from uploads, if upload is done, pictures are not updated

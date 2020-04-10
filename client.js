@@ -2770,6 +2770,10 @@ E.pics = function () {
                         ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
                      ]],
                      // TODO v2: add inline SVG
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, ['onclick', 'rem', 'State', 'selected']), [
+                        ['span', {class: 'organise-bar__button-title'}, 'Unselect all'],
+                     ]],
+                     // TODO v2: add inline SVG
                      ['div', B.ev ({class: 'organise-bar__button organise-bar__button--delete', opaque: true}, ['onclick', 'delete', 'pics']), [
                         ['span', {class: 'organise-bar__button-title'}, 'Delete'],
                      ]],
