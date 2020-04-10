@@ -42,7 +42,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pics
    - fix scroll height when having many tags
    - bug svgs after untagging and no pictures left
-   - when going back from uploads, if upload is done, pictures are not updated
    - Paint picture a bit when selected
    - when removing tag, if no pictures left with that tag, remove tag from query
 
@@ -51,20 +50,22 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - see
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 - upload
-   - Document
-   - put two buttons for downloading files or folder
-   - put two buttons for adding a tag or skipping/done adding tags
    - hide recent uploads
-   - remove space top margin
    - show ETA
-   - show thumbnails of last 3 pictures on upload
    - fix number of pictures in upload when going
    - show number of duplicates skipped
    - don't redraw box of new uploads when other uploads are updated
    - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
-- manage
+   - Document
+
+   - Upload flow
+      - Put two buttons for downloading files or folder
+      - Put two buttons for adding a tag or skipping/done adding tags
+   - Show thumbnails of last 3 pictures on upload
+   - Reduce top margin.
+- Manage
    - delete tag, rename tag
-- server
+- Server
    - s3 uploads in background
    - priority: important|critical on notifications
    - fix email going into spam
@@ -638,7 +639,7 @@ Used by giz:
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is `pics` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
+   2. `change State.page`: if current page is `pics` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`.

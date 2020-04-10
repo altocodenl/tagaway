@@ -1786,7 +1786,8 @@ dale.do ([
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      if (! B.get ('Data', 'tags'))   B.do (x, 'query', 'tags');
+      else B.do (x, 'query', 'pics');
+      B.do (x, 'query', 'tags');
    }],
    ['change', ['State', 'query'], function (x) {
       B.do (x, 'query', 'pics');
