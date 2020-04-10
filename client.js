@@ -1880,6 +1880,11 @@ dale.do ([
       B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
          B.do (x, 'set', ['Data', 'tags'], rs.body);
+         var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
+            if (rs.body [tag]) return tag;
+         });
+         if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
+         B.do (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
       });
    }],
    ['tag', 'pics', function (x, tag, del, ev) {
@@ -1911,7 +1916,7 @@ dale.do ([
    ['delete', 'pics', function (x, deg) {
       var pics = dale.keys (B.get ('State', 'selected'));
       if (pics.length === 0) return;
-      if (! confirm ('Are you sure you want to delete the selected pictures?')) return;
+      if (! confirm ('Are you sure you want to delete the ' + pics.length + ' selected pictures?')) return;
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          B.do (x, 'query', 'pics');

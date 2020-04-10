@@ -40,8 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo next
 
 - Pics
-   - When removing tag, if no pictures left with that tag, remove tag from query.
-   - Fix scroll height when having many tags
+   - Fix scroll height when having many tags.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 
    - Fix moving pic grid when going from/to selecting/unselecting
@@ -50,21 +49,21 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - hide recent uploads
    - Don't redraw box of new uploads when other uploads are updated
    - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
-   - fix number of pictures in upload when going
-   - show number of duplicates skipped
-   - show ETA
-   - Document
+   - fix number of pictures in ongoing upload.
+   - Show number of duplicates skipped
+   - Show ETA in ongoing upload.
+   - Document element, listeners & store.
 
    - Upload flow
-      - Put two buttons for downloading files or folder
-      - Put two buttons for adding a tag or skipping/done adding tags
-   - Show thumbnails of last 3 pictures on upload
+      - Put two buttons for downloading files or folder.
+      - Put two buttons for adding a tag or skipping/done adding tags.
+   - Show thumbnails of last 3 pictures on upload.
    - Reduce top margin.
-- Manage: delete tag, rename tag
+- Manage: delete tag, rename tag.
 - Server
-   - s3 uploads in background
-   - priority: important|critical on notifications
-   - fix email going into spam
+   - S3 uploads in background.
+   - notify priority important|critical.
+   - Fix email going into spam.
 
 ### Todo v0
 
@@ -88,6 +87,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Rotate pictures.
    - Delete pictures.
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
+   - When untagging, if no pictures left with that tag, remove tag from query.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -645,7 +645,7 @@ Used by giz:
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
    10. `select all`: sets `State.selected` to all the pictures in the current query.
-   11. `query tags`: invokes `get tags` and sets `Data.tags`.
+   11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
    12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
