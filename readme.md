@@ -40,9 +40,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo next
 
 - pics
-   - when clicking on no man's land, unselect
+   - Load on scroll.
+   - Improve performance when selecting/deselecting.
+   - when clicking on no man's land, unselect? Discuss with Ruben
    - when clicking on tag on attach/unattach, go to tag
-   - attach tag by clicking on attach
    - snackbar when tagging successful
    - unselect button at the top of the bar
    - bug svgs after untagging and no pictures left
@@ -50,7 +51,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - fix moving pic grid when going from/to selecting/unselecting
    - paint picture a bit when selected
    - when removing tag, if no pictures left with that tag, remove tag from query
+   - fix scroll height when having many tags
+- see
+   - when seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 - upload
+   - Document
    - put two buttons for downloading files or folder
    - put two buttons for adding a tag or skipping/done adding tags
    - hide recent uploads
@@ -59,12 +64,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - show thumbnails of last 3 pictures on upload
    - fix number of pictures in upload when going
    - show number of duplicates skipped
+   - don't redraw box of new uploads when other uploads are updated
+   - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
 - manage
    - delete tag, rename tag
 - server
-   - auto rotate with orientation
    - s3 uploads in background
-   - Reference users internaly by id, not username.
+   - priority: important|critical on notifications
    - fix email going into spam
 
 ### Todo v0
@@ -132,7 +138,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1
 
 - Pics
-   - Load on scroll.
    - Hidden tags.
    - Enable GPS detection.
    - Set date manually.
@@ -143,6 +148,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Show tags.
 
 - Upload
+   - Auto rotate using metadata.
    - Retry on error.
    - Notify of ignored files in upload.
    - Warn of leaving page if upload is going.
@@ -180,6 +186,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Frontend tests.
+   - Reference users internaly by id, not username.
    - Test for maximum capacity.
    - Report slow queries & slow redraws.
    - Migrate to gotoB v2
@@ -587,7 +594,7 @@ Used by giz:
    - Contained by: `E.pics`.
 5. `E.grid`
    - Contained by: `E.pics`.
-   - Depends on `Data.pics` and `State.selected`.
+   - Depends on `Data.pics`.
    - Events: `click -> click pic`.
 6. `E.open`
    - Contained by: `E.pics`.
@@ -634,7 +641,7 @@ Used by giz:
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is `pics` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
-   4. `change State.selected`: adds & removes classes from `#pics` and optionally removes `State.untag`.
+   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`.
    6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
