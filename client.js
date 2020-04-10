@@ -3157,6 +3157,7 @@ E.upload = function () {
                      }),
                   ]],
                   // RECENT UPLOADS
+                  /*
                   ['div', {class: 'page-section'}, [
                      ['div', {class: 'recent-uploads'}, [
                         ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
@@ -3199,6 +3200,7 @@ E.upload = function () {
                         })],
                      ]]
                   ]],
+                  */
                   ['div', {class: 'page-section'}, [
                      // BACK LINK
                      ['div', {class: 'back-link back-link--uploads'}, [

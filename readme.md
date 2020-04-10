@@ -46,7 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fix moving pic grid when going from/to selecting/unselecting
    - When clicking on no man's land, unselect? Discuss with Ruben.
 - Upload
-   - hide recent uploads
    - Don't redraw box of new uploads when other uploads are updated
    - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
    - fix number of pictures in ongoing upload.
