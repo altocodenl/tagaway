@@ -2619,7 +2619,8 @@ E.pics = function () {
                                  // TODO v2: add inline SVG
                                  return ['li', B.ev ({class: Class, opaque: true}, action), [
                                     ['span', {class: 'tag__title'}, tag],
-                                    ['div', {class: 'tag__actions'}, [
+                                    // TODO: why must specify height so it looks exactly the same as markup?
+                                    ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                        ['div', {class: 'tag-actions'}, [
                                           // TODO v2: add inline SVG
                                           ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
@@ -2792,10 +2793,11 @@ E.pics = function () {
                                     // TODO v2: add inline SVG
                                     return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
                                        ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag],
-                                       ['div', {class: 'tag__actions'}, [
+                                       // TODO: why must specify height so it looks exactly the same as markup?
+                                       ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
                                              // TODO v2: add inline SVG
-                                             ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['onclick', 'toggle', 'tag', tag])],
+                                             ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['onclick', 'toggle', 'tag', tag])],
                                           ]],
                                        ]],
                                     ]];

@@ -43,12 +43,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - fix scroll height when having many tags
    - bug svgs after untagging and no pictures left
    - Paint picture a bit when selected
-   - when removing tag, if no pictures left with that tag, remove tag from query
+   - When removing tag, if no pictures left with that tag, remove tag from query.
+   - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 
    - Fix moving pic grid when going from/to selecting/unselecting
    - When clicking on no man's land, unselect? Discuss with Ruben.
-- see
-   - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 - upload
    - hide recent uploads
    - show ETA
@@ -63,8 +62,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Put two buttons for adding a tag or skipping/done adding tags
    - Show thumbnails of last 3 pictures on upload
    - Reduce top margin.
-- Manage
-   - delete tag, rename tag
+- Manage: delete tag, rename tag
 - Server
    - s3 uploads in background
    - priority: important|critical on notifications
@@ -77,6 +75,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Sort by newest, oldest & upload date.
    - Select/unselect picture by clicking on it.
    - Multiple selection with shift.
+   - Select/unselect all.
    - When selecting pictures, see selection bar.
    - Hover on picture and see date.
    - Show untagged pictures.
