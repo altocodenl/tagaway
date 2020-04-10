@@ -1915,6 +1915,10 @@ dale.do ([
          B.do (x, 'query', 'tags');
       });
    }],
+   ['goto', 'tag', function (x, tag) {
+      B.do ('set', ['State', 'selected'], {});
+      B.do ('set', ['State', 'query', 'tags'], [tag]);
+   }],
 
    // *** OPEN LISTENERS ***
 
@@ -2711,7 +2715,7 @@ E.pics = function () {
                                     return dale.do (editTags, function (tag) {
                                        var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
                                        // TODO v2: add inline SVG
-                                       return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, [
+                                       return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, ['onclick', 'goto', 'tag', tag]), [
                                           ['span', {class: 'tag__title'}, tag],
                                           ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag]), [
                                              ['div', {class: 'tag-actions'}, [

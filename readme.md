@@ -39,21 +39,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo next
 
-- pics
-   - Load on scroll.
-   - Improve performance when selecting/deselecting.
-   - when clicking on no man's land, unselect? Discuss with Ruben
-   - when clicking on tag on attach/unattach, go to tag
+- Pics
    - snackbar when tagging successful
+   - fix scroll height when having many tags
    - unselect button at the top of the bar
    - bug svgs after untagging and no pictures left
    - when going back from uploads, if upload is done, pictures are not updated
-   - fix moving pic grid when going from/to selecting/unselecting
-   - paint picture a bit when selected
+   - Paint picture a bit when selected
    - when removing tag, if no pictures left with that tag, remove tag from query
-   - fix scroll height when having many tags
+
+   - Fix moving pic grid when going from/to selecting/unselecting
+   - When clicking on no man's land, unselect? Discuss with Ruben.
 - see
-   - when seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
+   - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 - upload
    - Document
    - put two buttons for downloading files or folder
@@ -93,6 +91,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Filter tags when tagging/untagging.
    - Rotate pictures.
    - Delete pictures.
+   - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -135,9 +134,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo v1
+### Todo beta
 
 - Pics
+   - Load on scroll.
    - Hidden tags.
    - Enable GPS detection.
    - Set date manually.
@@ -564,6 +564,7 @@ Used by giz:
       - `click -> delete pics`
       - `input -> set State.newTag`
       - `input -> set State.filter`
+      - `click -> goto tag`
 2. `E.upload`
    - Depends on: `Data.account`, `State.currentUpload`.
    - Events:
@@ -652,6 +653,7 @@ Used by giz:
    12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
+   15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
