@@ -2849,6 +2849,16 @@ E.grid = function () {
             'font-size': CSS.typography.fontSize (-1),
             transition: 'opacity',
          }],
+         ['.pictures-grid__item-picture .mask', {
+            'background-color': '#5b6eff',
+            opacity: '0',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            'height, width': 1,
+            'border-radius': 'inherit',
+         }],
+         ['.pictures-grid__item-picture.selected .mask', {opacity: '0.2'}],
          ['div.pictures-grid__item-picture:hover div.caption', {
             'transition-delay': '0.4s',
             opacity: '1',
@@ -2910,6 +2920,7 @@ E.grid = function () {
                         rotation: rotation,
                      }),
                   }],
+                  ['div', {class: 'mask'}],
                   ['div', {class: 'caption'}, [
                      //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
                      ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],

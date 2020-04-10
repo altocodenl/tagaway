@@ -42,19 +42,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pics
    - fix scroll height when having many tags
    - bug svgs after untagging and no pictures left
-   - Paint picture a bit when selected
    - When removing tag, if no pictures left with that tag, remove tag from query.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
 
    - Fix moving pic grid when going from/to selecting/unselecting
    - When clicking on no man's land, unselect? Discuss with Ruben.
-- upload
+- Upload
    - hide recent uploads
-   - show ETA
+   - Don't redraw box of new uploads when other uploads are updated
+   - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
    - fix number of pictures in upload when going
    - show number of duplicates skipped
-   - don't redraw box of new uploads when other uploads are updated
-   - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
+   - show ETA
    - Document
 
    - Upload flow
