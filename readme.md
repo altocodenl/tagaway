@@ -42,9 +42,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pics
    - Fix scroll height when having many tags.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
+   - Mobile: mousedown for opening picture.
+   - Download.
 
-   - Fix moving pic grid when going from/to selecting/unselecting
-   - When clicking on no man's land, unselect? Discuss with Ruben.
+   - Fix moving pic grid when going from/to selecting/unselecting.
+   - Add button for adding new tag, as alternate path to pressing "enter".
+   - When clicking on no man's land, unselect? Discuss
+
 - Upload
    - Don't redraw box of new uploads when other uploads are updated
    - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
@@ -60,8 +64,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Reduce top margin.
 - Manage: delete tag, rename tag.
 - Server
-   - S3 uploads in background.
+   - Download.
    - notify priority important|critical.
+   - S3 uploads in background.
    - Fix email going into spam.
 
 ### Todo v0
