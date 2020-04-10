@@ -1813,8 +1813,8 @@ dale.do ([
    ['change', ['State', 'untag'], function (x) {
       var untag = B.get ('State', 'untag');
       var target = c ('#pics');
-      target.classList.add    (untag ? 'app-untag-tags'  : 'app-attach-tags');
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
+      if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
    ['query', 'pics', function (x) {
       var query = B.get ('State', 'query');
@@ -2594,6 +2594,7 @@ E.pics = function () {
                               ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
                            ]],
                         ]],
+                        // *** QUERY LIST ***
                         // TODO v2: merge two views into one
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
                            filter = (filter || '').trim ();
@@ -2695,6 +2696,7 @@ E.pics = function () {
                               filter = (filter || '').trim ();
                               return [
                                  ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
+                                 // *** TAG/UNTAG LIST ***
                                  B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
                                     var selectedTags = {};
                                     if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
