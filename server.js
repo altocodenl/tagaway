@@ -290,24 +290,22 @@ H.decrypt = function (data) {
    return Buffer.concat ([cipher.update (ciphertext), cipher.final ()]);
 }
 
-H.s3put = function (s, user, path, key) {
+H.s3put = function (s, key, path, user) {
    a.stop (s, [
       [a.make (H.encrypt), path],
-      [a.get, a.make (s3.upload, s3), {Key: user ? (H.hash (user) + '/' + key) : key, Body: '@last'}],
-      ! user ? [] : [a.make (s3.headObject, s3), {Key: H.hash (user) + '/' + key}],
+      [a.get, a.make (s3.upload, s3), {Key: key, Body: '@last'}],
+      ! user ? [] : [a.make (s3.headObject, s3), {Key: key}],
    ]);
 }
 
-H.s3get = function (s, user, key) {
-   a.stop (s, [
-      [a.set, 'data', [a.make (s3.getObject, s3), {Key: H.hash (user) + '/' + key}]],
-      function (s) {
-         s.next (H.decrypt (s.data.Body));
-      }
-   ]);
+H.s3get = function (s, key) {
+   s3.getObject ({Key: key}, function (error, data) {
+      if (error) return s.next (null, error);
+      s.next (H.decrypt (s.data.Body));
+   });
 }
 
-H.s3del = function (s, user, keys) {
+H.s3del = function (s, keys, user, sizes) {
 
    var counter = 0;
    if (type (keys) === 'string') keys = [keys];
@@ -316,7 +314,7 @@ H.s3del = function (s, user, keys) {
 
    var batch = function () {
       s3.deleteObjects ({Delete: {Objects: dale.go (keys.slice (counter * 1000, (counter + 1) * 1000), function (key) {
-         return {Key: user ? (H.hash (user) + '/' + key) : key}
+         return {Key: key}
       })}}, function (error) {
          if (error) return s.next (0, error);
          if (++counter === Math.ceil (keys.length / 1000)) s.next ();
@@ -341,6 +339,59 @@ H.s3list = function (s, prefix) {
    fetch ();
 }
 
+
+// https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
+// LIMIT === 3500
+// want to execute the queue from n cores, not just one!
+// when doing something, hit queue function
+// queue function: no queue, return; otherwise, transaction: at max or increment. if at max, do nothing. otherwise, perform the operation, decrement and hit queue function again.
+H.s3queue = function (s, op, username, path, file) {
+   Redis (s, 'rpush', 's3queue:' + op, JSON.stringify ({username: username, path: path, file: file}));
+   // if ongoing, mark pending?
+}
+
+/*
+- invalid sequence: delete, upload
+- possible valid sequences
+   - upload done, delete -> delete
+   - upload in queue, delete -> remove upload from queue
+   - upload in progress, delete -> wait until upload is done, delete
+
+which is the kanban? missing file or db entry? but I need to store space anyway, so that can be it. but no, that entry happens after upload. kanban must be the file itself.
+upload:
+   why not file? slow?
+   if no entry, do nothing (already deleted)
+delete from s3
+*/
+// queue should execute one at a time, at redis speed. calls itself until is done. can be kickstarted by other functions.
+// can use node variable, since this executes one at a time! but why? why can't parallelize? only dependencies are: maximum operations per period of time, and delete overriding queued uploads.
+// start processing one at a time, but no need to guarantee order, just don't go over maximum. kickstart it.
+// wait! upload, once it's done, if there's no entry on DB, it can delete itself!
+H.s3exeque = function (s) {
+   // if s3executing return else set it, as transaction
+   // define next function
+   // next
+      // get next item. none? delete s3executing & return
+      // upload
+         // get DB entry, if none, do nothing (has been deleted while enqueued), return next
+         // DB entry? set uploading flag, call s3put with cb that removes uploading flag & updates stats
+      //
+
+
+H.s3exeque = function (s) {
+   // put:
+      // get up to 5 elements in queue
+      // upload them
+   // put: up to max 5
+   //
+         function (s) {
+            H.stat (s, [
+               ['stock', 'bys3',         s.last.ContentLength],
+               ['stock', 'bys3-' + user, s.last.ContentLength],
+            ]);
+         }
+      ],
+
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
 H.deletePic = function (s, id, username) {
@@ -356,7 +407,7 @@ H.deletePic = function (s, id, username) {
          s.tags = s.last [1];
          if (! s.pic || username !== s.pic.owner) return s.next (0, 'nf');
 
-         H.s3del (s, username, s.pic.id);
+         H.s3queue (s, 'del', username, Path.join (H.hash (username), id));
       },
       function (s) {
          var thumbs = [];
@@ -387,8 +438,6 @@ H.deletePic = function (s, id, username) {
          H.stat.w (s, [
             ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
             ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
-            ['stock', 'bys3',             - s.pic.bys3],
-            ['stock', 'bys3-' + username, - s.pic.bys3],
             ['stock', 'pics', -1],
             s.pic.by200 ? ['stock', 't200', -1] : [],
             s.pic.by900 ? ['stock', 't900', -1] : [],
@@ -1023,7 +1072,7 @@ var routes = [
    ['get', 'original/:id', function (rq, rs) {
       if (ENV) return reply (rs, 400);
       astop (rs, [
-         [H.s3get, rq.user.username, rq.data.params.id],
+         [H.s3get, Path.join (H.hash (rq.user.username), rq.data.params.id)],
          function (s) {
             rs.end (s.last);
          }
@@ -1171,12 +1220,12 @@ var routes = [
          [k, 'cp', path, newpath],
          [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
+         // We store only the original pictures in S3, not the thubnails
+         [H.s3queue, 'put', username, Path.join (H.hash (username), pic.id), newpath],
          [perfTrack, 'fs'],
          [a.fork, [
             [[H.resizeif, newpath, 200], [perfTrack, 'resize200']],
             [[H.resizeif, newpath, 900], [perfTrack, 'resize900']],
-            // We store only the original pictures in S3, not the thubnails
-            [[a.set, 's3', [H.s3put, rq.user.username, newpath, pic.id]], [perfTrack, 's3']],
          ], function (v) {return v}],
          // Delete original image from disk.
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
@@ -1185,7 +1234,6 @@ var routes = [
 
             pic.dimw = s.size.w;
             pic.dimh = s.size.h;
-            pic.bys3 = s.s3.ContentLength;
             pic.byfs = s.byfs.size;
             pic.hash = s.hash;
 
@@ -1235,8 +1283,6 @@ var routes = [
             H.stat.w (s, [
                ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
-               ['stock', 'bys3',                     pic.bys3],
-               ['stock', 'bys3-' + rq.user.username, pic.bys3],
                ['stock', 'pics', 1],
                pic.by200 ? ['stock', 't200', 1] : [],
                pic.by900 ? ['stock', 't900', 1] : [],
@@ -1942,8 +1988,8 @@ if (cicek.isMaster) a.stop ([
    },
    // Extraneous S3 files: delete.
    function (s) {
-      // This operation won't update the S3 usage statistics
-      H.s3del (s, null, s.s3extra);
+      // This operation won't update the S3 usage statistics, they are assumed to be consistent already.
+      H.s3del (s, s.s3extra);
    },
    // Extraneous FS files: delete.
    [a.get, a.fork, '@fsextra', function (v) {
@@ -1951,9 +1997,9 @@ if (cicek.isMaster) a.stop ([
    }, {max: 5}],
    // Missing S3 files: upload from disk.
    function (s) {
-      // This operation won't update the S3 usage statistics
+      // This operation won't update the S3 usage statistics, they are assumed to be consistent already.
       a.fork (s, s.s3missing, function (key) {
-         return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
+         return [H.s3put, Path.join (CONFIG.basepath, key), key];
       }, {max: 5});
    },
    // Missing FS files: nothing to do but report.
