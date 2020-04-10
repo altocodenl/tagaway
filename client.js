@@ -1883,7 +1883,7 @@ dale.do ([
       });
    }],
    ['tag', 'pics', function (x, tag, del, ev) {
-      ev.stopPropagation ();
+      if (ev) ev.stopPropagation ();
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
