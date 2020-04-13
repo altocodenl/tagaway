@@ -66,6 +66,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Server
    - Download.
    - notify priority important|critical.
+   - Report redis errors
    - S3 uploads in background.
    - Fix email going into spam.
 
@@ -186,6 +187,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Frontend tests.
+   - Disable THP for redis.
    - Reference users internaly by id, not username.
    - Test for maximum capacity.
    - Report slow queries & slow redraws.
