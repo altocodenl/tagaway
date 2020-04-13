@@ -31,3 +31,7 @@ ssh $HOST apt-get autoremove -y
 ssh $HOST apt-get clean
 ssh $HOST mkdir /root/files
 ssh $HOST shutdown -r now
+
+# /etc/sysctl.conf -> net.core.somaxconn=1024
+# /etc/sysctl.conf -> vm.overcommit_memory = 1
+# disable THP echo never > /sys/kernel/mm/transparent_hugepage/enabled

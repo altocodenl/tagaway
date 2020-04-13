@@ -39,33 +39,36 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo next
 
-- pics
-   - when clicking on no man's land, unselect
-   - when clicking on tag on attach/unattach, go to tag
-   - attach tag by clicking on attach
-   - snackbar when tagging successful
-   - unselect button at the top of the bar
-   - bug svgs after untagging and no pictures left
-   - when going back from uploads, if upload is done, pictures are not updated
-   - fix moving pic grid when going from/to selecting/unselecting
-   - paint picture a bit when selected
-   - when removing tag, if no pictures left with that tag, remove tag from query
-- upload
-   - put two buttons for downloading files or folder
-   - put two buttons for adding a tag or skipping/done adding tags
-   - hide recent uploads
-   - remove space top margin
-   - show ETA
-   - show thumbnails of last 3 pictures on upload
-   - fix number of pictures in upload when going
-   - show number of duplicates skipped
-- manage
-   - delete tag, rename tag
-- server
-   - auto rotate with orientation
-   - s3 uploads in background
-   - Reference users internaly by id, not username.
-   - fix email going into spam
+- Pics
+   - Fix scroll height when having many tags.
+   - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
+   - Mobile: mousedown for opening picture.
+   - Download.
+
+   - Fix moving pic grid when going from/to selecting/unselecting.
+   - Add button for adding new tag, as alternate path to pressing "enter".
+   - When clicking on no man's land, unselect? Discuss
+
+- Upload
+   - Don't redraw box of new uploads when other uploads are updated
+   - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
+   - fix number of pictures in ongoing upload.
+   - Show number of duplicates skipped
+   - Show ETA in ongoing upload.
+   - Document element, listeners & store.
+
+   - Upload flow
+      - Put two buttons for downloading files or folder.
+      - Put two buttons for adding a tag or skipping/done adding tags.
+   - Show thumbnails of last 3 pictures on upload.
+   - Reduce top margin.
+- Manage: delete tag, rename tag.
+- Server
+   - Download.
+   - notify priority important|critical.
+   - Report redis errors
+   - S3 uploads in background.
+   - Fix email going into spam.
 
 ### Todo v0
 
@@ -74,6 +77,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Sort by newest, oldest & upload date.
    - Select/unselect picture by clicking on it.
    - Multiple selection with shift.
+   - Select/unselect all.
    - When selecting pictures, see selection bar.
    - Hover on picture and see date.
    - Show untagged pictures.
@@ -87,6 +91,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Filter tags when tagging/untagging.
    - Rotate pictures.
    - Delete pictures.
+   - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
+   - When untagging, if no pictures left with that tag, remove tag from query.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -129,7 +135,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo v1
+### Todo beta
 
 - Pics
    - Load on scroll.
@@ -143,6 +149,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Show tags.
 
 - Upload
+   - Auto rotate using metadata.
    - Retry on error.
    - Notify of ignored files in upload.
    - Warn of leaving page if upload is going.
@@ -180,6 +187,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Frontend tests.
+   - Disable THP for redis.
+   - Reference users internaly by id, not username.
    - Test for maximum capacity.
    - Report slow queries & slow redraws.
    - Migrate to gotoB v2
@@ -557,6 +566,7 @@ Used by giz:
       - `click -> delete pics`
       - `input -> set State.newTag`
       - `input -> set State.filter`
+      - `click -> goto tag`
 2. `E.upload`
    - Depends on: `Data.account`, `State.currentUpload`.
    - Events:
@@ -587,7 +597,7 @@ Used by giz:
    - Contained by: `E.pics`.
 5. `E.grid`
    - Contained by: `E.pics`.
-   - Depends on `Data.pics` and `State.selected`.
+   - Depends on `Data.pics`.
    - Events: `click -> click pic`.
 6. `E.open`
    - Contained by: `E.pics`.
@@ -632,19 +642,20 @@ Used by giz:
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is `pics` and there's no `State.query`, it 1) initializes it to `{tags: [], sort: 'newest'}` and 2) invokes `query tags`.
+   2. `change State.page`: if current page is `pics` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`.
    3. `change State.query`: invokes `query pics`.
-   4. `change State.selected`: adds & removes classes from `#pics` and optionally removes `State.untag`.
-   5. `change State.untag`: adds & removes classes from `#pics`.
+   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
+   5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
    10. `select all`: sets `State.selected` to all the pictures in the current query.
-   11. `query tags`: invokes `get tags` and sets `Data.tags`.
+   11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
    12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
+   15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).

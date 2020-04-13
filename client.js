@@ -1786,12 +1786,16 @@ dale.do ([
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      if (! B.get ('Data', 'tags'))   B.do (x, 'query', 'tags');
+      else B.do (x, 'query', 'pics');
+      B.do (x, 'query', 'tags');
    }],
    ['change', ['State', 'query'], function (x) {
       B.do (x, 'query', 'pics');
    }],
    ['change', ['State', 'selected'], function (x) {
+      c ('.pictures-grid__item-picture', function (pic) {
+         pic.classList [B.get ('State', 'selected', pic.id) ? 'add' : 'remove'] ('selected');
+      });
       var selectedPictures = dale.keys (B.get ('State', 'selected')).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
@@ -1809,8 +1813,8 @@ dale.do ([
    ['change', ['State', 'untag'], function (x) {
       var untag = B.get ('State', 'untag');
       var target = c ('#pics');
-      target.classList.add    (untag ? 'app-untag-tags'  : 'app-attach-tags');
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
+      if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
    ['query', 'pics', function (x) {
       var query = B.get ('State', 'query');
@@ -1876,9 +1880,15 @@ dale.do ([
       B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
          B.do (x, 'set', ['Data', 'tags'], rs.body);
+         var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
+            if (rs.body [tag]) return tag;
+         });
+         if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
+         B.do (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
       });
    }],
-   ['tag', 'pics', function (x, tag, del) {
+   ['tag', 'pics', function (x, tag, del, ev) {
+      if (ev) ev.stopPropagation ();
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
@@ -1889,6 +1899,7 @@ dale.do ([
       var payload = {tag: tag, ids: ids, del: del}
       B.do (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+         if (! del) B.do (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
          B.do (x, 'query', 'pics');
          B.do (x, 'query', 'tags');
          if (tag === B.get ('State', 'newTag')) B.do (x, 'rem', 'State', 'newTag');
@@ -1905,12 +1916,16 @@ dale.do ([
    ['delete', 'pics', function (x, deg) {
       var pics = dale.keys (B.get ('State', 'selected'));
       if (pics.length === 0) return;
-      if (! confirm ('Are you sure you want to delete the selected pictures?')) return;
+      if (! confirm ('Are you sure you want to delete the ' + pics.length + ' selected pictures?')) return;
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          B.do (x, 'query', 'pics');
          B.do (x, 'query', 'tags');
       });
+   }],
+   ['goto', 'tag', function (x, tag) {
+      B.do ('set', ['State', 'selected'], {});
+      B.do ('set', ['State', 'query', 'tags'], [tag]);
    }],
 
    // *** OPEN LISTENERS ***
@@ -2584,6 +2599,7 @@ E.pics = function () {
                               ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
                            ]],
                         ]],
+                        // *** QUERY LIST ***
                         // TODO v2: merge two views into one
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
                            filter = (filter || '').trim ();
@@ -2609,7 +2625,8 @@ E.pics = function () {
                                  // TODO v2: add inline SVG
                                  return ['li', B.ev ({class: Class, opaque: true}, action), [
                                     ['span', {class: 'tag__title'}, tag],
-                                    ['div', {class: 'tag__actions'}, [
+                                    // TODO: why must specify height so it looks exactly the same as markup?
+                                    ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                        ['div', {class: 'tag-actions'}, [
                                           // TODO v2: add inline SVG
                                           ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
@@ -2684,6 +2701,7 @@ E.pics = function () {
                               filter = (filter || '').trim ();
                               return [
                                  ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
+                                 // *** TAG/UNTAG LIST ***
                                  B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
                                     var selectedTags = {};
                                     if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
@@ -2708,9 +2726,9 @@ E.pics = function () {
                                     return dale.do (editTags, function (tag) {
                                        var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
                                        // TODO v2: add inline SVG
-                                       return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, [
+                                       return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, ['onclick', 'goto', 'tag', tag]), [
                                           ['span', {class: 'tag__title'}, tag],
-                                          ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag]), [
+                                          ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}]), [
                                              ['div', {class: 'tag-actions'}, [
                                                 // TODO v2: add inline SVG
                                                 ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
@@ -2761,6 +2779,10 @@ E.pics = function () {
                         ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
                      ]],
                      // TODO v2: add inline SVG
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, ['onclick', 'rem', 'State', 'selected']), [
+                        ['span', {class: 'organise-bar__button-title'}, 'Unselect all'],
+                     ]],
+                     // TODO v2: add inline SVG
                      ['div', B.ev ({class: 'organise-bar__button organise-bar__button--delete', opaque: true}, ['onclick', 'delete', 'pics']), [
                         ['span', {class: 'organise-bar__button-title'}, 'Delete'],
                      ]],
@@ -2778,10 +2800,11 @@ E.pics = function () {
                                     // TODO v2: add inline SVG
                                     return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
                                        ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag],
-                                       ['div', {class: 'tag__actions'}, [
+                                       // TODO: why must specify height so it looks exactly the same as markup?
+                                       ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
                                              // TODO v2: add inline SVG
-                                             ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['onclick', 'toggle', 'tag', tag])],
+                                             ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['onclick', 'toggle', 'tag', tag])],
                                           ]],
                                        ]],
                                     ]];
@@ -2833,76 +2856,84 @@ E.grid = function () {
             'font-size': CSS.typography.fontSize (-1),
             transition: 'opacity',
          }],
+         ['.pictures-grid__item-picture .mask', {
+            'background-color': '#5b6eff',
+            opacity: '0',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            'height, width': 1,
+            'border-radius': 'inherit',
+         }],
+         ['.pictures-grid__item-picture.selected .mask', {opacity: '0.2'}],
          ['div.pictures-grid__item-picture:hover div.caption', {
             'transition-delay': '0.4s',
             opacity: '1',
             '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
          }],
       ]],
-      // TODO merge two views into one
       B.view (['Data', 'pics'], function (x, pics) {
-         return B.view (['State', 'selected'], function (x, selected) {
-            selected = selected || {};
-            return dale.do (pics, function (pic, k) {
-               var askance = pic.deg === 90 || pic.deg === -90;
-               var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
-               });
-               rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
-                  if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
-                  if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
-               });
-               // 122w 224h 102m-left
-
-               // If following the CSS rules only:
-               // 140: 6, 11, 16, 21, 26
-               // 180: 2, 5, 8, 14, 17, 20, 23
-               // 240: 15, 19, 27
-               // 100: rest
-               //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
-               //if (((k + 1) % 3) === 0)           frameWidth = 180;
-               //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
-
-               var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
-               var picRatio = picWidth / picHeight;
-
-               // padding right: 16px, padding left: 18px
-               var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
-               if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
-               else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
-               else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
-               else    frameWidth = sizes [3];
-
-               // TODO: understand this magic number.
-               if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
-                  return [v [0], v [1]];
-               });
-
-               return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
-                  ['div', B.ev ({
-                     class: 'pictures-grid__item-picture' + (selected [pic.id] ? ' selected' : ''),
-                  }, ['onclick', 'click', 'pic', pic.id, k]), [
-                     ['div', {
-                        class: 'inner',
-                        style: style ({
-                           'border-radius': 'inherit',
-                           width: askance ? frameHeight : frameWidth,
-                           height: askance ? frameWidth : frameHeight,
-                           'background-image': 'url(' + H.path (pic) + ')',
-                           'background-position': 'center',
-                           'background-repeat': 'no-repeat',
-                           'background-size': 'cover',
-                           'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
-                           rotation: rotation,
-                        }),
-                     }],
-                     ['div', {class: 'caption'}, [
-                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
-                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
-                     ]],
-                  ]],
-               ]];
+         return dale.do (pics, function (pic, k) {
+            var askance = pic.deg === 90 || pic.deg === -90;
+            var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+               return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
             });
+            rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+               if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+               if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
+            });
+            // 122w 224h 102m-left
+
+            // If following the CSS rules only:
+            // 140: 6, 11, 16, 21, 26
+            // 180: 2, 5, 8, 14, 17, 20, 23
+            // 240: 15, 19, 27
+            // 100: rest
+            //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
+            //if (((k + 1) % 3) === 0)           frameWidth = 180;
+            //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
+
+            var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
+            var picRatio = picWidth / picHeight;
+
+            // padding right: 16px, padding left: 18px
+            var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
+            if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
+            else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
+            else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
+            else    frameWidth = sizes [3];
+
+            // TODO: understand this magic number.
+            if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
+               return [v [0], v [1]];
+            });
+
+            return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
+               ['div', B.ev ({
+                  class: 'pictures-grid__item-picture',
+                  id: pic.id,
+               }, ['onclick', 'click', 'pic', pic.id, k]), [
+                  ['div', {
+                     class: 'inner',
+                     style: style ({
+                        'border-radius': 'inherit',
+                        width: askance ? frameHeight : frameWidth,
+                        height: askance ? frameWidth : frameHeight,
+                        'background-image': 'url(' + H.path (pic) + ')',
+                        'background-position': 'center',
+                        'background-repeat': 'no-repeat',
+                        'background-size': 'cover',
+                        'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
+                        rotation: rotation,
+                     }),
+                  }],
+                  ['div', {class: 'mask'}],
+                  ['div', {class: 'caption'}, [
+                     //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
+                     ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
+                  ]],
+               ]],
+            ]];
          });
       }),
    ];
@@ -3126,6 +3157,7 @@ E.upload = function () {
                      }),
                   ]],
                   // RECENT UPLOADS
+                  /*
                   ['div', {class: 'page-section'}, [
                      ['div', {class: 'recent-uploads'}, [
                         ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
@@ -3168,6 +3200,7 @@ E.upload = function () {
                         })],
                      ]]
                   ]],
+                  */
                   ['div', {class: 'page-section'}, [
                      // BACK LINK
                      ['div', {class: 'back-link back-link--uploads'}, [
