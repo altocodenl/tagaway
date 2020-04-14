@@ -2057,30 +2057,3 @@ if (cicek.isMaster) a.stop ([
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'File consistency check error.', error: error});
 });
-
-// Data migration: initialize s3:files
-// TODO: remove after executing in dev & prod
-if (cicek.isMaster) a.stop ([
-   [redis.keyscan, 'pic:*'],
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (pic) {
-         multi.hgetall (pic);
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (pic) {
-         if (! pic.bys3) return;
-         multi.hset ('s3:files', Path.join (H.hash (pic.owner), pic.id), pic.bys3);
-         multi.hdel ('pic:' + pic.id, 'bys3');
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      notify (s, {priority: 'critical', type: 'data migration s3:files successful', items: s.last.length});
-   },
-], function (s, error) {
-   if (error) notify (s, {priority: 'error', type: 'data migration s3:files error', error: error});
-});
