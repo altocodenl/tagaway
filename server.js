@@ -154,8 +154,8 @@ var sendmail = function (s, o) {
       subject: o.subject,
       html:    lith.g (o.message),
    }, function (error, rs) {
-      if (! error) return notify (s, {type: 'email sent', to: o.to2, subject: o.subject});
-      a.stop (s, [notify, {type: 'mailer error', error: error, options: o}]);
+      if (! error) notify (s, {type: 'email sent', to: o.to2, subject: o.subject});
+      else         notify (s, {priority: 'critical', type: 'mailer error', error: error, options: o});
    });
 }
 
@@ -352,7 +352,7 @@ H.s3queue = function (s, op, username, key, path) {
    a.seq (s, [
       [Redis, 'rpush', 's3:queue', JSON.stringify ({op: op, username: username, key: key, path: path})],
       function (s) {
-         if (s.error) return notify (s, {type: 'redis error s3queue', error: s.error});
+         if (s.error) return notify (s, {priority: 'critical', type: 'redis error s3queue', error: s.error});
          // We call the next function.
          s.next ();
          // We trigger s3exec.
@@ -368,7 +368,7 @@ H.s3exec = function () {
    // If there's no items on the queue, or if we're over the maximum: do nothing.
    // Otherwise, increment s3:proc and LPOP the first element of the queue
    redis.eval ('if redis.call ("llen", "s3:queue") == 0 then return nil end if (tonumber (redis.call ("get", "s3:proc")) or 0) >= 3500 then return nil end redis.call ("incr", "s3:proc"); return redis.call ("lpop", "s3:queue")', 0, function (error, next) {
-      if (error) return notify (a.creat (), {type: 'redis error s3exec', error: error});
+      if (error) return notify (a.creat (), {priority: 'critical', type: 'redis error s3exec', error: error});
       if (! next) return;
       next = JSON.parse (next);
 
@@ -417,7 +417,7 @@ H.s3exec = function () {
          actions,
          [Redis, 'decr', 's3:proc'],
       ], function (s, error) {
-         if (error) return notify (s, {type: 'redis error s3exec', error: error});
+         if (error) return notify (s, {priority: 'critical', type: 'redis error s3exec', error: error});
          H.s3exec ();
       });
    });
@@ -682,7 +682,7 @@ var routes = [
 
    ['post', 'error', function (rq, rs) {
       astop (rs, [
-         [notify, {type: 'client error', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
+         [notify, {priority: 'critical', type: 'client error', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
          [reply, rs, 200],
       ]);
    }],
@@ -843,7 +843,7 @@ var routes = [
       astop (rs, [
          [a.cond, [a.set, 'emailtoken', [Redis, 'hget', 'emailtoken', token], true], {
             null: [
-               [notify, {type: 'bad emailtoken', token: token, ip: rq.origin, ua: rq.headers ['user-agent']}],
+               [notify, {priority: 'important', type: 'bad emailtoken', token: token, ip: rq.origin, ua: rq.headers ['user-agent']}],
                [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/badtoken'}],
             ],
          }],
@@ -1103,7 +1103,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [notify, {type: 'feedback', user: rq.user.username, message: b.message}],
+         [notify, {priority: 'important', type: 'feedback', user: rq.user.username, message: b.message}],
          ENV ? [] : [reply, rs, 200],
          [sendmail, {
             to1:     rq.user.username,
@@ -1829,7 +1829,7 @@ cicek.apres = function (rs) {
    ];
 
    if (rs.log.code >= 400) {
-      if (['/favicon.ico', '/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+      if (['/favicon.ico', '/lib/normalize.min.css.map'].indexOf (rs.log.url) === -1) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       logs.push (['flow', 'rq-bad', 1]);
    }
    else {
@@ -1854,6 +1854,7 @@ cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
    if (message [1] === 'Invalid signature in cookie') return;
    notify (a.creat (), {
+      priority: 'critical',
       type:    'server error',
       subtype: message [1],
       from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
@@ -1868,18 +1869,23 @@ cicek.listen ({port: CONFIG.port}, routes);
 if (cicek.isMaster) a.seq ([
    [k, 'git', 'rev-parse', 'HEAD'],
    function (s) {
-      if (s.error) return notify (a.creat (), {type: 'server start', error: s.error});
+      if (s.error) return notify (a.creat (), {priority: 'critical', type: 'server start', error: s.error});
       // TODO: remove timeout after implementing separate log service
       setTimeout (function () {
-         notify (a.creat (), {type: 'server start', sha: s.last.stdout.slice (0, -1)});
+         notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
       }, ENV === 'dev' ? 1500 : 0);
    }
 ]);
 
 // *** REDIS ERROR HANDLER ***
 
+var lastRedisErrorNotification = 0;
+
 redis.on ('error', function (error) {
-   if (cicek.isMaster) notify (a.creat (), {type: 'redis error', error: error});
+   // Notify maximum once every 60 seconds.
+   if ((Date.now () - lastRedisErrorNotification) < (1000 * 60)) return;
+   lastRedisErrorNotification = Date.now ();
+   notify (a.creat (), {priority: 'critical', type: 'redis error', error: error});
 });
 
 // *** DB BACKUPS ***
@@ -1897,7 +1903,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
       [a.get, a.make (s3.upload, s3), {Key: new Date ().toUTCString () + '-dump.rdb', Body: '@last'}],
    ], function (s, error) {
       a.seq ([
-         [notify, {type: 'backup error', error: error}],
+         [notify, {priority: 'critical', type: 'backup error', error: error}],
          [a.fork, [SECRET.admins [0]], function (v) {
             return [sendmail, {
                from1:   'ac;pic backup',
@@ -1917,7 +1923,7 @@ if (cicek.isMaster) setInterval (function () {
    a.seq ([
       [a.fork, ['mpstat', 'free'], function (v) {return [k, v]}],
       function (s) {
-         if (s.error) return notify (s, {type: 'resources check error', error: s.error});
+         if (s.error) return notify (s, {priority: 'critical', type: 'resources check error', error: s.error});
          var cpu  = s.last [0].stdout;
          cpu = cpu.split ('\n') [3].split (/\s+/);
          cpu = Math.round (parseFloat (cpu [cpu.length - 1].replace (',', '.')));
@@ -1926,8 +1932,8 @@ if (cicek.isMaster) setInterval (function () {
          free = Math.round (100 * parseInt (free [6]) / parseInt (free [1]));
 
          a.seq (s, [
-            cpu  < 20 ? [notify, {type: 'high CPU usage', usage: (100 - cpu)  / 100}] : [],
-            free < 20 ? [notify, {type: 'high RAM usage', usage: (100 - free) / 100}] : [],
+            cpu  < 20 ? [notify, {priority: 'critical', type: 'high CPU usage', usage: (100 - cpu)  / 100}] : [],
+            free < 20 ? [notify, {priority: 'critical', type: 'high RAM usage', usage: (100 - free) / 100}] : [],
          ]);
       },
    ]);
@@ -1943,7 +1949,7 @@ if (cicek.isMaster) setTimeout (function () {
          a.make (hitit.one) (s, {}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0], firstName: 'admin'}});
       },
    ], function (s, error) {
-      notify (s, {type: 'bootstrap invite error', error: error});
+      notify (s, {priority: 'critical', type: 'bootstrap invite error', error: error});
    });
 }, 3000);
 
@@ -2025,39 +2031,31 @@ if (cicek.isMaster) a.stop ([
          if (! s.dbfiles [fsfile]) s.fsextra.push (fsfile);
       });
 
-      if (s.s3extra.length)   notify (a.creat (), {type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra});
-      if (s.fsextra.length)   notify (a.creat (), {type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra});
-      if (s.s3missing.length) notify (a.creat (), {type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing});
-      if (s.fsmissing.length) notify (a.creat (), {type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing});
+      if (s.s3extra.length)   notify (a.creat (), {priority: 'important', type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra});
+      if (s.fsextra.length)   notify (a.creat (), {priority: 'important', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra});
+      if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing});
+      if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing});
 
-      if (process.argv [3] !== 'makeConsistent') return clog ('File consistency check', '`makeConsistent` flag not passed, exiting.');
-
-      s.next ();
+      if (process.argv [3] !== 'makeConsistent') return;
+      if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
    },
    // Extraneous S3 files: delete. Don't update the statistics, they are assumed to be consistent already.
    function (s) {
       H.s3del (s, s.s3extra);
    },
-   // Extraneous FS files: delete.
+   // Extraneous FS files: delete. Don't update the statistics, they are assumed to be consistent already.
    [a.get, a.fork, '@fsextra', function (v) {
       return [a.make (fs.unlink), Path.join (CONFIG.basepath, v)];
    }, {max: 5}],
-   // Missing S3 files: upload from disk.
-   function (s) {
-      // This operation won't update the S3 usage statistics, they are assumed to be consistent already.
-      a.fork (s, s.s3missing, function (key) {
-         return [H.s3put, Path.join (CONFIG.basepath, key), key];
-      }, {max: 5});
-   },
    // Missing FS files: nothing to do but report.
    function (s) {
-      var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {type: 'File consistency check success.'}, function (k) {
+      var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: 'File consistency check success.'}, function (k) {
          if (s [k]) return [k, s [k]];
       });
       notify (s, message);
    },
 ], function (s, error) {
-   notify (s, {type: 'File consistency check error.', error: error});
+   notify (s, {priority: 'critical', type: 'File consistency check error.', error: error});
 });
 
 // Data migration: initialize s3:files
@@ -2081,8 +2079,8 @@ if (cicek.isMaster) a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      notify (s, {type: 'data migration s3:files successful', items: s.last.length});
+      notify (s, {priority: 'critical', type: 'data migration s3:files successful', items: s.last.length});
    },
 ], function (s, error) {
-   if (error) notify (s, {type: 'data migration s3:files', error: error});
+   if (error) notify (s, {priority: 'error', type: 'data migration s3:files error', error: error});
 });

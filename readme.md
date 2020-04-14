@@ -61,12 +61,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Put two buttons for adding a tag or skipping/done adding tags.
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
-- Manage: delete tag, rename tag.
 - Server
    - Download.
-   - Notify priority important|critical.
-   - Don't upload to S3 automatically on script, require manual action.
-   - Report redis errors.
+- Manage: delete tag, rename tag.
 - Other
    - Fix email going into spam.
    - RGB logo in app & emails.
