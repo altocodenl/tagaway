@@ -1880,6 +1880,7 @@ dale.do ([
       B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
          B.do (x, 'set', ['Data', 'tags'], rs.body);
+         if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
             if (rs.body [tag]) return tag;
          });
@@ -2023,7 +2024,7 @@ dale.do ([
    ['change', ['State', 'upload', 'queue'], function (x) {
       var queue = B.get ('State', 'upload', 'queue');
       var MAXSIMULT = 5, uploading = 0;
-      dale.stopNot (queue, false, function (file) {
+      dale.stop (queue, false, function (file) {
          if (uploading === MAXSIMULT) return false;
          if (file.uploading) return uploading++;
          file.uploading = true;

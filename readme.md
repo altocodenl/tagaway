@@ -40,35 +40,36 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo next
 
 - Pics
-   - Fix scroll height when having many tags.
+   - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
-   - Mobile: mousedown for opening picture.
+   - Mobile: mousedown for opening picture?
    - Download.
-
-   - Fix moving pic grid when going from/to selecting/unselecting.
-   - Add button for adding new tag, as alternate path to pressing "enter".
-   - When clicking on no man's land, unselect? Discuss
-
+   - UI team changes:
+      - Fix moving pic grid when going from/to selecting/unselecting.
+      - Add button for adding new tag, as alternate path to pressing "enter".
+      - When clicking on no man's land, unselect? Discuss
 - Upload
-   - Don't redraw box of new uploads when other uploads are updated
-   - mobile: show upload box as folders only, since there's no dropdown or perhaps no folders
-   - fix number of pictures in ongoing upload.
+   - Don't redraw box of new uploads when other uploads are updated.
+   - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
+   - Fix number of pictures in ongoing upload.
    - Show number of duplicates skipped
    - Show ETA in ongoing upload.
    - Document element, listeners & store.
-
-   - Upload flow
-      - Put two buttons for downloading files or folder.
-      - Put two buttons for adding a tag or skipping/done adding tags.
-   - Show thumbnails of last 3 pictures on upload.
-   - Reduce top margin.
+   - UI team changes:
+      - Upload flow
+         - Put two buttons for downloading files or folder.
+         - Put two buttons for adding a tag or skipping/done adding tags.
+      - Show thumbnails of last 3 pictures on upload.
+      - Reduce top margin.
 - Manage: delete tag, rename tag.
 - Server
    - Download.
-   - notify priority important|critical.
-   - Report redis errors
-   - S3 uploads in background.
+   - Notify priority important|critical.
+   - Don't upload to S3 automatically on script, require manual action.
+   - Report redis errors.
+- Other
    - Fix email going into spam.
+   - RGB logo in app & emails.
 
 ### Todo v0
 
