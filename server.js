@@ -214,9 +214,9 @@ H.trim = function (string) {
    return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 }
 
-H.log = function (s, user, ev) {
+H.log = function (s, username, ev) {
    ev.t = Date.now ();
-   Redis (s, 'lpush', 'ulog:' + user, teishi.str (ev));
+   Redis (s, 'lpush', 'ulog:' + username, teishi.str (ev));
 }
 
 H.size = function (s, path) {
@@ -290,24 +290,31 @@ H.decrypt = function (data) {
    return Buffer.concat ([cipher.update (ciphertext), cipher.final ()]);
 }
 
-H.s3put = function (s, key, path, user) {
+H.s3put = function (s, key, path) {
    a.stop (s, [
       [a.make (H.encrypt), path],
+      function (s) {
+         s.time = Date.now ();
+         s.next ();
+      },
       [a.get, a.make (s3.upload, s3), {Key: key, Body: '@last'}],
-      ! user ? [] : [a.make (s3.headObject, s3), {Key: key}],
+      function (s) {
+         H.stat.w (s, 'max', 'ms-s3put', Date.now () - s.time);
+      },
+      [a.make (s3.headObject, s3), {Key: key}],
    ]);
 }
 
 H.s3get = function (s, key) {
    s3.getObject ({Key: key}, function (error, data) {
       if (error) return s.next (null, error);
-      s.next (H.decrypt (s.data.Body));
+      s.next (H.decrypt (data.Body));
    });
 }
 
-H.s3del = function (s, keys, user, sizes) {
+H.s3del = function (s, keys) {
 
-   var counter = 0;
+   var counter = 0, t = Date.now ();
    if (type (keys) === 'string') keys = [keys];
 
    if (keys.length === 0) return s.next ();
@@ -317,7 +324,9 @@ H.s3del = function (s, keys, user, sizes) {
          return {Key: key}
       })}}, function (error) {
          if (error) return s.next (0, error);
-         if (++counter === Math.ceil (keys.length / 1000)) s.next ();
+         if (++counter === Math.ceil (keys.length / 1000)) {
+            H.stat.w (s, 'max', 'ms-s3del', Date.now () - t);
+         }
          else batch ();
       });
    }
@@ -339,58 +348,80 @@ H.s3list = function (s, prefix) {
    fetch ();
 }
 
-
-// https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
-// LIMIT === 3500
-// want to execute the queue from n cores, not just one!
-// when doing something, hit queue function
-// queue function: no queue, return; otherwise, transaction: at max or increment. if at max, do nothing. otherwise, perform the operation, decrement and hit queue function again.
-H.s3queue = function (s, op, username, path, file) {
-   Redis (s, 'rpush', 's3queue:' + op, JSON.stringify ({username: username, path: path, file: file}));
-   // if ongoing, mark pending?
+H.s3queue = function (s, op, username, key, path) {
+   a.seq (s, [
+      [Redis, 'rpush', 's3:queue', JSON.stringify ({op: op, username: username, key: key, path: path})],
+      function (s) {
+         if (s.error) return notify (s, {type: 'redis error s3queue', error: s.error});
+         // We call the next function.
+         s.next ();
+         // We trigger s3exec.
+         H.s3exec ();
+      }
+   ]);
 }
 
-/*
-- invalid sequence: delete, upload
-- possible valid sequences
-   - upload done, delete -> delete
-   - upload in queue, delete -> remove upload from queue
-   - upload in progress, delete -> wait until upload is done, delete
+// Up to 3500 simultaneous operations (actually, per second, but simultaneous will do, since it's more conservative and easier to measure).
+// https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
+// Queue items are processed in order with regards to the *start* of it, not the whole thing (otherwise, we would wait for each to be done - for implementing this, we can set LIMIT to 1).
+H.s3exec = function () {
+   // If there's no items on the queue, or if we're over the maximum: do nothing.
+   // Otherwise, increment s3:proc and LPOP the first element of the queue
+   redis.eval ('if redis.call ("llen", "s3:queue") == 0 then return nil end if (tonumber (redis.call ("get", "s3:proc")) or 0) >= 3500 then return nil end redis.call ("incr", "s3:proc"); return redis.call ("lpop", "s3:queue")', 0, function (error, next) {
+      if (error) return notify (a.creat (), {type: 'redis error s3exec', error: error});
+      if (! next) return;
+      next = JSON.parse (next);
 
-which is the kanban? missing file or db entry? but I need to store space anyway, so that can be it. but no, that entry happens after upload. kanban must be the file itself.
-upload:
-   why not file? slow?
-   if no entry, do nothing (already deleted)
-delete from s3
-*/
-// queue should execute one at a time, at redis speed. calls itself until is done. can be kickstarted by other functions.
-// can use node variable, since this executes one at a time! but why? why can't parallelize? only dependencies are: maximum operations per period of time, and delete overriding queued uploads.
-// start processing one at a time, but no need to guarantee order, just don't go over maximum. kickstart it.
-// wait! upload, once it's done, if there's no entry on DB, it can delete itself!
-H.s3exeque = function (s) {
-   // if s3executing return else set it, as transaction
-   // define next function
-   // next
-      // get next item. none? delete s3executing & return
-      // upload
-         // get DB entry, if none, do nothing (has been deleted while enqueued), return next
-         // DB entry? set uploading flag, call s3put with cb that removes uploading flag & updates stats
-      //
+      /* Possible valid sequences
+         - delete -> put? No, because put would be started before delete, otherwise it would be a genuine 404.
+         - put uploading -> delete: let the put delete the file it just uploaded.
+         - put ready -> delete: delete is in charge of deleting the file.
+      */
 
-
-H.s3exeque = function (s) {
-   // put:
-      // get up to 5 elements in queue
-      // upload them
-   // put: up to max 5
-   //
+      var actions = next.op === 'put' ? [
+         [Redis, 'hset', 's3:files', next.key, 'true'],
+         [a.set, 'upload', [H.s3put, next.key, next.path]],
+         [Redis, 'hexists', 's3:files', next.key],
          function (s) {
-            H.stat (s, [
-               ['stock', 'bys3',         s.last.ContentLength],
-               ['stock', 'bys3-' + user, s.last.ContentLength],
+            // If a delete operation removed the file while we were uploading it, we delete it from S3. No need to update the stats.
+            if (! s.last) return a.seq (s, [H.s3del, next.key]);
+            var bys3 = s.upload.ContentLength;
+            a.seq (s, [
+               // update S3 & the stats
+               [Redis, 'hset', 's3:files', next.key, bys3],
+               [H.stat.w, [
+                  ['stock', 'bys3',                  bys3],
+                  ['stock', 'bys3-' + next.username, bys3],
+               ]],
             ]);
          }
-      ],
+      ] : [
+         [Redis, 'hget', 's3:files', next.key],
+         function (s) {
+            // File is being uploaded, just remove entry.
+            if (s.last === 'true') return Redis (s, 'hdel', 's3:files', next.key);
+            // File has already been uploaded.
+            var bys3 = parseInt (s.last);
+            a.seq (s, [
+               [H.s3del, next.key],
+               [Redis, 'hdel', 's3:files', next.key],
+               [H.stat.w, [
+                  ['stock', 'bys3',                  - bys3],
+                  ['stock', 'bys3-' + next.username, - bys3],
+               ]],
+            ]);
+         }
+      ];
+
+      a.stop ([
+         actions,
+         [Redis, 'decr', 's3:proc'],
+      ], function (s, error) {
+         if (error) return notify (s, {type: 'redis error s3exec', error: error});
+         H.s3exec ();
+      });
+   });
+}
 
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
@@ -654,6 +685,23 @@ var routes = [
          [notify, {type: 'client error', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
          [reply, rs, 200],
       ]);
+   }],
+
+   // *** PUBLIC STATS ***
+
+   ['get', 'stats', function (rq, rs) {
+      // TODO: replace with H.stat.r
+      var multi = redis.multi ();
+      var keys = ['byfs', 'bys3', 'pics', 't200', 't900', 'users'];
+      dale.go (keys, function (key) {
+         multi.get ('stat:s:' + key);
+      });
+      multi.exec (function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, dale.obj (keys, function (key, k) {
+            return [key, parseInt (data [k]) || 0];
+         }));
+      });
    }],
 
    // *** LOGIN & SIGNUP ***
@@ -1220,8 +1268,8 @@ var routes = [
          [k, 'cp', path, newpath],
          [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
-         // We store only the original pictures in S3, not the thubnails
-         [H.s3queue, 'put', username, Path.join (H.hash (username), pic.id), newpath],
+         // We store only the original pictures in S3, not the thumbnails
+         [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
          [a.fork, [
             [[H.resizeif, newpath, 200], [perfTrack, 'resize200']],
@@ -1986,9 +2034,8 @@ if (cicek.isMaster) a.stop ([
 
       s.next ();
    },
-   // Extraneous S3 files: delete.
+   // Extraneous S3 files: delete. Don't update the statistics, they are assumed to be consistent already.
    function (s) {
-      // This operation won't update the S3 usage statistics, they are assumed to be consistent already.
       H.s3del (s, s.s3extra);
    },
    // Extraneous FS files: delete.

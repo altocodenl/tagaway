@@ -382,7 +382,7 @@ All the routes below require an admin user to be logged in.
 
 `GET /stats`
    - Publicly accessible.
-   - Returns all public stats information.
+   - Returns all public stats information, with the shape `{byfs: INT, bys3: INT, pics: INT, t200: INT, t900: INT, users: INT}`.
 
 #### Admin routes
 
@@ -421,6 +421,8 @@ All the routes below require an admin user to be logged in.
    - ms-tag:    maximum ms for successful requests for POST /tag
    - ms-query:  maximum ms for successful requests for POST /query
    - ms-share:  maximum ms for successful requests for POST /share
+   - ms-s3put:  maximum ms for successful uploads to S3
+   - ms-s3del:  maximum ms for successful deletions to S3
 
 4. stat:f (flow)
    - rq-user-USERNAME: total requests from USERNAME
@@ -452,7 +454,7 @@ All the routes below require an admin user to be logged in.
    - ms-upload-fs:        total ms for FS operations in POST /upload
    - ms-upload-resize200: total ms for 200 resize operation in POST /upload
    - ms-upload-resize900: total ms for 900 resize operation in POST /upload
-   - ms-upload-s3:        total ms for S3 upload in POST /upload
+   - ms-upload-s3:        total ms for S3 upload in POST /upload (no longer in use after S3 uploads are done in the background)
    - ms-upload-db:        total ms for info storage & DB processing in POST /upload
 
 ### Redis structure
@@ -488,7 +490,6 @@ All the routes below require an admin user to be logged in.
    dateup: INT (millis)
    dimw: INT (width in pixels)
    dimh: INT (height in pixels)
-   bys3: INT (size in bytes in S3)
    byfs: INT (size in bytes in FS)
    hash: STRING
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
@@ -533,6 +534,11 @@ All the routes below require an admin user to be logged in.
    - stat:s:NAME:      stock
    - stat:s:NAME:DATE: stock change
    - stat:u:NAME:PERIOD:DATE: unique
+
+- s3:...: S3 management
+   - s3:queue (list): items yet to be processed
+   - s3:proc (string): number of queue items being processed
+   - s3:files (hash): each key is the name of the object in S3, each value is `true|INT` - if `true`, it means that the upload is ongoing; if INT, it shows the amount of bytes taken by the file in S3.
 
 Used by giz:
 
