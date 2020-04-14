@@ -1714,7 +1714,7 @@ var routes = [
             var multi = redis.multi ();
             multi.lrange ('ulog:' + rq.user.username, 0, -1);
             multi.get    ('stat:s:byfs-' + rq.user.username);
-            if (! ENV) multi.get ('stat:s:bys3-' + rq.user.username);
+            multi.get    ('stat:s:bys3-' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
@@ -1724,9 +1724,9 @@ var routes = [
                type:     rq.user.type,
                created:  parseInt (rq.user.created),
                usage:    {
-                  limit: CONFIG.storelimit [rq.user.type],
-                  used: parseInt (s.last [1]) || 0,
-                  s3used: ENV ? undefined : parseInt (s.last [2]) || 0
+                  limit:  CONFIG.storelimit [rq.user.type],
+                  fsused: parseInt (s.last [1]) || 0,
+                  s3used: parseInt (s.last [2]) || 0
                },
                logs:     dale.go (s.last [0], JSON.parse),
             });

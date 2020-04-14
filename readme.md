@@ -368,7 +368,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
 
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...]}`.
 
 #### Debugging routes
 
