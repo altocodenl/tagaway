@@ -281,7 +281,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 0})) return clog ('Invalid usage field.');
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
       return true;
    }],
@@ -376,13 +376,13 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['check usage after uploading small picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-      if (rs.body.usage.used   !== 3370) return clog ('Invalid FS usage.');
+      if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 0)    return clog ('Invalid S3 usage.');
       // Wait for S3
       setTimeout (next, 2000);
    }],
    ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.usage.used   !== 3370) return clog ('Invalid FS usage.');
+      if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
       return true;
    }],
@@ -427,13 +427,13 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-      if (rs.body.usage.used   !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
+      if (rs.body.usage.fsused !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 3402)                return clog ('Invalid S3 usage.');
       // Wait for S3
       setTimeout (next, 3000);
    }],
    ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.usage.used   !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
+      if (rs.body.usage.fsused   !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 3402 + 22676)        return clog ('Invalid S3 usage.');
       return true;
    }],
@@ -1018,13 +1018,13 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 900604})) return clog ('Invalid usage field.');
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 900604})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 46 && rs.body.logs.length !== 47)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],
    ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 0})) return clog ('Invalid usage field.');
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
       return true;
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
