@@ -2076,7 +2076,7 @@ if (cicek.isMaster) a.stop ([
       dale.go (s.last, function (pic) {
          if (! pic.bys3) return;
          multi.hset ('s3:files', Path.join (H.hash (pic.owner), pic.id), pic.bys3);
-         multi.hdel (pic, 'bys3');
+         multi.hdel ('pic:' + pic.id, 'bys3');
       });
       mexec (s, multi);
    },
