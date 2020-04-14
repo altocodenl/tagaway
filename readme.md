@@ -47,7 +47,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - UI team changes:
       - Fix moving pic grid when going from/to selecting/unselecting.
       - Add button for adding new tag, as alternate path to pressing "enter".
-      - When clicking on no man's land, unselect? Discuss
+      - When clicking on no man's land, unselect? **Discuss**
 - Upload
    - Don't redraw box of new uploads when other uploads are updated.
    - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
@@ -59,6 +59,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Upload flow
          - Put two buttons for downloading files or folder.
          - Put two buttons for adding a tag or skipping/done adding tags.
+         - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictires'" **Discuss**
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
 - Server
@@ -67,6 +68,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Other
    - Fix email going into spam.
    - RGB logo in app & emails.
+   - Homepage **Discuss**
 
 ### Todo v0
 
