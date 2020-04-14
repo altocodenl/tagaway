@@ -214,9 +214,9 @@ H.trim = function (string) {
    return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 }
 
-H.log = function (s, user, ev) {
+H.log = function (s, username, ev) {
    ev.t = Date.now ();
-   Redis (s, 'lpush', 'ulog:' + user, teishi.str (ev));
+   Redis (s, 'lpush', 'ulog:' + username, teishi.str (ev));
 }
 
 H.size = function (s, path) {
@@ -290,36 +290,43 @@ H.decrypt = function (data) {
    return Buffer.concat ([cipher.update (ciphertext), cipher.final ()]);
 }
 
-H.s3put = function (s, user, path, key) {
+H.s3put = function (s, key, path) {
    a.stop (s, [
       [a.make (H.encrypt), path],
-      [a.get, a.make (s3.upload, s3), {Key: user ? (H.hash (user) + '/' + key) : key, Body: '@last'}],
-      ! user ? [] : [a.make (s3.headObject, s3), {Key: H.hash (user) + '/' + key}],
-   ]);
-}
-
-H.s3get = function (s, user, key) {
-   a.stop (s, [
-      [a.set, 'data', [a.make (s3.getObject, s3), {Key: H.hash (user) + '/' + key}]],
       function (s) {
-         s.next (H.decrypt (s.data.Body));
-      }
+         s.time = Date.now ();
+         s.next ();
+      },
+      [a.get, a.make (s3.upload, s3), {Key: key, Body: '@last'}],
+      function (s) {
+         H.stat.w (s, 'max', 'ms-s3put', Date.now () - s.time);
+      },
+      [a.make (s3.headObject, s3), {Key: key}],
    ]);
 }
 
-H.s3del = function (s, user, keys) {
+H.s3get = function (s, key) {
+   s3.getObject ({Key: key}, function (error, data) {
+      if (error) return s.next (null, error);
+      s.next (H.decrypt (data.Body));
+   });
+}
 
-   var counter = 0;
+H.s3del = function (s, keys) {
+
+   var counter = 0, t = Date.now ();
    if (type (keys) === 'string') keys = [keys];
 
    if (keys.length === 0) return s.next ();
 
    var batch = function () {
       s3.deleteObjects ({Delete: {Objects: dale.go (keys.slice (counter * 1000, (counter + 1) * 1000), function (key) {
-         return {Key: user ? (H.hash (user) + '/' + key) : key}
+         return {Key: key}
       })}}, function (error) {
          if (error) return s.next (0, error);
-         if (++counter === Math.ceil (keys.length / 1000)) s.next ();
+         if (++counter === Math.ceil (keys.length / 1000)) {
+            H.stat.w (s, 'max', 'ms-s3del', Date.now () - t);
+         }
          else batch ();
       });
    }
@@ -341,6 +348,81 @@ H.s3list = function (s, prefix) {
    fetch ();
 }
 
+H.s3queue = function (s, op, username, key, path) {
+   a.seq (s, [
+      [Redis, 'rpush', 's3:queue', JSON.stringify ({op: op, username: username, key: key, path: path})],
+      function (s) {
+         if (s.error) return notify (s, {type: 'redis error s3queue', error: s.error});
+         // We call the next function.
+         s.next ();
+         // We trigger s3exec.
+         H.s3exec ();
+      }
+   ]);
+}
+
+// Up to 3500 simultaneous operations (actually, per second, but simultaneous will do, since it's more conservative and easier to measure).
+// https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
+// Queue items are processed in order with regards to the *start* of it, not the whole thing (otherwise, we would wait for each to be done - for implementing this, we can set LIMIT to 1).
+H.s3exec = function () {
+   // If there's no items on the queue, or if we're over the maximum: do nothing.
+   // Otherwise, increment s3:proc and LPOP the first element of the queue
+   redis.eval ('if redis.call ("llen", "s3:queue") == 0 then return nil end if (tonumber (redis.call ("get", "s3:proc")) or 0) >= 3500 then return nil end redis.call ("incr", "s3:proc"); return redis.call ("lpop", "s3:queue")', 0, function (error, next) {
+      if (error) return notify (a.creat (), {type: 'redis error s3exec', error: error});
+      if (! next) return;
+      next = JSON.parse (next);
+
+      /* Possible valid sequences
+         - delete -> put? No, because put would be started before delete, otherwise it would be a genuine 404.
+         - put uploading -> delete: let the put delete the file it just uploaded.
+         - put ready -> delete: delete is in charge of deleting the file.
+      */
+
+      var actions = next.op === 'put' ? [
+         [Redis, 'hset', 's3:files', next.key, 'true'],
+         [a.set, 'upload', [H.s3put, next.key, next.path]],
+         [Redis, 'hexists', 's3:files', next.key],
+         function (s) {
+            // If a delete operation removed the file while we were uploading it, we delete it from S3. No need to update the stats.
+            if (! s.last) return a.seq (s, [H.s3del, next.key]);
+            var bys3 = s.upload.ContentLength;
+            a.seq (s, [
+               // update S3 & the stats
+               [Redis, 'hset', 's3:files', next.key, bys3],
+               [H.stat.w, [
+                  ['stock', 'bys3',                  bys3],
+                  ['stock', 'bys3-' + next.username, bys3],
+               ]],
+            ]);
+         }
+      ] : [
+         [Redis, 'hget', 's3:files', next.key],
+         function (s) {
+            // File is being uploaded, just remove entry.
+            if (s.last === 'true') return Redis (s, 'hdel', 's3:files', next.key);
+            // File has already been uploaded.
+            var bys3 = parseInt (s.last);
+            a.seq (s, [
+               [H.s3del, next.key],
+               [Redis, 'hdel', 's3:files', next.key],
+               [H.stat.w, [
+                  ['stock', 'bys3',                  - bys3],
+                  ['stock', 'bys3-' + next.username, - bys3],
+               ]],
+            ]);
+         }
+      ];
+
+      a.stop ([
+         actions,
+         [Redis, 'decr', 's3:proc'],
+      ], function (s, error) {
+         if (error) return notify (s, {type: 'redis error s3exec', error: error});
+         H.s3exec ();
+      });
+   });
+}
+
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
 H.deletePic = function (s, id, username) {
@@ -356,7 +438,7 @@ H.deletePic = function (s, id, username) {
          s.tags = s.last [1];
          if (! s.pic || username !== s.pic.owner) return s.next (0, 'nf');
 
-         H.s3del (s, username, s.pic.id);
+         H.s3queue (s, 'del', username, Path.join (H.hash (username), id));
       },
       function (s) {
          var thumbs = [];
@@ -387,8 +469,6 @@ H.deletePic = function (s, id, username) {
          H.stat.w (s, [
             ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
             ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
-            ['stock', 'bys3',             - s.pic.bys3],
-            ['stock', 'bys3-' + username, - s.pic.bys3],
             ['stock', 'pics', -1],
             s.pic.by200 ? ['stock', 't200', -1] : [],
             s.pic.by900 ? ['stock', 't900', -1] : [],
@@ -605,6 +685,23 @@ var routes = [
          [notify, {type: 'client error', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
          [reply, rs, 200],
       ]);
+   }],
+
+   // *** PUBLIC STATS ***
+
+   ['get', 'stats', function (rq, rs) {
+      // TODO: replace with H.stat.r
+      var multi = redis.multi ();
+      var keys = ['byfs', 'bys3', 'pics', 't200', 't900', 'users'];
+      dale.go (keys, function (key) {
+         multi.get ('stat:s:' + key);
+      });
+      multi.exec (function (error, data) {
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, dale.obj (keys, function (key, k) {
+            return [key, parseInt (data [k]) || 0];
+         }));
+      });
    }],
 
    // *** LOGIN & SIGNUP ***
@@ -1023,7 +1120,7 @@ var routes = [
    ['get', 'original/:id', function (rq, rs) {
       if (ENV) return reply (rs, 400);
       astop (rs, [
-         [H.s3get, rq.user.username, rq.data.params.id],
+         [H.s3get, Path.join (H.hash (rq.user.username), rq.data.params.id)],
          function (s) {
             rs.end (s.last);
          }
@@ -1171,12 +1268,12 @@ var routes = [
          [k, 'cp', path, newpath],
          [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
+         // We store only the original pictures in S3, not the thumbnails
+         [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
          [a.fork, [
             [[H.resizeif, newpath, 200], [perfTrack, 'resize200']],
             [[H.resizeif, newpath, 900], [perfTrack, 'resize900']],
-            // We store only the original pictures in S3, not the thubnails
-            [[a.set, 's3', [H.s3put, rq.user.username, newpath, pic.id]], [perfTrack, 's3']],
          ], function (v) {return v}],
          // Delete original image from disk.
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
@@ -1185,7 +1282,6 @@ var routes = [
 
             pic.dimw = s.size.w;
             pic.dimh = s.size.h;
-            pic.bys3 = s.s3.ContentLength;
             pic.byfs = s.byfs.size;
             pic.hash = s.hash;
 
@@ -1235,8 +1331,6 @@ var routes = [
             H.stat.w (s, [
                ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
-               ['stock', 'bys3',                     pic.bys3],
-               ['stock', 'bys3-' + rq.user.username, pic.bys3],
                ['stock', 'pics', 1],
                pic.by200 ? ['stock', 't200', 1] : [],
                pic.by900 ? ['stock', 't900', 1] : [],
@@ -1620,7 +1714,7 @@ var routes = [
             var multi = redis.multi ();
             multi.lrange ('ulog:' + rq.user.username, 0, -1);
             multi.get    ('stat:s:byfs-' + rq.user.username);
-            if (! ENV) multi.get ('stat:s:bys3-' + rq.user.username);
+            multi.get    ('stat:s:bys3-' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
@@ -1630,9 +1724,9 @@ var routes = [
                type:     rq.user.type,
                created:  parseInt (rq.user.created),
                usage:    {
-                  limit: CONFIG.storelimit [rq.user.type],
-                  used: parseInt (s.last [1]) || 0,
-                  s3used: ENV ? undefined : parseInt (s.last [2]) || 0
+                  limit:  CONFIG.storelimit [rq.user.type],
+                  fsused: parseInt (s.last [1]) || 0,
+                  s3used: parseInt (s.last [2]) || 0
                },
                logs:     dale.go (s.last [0], JSON.parse),
             });
@@ -1940,10 +2034,9 @@ if (cicek.isMaster) a.stop ([
 
       s.next ();
    },
-   // Extraneous S3 files: delete.
+   // Extraneous S3 files: delete. Don't update the statistics, they are assumed to be consistent already.
    function (s) {
-      // This operation won't update the S3 usage statistics
-      H.s3del (s, null, s.s3extra);
+      H.s3del (s, s.s3extra);
    },
    // Extraneous FS files: delete.
    [a.get, a.fork, '@fsextra', function (v) {
@@ -1951,9 +2044,9 @@ if (cicek.isMaster) a.stop ([
    }, {max: 5}],
    // Missing S3 files: upload from disk.
    function (s) {
-      // This operation won't update the S3 usage statistics
+      // This operation won't update the S3 usage statistics, they are assumed to be consistent already.
       a.fork (s, s.s3missing, function (key) {
-         return [H.s3put, null, Path.join (CONFIG.basepath, key), key];
+         return [H.s3put, Path.join (CONFIG.basepath, key), key];
       }, {max: 5});
    },
    // Missing FS files: nothing to do but report.
@@ -1965,4 +2058,31 @@ if (cicek.isMaster) a.stop ([
    },
 ], function (s, error) {
    notify (s, {type: 'File consistency check error.', error: error});
+});
+
+// Data migration: initialize s3:files
+// TODO: remove after executing in dev & prod
+if (cicek.isMaster) a.stop ([
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (pic) {
+         multi.hgetall (pic);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (pic) {
+         if (! pic.bys3) return;
+         multi.hset ('s3:files', Path.join (H.hash (pic.owner), pic.id), pic.bys3);
+         multi.hdel ('pic:' + pic.id, 'bys3');
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      notify (s, {type: 'data migration s3:files successful', items: s.last.length});
+   },
+], function (s, error) {
+   if (error) notify (s, {type: 'data migration s3:files', error: error});
 });

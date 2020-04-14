@@ -88,6 +88,10 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 }
 
 var intro = [
+   ['get public stats at the beginning', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats');
+      return true;
+   }],
    ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
    ['submit client error without being logged in #2', 'post', 'error', {}, {error: 'error'}, 200],
    ['login with no credentials', 'post', 'auth/login', {}, {}, 400],
@@ -261,6 +265,10 @@ var outro = [
       return true;
    }],
    ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
+   ['get public stats at the end', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats');
+      return true;
+   }],
 ];
 
 var main = [
@@ -367,7 +375,13 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
-   ['check usage after uploading small picture', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+   ['check usage after uploading small picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      if (rs.body.usage.used   !== 3370) return clog ('Invalid FS usage.');
+      if (rs.body.usage.s3used !== 0)    return clog ('Invalid S3 usage.');
+      // Wait for S3
+      setTimeout (next, 2000);
+   }],
+   ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.usage.used   !== 3370) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
       return true;
@@ -412,7 +426,13 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
-   ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+   ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      if (rs.body.usage.used   !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
+      if (rs.body.usage.s3used !== 3402)                return clog ('Invalid S3 usage.');
+      // Wait for S3
+      setTimeout (next, 3000);
+   }],
+   ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.usage.used   !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 3402 + 22676)        return clog ('Invalid S3 usage.');
       return true;
@@ -553,12 +573,17 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
    ]}, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       var pic = rs.body.pics [0];
       if (pic.date !== 1522070614000) return clog ('GPS timestamp wasn\'t ignored.');
       if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Wrong year tag.');
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
+      // Wait for S3
+      setTimeout (next, 5000);
+   }],
+   ['get public stats before deleting pictures', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body, {byfs: 6384282, bys3: 6128443, pics: 5, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    dale.go (dale.times (5, 0), function (k) {
@@ -989,12 +1014,21 @@ var main = [
       return true;
    }],
    ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
-   ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+   ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 0})) return clog ('Invalid usage field.');
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 900604})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 46 && rs.body.logs.length !== 47)) return clog ('Invalid logs.');
+      // Wait for S3
+      setTimeout (next, 2000);
+   }],
+   ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, used: 0, s3used: 0})) return clog ('Invalid usage field.');
+      return true;
+   }],
+   ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    // TODO: add admin/stats test
