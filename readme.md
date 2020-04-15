@@ -43,34 +43,36 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
    - Mobile: mousedown for opening picture?
-   - Download.
+   - * Load pictures on scroll.
    - UI team changes:
       - Fix moving pic grid when going from/to selecting/unselecting.
       - Add button for adding new tag, as alternate path to pressing "enter".
       - When clicking on no man's land, unselect? **Discuss**
 - Upload
+   - Show thumbnail of last picture on upload.
    - Don't redraw box of new uploads when other uploads are updated.
-   - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
+   - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Fix number of pictures in ongoing upload.
-   - Show number of duplicates skipped
-   - Show ETA in ongoing upload.
+   - * Show number of duplicates skipped.
+   - * Show ETA in ongoing upload.
    - Document element, listeners & store.
    - UI team changes:
       - Upload flow
          - Put two buttons for downloading files or folder.
          - Put two buttons for adding a tag or skipping/done adding tags.
-         - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictires'" **Discuss**
+         - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
-- Server
-   - Download.
-- Manage: delete tag, rename tag.
 - Other
-   - Fix email going into spam.
+   - Fix emails going into spam.
    - RGB logo in app & emails.
    - Homepage **Discuss**
 
-### Todo v0
+- Admin
+   - Logout.
+   - Invites: fix visual & clear boxes when done.
+
+### Todo alpha (DONE)
 
 - Pics
    - Show all pictures.
@@ -119,8 +121,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Refresh list of pics periodically if there's an upload in the background.
    - Cancel current upload.
 
-   - Document upload element & listeners
-
 - Account & payment
    - Login/logout.
    - Signup with invite.
@@ -135,15 +135,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo beta
+### Todo v1
 
 - Pics
-   - Load on scroll.
-   - Hidden tags.
-   - Enable GPS detection.
-   - Set date manually.
-   - Mobile/tablet design.
-   - Download picture.
+   - Download.
+   - Basic mobile design.
 
 - Open
    - Show tags.
@@ -151,41 +147,38 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Auto rotate using metadata.
    - Retry on error.
-   - Notify of ignored files in upload.
-   - Warn of leaving page if upload is going.
+   - Warn of leaving page if upload is ongoing.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
+   - Ignore deleted pictures flag.
    - Client-side hashes for fast duplicate elimination.
-   - Client-side hashes to avoid deleted pictures on folder upload mode (with override).
-   - Folder upload on mobile.
    - Upload video.
 
 - Share & manage
+   - Delete tag.
+   - Rename tag.
    - Share/unshare with email: signup, login, or go straight if there's a session.
-   - Mark tags shared with user with something.
-   - If two shared tags from different users have the same name, put "@email".
+   - Mark tags shared.
+   - Mark tags shared with me.
+   - If two shared tags from different users have the same name, put "@username".
    - Authorization to see or ignore share.
-   - Share/unshare tag with a link (takes you to special page even if you're logged in, with go back to my pictures). Query against it as well with tags that are in those too?
-   - Upload to shared tag.
 
 - Account & payment
-   - Recover/reset/change password.
+   - Recover/reset password.
    - Account page.
-   - Delete account.
    - Change email, password & username.
-   - Export all data.
-   - Re-import your data (won't reset what you have. do it through the proper endpoints, change ids).
+   - Delete account.
+   - Export/import all data.
    - Log me out of all sessions.
    - Freeze me out (includes log me out of all sessions).
    - Payment.
-   - Payment late: 2 week notice with download.
+   - Payment late flow: freeze uploads, email, auto-delete by size.
 
 - Admin
-   - Logout.
-   - Invites: fix visual & clear boxes when done.
    - Retrieve stats & test endpoint.
    - User management.
 
 - Other
+   - Set up proper lifecycle of pics bucket in S3.
    - Frontend tests.
    - Disable THP for redis.
    - Reference users internaly by id, not username.
@@ -198,15 +191,20 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Status & stats public page.
    - Spanish support.
 
-### Todo maybe
+### Todo future
 
 - Pics
+   - Hidden tags.
+   - Enable GPS detection.
+   - Set date manually.
    - Filters.
    - Themes for the interface.
-   - Add colors to tags?
+   - Set colors of tags?
    - Order pictures within tag? Set priorities! Manual order mode.
 
 - Share & manage
+   - Upload to shared tag.
+   - Public tag, including download restrictions per picture?
    - QR code to share.
    - Create group that groups people.
    - Create tag that groups tags (can also have pictures directly assigned).
@@ -216,7 +214,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Share
    - Comments.
    - Share to social platforms.
-   - Serve images as hosting.
    - Share certain tags only on shared pictures.
    - Public profile pages.
 
