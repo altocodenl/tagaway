@@ -65,6 +65,35 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Reduce top margin.
 - Other
    - Homepage **Discuss**
+-**Discussion**
+   - **"I have a problem"** Tom:
+   This is real, I'm not being hypothetical. 
+   As you all know, I store my photos in Google Drive. I have done so since 2013 with my current photos since then, while also backing up older photos I had until then (3 free Dropbox accounts, a ton of photos on emails and local). Currently, my G Drive has 2TB storage of which 968Gb are used. I pay $10 a month for this. Of those 968Gb of space used, I have 93.5Gb of personal photos. This does not include OneMillionLoops files (which includes music, videos, photos, code, etc) - OML is 327.9 Gb, and it does not include audiofiles from my older bands recording sessions and freelance drumming files (that's like another 30Gb). The rest miscellaneous stuff (software back ups, etc). My iPhone X has 8.7Gb of photos and videos. My phone has 64Gb of storage. Although is not near what other phones have in storage capacity these days, is faily good and I still have 20Gb to spare. I just described this to give you an idea of the size of my problem.
+   My point is: my Google Drive situation is insurmountable, my phone situation is not really that bad. This past weekend I was trying to make a joke on Instagram by sending Nico & Mapache an old video of us making the record and I couldn't find the video. I also tried to prank my sister-in-law by posting a pic from when she was 13, couldn't find it. I have some folders in G Drive, but then I have a folder which acted as a dump in the early days which is 20Gb. My G Drive is, as expected, a mess. It's beyond repair at this point in time. I don't have the time, the energy nor the willness to organize that thing. I will not attempt to organize almost 100Gb of photos, it's literally insurmountable. Also, I won't try to download to my disk and then upload those 100Gb for several reasons: 
+      1) That's insane
+      2) Downloading would take a long time
+      3) Even if I had the time, I don't have the disk space
+      4) Even if I had the disk space, trying to upload 100Gb though a browser would take so much time I can't even fathom. 
+
+   So, I started thinking: what would make me to start using ac;pic? Again, not being hypothetical, not talking about an 'ideal user', I'm talking about myself. 
+   If I could transfer all my Google Drive photos to ac;pic, have them automatically tagged (even if it's only 'year' tags at the moment that would be huge, I have a shit ton of '07, '08, '09 pics all mixed up and who knows when was what) that would be great. If I could prank my sister-in-law in a minute by finding a pic from '07 when she was 13 years old, that would be fun. Also, it would kinda force me to keep using ac;pic because now all my shit is there. Yeah, I know, I have 93Gb of photos, but that's most people I guess. Irina has almost 1 TB in an external disk (which seems to be broken, so don't bring that topic to conversation with her because the mood swings badly). 
+   So, if I could transfer all my G Drive photos to ac;pic, then I would do it. Seriously. Even in alpha (I would keep my G Drive folders for the time being, just in case, but I wouldn't use G Drive to find and share, it would only be storage). 
+   That is my problem. After you've read this and wish for my sudden and painful death, let's talk about it. I'll live. Fuck you all. 
+   With Love, 
+   Niñita. 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Todo alpha (DONE)
 
