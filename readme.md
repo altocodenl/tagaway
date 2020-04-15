@@ -49,10 +49,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Add button for adding new tag, as alternate path to pressing "enter".
       - When clicking on no man's land, unselect? **Discuss**
 - Upload
-   - Show thumbnail of last picture on upload.
    - Don't redraw box of new uploads when other uploads are updated.
-   - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Fix number of pictures in ongoing upload.
+   - * Show thumbnail of last picture on upload.
+   - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - * Show number of duplicates skipped.
    - * Show ETA in ongoing upload.
    - Document element, listeners & store.
@@ -64,8 +64,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
 - Other
-   - Fix emails going into spam.
-   - RGB logo in app & emails.
    - Homepage **Discuss**
 
 ### Todo alpha (DONE)
