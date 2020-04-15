@@ -111,9 +111,111 @@ var CSS = {
 };
 
 CSS.litc = [
-   ['body', {
-      padding: 50,
+   // *** reset.scss ***
+   ['html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video', {
+      'margin, padding, border': 0,
+      'font-size': 1,
+      font: 'inherit',
+      'vertical-align': 'baseline',
+   }],
+   ['article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section', {display: 'block'}],
+   ['body', {'line-height': '1'}],
+   ['ol, ul', {'list-style': 'none'}],
+   ['blockquote, q', {quotes: 'none'}],
+   ['LITERAL', 'blockquote:before, blockquote:after, q:before, q:after {content: \'\'; content: none}'],
+   ['table', {'border-collapse': 'collapse', 'border-spacing': 0}],
+   // *** typography.scss ***
+   ['*', {'-webkit-font-smoothing': 'antialiased', '-moz-osx-font-smoothing': 'grayscale'}],
+   ['html', {'font-size': CSS.typography.typeBase}],
+   ['html, body', {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
+   ['p, a, li',   {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
+   // Global typographic styles
+   ['.page-title', {
+      'font-size':   CSS.typography.fontSize (7),
+      'line-height': CSS.typography.spaceVer (1.75),
+      'margin-bottom': CSS.typography.spaceVer (0.25),
       mixin1: CSS.vars.fontPrimaryRegular,
+   }],
+   ['.page-subtitle', {
+      'font-size':   CSS.typography.fontSize (1),
+      mixin1: CSS.vars.fontPrimaryItalic,
+      color: CSS.vars.grey,
+   }],
+   // *** main-styles.scss ***
+   ['a, .pointer', {cursor: 'pointer'}],
+   ['a', {'text-decoration': 'none'}],
+   ['*', {'box-sizing': 'border-box'}], // Makes padding included in width
+   ['input:focus, textarea:focus', {outline: 'none'}],
+   ['body', {'width, height': 1}],
+   media ('screen and (max-width: 767px)', [
+      ['.hide-on-mobile', {display: 'none'}],
+   ]),
+   // *** colors.scss ***
+   ['body', {'background-color': '#fff', color: CSS.vars ['grey--darker']}],
+   ['p > a', {color: CSS.vars ['color--one']}],
+   // *** buttons.scss ***
+   ['.button', {
+      outline: 0,
+      'border-radius': 100,
+      mixin1: CSS.vars.fontPrimaryMedium,
+      'line-height': 40,
+      height: 42,
+      display: 'inline-flex',
+      'align-items': 'center',
+      'padding-left, padding-right': CSS.vars ['padding--m'],
+      'text-align': 'center',
+      transition: CSS.vars.easeOutQuart,
+   }],
+   ['.button--one', {
+      border: '1px solid ' + CSS.vars ['color--one'],
+      'background-color': CSS.vars ['color--one'],
+      color: '#fff',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--one:hover', {
+      'background-color': '#fff',
+      color: CSS.vars ['color--one'],
+   }]),
+   ['.button--two', {
+      border: '1px solid ' + CSS.vars.grey,
+      'background-color': '#fff',
+      color: CSS.vars.grey,
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--two:hover', {
+      background: CSS.vars.grey,
+      color: '#fff',
+   }]),
+   // Buttons icon
+   ['.button__icon', {
+      display: 'inline-block',
+      'width, height': 24,
+      'margin-left': -4,
+   }],
+   ['.button--one .button__icon', ['path', {fill: '#fff'}]],
+   media ('screen and (min-width: 1025px)', ['.button--one:hover .button__icon', ['path', {fill: CSS.vars ['color--one']}]]),
+   ['.button--two .button__icon', ['path', {fill: CSS.vars.grey}]],
+   media ('screen and (min-width: 1025px)', ['.button--two:hover .button__icon', ['path', {fill: '#fff'}]]),
+   // *** structure.scss ***
+   ['.max-width--m', {'max-width': 670, width: 1}],
+   // *** forms.scss ***
+   ['input', {
+      border: 0,
+      'font-size': CSS.typography.fontSize (1),
+      width: 1,
+   }],
+   ['input.search-input', {'padding-left': CSS.vars ['padding--m'], 'padding-right': CSS.vars ['padding--l']}],
+   ['input.search-input::placeholder', {mixin1: CSS.vars.fontPrimaryItalic}],
+   ['input.attach-input', {
+      'line-height, height': 46,
+      border: '1px solid ' + CSS.vars ['border-color--dark'],
+      'border-radius': 100,
+      'padding-left': 15,
+      'padding-right': 10,
+   }],
+
+   // *** ADMIN SPECIFIC STYLES ***
+   ['body', {
+      mixin1: CSS.vars.fontPrimaryRegular,
+      'font-size': CSS.typography.fontSize (1),
    }],
    ['.action', {
       color: 'blue',
@@ -236,6 +338,12 @@ dale.do ([
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
       });
    }],
+   ['logout', [], function (x) {
+      B.do (x, 'post', 'auth/logout', {}, {}, function (x, error) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error logging you out.');
+         B.do (x, 'reset', 'store', true);
+      });
+   }],
 
    // *** INVITE LISTENERS ***
 
@@ -248,6 +356,7 @@ dale.do ([
    ['create', 'invite', function (x) {
       B.do (x, 'post', 'admin/invites', {}, B.get ('State', 'newInvite'), function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error creating the invite.');
+         B.do (x, 'rem', 'State', 'newInvite');
          B.do (x, 'retrieve', 'invites');
       });
    }],
@@ -267,11 +376,29 @@ dale.do ([
    B.listen.apply (null, v);
 });
 
+// *** LOGO ELEMENT ***
+
+E.logo = function (size) {
+   return [
+      ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+      ['span', {style: style ({'font-weight': 'bold', color: 'black', 'font-size': size})}, 'ac;'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'red',   'font-size': size})}, 'p'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'green', 'font-size': size})}, 'i'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'blue',  'font-size': size})}, 'c'],
+   ];
+}
+
 // *** BASE ELEMENT ***
 
 E.base = function () {
    return [
       ['style', CSS.litc],
+      B.view (['Data', 'csrf'], function (x, csrf) {
+         if (csrf) return [
+            ['style', ['.logout', {position: 'absolute', 'top, right': 40, 'font-size': CSS.typography.fontSize (3)}]],
+            ['a', B.ev ({href: '#', class: 'logout'}, ['onclick', 'logout', []]), 'Logout'],
+         ];
+      }),
       E.snackbar (),
       // TODO v2: merge two elements into one
       B.view (['Data', 'csrf'], function (x, csrf) {
@@ -389,7 +516,7 @@ E.login = function () {
          }],
          ['.enter-form__input', {
             'border, background': 'none',
-            'border-bottom': '1px solid ' + CSS.vars.darkest,
+            'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
             'font-size': 16,
             width: 1,
             'padding-top, padding-bottom': CSS.typography.spaceVer (1),
@@ -482,6 +609,7 @@ E.login = function () {
             'margin-bottom': CSS.typography.spaceVer (2),
          }],
          ['.auth-card__header-logo', {
+            'text-align': 'center',
             'margin-bottom': CSS.typography.spaceVer (1),
             width: 200,
             height: 'auto',
@@ -498,7 +626,8 @@ E.login = function () {
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
-                  ['p', {class: 'auth-card__header-text'}, 'ac;pic admin'],
+                  ['p', {class: 'auth-card__header-logo'}, E.logo (28)],
+                  ['p', {class: 'auth-card__header-text'}, 'admin'],
                ]],
                // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
                // By setting the form to be opaque, we prevent them being recycled.
@@ -506,8 +635,6 @@ E.login = function () {
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'login', []])],
-                  //['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
-                  ['a', B.ev ({class: 'enter-form__forgot-password'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Forgot password?'],
                ]]
             ]]
          ]],
@@ -518,17 +645,18 @@ E.login = function () {
 // *** DASHBOARD VIEW ***
 
 E.dashboard = function (x) {
-   return [
-      ['h2', 'ac;pic admin'],
-      ['h3', ['a', {href: '#/invites'}, 'Invites']],
-   ];
+   return ['div', {style: style ({padding: 60})}, [
+      ['h2', {class: 'page-title'}, 'ac;pic admin'],
+      ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/invites'}, 'Invites']],
+   ]];
 }
 
 // *** INVITES VIEW ***
 
 E.invites = function () {
    return B.view (['Data', 'invites'], function (x, invites) {
-      return [
+      return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Invites'],
          ['table', {class: 'pure-table pure-table-striped'}, [
             ['tr', dale.do (['email', 'firstName', 'token', 'sent', 'accepted', 'delete'], function (v) {return ['th', v]})],
@@ -545,15 +673,21 @@ E.invites = function () {
          ]],
          ['br'],
          B.view (['State', 'newInvite'], function (x, newInvite) {
-            if (! newInvite) return ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'newInvite'], {email: 'email', firstName: 'firstName'}]), 'Create invite'];
+            if (! newInvite) return ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'newInvite'], {email: '', firstName: ''}]), 'Create invite'];
             return [
-               ['input', B.ev ({value: newInvite.email}, ['onchange', 'set', ['State', 'newInvite', 'email']])],
-               ['input', B.ev ({value: newInvite.firstName}, ['onchange', 'set', ['State', 'newInvite', 'firstName']])],
+               ['input', B.ev ({placeholder: 'email', value: newInvite.email}, ['onchange', 'set', ['State', 'newInvite', 'email']])],
+               ['br'],
+               ['br'],
+               ['input', B.ev ({placeholder: 'name', value: newInvite.firstName}, ['onchange', 'set', ['State', 'newInvite', 'firstName']])],
+               ['br'],
+               ['br'],
                ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'create', 'invite']), 'Create invite'],
-               ['span', B.ev ({class: 'action'}, ['onclick', 'rem', ['State', 'newInvite']]), 'Cancel'],
+               ['br'],
+               ['br'],
+               ['span', B.ev ({class: 'action'}, ['onclick', 'rem', 'State', 'newInvite']), 'Cancel'],
             ];
          }),
-      ];
+      ]];
    });
 }
 

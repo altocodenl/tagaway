@@ -37,7 +37,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
-### Todo next
+### Todo alpha remaining
 
 - Pics
    - Fix scroll height when having many tags on tag search.
@@ -67,10 +67,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fix emails going into spam.
    - RGB logo in app & emails.
    - Homepage **Discuss**
-
-- Admin
-   - Logout.
-   - Invites: fix visual & clear boxes when done.
 
 ### Todo alpha (DONE)
 
@@ -716,7 +712,7 @@ Only things that differ from client are noted.
 
 1. Invites
    1. `retrieve invites`: invokes `get admin/invites`.
-   2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites`, otherwise it invokes `snackbar`.
+   2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites` and `rem State.newInvite`, otherwise it invokes `snackbar`.
    3. `delete invite`: invokes `delete admin/invites/EMAIL`; if successful, invokes `retrieve invites`, otherwise it invokes `snackbar`.
    2. `change State.page`: if current page is `invites` and there's no `Data.invites`, it invokes `retrieve invites`.
 

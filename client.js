@@ -2078,8 +2078,10 @@ dale.do ([
 E.logo = function (size) {
    return [
       ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-      ['span', {style: style ({'font-weight': 'bold', color: '#BE5764', 'font-size': size})}, 'ac;'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'black',   'font-size': size})}, 'pic'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'black', 'font-size': size})}, 'ac;'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'red',   'font-size': size})}, 'p'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'green', 'font-size': size})}, 'i'],
+      ['span', {style: style ({'font-weight': 'bold', color: 'blue',  'font-size': size})}, 'c'],
    ];
 }
 
@@ -2205,7 +2207,7 @@ E.login = function () {
          }],
          ['.enter-form__input', {
             'border, background': 'none',
-            'border-bottom': '1px solid ' + CSS.vars.darkest,
+            'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
             'font-size': 16,
             width: 1,
             'padding-top, padding-bottom': CSS.typography.spaceVer (1),
@@ -2298,6 +2300,7 @@ E.login = function () {
             'margin-bottom': CSS.typography.spaceVer (2),
          }],
          ['.auth-card__header-logo', {
+            'text-align': 'center',
             'margin-bottom': CSS.typography.spaceVer (1),
             width: 200,
             height: 'auto',
@@ -2372,7 +2375,7 @@ E.signup = function () {
          }],
          ['.enter-form__input', {
             'border, background': 'none',
-            'border-bottom': '1px solid ' + CSS.vars.darkest,
+            'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
             'font-size': 16,
             width: 1,
             'padding-top, padding-bottom': CSS.typography.spaceVer (1),
@@ -2465,6 +2468,7 @@ E.signup = function () {
             'margin-bottom': CSS.typography.spaceVer (2),
          }],
          ['.auth-card__header-logo', {
+            'text-align': 'center',
             'margin-bottom': CSS.typography.spaceVer (1),
             width: 200,
             height: 'auto',
