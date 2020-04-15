@@ -65,6 +65,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Reduce top margin.
 - Other
    - Homepage **Discuss**
+   - Request invite.
 
 ### Todo alpha (DONE)
 
