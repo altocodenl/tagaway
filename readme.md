@@ -39,12 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
-- play
-- invalid vid
-- check metadata valid vids x2
-- don't allow rotation server
-- don't allow rotation client
-
 - Pics
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
@@ -73,6 +67,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Homepage **Discuss**
    - Request invite.
 
+- * Download.
+- Share & manage
+   - * Delete tag.
+   - * Rename tag.
+   - * Share/unshare with email: signup, login, or go straight if there's a session.
+   - * Mark tags shared.
+   - * Mark tags shared with me.
+   - * If two shared tags from different users have the same name, put "@username".
+   - * Authorization to see or ignore share.
+
 ### Todo alpha (DONE)
 
 - Pics
@@ -94,6 +98,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Filter tags when tagging/untagging.
    - Rotate pictures.
    - Delete pictures.
+   - Ignore rotation of videos.
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
    - When untagging, if no pictures left with that tag, remove tag from query.
 
@@ -107,9 +112,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Preload the next picture.
    - If exiting fullscreen, also exit picture.
    - Hide scrollbar on fullscreen and hide it again on exit.
+   - If video, show thumbnail & controls.
 
 - Upload
-   - Allow only jpeg & png.
+   - Allow only jpeg, png & video.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pictures in S3 and pictures + thumbnails locally.
@@ -139,7 +145,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1
 
 - Pics
-   - Download.
    - Basic mobile design.
 
 - Open
@@ -153,15 +158,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Ignore deleted pictures flag.
    - Client-side hashes for fast duplicate elimination.
    - Upload video.
-
-- Share & manage
-   - Delete tag.
-   - Rename tag.
-   - Share/unshare with email: signup, login, or go straight if there's a session.
-   - Mark tags shared.
-   - Mark tags shared with me.
-   - If two shared tags from different users have the same name, put "@username".
-   - Authorization to see or ignore share.
 
 - Account & payment
    - Recover/reset password.

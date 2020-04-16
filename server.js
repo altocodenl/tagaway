@@ -312,26 +312,6 @@ H.thumbVid = function (s, path) {
    ]);
 }
 
-H.resizeVideo = function (s, path, Max) {
-   a.stop (s, [
-      [H.size, path],
-      function (s) {
-         if (s.size.w <= Max && s.size.h <= Max) return s.next ();
-         s ['t' + Max] = uuid ();
-         var perc = Math.round (Max / Math.max (s.size.h, s.size.w) * 100);
-         k (s, 'convert', path, '-quality', 75, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + Max]));
-      },
-      function (s) {
-         if (s.size.w <= Max && s.size.h <= Max) return s.next ();
-         a.make (fs.stat) (s, Path.join (Path.dirname (path), s ['t' + Max]));
-      },
-      function (s) {
-         s ['t' + Max + 'size'] = s.last.size;
-         s.next ();
-      }
-   ]);
-}
-
 H.encrypt = function (path, cb) {
    // https://github.com/luke-park/SecureCompatibleEncryptionExamples/blob/master/JavaScript/SCEE-Node.js
    fs.readFile (path, function (error, file) {
@@ -1479,10 +1459,8 @@ var routes = [
                   reply (rs, 404);
                   return true;
                }
-               if (pic.vid) {
-                  reply (rs, 400);
-                  return true;
-               }
+               // We ignore rotation of videos
+               if (pic.vid) return;
 
                var deg = parseInt (pic.deg) || 0;
                if (deg === 0) deg = b.deg;
