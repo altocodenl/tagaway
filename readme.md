@@ -324,6 +324,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /rotate`
    - Body must be of the form `{ids: [STRING, ...], deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
    - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - Videos will not be rotated and will be silently ignored.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
 
