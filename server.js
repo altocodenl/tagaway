@@ -163,9 +163,9 @@ var sendmail = function (s, o) {
 
 var k = function (s) {
 
-   var output = {stdout: '', stderr: ''};
-
    var command = [].slice.call (arguments, 1);
+
+   var output = {stdout: '', stderr: '', command: command};
 
    var proc = require ('child_process').spawn (command [0], command.slice (1));
 
@@ -249,7 +249,70 @@ H.mkdirif = function (s, path) {
    });
 }
 
-H.resizeif = function (s, path, Max) {
+H.thumbPic = function (s, path, Max) {
+   a.stop (s, [
+      [H.size, path],
+      function (s) {
+         if (s.size.w <= Max && s.size.h <= Max) return s.next ();
+         s ['t' + Max] = uuid ();
+         var perc = Math.round (Max / Math.max (s.size.h, s.size.w) * 100);
+         k (s, 'convert', path, '-quality', 75, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + Max]));
+      },
+      function (s) {
+         if (s.size.w <= Max && s.size.h <= Max) return s.next ();
+         a.make (fs.stat) (s, Path.join (Path.dirname (path), s ['t' + Max]));
+      },
+      function (s) {
+         s ['t' + Max + 'size'] = s.last.size;
+         s.next ();
+      }
+   ]);
+}
+
+H.thumbVid = function (s, path) {
+   var max = Math.max (s.size.h, s.size.w);
+   s.t200 = uuid (), s.t900 = max > 200 ? uuid () : undefined;
+   // small video: make t200 and t200 will be smaller or equal than 200
+   if (max <= 200) var t200dim = s.size;
+   // medium video: make t200 and t900 but t900 will be smaller or equal than 900
+   else if (max <= 900) {
+      var t200dim = {h: Math.round (s.size.h * 200 / max), w: Math.round (s.size.w * 200 / max)};
+      var t900dim = s.size;
+   }
+   // large video: make t200 and t900
+   else {
+      var t200dim = {h: Math.round (s.size.h * 200 / max), w: Math.round (s.size.w * 200 / max)};
+      var t900dim = {h: Math.round (s.size.h * 900 / max), w: Math.round (s.size.w * 900 / max)};
+   }
+   a.stop (s, [
+      [
+         [a.stop, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim.w + 'x' + t200dim.h, Path.join (Path.dirname (path), s.t200 + '.png')], function (s, error) {
+            if (error.code === 0) s.next ();
+            else                  s.next (null, error);
+         }],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
+         [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
+         function (s) {
+            s.t200size = s.last.size;
+            s.next ();
+         },
+      ],
+      ! s.t900 ? [] : [
+         [a.stop, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim.w + 'x' + t900dim.h, Path.join (Path.dirname (path), s.t900 + '.png')], function (s, error) {
+            if (error.code === 0) s.next ();
+            else                  s.next (null, error);
+         }],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
+         [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
+         function (s) {
+            s.t900size = s.last.size;
+            s.next ();
+         },
+      ]
+   ]);
+}
+
+H.resizeVideo = function (s, path, Max) {
    a.stop (s, [
       [H.size, path],
       function (s) {
@@ -1216,9 +1279,7 @@ var routes = [
 
       if (CONFIG.allowedFormats.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
-      var path = rq.data.files.pic;
-
-      var lastModified = parseInt (rq.data.fields.lastModified);
+      var path = rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
 
       var pic = {
          id:     uuid (),
@@ -1226,6 +1287,8 @@ var routes = [
          name:   path.slice (path.indexOf ('_') + 1),
          dateup: Date.now (),
       };
+
+      if (mime.lookup (rq.data.files.pic) === 'video/mp4') pic.vid = 1;
 
       var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic.id);
 
@@ -1249,18 +1312,35 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'capacity'],
-         [a.stop, [a.set, 'metadata', [k, 'identify', '-format', "'%[*]'", path]], function (s, error) {
-            reply (rs, 400, {error: 'Invalid image: ' + error.toString ()});
+         [a.stop, ! pic.vid ? [k, 'identify', '-format', "'%[*]'", path] : [k, 'ffprobe', '-i', path], function (s, error) {
+            if (error.code !== 0) return reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr});
+            // ffprobe always logs to stderr, so we need to put stderr onto s.last
+            s.last = s.next (error);
          }],
          function (s) {
-            if (! s.metadata || ! s.metadata.stdout) return reply (rs, 400, {error: 'Invalid image'});
-            var metadata = s.metadata.stdout.split ('\n');
-            s.dates = dale.obj (metadata, function (line) {
-               if (line.match (/date/i)) return [line.split ('=') [0], line.split ('=') [1]];
-            });
-            s.orientation = dale.fil (metadata, undefined, function (line) {
-               if (line.match (/orientation/i)) return line;
-            });
+            var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
+            if (! pic.vid) {
+               s.dates = dale.obj (metadata, function (line) {
+                  if (line.match (/date/i)) return [line.split ('=') [0], line.split ('=') [1]];
+               });
+               s.orientation = dale.fil (metadata, undefined, function (line) {
+                  if (line.match (/orientation/i)) return line;
+               });
+            }
+            else {
+               dale.stopNot (metadata, undefined, function (line) {
+                  if (! line.match (/h264/)) return;
+                  var size = line.match (/\d{2,4}x\d{2,4}/);
+                  if (! size) return s.size = false;
+                  s.size = {h: parseInt (size [0].split ('x') [0]), w: parseInt (size [0].split ('x') [1])};
+                  if (type (s.size.h) !== 'integer' || type (s.size.w) !== 'integer') s.size = false;
+                  return true;
+               });
+               if (! s.size) return reply (rs, 400, {error: 'Invalid video size.'});
+               s.dates = dale.obj (metadata, function (line) {
+                  if (line.match (/time/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
+               });
+            }
             s.next ();
          },
          [perfTrack, 'format'],
@@ -1271,10 +1351,10 @@ var routes = [
          // We store only the original pictures in S3, not the thumbnails
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
-         [a.fork, [
-            [[H.resizeif, newpath, 200], [perfTrack, 'resize200']],
-            [[H.resizeif, newpath, 900], [perfTrack, 'resize900']],
-         ], function (v) {return v}],
+         ! pic.vid ? [a.fork, [
+            [[H.thumbPic, newpath, 200], [perfTrack, 'resize200']],
+            [[H.thumbPic, newpath, 900], [perfTrack, 'resize900']],
+         ], function (v) {return v}] : [H.thumbVid, newpath],
          // Delete original image from disk.
          // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
          function (s) {
@@ -1287,7 +1367,7 @@ var routes = [
 
             s.dates ['upload:date'] = lastModified;
             pic.dates = JSON.stringify (s.dates);
-            if (s.orientation.length > 0) pic.orientation = JSON.stringify (s.orientation);
+            if (s.orientation && s.orientation.length > 0) pic.orientation = JSON.stringify (s.orientation);
 
             pic.date = dale.fil (s.dates, undefined, function (v, k) {
                if (! v) return;
@@ -1397,6 +1477,10 @@ var routes = [
             if (dale.stopNot (s.last, undefined, function (pic) {
                if (pic === null || pic.owner !== rq.user.username) {
                   reply (rs, 404);
+                  return true;
+               }
+               if (pic.vid) {
+                  reply (rs, 400);
                   return true;
                }
 
@@ -1648,7 +1732,7 @@ var routes = [
          },
          function (s) {
             dale.go (s.output.pics, function (pic, k) {
-               s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined};
+               s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined};
             });
             reply (rs, 200, s.output);
          },

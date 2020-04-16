@@ -312,10 +312,33 @@ var main = [
    ['upload invalid payload #3', 'post', 'upload', {}, [], 400],
    ['upload invalid payload #4', 'post', 'upload', {}, {}, 400],
    ['upload invalid payload #5', 'post', 'upload', {}, {file: {}}, 400],
-   ['upload video (no support)', 'post', 'upload', {}, {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+   // upload invalid video
+   ['upload video #1', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 400],
+   ]}, 200],
+   ['upload video #2', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 200],
+   ['upload repeated video', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 409],
+   ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
+      s.vids = dale.go (rs.body.pics, function (pic) {return pic.id});
+      // TODO FURTHER CHECKS HERE
+      setTimeout (next, 12000);
+   }],
+   ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
+      return {ids: s.vids};
+   }, 200],
    ['upload empty picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -325,7 +348,11 @@ var main = [
       {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 400],
+   ]}, 400, function (s, rq, rs) {
+      if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
+      if (! rs.body.error.match (/^Invalid image: .+ Expected 3218 bytes; found 329 bytes/)) return clog ('Invalid error message.');
+      return true;
+   }],
    ['upload picture without uid', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -1019,7 +1046,7 @@ var main = [
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 900604})) return clog ('Invalid usage field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 46 && rs.body.logs.length !== 47)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 49 && rs.body.logs.length !== 50)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],

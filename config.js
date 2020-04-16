@@ -24,7 +24,7 @@ var GREETING = function (username) {
 
 module.exports = {
    cookiename: 'ac-v1',
-   allowedFormats: ['image/jpeg', 'image/png'],
+   allowedFormats: ['image/jpeg', 'image/png', 'video/mp4'],
    port: 1427,
    basepath: process.argv [2] ? '/root/files' : '/tmp',
    redisdb: 15,

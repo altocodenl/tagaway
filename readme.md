@@ -39,6 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
+- play
+- invalid vid
+- check metadata valid vids x2
+- don't allow rotation server
+- don't allow rotation client
+
 - Pics
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
@@ -345,7 +351,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
-      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED}`.
+      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
 
 `POST /share`
@@ -492,6 +498,7 @@ All the routes below require an admin user to be logged in.
    by200: INT or absent (size of 200 thumbnail in FS)
    t900: STRING or absent
    by900: INT or absent (size of 900 thumbnail in FS)
+   vid: `1` or absent
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pics downloaded (also includes cache)

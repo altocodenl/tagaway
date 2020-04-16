@@ -1532,6 +1532,7 @@ CSS.litc = [
 var H = {};
 
 H.path = function (pic, large) {
+   if (pic.video) return 'thumb/' + (pic.t900 || pic.t200);
    if (! large && pic.t200) return 'thumb/' + pic.t200;
    if (pic.t900)            return 'thumb/' + pic.t900;
    return 'pic/' + pic.id;
