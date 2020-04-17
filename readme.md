@@ -39,16 +39,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
-- Check errors are sent from client with full body.
-- z-index of dropdown.
-- fix position & look of video playback icon
-
 - Pics
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
    - Mobile: mousedown for opening picture?
    - * Load pictures on scroll.
    - UI team changes:
+      - Fix position & look of video playback icon.
+      - Fix z-index of dropdown.
       - Fix moving pic grid when going from/to selecting/unselecting.
       - Add button for adding new tag, as alternate path to pressing "enter".
       - When clicking on no man's land, unselect? **Discuss**
@@ -70,8 +68,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Other
    - Homepage **Discuss**
    - Request invite.
-
-- * Download.
+- * Download
+   - Download a single picture.
+   - Download multiple pictures as one zip file.
 - Share & manage
    - * Delete tag.
    - * Rename tag.
