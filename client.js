@@ -1566,9 +1566,9 @@ var E = {};
 
 // *** NATIVE LISTENERS ***
 
-window.addEventListener ('error', function () {
+window.onerror = function () {
    B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
-});
+}
 
 window.addEventListener ('hashchange', function () {
    B.do ('read', 'hash');
