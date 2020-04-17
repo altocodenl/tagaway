@@ -72,6 +72,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Request invite.
 
 - * Download.
+   - Ignore invalid request.
+   - Empty, ignore with 200.
+   - One, send file itself.
+   - Multiple, send zips.
+   - All owned.
+   - Mixed owned & shared with me.
+   - Document.
+
 - Share & manage
    - * Delete tag.
    - * Rename tag.
