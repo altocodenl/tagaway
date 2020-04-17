@@ -66,6 +66,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
 - Other
+   - Fix video thumbnail aspect ratio.
+   - Fix format issue with some mp4 videos.
    - Homepage **Discuss**
    - Request invite.
 - * Download
