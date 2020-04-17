@@ -89,7 +89,7 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 
 var intro = [
    ['get public stats at the beginning', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
    ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
@@ -266,7 +266,7 @@ var outro = [
    }],
    ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
    ['get public stats at the end', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
 ];
@@ -657,7 +657,7 @@ var main = [
       setTimeout (next, 15000);
    }],
    ['get public stats before deleting pictures', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 6384282, bys3: 6128443, pics: 5, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 6384282, bys3: 6128443, pics: 5, vids: 0, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    dale.go (dale.times (5, 0), function (k) {
@@ -1102,7 +1102,7 @@ var main = [
       return true;
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    // TODO: add admin/stats test

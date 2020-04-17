@@ -512,7 +512,7 @@ H.deletePic = function (s, id, username) {
          H.stat.w (s, [
             ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
             ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
-            ['stock', 'pics', -1],
+            ['stock', s.pic.vid ? 'vids' : 'pics', -1],
             s.pic.by200 ? ['stock', 't200', -1] : [],
             s.pic.by900 ? ['stock', 't900', -1] : [],
          ]);
@@ -735,7 +735,7 @@ var routes = [
    ['get', 'stats', function (rq, rs) {
       // TODO: replace with H.stat.r
       var multi = redis.multi ();
-      var keys = ['byfs', 'bys3', 'pics', 't200', 't900', 'users'];
+      var keys = ['byfs', 'bys3', 'pics', 'vids', 't200', 't900', 'users'];
       dale.go (keys, function (key) {
          multi.get ('stat:s:' + key);
       });
@@ -1391,7 +1391,7 @@ var routes = [
             H.stat.w (s, [
                ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
-               ['stock', 'pics', 1],
+               ['stock', pic.vid ? 'vids' : 'pics', 1],
                pic.by200 ? ['stock', 't200', 1] : [],
                pic.by900 ? ['stock', 't900', 1] : [],
             ].concat (dale.fil (perf, undefined, function (item, k) {
