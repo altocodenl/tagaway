@@ -66,6 +66,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
 - Other
+   - Session issue?
+   - Update logo color.
    - Fix video thumbnail aspect ratio.
    - Fix format issue with some mp4 videos.
    - Homepage **Discuss**
@@ -646,7 +648,8 @@ Used by giz:
    2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
    3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
-   5. `signup`: calls `post /auth/signup. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
+   6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.

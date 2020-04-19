@@ -653,6 +653,10 @@ var routes = [
 
    // *** STATIC ASSETS ***
 
+   ['get', 'home/', cicek.file, 'home/index.html'],
+   ['get', 'homestyle.css', cicek.file, 'home/style.css'],
+   ['get', 'homeimages/(*)', cicek.file, ['home/images']],
+
    ['get', 'lib/murmurhash.js', cicek.file, 'node_modules/murmurhash/murmurhash.js'],
 
    ['get', 'img/*', cicek.file, ['markup']],
@@ -716,7 +720,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [sendmail, {to1: 'Chef', to2: SECRET.admins [0], subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
+         [sendmail, {to1: 'Altocode', to2: SECRET.emailAddress, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
          [reply, rs, 200],
       ]);
    }],

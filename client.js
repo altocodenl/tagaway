@@ -1643,7 +1643,7 @@ dale.do ([
       B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/get|post/, [], function (x, headers, body, cb) {
-      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout';
+      var path = x.path [0], authRequest = (path.match (/^auth/) && path !== 'auth/logout') || path === 'requestInvite';
       // CSRF protection
       if (x.verb === 'post' && ! authRequest) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
@@ -1738,6 +1738,14 @@ dale.do ([
       }, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error creating your account.');
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+      });
+   }],
+   ['request', 'invite', function (x) {
+      var email = prompt ('Send us your email and we\'ll send you an invite link to create your account! We will *only* use your email to send you an invite.');
+      if (! email || ! email.match (/^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/)) return B.do (x, 'snackbar', 'red', 'Please enter a valid email address.');
+      B.do (x, 'post', 'requestInvite', {}, {email: email}, function (x, error) {
+         if (error) B.do (x, 'snackbar', 'red', 'There was an error processing your request. Please write us to info@altocode.nl instead.');
+         else       B.do (x, 'snackbar', 'green', 'We received your request successfully, hang tight!');
       });
    }],
 
@@ -2330,6 +2338,7 @@ E.login = function () {
                   ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'login', []])],
                   //['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
                   ['a', B.ev ({class: 'enter-form__forgot-password'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Forgot password?'],
+                  ['a', B.ev ({class: 'enter-form__forgot-password'}, ['onclick', 'request', 'invite']), 'Don\'t have an account? Request an invite.'],
                ]]
             ]]
          ]],
