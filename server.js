@@ -1320,7 +1320,7 @@ var routes = [
                   if (type (s.size.h) !== 'integer' || type (s.size.w) !== 'integer') s.size = false;
                   return true;
                });
-               if (! s.size) return reply (rs, 400, {error: 'Invalid video size.'});
+               if (! s.size) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
                s.dates = dale.obj (metadata, function (line) {
                   if (line.match (/time/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
                });
