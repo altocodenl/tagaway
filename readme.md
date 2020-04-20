@@ -39,6 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
+- Other
+   - Move altocode.nl blog
+   - Investigate & fix session issue.
+   - Fix video thumbnail aspect ratio.
+   - Fix format issue with some mp4 videos.
 - Pics
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
@@ -65,13 +70,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
-- Other
-   - Session issue?
-   - Update logo color.
-   - Fix video thumbnail aspect ratio.
-   - Fix format issue with some mp4 videos.
-   - Homepage **Discuss**
-   - Request invite.
 - * Download
    - Download a single picture.
    - Download multiple pictures as one zip file.
