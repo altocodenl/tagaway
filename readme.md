@@ -40,39 +40,41 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
+   - Mobile zoom
+   - Scrollbar 110%
+   - * Change icon for year tags
+   - * Query based on actual query
    - Fix video thumbnail aspect ratio.
-   - Fix format issue with some mp4 videos.
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
    - Mobile: mousedown for opening picture?
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
-   - UI team changes:
+   - UI team changes (Ruben):
       - Fix position & look of video playback icon.
       - Fix z-index of dropdown.
-      - Fix moving pic grid when going from/to selecting/unselecting.
+      - Move actions bar to the bottom and make position fixed.
       - Add button for adding new tag, as alternate path to pressing "enter".
-      - When clicking on no man's land, unselect? **Discuss**
+      - **Discuss**: When clicking on no man's land, unselect?
 - Upload
    - Don't redraw box of new uploads when other uploads are updated.
    - Fix number of pictures in ongoing upload.
    - * Show thumbnail of last picture on upload.
    - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
-   - * Show number of duplicates skipped.
+   - * Show number of duplicates skipped & photos ignored.
    - * Show ETA in ongoing upload.
    - Document element, listeners & store.
-   - UI team changes:
+   - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
+   - UI team changes (Ruben):
       - Upload flow
-         - Put two buttons for downloading files or folder.
-         - Put two buttons for adding a tag or skipping/done adding tags.
-         - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
-      - Show thumbnails of last 3 pictures on upload.
-      - Reduce top margin.
+         - Starting state: area from dropdown & button for files & button for folder upload.
+         - Uploading state: button for starting new upload and button for starting tagging state.
+         - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 - Other
+   - Update stats when there are extraneous files.
+   - Remove parse error critical notification
    - Move altocode.nl blog
    - Investigate & fix session issue.
-   - Update stats when there are extraneous files?
-   - Remove parse error critical notification
 - Share & manage
    - * Delete tag.
    - * Rename tag.
