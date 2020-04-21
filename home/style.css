@@ -79,8 +79,14 @@ font-weight: 600;
 }
 
 @media screen and (max-width: 767px) {
+  h3 {
+    font-size: 1em;
+  }
+}
+
+@media screen and (max-width: 767px) {
   p {
-    font-size: 9px;
+    font-size: 12px;
     line-height: normal;
   }
 } 
@@ -162,6 +168,7 @@ font-weight: 600;
     width: 80%;
     margin: auto;
 }
+
 .simple, 
 .organized, 
 .share, 
