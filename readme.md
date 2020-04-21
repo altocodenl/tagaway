@@ -40,37 +40,55 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
+   - Mobile zoom
+   - Scrollbar 110%
+   - * Change icon for year tags
+   - * Query based on actual query
+   - Fix video thumbnail aspect ratio.
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
    - Mobile: mousedown for opening picture?
-   - * Load pictures on scroll.
-   - UI team changes:
-      - Fix moving pic grid when going from/to selecting/unselecting.
+   - * Download a single picture.
+   - * Download multiple pictures as one zip file.
+   - UI team changes (Ruben):
+      - Fix position & look of video playback icon.
+      - Fix z-index of dropdown.
+      - Move actions bar to the bottom and make position fixed.
       - Add button for adding new tag, as alternate path to pressing "enter".
-      - When clicking on no man's land, unselect? **Discuss**
+      - **Discuss**: When clicking on no man's land, unselect?
 - Upload
    - Don't redraw box of new uploads when other uploads are updated.
    - Fix number of pictures in ongoing upload.
    - * Show thumbnail of last picture on upload.
    - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
-   - * Show number of duplicates skipped.
+   - * Show number of duplicates skipped & photos ignored.
    - * Show ETA in ongoing upload.
    - Document element, listeners & store.
-   - UI team changes:
+   - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
+   - UI team changes (Ruben):
       - Upload flow
-         - Put two buttons for downloading files or folder.
-         - Put two buttons for adding a tag or skipping/done adding tags.
-         - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
-      - Show thumbnails of last 3 pictures on upload.
-      - Reduce top margin.
+         - Starting state: area from dropdown & button for files & button for folder upload.
+         - Uploading state: button for starting new upload and button for starting tagging state.
+         - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 - Other
-   - Homepage **Discuss**
-   - Request invite.
+   - Update stats when there are extraneous files.
+   - Remove parse error critical notification
+   - Move altocode.nl blog
+   - Investigate & fix session issue.
+- Share & manage
+   - * Delete tag.
+   - * Rename tag.
+   - * Share/unshare with email: signup, login, or go straight if there's a session.
+   - * Mark tags shared.
+   - * Mark tags shared with me.
+   - * If two shared tags from different users have the same name, put "@username".
+   - * Authorization to see or ignore share.
 
 ### Todo alpha (DONE)
 
 - Pics
    - Show all pictures.
+   - Load more pictures on scroll.
    - Sort by newest, oldest & upload date.
    - Select/unselect picture by clicking on it.
    - Multiple selection with shift.
@@ -88,6 +106,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Filter tags when tagging/untagging.
    - Rotate pictures.
    - Delete pictures.
+   - Ignore rotation of videos.
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
    - When untagging, if no pictures left with that tag, remove tag from query.
 
@@ -101,9 +120,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Preload the next picture.
    - If exiting fullscreen, also exit picture.
    - Hide scrollbar on fullscreen and hide it again on exit.
+   - If video, show thumbnail & controls.
 
 - Upload
-   - Allow only jpeg & png.
+   - Allow only jpeg, png & video.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pictures in S3 and pictures + thumbnails locally.
@@ -133,7 +153,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1
 
 - Pics
-   - Download.
    - Basic mobile design.
 
 - Open
@@ -147,15 +166,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Ignore deleted pictures flag.
    - Client-side hashes for fast duplicate elimination.
    - Upload video.
-
-- Share & manage
-   - Delete tag.
-   - Rename tag.
-   - Share/unshare with email: signup, login, or go straight if there's a session.
-   - Mark tags shared.
-   - Mark tags shared with me.
-   - If two shared tags from different users have the same name, put "@username".
-   - Authorization to see or ignore share.
 
 - Account & payment
    - Recover/reset password.
@@ -322,6 +332,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /rotate`
    - Body must be of the form `{ids: [STRING, ...], deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
    - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - Videos will not be rotated and will be silently ignored.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
 
@@ -345,7 +356,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
-      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED}`.
+      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
 
 `POST /share`
@@ -398,6 +409,7 @@ All the routes below require an admin user to be logged in.
    - byfs-USERNAME: total bytes stored in FS for USERNAME
    - bys3-USERNAME: total bytes stored in S3 for USERNAME
    - pics:          total pics
+   - vids:          total vids
    - t200:          total thumbnails of size 200
    - t900:          total thumbnails of size 900
    - users:         total users
@@ -492,6 +504,7 @@ All the routes below require an admin user to be logged in.
    by200: INT or absent (size of 200 thumbnail in FS)
    t900: STRING or absent
    by900: INT or absent (size of 900 thumbnail in FS)
+   vid: `1` or absent
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pics downloaded (also includes cache)
@@ -595,7 +608,7 @@ Used by giz:
    - Contained by: `E.pics`.
 5. `E.grid`
    - Contained by: `E.pics`.
-   - Depends on `Data.pics`.
+   - Depends on `State.nPics` and `Data.pics`.
    - Events: `click -> click pic`.
 6. `E.open`
    - Contained by: `E.pics`.
@@ -636,7 +649,8 @@ Used by giz:
    2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
    3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
-   5. `signup`: calls `post /auth/signup. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
+   6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
@@ -644,7 +658,7 @@ Used by giz:
    3. `change State.query`: invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
+   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `State.nPics` and `Data.pics` after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
@@ -654,6 +668,7 @@ Used by giz:
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
+   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible; 3) the number of pictures in `Data.pics` is larger than `State.nPics`. If it increases `State.nPics`, it will do so by 20 pictures.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
@@ -670,7 +685,9 @@ Used by giz:
 - `State`:
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
+   - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
    - `newTag`: the name of a new tag to be posted.
+   - `nPics`: the number of pictures to show.
    - `open`: index of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.

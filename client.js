@@ -1532,6 +1532,7 @@ CSS.litc = [
 var H = {};
 
 H.path = function (pic, large) {
+   if (pic.vid) return 'thumb/' + (pic.t900 || pic.t200);
    if (! large && pic.t200) return 'thumb/' + pic.t200;
    if (pic.t900)            return 'thumb/' + pic.t900;
    return 'pic/' + pic.id;
@@ -1565,9 +1566,9 @@ var E = {};
 
 // *** NATIVE LISTENERS ***
 
-window.addEventListener ('error', function () {
+window.onerror = function () {
    B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
-});
+}
 
 window.addEventListener ('hashchange', function () {
    B.do ('read', 'hash');
@@ -1642,7 +1643,7 @@ dale.do ([
       B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/get|post/, [], function (x, headers, body, cb) {
-      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout';
+      var path = x.path [0], authRequest = (path.match (/^auth/) && path !== 'auth/logout') || path === 'requestInvite';
       // CSRF protection
       if (x.verb === 'post' && ! authRequest) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
@@ -1739,6 +1740,14 @@ dale.do ([
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
       });
    }],
+   ['request', 'invite', function (x) {
+      var email = prompt ('Send us your email and we\'ll send you an invite link to create your account! We will *only* use your email to send you an invite.');
+      if (! email || ! email.match (/^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/)) return B.do (x, 'snackbar', 'red', 'Please enter a valid email address.');
+      B.do (x, 'post', 'requestInvite', {}, {email: email}, function (x, error) {
+         if (error) B.do (x, 'snackbar', 'red', 'There was an error processing your request. Please write us to info@altocode.nl instead.');
+         else       B.do (x, 'snackbar', 'green', 'We received your request successfully, hang tight!');
+      });
+   }],
 
    // *** PICS LISTENERS ***
 
@@ -1782,6 +1791,7 @@ dale.do ([
       putSvg ('.search-form-svg', 'afterBegin', '<svg class="search-form__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path  d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
       putSvg ('.upload-progress', 'afterBegin', '<svg class="upload-progress__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
       putSvg ('.back-link__link', 'afterBegin', '<svg class="back-link__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 12c0 .3-.2.5-.5.5h-12.2l3.4 3.4c.2.2.2.5 0 .7-.1.1-.2.1-.4.1-.1 0-.3 0-.4-.1l-3.5-3.5c-.3-.3-.4-.7-.4-1.1s.2-.8.5-1.1l3.5-3.5c.2-.2.5-.2.7 0s.2.5 0 .7l-3.4 3.4h12.2c.3 0 .5.2.5.5z" /></svg>');
+      putSvg ('.video-playback', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 60 60" style="enable-background:new 0 0 60 60;" xml:space="preserve"><path fill="black" d="M45.563,29.174l-22-15c-0.307-0.208-0.703-0.231-1.031-0.058C22.205,14.289,22,14.629,22,15v30c0,0.371,0.205,0.711,0.533,0.884C22.679,45.962,22.84,46,23,46c0.197,0,0.394-0.059,0.563-0.174l22-15C45.836,30.64,46,30.331,46,30S45.836,29.36,45.563,29.174z M24,43.107V16.893L43.225,30L24,43.107z"/><path fill="black" d="M30,0C13.458,0,0,13.458,0,30s13.458,30,30,30s30-13.458,30-30S46.542,0,30,0z M30,58C14.561,58,2,45.439,2,30S14.561,2,30,2s28,12.561,28,28S45.439,58,30,58z"/></svg>');
    }],
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -1826,6 +1836,7 @@ dale.do ([
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
          B.do (x, 'set', ['State', 'selected'], selected);
+         B.do (x, 'set', ['State', 'nPics'], 20);
          B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
       });
    }],
@@ -1928,6 +1939,22 @@ dale.do ([
       B.do ('set', ['State', 'selected'], {});
       B.do ('set', ['State', 'query', 'tags'], [tag]);
    }],
+   ['scroll', [], function (x, e) {
+      if (B.get ('State', 'page') !== 'pics') return;
+      var lastScroll = B.get ('State', 'lastScroll');
+      if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
+      B.do (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
+      if (lastScroll && lastScroll.y > window.scrollY) return;
+
+      var lastPic = teishi.last (c ('.pictures-grid__item-picture'));
+      if (! lastPic) return;
+
+      if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
+
+      if ((B.get ('Data', 'pics') || []).length <= B.get ('State', 'nPics')) return;
+
+      B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
+   }],
 
    // *** OPEN LISTENERS ***
 
@@ -1964,7 +1991,7 @@ dale.do ([
    }],
    ['open', /prev|next/, function (x) {
       var open = B.get ('State', 'open');
-      if (x.path [0] === 'next') B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 1);
+      if (x.path [0] === 'next') B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 0);
       else                       B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open - 1) ? open - 1 : B.get ('Data', 'pics').length - 1);
    }],
 
@@ -2078,10 +2105,10 @@ dale.do ([
 E.logo = function (size) {
    return [
       ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-      ['span', {style: style ({'font-weight': 'bold', color: 'black', 'font-size': size})}, 'ac;'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'red',   'font-size': size})}, 'p'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'green', 'font-size': size})}, 'i'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'blue',  'font-size': size})}, 'c'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'ac;'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'p'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'i'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'c'],
    ];
 }
 
@@ -2328,6 +2355,7 @@ E.login = function () {
                   ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'login', []])],
                   //['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
                   ['a', B.ev ({class: 'enter-form__forgot-password'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Forgot password?'],
+                  ['a', B.ev ({class: 'enter-form__forgot-password'}, ['onclick', 'request', 'invite']), 'Don\'t have an account? Request an invite.'],
                ]]
             ]]
          ]],
@@ -2876,71 +2904,82 @@ E.grid = function () {
             opacity: '1',
             '-webkit-box-sizing, -moz-box-sizing, box-sizing': 'border-box'
          }],
+         ['.pictures-grid__item-picture .video-playback', {
+            position: 'absolute',
+            top: 0.25,
+            left: 0.25,
+            'height, width': 0.5,
+         }],
       ]],
-      B.view (['Data', 'pics'], function (x, pics) {
-         return dale.do (pics, function (pic, k) {
-            var askance = pic.deg === 90 || pic.deg === -90;
-            var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-               return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
-            });
-            rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
-               if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
-               if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
-            });
-            // 122w 224h 102m-left
+      // TODO v2: merge two views into one
+      B.view (['State', 'nPics'], function (x, nPics) {
+         if (! nPics) return;
+         return B.view (['Data', 'pics'], function (x, pics) {
+            return dale.do (pics.slice (0, nPics), function (pic, k) {
+               var askance = pic.deg === 90 || pic.deg === -90;
+               var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
+               });
+               rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+                  if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+                  if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
+               });
+               // 122w 224h 102m-left
 
-            // If following the CSS rules only:
-            // 140: 6, 11, 16, 21, 26
-            // 180: 2, 5, 8, 14, 17, 20, 23
-            // 240: 15, 19, 27
-            // 100: rest
-            //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
-            //if (((k + 1) % 3) === 0)           frameWidth = 180;
-            //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
+               // If following the CSS rules only:
+               // 140: 6, 11, 16, 21, 26
+               // 180: 2, 5, 8, 14, 17, 20, 23
+               // 240: 15, 19, 27
+               // 100: rest
+               //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
+               //if (((k + 1) % 3) === 0)           frameWidth = 180;
+               //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
 
-            var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
-            var picRatio = picWidth / picHeight;
+               var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
+               var picRatio = picWidth / picHeight;
 
-            // padding right: 16px, padding left: 18px
-            var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
-            if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
-            else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
-            else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
-            else    frameWidth = sizes [3];
+               // padding right: 16px, padding left: 18px
+               var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
+               if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
+               else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
+               else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
+               else    frameWidth = sizes [3];
 
-            // TODO: understand this magic number.
-            if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
-               return [v [0], v [1]];
-            });
+               // TODO: understand this magic number.
+               if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
+                  return [v [0], v [1]];
+               });
 
-            return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
-               ['div', B.ev ({
-                  class: 'pictures-grid__item-picture',
-                  id: pic.id,
-               }, ['onclick', 'click', 'pic', pic.id, k]), [
-                  ['div', {
-                     class: 'inner',
-                     style: style ({
-                        'border-radius': 'inherit',
-                        width: askance ? frameHeight : frameWidth,
-                        height: askance ? frameWidth : frameHeight,
-                        'background-image': 'url(' + H.path (pic) + ')',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-size': 'cover',
-                        'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
-                        rotation: rotation,
-                     }),
-                  }],
-                  ['div', {class: 'mask'}],
-                  ['div', {class: 'caption'}, [
-                     //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
-                     ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
+               return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
+                  ['div', B.ev ({
+                     class: 'pictures-grid__item-picture',
+                     id: pic.id,
+                  }, ['onclick', 'click', 'pic', pic.id, k]), [
+                     ['div', {
+                        class: 'inner',
+                        style: style ({
+                           'border-radius': 'inherit',
+                           width: askance ? frameHeight : frameWidth,
+                           height: askance ? frameWidth : frameHeight,
+                           'background-image': 'url(' + H.path (pic) + ')',
+                           'background-position': 'center',
+                           'background-repeat': 'no-repeat',
+                           'background-size': 'cover',
+                           'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
+                           rotation: rotation,
+                        }),
+                     }],
+                     pic.vid ? ['div', {class: 'video-playback'}] : [],
+                     ['div', {class: 'mask'}],
+                     ['div', {class: 'caption'}, [
+                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
+                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
+                     ]],
                   ]],
-               ]],
-            ]];
+               ]];
+            });
          });
-      }),
+      })
    ];
 }
 
@@ -2973,10 +3012,10 @@ E.open = function () {
                ['span', {class: 'fullscreen__date-text'}, H.dateFormat (pic.date)],
             ]],
             ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, [
-               ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}],
+               ! pic.vid ? ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}] : ['video', {class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: H.path (pic, true), preload: 'auto'}],
             ]],
             ['div', {class: 'fullscreen__actions'}, [
-               ['div', B.ev ({class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
+               pic.vid ? [] : ['div', B.ev ({class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
                   // TODO v2: add inline SVG
                   ['div', {class: 'fullscreen__action-icon-container', opaque: true}],
                   ['div', {class: 'fullscreen__action-text'}, 'Rotate'],

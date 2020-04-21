@@ -381,10 +381,10 @@ dale.do ([
 E.logo = function (size) {
    return [
       ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-      ['span', {style: style ({'font-weight': 'bold', color: 'black', 'font-size': size})}, 'ac;'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'red',   'font-size': size})}, 'p'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'green', 'font-size': size})}, 'i'],
-      ['span', {style: style ({'font-weight': 'bold', color: 'blue',  'font-size': size})}, 'c'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'ac;'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'p'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'i'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'c'],
    ];
 }
 

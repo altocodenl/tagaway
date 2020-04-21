@@ -5,7 +5,7 @@ fi
 if [ "$1" == "prod" ] ; then
    HOST="root@88.198.89.151"
 elif [ "$1" == "dev" ] ; then
-   HOST="root@207.154.244.76"
+   HOST="root@116.203.118.26"
 else
    echo "Must specify environment (dev|prod)"
    exit 1
@@ -27,6 +27,7 @@ ssh $HOST mv vimrc .vimrc
 ssh $HOST apt-get install redis-server -y
 ssh $HOST apt-get install nginx -y
 ssh $HOST apt-get install imagemagick -y
+ssh $HOST apt-get install ffmpeg -y
 ssh $HOST apt-get autoremove -y
 ssh $HOST apt-get clean
 ssh $HOST mkdir /root/files

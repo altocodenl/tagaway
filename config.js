@@ -5,10 +5,10 @@ var DOMAIN = {
 
 var LOGO = [
    ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: black;'}, 'ac;'],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: red;'},   'p'],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: green;'}, 'i'],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: blue;'},  'c'],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'}, 'ac;'],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'},   'p'],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'}, 'i'],
+   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'},  'c'],
 ];
 
 var TEMPLATE = function (content) {
@@ -24,7 +24,7 @@ var GREETING = function (username) {
 
 module.exports = {
    cookiename: 'ac-v1',
-   allowedFormats: ['image/jpeg', 'image/png'],
+   allowedFormats: ['image/jpeg', 'image/png', 'video/mp4'],
    port: 1427,
    basepath: process.argv [2] ? '/root/files' : '/tmp',
    redisdb: 15,

@@ -89,7 +89,7 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 
 var intro = [
    ['get public stats at the beginning', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
    ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
@@ -266,7 +266,7 @@ var outro = [
    }],
    ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
    ['get public stats at the end', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
 ];
@@ -312,10 +312,83 @@ var main = [
    ['upload invalid payload #3', 'post', 'upload', {}, [], 400],
    ['upload invalid payload #4', 'post', 'upload', {}, {}, 400],
    ['upload invalid payload #5', 'post', 'upload', {}, {file: {}}, 400],
-   ['upload video (no support)', 'post', 'upload', {}, {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+   // upload invalid video
+   ['upload video #1', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 400],
+   ]}, 200],
+   ['upload video #2', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 200],
+   ['upload repeated video', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 409],
+   ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
+      s.vids = dale.go (rs.body.pics, function (pic) {return pic.id});
+      var vid1 = rs.body.pics [0], vid2 = rs.body.pics [1];
+      if (type (vid1.id) !== 'string' || type (vid1.t200) !== 'string' || type (vid1.t900) !== 'string') return clog ('Invalid id, t200 or t900 in vid #1.');
+      if (type (vid2.id) !== 'string' || type (vid2.t200) !== 'string' || type (vid2.t900) !== 'string') return clog ('Invalid id, t200 or t900 in vid #2.');
+      if (type (vid1.date)   !== 'integer') return clog ('Invalid vid1.date.');
+      if (type (vid1.dateup) !== 'integer') return clog ('Invalid vid1.dateup.');
+      if (type (vid2.date)   !== 'integer') return clog ('Invalid vid2.date.');
+      if (type (vid2.dateup) !== 'integer') return clog ('Invalid vid2.dateup.');
+      delete vid1.id;
+      delete vid1.t200;
+      delete vid1.t900;
+      delete vid2.id;
+      delete vid2.t200;
+      delete vid2.t900;
+      delete vid1.dateup;
+      delete vid2.dateup;
+
+      if (! eq (vid1, {
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
+         name: 'tram.mp4',
+         dimh: 1920,
+         dimw: 1080,
+         tags: ['2018'],
+         vid: true,
+         date: 1544889597000,
+      })) return clog ('Invalid vid #1 fields.');
+      if (! eq (vid2, {
+         owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
+         name: 'bach.mp4',
+         dimh: 1366,
+         dimw: 768,
+         tags: ['2018'],
+         vid: true,
+         date: 1538154339000,
+      })) return clog ('Invalid vid #2 fields.');
+      return true;
+   }],
+   dale.go (dale.times (2, 0), function (k) {
+      return {tag: 'get videos', method: 'get', path: function (s) {return 'pic/' + s.vids [k]}, code: 200, raw: true, apres: function (s, rq, rs) {
+         var up       = Buffer.from (rs.body, 'binary');
+         var original = require ('fs').readFileSync ([PICS + 'tram.mp4', PICS + 'bach.mp4'] [k]);
+         if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded video!');
+         return true;
+      }};
+   }),
+   ['upload invalid video', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'invalid.mp4'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 400, function (s, rq, rs) {
+      if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
+      if (! rs.body.error.match (/^Invalid video:/)) return clog ('Invalid error message.');
+      return true;
+   }],
+   ['delete videos', 'post', 'delete', {}, function (s) {
+      return {ids: s.vids};
+   }, 200],
    ['upload empty picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -325,7 +398,11 @@ var main = [
       {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 400],
+   ]}, 400, function (s, rq, rs) {
+      if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
+      if (! rs.body.error.match (/^Invalid image: .+ Expected 3218 bytes; found 329 bytes/)) return clog ('Invalid error message.');
+      return true;
+   }],
    ['upload picture without uid', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -374,12 +451,9 @@ var main = [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
-   ]}, 200],
-   ['check usage after uploading small picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-      if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
-      if (rs.body.usage.s3used !== 0)    return clog ('Invalid S3 usage.');
-      // Wait for S3
-      setTimeout (next, 2000);
+   ]}, 200, function (s, rq, rs, next) {
+      // Wait for S3 to delete the videos uploaded before and the image just uploaded
+      setTimeout (next, 5000);
    }],
    ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
@@ -580,10 +654,10 @@ var main = [
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
       // Wait for S3
-      setTimeout (next, 5000);
+      setTimeout (next, 15000);
    }],
    ['get public stats before deleting pictures', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 6384282, bys3: 6128443, pics: 5, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 6384282, bys3: 6128443, pics: 5, vids: 0, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    dale.go (dale.times (5, 0), function (k) {
@@ -1019,7 +1093,7 @@ var main = [
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 900604})) return clog ('Invalid usage field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 46 && rs.body.logs.length !== 47)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 49 && rs.body.logs.length !== 50)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],
@@ -1028,7 +1102,7 @@ var main = [
       return true;
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    // TODO: add admin/stats test
