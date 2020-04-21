@@ -1836,6 +1836,7 @@ dale.do ([
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
          B.do (x, 'set', ['State', 'selected'], selected);
+         B.do (x, 'set', ['State', 'nPics'], 20);
          B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
       });
    }],
@@ -1937,6 +1938,22 @@ dale.do ([
    ['goto', 'tag', function (x, tag) {
       B.do ('set', ['State', 'selected'], {});
       B.do ('set', ['State', 'query', 'tags'], [tag]);
+   }],
+   ['scroll', [], function (x, e) {
+      if (B.get ('State', 'page') !== 'pics') return;
+      var lastScroll = B.get ('State', 'lastScroll');
+      if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
+      B.do (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
+      if (lastScroll && lastScroll.y > window.scrollY) return;
+
+      var lastPic = teishi.last (c ('.pictures-grid__item-picture'));
+      if (! lastPic) return;
+
+      if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
+
+      if ((B.get ('Data', 'pics') || []).length <= B.get ('State', 'nPics')) return;
+
+      B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
    }],
 
    // *** OPEN LISTENERS ***
@@ -2894,71 +2911,75 @@ E.grid = function () {
             'height, width': 0.5,
          }],
       ]],
-      B.view (['Data', 'pics'], function (x, pics) {
-         return dale.do (pics, function (pic, k) {
-            var askance = pic.deg === 90 || pic.deg === -90;
-            var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-               return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
-            });
-            rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
-               if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
-               if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
-            });
-            // 122w 224h 102m-left
+      // TODO v2: merge two views into one
+      B.view (['State', 'nPics'], function (x, nPics) {
+         if (! nPics) return;
+         return B.view (['Data', 'pics'], function (x, pics) {
+            return dale.do (pics.slice (0, nPics), function (pic, k) {
+               var askance = pic.deg === 90 || pic.deg === -90;
+               var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
+               });
+               rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+                  if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+                  if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
+               });
+               // 122w 224h 102m-left
 
-            // If following the CSS rules only:
-            // 140: 6, 11, 16, 21, 26
-            // 180: 2, 5, 8, 14, 17, 20, 23
-            // 240: 15, 19, 27
-            // 100: rest
-            //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
-            //if (((k + 1) % 3) === 0)           frameWidth = 180;
-            //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
+               // If following the CSS rules only:
+               // 140: 6, 11, 16, 21, 26
+               // 180: 2, 5, 8, 14, 17, 20, 23
+               // 240: 15, 19, 27
+               // 100: rest
+               //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
+               //if (((k + 1) % 3) === 0)           frameWidth = 180;
+               //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
 
-            var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
-            var picRatio = picWidth / picHeight;
+               var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
+               var picRatio = picWidth / picHeight;
 
-            // padding right: 16px, padding left: 18px
-            var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
-            if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
-            else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
-            else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
-            else    frameWidth = sizes [3];
+               // padding right: 16px, padding left: 18px
+               var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
+               if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
+               else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
+               else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
+               else    frameWidth = sizes [3];
 
-            // TODO: understand this magic number.
-            if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
-               return [v [0], v [1]];
-            });
+               // TODO: understand this magic number.
+               if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
+                  return [v [0], v [1]];
+               });
 
-            return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
-               ['div', B.ev ({
-                  class: 'pictures-grid__item-picture',
-                  id: pic.id,
-               }, ['onclick', 'click', 'pic', pic.id, k]), [
-                  ['div', {
-                     class: 'inner',
-                     style: style ({
-                        'border-radius': 'inherit',
-                        width: askance ? frameHeight : frameWidth,
-                        height: askance ? frameWidth : frameHeight,
-                        'background-image': 'url(' + H.path (pic) + ')',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-size': 'cover',
-                        'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
-                        rotation: rotation,
-                     }),
-                  }],
-                  pic.vid ? ['div', {class: 'video-playback'}] : [],
-                  ['div', {class: 'mask'}],
-                  ['div', {class: 'caption'}, [
-                     //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
-                     ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
+               return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
+                  ['div', B.ev ({
+                     class: 'pictures-grid__item-picture',
+                     id: pic.id,
+                  }, ['onclick', 'click', 'pic', pic.id, k]), [
+                     ['div', {
+                        class: 'inner',
+                        style: style ({
+                           'border-radius': 'inherit',
+                           width: askance ? frameHeight : frameWidth,
+                           height: askance ? frameWidth : frameHeight,
+                           'background-image': 'url(' + H.path (pic) + ')',
+                           'background-position': 'center',
+                           'background-repeat': 'no-repeat',
+                           'background-size': 'cover',
+                           'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
+                           rotation: rotation,
+                        }),
+                     }],
+                     pic.vid ? ['div', {class: 'video-playback'}] : [],
+                     ['div', {class: 'mask'}],
+                     ['div', {class: 'caption'}, [
+                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
+                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
+                     ]],
                   ]],
-               ]],
-            ]];
+               ]];
+            });
          });
-      }),
+      })
    ];
 }
 

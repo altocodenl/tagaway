@@ -39,16 +39,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
-- Other
-   - Move altocode.nl blog
-   - Investigate & fix session issue.
+- Pics
    - Fix video thumbnail aspect ratio.
    - Fix format issue with some mp4 videos.
-- Pics
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
    - Mobile: mousedown for opening picture?
-   - * Load pictures on scroll.
+   - * Download a single picture.
+   - * Download multiple pictures as one zip file.
    - UI team changes:
       - Fix position & look of video playback icon.
       - Fix z-index of dropdown.
@@ -70,9 +68,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
       - Show thumbnails of last 3 pictures on upload.
       - Reduce top margin.
-- * Download
-   - Download a single picture.
-   - Download multiple pictures as one zip file.
+- Other
+   - Move altocode.nl blog
+   - Investigate & fix session issue.
+   - Update stats when there are extraneous files?
+   - Remove parse error critical notification
 - Share & manage
    - * Delete tag.
    - * Rename tag.
@@ -86,6 +86,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pics
    - Show all pictures.
+   - Load more pictures on scroll.
    - Sort by newest, oldest & upload date.
    - Select/unselect picture by clicking on it.
    - Multiple selection with shift.
@@ -605,7 +606,7 @@ Used by giz:
    - Contained by: `E.pics`.
 5. `E.grid`
    - Contained by: `E.pics`.
-   - Depends on `Data.pics`.
+   - Depends on `State.nPics` and `Data.pics`.
    - Events: `click -> click pic`.
 6. `E.open`
    - Contained by: `E.pics`.
@@ -655,7 +656,7 @@ Used by giz:
    3. `change State.query`: invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected` and sets `Data.pics` after invoking `post query`.
+   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `State.nPics` and `Data.pics` after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
@@ -665,6 +666,7 @@ Used by giz:
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
+   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible; 3) the number of pictures in `Data.pics` is larger than `State.nPics`. If it increases `State.nPics`, it will do so by 20 pictures.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
@@ -681,7 +683,9 @@ Used by giz:
 - `State`:
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
+   - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
    - `newTag`: the name of a new tag to be posted.
+   - `nPics`: the number of pictures to show.
    - `open`: index of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
