@@ -729,7 +729,7 @@ var routes = [
 
    ['post', 'error', function (rq, rs) {
       astop (rs, [
-         [notify, {priority: 'critical', type: 'client error', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
+         [notify, {priority: 'critical', type: 'client error in browser', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, ua: rq.headers ['user-agent']}],
          [reply, rs, 200],
       ]);
    }],
@@ -1918,14 +1918,28 @@ cicek.apres = function (rs) {
 
 cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
-   if (message [1] === 'Invalid signature in cookie') return;
-   notify (a.creat (), {
+   var notification;
+   if (message [1] === 'Invalid signature in cookie') notification = {
+      priority: 'important',
+      type: 'invalid signature in cookie',
+      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+      error:   message [2]
+   }
+   else if (message [1] === 'client error') notification = {
+      priority: 'important',
+      type:    'client error in server',
+      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+      error:   message [2]
+   }
+   else notification = {
       priority: 'critical',
       type:    'server error',
       subtype: message [1],
       from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
       error:   message [2]
-   });
+   }
+
+   notify (a.creat (), notification);
 }
 
 cicek.cluster ();
