@@ -40,14 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
-   - Mobile zoom
    - Scrollbar 110%
    - * Change icon for year tags
    - * Query based on actual query
    - Fix video thumbnail aspect ratio.
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
-   - Mobile: mousedown for opening picture?
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
    - UI team changes (Ruben):
@@ -71,8 +69,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Uploading state: button for starting new upload and button for starting tagging state.
          - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 - Other
-   - Update stats when there are extraneous files.
-   - Remove parse error critical notification
    - Move altocode.nl blog
    - Investigate & fix session issue.
 - Share & manage
@@ -121,6 +117,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If exiting fullscreen, also exit picture.
    - Hide scrollbar on fullscreen and hide it again on exit.
    - If video, show thumbnail & controls.
+   - Mobile: no padding, swipe left/right.
 
 - Upload
    - Allow only jpeg, png & video.
@@ -627,9 +624,11 @@ Used by giz:
    7. `webkitfullscreenchange|mozfullscreenchange|fullscreenchange|MSFullscreenChange` -> `exit fullscreen`
    8. `dragover` -> do nothing
    9. `drop` -> `drop files EVENT`
+   10. `touchstart` -> `touch start`
+   11. `touchend` -> `touch end`
 
 1. General
-   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched.
+   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
    2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current page should be `login`).
    3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
    4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
@@ -676,6 +675,8 @@ Used by giz:
    3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
    4. `change State.open`: remove or add `app-fullscreen` class from `#pics`, depending on whether `State.open` is defined. If `State.open` is defined, it invokes `enter fullscreen`.
    5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture.
+   6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
+   7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
 
 5. Upload
    1. `drop files`: if `State.page` is upload, access dropped files or folders and put them on the upload file input.
@@ -686,6 +687,7 @@ Used by giz:
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
+   - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
    - `newTag`: the name of a new tag to be posted.
    - `nPics`: the number of pictures to show.
    - `open`: index of the picture to be shown in full-screen mode.

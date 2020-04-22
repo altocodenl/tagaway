@@ -1574,16 +1574,16 @@ window.addEventListener ('hashchange', function () {
    B.do ('read', 'hash');
 });
 
-window.addEventListener ('keydown', function (e) {
-   B.do ('key', 'down', (e || document.event).keyCode);
+window.addEventListener ('keydown', function (ev) {
+   B.do ('key', 'down', (ev || document.event).keyCode);
 });
 
-window.addEventListener ('keyup', function (e) {
-   B.do ('key', 'up', (e || document.event).keyCode);
+window.addEventListener ('keyup', function (ev) {
+   B.do ('key', 'up', (ev || document.event).keyCode);
 });
 
-window.addEventListener ('scroll', function (e) {
-   B.do ('scroll', [], e);
+window.addEventListener ('scroll', function (ev) {
+   B.do ('scroll', [], ev);
 });
 
 window.addEventListener ('beforeunload', function () {
@@ -1598,13 +1598,21 @@ dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', '
    });
 });
 
-window.addEventListener ('dragover', function (e) {
-   e.preventDefault ();
+window.addEventListener ('dragover', function (ev) {
+   ev.preventDefault ();
 });
 
-window.addEventListener ('drop', function (e) {
-   B.do ('drop', 'files', e);
-   e.preventDefault ();
+window.addEventListener ('drop', function (ev) {
+   B.do ('drop', 'files', ev);
+   ev.preventDefault ();
+});
+
+document.body.addEventListener ('touchstart', function (ev) {
+   B.do ('touch', 'start', ev);
+});
+
+document.body.addEventListener ('touchend', function (ev) {
+   B.do ('touch', 'end', ev);
 });
 
 // *** LISTENERS ***
@@ -1614,6 +1622,7 @@ dale.do ([
    // *** GENERAL LISTENERS ***
 
    ['initialize', [], {burn: true}, function (x) {
+      document.querySelector ('meta[name="viewport"]').content = 'width=1200';
       B.do (x, 'reset',    'store');
       B.do (x, 'read',     'hash');
       B.do (x, 'retrieve', 'csrf');
@@ -1842,8 +1851,8 @@ dale.do ([
    }],
    ['click', 'pic', function (x, id, k) {
       var last = B.get ('State', 'lastClick') || {time: 0};
-      // If the last click was also on this picture and happened less than 400ms ago, we open the picture in fullscreen.
-      if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 400) {
+      // If the last click was also on this picture and happened less than 800ms ago, we open the picture in fullscreen.
+      if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 800) {
          B.do (x, 'rem', ['State', 'selected'], id);
          B.do (x, 'set', ['State', 'open'], k);
          return;
@@ -1993,6 +2002,18 @@ dale.do ([
       var open = B.get ('State', 'open');
       if (x.path [0] === 'next') B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 0);
       else                       B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open - 1) ? open - 1 : B.get ('Data', 'pics').length - 1);
+   }],
+   ['touch', 'start', function (x, ev) {
+      if (B.get ('State', 'open') === undefined) return;
+      B.do (x, 'set', ['State', 'lastTouch'], {x: ev.changedTouches [0].pageX, time: Date.now ()});
+   }],
+   ['touch', 'end', function (x, ev) {
+      if (B.get ('State', 'open') === undefined) return;
+      var lastTouch = B.get ('State', 'lastTouch');
+      B.do (x, 'rem', 'State', 'lastTouch');
+      if (Date.now () - lastTouch.t > 1000) return;
+      if (ev.changedTouches [0].pageX > lastTouch.x) B.do (x, 'open', 'prev');
+      else                                           B.do (x, 'open', 'next');
    }],
 
    // *** UPLOAD LISTENERS ***
@@ -3011,6 +3032,9 @@ E.open = function () {
             ['div', {class: 'fullscreen__date'}, [
                ['span', {class: 'fullscreen__date-text'}, H.dateFormat (pic.date)],
             ]],
+            ['style', media ('screen and (max-width: 767px)', [
+               ['.fullscreen__image-container', {padding: 0}],
+            ])],
             ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, [
                ! pic.vid ? ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}] : ['video', {class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: H.path (pic, true), preload: 'auto'}],
             ]],
