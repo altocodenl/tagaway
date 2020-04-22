@@ -2010,8 +2010,10 @@ dale.do ([
    ['touch', 'end', function (x, ev) {
       if (B.get ('State', 'open') === undefined) return;
       var lastTouch = B.get ('State', 'lastTouch');
+      if (! lastTouch) return;
       B.do (x, 'rem', 'State', 'lastTouch');
       if (Date.now () - lastTouch.t > 1000) return;
+      if (Math.abs (ev.changedTouches [0].pageX - lastTouch.x) < 100) return;
       if (ev.changedTouches [0].pageX > lastTouch.x) B.do (x, 'open', 'prev');
       else                                           B.do (x, 'open', 'next');
    }],
@@ -3036,7 +3038,7 @@ E.open = function () {
                ['.fullscreen__image-container', {padding: 0}],
             ])],
             ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, [
-               ! pic.vid ? ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}] : ['video', {class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: H.path (pic, true), preload: 'auto'}],
+               ! pic.vid ? ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}] : ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: H.path (pic, true), preload: 'auto'}],
             ]],
             ['div', {class: 'fullscreen__actions'}, [
                pic.vid ? [] : ['div', B.ev ({class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
