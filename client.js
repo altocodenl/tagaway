@@ -2937,7 +2937,7 @@ E.grid = function () {
       // TODO v2: merge two views into one
       B.view (['State', 'nPics'], function (x, nPics) {
          if (! nPics) return;
-         return B.view (['Data', 'pics'], function (x, pics) {
+         return B.view (['Data', 'pics'], {attrs: {style: style ({'min-height': window.innerHeight})}}, function (x, pics) {
             return dale.do (pics.slice (0, nPics), function (pic, k) {
                var askance = pic.deg === 90 || pic.deg === -90;
                var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {

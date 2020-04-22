@@ -40,12 +40,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
-   - Scrollbar 110%
-   - * Change icon for year tags
-   - * Query based on actual query
    - Fix video thumbnail aspect ratio.
    - Fix scroll height when having many tags on tag search.
    - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
+   - * Change icon for year tags.
+   - * Query based on actual query.
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
    - UI team changes (Ruben):
@@ -57,10 +56,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Don't redraw box of new uploads when other uploads are updated.
    - Fix number of pictures in ongoing upload.
-   - * Show thumbnail of last picture on upload.
-   - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - * Show number of duplicates skipped & photos ignored.
    - * Show ETA in ongoing upload.
+   - * Show thumbnail of last picture on upload.
+   - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Document element, listeners & store.
    - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
    - UI team changes (Ruben):
@@ -69,7 +68,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Uploading state: button for starting new upload and button for starting tagging state.
          - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 - Other
-   - Move altocode.nl blog
+   - Move altocode.nl blog to static pages.
    - Investigate & fix session issue.
 - Share & manage
    - * Delete tag.
