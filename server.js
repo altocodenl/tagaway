@@ -2037,9 +2037,9 @@ if (cicek.isMaster) setTimeout (function () {
 
 if (cicek.isMaster) a.stop ([
    // Get list of files from S3
-   [a.set, 's3files', [H.s3list, '']],
+   [H.s3list, ''],
    function (s) {
-      s.s3files = dale.obj (s.s3files, function (path) {
+      s.s3files = dale.obj (s.last, function (path) {
          return [path, true];
       });
       s.next ();
@@ -2071,11 +2071,11 @@ if (cicek.isMaster) a.stop ([
       s.next ();
    },
    // Get list of pics and thumbs
-   [a.set, 'picids', [redis.keyscan, 'pic:*']],
+   [redis.keyscan, 'pic:*'],
    function (s) {
       var multi = redis.multi ();
-      dale.go (s.picids, function (picid) {
-         multi.hgetall (picid);
+      dale.go (s.last, function (id) {
+         multi.hgetall (id);
       });
       mexec (s, multi);
    },
@@ -2119,11 +2119,12 @@ if (cicek.isMaster) a.stop ([
       if (process.argv [3] !== 'makeConsistent') return;
       if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
    },
-   // Extraneous S3 files: delete. Don't update the statistics, they are assumed to be consistent already.
+   // Extraneous S3 files: delete. Don't update the statistics.
+   // s3:files entries should be deleted manually if needed.
    function (s) {
       H.s3del (s, s.s3extra);
    },
-   // Extraneous FS files: delete. Don't update the statistics, they are assumed to be consistent already.
+   // Extraneous FS files: delete. Don't update the statistics.
    [a.get, a.fork, '@fsextra', function (v) {
       return [a.make (fs.unlink), Path.join (CONFIG.basepath, v)];
    }, {max: 5}],
@@ -2136,4 +2137,67 @@ if (cicek.isMaster) a.stop ([
    },
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'File consistency check error.', error: error});
+});
+
+// *** CHECK CONSISTENCY OF STORED SIZES IN DB ***
+
+if (cicek.isMaster) a.stop ([
+   // Get list of all S3 sizes
+   [a.set, 's3:files', [Redis, 'hgetall', 's3:files']],
+   [redis.keyscan, 'stat:s:by*'],
+   function (s) {
+      s.statkeys = s.last;
+      var multi = redis.multi ();
+      dale.go (s.last, function (key) {
+         multi.get (key);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      s.stats = dale.obj (s.last, function (n, k) {
+         // Ignore stock:TIME, we want only the final numbers
+         if (s.statkeys [k].match (/:\d+$/)) return;
+         return [s.statkeys [k], parseInt (n)];
+      });
+      s.next ();
+   },
+   // Get list of pics and thumbs
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (id) {
+         multi.hgetall (id);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      var actual = {TOTAL: {s3: 0, fs: 0}};
+      dale.go (s.last, function (pic) {
+         if (! actual [pic.owner]) actual [pic.owner] = {s3: 0, fs: 0};
+         actual [pic.owner].fs += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0);
+         actual.TOTAL.fs       += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0);
+         actual [pic.owner].s3 += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
+         actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
+      });
+      var mismatch = [];
+      dale.go (actual, function (v, k) {
+         if (k === 'TOTAL') var stats = {fs: s.stats ['stat:s:byfs'],      s3: s.stats ['stat:s:bys3']};
+         else               var stats = {fs: s.stats ['stat:s:byfs-' + k], s3: s.stats ['stat:s:bys3-' + k]};
+         if (v.fs !== stats.fs) mismatch.push (['byfs' + (k === 'TOTAL' ? '' : '-' + k), v.fs - stats.fs]);
+         if (v.s3 !== stats.s3) mismatch.push (['bys3' + (k === 'TOTAL' ? '' : '-' + k), v.s3 - stats.s3]);
+      });
+
+      if (mismatch.length === 0) return;
+
+      notify (a.creat (), {priority: 'important', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
+
+      if (process.argv [3] !== 'makeConsistent') return;
+
+      H.stat.w (s, dale.go (mismatch, function (v) {
+         return ['stock', v [0], v [1]];
+      }));
+   },
+   [notify, {priority: 'critical', type: 'Stored sizes consistency check success.'}]
+], function (s, error) {
+   notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
