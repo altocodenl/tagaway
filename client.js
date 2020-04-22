@@ -2073,7 +2073,7 @@ dale.do ([
    }],
    ['change', ['State', 'upload', 'queue'], function (x) {
       var queue = B.get ('State', 'upload', 'queue');
-      var MAXSIMULT = 5, uploading = 0;
+      var MAXSIMULT = 2, uploading = 0;
       dale.stop (queue, false, function (file) {
          if (uploading === MAXSIMULT) return false;
          if (file.uploading) return uploading++;
