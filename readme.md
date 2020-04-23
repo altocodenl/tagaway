@@ -42,8 +42,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pics
    - Fix video thumbnail aspect ratio.
    - Fix scroll height when having many tags on tag search.
-   - When seeing, if list of pictures changes on background update, update the index correctly so that you don't lose the picture. same with rotating.
-   - * Change icon for year tags.
+   - Change icon for year tags.
    - * Query based on actual query.
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
@@ -104,6 +103,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Ignore rotation of videos.
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
    - When untagging, if no pictures left with that tag, remove tag from query.
+   - Fill pictures grid until screen is full or no pictures remain.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -117,6 +117,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Hide scrollbar on fullscreen and hide it again on exit.
    - If video, show thumbnail & controls.
    - Mobile: no padding, swipe left/right.
+   - If upload is happening in the background, keep the current picture open but update the counter on the bottom right.
 
 - Upload
    - Allow only jpeg, png & video.
@@ -666,7 +667,8 @@ Used by giz:
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
-   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible; 3) the number of pictures in `Data.pics` is larger than `State.nPics`. If it increases `State.nPics`, it will do so by 20 pictures.
+   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible; 3) the number of pictures in `Data.pics` is larger than `State.nPics`. If it increases `State.nPics`, it will do so by 20.
+   17. `change Data.pics|State.nPics|Data.tags`: if `State.page` is `pics` and any of the three paths change, and the following conditions are met: 1) there are already pictures in `Data.pics`; 2) `State.nPics` is smaller than the amount of pics in `Data.pics`; and 3) all the pictures are visible; then, `State.nPics` will be increased by 20. This has the result of filling the screen with pictures, in increments of 20. The reason for including a change event for `Data.tags` is that `E.pics` also depends on `Data.tags`, so depending on the order of the redraws, there might be no pictures on the screen when the event is triggered by a change on `Data.pics`.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).

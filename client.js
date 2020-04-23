@@ -1982,6 +1982,16 @@ dale.do ([
 
       B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
    }],
+   ['change', [], {priority: -10000}, function (x) {
+      if (B.get ('State', 'page') !== 'pics') return;
+      if (! teishi.eq (x.path, ['Data', 'pics']) && ! teishi.eq (x.path, ['State', 'nPics']) && ! teishi.eq (x.path, ['Data', 'tags'])) return;
+      // We fill the screen with pictures.
+      var lastPic = teishi.last (c ('.pictures-grid__item-picture'));
+      if (! lastPic) return;
+      if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
+      if ((B.get ('Data', 'pics') || []).length <= B.get ('State', 'nPics')) return;
+      B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
+   }],
 
    // *** OPEN LISTENERS ***
 
