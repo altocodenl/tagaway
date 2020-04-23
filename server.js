@@ -1931,8 +1931,15 @@ cicek.log = function (message) {
       from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
       error:   message [2]
    }
-   else notification = {
+   else if (message [1] === 'worker error') notification = {
       priority: 'critical',
+      type:    'server error',
+      subtype: message [1],
+      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+      error:   message [2]
+   }
+   else notification = {
+      priority: 'important',
       type:    'server error',
       subtype: message [1],
       from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
