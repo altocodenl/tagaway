@@ -1809,6 +1809,7 @@ dale.do ([
       B.do (x, 'query', 'tags');
    }],
    ['change', ['State', 'query'], function (x) {
+      B.do (x, 'set', ['State', 'nPics'], 20);
       B.do (x, 'query', 'pics');
    }],
    ['change', ['State', 'selected'], function (x) {
@@ -1845,8 +1846,25 @@ dale.do ([
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
          B.do (x, 'set', ['State', 'selected'], selected);
-         B.do (x, 'set', ['State', 'nPics'], 20);
-         B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+
+         if (B.get ('State', 'open') === undefined) return B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+
+         var open = B.get ('Data', 'pics') [B.get ('State', 'open')];
+         var newOpen = dale.stopNot (rs.body.pics, undefined, function (pic, k) {
+            if (pic.id === open.id) return k;
+         });
+         // If opened picture is no longer in query, exit open.
+         if (newOpen === undefined) {
+            B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+            B.do (x, 'exit', 'fullscreen');
+            return;
+         }
+         // Otherwise, update the index of the opened picture.
+         // We first set the values, then trigger the change event, to prevent the picture flickering.
+         B.set (['State', 'open'], newOpen);
+         B.set (['Data', 'pics'], rs.body.pics);
+         B.do (x, 'change', ['State', 'open']);
+         B.do (x, 'change', ['Data', 'pics']);
       });
    }],
    ['click', 'pic', function (x, id, k) {
@@ -2099,8 +2117,8 @@ dale.do ([
             }
             B.do (x, 'query', 'account');
             B.do (x, 'query', 'tags');
-            // If we're back in the pics page but not in full screen, refresh the query after each successful upload
-            if (B.get ('State', 'page') === 'pics' && ! B.get ('State', 'open')) B.do (x, 'query', 'pics');
+            // If we're back in the pics page, refresh the query after each successful upload.
+            if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
          });
       });
    }],

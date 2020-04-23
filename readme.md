@@ -653,10 +653,10 @@ Used by giz:
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is `pics` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`.
-   3. `change State.query`: invokes `query pics`.
+   3. `change State.query`: sets `State.npics` and invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `State.nPics` and `Data.pics` after invoking `post query`.
+   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `Data.pics` (and optionally `State.open` if it's already present) after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
