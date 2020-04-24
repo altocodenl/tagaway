@@ -40,14 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
-   - Fix video thumbnail aspect ratio.
    - Fix scroll height when having many tags on tag search.
    - Change icon for year tags.
    - * Query based on actual query.
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
    - UI team changes (Ruben):
-      - Fix position & look of video playback icon.
       - Fix z-index of dropdown.
       - Move actions bar to the bottom and make position fixed.
       - Add button for adding new tag, as alternate path to pressing "enter".
