@@ -361,8 +361,8 @@ var main = [
       if (! eq (vid2, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'bach.mp4',
-         dimh: 1366,
-         dimw: 768,
+         dimh: 768,
+         dimw: 1366,
          tags: ['2018'],
          vid: true,
          date: 1538154339000,

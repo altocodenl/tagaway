@@ -1296,7 +1296,7 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'capacity'],
-         [a.stop, ! pic.vid ? [k, 'identify', '-format', "'%[*]'", path] : [k, 'ffprobe', '-i', path], function (s, error) {
+         [a.stop, ! pic.vid ? [k, 'identify', '-format', "'%[*]'", path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
             if (error.code !== 0) return reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr});
             // ffprobe always logs to stderr, so we need to put stderr onto s.last
             s.last = s.next (error);
@@ -1312,15 +1312,18 @@ var routes = [
                });
             }
             else {
-               dale.stopNot (metadata, undefined, function (line) {
+               var rotation;
+               dale.go (metadata, function (line) {
+                  if (line.match (/\s+rotate\s+:/)) rotation = line.replace (/rotate\s+:/, '').trim ();
                   if (! line.match (/h264/)) return;
                   var size = line.match (/\d{2,4}x\d{2,4}/);
                   if (! size) return s.size = false;
-                  s.size = {h: parseInt (size [0].split ('x') [0]), w: parseInt (size [0].split ('x') [1])};
+                  s.size = {w: parseInt (size [0].split ('x') [0]), h: parseInt (size [0].split ('x') [1])};
                   if (type (s.size.h) !== 'integer' || type (s.size.w) !== 'integer') s.size = false;
                   return true;
                });
                if (! s.size) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
+               if (rotation === '90' || rotation === '-90') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
                   if (line.match (/time/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
                });
@@ -2188,8 +2191,8 @@ if (cicek.isMaster) a.stop ([
       });
       var mismatch = [];
       dale.go (actual, function (v, k) {
-         if (k === 'TOTAL') var stats = {fs: s.stats ['stat:s:byfs'],      s3: s.stats ['stat:s:bys3']};
-         else               var stats = {fs: s.stats ['stat:s:byfs-' + k], s3: s.stats ['stat:s:bys3-' + k]};
+         if (k === 'TOTAL') var stats = {fs: s.stats ['stat:s:byfs']      || 0, s3: s.stats ['stat:s:bys3']      || 0};
+         else               var stats = {fs: s.stats ['stat:s:byfs-' + k] || 0, s3: s.stats ['stat:s:bys3-' + k] || 0};
          if (v.fs !== stats.fs) mismatch.push (['byfs' + (k === 'TOTAL' ? '' : '-' + k), v.fs - stats.fs]);
          if (v.s3 !== stats.s3) mismatch.push (['bys3' + (k === 'TOTAL' ? '' : '-' + k), v.s3 - stats.s3]);
       });
