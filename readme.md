@@ -41,7 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pics
    - Fix scroll height when having many tags on tag search.
-   - Change icon for year tags.
    - * Query based on actual query.
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
