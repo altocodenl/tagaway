@@ -50,6 +50,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Add button for adding new tag, as alternate path to pressing "enter".
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
+   - Ignore metadata when computing hash for videos & pics.
    - Don't redraw box of new uploads when other uploads are updated.
    - Fix number of pictures in ongoing upload.
    - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
