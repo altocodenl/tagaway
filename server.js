@@ -1323,7 +1323,7 @@ var routes = [
                   return true;
                });
                if (! s.size) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
-               if (rotation === '90' || rotation === '-90') s.size = {w: s.size.h, h: s.size.w};
+               if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
                   if (line.match (/time/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
                });
