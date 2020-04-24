@@ -2211,3 +2211,86 @@ if (cicek.isMaster) a.stop ([
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
+
+// *** FIX VIDEOS ***
+
+if (cicek.isMaster) a.stop ([
+   // Get all videos
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (id) {
+         multi.hgetall (id);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      s.next (dale.fil (s.last, undefined, function (pic) {
+         if (pic.vid) return pic;
+      }));
+   },
+   // Get list of all S3 sizes
+   [a.fork, true, function (pic) {
+      var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
+      return [
+         [a.stop, ! pic.vid ? [k, 'identify', '-format', "'%[*]'", path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
+            // ffprobe always logs to stderr, so we need to put stderr onto s.last
+            s.last = s.next (error);
+         }],
+         function (s) {
+            var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
+            var rotation;
+            dale.go (metadata, function (line) {
+               if (line.match (/\s+rotate\s+:/)) rotation = line.replace (/rotate\s+:/, '').trim ();
+               if (! line.match (/h264/)) return;
+               var size = line.match (/\d{2,4}x\d{2,4}/);
+               if (! size) return s.size = false;
+               s.size = {w: parseInt (size [0].split ('x') [0]), h: parseInt (size [0].split ('x') [1])};
+               if (type (s.size.h) !== 'integer' || type (s.size.w) !== 'integer') s.size = false;
+               return true;
+            });
+            if (! s.size) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
+            if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
+
+            var storedDims = {w: parseInt (pic.dimw), h: parseInt (pic.dimh)};
+
+            if (teishi.eq (storedDims, s.size)) return s.next (true);
+            a.seq (s, [
+               [H.thumbVid, path],
+               pic.t200 ? [a.make (fs.unlink), Path.join (CONFIG.basepath, H.hash (pic.owner), pic.t200)] : [],
+               pic.t900 ? [a.make (fs.unlink), Path.join (CONFIG.basepath, H.hash (pic.owner), pic.t900)] : [],
+               function (s) {
+                  var multi = redis.multi ();
+                  multi.hmset ('pic:' + pic.id, {dimw: s.size.w, dimh: s.size.h});
+                  if (s.t200) multi.hmset ('pic:' + pic.id, {t200: s.t200});
+                  if (s.t900) multi.hmset ('pic:' + pic.id, {t900: s.t900});
+                  if (s.t200) multi.set ('thu:' + s.t200, pic.id);
+                  if (s.t900) multi.set ('thu:' + s.t900, pic.id);
+                  if (pic.t200) multi.del ('thu:' + pic.t200);
+                  if (pic.t900) multi.del ('thu:' + pic.t900);
+                  if (s.t200size) multi.hmset ('pic:' + pic.id, {by200: s.t200size});
+                  if (s.t900size) multi.hmset ('pic:' + pic.id, {by900: s.t900size});
+                  mexec (s, multi);
+               },
+               function (s) {
+                  H.stat.w (s, [
+                     ['stock', 'byfs',              (s.t200size || 0) - (pic.by200 || 0) + (s.t900size || 0) - (pic.by900 - 0)],
+                     ['stock', 'byfs-' + pic.owner, (s.t200size || 0) - (pic.by200 || 0) + (s.t900size || 0) - (pic.by900 - 0)],
+                  ]);
+               },
+               function (s) {
+                  s.next (pic.id);
+               },
+            ])
+         },
+      ];
+   }, {max: 5}],
+   function (s) {
+      var fixedVideos = dale.fil (s.last, undefined, function (id) {
+         if (id !== true) return id;
+      });
+      if (fixedVideos.length) notify (s, {priority: 'critical', type: 'Fix rotation of videos successful.', fixedVideos: fixedVideos});
+   },
+], function (s, error) {
+   notify (s, {priority: 'critical', type: 'Fix rotation of videos error.', error: error});
+});
