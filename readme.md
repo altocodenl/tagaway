@@ -53,12 +53,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Don't redraw box of new uploads when other uploads are updated.
    - Fix number of pictures in ongoing upload.
+   - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
    - * Show number of duplicates skipped & photos ignored.
    - * Show ETA in ongoing upload.
    - * Show thumbnail of last picture on upload.
    - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Document element, listeners & store.
-   - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'" **Discuss**
    - UI team changes (Ruben):
       - Upload flow
          - Starting state: area from dropdown & button for files & button for folder upload.
@@ -76,7 +76,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - * If two shared tags from different users have the same name, put "@username".
    - * Authorization to see or ignore share.
 
-### Todo alpha (DONE)
+### Alpha version (DONE)
 
 - Pics
    - Show all pictures.
@@ -145,7 +145,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo v1
+### v1
 
 - Pics
    - Basic mobile design.
@@ -191,7 +191,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Status & stats public page.
    - Spanish support.
 
-### Todo future
+### Future
 
 - Pics
    - Hidden tags.
@@ -209,7 +209,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Create group that groups people.
    - Create tag that groups tags (can also have pictures directly assigned).
 
-### Todo never
+### Never
 
 - Share
    - Comments.
