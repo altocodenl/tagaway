@@ -1264,6 +1264,7 @@ var routes = [
       if (CONFIG.allowedFormats.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
       var path = rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
+      var hashpath = Path.join (Path.dirname (path), Path.basename (path).replace (Path.extname (path), '') + 'hash' + Path.extname (path));
 
       var pic = {
          id:     uuid (),
@@ -1282,21 +1283,13 @@ var routes = [
       }
 
       astop (rs, [
-         [a.set, 'hash', function (s) {
-            fs.readFile (path, function (error, file) {
-               if (error) return s.next (0, error);
-               s.next (hash (file.toString ()));
-            });
-         }],
-         [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
-         [perfTrack, 'hash'],
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
             if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
          [perfTrack, 'capacity'],
-         [a.stop, ! pic.vid ? [k, 'identify', '-format', "'%[*]'", path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
+         [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
             if (error.code !== 0) return reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr});
             // ffprobe always logs to stderr, so we need to put stderr onto s.last
             s.last = s.next (error);
@@ -1304,8 +1297,16 @@ var routes = [
          function (s) {
             var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
             if (! pic.vid) {
+               var error = dale.stopNot (metadata, undefined, function (line) {
+                  if (line.match (/^Warning/)) return line.replace (/^Warning\s+:\s+/, '');
+                  if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
+               });
+               if (error) return reply (rs, 400, {error: 'Invalid image: ' + error});
+
                s.dates = dale.obj (metadata, function (line) {
-                  if (line.match (/date/i)) return [line.split ('=') [0], line.split ('=') [1]];
+                  if (! line.match (/date/i)) return;
+                  var key = line.split (':') [0].trim ();
+                  return [key, line.replace (key, '').replace (':', '').trim ()];
                });
                s.orientation = dale.fil (metadata, undefined, function (line) {
                   if (line.match (/orientation/i)) return line;
@@ -1331,6 +1332,22 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'format'],
+         pic.vid ? [a.stop, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
+            if (error.code !== 0) return reply (rs, 500, {error: error});
+            s.next ();
+         }] : [
+            [a.make (fs.copyFile), path, hashpath],
+            [k, 'exiftool', '-all=', '-overwrite_original', hashpath],
+         ],
+         [a.set, 'hash', function (s) {
+            fs.readFile (hashpath, function (error, file) {
+               if (error) return s.next (0, error);
+               s.next (hash (file.toString ()));
+            });
+         }],
+         [a.make (fs.unlink), hashpath],
+         [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
+         [perfTrack, 'hash'],
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
          [a.set, 'byfs', [a.make (fs.stat), newpath]],
@@ -2211,3 +2228,24 @@ if (cicek.isMaster) a.stop ([
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
+
+// *** CHECK DATE, ORIENTATION & REPEATED ***
+
+if (cicek.isMaster) a.stop ([
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (id) {
+         multi.hgetall (id);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      setTimeout (function () {
+         dale.go (s.last, function (pic) {
+            //if (pic.orientation) clog ('orientation', H.hash (pic.owner) + '/' + pic.id, pic.orientation, pic.deg);
+            //if (pic.deg) clog ('deg........', H.hash (pic.owner) + '/' + pic.id, pic.deg);
+         });
+      }, 5000);
+   }
+]);
