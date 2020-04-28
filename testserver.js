@@ -201,10 +201,10 @@ var intro = [
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0] || rs.headers ['set-cookie'] [0].length <= 5) return clog ('Invalid cookie.');
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       if (! rs.body || ! rs.body.csrf) return clog ('Invalid CSRF token');
       s.csrf = rs.body.csrf;
-      return s.headers.cookie !== undefined && s.headers.cookie.match ('HttpOnly');
+      return s.headers.cookie !== undefined && rs.headers ['set-cookie'] [0].match ('HttpOnly');
    }],
    ['get CSRF token after being logged in', 'get', 'csrf', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {csrf: s.csrf})) return clog ('Invalid payload');
@@ -220,7 +220,7 @@ var intro = [
    ['change password', 'post', 'auth/changePassword', {}, function (s) {return {old: U [0].password, 'new': '123456'}}, 200],
    ['change password again', 'post', 'auth/changePassword', {}, function (s) {return {old: '123456', 'new': U [0].password}}, 200],
    ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return true;
    }],
@@ -243,7 +243,7 @@ var outro = [
       return true;
    }},
    ['login with valid credentials', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -921,7 +921,7 @@ var main = [
    }],
    ['unshare tag', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username, del: true}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -945,7 +945,7 @@ var main = [
       return 'pic/' + s.pics [0].id;
    }, {}, '', 404],
    ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -959,7 +959,7 @@ var main = [
    }],
    ['share rotate tag with a user', 'post', 'share', {}, {tag: 'rotate', who: U [1].username}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -1035,7 +1035,7 @@ var main = [
       return true;
    }],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -1049,13 +1049,13 @@ var main = [
       return true;
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
    ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', ''), del: true}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -1065,7 +1065,7 @@ var main = [
       return true;
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
@@ -1074,7 +1074,7 @@ var main = [
    }, 200],
    ['delete account', 'post', 'auth/delete', {}, {}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
-      s.headers = {cookie: rs.headers ['set-cookie'] [0]};
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
