@@ -595,6 +595,7 @@ var main = [
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
+         deg:  90,
          tags: ['2017']
       })) return clog ('Invalid pic fields.');
       return true;
@@ -611,7 +612,7 @@ var main = [
       return {ids: [s.rotateid, 'foo'], deg: 90};
    }, 404],
    ['rotate pic', 'post', 'rotate', {}, function (s) {
-      return {ids: [s.rotateid], deg: 90};
+      return {ids: [s.rotateid], deg: -90};
    }, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       var pic = rs.body.pics [0];
@@ -629,11 +630,13 @@ var main = [
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
-         deg:  90,
          tags: ['2017']
       })) return clog ('Invalid pic fields.');
       return true;
    }],
+   ['rotate pic again', 'post', 'rotate', {}, function (s) {
+      return {ids: [s.rotateid], deg: 90};
+   }, 200],
    dale.go ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
       return [
          ['rotate pic #' + (k + 2), 'post', 'rotate', {}, function (s) {

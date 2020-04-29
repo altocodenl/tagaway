@@ -39,6 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
+- script to:
+   - no metadata hash
+      - update hashes (upic & upicd)
+      - merge duplicates
+   - fix dates & date
+   - auto add orientation based on metadata if pic is not already rotated (but not on videos)
+
 - Pics
    - Fix scroll height when having many tags on tag search.
    - * Query based on actual query.
@@ -50,7 +57,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Add button for adding new tag, as alternate path to pressing "enter".
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
-   - Ignore metadata when computing hash for videos & pics.
    - Don't redraw box of new uploads when other uploads are updated.
    - Fix number of pictures in ongoing upload.
    - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
@@ -122,11 +128,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pictures in S3 and pictures + thumbnails locally.
-   - Ignore images that already were uploaded (by hash check).
+   - Ignore images that already were uploaded (by hash check, ignoring metadata).
    - Upload files from folder selection, files selection & drop.
    - See progress when uploading files, using a progress bar.
    - Add one or more tags to the upcoming upload batch.
    - See previous uploads.
+   - Auto rotate based on metadata.
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pics periodically if there's an upload in the background.
    - Cancel current upload.
@@ -154,12 +161,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Show tags.
 
 - Upload
-   - Auto rotate using metadata.
    - Retry on error.
    - Warn of leaving page if upload is ongoing.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Ignore deleted pictures flag.
-   - Client-side hashes for fast duplicate elimination.
    - Upload video.
 
 - Account & payment
@@ -492,8 +497,7 @@ All the routes below require an admin user to be logged in.
    byfs: INT (size in bytes in FS)
    hash: STRING
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
-   orientation: STRING (stringified array of orientation data) or absent
-   deg: 90|-90|180 or absent
+   deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
    t200: STRING or absent
    by200: INT or absent (size of 200 thumbnail in FS)

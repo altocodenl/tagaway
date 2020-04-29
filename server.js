@@ -1298,18 +1298,23 @@ var routes = [
             var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
             if (! pic.vid) {
                var error = dale.stopNot (metadata, undefined, function (line) {
-                  if (line.match (/^Warning/)) return line.replace (/^Warning\s+:\s+/, '');
+                  if (line.match (/^Warning/) && ! line.match ('minor')) return line.replace (/^Warning\s+:\s+/, '');
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
                if (error) return reply (rs, 400, {error: 'Invalid image: ' + error});
+
+               var rotation = dale.stopNot (metadata, undefined, function (line) {
+                  if (line.match (/^Orientation/)) return line;
+               }) || '';
+
+               if      (rotation.match ('270')) pic.deg = -90;
+               else if (rotation.match ('90'))  pic.deg = 90;
+               else if (rotation.match ('180')) pic.deg = 180;
 
                s.dates = dale.obj (metadata, function (line) {
                   if (! line.match (/date/i)) return;
                   var key = line.split (':') [0].trim ();
                   return [key, line.replace (key, '').replace (':', '').trim ()];
-               });
-               s.orientation = dale.fil (metadata, undefined, function (line) {
-                  if (line.match (/orientation/i)) return line;
                });
             }
             else {
@@ -1371,7 +1376,6 @@ var routes = [
 
             s.dates ['upload:date'] = lastModified;
             pic.dates = JSON.stringify (s.dates);
-            if (s.orientation && s.orientation.length > 0) pic.orientation = JSON.stringify (s.orientation);
 
             pic.date = dale.fil (s.dates, undefined, function (v, k) {
                if (! v) return;
@@ -2229,7 +2233,8 @@ if (cicek.isMaster) a.stop ([
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
 
-// *** CHECK DATE, ORIENTATION & REPEATED ***
+// *** SCRIPT TO FIX DATE, ORIENTATION & REPEATED USING EXIFTOOL ***
+// TODO remove after applying
 
 if (cicek.isMaster) a.stop ([
    [redis.keyscan, 'pic:*'],
@@ -2241,11 +2246,79 @@ if (cicek.isMaster) a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      setTimeout (function () {
-         dale.go (s.last, function (pic) {
-            //if (pic.orientation) clog ('orientation', H.hash (pic.owner) + '/' + pic.id, pic.orientation, pic.deg);
-            //if (pic.deg) clog ('deg........', H.hash (pic.owner) + '/' + pic.id, pic.deg);
+      //s.pics = s.last.slice (0, 5000);
+      s.pics = s.last.slice (0, 5000);
+      s.hashes = {};
+      // We do the call to a.fork with a new stack because the copying of the entire stack makes it very slow.
+      a.seq (a.creat (), [
+         [a.fork, dale.go (s.pics, function (pic) {return [pic.owner, pic.id]}), function (pic, index) {
+            return [
+               [a.log, 'start #' + (index + 1)],
+               [a.make (fs.copyFile), Path.join (CONFIG.basepath, H.hash (pic [0]), pic [1]), Path.join ('/tmp', pic [1])],
+               // TODO: if video, use ffmpeg!
+               [k, 'exiftool', '-all=', '-overwrite_original', Path.join ('/tmp', pic [1])],
+               function (S) {
+                  fs.readFile (Path.join ('/tmp', pic [1]), function (error, file) {
+                     if (error) return S.next (0, error);
+                     var hash = H.hash (file.toString ());
+                     if (! s.hashes [hash]) s.hashes [hash] = [];
+                     s.hashes [hash].push (pic [1]);
+                     S.next ();
+                  });
+               },
+               [a.make (fs.unlink), Path.join ('/tmp', pic [1])],
+               [k, 'exiftool', Path.join (CONFIG.basepath, H.hash (pic [0]), pic [1])],
+               [a.log, 'end.. #' + (index + 1)],
+            ];
+         }, {max: 8}],
+         function (S) {s.next (S.last)}
+      ]);
+   },
+   function (s) {
+      var errors = [];
+      dale.go (s.pics, function (pic, k) {
+         var metadata = s.last [k].stdout.split ('\n');
+         var error = dale.stopNot (metadata, undefined, function (line) {
+            if (line.match (/^Warning/) && ! line.match ('minor')) return line;
+            if (line.match (/^Error/))   return line;
          });
-      }, 5000);
+         if (error) return errors.push ({pic: pic.id, error: error});
+
+         var dates = dale.obj (metadata, function (line) {
+            if (! line.match (/date/i)) return;
+            var key = line.split (':') [0].trim ();
+            return [key, line.replace (key, '').replace (':', '').trim ()];
+         });
+         dates ['upload:date'] = parseInt (pic.dateup);
+
+         var date = dale.fil (dates, undefined, function (v, k) {
+            if (! v) return;
+            // Ignore GPS date stamp
+            // if (k.match (/gps/i)) return;
+            var d = new Date (v);
+            if (d.getTime ()) return d.getTime ();
+            d = new Date (v.replace (':', '-').replace (':', '-').replace (' ', 'T') + '.000Z');
+            if (d.getTime ()) return d.getTime ();
+         }).sort (function (a, b) {
+            return a - b;
+         }) [0];
+
+         var orientation = dale.fil (metadata, undefined, function (line) {
+            if (line.match (/orientation/i)) return line;
+         });
+
+         if (orientation.length)           clog ('orientation', pic.id, orientation, pic.deg);
+         else if (pic.deg)                 clog ('deg, no ori', pic.id, pic.deg);
+         if (date !== parseInt (pic.date)) clog ('date.fix...', pic.id, new Date (date), new Date (parseInt (pic.date)));
+      });
+      if (errors.length) clog ('ERRORS', errors);
+      clog ('HASHES', s.hashes);
+      dale.go (s.hashes, function (hashes) {
+         if (hashes.length > 1) clog ('REPEATED PICS', hashes);
+      });
    }
-]);
+], function (s, error) {
+   clog ('error', error);
+   // TODO
+   // notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
+});
