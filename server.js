@@ -1982,6 +1982,8 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
+cicek.listen ({port: CONFIG.port}, routes);
+
 if (cicek.isMaster) a.seq ([
    [k, 'git', 'rev-parse', 'HEAD'],
    function (s) {
