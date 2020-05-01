@@ -40,6 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
+   - Fixes: years (no eyes, bold, no re-sort), extra video icons.
    - Fix scroll height when having many tags on tag search.
    - * Query based on actual query.
    - * Download a single picture.
