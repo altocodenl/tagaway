@@ -39,13 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
-- script to:
-   - no metadata hash
-      - update hashes (upic & upicd)
-      - merge duplicates
-   - fix dates & date
-   - auto add orientation based on metadata if pic is not already rotated (but not on videos)
-
 - Pics
    - Fix scroll height when having many tags on tag search.
    - * Query based on actual query.

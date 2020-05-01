@@ -13,14 +13,18 @@ var U = [
 
 var PICS = 'test/';
 
-var getUTCTime = function (dstring) {
-   return new Date (dstring.replace (/\//g, '-') + 'T00:00:00.000Z').getTime ();
-}
-
 var H = {};
 
 H.trim = function (s) {
    return s.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+}
+
+H.getDate = function (d) {
+   // We compensate for the local offset. The server must be in UTC to parse dates properly.
+   var date = new Date (d);
+   if (date.getTime ()) return date.getTime ();
+   date = new Date (d.replace (':', '-').replace (':', '-'));
+   if (date.getTime ()) return date.getTime ();
 }
 
 var ttester = function (label, method, Path, headers, list, allErrors) {
@@ -453,7 +457,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200, function (s, rq, rs, next) {
       // Wait for S3 to delete the videos uploaded before and the image just uploaded
-      setTimeout (next, 5000);
+      setTimeout (next, 8000);
    }],
    ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
@@ -466,7 +470,7 @@ var main = [
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       s.smallpic = teishi.copy (pic);
-      if (pic.date !== 1399507583000)      return clog ('Invalid pic.date');
+      if (pic.date !== H.getDate ('2014:05:08 00:06:23'))  return clog ('Invalid pic.date');
       if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
       delete pic.date;
@@ -521,7 +525,7 @@ var main = [
       if (rs.body.total !== 2) return clog ('Invalid total count.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
-      if (pic.date !== getUTCTime ('2018/06/03')) return clog ('Invalid pic.date');
+      if (pic.date !== H.getDate ('2018-06-03T00:00:00.000Z')) return clog ('Invalid pic.date');
       if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
       delete pic.date;
       delete pic.dateup;
@@ -549,7 +553,7 @@ var main = [
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
-      if (pic.date !== 1405880431000) return clog ('Invalid pic.date');
+      if (pic.date !== H.getDate ('2014:07:20 18:20:31')) return clog ('Invalid pic.date');
       delete pic.date;
       delete pic.dateup;
       delete pic.id;
@@ -579,7 +583,7 @@ var main = [
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
       if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
-      if (pic.date !== 1490204120000) return clog ('Invalid date.');
+      if (pic.date !== H.getDate ('2017:03:22 17:35:20')) return clog ('Invalid date.');
       s.rotateid = pic.id;
       s.rotatepic = teishi.copy (pic);
       delete pic.date;
@@ -623,6 +627,7 @@ var main = [
       delete pic.t900;
       if (s.rotatepic.date !== pic.date)     return clog ('date changed after rotate.');
       if (s.rotatepic.dateup !== pic.dateup) return clog ('dateup changed after rotate.');
+      s.rotatedate = pic.date;
       delete pic.date;
       delete pic.dateup;
       if (! eq (pic, {
@@ -657,7 +662,7 @@ var main = [
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       var pic = rs.body.pics [0];
-      if (pic.date !== 1522070614000) return clog ('GPS timestamp wasn\'t ignored.');
+      if (pic.date !== H.getDate ('2018:03:26 13:23:34')) return clog ('GPS timestamp wasn\'t ignored.');
       if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Wrong year tag.');
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
@@ -691,25 +696,33 @@ var main = [
       }))) return clog ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by mindate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
+   ['get pics by mindate #1', 'post', 'query', {}, function (s) {
+      return {tags: [], sort: 'newest', from: 1, to: 4, mindate: s.rotatedate};
+   }, 200, function (s, rq, rs) {
       if (! eq (['medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return clog ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by mindate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, mindate: 1490204120000}, 200, function (s, rq, rs) {
+   ['get pics by mindate #2', 'post', 'query', {}, function (s) {
+      return {tags: [], sort: 'oldest', from: 1, to: 4, mindate: s.rotatedate};
+   }, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'medium.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return clog ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by maxdate #1', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
+   ['get pics by maxdate #1', 'post', 'query', {}, function (s) {
+      return {tags: [], sort: 'newest', from: 1, to: 4, maxdate: s.rotatedate};
+   }, 200, function (s, rq, rs) {
       if (! eq (['rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return clog ('Invalid pic date sorting');
       return true;
    }],
-   ['get pics by maxdate #2', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: 1490204120000}, 200, function (s, rq, rs) {
+   ['get pics by maxdate #2', 'post', 'query', {}, function (s) {
+      return {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: s.rotatedate};
+   }, 200, function (s, rq, rs) {
       if (! eq (['small.png', 'large.jpeg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
          return v.name;
       }))) return clog ('Invalid pic date sorting');
