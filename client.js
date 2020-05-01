@@ -2112,7 +2112,7 @@ dale.do ([
          uploading++;
 
          var f = new FormData ();
-         f.append ('lastModified', (file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()) - new Date ().getTimezoneOffset () * 60 * 1000);
+         f.append ('lastModified', file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ());
          f.append ('uid', file.uid);
          f.append ('pic', file.file);
          if (file.tags) f.append ('tags', JSON.stringify (file.tags));
