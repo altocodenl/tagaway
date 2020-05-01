@@ -2324,7 +2324,7 @@ if (cicek.isMaster) a.stop ([
             var key = line.split (':') [0].trim ();
             return [key, line.replace (key, '').replace (':', '').trim ()];
          });
-         dates ['lastModified'] = JSON.parse (pic.dates) ['upload:date'];
+         dates ['lastModified'] = JSON.parse (pic.dates) ['upload:date'] || JSON.parse (pic.dates).lastModified;
 
          var date = dale.fil (dates, undefined, function (v, k) {
             if (! v) return;
