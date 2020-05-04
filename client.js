@@ -2674,7 +2674,11 @@ E.pics = function () {
             if (! pics || ! tags) return;
             if (tags.all === 0) return E.empty ();
             return [
-               ['style', ['.tag--time', {width: 0.33, float: 'left'}]],
+               ['style', [
+                  ['.tag--time', {width: 0.33, float: 'left'}],
+                  ['.tag--bolded .tag__title', {color: CSS.vars ['color--one'], 'font-weight': 'bold'}],
+                  ['.tag--bolded svg', {stroke: CSS.vars ['color--one'], 'stroke-width': 4}],
+               ]],
                ['div', {class: 'sidebar'}, [
                   ['div', {class: 'sidebar__inner'}, [
                      // Sidebar section View pictures
@@ -2698,6 +2702,10 @@ E.pics = function () {
                                  if (! filter) return tag;
                                  if (tag.match (H.makeRegex (filter))) return tag;
                               }).sort (function (a, b) {
+                                 if (H.isYear (a) && ! H.isYear (b)) return -1;
+                                 if (H.isYear (b) && ! H.isYear (a)) return 1;
+                                 if (H.isYear (a) && H.isYear (b)) return a - b;
+
                                  var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
                                  var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
                                  if (aSelected !== bSelected) return aSelected ? -1 : 1;
@@ -2708,7 +2716,8 @@ E.pics = function () {
                               var makeTag  = function (which) {
                                  if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : ''), tag = 'All pictures', action = ['onclick', 'set', ['State', 'query', 'tags'], []];
                                  else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']];
-                                 else                           var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '') + (H.isYear (which) ? ' tag--time' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
+                                 else if (H.isYear (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--bolded' : '') + ' tag--time', tag = which, action = ['onclick', 'toggle', 'tag', tag];
+                                 else                           var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
 
                                  // TODO v2: add inline SVG
                                  return ['li', B.ev ({class: Class, opaque: true}, action), [
