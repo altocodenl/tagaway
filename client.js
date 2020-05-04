@@ -537,6 +537,22 @@ CSS.litc = [
    ['.app-show-organise-bar .main', {
       transform: 'translateY(58px)' // header height
    }],
+   ['.app-show-organise-bar .pictures-header', {
+      transition: CSS.vars.easeOutQuart,
+      transform: 'translateY(-29px)' // header height / 2
+   }],
+   ['.app-show-organise-bar .pictures-grid__item', {
+      transition: CSS.vars.easeOutQuart,
+      transform: 'translateY(-58px)' // header height
+   }],
+   ['.app-pictures .pictures-header', {
+      transition: CSS.vars.easeOutQuart,
+      transform: 'translateY(0px)'
+   }],
+   ['.app-pictures .pictures-grid__item', {
+      transition: CSS.vars.easeOutQuart,
+      transform: 'translateY(0px)'
+   }],
    ['.main__inner', {
       'margin-top': CSS.typography.spaceVer (1.5),
       'padding-left, padding-right': CSS.vars ['padding--l'],
@@ -1872,8 +1888,8 @@ dale.do ([
    }],
    ['click', 'pic', function (x, id, k) {
       var last = B.get ('State', 'lastClick') || {time: 0};
-      // If the last click was also on this picture and happened less than 800ms ago, we open the picture in fullscreen.
-      if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 800) {
+      // If the last click was also on this picture and happened less than 500ms ago, we open the picture in fullscreen.
+      if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 500) {
          B.do (x, 'rem', ['State', 'selected'], id);
          B.do (x, 'set', ['State', 'open'], k);
          return;
