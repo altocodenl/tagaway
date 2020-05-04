@@ -3023,7 +3023,7 @@ E.grid = function () {
                            rotation: rotation,
                         }),
                      }],
-                     pic.vid ? ['div', {class: 'video-playback'}] : [],
+                     pic.vid ? ['div', {class: 'video-playback', opaque: true}] : [],
                      ['div', {class: 'mask'}],
                      ['div', {class: 'caption'}, [
                         //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
