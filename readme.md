@@ -40,15 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
-   - Fixes: years (no eyes, bold, no re-sort), extra video icons.
    - Fix scroll height when having many tags on tag search.
    - * Query based on actual query.
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
    - UI team changes (Ruben):
       - Fix z-index of dropdown.
-      - Move actions bar to the bottom and make position fixed.
-      - Add button for adding new tag, as alternate path to pressing "enter".
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
    - Don't redraw box of new uploads when other uploads are updated.
@@ -649,7 +646,7 @@ Used by giz:
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is `pics` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`.
+   2. `change State.page`: if current page is `pics` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
    3. `change State.query`: sets `State.npics` and invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.

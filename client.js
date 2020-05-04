@@ -1821,11 +1821,12 @@ dale.do ([
       putSvg ('.back-link__link', 'afterBegin', '<svg class="back-link__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 12c0 .3-.2.5-.5.5h-12.2l3.4 3.4c.2.2.2.5 0 .7-.1.1-.2.1-.4.1-.1 0-.3 0-.4-.1l-3.5-3.5c-.3-.3-.4-.7-.4-1.1s.2-.8.5-1.1l3.5-3.5c.2-.2.5-.2.7 0s.2.5 0 .7l-3.4 3.4h12.2c.3 0 .5.2.5.5z" /></svg>');
       putSvg ('.video-playback', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="50px" height="50px" viewBox="0 0 512 512" style="position: absolute" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#5b6eff" d="M256,0C114.608,0,0,114.608,0,256s114.608,256,256,256s256-114.608,256-256S397.392,0,256,0z M256,496C123.664,496,16,388.336,16,256S123.664,16,256,16s240,107.664,240,240S388.336,496,256,496z"/><polygon style="fill:#5b6eff" points="189.776,141.328 189.776,370.992 388.672,256.16"/></svg>');
    }],
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.do (x, 'query', 'pics');
       B.do (x, 'query', 'tags');
+      B.do (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], function (x) {
       B.do (x, 'set', ['State', 'nPics'], 20);
@@ -1841,6 +1842,7 @@ dale.do ([
          organise: ['app-organise', 'app-show-organise-bar', 'app-attach-tags'],
       }
       var target = c ('#pics');
+      if (! target) return;
       dale.do (classes, function (classes, mode) {
          dale.do (classes, function (v) {
             if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
@@ -2905,41 +2907,44 @@ E.pics = function () {
                // MAIN
                ['div', {class: 'main main--pictures'}, [
                   ['div', {class: 'main__inner'}, [
-                     ['div', {class: 'pictures-header'}, [
-                        ['h2', {class: 'pictures-header__title page-title'}, pics.length + ' pictures'],
-                        ['div', {class: 'pictures-header__action-bar'}, [
-                           ['div', {class: 'pictures-header__selected-tags'}, [
-                              B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list-horizontal'}}, function (x, tags) {
-                                 return dale.do (tags, function (tag) {
-                                    // TODO v2: add inline SVG
-                                    return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
-                                       ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag],
-                                       // TODO: why must specify height so it looks exactly the same as markup?
-                                       ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                          ['div', {class: 'tag-actions'}, [
-                                             // TODO v2: add inline SVG
-                                             ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['onclick', 'toggle', 'tag', tag])],
+                     B.view (['State', 'selected'], {attrs: {class: 'pictures-header'}}, function (x, selected) {
+                        selected = dale.keys (selected).length;
+                        return [
+                           ['h2', {class: 'pictures-header__title page-title'}, [pics.length + ' pictures', ! selected ? [] : [', ', selected, ' selected']]],
+                           ['div', {class: 'pictures-header__action-bar'}, [
+                              ['div', {class: 'pictures-header__selected-tags'}, [
+                                 B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list-horizontal'}}, function (x, tags) {
+                                    return dale.do (tags, function (tag) {
+                                       // TODO v2: add inline SVG
+                                       return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
+                                          ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag],
+                                          // TODO: why must specify height so it looks exactly the same as markup?
+                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                             ['div', {class: 'tag-actions'}, [
+                                                // TODO v2: add inline SVG
+                                                ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['onclick', 'toggle', 'tag', tag])],
+                                             ]],
                                           ]],
+                                       ]];
+                                    });
+                                 }),
+                              ]],
+                              ['div', {class: 'pictures-header__sort'}, [
+                                 B.view (['State', 'query'], {attrs: {class: 'dropdown'}}, function (x, query) {
+                                    if (! query) return;
+                                    return [
+                                       ['div', {class: 'dropdown__button'}, query.sort],
+                                       ['ul', {class: 'dropdown__list'}, [
+                                          dale.do (['newest', 'oldest', 'upload'], function (sort) {
+                                             return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort];
+                                          })
                                        ]],
-                                    ]];
-                                 });
-                              }),
+                                    ];
+                                 }),
+                              ]],
                            ]],
-                           ['div', {class: 'pictures-header__sort'}, [
-                              B.view (['State', 'query'], {attrs: {class: 'dropdown'}}, function (x, query) {
-                                 if (! query) return;
-                                 return [
-                                    ['div', {class: 'dropdown__button'}, query.sort],
-                                    ['ul', {class: 'dropdown__list'}, [
-                                       dale.do (['newest', 'oldest', 'upload'], function (sort) {
-                                          return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort];
-                                       })
-                                    ]],
-                                 ];
-                              }),
-                           ]],
-                        ]],
-                     ]],
+                        ];
+                     }),
                      // PICTURES GRID
                      ['div', {class: 'pictures-grid'}, E.grid ()],
                   ]],
