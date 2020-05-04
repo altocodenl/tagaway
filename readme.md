@@ -48,13 +48,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Fix z-index of dropdown.
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
-   - Don't redraw box of new uploads when other uploads are updated.
-   - Fix number of pictures in ongoing upload.
+   - Fix rotations in thumbnails (add to log?)
    - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
-   - * Show number of duplicates skipped & photos ignored.
+   - Fix number of pictures in ongoing upload.
+   - * Show number of duplicates skipped.
+   - * Show errors.
    - * Show ETA in ongoing upload.
-   - * Show thumbnail of last picture on upload.
-   - * Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Document element, listeners & store.
    - UI team changes (Ruben):
       - Upload flow
@@ -127,7 +126,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Auto rotate based on metadata.
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pics periodically if there's an upload in the background.
+   - Show thumbnail of last picture on each upload.
    - Cancel current upload.
+   - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
 
 - Account & payment
    - Login/logout.
@@ -296,6 +297,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `GET /thumb/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
+   - Depending on ETag, a 200 or 304 is returned.
+   - If the file is not found, a 404 is returned.
+
+- `GET /thumbof/ID`
+   - Gets the smallest thumbnail (or the picture, if the picture has none) of the picture with id ID.
+   - Picture must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
@@ -652,7 +659,7 @@ Used by giz:
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `Data.pics` (and optionally `State.open` if it's already present) after invoking `post query`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
-   8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`.
+   8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
    10. `select all`: sets `State.selected` to all the pictures in the current query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.

@@ -786,6 +786,9 @@ var main = [
          ['get pic #' + (k + 1), 'get', function (s) {
             return 'pic/' + s.pics [k].id;
          }, {}, '', 200],
+         ['get thumb of pic #' + (k + 1), 'get', function (s) {
+            return 'thumbof/' + s.pics [k].id;
+         }, {}, '', 200],
          k === 3 ? [] : ['get thumb 200 #' + (k + 1), 'get', function (s) {
             return 'thumb/' + s.pics [k].t200;
          }, {}, '', 200],
@@ -956,6 +959,9 @@ var main = [
    }],
    ['get shared pic as user2', 'get', function (s) {
       return 'pic/' + s.shared.id;
+   }, {}, '', 200],
+   ['get thumbnail of shared pic as user2', 'get', function (s) {
+      return 'thumbof/' + s.shared.id;
    }, {}, '', 200],
    ['fail getting nonshared pic as user2', 'get', function (s) {
       return 'pic/' + s.pics [0].id;

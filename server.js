@@ -1237,6 +1237,37 @@ var routes = [
       ]);
    }],
 
+   ['get', 'thumbof/:id', function (rq, rs) {
+      astop (rs, [
+         [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
+         function (s) {
+            if (rq.user.username === s.pic.owner) return s.next ();
+            a.stop (s, [
+               [a.set, 'tags', [Redis, 'smembers', 'pict:' + s.pic.id]],
+               function (s) {
+                  if (s.tags.length === 0) return reply (rs, 404);
+                  var multi = redis.multi ();
+                  dale.go (s.tags, function (tag) {
+                     multi.sismember ('shm:' + rq.user.username, s.pic.owner + ':' + tag);
+                  });
+                  mexec (s, multi);
+               },
+               function (s) {
+                  var authorized = dale.stop (s.last, true, function (v) {return !! v});
+                  if (! authorized) return reply (rs, 404);
+                  s.next ();
+               }
+            ]);
+         },
+         function (s) {
+            Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt2', 1);
+         },
+         function (s) {
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.t200 || s.pic.id), [CONFIG.basepath]);
+         }
+      ]);
+   }],
+
    // *** UPLOAD PICTURES ***
 
    ['post', 'upload', function (rq, rs) {

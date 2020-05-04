@@ -1577,6 +1577,12 @@ H.isYear = function (tag) {
 H.makeRegex = function (filter) {
    return new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
 }
+
+H.isMobile = function () {
+   // https://stackoverflow.com/a/11381730
+   return !! navigator.userAgent.match (/android|webos|iphone|ipad|blackberry|windows phone/);
+}
+
 // *** ELEMENTS ***
 
 var E = {};
@@ -1919,7 +1925,8 @@ dale.do ([
    }],
    ['key', /down|up/, function (x, keyCode) {
       if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
-      if (keyCode === 13 && document.activeElement === c ('#newTag')) B.do (x, 'tag', 'pics', true);
+      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.do (x, 'tag', 'pics', true);
+      if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.do (x, 'upload', 'tag', true);
    }],
    ['toggle', 'tag', function (x, tag) {
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
@@ -2111,14 +2118,11 @@ dale.do ([
       }));
    }],
    ['upload', 'tag', function (x, tag) {
+      if (tag === true) tag = c ('#uploadTag').value;
+      if (type (tag) !== 'string' || tag === '') return;
       if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return B.do (x, 'snackbar', 'yellow', 'Sorry, you can not use that tag.');
       B.do (x, 'add', ['State', 'upload', 'new', 'tags'], tag);
-   }],
-   ['key', 'down', function (x, keyCode) {
-      if (keyCode === 13 && document.activeElement === c ('#uploadTag')) {
-         B.do (x, 'upload', 'tag', c ('#uploadTag').value);
-         B.do (x, 'rem', ['State', 'upload'], 'tag');
-      }
+      B.do (x, 'rem', ['State', 'upload'], 'tag');
    }],
    ['change', ['State', 'upload', 'queue'], function (x) {
       var queue = B.get ('State', 'upload', 'queue');
@@ -3124,6 +3128,7 @@ E.open = function () {
 
 E.upload = function () {
    return ['div', [
+      ['style', ['.upload-box__image-pic svg', {display: 'none'}]],
       E.header (),
       // TODO v2: merge two views into one
       B.view (['Data', 'account'], {attrs: {class: 'main-centered'}}, function (x, account) {
@@ -3134,8 +3139,8 @@ E.upload = function () {
             var uploads = {};
             dale.do (logs, function (log) {
                if (log.a !== 'upl') return;
-               if (! uploads [log.uid]) uploads [log.uid] = {tags: log.tags, uploaded: 0, t: 0};
-               uploads [log.uid].uploaded++;
+               if (! uploads [log.uid]) uploads [log.uid] = {tags: log.tags, t: 0, ids: []};
+               uploads [log.uid].ids.push (log.id);
                if (uploads [log.uid].t < log.t) uploads [log.uid].t = log.t;
             });
 
@@ -3168,13 +3173,14 @@ E.upload = function () {
                                  ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
                                  // DRAG & DROP
                                  // TODO v2: add inline SVG
-                                 ['div', {class: 'drag-and-drop', opaque: true}, [
-                                    ['p', {class: 'drag-and-drop__text'}, [
-                                       'Drag and drop photos here or upload ',
-                                       ['a', {onclick: 'c ("#files-upload").click ()'}, 'files'],
-                                       ' or a ',
-                                       ['a', {onclick: 'c ("#folder-upload").click ()'}, 'folder'],
-                                       '.',
+                                 ['div', {class: 'drag-and-drop', opaque: true}, H.isMobile () ? [
+                                    ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
+                                 ] : [
+                                    'Drag and drop photos here or ',
+                                    ['br'], ['br'],
+                                    ['div', [
+                                       ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
+                                       ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'button button--one', onclick: 'c ("#folder-upload").click ()'}, 'Upload folder'],
                                     ]],
                                  ]],
                                  // UPLOAD SELECTION
@@ -3182,14 +3188,16 @@ E.upload = function () {
                                     // TODO v2: add inline SVG
                                     ['div', {class: 'upload-selection', opaque: true}, [
                                        ['p', {class: 'upload-selection__text'}, ((! newUpload.files || ! newUpload.files.length) ? 'No' : newUpload.files.length) + ' pictures selected'],
-                                       ! newUpload.files || ! newUpload.files.length ? [] : ['div', B.ev ({class: 'upload-selection__remove'}, ['onclick', 'rem', ['State', 'upload'], 'new']), [
+                                       ! newUpload.files || ! newUpload.files.length ? [] : ['div', B.ev ({class: 'upload-selection__remove'}, [
+                                          ['onclick', 'rem', ['State', 'upload'], 'new'],
+                                       ]), [
                                           ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
                                        ]],
                                     ]],
                                  ]],
                               ]],
                               // UPLOAD BOX SECTION
-                              ['div', {class: 'upload-box__section'}, [
+                              newUpload.files.length === 0 ? [] : ['div', {class: 'upload-box__section'}, [
                                  ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                  // TODO v2: merge two views into one
                                  B.view (['Data', 'tags'], {attrs: {class: 'upload-box__search'}}, function (x, tags) {
@@ -3236,22 +3244,41 @@ E.upload = function () {
                                        ]];
                                     }),
                                  ]],
+                                 ['div', [
+                                    ['br'], ['br'],
+                                    ['div', B.ev ({style: style ({float: 'left', width: 'inherit', 'margin-right': 10}), class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'tag', true]), [
+                                       ['a', {class: 'upload-box__upload-button button button--two'}, 'Add tag'],
+                                    ]],
+                                    ['div', B.ev ({style: style ({float: 'left', width: 'inherit'}), class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'start']), [
+                                       ['a', {class: 'upload-box__upload-button button button--one'}, 'Start upload'],
+                                    ]],
+                                 ]],
                               ]],
                               // UPLOAD BOX SECTION
-                              ! newUpload.files || ! newUpload.files.length ? [] : ['div', B.ev ({class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'start']), [
-                                 ['a', {class: 'upload-box__upload-button button button--one'}, 'Upload ' + newUpload.files.length + ' files'],
-                              ]],
+                              /*
+                              B.view (['State', 'readyToUpload'], function (x, ready) {
+                                 if (! ready) return;
+                                 return ['div', B.ev ({class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'start']), [
+                                    ['a', {class: 'upload-box__upload-button button button--one'}, 'Upload ' + newUpload.files.length + ' files'],
+                                 ]];
+                              }),
+                              */
                            ]],
                         ]]
                      ]],
                      // PENDING UPLOADS
                      dale.do (pending, function (pending, uid) {
-                        var alreadyUploaded = uploads [uid] ? uploads [uid].uploaded : 0;
+                        var alreadyUploaded = uploads [uid] ? uploads [uid].ids.length : 0;
                         return ['li', {class: 'upload-box-list__item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                               // TODO v2: add inline SVG
-                              ['div', {class: 'upload-box__image', opaque: true}],
+                              uploads [uid] && uploads [uid].ids [0] ? ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                                 'background-image': 'url(thumbof/' + uploads [uid].ids [0] + ')',
+                                 'background-position': 'center',
+                                 'background-repeat': 'no-repeat',
+                                 'background-size': 'cover',
+                              })}] : ['div', {class: 'upload-box__image', opaque: true}],
                               ['div', {class: 'upload-box__main'}, [
                                  ['div', {class: 'upload-box__section'}, [
                                     // TODO v2: add inline SVG
@@ -3289,22 +3316,28 @@ E.upload = function () {
                      }),
                   ]],
                   // RECENT UPLOADS
-                  /*
                   ['div', {class: 'page-section'}, [
                      ['div', {class: 'recent-uploads'}, [
                         ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
                         ['ul', {class: 'recent-uploads__list'}, dale.do (uploads, function (upload, uid) {
                            if (pending [uid]) return;
+                           // Show uploads from the last 60 minutes.
+                           if (upload.t < Date.now () - 1000 * 60 * 60) return;
                            return ['li', {class: 'recent-uploads__list-item'}, [
                               // UPLOAD BOX
                               ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                                 ['div', {class: 'upload-box__image', opaque: true}],
+                              uploads [uid] && uploads [uid].ids [0] ? ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                                 'background-image': 'url(thumbof/' + uploads [uid].ids [0] + ')',
+                                 'background-position': 'center',
+                                 'background-repeat': 'no-repeat',
+                                 'background-size': 'cover',
+                              })}] : ['div', {class: 'upload-box__image', opaque: true}],
                                  ['div', {class: 'upload-box__main'}, [
                                     // UPLOAD BOX SECTION
                                     ['div', {class: 'upload-box__section'}, [
                                        // TODO v2: add inline SVG
                                        ['p', {class: 'upload-progress', opaque: true}, [
-                                          ['span', {class: 'upload-progress__amount-uploaded'}, upload.uploaded],
+                                          ['span', {class: 'upload-progress__amount-uploaded'}, upload.ids.length],
                                           //'/',
                                           //['span', {class: 'upload-progress__amount'}, '37'],
                                           ['LITERAL', '&nbsp'],
@@ -3332,7 +3365,6 @@ E.upload = function () {
                         })],
                      ]]
                   ]],
-                  */
                   ['div', {class: 'page-section'}, [
                      // BACK LINK
                      ['div', {class: 'back-link back-link--uploads'}, [
