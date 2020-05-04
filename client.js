@@ -1580,7 +1580,7 @@ H.makeRegex = function (filter) {
 
 H.isMobile = function () {
    // https://stackoverflow.com/a/11381730
-   return !! navigator.userAgent.match (/android|webos|iphone|ipad|blackberry|windows phone/);
+   return !! navigator.userAgent.match (/android|webos|iphone|ipad|blackberry|windows phone/i);
 }
 
 // *** ELEMENTS ***
