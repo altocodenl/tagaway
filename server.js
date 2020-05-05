@@ -1451,7 +1451,9 @@ var routes = [
             multi.hmset ('pic:' + pic.id, pic);
             mexec (s, multi);
          },
-         [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined}],
+         function (s) {
+            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
+         },
          [perfTrack, 'db'],
          function (s) {
             H.stat.w (s, [

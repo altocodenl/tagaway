@@ -576,6 +576,11 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200],
+   ['check that automatic rotation is on the upload log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      var lastLog = rs.body.logs [0];
+      if (lastLog.deg !== 90) return clog ('No `deg` field on autorotated picture.');
+      return true;
+   }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 4) return clog ('Invalid total count.');
@@ -1116,7 +1121,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 48 && rs.body.logs.length !== 49)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 49 && rs.body.logs.length !== 50)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],

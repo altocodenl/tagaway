@@ -40,15 +40,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
-   - Fix scroll height when having many tags on tag search.
    - * Query based on actual query.
    - * Download a single picture.
    - * Download multiple pictures as one zip file.
    - UI team changes (Ruben):
+      - Fix scroll height when having many tags on tag search.
       - Fix z-index of dropdown.
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
-   - Fix rotations in thumbnails (add to log?)
+   - Fix rotations in thumbnails of uploads.
    - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
    - Fix number of pictures in ongoing upload.
    - * Show number of duplicates skipped.
@@ -60,9 +60,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Starting state: area from dropdown & button for files & button for folder upload.
          - Uploading state: button for starting new upload and button for starting tagging state.
          - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
-- Other
-   - Move altocode.nl blog to static pages.
-   - Investigate & fix session issue.
 - Share & manage
    - * Delete tag.
    - * Rename tag.
@@ -523,7 +520,7 @@ All the routes below require an admin user to be logged in.
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING}
-   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED}
+   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}

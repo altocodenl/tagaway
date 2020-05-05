@@ -3083,7 +3083,6 @@ E.open = function () {
 
          var askance = pic.deg === 90 || pic.deg === -90;
          var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-            //return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
             return [v + 'transform', 'rotate(' + pic.deg + 'deg)'];
          });
          rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
