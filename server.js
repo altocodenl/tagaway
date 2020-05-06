@@ -659,6 +659,8 @@ var routes = [
 
    ['get', 'lib/murmurhash.js', cicek.file, 'node_modules/murmurhash/murmurhash.js'],
 
+   ['get', 'favicon.ico', cicek.file, 'lib/favicon.ico'],
+
    ['get', 'img/*', cicek.file, ['markup']],
 
    ['get', ['lib/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
@@ -1959,7 +1961,7 @@ cicek.apres = function (rs) {
    ];
 
    if (rs.log.code >= 400) {
-      if (['/favicon.ico', '/lib/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) === -1) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+      if (['/lib/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) === -1) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       logs.push (['flow', 'rq-bad', 1]);
    }
    else {
