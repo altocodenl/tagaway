@@ -293,3 +293,7 @@ ul {
    text-align: left;
    padding-left: 8px;
 }
+
+td {
+   padding: 10px;
+}
