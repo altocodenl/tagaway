@@ -89,7 +89,7 @@ font-weight: 600;
     font-size: 12px;
     line-height: normal;
   }
-} 
+}
 
 .header, .mid-title, .comparison-title {
 	text-align: center;
@@ -120,7 +120,7 @@ font-weight: 600;
   padding-top: 4%;
   padding-bottom: 2%;
   justify-content: center;
-  display: flex; 
+  display: flex;
 }
 .button {
   outline: 0;
@@ -134,7 +134,7 @@ font-weight: 600;
   font-weight: 500;
   font-style: normal;
   border-radius: 100px;
-  border: 1px solid #5b6eff; 
+  border: 1px solid #5b6eff;
   color: #ffffff;
   background-color: #5b6eff;
   transition: all 400ms cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -169,25 +169,25 @@ font-weight: 600;
     margin: auto;
 }
 
-.simple, 
-.organized, 
-.share, 
-.efficient, 
+.simple,
+.organized,
+.share,
+.efficient,
 .safe {
   height: 400px;
-  width: 100%; 
+  width: 100%;
   justify-content: center;
 }
 
 @media screen and (max-width: 767px) {
-.simple, 
-.organized, 
-.share, 
-.efficient, 
+.simple,
+.organized,
+.share,
+.efficient,
 .safe {
   height: auto;
 }
-} 
+}
 
 .image-left, .image-right {
 	height: 100%;
@@ -201,7 +201,7 @@ font-weight: 600;
 }
 
 .image-left img, .image-right img {
-  max-height: 100%; 
+  max-height: 100%;
   max-width: 100%;
   height: auto;
   width: auto;
@@ -256,7 +256,7 @@ font-weight: 600;
   display: block;
   margin-left: auto;
   margin-right: auto;
-  border-collapse: collapse; 
+  border-collapse: collapse;
 }
 
 .comparison-table a:link {
@@ -281,10 +281,15 @@ th {
   font-size: 100%;
 }
 
-tr, th {
+tr, th, td {
   font-size: 90%;
   text-align: center;
   vertical-align: middle;
   border: 1px solid #484848;
 }
 
+ul {
+   list-style-position: inside;
+   text-align: left;
+   padding-left: 8px;
+}
