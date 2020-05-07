@@ -617,7 +617,7 @@ Used by giz:
    3. `keydown` -> `key down KEYCODE`
    4. `keyup` -> `key up KEYCODE`
    5. `scroll` -> `scroll [] EVENT`
-   6. `beforeunload` -> `exit app`
+   6. `beforeunload` -> if `State.upload.queue` is not empty, prompt the user before exiting the app.
    7. `webkitfullscreenchange|mozfullscreenchange|fullscreenchange|MSFullscreenChange` -> `exit fullscreen`
    8. `dragover` -> do nothing
    9. `drop` -> `drop files EVENT`

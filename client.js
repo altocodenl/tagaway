@@ -1609,9 +1609,9 @@ window.addEventListener ('scroll', function (ev) {
    B.do ('scroll', [], ev);
 });
 
-window.addEventListener ('beforeunload', function () {
-   B.do ('exit', 'app');
-});
+window.onbeforeunload = function () {
+   if ((B.get ('State', 'upload', 'queue') || []).length) return 'Are you sure you want to leave?';
+}
 
 dale.do (['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange'], function (v) {
    document.addEventListener (v, function () {
@@ -2076,11 +2076,6 @@ dale.do ([
 
    // *** UPLOAD LISTENERS ***
 
-   ['exit', 'app', function () {
-      alert ('exit');
-      var q = B.get ('State', 'upload', 'queue');
-      if (q && q.length > 0 && ! confirm ('Refreshing the page will interrupt the upload process. Are you sure?')) return;
-   }],
    ['drop', 'files', function (x, ev) {
       if (B.get ('State', 'page') !== 'upload') return;
       dale.do (ev.dataTransfer.files, function (file) {
