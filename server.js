@@ -28,10 +28,11 @@ var giz    = require ('giz');
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');
 
-var uuid   = require ('uuid/v4');
-var mailer = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
-var hash   = require ('murmurhash').v3;
-var mime   = require ('mime');
+var uuid     = require ('uuid/v4');
+var mailer   = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
+var hash     = require ('murmurhash').v3;
+var mime     = require ('mime');
+var archiver = require ('archiver');
 
 var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () {
    var rs = dale.stopNot (arguments, undefined, function (arg) {
@@ -1835,6 +1836,59 @@ var routes = [
                }),
             });
          }
+      ]);
+   }],
+
+   // *** DOWNLOAD ***
+
+   ['post', 'download', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['pics'], 'eachOf', teishi.test.equal],
+         ['body.pics', b.pics, 'array'],
+         ['body.pics', b.pics, 'string', 'each'],
+      ])) return;
+
+      if (b.pics.length === 0) return reply (rs, 200);
+
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            dale.go (b.pics, function (pic) {
+               multi.hgetall ('pic:' + pic);
+            });
+            multi.smembers ('shm:' + rq.user.username);
+            mexec (s, multi);
+         }],
+         function (s) {
+            var sharedWithUser = teishi.last (s.last);
+
+            var hasAccess = dale.stopNot (s.last.slice (0, -1), true, function (pic) {
+               // No such picture
+               if (! pic) return false;
+               if (pic.owner === rq.user.username) return true;
+               return dale.stop (pic.tags, true, function (tag) {
+                  return sharedWithUser.indexOf (pic.owner + ':' + tag) > -1;
+               });
+            });
+
+            if (! hasAccess) return reply (rs, 404);
+            if (b.pics.length === 1) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), b.pics [0]), [CONFIG.basepath]);
+
+            var archive = archiver ('zip');
+            archive.on ('error', function (error) {reply (rs, 500, {error: error})});
+
+            dale.go (b.pics, function (pic) {
+               archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: pic.id + Path.extname (pic.name)});
+            });
+            archive.pipe (rs);
+            archive.finalize ();
+            archive.on ('finish', function () {
+               cicek.apres (rs);
+            });
+         },
       ]);
    }],
 
