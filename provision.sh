@@ -23,8 +23,7 @@ ssh $HOST apt-get install git -y
 ssh $HOST '(mkdir /tmp/mon && cd /tmp/mon && curl -L# https://github.com/tj/mon/archive/master.tar.gz | tar zx --strip 1 && make install && rm -rf /tmp/mon)'
 ssh $HOST npm install -g mongroup
 ssh $HOST apt-get install vim -y
-ssh $HOST wget https://raw.githubusercontent.com/fpereiro/vimrc/master/vimrc
-ssh $HOST mv vimrc .vimrc
+ssh $HOST wget https://raw.githubusercontent.com/fpereiro/vimrc/master/vimrc -O .vimrc
 ssh $HOST apt-get install redis-server -y
 ssh $HOST apt-get install nginx -y
 ssh $HOST apt-get install imagemagick -y
