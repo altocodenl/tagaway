@@ -276,7 +276,6 @@ font-weight: 600;
 
 @media screen and (max-width: 767px) {
   .comparison-table {
-    height: 100%;
     width: 100%;
     font-size: 12px;
   }
