@@ -39,6 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
+- Bug multiselect.
+- If text on tag box on upload, use it as tag.
+
 - Pics
    - * Query based on actual query.
    - * Download a single picture.
@@ -60,14 +63,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Starting state: area from dropdown & button for files & button for folder upload.
          - Uploading state: button for starting new upload and button for starting tagging state.
          - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
-- Share & manage
-   - * Delete tag.
-   - * Rename tag.
-   - * Share/unshare with email: signup, login, or go straight if there's a session.
-   - * Mark tags shared.
-   - * Mark tags shared with me.
-   - * If two shared tags from different users have the same name, put "@username".
-   - * Authorization to see or ignore share.
 
 ### Alpha version (DONE)
 
@@ -109,6 +104,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If video, show thumbnail & controls.
    - Mobile: no padding, swipe left/right.
    - If upload is happening in the background, keep the current picture open but update the counter on the bottom right.
+   - Warn of leaving page if upload is ongoing.
 
 - Upload
    - Allow only jpeg, png & video.
@@ -151,21 +147,28 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upload
    - Retry on error.
-   - Warn of leaving page if upload is ongoing.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Ignore deleted pictures flag.
-   - Upload video.
 
 - Account & payment
-   - Recover/reset password.
    - Account page.
+   - Payment.
+   - Recover/reset password.
    - Change email, password & username.
    - Delete account.
    - Export/import all data.
    - Log me out of all sessions.
    - Freeze me out (includes log me out of all sessions).
-   - Payment.
    - Payment late flow: freeze uploads, email, auto-delete by size.
+
+- Share & manage
+   - Delete tag.
+   - Rename tag.
+   - Share/unshare with email: signup, login, or go straight if there's a session.
+   - Mark tags shared.
+   - Mark tags shared with me.
+   - If two shared tags from different users have the same name, put "@username".
+   - Authorization to see or ignore share.
 
 - Admin
    - Retrieve stats & test endpoint.
@@ -365,6 +368,16 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200 with body `{sho: [[USERNAME1, TAG1], ...], shm: [[USERNAME2, TAG2], ...]}`.
    - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
 
+`POST /download`
+   - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
+   - `body.ids` must have at least a length of 2.
+   - All pictures must exist and user must be owner of the pictures or have the pictures shared with them, otherwise a 404 is returned.
+   - If successful, returns a 200 with body `{id: STRING}`. The `id` corresponds to a temporary download file that lasts 5 seconds and is only valid for the user that requested the download.
+
+`GET /download/ID`
+   - `ID` is an id returned by `POST /download`.
+   - If successful, the user will receive a zip file with the specified pictures.
+
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...]}`.
 
@@ -512,6 +525,8 @@ All the routes below require an admin user to be logged in.
 - sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
 
 - tags:USERID (set): list of all tags created by the user. Does not count tags shared with the user.
+
+- download:ID (string): stringified object of the shape `{username: ID, pics: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:           {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}

@@ -1841,23 +1841,51 @@ var routes = [
 
    // *** DOWNLOAD ***
 
+   ['get', 'download/(*)', function (rq, rs) {
+
+      redis.get ('download:' + rq.data.params [0], function (error, download) {
+         if (error) return reply (rs, 500, {error: error});
+         if (! download) return reply (rs, 404);
+         download = JSON.parse (download);
+
+         if (download.username !== rq.user.username) return reply (rs, 403);
+
+         var archive = archiver ('zip');
+         archive.on ('error', function (error) {
+            reply (rs, 500, {error: error})
+         });
+         dale.go (download.pics, function (pic) {
+            archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: pic.id + Path.extname (pic.name)});
+         });
+
+         archive.pipe (rs);
+         archive.finalize ();
+         archive.on ('finish', function () {
+            cicek.apres (rs);
+         });
+       });
+   }],
+
    ['post', 'download', function (rq, rs) {
 
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['pics'], 'eachOf', teishi.test.equal],
-         ['body.pics', b.pics, 'array'],
-         ['body.pics', b.pics, 'string', 'each'],
+         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
       ])) return;
 
-      if (b.pics.length === 0) return reply (rs, 200);
+      if (b.ids.length < 2) return reply (rs, 400);
 
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            dale.go (b.pics, function (pic) {
-               multi.hgetall ('pic:' + pic);
+            dale.go (b.ids, function (id) {
+               multi.hgetall ('pic:' + id);
+            });
+            dale.go (b.ids, function (id) {
+               multi.smembers ('pict:' + id);
             });
             multi.smembers ('shm:' + rq.user.username);
             mexec (s, multi);
@@ -1865,29 +1893,27 @@ var routes = [
          function (s) {
             var sharedWithUser = teishi.last (s.last);
 
-            var hasAccess = dale.stopNot (s.last.slice (0, -1), true, function (pic) {
+            var hasAccess = dale.stopNot (s.last.slice (0, b.ids.length), true, function (pic, k) {
                // No such picture
                if (! pic) return false;
                if (pic.owner === rq.user.username) return true;
-               return dale.stop (pic.tags, true, function (tag) {
+               var tags = s.last [b.ids.length + k];
+               return dale.stop (tags, true, function (tag) {
                   return sharedWithUser.indexOf (pic.owner + ':' + tag) > -1;
                });
             });
 
             if (! hasAccess) return reply (rs, 404);
-            if (b.pics.length === 1) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), b.pics [0]), [CONFIG.basepath]);
 
-            var archive = archiver ('zip');
-            archive.on ('error', function (error) {reply (rs, 500, {error: error})});
+            var downloadId = uuid ();
+            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pics: dale.go (b.ids, function (id, k) {
+               var pic = s.last [k];
+               return {owner: pic.owner, id: pic.id, name: pic.name};
+            })}), function (error) {
+               if (error) return reply (rs, 500, {error: error});
+               reply (rs, 200, {id: downloadId});
+            });
 
-            dale.go (b.pics, function (pic) {
-               archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: pic.id + Path.extname (pic.name)});
-            });
-            archive.pipe (rs);
-            archive.finalize ();
-            archive.on ('finish', function () {
-               cicek.apres (rs);
-            });
          },
       ]);
    }],
@@ -2083,6 +2109,11 @@ if (cicek.isMaster) a.seq ([
       }, ENV === 'dev' ? 1500 : 0);
    }
 ]);
+
+process.on ('uncaughtException', function (error, origin) {
+   notify (a.creat (), {priority: 'critical', type: 'server error', error: error, origin: origin});
+   process.exit (1);
+});
 
 // *** REDIS ERROR HANDLER ***
 

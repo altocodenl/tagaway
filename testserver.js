@@ -4,6 +4,8 @@ var CONFIG = require ('./config.js');
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var h      = require ('hitit');
+var a      = require ('./lib/astack.js');
+var fs     = require ('fs');
 var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
 
 var U = [
@@ -25,6 +27,40 @@ H.getDate = function (d) {
    if (date.getTime ()) return date.getTime ();
    date = new Date (d.replace (':', '-').replace (':', '-'));
    if (date.getTime ()) return date.getTime ();
+}
+
+var k = function (s) {
+
+   var command = [].slice.call (arguments, 1);
+
+   var output = {stdout: '', stderr: '', command: command};
+
+   var proc = require ('child_process').spawn (command [0], command.slice (1));
+
+   var wait = 3;
+
+   var done = function () {
+      if (--wait > 0) return;
+      if (! output.stderr && output.code === 0) s.next (output);
+      else                                      s.next (0, output);
+   }
+
+   dale.go (['stdout', 'stderr'], function (v) {
+      proc [v].on ('data', function (chunk) {
+         output [v] += chunk;
+      });
+      proc [v].on ('end', done);
+   });
+
+   proc.on ('error', function (error) {
+      output.err += error + ' ' + error.stack;
+      done ();
+   });
+   proc.on ('exit',  function (code, signal) {
+      output.code = code;
+      output.signal = signal;
+      done ();
+   });
 }
 
 var ttester = function (label, method, Path, headers, list, allErrors) {
@@ -290,6 +326,7 @@ var main = [
       return true;
    }],
    ttester ('query pics', 'post', 'query', {}, [
+      ['tags', 'array'],
       [['tags', 0], 'string'],
       ['mindate', ['undefined', 'integer']],
       ['maxdate', ['undefined', 'integer']],
@@ -404,7 +441,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400, function (s, rq, rs) {
       if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
-      if (rs.body.error !== 'Invalid image: Corrupted PNG image') return clog ('Invalid error message.');
+      if (! rs.body.error.match (/^Invalid image:/)) return clog ('Invalid error message.');
       return true;
    }],
    ['upload picture without uid', 'post', 'upload', {}, {multipart: [
@@ -505,8 +542,8 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-      if (rs.body.usage.fsused !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
-      if (rs.body.usage.s3used !== 0)                   return clog ('Invalid S3 usage.');
+      if (rs.body.usage.fsused !== 3370 + 22644 + 8694) return clog ('Invalid FS usage.');
+      if (rs.body.usage.s3used !== 0 && rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
       // Wait for S3
       setTimeout (next, 3000);
    }],
@@ -516,7 +553,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 409],
    ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.usage.fsused !== 3370 + 22644 + 8663) return clog ('Invalid FS usage.');
+      if (rs.body.usage.fsused !== 3370 + 22644 + 8694) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 3402 + 22676)        return clog ('Invalid S3 usage.');
       return true;
    }],
@@ -611,6 +648,7 @@ var main = [
    }],
    ttester ('rotate pic', 'post', 'rotate', {}, [
       ['ids', 'array'],
+      [['ids', 0], 'string'],
       ['deg', 'integer'],
    ]),
    ['rotate pic (invalid #1)', 'post', 'rotate', {}, {ids: ['hello'], deg: 45}, 400],
@@ -672,10 +710,10 @@ var main = [
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
       // Wait for S3
-      setTimeout (next, 15000);
+      setTimeout (next, 8000);
    }],
    ['get public stats before deleting pictures', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 6384282, bys3: 6128443, pics: 5, vids: 0, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
+      if (! teishi.eq (rs.body, {byfs: 6385276, bys3: 6128443, pics: 5, vids: 0, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
       return true;
    }],
    dale.go (dale.times (5, 0), function (k) {
@@ -763,6 +801,7 @@ var main = [
    }],
    ttester ('tag pic', 'post', 'tag', {}, [
       ['tag', 'string'],
+      ['ids', 'array'],
       [['ids', 0], 'string'],
       ['del', ['boolean', 'undefined']],
    ]),
@@ -902,6 +941,9 @@ var main = [
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 1, all: 3, untagged: 2, bla: 1})) return clog (rs.body);
       return true;
    }],
+   ['tag another picture', 'post', 'tag', {}, function (s) {
+      return {tag: 'bla', ids: [s.pics [2].id]};
+   }, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       s.pics = rs.body.pics;
       s.cookie0 = s.headers.cookie;
@@ -954,28 +996,98 @@ var main = [
       return true;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user2 should have one pic');
-      s.shared = rs.body.pics [0];
+      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics.');
+      s.shared = rs.body.pics;
       return true;
    }],
    ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user2 should have one pic with this tag');
+      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics with this tag.');
       return true;
    }],
    ['get shared pic as user2', 'get', function (s) {
-      return 'pic/' + s.shared.id;
+      return 'pic/' + s.shared [0].id;
    }, {}, '', 200],
    ['get thumbnail of shared pic as user2', 'get', function (s) {
-      return 'thumbof/' + s.shared.id;
+      return 'thumbof/' + s.shared [0].id;
    }, {}, '', 200],
    ['fail getting nonshared pic as user2', 'get', function (s) {
       return 'pic/' + s.pics [0].id;
    }, {}, '', 404],
+   ttester ('download', 'post', 'download', {}, [
+      ['ids', 'array'],
+      [['ids', 0], 'string'],
+   ]),
+   ['download shared pics (empty)', 'post', 'download', {}, {ids: []}, 400],
+   ['download shared pics (one picture)', 'post', 'download', {}, function (s) {
+      return {ids: [s.shared [0].id]};
+   }, 400],
+   ['download shared pics (two pictures, one lacking permission)', 'post', 'download', {}, function (s) {
+      return {ids: [s.shared [0].id, s.pics [0].id]};
+   }, 404],
+   ['download shared pics as user2', 'post', 'download', {}, function (s) {
+      return {ids: [s.shared [0].id, s.shared [1].id]};
+   }, 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return log ('Invalid id returned.');
+      s.downloadId = rs.body.id;
+      return true;
+   }],
+   {raw: true, tag: 'download multiple pictures', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
+      fs.writeFileSync ('download.zip', rs.body);
+      a.stop ([
+         [k, 'unzip', 'download.zip'],
+         function (S) {
+            var file1 = fs.readFileSync (s.shared [0].id + '.jpeg');
+            var file2 = fs.readFileSync (s.shared [1].id + '.jpg');
+            if (Buffer.compare (fs.readFileSync ('test/large.jpeg'), file1) !== 0) return clog ('Mismatch between expected and actual download #1.');
+            if (Buffer.compare (fs.readFileSync ('test/medium.jpg'), file2) !== 0) return clog ('Mismatch between expected and actual download #2.');
+            fs.unlinkSync (s.shared [0].id + '.jpeg');
+            fs.unlinkSync (s.shared [1].id + '.jpg');
+            fs.unlinkSync ('download.zip');
+            next ();
+         }
+      ], clog);
+   }},
    ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
+   ['request download of another user', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 403],
+   ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs, next) {
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
+      s.csrf = rs.body.csrf;
+      setTimeout (next, 5000);
+   }],
+   ['download multiple pictures after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
+   ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
+      s.csrf = rs.body.csrf;
+      return s.headers.cookie !== undefined;
+   }],
+   ['download own pics', 'post', 'download', {}, function (s) {
+      return {ids: [s.shared [0].id, s.shared [1].id]};
+   }, 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return log ('Invalid id returned.');
+      s.downloadId = rs.body.id;
+      return true;
+   }],
+   {raw: true, tag: 'download multiple pictures (own)', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
+      fs.writeFileSync ('download.zip', rs.body);
+      a.stop ([
+         [k, 'unzip', 'download.zip'],
+         function (S) {
+            var file1 = fs.readFileSync (s.shared [0].id + '.jpeg');
+            var file2 = fs.readFileSync (s.shared [1].id + '.jpg');
+            if (Buffer.compare (fs.readFileSync ('test/large.jpeg'), file1) !== 0) return clog ('Mismatch between expected and actual download #1.');
+            if (Buffer.compare (fs.readFileSync ('test/medium.jpg'), file2) !== 0) return clog ('Mismatch between expected and actual download #2.');
+            fs.unlinkSync (s.shared [0].id + '.jpeg');
+            fs.unlinkSync (s.shared [1].id + '.jpg');
+            fs.unlinkSync ('download.zip');
+            setTimeout (next, 5000);
+         }
+      ], clog);
+   }},
+   ['download multiple pictures after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
    ['tag rotated picture', 'post', 'tag', {}, function (s) {
       return dale.stopNot (s.pics, undefined, function (pic) {
          if (pic.name === 'rotate.jpg') return {tag: '\nrotate', ids: [pic.id]};
@@ -991,7 +1103,7 @@ var main = [
       return s.headers.cookie !== undefined;
    }],
    ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics.');
+      if (rs.body.pics.length !== 3) return clog ('user2 should have three pics.');
       s.pics2 = rs.body.pics;
       return true;
    }],
@@ -1042,8 +1154,8 @@ var main = [
       {type: 'field',  name: 'tags', value: '["rotate"]'}
    ]}, 200],
    ['get all pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics.');
-      if (rs.body.total !== 2) return clog ('total not computed properly with repeated pics.');
+      if (rs.body.pics.length !== 3) return clog ('user2 should have three pics.');
+      if (rs.body.total !== 3) return clog ('total not computed properly with repeated pics.');
       if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
       s.rotate2 = rs.body.pics [0];
       return true;
@@ -1121,7 +1233,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 49 && rs.body.logs.length !== 50)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 50 && rs.body.logs.length !== 51)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],
