@@ -3256,7 +3256,10 @@ E.upload = function () {
                                     ['div', B.ev ({style: style ({float: 'left', width: 'inherit', 'margin-right': 10}), class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'tag', true]), [
                                        ['a', {class: 'upload-box__upload-button button button--two'}, 'Add tag'],
                                     ]],
-                                    ['div', B.ev ({style: style ({float: 'left', width: 'inherit'}), class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'start']), [
+                                    ['div', B.ev ({style: style ({float: 'left', width: 'inherit'}), class: 'upload-box__section upload-box__section--buttons'}, [
+                                       ['onclick', 'upload', 'tag', true],
+                                       ['onclick', 'upload', 'start']
+                                    ]), [
                                        ['a', {class: 'upload-box__upload-button button button--one'}, 'Start upload'],
                                     ]],
                                  ]],

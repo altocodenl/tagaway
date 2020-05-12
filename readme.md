@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Bug multiselect.
-- If text on tag box on upload, use it as tag.
 
 - Pics
    - * Query based on actual query.
