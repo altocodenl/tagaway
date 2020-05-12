@@ -39,12 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha remaining
 
-- Bug multiselect.
-
 - Pics
+   - Bug multiselect.
    - * Query based on actual query.
-   - * Download a single picture.
-   - * Download multiple pictures as one zip file.
    - UI team changes (Ruben):
       - Fix scroll height when having many tags on tag search.
       - Fix z-index of dropdown.
@@ -89,6 +86,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
    - When untagging, if no pictures left with that tag, remove tag from query.
    - Fill pictures grid until screen is full or no pictures remain.
+   - Download a single picture.
+   - Download multiple pictures as one zip file.
 
 - Open
    - Open picture and trigger fullscreen.
