@@ -345,7 +345,7 @@ var main = [
    ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq (rs.body, {total: 0, pics: []})) return clog ('Invalid payload');
+      if (! eq (rs.body, {total: 0, pics: [], tags: []})) return clog ('Invalid payload');
       return true;
    }],
    ['upload invalid payload #1', 'post', 'upload', {}, '', 400],
@@ -372,6 +372,7 @@ var main = [
    ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (! teishi.eq (rs.body.tags, ['2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       s.vids = dale.go (rs.body.pics, function (pic) {return pic.id});
       var vid1 = rs.body.pics [0], vid2 = rs.body.pics [1];
@@ -494,7 +495,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200, function (s, rq, rs, next) {
       // Wait for S3 to delete the videos uploaded before and the image just uploaded
-      setTimeout (next, 8000);
+      setTimeout (next, 5000);
    }],
    ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
@@ -504,6 +505,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 1) return clog ('Invalid total count.');
+      if (! teishi.eq (rs.body.tags, ['2014'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       s.smallpic = teishi.copy (pic);
@@ -560,6 +562,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       if (pic.date !== H.getDate ('2018-06-03T00:00:00.000Z')) return clog ('Invalid pic.date');
@@ -587,6 +590,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 3) return clog ('Invalid total count.');
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
@@ -621,6 +625,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 4) return clog ('Invalid total count.');
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
@@ -662,6 +667,7 @@ var main = [
       return {ids: [s.rotateid], deg: -90};
    }, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
       var pic = rs.body.pics [0];
       delete pic.id;
       if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
@@ -704,6 +710,7 @@ var main = [
       {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018', 'beach', 'dunkerque'])) return clog ('Invalid tags.');
       var pic = rs.body.pics [0];
       if (pic.date !== H.getDate ('2018:03:26 13:23:34')) return clog ('GPS timestamp wasn\'t ignored.');
       if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Wrong year tag.');
@@ -867,6 +874,7 @@ var main = [
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', 'foo'])) return clog ('Invalid tags.');
       if (rs.body.total !== 1) return clog ('Searching by tag does not work.');
       if (! eq (rs.body.pics [0].tags, ['2014', 'foo'])) return clog ('Invalid tags');
       return true;
@@ -883,6 +891,7 @@ var main = [
       return true;
    }],
    ['get tagged pic after untagging', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
       if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
@@ -894,6 +903,7 @@ var main = [
       return true;
    }],
    ['get tagged pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018', 'bla'])) return clog ('Invalid tags.');
       if (! eq (rs.body.pics [0].tags, ['2018', 'bla'])) return clog ('Invalid tags');
       if (! eq (rs.body.pics [3].tags, ['2014', 'bla'])) return clog ('Invalid tags');
       return true;
@@ -914,6 +924,7 @@ var main = [
       return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id], del: true};
    }, 200],
    ['get tagged pics after untagging', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
       if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
@@ -1001,6 +1012,7 @@ var main = [
       return true;
    }],
    ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2018', 'bla'])) return clog ('Invalid tags.');
       if (rs.body.pics.length !== 2) return clog ('user2 should have two pics with this tag.');
       return true;
    }],
@@ -1233,7 +1245,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 50 && rs.body.logs.length !== 51)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 51 && rs.body.logs.length !== 52)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],

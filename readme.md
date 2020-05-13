@@ -40,8 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha remaining
 
 - Pics
-   - Bug multiselect.
-   - * Query based on actual query.
+   - Bug multiselect (check `State.shift`).
    - UI team changes (Ruben):
       - Fix scroll height when having many tags on tag search.
       - Fix z-index of dropdown.
@@ -88,6 +87,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fill pictures grid until screen is full or no pictures remain.
    - Download a single picture.
    - Download multiple pictures as one zip file.
+   - Only show tags relevant to the current query.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -351,9 +351,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `untagged` can be included on `body.tags` to retrieve untagged pictures.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
-   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT}`.
+   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...]}`.
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
+      - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
 
 `POST /share`
    - Body must be of the form `{tag: STRING, who: ID, del: BOOLEAN|UNDEFINED}`.
@@ -570,7 +571,7 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.tags`, `Data.pics`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
+   - Depends on: `Data.tags`, `Data.pics`, `Data.queryTags`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
    - Events:
       - `click -> rem State.selected`
       - `click -> set State.query.tags []|['untagged']`
@@ -667,7 +668,7 @@ Used by giz:
    3. `change State.query`: sets `State.npics` and invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `Data.pics` (and optionally `State.open` if it's already present) after invoking `post query`.
+   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `Data.pics` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
@@ -717,6 +718,7 @@ Used by giz:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
+   - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
 

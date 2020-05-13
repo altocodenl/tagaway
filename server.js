@@ -1718,6 +1718,11 @@ var routes = [
                return qid + ':' + tag;
             }).concat (ytags.length ? qid : []));
 
+            // We get all the pictures without regard to the year tags, for the purposes of getting tags that match with the query.
+            multi [allmode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
+               return qid + ':' + tag;
+            }).concat (ytags.length ? qid : []));
+
             if (ytags.length) multi.del (qid);
             dale.go (tags, function (users, tag) {
                multi.del (qid + ':' + tag);
@@ -1726,7 +1731,8 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            var pics = s.last [dale.keys (tags).length + (ytags.length ? 1 : 0)];
+            var pics  = s.last [dale.keys (tags).length + (ytags.length ? 1 : 0)];
+            s.tagpics = s.last [dale.keys (tags).length + (ytags.length ? 1 : 0) + 1];
             var multi = redis.multi ();
             dale.go (pics, function (pic) {
                multi.hgetall ('pic:' + pic);
@@ -1735,7 +1741,7 @@ var routes = [
          },
          function (s) {
             var pics = s.last;
-            if (pics.length === 0) return reply (rs, 200, {total: 0, pics: []});
+            if (pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
             var output = {pics: []};
 
             var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
@@ -1776,10 +1782,22 @@ var routes = [
             dale.go (output.pics, function (pic) {
                multi.smembers ('pict:' + pic.id);
             });
+            dale.go (s.tagpics, function (pic) {
+               multi.smembers ('pict:' + pic);
+            });
             s.output = output;
             mexec (s, multi);
          },
          function (s) {
+            // for years, we'd need to query outside of them and show all possible years
+            var tags = {};
+            dale.go (s.last, function (v, k) {
+               if (k < s.output.pics.length) return;
+               dale.go (v, function (v2) {
+                  tags [v2] = true;
+               });
+            });
+            s.output.tags = dale.keys (tags);
             dale.go (s.output.pics, function (pic, k) {
                s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined};
             });

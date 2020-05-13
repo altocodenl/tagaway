@@ -1870,6 +1870,8 @@ dale.do ([
 
       B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: 10000}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+
+         B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
          var selected = dale.obj (rs.body.pics, function (pic) {
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
@@ -2723,54 +2725,55 @@ E.pics = function () {
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
                            filter = (filter || '').trim ();
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
-                              var taglist = dale.fil (tags, undefined, function (v, tag) {
-                                 if (tag === 'all' || tag === 'untagged') return;
-                                 if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
-                                 if (! filter) return tag;
-                                 if (tag.match (H.makeRegex (filter))) return tag;
-                              }).sort (function (a, b) {
-                                 if (H.isYear (a) && ! H.isYear (b)) return -1;
-                                 if (H.isYear (b) && ! H.isYear (a)) return 1;
-                                 if (H.isYear (a) && H.isYear (b)) return a - b;
+                              return B.view (['Data', 'queryTags'], function (x, tags) {
+                                 var taglist = dale.fil (tags, undefined, function (tag) {
+                                    if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
+                                    if (! filter) return tag;
+                                    if (tag.match (H.makeRegex (filter))) return tag;
+                                 }).sort (function (a, b) {
+                                    if (H.isYear (a) && ! H.isYear (b)) return -1;
+                                    if (H.isYear (b) && ! H.isYear (a)) return 1;
+                                    if (H.isYear (a) && H.isYear (b)) return a - b;
 
-                                 var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
-                                 var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
-                                 if (aSelected !== bSelected) return aSelected ? -1 : 1;
-                                 return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
-                              });
-                              var all      = teishi.eq (selected, []);
-                              var untagged = teishi.eq (selected, ['untagged']);
-                              var makeTag  = function (which) {
-                                 if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : ''), tag = 'All pictures', action = ['onclick', 'set', ['State', 'query', 'tags'], []];
-                                 else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']];
-                                 else if (H.isYear (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--bolded' : '') + ' tag--time', tag = which, action = ['onclick', 'toggle', 'tag', tag];
-                                 else                           var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
+                                    var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
+                                    var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
+                                    if (aSelected !== bSelected) return aSelected ? -1 : 1;
+                                    return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                 });
+                                 var all      = teishi.eq (selected, []);
+                                 var untagged = teishi.eq (selected, ['untagged']);
+                                 var makeTag  = function (which) {
+                                    if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : ''), tag = 'All pictures', action = ['onclick', 'set', ['State', 'query', 'tags'], []];
+                                    else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']];
+                                    else if (H.isYear (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--bolded' : '') + ' tag--time', tag = which, action = ['onclick', 'toggle', 'tag', tag];
+                                    else                           var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
 
-                                 // TODO v2: add inline SVG
-                                 return ['li', B.ev ({class: Class, opaque: true}, action), [
-                                    ['span', {class: 'tag__title'}, tag],
-                                    // TODO: why must specify height so it looks exactly the same as markup?
-                                    ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                       ['div', {class: 'tag-actions'}, [
-                                          // TODO v2: add inline SVG
-                                          ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
-                                          // TODO v2: add inline SVG
-                                          ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
-                                          // TODO v2: add inline SVG
-                                          ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
-                                          // TODO v2: add inline SVG
-                                          ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
-                                          // TODO v2: add inline SVG
-                                          ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                    // TODO v2: add inline SVG
+                                    return ['li', B.ev ({class: Class, opaque: true}, action), [
+                                       ['span', {class: 'tag__title'}, tag],
+                                       // TODO: why must specify height so it looks exactly the same as markup?
+                                       ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                          ['div', {class: 'tag-actions'}, [
+                                             // TODO v2: add inline SVG
+                                             ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
+                                             // TODO v2: add inline SVG
+                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
+                                             // TODO v2: add inline SVG
+                                             ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
+                                             // TODO v2: add inline SVG
+                                             ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
+                                             // TODO v2: add inline SVG
+                                             ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                          ]]
                                        ]]
-                                    ]]
-                                 ]];
-                              }
-                              return [
-                                 makeTag ('all'),
-                                 makeTag ('untagged'),
-                                 dale.do (taglist, makeTag)
-                              ];
+                                    ]];
+                                 }
+                                 return [
+                                    makeTag ('all'),
+                                    makeTag ('untagged'),
+                                    dale.do (taglist, makeTag)
+                                 ];
+                              });
                            });
                         }),
                      ]],
