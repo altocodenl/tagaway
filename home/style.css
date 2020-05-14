@@ -101,7 +101,8 @@ font-weight: 600;
 	padding-top: 2%;
 }
 .demo {
-  background-color: #f2f2f2;
+  background-color: #f7f7f7;
+  /* before it was #f2f2f2 */
 }
 .demo img {
   max-width: 100%;
@@ -109,6 +110,12 @@ font-weight: 600;
   display: block;
   margin-left: auto;
   margin-right: auto;
+}
+
+@media screen and (min-width: 1024px){
+  .demo img {
+    width: 50%;
+  }
 }
 .log-in-button {
 	padding-top: 3%;
@@ -122,6 +129,22 @@ font-weight: 600;
   justify-content: center;
   display: flex;
 }
+.log-in-button-desktop {
+  padding-top: 0%;
+  padding-bottom: 2%;
+  justify-content: center;
+  display: none;
+}
+
+@media screen and (min-width: 1024px) {
+  .log-in-button {
+    display: none;
+  }
+  .log-in-button-desktop {
+    display: flex;
+  }
+}
+
 .button {
   outline: 0;
   padding-left: 48px;
