@@ -289,6 +289,7 @@ th, td {
 .table-heading {
   font-weight: bold;
   background-color: #5b6eff;
+  color: #fff;
   font-size: 100%;
 }
 
@@ -308,6 +309,48 @@ ul {
 
 td {
    padding: 1%;
+}
+
+i {
+  position: relative;
+  display: inline-block;
+  color: #484848;
+}
+.td-comment {
+  position: relative;
+  display: inline-block;
+}
+
+.td-comment .hover-text {
+  visibility: hidden;
+  width: 120px;
+  background-color: #5b6eff;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 150%;
+  left: 50%;
+  margin-left: -60px;
+  transition: all cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.td-comment .hover-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #5b6eff transparent transparent transparent;
+}
+
+i:hover + .td-comment .hover-text{
+  visibility: visible;
 }
 
 @media screen and (max-width: 767px) {
