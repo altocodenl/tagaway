@@ -174,16 +174,59 @@ font-weight: 600;
   padding-bottom: 2%
 }
 .description {
-	width: 800px;
+	height: 100%;
+  width: 100%;
 	display: block;
-    margin-left: auto;
-    margin-right: auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-@media screen and (max-width: 767px) {
+.desktop-description {
+  width: 900px;
+  display: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.desktop-description-table {
+  border-collapse: collapse;
+  border-style: hidden;
+  margin-bottom: 5%;
+}
+
+.desktop-description-table-2 {
+  border-collapse: collapse;
+  border-style: hidden; 
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.table-description-header {
+  font-weight: 600;
+  font-size: 22px;
+}
+
+.table-description {
+  margin-left: 10px;
+  margin-right: 10px;
+  font-size: 16px;
+  vertical-align: text-top;
+}
+
+.table-description-header,.table-images, .table-description {
+  border-style: hidden;
+  text-align: center;
+  width: 300px;
+}
+
+
+
+@media screen and (min-width: 1024px){
   .description {
-    height: 100%;
-    width: 100%;
+    display: none;
+  }
+  .desktop-description {
+    display: block;
   }
 }
 
