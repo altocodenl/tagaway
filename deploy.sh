@@ -26,7 +26,7 @@ if [ "$2" == "admin" ] ; then
 fi
 
 if [ "$2" == "home" ] ; then
-   scp home/* $HOST:$FOLDER/home
+   scp -r home/* $HOST:$FOLDER/home
    exit 0
 fi
 

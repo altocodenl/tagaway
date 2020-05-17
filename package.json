@@ -9,6 +9,7 @@
       "hitit":   "1.2.7",
       "lith":    "6.0.4",
       "redis":   "3.0.2",
+      "redmin":  "0.1.1",
       "redport": "0.1.2",
       "teishi":  "5.0.2",
       "archiver":                 "4.0.1",

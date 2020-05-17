@@ -358,12 +358,19 @@ var main = [
       {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 200],
+   ]}, 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
+      s.uploadIds = [rs.body.id];
+      return true;
+   }],
    ['upload video #2', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 200],
+   ]}, 200, function (s, rq, rs) {
+      s.uploadIds [1] = rs.body.id;
+      return true;
+   }],
    ['upload repeated video', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -376,6 +383,7 @@ var main = [
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       s.vids = dale.go (rs.body.pics, function (pic) {return pic.id});
       var vid1 = rs.body.pics [0], vid2 = rs.body.pics [1];
+      if (vid1.id !== s.uploadIds [0] || vid2.id !== s.uploadIds [1]) return clog ('Id mismatch.');
       if (type (vid1.id) !== 'string' || type (vid1.t200) !== 'string' || type (vid1.t900) !== 'string') return clog ('Invalid id, t200 or t900 in vid #1.');
       if (type (vid2.id) !== 'string' || type (vid2.t200) !== 'string' || type (vid2.t900) !== 'string') return clog ('Invalid id, t200 or t900 in vid #2.');
       if (type (vid1.date)   !== 'integer') return clog ('Invalid vid1.date.');
@@ -495,7 +503,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200, function (s, rq, rs, next) {
       // Wait for S3 to delete the videos uploaded before and the image just uploaded
-      setTimeout (next, 5000);
+      setTimeout (next, 8000);
    }],
    ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
@@ -547,7 +555,7 @@ var main = [
       if (rs.body.usage.fsused !== 3370 + 22644 + 8694) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 0 && rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
       // Wait for S3
-      setTimeout (next, 3000);
+      setTimeout (next, 5000);
    }],
    ['upload medium picture with no metadata', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'medium-nometa.jpg'},
@@ -717,7 +725,7 @@ var main = [
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
       // Wait for S3
-      setTimeout (next, 8000);
+      setTimeout (next, 10000);
    }],
    ['get public stats before deleting pictures', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
       if (! teishi.eq (rs.body, {byfs: 6385276, bys3: 6128443, pics: 5, vids: 0, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');

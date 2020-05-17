@@ -48,10 +48,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Fix rotations in thumbnails of uploads.
    - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
-   - Fix number of pictures in ongoing upload.
-   - * Show number of duplicates skipped.
    - * Show errors.
-   - * Show ETA in ongoing upload.
    - Document element, listeners & store.
    - UI team changes (Ruben):
       - Upload flow
@@ -145,6 +142,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upload
    - Retry on error.
+   - Show estimated time remaining in ongoing uploads.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Ignore deleted pictures flag.
 
@@ -316,7 +314,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - The file uploaded must be `.png` or `.jpg` (otherwise, 400 with body `{error: 'format'}`).
    - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
-   - If the upload is successful, a 200 is returned.
+   - If the upload is successful, a 200 is returned with body `{id: ID}`, where `ID` is the ID of the picture just uploaded.
 
 - `POST /delete`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
@@ -692,6 +690,8 @@ Used by giz:
 
 5. Upload
    1. `drop files`: if `State.page` is upload, access dropped files or folders and put them on the upload file input.
+
+6. Account
 
 ### Store
 

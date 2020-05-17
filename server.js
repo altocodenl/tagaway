@@ -24,6 +24,8 @@ var teishi = require ('teishi');
 var lith   = require ('lith');
 var cicek  = require ('cicek');
 var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
+var redmin = require ('redmin');
+redmin.redis = redis;
 var giz    = require ('giz');
 var hitit  = require ('hitit');
 var a      = require ('./lib/astack.js');
@@ -405,7 +407,7 @@ H.s3queue = function (s, op, username, key, path) {
    ]);
 }
 
-// Up to 3500 simultaneous operations (actually, per second, but simultaneous will do, since it's more conservative and easier to measure).
+// Up to 3500 simultaneous operations (actually, per second, but simultaneous will do, since it's more conservative and easier to measure). But it's conservative only if the greatest share of operations are over one second in length.
 // https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
 // Queue items are processed in order with regards to the *start* of it, not the whole thing (otherwise, we would wait for each to be done - for implementing this, we can set LIMIT to 1).
 H.s3exec = function () {
@@ -997,6 +999,8 @@ var routes = [
 
    ['all', '*', function (rq, rs) {
 
+      if (rq.url.match (/^\/redmin/) && ! ENV) return rs.next ();
+
       if (rq.method === 'post' && rq.url === '/error') return rs.next ();
       if (rq.method === 'get'  && rq.url === '/stats') return rs.next ();
       if (rq.method === 'post' && rq.url === '/admin/invites') {
@@ -1017,7 +1021,7 @@ var routes = [
          rs.log.username = user.username;
          rq.user         = user;
 
-         if (rq.url.match (/^\/admin/)  && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
+         if ((rq.url.match (/^\/admin/) || rq.url.match (/^\/redmin/)) && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
 
          astop (rs, [
             [H.stat.w, [
@@ -1042,6 +1046,7 @@ var routes = [
 
    ['post', '*', function (rq, rs) {
 
+      if (rq.url.match (/^\/redmin/)) return rs.next ();
       if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
 
       var ctype = rq.headers ['content-type'] || '';
@@ -1469,7 +1474,7 @@ var routes = [
                if (k > 0) return ['flow', 'ms-upload-' + item [0], item [1] - perf [k - 1] [1]];
             })));
          },
-         [reply, rs, 200],
+         [reply, rs, 200, {id: pic.id}],
       ]);
    }],
 
@@ -1966,6 +1971,18 @@ var routes = [
 
    // *** ADMIN AREA ***
 
+   // *** REDMIN ***
+
+   ['get', 'redmin', reply, redmin.html ()],
+   ['post', 'redmin', function (rq, rs) {
+      redmin.api (rq.body, function (error, data) {
+         if (error) return cicek.reply (rs, 500, {error: error});
+         cicek.reply (rs, 200, data);
+      });
+   }],
+   ['get', 'redmin/client.js',    cicek.file, 'node_modules/redmin/client.js'],
+   ['get', 'redmin/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
+
    // *** ADMIN: INVITES ***
 
    ['get', 'admin/invites', function (rq, rs) {
@@ -2059,8 +2076,13 @@ cicek.apres = function (rs) {
    ];
 
    if (rs.log.code >= 400) {
-      if (['/lib/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) === -1) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       logs.push (['flow', 'rq-bad', 1]);
+      var report = function () {
+         if (rs.log.code === 404 && rs.log.url.match (/^\/thumbof/)) return false;
+         if (['/lib/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
+         return true;
+      }
+      if (report ()) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
    }
    else {
       logs.push (['flow', 'rq-all', 1]);

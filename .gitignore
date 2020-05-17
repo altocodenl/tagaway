@@ -1,3 +1,4 @@
 secret.js
 node_modules
 *.swp
+.DS_Store
