@@ -624,7 +624,10 @@ var main = [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 200],
+   ]}, 200, function (s, rq, rs) {
+      if (rs.body.deg !== 90) return clog ('Invalid body.deg');
+      return true;
+   }],
    ['check that automatic rotation is on the upload log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       var lastLog = rs.body.logs [0];
       if (lastLog.deg !== 90) return clog ('No `deg` field on autorotated picture.');

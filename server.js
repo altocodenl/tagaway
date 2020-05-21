@@ -1474,7 +1474,9 @@ var routes = [
                if (k > 0) return ['flow', 'ms-upload-' + item [0], item [1] - perf [k - 1] [1]];
             })));
          },
-         [reply, rs, 200, {id: pic.id}],
+         function (s) {
+            reply (rs, 200, {id: pic.id, deg: pic.deg});
+         }
       ]);
    }],
 

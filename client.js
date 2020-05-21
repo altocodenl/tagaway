@@ -13,7 +13,7 @@ lith.css.style = function (attributes, prod) {
    return result === false ? result : result.slice (1, -1);
 }
 
-B.perflogs = true;
+// B.perflogs = true;
 
 // *** SETUP ***
 
@@ -2150,21 +2150,25 @@ dale.do ([
          f.append ('uid', file.uid);
          f.append ('pic', file.file);
          if (file.tags) f.append ('tags', JSON.stringify (file.tags));
-         B.set (['State', 'upload', 'summary', file.uid, 'tags'], file.tags || []);
+         B.do (x, 'set', ['State', 'upload', 'summary', file.uid, 'tags'], file.tags || []);
          B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
             dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
                if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
             });
+            var lastUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
+               if (v.id === file.uid) return v;
+            });
+            if (lastUpload) B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
             if (error) {
                if (error.status === 409) {
                   if (error.responseText.match ('repeated')) return B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'repeat'], file.file.name);
                   B.do (x, 'set', ['State', 'upload', 'queue'], []);
                   return B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
                }
-               B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'error'], file.file.name);
+               B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'error'], {name: file.file.name, error: error.responseText});
                return B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
-            B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'ok'], rs.body.id);
+            B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'ok'], {id: rs.body.id, deg: rs.body.deg});
             B.set (['State', 'upload', 'done', file.uid, 'tags'], file.tags || []);
             B.do (x, 'query', 'account');
             B.do (x, 'query', 'tags');
@@ -3132,7 +3136,7 @@ E.open = function () {
                '/',
                ['span', {class: 'fullscreen__count-total'}, pics.length],
             ]],
-            H.if (next, ['img', {src: H.path (next, true), style: style ({display: 'none'})}])
+            next ? ['img', {src: H.path (next, true), style: style ({display: 'none'})}] : [],
          ];
       });
    });
@@ -3284,10 +3288,11 @@ E.upload = function () {
                               ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                                  // TODO v2: add inline SVG
                                  (! upload.ok || ! upload.ok [0]) ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                    'background-image': 'url(thumbof/' + teishi.last (upload.ok) + ')',
+                                    'background-image': 'url(thumbof/' + teishi.last (upload.ok).id + ')',
                                     'background-position': 'center',
                                     'background-repeat': 'no-repeat',
                                     'background-size': 'cover',
+                                    transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [teishi.last (upload.ok).deg],
                                  })}],
                                  ['div', {class: 'upload-box__main'}, [
                                     ['div', {class: 'upload-box__section'}, [
@@ -3298,7 +3303,16 @@ E.upload = function () {
                                           ['span', {class: 'upload-progress__amount'}, pending [id] + (! upload.ok ? 0 : upload.ok.length)],
                                           ['LITERAL', '&nbsp'],
                                           ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
-                                          H.if (upload.repeat, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeat || []).length + ' repeated)']),
+                                          H.if (upload.repeat, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeat || []).length + ' repeated) ']),
+                                       ]],
+                                       ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
+                                          ['style', ['.no-svg svg', {display: 'none'}]],
+                                          H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
+                                             'Errors:',
+                                             ['ul', dale.do (upload.error, function (e) {
+                                                return ['li', [e.name, ': ', e.error.slice (0, 100), e.error.length > 100 ? '...' : '']];
+                                             })],
+                                          ]]),
                                        ]],
                                        // UPLOAD BAR
                                        ['div', {class: 'progress-bar'}, [
@@ -3344,12 +3358,13 @@ E.upload = function () {
                            if (! pending [file.uid]) pending [file.uid] = 0;
                            pending [file.uid]++;
                         });
-                        var serverUploads = {};
+                        var serverUploads = {}, rotations = {};
                         dale.do (account ? account.logs : [], function (log) {
                            if (log.a !== 'upl') return;
                            var id = log.uid;
                            if (! serverUploads [log.uid]) serverUploads [log.uid] = {ok: [], t: 0, tags: log.tags};
                            serverUploads [id].ok.push (log.id);
+                           if (log.deg) rotations [log.id] = log.deg;
                            // Get most recent date
                            if (serverUploads [id].t < log.t) serverUploads [id].t = log.t;
                         });
@@ -3366,17 +3381,21 @@ E.upload = function () {
                            if (serverUpload && serverUpload.t < Date.now () - 1000 * 60 * 60) return;
                            var ok = teishi.c (upload.ok) || [];
                            dale.do (serverUpload.ok, function (id) {
-                              if (ok.indexOf (id) === -1) ok.push (id);
+                              var exists = dale.stopNot (ok, undefined, function (item) {
+                                 if (item.id === id) return id;
+                              });
+                              if (! exists) ok.push ({id: id, deg: rotations [id]});
                            });
 
                            return ['li', {class: 'recent-uploads__list-item'}, [
                               // UPLOAD BOX
                               ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                                  ! ok [0] ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                    'background-image': 'url(thumbof/' + teishi.last (ok) + ')',
+                                    'background-image': 'url(thumbof/' + teishi.last (ok).id + ')',
                                     'background-position': 'center',
                                     'background-repeat': 'no-repeat',
                                     'background-size': 'cover',
+                                    transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [rotations [teishi.last (ok).id]],
                                  })}],
                                  ['div', {class: 'upload-box__main'}, [
                                     // UPLOAD BOX SECTION
@@ -3387,8 +3406,18 @@ E.upload = function () {
                                           ['LITERAL', '&nbsp'],
                                           ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
                                           ['LITERAL', '&nbsp'],
-                                          H.if (upload.repeat, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeat || []).length + ' repeated)']),
+                                          H.if (upload.repeat, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeat || []).length + ' repeated) ']),
                                           H.if (serverUpload.t, ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - serverUpload.t) / 60000) + ' minutes ago)']),
+                                          ['br'],
+                                       ]],
+                                       ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
+                                          ['style', ['.no-svg svg', {display: 'none'}]],
+                                          H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
+                                             'Errors:',
+                                             ['ul', dale.do (upload.error, function (e) {
+                                                return ['li', [e.name, ': ', e.error.slice (0, 100), e.error.length > 100 ? '...' : '']];
+                                             })],
+                                          ]]),
                                        ]],
                                     ]],
                                     ['div', {class: 'upload-box__section'}, [

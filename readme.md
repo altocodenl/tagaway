@@ -46,9 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Fix z-index of dropdown.
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
-   - Fix rotations in thumbnails of uploads.
-   - Snackbar when pics are finished uploading, "your pics have been uploaded, you can find them in 'View Pictures'
-   - * Show errors.
    - Document element, listeners & store.
    - UI team changes (Ruben):
       - Upload flow
@@ -117,6 +114,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Show thumbnail of last picture on each upload.
    - Cancel current upload.
    - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
+   - Snackbar with success message when pics are finished uploading.
+   - Show errors.
 
 - Account & payment
    - Login/logout.
@@ -314,7 +313,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - The file uploaded must be `.png` or `.jpg` (otherwise, 400 with body `{error: 'format'}`).
    - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
-   - If the upload is successful, a 200 is returned with body `{id: ID}`, where `ID` is the ID of the picture just uploaded.
+   - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the picture just uploaded and `deg` is the rotation automatically applied to the picture based on its metadata.
 
 - `POST /delete`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
