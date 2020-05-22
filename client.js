@@ -2169,7 +2169,6 @@ dale.do ([
                return B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
             B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'ok'], {id: rs.body.id, deg: rs.body.deg});
-            B.set (['State', 'upload', 'done', file.uid, 'tags'], file.tags || []);
             B.do (x, 'query', 'account');
             B.do (x, 'query', 'tags');
             // If we're back in the pics page, refresh the query after each successful upload.

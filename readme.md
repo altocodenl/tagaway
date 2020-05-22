@@ -46,7 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Fix z-index of dropdown.
       - **Discuss**: When clicking on no man's land, unselect?
 - Upload
-   - Document element, listeners & store.
    - UI team changes (Ruben):
       - Upload flow
          - Starting state: area from dropdown & button for files & button for folder upload.
@@ -584,9 +583,15 @@ Used by giz:
       - `input -> set State.filter`
       - `click -> goto tag`
 2. `E.upload`
-   - Depends on: `Data.account`, `State.currentUpload`.
+   - Depends on: `State.upload.summary`, `State.upload.new`, `Data.tags`, `State.upload.tag`, `State.upload.queue`
    - Events:
-      - `click -> upload`
+      - `onchange -> upload files|folder`
+      - `onclick -> rem State.upload.new`
+      - `oninput -> set State.upload.tag`
+      - `onclick -> upload tag`
+      - `onclick -> rem State.upload.new.tags.INDEX`
+      - `onclick -> upload start`
+      - `onclick -> upload cancel`
 3. `E.share`
 4. `E.tags`
 5. Auth:
@@ -688,9 +693,22 @@ Used by giz:
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
 
 5. Upload
-   1. `drop files`: if `State.page` is upload, access dropped files or folders and put them on the upload file input.
-
+   1. `change State.page`: if `State.page` is `upload`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
+   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`.
+   3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
+   4. `upload start`: adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and `change State.upload.queue`.
+   5. `upload cancel`: has `uid` as its first argument; finds all the files on `State.upload.queue` with `uid`, filters them out and updates `State.upload.queue`.
+   6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
+   7. `change State.upload.queue`:
+      - Sets `State.upload.summary.UID.tags`.
+      - Invokes `post upload`.
+      - Removes an element from `State.upload.queue`.
+      - Conditionally invokes `snackbar` on error; also on success of entire upload.
+      - Adds an item to either `State.upload.summary.UID.ok`, `State.upload.summary.UID.error` or `State.upload.summary.UID.repeat`.
+      - If query is successful, invokes `query account` and `query tags`.
+      - If query is successful and `State.page` is `pics`, invokes `query pics`.
 6. Account
+   1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`.
 
 ### Store
 
@@ -709,9 +727,10 @@ Used by giz:
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
    - `upload`:
-      - `new`: {files: [...], tags: [...]|UNDEFINED}
+      - `new`: {format: ['FILENAME', ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
+      - `summary`: {ok: [{id: ID, deg: 90|-90|180|undefined}, ...]|UNDEFINED, error: {name: STRING, error: STRING}|UNDEFINED, repeat: [FILENAME, ...]|UNDEFINED}
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
@@ -735,7 +754,7 @@ Only things that differ from client are noted.
    - Events:
       - `click -> create invite`
       - `click -> delete invite`
-      - `change -> set State.newInvite.*`
+      - `change -> set State.newInvite.ID`
       - `click -> del State.newInvite`
 
 ### Listeners
