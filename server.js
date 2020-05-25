@@ -654,6 +654,15 @@ H.stat.r = function (s) {
 
 var routes = [
 
+   // *** UPTIME ROBOT ***
+
+   ['head', '*', function (rq, rs) {
+      redis.info (function (error) {
+         if (error) reply (rs, 500);
+         reply (rs, ['/home', '/stats'].indexOf (rq.url) !== -1 ? 200 : 404);
+      });
+   }],
+
    // *** STATIC ASSETS ***
 
    ['get', 'home/', cicek.file, 'home/index.html'],
