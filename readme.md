@@ -37,10 +37,33 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
+### Fixes & small improvements
+
+- Pics
+   - Filter: search for tag -> filter matching tags (if there's tags on the query already)
+   - Bug when tagging an untagged picture, attach tag/untag.
+   - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
+   - Select all should work together with load on scroll.
+   - dropdown: "upload" -> "recently uploaded"
+   - Remove eye next to "view pictures"
+- Upload
+   - Snackbar confirms upload even when pics are still uploading
+   - Sort uploads by start, not end, also when there are no oks.
+   - "0 pictures uploaded phantom" recent upload
+
+### Todo beta now
+
+- Geotagging enable/disable.
+- Import from GDrive/Dropbox.
+   - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
+   - Import stops if: 1) API error; 2) space limit.
+   - Email when import done or stopped.
+- Paid accounts.
+- Share.
+
 ### Todo alpha remaining
 
 - Pics
-   - Bug multiselect (check `State.shift`).
    - UI team changes (Ruben):
       - Fix scroll height when having many tags on tag search.
       - Fix z-index of dropdown.
@@ -186,7 +209,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pics
    - Hidden tags.
-   - Enable GPS detection.
    - Set date manually.
    - Filters.
    - Themes for the interface.
