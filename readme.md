@@ -778,6 +778,9 @@ Only things that differ from client are noted.
       - `click -> delete invite`
       - `change -> set State.newInvite.ID`
       - `click -> del State.newInvite`
+3. `E.deploy`
+   - Events:
+      - `click -> deploy client`
 
 ### Listeners
 
@@ -785,7 +788,10 @@ Only things that differ from client are noted.
    1. `retrieve invites`: invokes `get admin/invites`.
    2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites` and `rem State.newInvite`, otherwise it invokes `snackbar`.
    3. `delete invite`: invokes `delete admin/invites/EMAIL`; if successful, invokes `retrieve invites`, otherwise it invokes `snackbar`.
-   2. `change State.page`: if current page is `invites` and there's no `Data.invites`, it invokes `retrieve invites`.
+   4. `change State.page`: if current page is `invites` and there's no `Data.invites`, it invokes `retrieve invites`.
+
+2. Deploy
+   1. `deploy client`: invokes `post admin/deploy` and `snackbar`.
 
 ### Store
 

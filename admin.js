@@ -14,8 +14,6 @@ lith.css.style = function (attributes, prod) {
    return result === false ? result : result.slice (1, -1);
 }
 
-B.perflogs = true;
-
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
@@ -305,7 +303,7 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['dashboard', 'invites'] : ['login'];
+      var allowed = logged ? ['dashboard', 'invites', 'deploy'] : ['login'];
 
       if (allowed.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
@@ -370,6 +368,20 @@ dale.do ([
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'invites') return;
       if (! B.get ('Data', 'invites')) B.do (x, 'retrieve', 'invites');
+   }],
+
+   // *** DEPLOY LISTENERS ***
+
+   ['deploy', 'client', function (x) {
+      var input = c ('#deploy');
+      if (! input.files.length) return B.do (x, 'snackbar', 'yellow', 'Please select a file.');
+      var f = new FormData ();
+      f.append ('file', input.files [0]);
+      B.do (x, 'post', 'admin/deploy', {}, f, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', error.responseText);
+         input.value = '';
+         B.do (x, 'snackbar', 'green', 'Deploy OK!');
+      });
    }],
 
 ], function (v) {
@@ -649,6 +661,8 @@ E.dashboard = function (x) {
       ['h2', {class: 'page-title'}, 'ac;pic admin'],
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/invites'}, 'Invites']],
+      ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/deploy'}, 'Deploy client']],
    ]];
 }
 
@@ -689,6 +703,20 @@ E.invites = function () {
          }),
       ]];
    });
+}
+
+// *** DEPLOY VIEW ***
+
+E.deploy = function () {
+   return ['div', {style: style ({padding: 60})}, [
+      ['h2', {class: 'page-title'}, 'Deploy client.js'],
+      ['br'], ['br'],
+      ['form', {onsubmit: 'event.preventDefault ()'}, [
+         ['input', {id: 'deploy', type: 'file', name: 'file'}],
+         ['br'], ['br'],
+         ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'deploy', 'client']), 'Update client.js'],
+      ]]
+   ]];
 }
 
 // *** STATS VIEW ***

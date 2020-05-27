@@ -13,8 +13,6 @@ lith.css.style = function (attributes, prod) {
    return result === false ? result : result.slice (1, -1);
 }
 
-// B.perflogs = true;
-
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
@@ -1715,7 +1713,7 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['pics', 'upload', 'share', 'tags'] : ['login', 'signup', 'recover', 'reset'];
+      var allowed = logged ? ['pics', 'upload', 'share', 'tags', 'import'] : ['login', 'signup', 'recover', 'reset'];
 
       if (allowed.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
@@ -2015,6 +2013,7 @@ dale.do ([
       if ((B.get ('Data', 'pics') || []).length <= B.get ('State', 'nPics')) return;
 
       B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
+      B.do (x, 'change', ['State', 'selected']);
    }],
    ['change', [], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -3453,6 +3452,14 @@ E.upload = function () {
             ]],
          ]]
       ]]
+   ]];
+}
+
+// *** IMPORT ELEMENT ***
+
+E.import = function () {
+   return ['div', [
+      ['h1', 'Import'],
    ]];
 }
 

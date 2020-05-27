@@ -2069,6 +2069,18 @@ var routes = [
       ]);
    }],
 
+   // *** ADMIN: DEPLOY CLIENT FROM ADMIN ***
+
+   ['post', 'admin/deploy', function (rq, rs) {
+
+      if (! rq.data.files || ! rq.data.files.file) return reply (rs, 400);
+
+      astop (rs, [
+         [a.make (fs.rename), rq.data.files.file, 'client.js'],
+         [reply, rs, 200]
+      ]);
+   }],
+
 ];
 
 // *** SERVER CONFIGURATION ***
