@@ -659,15 +659,11 @@ var routes = [
    ['head', '*', function (rq, rs) {
       redis.info (function (error) {
          if (error) reply (rs, 500);
-         reply (rs, ['/home', '/stats'].indexOf (rq.url) !== -1 ? 200 : 404);
+         reply (rs, ['/stats'].indexOf (rq.url) !== -1 ? 200 : 404);
       });
    }],
 
    // *** STATIC ASSETS ***
-
-   ['get', 'home/', cicek.file, 'home/index.html'],
-   ['get', 'homestyle.css', cicek.file, 'home/style.css'],
-   ['get', 'homeimages/(*)', cicek.file, ['home/images']],
 
    ['get', 'lib/murmurhash.js', cicek.file, 'node_modules/murmurhash/murmurhash.js'],
 
