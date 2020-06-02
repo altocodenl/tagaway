@@ -1794,7 +1794,7 @@ dale.do ([
       putSvg ('.logo__link', 'afterBegin', '<svg class="logo__img" enable-background="new 0 0 54 19" viewBox="0 0 54 19" xmlns="http://www.w3.org/2000/svg"><path d="m8.3 4.7v1.2c-.7-.9-1.8-1.5-3.3-1.5-2.6 0-4.8 2.3-4.8 5.3s2.3 5.3 4.9 5.3c1.5 0 2.5-.6 3.3-1.5v1.2h2.6v-10zm-2.8 7.8c-1.6 0-2.8-1.1-2.8-2.8s1.3-2.8 2.8-2.8 2.8 1.1 2.8 2.8-1.2 2.8-2.8 2.8zm12-.1c-1.5 0-2.7-1.1-2.7-2.7s1.1-2.7 2.7-2.7c1 0 1.9.5 2.3 1.3l2.2-1.3c-.8-1.5-2.5-2.6-4.5-2.6-3 0-5.3 2.3-5.3 5.3s2.2 5.3 5.3 5.3c2 0 3.7-1 4.5-2.6l-2.2-1.3c-.4.8-1.3 1.3-2.3 1.3zm7-8c-.9 0-1.7.8-1.7 1.7s.8 1.7 1.7 1.7 1.7-.8 1.7-1.7-.8-1.7-1.7-1.7zm0 7.2c-.9 0-1.7.8-1.7 1.7s.8 1.7 1.7 1.7 1.7-.8 1.7-1.7-.8-1.7-1.7-1.7zm9.3-7.2c-1.5 0-2.5.5-3.2 1.5v-1.2h-2.6v14h2.6v-5.2c.7.9 1.8 1.5 3.2 1.5 2.7 0 4.9-2.3 4.9-5.3s-2.2-5.3-4.9-5.3zm-.5 8.1c-1.6 0-2.8-1.1-2.8-2.8s1.2-2.8 2.8-2.8c1.5 0 2.7 1.1 2.7 2.8s-1.2 2.8-2.7 2.8zm7.9-12.2c-.9 0-1.6.7-1.6 1.6s.7 1.6 1.6 1.6 1.6-.7 1.6-1.6c0-.8-.7-1.6-1.6-1.6zm-1.2 4.4h2.6v10h-2.6zm11.5 6.4c-.4.8-1.3 1.3-2.3 1.3-1.5 0-2.7-1.1-2.7-2.7s1.1-2.7 2.7-2.7c1 0 1.9.5 2.3 1.3l2.2-1.3c-.8-1.5-2.5-2.6-4.5-2.6-3 0-5.3 2.3-5.3 5.3s2.2 5.3 5.3 5.3c2 0 3.7-1 4.5-2.6z" /></svg>');
       putSvg ('.account-menu__item', 'afterBegin', '<svg class="account-menu__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 2h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3zm0 1c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2z"/></svg>');
       putSvg ('.sidebar-search', 'beforeEnd', '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
-      putSvg ('.sidebar-header__filter-selected', 'afterBegin', '<svg class="sidebar-header__filter-selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+      //putSvg ('.sidebar-header__filter-selected', 'afterBegin', '<svg class="sidebar-header__filter-selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
       putSvg ('.tag--all-pictures', 'afterBegin', '<svg class="tag__icon tag__icon--all" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm0-6c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5zm-4.5-.5c0-.3-.2-.5-.5-.5h-1c-.3 0-.5.2-.5.5s.2.5.5.5h1c.3 0 .5-.2.5-.5zm10.5-3v-1c0-.3-.2-.5-.5-.5s-.5.2-.5.5v1h-2v-.5c0-.8-.6-1.5-1.3-1.5h-3.3c-.8 0-1.4.7-1.4 1.5v.5h-2.5c-1.9 0-3.5 1.6-3.5 3.5v5c0 1.9 1.6 3.5 3.5 3.5h11c1.9 0 3.5-1.6 3.5-3.5v-5c0-1.8-1.3-3.2-3-3.5zm-8-.5c0-.3.2-.5.3-.5h3.3c.2 0 .4.2.4.5v.5h-4zm10 9c0 1.4-1.1 2.5-2.5 2.5h-11c-1.4 0-2.5-1.1-2.5-2.5v-5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5z"/></svg>');
       putSvg ('.tag-actions__item--selected', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--selected tag-actions__selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
       putSvg ('.tag-actions__item--deselect', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--deselect" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>');
@@ -2885,12 +2885,12 @@ E.pics = function () {
                      ]],
                   ]],
                   // SIDEBAR SEARCH
-                  ['div', {class: 'sidebar__footer'}, [
-                     // TODO v2: add inline SVG
-                     B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
-                        return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
-                     }),
-                  ]],
+                  B.view (['State', 'query', 'tags'], {attrs: {class: 'sidebar__footer'}}, function (x, tags) {
+                     tags = tags || [];
+                     return B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
+                        return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
+                     });
+                  }),
                ]],
                // ORGANISE BAR
                B.view (['State', 'selected'], {tag: 'div', attrs: {class: 'organise-bar'}}, function (x, selected) {
@@ -2954,10 +2954,10 @@ E.pics = function () {
                                  B.view (['State', 'query'], {attrs: {class: 'dropdown'}}, function (x, query) {
                                     if (! query) return;
                                     return [
-                                       ['div', {class: 'dropdown__button'}, query.sort],
+                                       ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'recently uploaded' : query.sort],
                                        ['ul', {class: 'dropdown__list'}, [
                                           dale.do (['newest', 'oldest', 'upload'], function (sort) {
-                                             return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort];
+                                             return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort === 'upload' ? 'recently uploaded' : sort];
                                           })
                                        ]],
                                     ];
