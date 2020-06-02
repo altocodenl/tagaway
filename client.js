@@ -2154,10 +2154,10 @@ dale.do ([
             dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
                if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
             });
-            var lastUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
-               if (v.id === file.uid) return v;
+            var lastFromUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
+               if (v.uid === file.uid) return v;
             });
-            if (lastUpload) B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
+            if (lastFromUpload) B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
             if (error) {
                if (error.status === 409) {
                   if (error.responseText.match ('repeated')) return B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'repeat'], file.file.name);
@@ -3346,37 +3346,37 @@ E.upload = function () {
             // RECENT UPLOADS
             // TODO v2: merge three elements into one
             B.view (['State', 'upload', 'queue'], {attrs: {class: 'page-section'}}, function (x, queue) {
+               var pending = {};
+               dale.do (queue, function (file) {
+                  if (! pending [file.uid]) pending [file.uid] = 0;
+                  pending [file.uid]++;
+               });
                return B.view (['State', 'upload', 'summary'], {attrs: {class: 'recent-uploads'}}, function (x, uploads) {
                   uploads = uploads || {};
                   return [
                      ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
                      B.view (['Data', 'account'], {tag: 'ul', attrs: {class: 'recent-uploads__list'}}, function (x, account) {
-                        var pending = {};
-                        dale.do (queue, function (file) {
-                           if (! pending [file.uid]) pending [file.uid] = 0;
-                           pending [file.uid]++;
-                        });
                         var serverUploads = {}, rotations = {};
                         dale.do (account ? account.logs : [], function (log) {
                            if (log.a !== 'upl') return;
-                           var id = log.uid;
-                           if (! serverUploads [log.uid]) serverUploads [log.uid] = {ok: [], t: 0, tags: log.tags};
-                           serverUploads [id].ok.push (log.id);
+                           if (! serverUploads [log.uid]) serverUploads [log.uid] = {ok: [], tags: log.tags};
+                           serverUploads [log.uid].ok.push (log.id);
                            if (log.deg) rotations [log.id] = log.deg;
-                           // Get most recent date
-                           if (serverUploads [id].t < log.t) serverUploads [id].t = log.t;
                         });
-                        var allUploads = dale.keys (uploads).concat (dale.do (serverUploads, function (v, id) {
-                           if (! uploads [id]) return id;
-                        }));
-                        return dale.do (allUploads, function (id) {
+                        var allUploads = [];
+                        dale.do (dale.keys (uploads).concat (dale.keys (serverUploads)), function (k) {
+                           k = parseInt (k);
+                           // Don't repeat ids.
+                           if (allUploads.indexOf (k) !== -1) return;
                            // If pending files for this upload, ignore.
-                           if (pending [id]) return;
-                           var upload = uploads [id] || {};
-
-                           var serverUpload = serverUploads [id] || {};
+                           if (pending [k]) return;
                            // Show uploads from the last 60 minutes only.
-                           if (serverUpload && serverUpload.t < Date.now () - 1000 * 60 * 60) return;
+                           if (k >= Date.now () - 1000 * 60 * 60) allUploads.push (k);
+                        });
+                        allUploads.sort (function (a, b) {return b - a});
+                        return dale.do (allUploads, function (id) {
+                           var upload = uploads [id] || {};
+                           var serverUpload = serverUploads [id] || {};
                            var ok = teishi.c (upload.ok) || [];
                            dale.do (serverUpload.ok, function (id) {
                               var exists = dale.stopNot (ok, undefined, function (item) {
@@ -3405,7 +3405,8 @@ E.upload = function () {
                                           ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
                                           ['LITERAL', '&nbsp'],
                                           H.if (upload.repeat, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeat || []).length + ' repeated) ']),
-                                          H.if (serverUpload.t, ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - serverUpload.t) / 60000) + ' minutes ago)']),
+                                          ['LITERAL', '&nbsp'],
+                                          ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - parseInt (id)) / 60000) + ' minutes ago)'],
                                           ['br'],
                                        ]],
                                        ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [

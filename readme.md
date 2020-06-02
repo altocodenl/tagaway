@@ -46,11 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Select all should work together with load on scroll.
    - dropdown: "upload" -> "recently uploaded"
    - Remove eye next to "view pictures"
-- Upload
-   - Snackbar confirms upload even when pics are still uploading
-   - Sort uploads by start, not end, also when there are no oks.
-   - "0 pictures uploaded" phantom recent upload:
-      -Bug identified: 1) upload repeated pictures. The upload system will say "0 pictures uploaded (X repeated)". 2) Upload new pictures (unrepeated), the upload system will upload new pics. After uploading these new pictures, on the "Recent uploads" list the "0 pictures uploaded" will appear. 
 
 ### Todo beta now
 
