@@ -264,6 +264,7 @@ CSS.litc = [
    ['.header__menu', {'padding-left': CSS.vars ['padding--l']}],
    ['.header__user', {'margin-left': 'auto'}],
    ['.header__upload-button', {'margin-left, margin-right': CSS.vars ['padding--m']}],
+   ['.header__import-button', {'margin-left':'22px', 'margin-right':'-12px'}],
    // *** logo.scss ***
    ['.logo__img', {
       display: 'inline-block',
@@ -1113,6 +1114,12 @@ CSS.litc = [
    }, ['path', {fill: CSS.vars ['color--one']}]],
    ['.upload-selection__text', {mixin1: CSS.vars.fontPrimaryMedium}],
    ['.upload-selection__remove', {'margin-left': 'auto'}],
+   // RECENT IMPORTS
+   ['.recent-imports__title', {
+      'font-size': CSS.typography.fontSize (5),
+      'line-height': CSS.typography.spaceVer (1.5),
+      'margin-bottom': CSS.typography.spaceVer (1),
+   }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
       'margin-bottom': CSS.typography.spaceVer (2),
@@ -2649,6 +2656,8 @@ E.header = function (showUploadButton) {
             ]],
          ]],
       ]],
+      //IMPORT BUTTON
+      ['div', {class: 'header__import-button', style: style ({opacity: showUploadButton ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
       // UPLOAD BUTTON
       ['div', {class: 'header__upload-button', style: style ({opacity: showUploadButton ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
    ]];
@@ -2689,8 +2698,11 @@ E.empty = function () {
             ['div', {class: 'guide'}, [
                ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
-               ['p', {class: 'guide__text'}, 'Click the upload button and start adding pictures.'],
-               ['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures']
+               ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
+               ['div', [
+               	['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, 'Import pictures'],
+               	['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures'],
+               ]],	
             ]],
          ]],
       ]],
@@ -3460,7 +3472,33 @@ E.upload = function () {
 
 E.import = function () {
    return ['div', [
-      ['h1', 'Import'],
+   	E.header(),		
+    	['div',{class:'main-centered'},[
+    		['div',{class:'main-centered__inner max-width--m'},[
+    		// PAGE HEADER
+    		['div',{class:'page-header'},[
+    			['h1',{class:'page-header__title page-title'}, 'Import pictures'],
+    			['h2',{class:'page-header__subtitle page-subtitle'},'Start organizing your pictures']
+    			]],
+    			['div',{class:'page-section'},[
+    				// IMPORT BOX
+    				['div',{class:'upload-box'},[
+    				['div',{class:'upload-box__image', opaque: true}],
+    				['div',{class:'upload-box__main'},[
+    					// IMPORT BOX SECTION
+    					['div',{class:'upload-box__section'},[
+    						['h3',{class:'upload-box__section-title'}, 'Import files'],
+    						['div',{class:'drag-and-drop'},[
+    							['div','Import photos and videos from these services']
+    							]],
+    						]],
+    					]]
+    				]],
+    				// RECENT IMPORTS
+    				['h2',{class:'recent-imports__title'},'Recent imports'],
+    			]],
+    		]],
+    	]],
    ]];
 }
 
