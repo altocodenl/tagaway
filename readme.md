@@ -40,12 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Fixes & small improvements
 
 - Pics
-   - Filter: search for tag -> filter matching tags (if there's tags on the query already)
-   - Bug when tagging an untagged picture, attach tag/untag.
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
-   - Select all should work together with load on scroll.
-   - dropdown: "upload" -> "recently uploaded"
-   - Remove eye next to "view pictures"
+   - Bug when tagging an untagged picture with new text.
 
 ### Todo beta now
 
