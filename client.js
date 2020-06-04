@@ -1835,6 +1835,8 @@ dale.do ([
       putSvg ('.upload-progress', 'afterBegin', '<svg class="upload-progress__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm5 2c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm3.5-5.7c-.6-.7-1.4-1.2-2.4-1.2l-12-1c-1.7-.2-3.2.9-3.6 2.6-1.1.3-1.9 1.1-2.3 2.1-1.3.5-2.2 1.9-2 3.3l.7 8.2c.1.9.5 1.8 1.2 2.4.6.5 1.4.8 2.2.8h.3l12-1c1-.1 1.8-.6 2.4-1.3.6-.3 1.1-.8 1.5-1.4 0 0 .1 0 .1-.1 1.1-.5 1.8-1.6 1.9-2.8l.7-8c.2-1-.1-1.9-.7-2.6zm-19.5 3.7c0-1.4 1.1-2.5 2.5-2.5h12c1.4 0 2.5 1.1 2.5 2.5v7.9l-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9zm7 7.3 3.2 3.2h-7.7c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0zm-5.4 5.2c-1.4.1-2.6-.9-2.7-2.3l-.7-8.2c-.1-.7.2-1.4.8-1.9v7.9c0 1.9 1.6 3.5 3.5 3.5h10.5zm12.9-2h-3.1c0-.1 0-.3-.1-.4l-3.3-3.3 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.2 4.3c.1.1.2.1.3.1-.5 1-1.4 1.6-2.4 1.6zm4.1-3.8c0 .5-.3 1-.6 1.4 0-.1 0-.1 0-.2v-7.9c0-1.9-1.6-3.5-3.5-3.5h-11.9c.4-1 1.4-1.6 2.5-1.5l12 1c.7.1 1.3.4 1.7.9s.6 1.2.6 1.8z"/></svg>');
       putSvg ('.back-link__link', 'afterBegin', '<svg class="back-link__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 12c0 .3-.2.5-.5.5h-12.2l3.4 3.4c.2.2.2.5 0 .7-.1.1-.2.1-.4.1-.1 0-.3 0-.4-.1l-3.5-3.5c-.3-.3-.4-.7-.4-1.1s.2-.8.5-1.1l3.5-3.5c.2-.2.5-.2.7 0s.2.5 0 .7l-3.4 3.4h12.2c.3 0 .5.2.5.5z" /></svg>');
       putSvg ('.video-playback', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="50px" height="50px" viewBox="0 0 512 512" style="position: absolute" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#5b6eff" d="M256,0C114.608,0,0,114.608,0,256s114.608,256,256,256s256-114.608,256-256S397.392,0,256,0z M256,496C123.664,496,16,388.336,16,256S123.664,16,256,16s240,107.664,240,240S388.336,496,256,496z"/><polygon style="fill:#5b6eff" points="189.776,141.328 189.776,370.992 388.672,256.16"/></svg>');
+      putSvg ('.dropbox', 'afterBegin', '');
+      putSvg ('.google-drive', 'afterBegin', '');
    }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -2628,7 +2630,7 @@ E.signup = function () {
 
 // *** HEADER ELEMENT ***
 
-E.header = function (showUploadButton) {
+E.header = function (showUpload, showImport) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
          // TODO: why must specify height so it looks exactly the same as markup?
@@ -2657,9 +2659,9 @@ E.header = function (showUploadButton) {
          ]],
       ]],
       //IMPORT BUTTON
-      ['div', {class: 'header__import-button', style: style ({opacity: showUploadButton ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
       // UPLOAD BUTTON
-      ['div', {class: 'header__upload-button', style: style ({opacity: showUploadButton ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
+      ['div', {class: 'header__upload-button', style: style ({opacity: showUpload ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
    ]];
 }
 
@@ -2700,9 +2702,9 @@ E.empty = function () {
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
                ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
                ['div', [
-               	['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, 'Import pictures'],
-               	['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures'],
-               ]],	
+                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, 'Import pictures'],
+                  ['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures'],
+               ]],
             ]],
          ]],
       ]],
@@ -2713,7 +2715,7 @@ E.empty = function () {
 
 E.pics = function () {
    return ['div', {id: 'pics', class: 'app-pictures app-all-tags'}, [
-      E.header (true),
+      E.header (true, true),
       E.open (),
       // TODO v2: merge two elements into one
       B.view (['Data', 'pics'], function (x, pics) {
@@ -3157,7 +3159,7 @@ E.open = function () {
 E.upload = function () {
    return ['div', [
       ['style', ['.upload-box__image-pic svg', {display: 'none'}]],
-      E.header (),
+      E.header (false, true),
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
             // PAGE HEADER
@@ -3472,33 +3474,33 @@ E.upload = function () {
 
 E.import = function () {
    return ['div', [
-   	E.header(),		
-    	['div',{class:'main-centered'},[
-    		['div',{class:'main-centered__inner max-width--m'},[
-    		// PAGE HEADER
-    		['div',{class:'page-header'},[
-    			['h1',{class:'page-header__title page-title'}, 'Import pictures'],
-    			['h2',{class:'page-header__subtitle page-subtitle'},'Start organizing your pictures']
-    			]],
-    			['div',{class:'page-section'},[
-    				// IMPORT BOX
-    				['div',{class:'upload-box'},[
-    				['div',{class:'upload-box__image', opaque: true}],
-    				['div',{class:'upload-box__main'},[
-    					// IMPORT BOX SECTION
-    					['div',{class:'upload-box__section'},[
-    						['h3',{class:'upload-box__section-title'}, 'Import files'],
-    						['div',{class:'drag-and-drop'},[
-    							['div','Import photos and videos from these services']
-    							]],
-    						]],
-    					]]
-    				]],
-    				// RECENT IMPORTS
-    				['h2',{class:'recent-imports__title'},'Recent imports'],
-    			]],
-    		]],
-    	]],
+      E.header (true, false),
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            // PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
+            ]],
+            ['div', {class: 'page-section'}, [
+               // IMPORT BOX
+               ['div', {class:'upload-box'}, [
+                  ['div', {class:'upload-box__image', opaque: true}],
+                  ['div', {class:'upload-box__main'}, [
+                     // IMPORT BOX SECTION
+                     ['div', {class: 'upload-box__section'},[
+                        ['h3', {class: 'upload-box__section-title'}, 'Import files'],
+                        ['div', {class: 'drag-and-drop', opaque: true}, [
+                           ['div', 'Import photos and videos from these services']
+                        ]],
+                     ]]
+                  ]],
+               ]],
+               // RECENT IMPORTS
+               ['h2', {class:'recent-imports__title'}, 'Recent imports'],
+            ]],
+         ]],
+      ]],
    ]];
 }
 
