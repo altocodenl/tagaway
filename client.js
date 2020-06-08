@@ -384,6 +384,7 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuad,
       'transition-duration': '500ms',
    }],
+   // This CSS property switches the sidebar when selecting/unselecting pictures
    ['.app-organise .sidebar__inner', {transform: 'translateX(-50%)'}],
    ['.sidebar__inner-section', {width: 0.5, position: 'relative'}],
    // Sidebar coherent paddings
@@ -1828,7 +1829,6 @@ dale.do ([
       putSvg ('.tag-list-horizontal__item--time', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock" style="margin-right: 5px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>');
       putSvg ('.switch-list__button--attach', 'afterBegin', '<svg class="switch-list__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m20.5 11.5c0 .3-.2.5-.5.5h-2.5v2.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5v-2.5h-2.5c-.3 0-.5-.2-.5-.5s.2-.5.5-.5h2.5v-2.5c0-.3.2-.5.5-.5s.5.2.5.5v2.5h2.5c.3 0 .5.2.5.5zm-6.8 1.9-2.6 3.1c-.4.4-1 .5-1.4.1l-3.8-3.2c-.4-.4-.5-1-.1-1.4l5-5.9c.2-.2.4-.3.7-.4l3.5-.3c.6-.1 1 .4 1.1.9 0 .3.3.5.5.5.3 0 .5-.3.5-.5-.1-1.1-1.1-1.9-2.2-1.8l-3.5.3c-.5.1-1 .3-1.3.7l-5 5.9c-.7.8-.6 2.1.2 2.8l3.7 3.3c.4.3.8.5 1.3.5.6 0 1.1-.2 1.5-.7l2.6-3.2c.2-.2.1-.5-.1-.7-.1-.2-.4-.2-.6 0z"/></svg>');
       putSvg ('.switch-list__button--untag', 'afterBegin', '<svg class="switch-list__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 9.4c-.1-.3-.4-.4-.6-.3l-6.5 1.9 1.9-6.4c.1-.3 0-.5-.3-.6s-.5.1-.6.3l-2.1 7.1-2.6.8c.3-.9.1-1.9-.6-2.6-1-1-2.6-1-3.5 0s-1 2.6 0 3.5c.5.5 1.1.7 1.8.7.4 0 .7-.1 1-.2h.1l3.4-1-1 3.4v.2c-.2.3-.2.7-.2 1 0 .7.3 1.3.7 1.8.5.5 1.1.7 1.8.7.6 0 1.3-.2 1.8-.7s.7-1.1.7-1.8-.3-1.3-.7-1.8c-.7-.7-1.7-.9-2.6-.6l.8-2.6 7.1-2.1c.1-.1.3-.4.2-.7zm-14.2 3c-.6-.6-.6-1.5 0-2.1.3-.3.6-.5 1-.5s.8.2 1.1.4c.6.6.6 1.5 0 2.1s-1.6.6-2.1.1zm7.9 3.7c.3.3.4.7.4 1.1s-.2.8-.4 1.1c-.6.6-1.5.6-2.1 0-.3-.3-.4-.7-.4-1.1s.2-.8.4-1.1c.3-.3.7-.4 1.1-.4.4-.1.7.1 1 .4z"/></svg>');
-      putSvg ('.sidebar-search', 'beforeEnd', '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
       putSvg ('.selected-box__close', 'afterBegin', '<svg class="selected-box__close-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>');
       putSvg ('.organise-bar__button--select-all', 'afterBegin', '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7.5 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm8.5-2c0-2.2-1.8-4-4-4-1.7 0-3.1 1-3.7 2.5h-9.3c-1.9 0-3.5 1.6-3.5 3.5v8c0 1.3.8 2.5 1.9 3.1l.1.1c.5.2 1 .3 1.5.3h12c1.9 0 3.5-1.6 3.5-3.5v-6.9c.9-.7 1.5-1.8 1.5-3.1zm-17 12.5c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0l3.2 3.2zm12 0h-2.9l-3.7-3.7 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.4 4.5c-.3.9-1.2 1.5-2.2 1.5zm2.5-2.6-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9v-8c0-1.4 1.1-2.5 2.5-2.5h9.1c-.1.2-.1.3-.1.5 0 2.2 1.8 4 4 4 .5 0 1-.1 1.5-.3z"/></svg>')
       putSvg ('.organise-bar__button--rotate div', 'afterBegin', '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 11.5c-.3 0-.5.2-.5.5 0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6c1.5 0 3 .6 4.1 1.6l-.7.7c-.1.1-.1.2-.1.3 0 .3.2.5.5.5l2.4.2c.3 0 .5-.2.4-.4l-.2-2.4c0-.1-.1-.2-.2-.3-.2-.2-.5-.2-.7 0l-.8.8c-1.2-1.3-2.9-2-4.7-2-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7c0-.3-.2-.5-.5-.5z"/></svg>');
@@ -1894,7 +1894,8 @@ dale.do ([
          var selected = dale.obj (rs.body.pics, function (pic) {
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
-         B.do (x, 'set', ['State', 'selected'], selected);
+         B.set (['State', 'selected'], selected);
+         B.do (x, 'change', ['State', 'selected'], selected);
 
          if (B.get ('State', 'open') === undefined) return B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
 
@@ -3217,6 +3218,7 @@ E.upload = function () {
                                              ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
                                           ]]),
                                        ]],
+                                       // TODO v2: add inline SVG
                                        H.if (format.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
                                           ['style', ['.no-svg svg', {display: 'none'}]],
                                           ['p', {class: 'upload-selection__text'}, [
@@ -3350,7 +3352,7 @@ E.upload = function () {
                                        // TAG LIST HORIZONTAL
                                        ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
                                           // TODO v2: add inline SVG
-                                          return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
                                              ['span', {class: 'tag__title'}, tag],
                                           ]];
                                        })],
@@ -3452,7 +3454,7 @@ E.upload = function () {
                                        // TAG LIST HORIZONTAL
                                        ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags || serverUpload.tags, function (tag) {
                                           // TODO v2: add inline SVG
-                                          return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
                                              ['span', {class: 'tag__title'}, tag],
                                           ]];
                                        })],
