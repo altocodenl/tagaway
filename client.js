@@ -1122,7 +1122,7 @@ CSS.litc = [
    ['.google-drive-logo', {
       height:'30px',
       width:'98px',
-      'background-image': 'url(img/google-drive-logo.png)',
+      'background-image': 'url(assets/img/google-drive-logo.png)',
    }],
    // RECENT IMPORTS
    ['.recent-imports__title', {
