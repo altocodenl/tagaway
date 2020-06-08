@@ -28,7 +28,7 @@ var redmin = require ('redmin');
 redmin.redis = redis;
 var giz    = require ('giz');
 var hitit  = require ('hitit');
-var a      = require ('./lib/astack.js');
+var a      = require ('./assets/astack.js');
 
 var uuid     = require ('uuid/v4');
 var mailer   = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
@@ -665,13 +665,11 @@ var routes = [
 
    // *** STATIC ASSETS ***
 
-   ['get', 'lib/murmurhash.js', cicek.file, 'node_modules/murmurhash/murmurhash.js'],
-
-   ['get', 'favicon.ico', cicek.file, 'lib/favicon.ico'],
+   ['get', 'favicon.ico', cicek.file, 'assets/img/favicon.ico'],
 
    ['get', 'img/*', cicek.file, ['markup']],
 
-   ['get', ['lib/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['assets/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
       ['!DOCTYPE HTML'],
@@ -685,7 +683,7 @@ var routes = [
          ]],
          ['body', [
             dale.go (['gotoB.min'], function (v) {
-               return ['script', {src: 'lib/' + v + '.js'}];
+               return ['script', {src: 'assets/' + v + '.js'}];
             }),
             ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
             ['script', {src: 'client.js'}]
@@ -702,12 +700,12 @@ var routes = [
             ['title', 'ac;pic admin'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             dale.go (['pure-min', 'ionicons.min'], function (v) {
-               return ['link', {rel: 'stylesheet', href: 'lib/' + v + '.css'}];
+               return ['link', {rel: 'stylesheet', href: 'assets/' + v + '.css'}];
             })
          ]],
          ['body', [
             dale.go (['gotoB.min'], function (v) {
-               return ['script', {src: 'lib/' + v + '.js'}];
+               return ['script', {src: 'assets/' + v + '.js'}];
             }),
             ['script', {src: 'admin.js'}]
          ]]
@@ -2098,7 +2096,7 @@ cicek.apres = function (rs) {
       logs.push (['flow', 'rq-bad', 1]);
       var report = function () {
          if (rs.log.code === 404 && rs.log.url.match (/^\/thumbof/)) return false;
-         if (['/lib/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
+         if (['/assets/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
          return true;
       }
       if (report ()) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});

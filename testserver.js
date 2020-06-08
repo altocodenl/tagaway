@@ -4,7 +4,7 @@ var CONFIG = require ('./config.js');
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var h      = require ('hitit');
-var a      = require ('./lib/astack.js');
+var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
 var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
 
