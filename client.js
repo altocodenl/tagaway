@@ -3511,7 +3511,7 @@ E.import = function () {
                            ['div', 'Import photos and videos from these services'],
                            ['br'],['br'],
                            ['div', [
-                              ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo', opaque: true}],
+                              ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}],
                               ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
                            ]],
                         ]],
