@@ -1869,12 +1869,18 @@ dale.do ([
       }
       var target = c ('#pics');
       if (! target) return;
-      dale.do (classes, function (classes, mode) {
-         dale.do (classes, function (v) {
-            if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
-            if (mode === 'organise') target.classList [selectedPictures ? 'add'    : 'remove'] (v);
+
+      // This timeout is needed because on certain occasions, if the classes are changed before a redraw, the CSS won't be applied correctly.
+      // Without the timeout, sidebar__inner remains transformed 50% to the left.
+      setTimeout (function () {
+         dale.do (classes, function (classes, mode) {
+            dale.do (classes, function (v) {
+               if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
+               if (mode === 'organise') target.classList [selectedPictures ? 'add'    : 'remove'] (v);
+            });
          });
-      });
+      }, 0);
+
       if (B.get ('State', 'untag') && ! selectedPictures) B.do (x, 'rem', 'State', 'untag');
    }],
    ['change', ['State', 'untag'], function (x) {
@@ -3507,7 +3513,7 @@ E.import = function () {
                            ['div', [
                               ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo', opaque: true}],
                               ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
-                           ]],                           
+                           ]],
                         ]],
                      ]]
                   ]],

@@ -37,13 +37,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
-### Fixes & small improvements
+### Todo v1 now
 
 - Pics
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
-   - Bug when tagging an untagged picture with new text.
-
-### Todo beta now
 
 - Geotagging enable/disable.
 - Import from GDrive/Dropbox.

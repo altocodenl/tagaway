@@ -31,7 +31,7 @@ if [ "$2" == "home" ] ; then
 fi
 
 if [ "$2" == "gotoB" ] ; then
-   scp lib/gotoB.min.js $HOST:$FOLDER/lib
+   scp assets/gotoB.min.js $HOST:$FOLDER/assets
    exit 0
 fi
 
