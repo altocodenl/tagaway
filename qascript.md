@@ -28,20 +28,49 @@
 	- Click on email link "Please click on this link to create your account.", should be directed to "Sign Up" view. 
 
 ##Sign Up
-	- Test 2-character username.
-	- Test mismatching passwords.
-	- Test passwords with 4 characters. 
+	- Upon clicking on "Please click on this link to create your account." on invite email, the Sign Up view should be accesed.
+	- There should be 3 placeholders:
+		- Username 
+		- Password
+		- Repeat password
+	- Enter a 2-character username: 
+		- Red snackbar of "Please enter a username with 3 or more characters" should appear on clicking "create account".
+	- Enter email address on username placeholder: 
+		- Red snackbar of "Your username cannot be an email" should appear on clicking "create account". 
+	- Enter username that tester knows its being used, like 'admin':
+		- Red snackbar of "That username is already in use" should appear. 
+	- Test mismatching passwords:
+		- Red snackbar of "Repeated password does not match." should appear on clicking "create account":
+	- Test passwords with 5 characters or less:
+		- Red snackbar of "Please enter a password with six or more characters" on clicking "create account". 
 	- Test passwords with special characters '@' '$' '%' '^' '*' '!'
+		- Password should be accepted.
+	- Account is created:
+		- Green snackbar of "Your account has been created." should appear." 
 	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.  
 
 ##Log In
-	- Click 'log in' with empty form. 
-		- Please submit valid credentials.
-	- Insert incorrect username and correct password. 
-		- Please submit valid credentials.
-	- Insert correct username and incorrect password.
-		- Please submit valid credentials.
-	- Insert correct user and password. 
+	- Click 'log in' with empty form:
+		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in".
+	- Insert incorrect username and correct password:
+		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in". 
+	- Insert correct username and incorrect password:
+		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in".
+	- Insert correct user and password
+	- Should be logged in and redirected to 'empty' View Pictures view.
+	- Refresh browser. 
+	- User should be logged in. 
+	- Close browser tab.
+	- Open new tab and go to app. 
+	- The user should be logged in. 
+	- Close browser (all tabs, both incognito and regular browsing). 
+	- Open browser and go to app. 
+	- The user should be logged in. 
+	- Log out
+	- Should be back to "log in" view. 
+	- Refresh broswer. 
+	- Should be back to "Log in" view. 
+	- Log in 
 	- Should be logged in and redirected to 'empty' View Pictures view. 	
 
 ##Recover password
@@ -51,6 +80,30 @@ Not developed yet
 Not developed yet
 
 ##Upload pictures
+(Flow will change before Beta release. It will be updated when flow change is implemented)
+	- Go to upload view
+	- Choose 'upload files'
+	- Select at least 2 photos to upload.
+	- Do not add tags. 
+	- Upload
+	- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+	- Upload same photos as the initial batch. 
+	- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
+	- In your device, duplicate the same photo, making sure it has a different filename.
+	- Upload this duplicated photo with new name. 
+	- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
+	- Choose 'upload files'
+	- Select a photos for upload that has not been uploaded before. 
+	- Add a tag on upload.
+	- Upload photo
+	- Check in "View Pictures" view that photo has been tagged correctly. 
+	- Choose "upload files".
+	- Select a video.
+	- Upload
+	- In device, duplicate the same video and make sure it has a different name. 
+	- Upload video with same name. 
+	- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
+
 Check for duplicates
 
 ##Import Pictures

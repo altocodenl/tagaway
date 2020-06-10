@@ -39,10 +39,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- Invite
-   - Can't send more invites? "There was an error creating the invite."
-   - When we invite a user, our inputs are 'firstName' (or 'name' as per the admin form) and 'email'. When the user gets the invite email and clicks on the "Please click on this link to create your account." it goes to the Sign Up view. But, in the Sign Up form 'firstName' converts to 'username' and is pre-completed for the user. If more than one person have the same name, then the username will be replicated. If the user uses that username, creates a password and validates the password twice, the red snackbar of "there was an error creating your user" will appear. We must not use 'firstName' as a pre-loaded 'username' in Sign Up form, we must let the invited user choose their usernames. Also, this will block us from knowing the user's username as well.
-
+- Sign Up
+   - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account". 
+   - If user selects a username that is already in use. Red snackbar of "That username is already in use". 
+   - Test email placeholder with non email formats. ie " test.test.com" and "test". In these cases, Red snackbar of "Please enter a valid email" on clicking "create account".
+   - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
+   - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
+   - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
+   - When account is created. Green snackbar "Your account has been created."
+   **For more reference, we can check line 387 of OML's client.js**
+   
 - Pics
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
