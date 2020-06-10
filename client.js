@@ -2633,7 +2633,7 @@ E.signup = function () {
                // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
                // By setting the form to be opaque, we prevent them being recycled.
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
-                  ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username', value: B.get ('Data', 'signup', 'username')}],
+                  ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {id: 'auth-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account'}, ['onclick', 'signup', []])],

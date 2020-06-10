@@ -69,7 +69,7 @@ module.exports = {
                ['br'],
                'You have been officially invited to join ', LOGO, '!',
                ['br'],
-               ['a', {href: DOMAIN + '#/signup/' + encodeURIComponent (JSON.stringify ({username: username, token: token, email: email}))}, 'Please click on this link to create your account.'],
+               ['a', {href: DOMAIN + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
