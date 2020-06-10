@@ -12,13 +12,37 @@
 	- Internet Explorer
 	- Miscrosoft Edge
 - Tests on slower connections TBD
+- Tester must have access to Development Environment admin and altocode's email. 
+
 
 ##Invite process
-What happens if user has already requested an invite?
+	- On log in view, click on "Don't have an account? Request an invite."
+	- Browser prompt "Send us your email and we'll send you an invite link to create your account! We will *only* use your email to send you an invite."
+	- Insert an invalid address, such as 'test','test@' or 'test@test'
+		- Red snackbar with "Please enter a valid email address." should appear. 
+	- Insert valid email address (tester must have access to the corresponding inbox to conduct the rest of the test).
+	- Once entered, a green snackbar with "We received your request successfully, hang tight!" should appear.
+	- Email should arrive to info@altocode.nl with subject "Request for ac;pic invite" and email of requester.
+	- In DEV admin, create invite for the entered email address. 
+	- Invite should arrive to entered email address. 
+	- Click on email link "Please click on this link to create your account.", should be directed to "Sign Up" view. 
 
 ##Sign Up
+	- Test 2-character username.
+	- Test mismatching passwords.
+	- Test passwords with 4 characters. 
+	- Test passwords with special characters '@' '$' '%' '^' '*' '!'
+	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.  
 
 ##Log In
+	- Click 'log in' with empty form. 
+		- Please submit valid credentials.
+	- Insert incorrect username and correct password. 
+		- Please submit valid credentials.
+	- Insert correct username and incorrect password.
+		- Please submit valid credentials.
+	- Insert correct user and password. 
+	- Should be logged in and redirected to 'empty' View Pictures view. 	
 
 ##Recover password
 Not developed yet
