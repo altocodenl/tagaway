@@ -53,6 +53,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
 - Geotagging enable/disable.
+   - Make tags transactional.
+   - Endpoint to enable/disable geotags.
+   - Forbid geo tag prefixes from normal tags (server/client).
+   - Get geotags function.
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
