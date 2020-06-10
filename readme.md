@@ -260,6 +260,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Does not require the user to be logged in.
    - Body must be `{username: STRING, password: STRING, email: STRING, token: STRING}`. The email must be a valid email. If not, a 400 code will be returned with body `{error: ...}`.
    - Both `username` and `email` are lowercased and leading & trailing space is removed from them (and intermediate spaces or space-like characters are reduced to a single space). `username` cannot contain any `@` or `:` characters.
+   - The trimmed `username` must have at least 3 characters and `password` must have at least 6 characters.
    - If there's no invite associated with the token, a 403 is returned with body `{error: 'token'}`.
    - If there's already an account with that email, a 403 is returned with body `{error: 'email'}`.
    - If there's already an account with that username, a 403 is returned with body `{error: 'username'}`.
