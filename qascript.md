@@ -154,7 +154,7 @@ Not developed yet
 		- Select the second folder
 		- Do not add a tag
 		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-		- Check in "View Pictures" view > untagged that files have not been tagged.
+		- Check in "View Pictures" view > 'untagged' that files have not been tagged.
 
 ##Import Pictures
 ###Google Drive
@@ -170,43 +170,84 @@ Not developed yet
 Not developed yet
 
 ##View pictures
-
 	- All Pictures
-		- When 'All Pictures' is selected, an 'eye' icon must be visible next to the section name.
+		- When 'All Pictures' is selected, the 'eye' icon must be visible next to the section name.
 		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location), sidebar, and center view. 
 		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 
 		- Sort thumbnails by 'oldest'. Thumbail sorting should change to the opposite order as default. 
 		- Sort thumbnails by 'recently uploaded'. Thumbanail sorting should change to the corresponding order from latest upload to oldest uploaded. 
-
-
- 
 	- Untagged
 		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location). 
 		- Sidebar should display:
-			- 'all pictures' and camera icon without eye icon.
+			- 'all pictures' and camera icon without 'eye' icon.
 			- 'untagged' with 'eye' icon must be visible next to the section name.
-			- Years semi tags that have a positive intersection with 'untagged' files. 
+			- Years semi tags that have a possible intersection with 'untagged' files. 
 			- 'Filter tags' bar at the bottom. 
 		- Center should display total amount of files that are 'untagged'
 		- Sorting dropdown:
-			- all sorting options must be tested. 
+			- All sorting options must be tested. 
 		- The 'untagged' tag with an 'x' button. 
-			- if 'x' button is clicked, view goes back to 'all pictures'. 
+			- If 'x' button is clicked, view goes back to 'all pictures'. 
 		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 	
 
 ###Image selection and tagging
-**Select image**
-Select single image
-Select multiple images
+	- All the actions described below must be run for the following sub-views:
+		- All pictures
+		- Untagged (only if there are untagged files)
+		- Each year semi-tags
+		- Each tag
+		- Combinations of tags
+		- Combinations of tags and semi tags
+	- **Select image**
+		- Select single image:
+			- Click on an image from the thumbnail gallery.
+				- Sidebar left changes from 'navigation mode' to 'Organize pictures' mode. 
+					- Sidebar title must be 'Organize pictures (x)' where 'x' is amount of selected thumbnails. 
+						- Sidebar content and display described in tagging and untagging processes. 
+				- 'Organize Bar' appears below header divider with:
+					- Amount of thumbnails selected. If number is clicked, thumbnails are unselected. 
+					- 'Select all' option. Opacity 0.5, if :hover opacity:1.
+					- 'Rotate' option. Opacity 0.5, if :hover opacity:1.
+					- 'Unselect all' option. Opacity 0.5, if :hover opacity:1.
+					- 'Download' option. Opacity 0.5, if :hover opacity:1.
+					- 'Delete' option to the right. Opacity 0.5, if :hover opacity:1.
+				- In gallery title, the amount of thumbnails selected are described from the total of available thumbnails: 'X pictures, 1 selected'
+				- The thumbnail must automatically be displayed with: 
+					- Transform: scale(0.8) 
+					- Background color: #5b6eff
+					- Opacity: 20%
+			- Sort thumbnails from 'newest' (default) to 'oldest' to 'recently uploaded'. 
+				- Selection should remain with all parameters. 
+			- Unselect thumbnail by clicking on the selected thumbanil. 
+			- The interface should return to 'navigation mode'. 
+			- Select a thumbnail again.
+			- Interface should turn to 'organize view'.
+			- Unselect thumbnail by clicking on amount of thumbnails selected icon in blue on 'Organize bar'.
+			- The interface should return to 'navigation mode'. 
+			- Select a thumbnail again.
+			- Interface should turn to 'organize view'.
+			- Unselect thumbnail by clicking on 'x' in 'Organize pictures' sidebar. 
+			- The interface should return to 'navigation mode'. 
+			- Select a thumbnail again.
+			- Interface should turn to 'organize view'.
+			- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
+			- The interface should return to 'navigation mode'. 
+
+
+
+		- Select multiple images:
+			- 
+
 **Download image(s)**
 **Rotate**
 **Select all**
 Scrolling
 **Unselect all**
 Scrolling
+**Delete image(s)**
 - Tagging from "all pictures"
 			- Select a thumbnail or group of thumbnails. 
-			- Sidebar left should change to 'edit mode':
+			- Sidebar left should change to 'Organize pictures' mode:
 				- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
 				- By default, the 'attach option' should be selected. 
 				- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add a new tag' button.
@@ -251,4 +292,8 @@ Not developed yet
 ##Payment process
 Not developed yet
 
+- Navigation
+check logo goes to 'view pictures'
+checl header navigates correctly
+check from import and upload, 'See all photos' goes to 'view pictures'
 
