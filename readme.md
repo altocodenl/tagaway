@@ -40,17 +40,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - Sign Up
-   - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account". 
-   - If user selects a username that is already in use. Red snackbar of "That username is already in use". 
+   - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
+   - If user selects a username that is already in use. Red snackbar of "That username is already in use".
    - Test email placeholder with non email formats. ie " test.test.com" and "test". In these cases, Red snackbar of "Please enter a valid email" on clicking "create account".
    - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
    - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
    - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
    - When account is created. Green snackbar "Your account has been created."
    **For more reference, we can check line 387 of OML's client.js**
-   
-- Upload
-   - Line 341 .mp4 must be added. Also, **let's discuss .MOV and .3gp videos. iPhone native videos are .mov, while Samsumng are .3gp. A lot of video content is in these formats** 
 
 - Pics
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
@@ -171,6 +168,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Retry on error.
    - Show estimated time remaining in ongoing uploads.
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
+   - Support 3gp, mov, heic, avi. Check for actual file type in server, not just extension.
    - Ignore deleted pictures flag.
 
 - Account & payment
@@ -338,7 +336,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
-   - The file uploaded must be `.png` or `.jpg` (otherwise, 400 with body `{error: 'format'}`).
+   - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
    - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the picture just uploaded and `deg` is the rotation automatically applied to the picture based on its metadata.
