@@ -79,32 +79,82 @@ Not developed yet
 ##Change password
 Not developed yet
 
+##General layout
+	- Header:
+		- From left to right:
+			- ac;pic logo
+			- View pictures
+			- Manage tags
+			- User icon:
+				- My account
+				- Log out
+			- Import button
+			- Upload Button
+	- If first entry and app has not uploaded content:
+		- Sidebar left:
+			- View pictures
+			- "Tip! You have no tags yet. Upload some photos and add some tags." With lighbulb icon to the left of 'Tip!'. The word upload is a hyperlink to 'upload' view. 
+			- 'Search for tag' bar at bottom of sidebar.
+		- Center view:
+			- Image icon
+			- "Start organising and backing up your pictures. Click the buttons below and start adding pictures." 
+			- 'Import pictures' button.
+			- 'Upload pictures' button.
+	- If the app has content:
+		- Sidebar left:
+			- View pictures
+			- 'All pictures' with camera icon (default view).
+			- Untagged
+			- Years semi-tags
+			- List of tags, each with a different color. 
+			- 'Search for tag' bar at bottom of sidebar. 
+		- Center view:
+			- 'XX pictures' describing total amount of photos and videos uploaded and available. 
+			- To the right, sorting dropdown with options:
+				- Newest (default)
+				- Oldest
+				- Recent uploaded
+			- Photos and videos gallery. 
+
 ##Upload pictures
 (Flow will change before Beta release. It will be updated when flow change is implemented)
 	- Go to upload view
-	- Choose 'upload files'
-	- Select at least 2 photos to upload.
-	- Do not add tags. 
-	- Upload
-	- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-	- Upload same photos as the initial batch. 
-	- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-	- In your device, duplicate the same photo, making sure it has a different filename.
-	- Upload this duplicated photo with new name. 
-	- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
-	- Choose 'upload files'
-	- Select a photos for upload that has not been uploaded before. 
-	- Add a tag on upload.
-	- Upload photo
-	- Check in "View Pictures" view that photo has been tagged correctly. 
-	- Choose "upload files".
-	- Select a video.
-	- Upload
-	- In device, duplicate the same video and make sure it has a different name. 
-	- Upload video with same name. 
-	- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
-
-Check for duplicates
+	- 'Upload files'
+		- Choose 'upload files'
+		- Select at least 2 photos to upload.
+		- Do not add tags. 
+		- Upload
+		- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+		- Upload same photos as the initial batch. 
+		- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
+		- In your device, duplicate the same photo, making sure it has a different filename.
+		- Upload this duplicated photo with new name. 
+		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
+		- Choose 'upload files'
+		- Select a photos for upload that has not been uploaded before. 
+		- Add a tag on upload.
+		- Upload photo
+		- Check in "View Pictures" view that photo has been tagged correctly. 
+		- Choose "upload files".
+		- Select a video.
+		- Upload
+		- In device, duplicate the same video and make sure it has a different name. 
+		- Upload video with same name. 
+		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
+	- 'Upload folder'
+		- Prepare 2 folders with photos and videos. 
+		- Make sure that within each folder there are duplicated photos and videos.
+		- Select 'upload folder'
+		- Select a folder 
+		- Add a tag
+		- Upload folder. 
+		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
+		- Check in "View Pictures" view that files have been tagged correctly.
+		- Select 'upload folder'
+		- Select the second folder
+		- Do not add a tag
+		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
+		- Check in "View Pictures" view > untagged that files have not been tagged.
 
 ##Import Pictures
 ###Google Drive
@@ -119,30 +169,32 @@ Not developed yet
 ##Enabling Geo Tagging
 Not developed yet
 
-##View pictures view
+##View pictures
 
-###All Pictures
-Sorting
-Scrolling
+	- All Pictures
+		- When 'All Pictures' is selected, an 'eye' icon must be visible next to the section name.
+		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location), sidebar, and center view. 
+		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 
+		- Sort thumbnails by 'oldest'. Thumbail sorting should change to the opposite order as default. 
+		- Sort thumbnails by 'recently uploaded'. Thumbanail sorting should change to the corresponding order from latest upload to oldest uploaded. 
+
+
  
-###Untagged
-Sorting
-Scrolling
+	- Untagged
+		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location). 
+		- Sidebar should display:
+			- 'all pictures' and camera icon without eye icon.
+			- 'untagged' with 'eye' icon must be visible next to the section name.
+			- Years semi tags that have a positive intersection with 'untagged' files. 
+			- 'Filter tags' bar at the bottom. 
+		- Center should display total amount of files that are 'untagged'
+		- Sorting dropdown:
+			- all sorting options must be tested. 
+		- The 'untagged' tag with an 'x' button. 
+			- if 'x' button is clicked, view goes back to 'all pictures'. 
+		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 	
 
-###Tagging from "all pictures"
-Sorting
-
-###Tagging from "untagged"
-Sorting
-
-###Changing tags (adding tags & changing tags)
-
-###Removing tags
-When untagging, if no pictures left with that tag, remove tag from query.
-
-###Navigation with tags
-
-###Image selection
+###Image selection and tagging
 **Select image**
 Select single image
 Select multiple images
@@ -152,12 +204,30 @@ Select multiple images
 Scrolling
 **Unselect all**
 Scrolling
+- Tagging from "all pictures"
+			- Select a thumbnail or group of thumbnails. 
+			- Sidebar left should change to 'edit mode':
+				- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
+				- By default, the 'attach option' should be selected. 
+				- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add a new tag' button.
+				- List of all tags created by the user:
+					- If the thumbnail(s) selected already have a tag attached, the tag must have a tick icon, indicating the tag is selected. 
+					- For those tags not attached to the selected thumbnails, the tag must have a '+' icon. 
+			- 
+			Sorting
+
+###Changing tags (adding tags & changing tags)
+
+###Removing tags
+When untagging, if no pictures left with that tag, remove tag from query.
 
 ###View image
 Open picture and trigger fullscreen.
 Navigate images using arrows and keyboard left and right
 Video reproduction 
 If exit fullscreen, exit picture too. (using ESC key or arrows on top right)
+
+###Navigation with tags
 
 ##Share image
 Not developed yet

@@ -49,6 +49,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When account is created. Green snackbar "Your account has been created."
    **For more reference, we can check line 387 of OML's client.js**
    
+- Upload
+   - Line 341 .mp4 must be added. Also, **let's discuss .MOV and .3gp videos. iPhone native videos are .mov, while Samsumng are .3gp. A lot of video content is in these formats** 
+
 - Pics
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
