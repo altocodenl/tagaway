@@ -12,66 +12,66 @@
 	- Internet Explorer
 	- Miscrosoft Edge
 - Tests on slower connections TBD
-- Tester must have access to Development Environment admin and altocode's email. 
+- Tester must have access to Development Environment admin and altocode's email.
 
 
 ##Invite process
 	- On log in view, click on "Don't have an account? Request an invite."
 	- Browser prompt "Send us your email and we'll send you an invite link to create your account! We will *only* use your email to send you an invite."
 	- Insert an invalid address, such as 'test','test@' or 'test@test'
-		- Red snackbar with "Please enter a valid email address." should appear. 
+		- Red snackbar with "Please enter a valid email address." should appear.
 	- Insert valid email address (tester must have access to the corresponding inbox to conduct the rest of the test).
 	- Once entered, a green snackbar with "We received your request successfully, hang tight!" should appear.
 	- Email should arrive to info@altocode.nl with subject "Request for ac;pic invite" and email of requester.
-	- In DEV admin, create invite for the entered email address. 
-	- Invite should arrive to entered email address. 
-	- Click on email link "Please click on this link to create your account.", should be directed to "Sign Up" view. 
+	- In DEV admin, create invite for the entered email address.
+	- Invite should arrive to entered email address.
+	- Click on email link "Please click on this link to create your account.", should be directed to "Sign Up" view.
 
 ##Sign Up
 	- Upon clicking on "Please click on this link to create your account." on invite email, the Sign Up view should be accesed.
 	- There should be 3 placeholders:
-		- Username 
+		- Username
 		- Password
 		- Repeat password
-	- Enter a 2-character username: 
+	- Enter a 2-character username:
 		- Red snackbar of "Please enter a username with 3 or more characters" should appear on clicking "create account".
-	- Enter email address on username placeholder: 
-		- Red snackbar of "Your username cannot be an email" should appear on clicking "create account". 
+	- Enter email address on username placeholder:
+		- Red snackbar of "Your username cannot be an email" should appear on clicking "create account".
 	- Enter username that tester knows its being used, like 'admin':
-		- Red snackbar of "That username is already in use" should appear. 
+		- Red snackbar of "That username is already in use" should appear.
 	- Test mismatching passwords:
 		- Red snackbar of "Repeated password does not match." should appear on clicking "create account":
 	- Test passwords with 5 characters or less:
-		- Red snackbar of "Please enter a password with six or more characters" on clicking "create account". 
+		- Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
 	- Test passwords with special characters '@' '$' '%' '^' '*' '!'
 		- Password should be accepted.
 	- Account is created:
-		- Green snackbar of "Your account has been created." should appear." 
-	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.  
+		- Green snackbar of "Your account has been created." should appear."
+	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.
 
 ##Log In
 	- Click 'log in' with empty form:
 		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in".
 	- Insert incorrect username and correct password:
-		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in". 
+		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in".
 	- Insert correct username and incorrect password:
 		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in".
 	- Insert correct user and password
 	- Should be logged in and redirected to 'empty' View Pictures view.
-	- Refresh browser. 
-	- User should be logged in. 
+	- Refresh browser.
+	- User should be logged in.
 	- Close browser tab.
-	- Open new tab and go to app. 
-	- The user should be logged in. 
-	- Close browser (all tabs, both incognito and regular browsing). 
-	- Open browser and go to app. 
-	- The user should be logged in. 
+	- Open new tab and go to app.
+	- The user should be logged in.
+	- Close browser (all tabs, both incognito and regular browsing).
+	- Open browser and go to app.
+	- The user should be logged in.
 	- Log out
-	- Should be back to "log in" view. 
-	- Refresh broswer. 
-	- Should be back to "Log in" view. 
-	- Log in 
-	- Should be logged in and redirected to 'empty' View Pictures view. 	
+	- Should be back to "log in" view.
+	- Refresh broswer.
+	- Should be back to "Log in" view.
+	- Log in
+	- Should be logged in and redirected to 'empty' View Pictures view.
 
 ##Recover password
 Not developed yet
@@ -93,11 +93,11 @@ Not developed yet
 	- If first entry and app has not uploaded content:
 		- Sidebar left:
 			- View pictures
-			- "Tip! You have no tags yet. Upload some photos and add some tags." With lighbulb icon to the left of 'Tip!'. The word upload is a hyperlink to 'upload' view. 
+			- "Tip! You have no tags yet. Upload some photos and add some tags." With lighbulb icon to the left of 'Tip!'. The word upload is a hyperlink to 'upload' view.
 			- 'Search for tag' bar at bottom of sidebar.
 		- Center view:
 			- Image icon
-			- "Start organising and backing up your pictures. Click the buttons below and start adding pictures." 
+			- "Start organising and backing up your pictures. Click the buttons below and start adding pictures."
 			- 'Import pictures' button.
 			- 'Upload pictures' button.
 	- If the app has content:
@@ -106,15 +106,15 @@ Not developed yet
 			- 'All pictures' with camera icon (default view).
 			- Untagged
 			- Years semi-tags
-			- List of tags, each with a different color. 
-			- 'Search for tag' bar at bottom of sidebar. 
+			- List of tags, each with a different color.
+			- 'Search for tag' bar at bottom of sidebar.
 		- Center view:
-			- 'XX pictures' describing total amount of photos and videos uploaded and available. 
+			- 'XX pictures' describing total amount of photos and videos uploaded and available.
 			- To the right, sorting dropdown with options:
 				- Newest (default)
 				- Oldest
 				- Recent uploaded
-			- Photos and videos gallery. 
+			- Photos and videos gallery.
 
 ##Upload pictures
 (Flow will change before Beta release. It will be updated when flow change is implemented)
@@ -122,31 +122,31 @@ Not developed yet
 	- 'Upload files'
 		- Choose 'upload files'
 		- Select at least 2 photos to upload.
-		- Do not add tags. 
+		- Do not add tags.
 		- Upload
 		- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-		- Upload same photos as the initial batch. 
+		- Upload same photos as the initial batch.
 		- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
 		- In your device, duplicate the same photo, making sure it has a different filename.
-		- Upload this duplicated photo with new name. 
+		- Upload this duplicated photo with new name.
 		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
 		- Choose 'upload files'
-		- Select a photos for upload that has not been uploaded before. 
+		- Select a photos for upload that has not been uploaded before.
 		- Add a tag on upload.
 		- Upload photo
-		- Check in "View Pictures" view that photo has been tagged correctly. 
+		- Check in "View Pictures" view that photo has been tagged correctly.
 		- Choose "upload files".
 		- Select a video.
 		- Upload
-		- In device, duplicate the same video and make sure it has a different name. 
-		- Upload video with same name. 
+		- In device, duplicate the same video and make sure it has a different name.
+		- Upload video with same name.
 		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
 	- 'Upload folder'
 		- Prepare 2 folders with photos and videos. Make sure that within each folder there are duplicated photos and videos.
 		- Select 'upload folder'
-		- Select a folder 
+		- Select a folder
 		- Add a tag
-		- Upload folder. 
+		- Upload folder.
 		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
 		- Check in "View Pictures" view that files have been tagged correctly.
 		- Select 'upload folder'
@@ -154,6 +154,7 @@ Not developed yet
 		- Do not add a tag
 		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
 		- Check in "View Pictures" view > 'untagged' that files have not been tagged.
+   - Drag and drop
 
 ##Import Pictures
 ###Google Drive
@@ -171,23 +172,23 @@ Not developed yet
 ##View pictures
 	- All Pictures
 		- When 'All Pictures' is selected, the 'eye' icon must be visible next to the section name.
-		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location), sidebar, and center view. 
-		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 
-		- Sort thumbnails by 'oldest'. Thumbail sorting should change to the opposite order as default. 
-		- Sort thumbnails by 'recently uploaded'. Thumbanail sorting should change to the corresponding order from latest upload to oldest uploaded. 
+		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location), sidebar, and center view.
+		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded.
+		- Sort thumbnails by 'oldest'. Thumbail sorting should change to the opposite order as default.
+		- Sort thumbnails by 'recently uploaded'. Thumbanail sorting should change to the corresponding order from latest upload to oldest uploaded.
 	- Untagged
-		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location). 
+		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location).
 		- Sidebar should display:
 			- 'all pictures' and camera icon without 'eye' icon.
 			- 'untagged' with 'eye' icon must be visible next to the section name.
-			- Years semi tags that have a possible intersection with 'untagged' files. 
-			- 'Filter tags' bar at the bottom. 
+			- Years semi tags that have a possible intersection with 'untagged' files.
+			- 'Filter tags' bar at the bottom.
 		- Center should display total amount of files that are 'untagged'
 		- Sorting dropdown:
-			- All sorting options must be tested. 
-		- The 'untagged' tag with an 'x' button. 
-			- If 'x' button is clicked, view goes back to 'all pictures'. 
-		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 	
+			- All sorting options must be tested.
+		- The 'untagged' tag with an 'x' button.
+			- If 'x' button is clicked, view goes back to 'all pictures'.
+		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded.
 
 ###File selection and tagging
 	- All the actions described below must be run for the following sub-views:
@@ -200,38 +201,38 @@ Not developed yet
 	- **Select file(s)**
 		- Select single file:
 			- Click on an file from the thumbnail gallery.
-				- Sidebar left changes from 'navigation mode' to 'Organize pictures' mode. 
-					- Sidebar title must be 'Organize pictures (x)' where 'x' is amount of selected thumbnails. 
-						- Sidebar content and display described in tagging and untagging processes. 
+				- Sidebar left changes from 'navigation mode' to 'Organize pictures' mode.
+					- Sidebar title must be 'Organize pictures (x)' where 'x' is amount of selected thumbnails.
+						- Sidebar content and display described in tagging and untagging processes.
 				- 'Organize Bar' appears below header divider with:
-					- Amount of thumbnails selected. If number is clicked, thumbnails are unselected. 
+					- Amount of thumbnails selected. If number is clicked, thumbnails are unselected.
 					- 'Select all' option. Opacity 0.5, if :hover opacity:1.
 					- 'Rotate' option. Opacity 0.5, if :hover opacity:1.
 					- 'Unselect all' option. Opacity 0.5, if :hover opacity:1.
 					- 'Download' option. Opacity 0.5, if :hover opacity:1.
 					- 'Delete' option to the right. Opacity 0.5, if :hover opacity:1.
 				- In gallery title, the amount of thumbnails selected are described from the total of available thumbnails: 'X pictures, 1 selected'
-				- The thumbnail must automatically be displayed with: 
-					- Transform: scale(0.8) 
+				- The thumbnail must automatically be displayed with:
+					- Transform: scale(0.8)
 					- Background color: #5b6eff
 					- Opacity: 20%
-			- Sort thumbnails from 'newest' (default) to 'oldest' to 'recently uploaded'. 
+			- Sort thumbnails from 'newest' (default) to 'oldest' to 'recently uploaded'.
 				- Selection should remain with all parameters.
-			- When scrolling down, if thumbnails are below the fold, the 'Organize Bar' is always visible at the top of image gallery. 
-			- Unselect thumbnail by clicking on the selected thumbanil. 
-			- The interface should return to 'navigation mode'. 
+			- When scrolling down, if thumbnails are below the fold, the 'Organize Bar' is always visible at the top of image gallery.
+			- Unselect thumbnail by clicking on the selected thumbanil.
+			- The interface should return to 'navigation mode'.
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
 			- Unselect thumbnail by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
-			- The interface should return to 'navigation mode'. 
+			- The interface should return to 'navigation mode'.
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
-			- Unselect thumbnail by clicking on 'x' in 'Organize pictures' sidebar. 
-			- The interface should return to 'navigation mode'. 
+			- Unselect thumbnail by clicking on 'x' in 'Organize pictures' sidebar.
+			- The interface should return to 'navigation mode'.
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
-			- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
-			- The interface should return to 'navigation mode'. 
+			- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+			- The interface should return to 'navigation mode'.
 		- Select multiple files:
 			- Select multiple files by clicking each one:
 				- Select at least two (2) thumbnails by clicking on them:
@@ -240,43 +241,43 @@ Not developed yet
 					- 'Gallery title' must behave as described in 'select single file'.
 					- Thumbnails must must behave as described in 'select single file'.
 					- Sorting must behave as described in 'select single file'.
-				- Unselect thumbnails by clicking on the selected thumbanils. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnails by clicking on the selected thumbanils.
+				- The interface should return to 'navigation mode'.
 				- Select thumbnails again.
 				- Interface should turn to 'organize view'.
 				- Unselect thumbnails by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
-				- The interface should return to 'navigation mode'. 
+				- The interface should return to 'navigation mode'.
 				- Select thumbnails again.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar.
+				- The interface should return to 'navigation mode'.
 				- Select thumbnails again.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+				- The interface should return to 'navigation mode'.
 			- Select multiple images by using shift:
-				- Select a thumbnail. 
-				- While pressing the 'shift' key, select another thumbnail. 
+				- Select a thumbnail.
+				- While pressing the 'shift' key, select another thumbnail.
 				- All thumbnails between initial thumbnail selection and second thumbnail selection should be selected.
 						- Sidebar must behave as described in 'select single image'.
 						- 'Organize bar' must behave as described in 'select single image'.
 						- 'Gallery title' must behave as described in 'select single image'.
 						- Thumbnails must must behave as described in 'select single image'.
-						- Sorting must behave as described in 'select single image'. 
-				- Unselect thumbnails by clicking on the selected thumbanils. 
-				- The interface should return to 'navigation mode'. 
+						- Sorting must behave as described in 'select single image'.
+				- Unselect thumbnails by clicking on the selected thumbanils.
+				- The interface should return to 'navigation mode'.
 				- Select thumbnails again using the same methodology with 'shift'.
 				- Interface should turn to 'organize view'.
 				- Unselect thumbnails by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
-				- The interface should return to 'navigation mode'. 
+				- The interface should return to 'navigation mode'.
 				- Select thumbnails again using the same methodology with 'shift'.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar.
+				- The interface should return to 'navigation mode'.
 				- Select thumbnails again using the same methodology with 'shift'.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+				- The interface should return to 'navigation mode'.
 			- Select multiple images by using 'select all' option
 				- Select a thumbnail.
 						- Sidebar must behave as described in 'select single image'.
@@ -285,28 +286,28 @@ Not developed yet
 						- Thumbnails must must behave as described in 'select single image'.
 						- Sorting must behave as described in 'select single image'
 				- From 'Organize bar' click on 'select all'.
-					- All thumbnails of the gallery should be selected. 
-					- Gallery title must say 'x pictures, x selected' where 'x' is the same amount. 
-				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery. 
-					- All thumbnails must be selected. 
+					- All thumbnails of the gallery should be selected.
+					- Gallery title must say 'x pictures, x selected' where 'x' is the same amount.
+				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
+					- All thumbnails must be selected.
 				- Unselect thumbnails by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
 				- The interface should return to 'navigation mode'.
 				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
-					- All thumbnails must be unselected.   
-				- Select a thumbnail. 
+					- All thumbnails must be unselected.
+				- Select a thumbnail.
 				- Interface should turn to 'organize view'.
 				- From 'Organize bar' click on 'select all'.
-				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar.
+				- The interface should return to 'navigation mode'.
 				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
-					- All thumbnails must be unselected.   
-				- Select a thumbnail. 
+					- All thumbnails must be unselected.
+				- Select a thumbnail.
 				- Interface should turn to 'organize view'.
 				- From 'Organize bar' click on 'select all'.
-				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
-				- The interface should return to 'navigation mode'. 
+				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+				- The interface should return to 'navigation mode'.
 				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
-					- All thumbnails must be unselected.   
+					- All thumbnails must be unselected.
 	- **Download file(s)**
 		- Download single file.
 			- Select a thumbnail.
@@ -316,13 +317,13 @@ Not developed yet
 				- Thumbnails must must behave as described in 'select single image'.
 				- Sorting must behave as described in 'select single image'.
 			- In 'Organize bar' click on 'download' icon.
-			- New tab on browser appear and prompt of 'save as' and location for download is displayed. 
+			- New tab on browser appear and prompt of 'save as' and location for download is displayed.
 			- Click 'save'.
 				- Prompt dissapears.
 				- Tab closes automatically.
-				- Downloading starts 
-			- File is downloaded with original file extension to device in selected location. 
-		- Download multiple files. 
+				- Downloading starts
+			- File is downloaded with original file extension to device in selected location.
+		- Download multiple files.
 			- Select a thumbnail.
 				- Sidebar must behave as described in 'select single image'.
 				- 'Organize bar' must behave as described in 'select single image'.
@@ -335,46 +336,46 @@ Not developed yet
 				- Click 'save'.
 				- Prompt dissapears.
 				- Tab closes automatically.
-				- Downloading starts  
-			- .zip is downloaded to device in selected location containing original files with corresponding file extensions.  
+				- Downloading starts
+			- .zip is downloaded to device in selected location containing original files with corresponding file extensions.
 	- **Rotate file(s)**
 		- Rotate a single thumbnail
 			- Select a thumbnail.
 			- In 'Organize bar' click on 'rotate' icon.
-			- The selected thumbnail should turn 90 degrees clockwise with every click. 
+			- The selected thumbnail should turn 90 degrees clockwise with every click.
 		- Rotate a multiple thumbnails
 			- Select multiple thumbnails.
 			- In 'Organize bar' click on 'rotate' icon.
-			- The selected thumbnails should turn 90 degrees clockwise with every click. 
+			- The selected thumbnails should turn 90 degrees clockwise with every click.
 	- **Delete file(s)**
 		- Delete single file
 			- Select a thumbnail.
 			- In 'Organize bar' click on 'delete' icon.
 			- Browser prompt of 'Are you sure you want to delete the 1 selected pictures?'
-			- Click 'yes' or 'OK' depending on browser. 
-			- Thumbnail should be eliminated from gallery. 
-			- Amount of thumbnails described in the Gallery title should change accordingly to the new amount of thumbnails. 
+			- Click 'yes' or 'OK' depending on browser.
+			- Thumbnail should be eliminated from gallery.
+			- Amount of thumbnails described in the Gallery title should change accordingly to the new amount of thumbnails.
 		- Delete multiple files
 			- Select multiple thumbnails.
 			- In 'Organize bar' click on 'delete' icon.
-			- Browser prompt of 'Are you sure you want to delete the x selected pictures?' where 'x' is the amount of thumbnails selected. 
-			- Click 'yes' or 'OK' depending on browser. 
-			- Thumbnails should be eliminated from gallery. 
-			- Amount of thumbnails described in the Gallery title should change accordingly to the new amount of thumbnails. 
+			- Browser prompt of 'Are you sure you want to delete the x selected pictures?' where 'x' is the amount of thumbnails selected.
+			- Click 'yes' or 'OK' depending on browser.
+			- Thumbnails should be eliminated from gallery.
+			- Amount of thumbnails described in the Gallery title should change accordingly to the new amount of thumbnails.
 	- **View file**
 		- Double-click on thumbnail
 		- File viewer opens in fullscreen
-			- Press ESC to exit fullscreen prompt appears. 
+			- Press ESC to exit fullscreen prompt appears.
 			- If file is image:
 				- Image is displayed in full screen.
 			- If file is video:
-				- Video player loads and automatically plays video and audio. 
-			- Viewer has file date upper center. 
+				- Video player loads and automatically plays video and audio.
+			- Viewer has file date upper center.
 			- x/y in bottom right of viewer where 'x' is position of file in gallery and 'y' is total amount of files in gallery.
 			- Arrow righ and left
 				- if arrows are clicked, it opens the viewer of the following file. Right arrow is following file, left arrow is previous.
 				- If left and right keys from keyboard are used, they behave like clicking on left and right arrows.
-			- 'Opposing arrows' icon on upper right side. 
+			- 'Opposing arrows' icon on upper right side.
 			- Click 'Opposing arrows' icon to exit fullscreen.
 			- Should be back to 'navigation mode'.
 		- Double-click on thumbnail
@@ -382,52 +383,52 @@ Not developed yet
 			- Press ESC to exit fullscreen.
 		- Should be back to 'navigation mode'.
 	- **Tagging files**
-	(tagging from 'untagged' will change its flow. When changed, this script must be upated)	
-		- Select a thumbnail or group of thumbnails. 
+	(tagging from 'untagged' will change its flow. When changed, this script must be upated)
+		- Select a thumbnail or group of thumbnails.
 		- Sidebar left should change to 'Organize pictures' mode:
-			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
-			- By default, the 'attach tag' option should be selected. 
+			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery.
+			- By default, the 'attach tag' option should be selected.
 			- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add new tag' button.
 			- If there are tags previously created by the user, they are listed:
-				- If the thumbnail(s) selected already have a tag or tags attached, the tag(s) must have a tick icon, indicating the tag is selected. All tags with tick must be at the top of the list. 
-				- For those tags not attached to the selected thumbnails, the tag must have a '+' icon. 
-			- If there are no tags previously created by the user, nothing is shown between the 'Add new tag' button and 'search for tag' bar. 
+				- If the thumbnail(s) selected already have a tag or tags attached, the tag(s) must have a tick icon, indicating the tag is selected. All tags with tick must be at the top of the list.
+				- For those tags not attached to the selected thumbnails, the tag must have a '+' icon.
+			- If there are no tags previously created by the user, nothing is shown between the 'Add new tag' button and 'search for tag' bar.
 		- Tagging file(s) using previously created tags:
 			- From the list of previously created tags, click on the '+' icon.
-			- The used tag from the list changes the icon to its right from '+' to tick. 
+			- The used tag from the list changes the icon to its right from '+' to tick.
 			- A green snackbar with the message "Just tagged 'x' picture(s) with tag 'xyz'" where 'x' is the amount of files tagged and 'xyz' the name of the tag.
-			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag. 
+			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag.
 		- Tagging file(s) with new tags:
-			- Select a thumbnail or group of thumbnails. 
-			- On the placeholder with 'Add tag name' enter a tag name. 
+			- Select a thumbnail or group of thumbnails.
+			- On the placeholder with 'Add tag name' enter a tag name.
 			- Click 'Add new tag' button.
-			- The selected thumbnails should be tagged with the entered tag. 
-			- The entered tag now is added to the top of list of previously created tags and to its right the icon is a tick. 
+			- The selected thumbnails should be tagged with the entered tag.
+			- The entered tag now is added to the top of list of previously created tags and to its right the icon is a tick.
 			- A green snackbar with the message "Just tagged 'x' picture(s) with tag 'xyz'" where 'x' is the amount of files tagged and 'xyz' the name of the entered tag.
 			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag.
-			- Select a thumbnail or group of thumbnails. 
-			- On the placeholder with 'Add tag name' enter a tag name. 
+			- Select a thumbnail or group of thumbnails.
+			- On the placeholder with 'Add tag name' enter a tag name.
 			- Click enter.
-			- The selected thumbnails should be tagged with the entered tag. 
-			- The entered tag now is added to the top of list of previously created tags and to its right the icon is a tick. 
+			- The selected thumbnails should be tagged with the entered tag.
+			- The entered tag now is added to the top of list of previously created tags and to its right the icon is a tick.
 			- A green snackbar with the message "Just tagged 'x' picture(s) with tag 'xyz'" where 'x' is the amount of files tagged and 'xyz' the name of the entered tag.
 			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag.
 		- Tagging tagged files:
 			- If multiple files are selected and these have different tags (tags for file A are different from tags of file B)
 				- When tagging using previously created tags:
 					- All previously created tags will have a '+' icon, independently of if the selected files have those tags or not.
-					- If a tag or tags are applied, all selected files must be tagged with tag(s). 
+					- If a tag or tags are applied, all selected files must be tagged with tag(s).
 			- If multiple files are selected and these have common and different tags (tags for file A are '1' and '2' and tags for file B are '2' and '3').
 				- When tagging using previously created tags:
 					- All common tags (in this case '2') will have a tick icon and be at the top of the list
 					- All remaining previously created tags will have a '+' icon, independently of if the selected files have those tags or not.
-					- If a tag or tags are applied, all selected files must be tagged with tag(s). 
+					- If a tag or tags are applied, all selected files must be tagged with tag(s).
 	- **Removing tags**
-		- Select a thumbnail or group of thumbnails. 
+		- Select a thumbnail or group of thumbnails.
 		- Sidebar left should change to 'Organize pictures' mode:
-			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
+			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery.
 			- By default, the 'attach tag' option should be selected.
-			-  
+			-
 			- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add new tag' button.
 
 When untagging, if no pictures left with that tag, remove tag from query.
