@@ -1589,6 +1589,10 @@ H.isYear = function (tag) {
    return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
 }
 
+H.isGeo = function (tag) {
+   return !! tag.match (/^g::/);
+}
+
 H.makeRegex = function (filter) {
    return new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
 }
@@ -1989,7 +1993,7 @@ dale.do ([
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
       if (['all', 'untagged'].indexOf (tag.toLowerCase ()) > -1) return B.do (x, 'snackbar', 'yellow', 'Sorry, you can not use that tag.');
-      if (H.isYear (tag)) return B.do (x, 'snackbar', 'yellow', 'Sorry, you can not use that tag.');
+      if (H.isYear (tag) || H.isGeo (tag)) return B.do (x, 'snackbar', 'yellow', 'Sorry, you can not use that tag.');
       var ids = dale.keys (B.get ('State', 'selected'));
       if (ids.length === 0) return;
       var payload = {tag: tag, ids: ids, del: del}

@@ -40,7 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - Logo
-   - svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic. 
+   - svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
 - Sign Up
    - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
@@ -53,20 +53,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    **For more reference, we can check line 387 of OML's client.js**
 
 - Pics
-   - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.  
-   - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. 
+   - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
+   - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
       - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
-         - Select thumbnail above the fold. Sort images from 'newest' (default) to 'oldest'. Now gallery is sorted backwards, and selected thumbail is below the fold. Scroll down. Image will be selected on gallery interface. Scroll back up in order to reach the sorting dropdown. Sort back from 'oldest' to 'newest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. At this point, scroll down and scroll back up. Now the selected image is effectively shown selected on interface. 
+         - Select thumbnail above the fold. Sort images from 'newest' (default) to 'oldest'. Now gallery is sorted backwards, and selected thumbail is below the fold. Scroll down. Image will be selected on gallery interface. Scroll back up in order to reach the sorting dropdown. Sort back from 'oldest' to 'newest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. At this point, scroll down and scroll back up. Now the selected image is effectively shown selected on interface.
       - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface.
-   - Video player still has 'rotate' option in bottom center of viewer.  
+   - Video player still has 'rotate' option in bottom center of viewer.
 
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
 - Geotagging enable/disable.
-   - Make tags transactional.
-   - Endpoint to enable/disable geotags.
-   - Forbid geo tag prefixes from normal tags (server/client).
-   - Get geotags function.
+   - enable/disable
+   - if enabled, add when uploading
+   - test: forbid, enable, disable
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
@@ -410,6 +409,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `ID` is an id returned by `POST /download`.
    - If successful, the user will receive a zip file with the specified pictures.
 
+`POST /geo`
+   - Enables or disables geotagging.
+   - Body must be of the form `{operation: 'enable|disable'}`.
+   - If an operation is ongoing while the request is being made, the server will reply with a 409 code. Otherwise it will reply with a 200 code.
+   - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
+
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...]}`.
 
@@ -465,6 +470,7 @@ All the routes below require an admin user to be logged in.
    - ms-tag:    maximum ms for successful requests for POST /tag
    - ms-query:  maximum ms for successful requests for POST /query
    - ms-share:  maximum ms for successful requests for POST /share
+   - ms-geo:    maximum ms for successful requests for POST /geo
    - ms-s3put:  maximum ms for successful uploads to S3
    - ms-s3del:  maximum ms for successful deletions to S3
 
@@ -473,15 +479,16 @@ All the routes below require an admin user to be logged in.
    - rq-NNN:    total requests responded with HTTP code NNN
    - rq-bad:    total unsuccessful requests for all endpoints
    - rq-all:    total successful requests for all endpoints
-   - rq-auth:   total successful requests for /auth
-   - rq-pic:    total successful requests for /pic
-   - rq-thumb:  total successful requests for /thumb
-   - rq-upload: total successful requests for /upload
-   - rq-delete: total successful requests for /delete
-   - rq-rotate: total successful requests for /rotate
-   - rq-tag:    total successful requests for /tag and /tags
-   - rq-query:  total successful requests for /query
-   - rq-share:  total successful requests for /share
+   - rq-auth:   total successful requests for POST /auth
+   - rq-pic:    total successful requests for GET /pic
+   - rq-thumb:  total successful requests for GET /thumb
+   - rq-upload: total successful requests for POST /upload
+   - rq-delete: total successful requests for POST /delete
+   - rq-rotate: total successful requests for POST /rotate
+   - rq-tag:    total successful requests for POST /tag and /tags
+   - rq-query:  total successful requests for POST /query
+   - rq-share:  total successful requests for POST /share
+   - rq-geo:    total successful requests for POST /geo
    - ms-all:    total ms for successful requests for all endpoints
    - ms-auth:   total ms for successful requests for POST /auth
    - ms-pic:    total ms for successful requests for GET /pic
@@ -492,6 +499,7 @@ All the routes below require an admin user to be logged in.
    - ms-tag:    total ms for successful requests for POST /tag
    - ms-query:  total ms for successful requests for POST /query
    - ms-share:  total ms for successful requests for POST /share
+   - ms-geo:    total ms for successful requests for POST /geo
    - ms-upload-hash:      total ms for hash check in POST /upload
    - ms-upload-capacity:  total ms for capacity check in POST /upload
    - ms-upload-format:    total ms for format check in POST /upload
@@ -510,6 +518,9 @@ All the routes below require an admin user to be logged in.
    email: STRING
    type: STRING (one of tier1|tier2)
    created: INT
+   geo: 1|undefined
+
+- geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
 - emails (hash): key is email, value is username
 
@@ -552,11 +563,11 @@ All the routes below require an admin user to be logged in.
 
 - tag:USERID:TAG (set): pic ids.
 
+- tags:USERID (set): list of all tags created by the user. Does not include tags shared with the user.
+
 - shm:USERID (set): USERA:TAG, USERB:TAG (shared with me)
 
 - sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
-
-- tags:USERID (set): list of all tags created by the user. Does not count tags shared with the user.
 
 - download:ID (string): stringified object of the shape `{username: ID, pics: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
@@ -572,6 +583,7 @@ All the routes below require an admin user to be logged in.
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
+   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow

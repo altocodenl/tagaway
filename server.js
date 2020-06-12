@@ -246,6 +246,14 @@ H.isYear = function (tag) {
    return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
 }
 
+H.isGeo = function (tag) {
+   return !! tag.match (/^g::/);
+}
+
+H.getGeotags = function (metadata) {
+   return [];
+}
+
 H.mkdirif = function (s, path) {
    a.stop (s, [k, 'test', '-d', path], function (s) {
       a.seq (s, [k, 'mkdir', path]);
@@ -1303,7 +1311,7 @@ var routes = [
          if (type (tag) !== 'string') return error = teishi.str (tag);
          tag = H.trim (tag);
          if (['all', 'untagged'].indexOf (tag.toLowerCase ()) !== -1) return error = tag;
-         if (H.isYear (tag)) error = tag;
+         if (H.isYear (tag) || H.isGeo (tag)) error = tag;
          return tag;
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
@@ -1345,6 +1353,7 @@ var routes = [
          }],
          function (s) {
             var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
+            s.geotags = H.getGeotags (metadata);
             if (! pic.vid) {
                var error = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Warning/)) {
@@ -1415,9 +1424,10 @@ var routes = [
             [[H.thumbPic, newpath, 200], [perfTrack, 'resize200']],
             [[H.thumbPic, newpath, 900], [perfTrack, 'resize900']],
          ], function (v) {return v}] : [H.thumbVid, newpath],
-         // Delete original image from disk.
-         // ! ENV ? [] : [a.set, false, [a.make (fs.unlink), newpath]],
+         // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
+         [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
          function (s) {
+            if (! s.last) s.geoTags = [];
             var multi = redis.multi ();
 
             pic.dimw = s.size.w;
@@ -1458,7 +1468,7 @@ var routes = [
             multi.srem ('upicd:' + rq.user.username, pic.hash);
             multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
 
-            dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()), function (tag) {
+            dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()).concat (s.geotags), function (tag) {
                multi.sadd ('pict:' + pic.id,                       tag);
                multi.sadd ('tags:' + rq.user.username,             tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic.id);
@@ -1596,7 +1606,7 @@ var routes = [
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag.toLowerCase ()) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isYear (b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (H.isYear (b.tag) || H.isGeo (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       var multi = redis.multi (), seen = {};
       dale.go (b.ids, function (id) {
@@ -1838,7 +1848,7 @@ var routes = [
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isYear (b.tag))                           return reply (rs, 400, {error: 'tag'});
+      if (H.isYear (b.tag) || H.isGeo (b.tag))        return reply (rs, 400, {error: 'tag'});
       if (b.who === rq.user.username)                 return reply (rs, 400, {error: 'self'});
 
       astop (rs, [
@@ -1976,8 +1986,87 @@ var routes = [
                   s3used: parseInt (s.last [2]) || 0
                },
                logs:     dale.go (s.last [0], JSON.parse),
+               geo:      rq.user.geo
             });
          }
+      ]);
+   }],
+
+   // *** ENABLE/DISABLE GEOTAGGING ***
+
+   ['post', 'geo', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['operation'], 'eachOf', teishi.test.equal],
+         ['operation', b.operation, ['enable', 'disable'], 'oneOf', teishi.test.equal]
+      ])) return;
+
+      astop (rs, [
+         [Redis, 'get', 'geo:' + rq.user.username],
+         function (s) {
+            if (s.last) return reply (rs, 409);
+            s.next ();
+         },
+         b.operation === 'disable' ? [
+            [Redis, 'smembers', 'tags:' + rq.user.username],
+            function (s) {
+               s.tags = s.last;
+               var multi = redis.multi ();
+               dale.go (s.last, function (tag) {
+                  if (H.isGeo (tag)) multi.smembers ('tag:' + rq.user.username + ':' + tag);
+               });
+               mexec (s, multi);
+            },
+            function (s) {
+               var multi = redis.multi ();
+               dale.go (s.tags, function (tag, k) {
+                  if (! H.isGeo (tag)) return;
+                  multi.srem ('tags:' + rq.user.username, tag);
+                  multi.del ('tag:' + rq.user.username + ':' + tag);
+                  dale.go (s.last [k], function (pic) {
+                     multi.srem ('pict:' + pic, tag);
+                  });
+               });
+               multi.hdel ('users:' + rq.user.username, 'geo');
+               mexec (s, multi);
+            },
+         ] : [
+            [Redis, 'set', 'geo:' + rq.user.username, Date.now ()],
+            [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
+            function (s) {
+               s.pics = s.last;
+               var multi = redis.multi ();
+               dale.go (s.last, function (pic) {
+                  multi.hget ('pic:' + pic, 'vid');
+               });
+               mexec (s, multi);
+            },
+            function (s) {
+               a.fork (s, s.pics, function (pic, k) {
+                  var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic);
+                  return [
+                     ! s.last [k] ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'],
+                     function (s) {
+                        var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
+                        var geotags = H.getGeodata (metadata);
+                        var multi = redis.multi ();
+                        dale.go (geotags, function (tag) {
+                           multi.sadd ('pict:' + pic,                          tag);
+                           multi.sadd ('tags:' + rq.user.username,             tag);
+                           multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic);
+                        });
+                        mexec (s, multi);
+                     }
+                  ];
+               }, {max: 5});
+            },
+            [Redis, 'hset', 'users:' + rq.user.username, 'geo', 1],
+            [Redis, 'del', 'geo:' + rq.user.username],
+         ],
+         [H.log, rq.user.username, {a: 'geo', op: b.operation}],
+         [reply, rs, 200]
       ]);
    }],
 
@@ -2112,7 +2201,7 @@ cicek.apres = function (rs) {
       logs.push (['flow', 'rq-all', 1]);
       logs.push (['flow', 'ms-all', t - rs.log.startTime]);
       logs.push (['max',  'ms-all', t - rs.log.startTime]);
-      dale.go (['auth', 'pic', 'thumb', 'upload', 'delete', 'rotate', 'tag', 'query', 'share'], function (path) {
+      dale.go (['auth', 'pic', 'thumb', 'upload', 'delete', 'rotate', 'tag', 'query', 'share', 'geo'], function (path) {
          if (rs.log.method !== ((path === 'pic' || path === 'thumb') ? 'get' : 'post')) return;
          if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
          logs.push (['flow', 'rq-' + path, 1]);
@@ -2175,8 +2264,12 @@ if (cicek.isMaster) a.seq ([
 ]);
 
 process.on ('uncaughtException', function (error, origin) {
-   notify (a.creat (), {priority: 'critical', type: 'server error', error: error, origin: origin});
-   process.exit (1);
+   a.seq ([
+      [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
+      function () {
+         process.exit (1);
+      }
+   ]);
 });
 
 // *** REDIS ERROR HANDLER ***
@@ -2456,6 +2549,8 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
    }],
 ]);
 
+// *** TEMPORARY SCRIPT TO FIND GEODATA ***
+
 if (cicek.isMaster) a.stop ([
    // Get list of pics and thumbs
    [redis.keyscan, 'pic:*'],
@@ -2472,9 +2567,10 @@ if (cicek.isMaster) a.stop ([
          return [
             ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'],
             function (s) {
-               var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
-               dale.go (metadata, function (line) {
-                  if (line.match (/geo|gps/i)) clog ('FOUND', pic.id, line);
+               var metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
+               if (! metadata) return clog ('no metadata', pic, metadata);
+               dale.go (metadata.split ('\n'), function (line) {
+                  if (line.match (/geo|gps/i)) fs.appendFile ('gpsinfo.txt', [pic.id, line].join ('\t') + '\n', 'utf8', function () {});
                });
                s.next ();
             }
