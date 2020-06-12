@@ -14,7 +14,6 @@
 - Tests on slower connections TBD
 - Tester must have access to Development Environment admin and altocode's email.
 
-
 ##Invite process
 	- On log in view, click on "Don't have an account? Request an invite."
 	- Browser prompt "Send us your email and we'll send you an invite link to create your account! We will *only* use your email to send you an invite."
@@ -116,45 +115,128 @@ Not developed yet
 				- Recent uploaded
 			- Photos and videos gallery.
 
+##General Navigation
+	- On first loading, app interface is 'View pictures'
+	- Click on 'Manage tags', green snackbar of "Coming soon, hang tight!" should appear. 
+	- On user icon, on :hover dropdown should appear. Click on "my account". Green snackbar of "Coming soon, hang tight!" should appear. 
+	- Click on 'Import pictures', go to 'import' view
+	- Click browser's 'back' button. Go back to 'view pictures'.
+	- Click browser's 'forward' button. Go back to 'import' view.
+	- Click on 'logo', Go back to 'view pictures'.
+	- Click on 'upload pictures'. Go to 'upload' view.
+	- Click on 'See all photos'. Go to 'view pictures'.
+	- Click browser's 'back' button. Go back to 'upload' view.
+	- Click on 'View pictures' on header. Go to 'view pictures'.
+	- On user icon, on :hover dropdown should appear. 
+	- Click on 'logout'. Logged out. 
+	- Log in. 
+
 ##Upload pictures
 (Flow will change before Beta release. It will be updated when flow change is implemented)
-	- Go to upload view
-	- 'Upload files'
-		- Choose 'upload files'
-		- Select at least 2 photos to upload.
-		- Do not add tags.
-		- Upload
-		- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-		- Upload same photos as the initial batch.
-		- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-		- In your device, duplicate the same photo, making sure it has a different filename.
-		- Upload this duplicated photo with new name.
-		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
-		- Choose 'upload files'
-		- Select a photos for upload that has not been uploaded before.
-		- Add a tag on upload.
-		- Upload photo
-		- Check in "View Pictures" view that photo has been tagged correctly.
-		- Choose "upload files".
-		- Select a video.
-		- Upload
-		- In device, duplicate the same video and make sure it has a different name.
-		- Upload video with same name.
-		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
-	- 'Upload folder'
-		- Prepare 2 folders with photos and videos. Make sure that within each folder there are duplicated photos and videos.
-		- Select 'upload folder'
-		- Select a folder
-		- Add a tag
-		- Upload folder.
-		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-		- Check in "View Pictures" view that files have been tagged correctly.
-		- Select 'upload folder'
-		- Select the second folder
-		- Do not add a tag
-		- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-		- Check in "View Pictures" view > 'untagged' that files have not been tagged.
-   - Drag and drop
+	- Direct upload: 
+		- Go to upload view
+		- 'Upload files'
+			- Choose 'upload files'
+			- Select at least 2 photos to upload.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add tags.
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- The uploaded photos should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- In your device, duplicate the same photos as the previous batch, making sure they have different filenames
+			- Choose 'upload files'
+			- Select those same photos.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add tags.
+			- Click on "Start Upload"
+			- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload. 
+			- Choose 'upload files'
+			- Select photos for upload that have not been uploaded before.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Add a tag on upload.
+			- Click on "Start Upload"
+			- Check in "View Pictures" view that photo has been tagged correctly.
+			- Choose "upload files".
+			- Select a video for upload.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add a tag
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- The uploaded video should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- In your device, duplicate the same video as the previous batch, making sure it has different filenames
+			- Choose 'upload files'
+			- Select the same video.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- Do not add tags.
+			- Click on "Start Upload"
+			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
+			- Choose 'upload files'
+			- Select videos for upload that have not been uploaded before.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- Add a tag on upload.
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- Check in "View Pictures" view that video has been tagged correctly.
+		- 'Upload folder'
+			- Prepare 2 folders with photos and videos. Make sure that within each folder there are duplicated photos and videos.
+			- Select 'upload folder'
+			- Select a folder
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Add a tag
+			- Click on "Start Upload"
+			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
+			- Check in "View Pictures" view that files have been tagged correctly.
+			- Select 'upload folder'
+			- Select the second folder
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add a tag
+			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
+			- Check in "View Pictures" view > 'untagged' that files have not been tagged.
+   	- Drag and drop upload:
+   		- Go to upload view
+		- 'Upload files'
+			- From device, select at least 2 photos to upload. 
+			- Have at least 2 photos to upload.
+			- From device select, drag and drop photos to any part of the 'upload interface' on browser.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add tags.
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- The uploaded photos should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- In your device, duplicate the same photos as the previous batch, making sure they have different filenames.
+			- From device select those photos, drag and drop photos to any part of the 'upload interface' on browser.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add tags.
+			- Click on "Start Upload"
+			- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload. 
+			- Have photos ready that have not been uploaded before.
+			- From device select, drag and drop photos to any part of the 'upload interface' on browser.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Add a tag.
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- Check in "View Pictures" view that video has been tagged correctly.
+			- Select a video for upload.
+			- From device select, drag and drop video to any part of the 'upload interface' on browser.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- Do not add a tag
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- The uploaded video should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- In your device, duplicate the same video as the previous batch, making sure it has different filenames
+			- From device select, drag and drop video to any part of the 'upload interface' on browser.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- Do not add tags.
+			- Click on "Start Upload"
+			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
+			- Select videos for upload that have not been uploaded before.
+			- From device select, drag and drop video to any part of the 'upload interface' on browser.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- Add a tag.
+			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- Check in "View Pictures" view that video has been tagged correctly.
+  
 
 ##Import Pictures
 ###Google Drive
@@ -428,20 +510,50 @@ Not developed yet
 		- Sidebar left should change to 'Organize pictures' mode:
 			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery.
 			- By default, the 'attach tag' option should be selected.
-			-
-			- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add new tag' button.
+			- Select 'Untag'.
+			- If selected thumbnail has no tags:
+				- The list under 'Remove current tags' must be empty. 
+			- If selected thumbnail has tags:
+				- The list under 'Remove current tags' must list all the tags atached to the selected thumbnail(s)
+				- Each tag listed must have the tick icon to its right. 
+			- On tag list, on :hover the tick icon should change to 'scissors' icon in red. 
+			- Click on 'scissors' icon on :hover.
+			- Browser prompt 'Are you sure you want to remove the tag xxx from all selected pictures?' where 'xxx' is the tag's name. 
+			- Click 'Yes' or 'OK' depending on the browser. 
+			- Thumbnail(s) should be untagged of removed tag. 
+			- Tag should dissapear from list under 'Remove current tags'.
+			- If there are no thumbnails tagged with a particular tag, that tag should be eliminated from interface. From both sidebar left in 'navigation mode' as well as 'organize mode'. 
+	- **Navigation with tags**
+		- From 'view pictures' view and with files uploaded and tagged. 
+			- Default option should be 'all pictures' unless navigation occured before.  
+			- On sidebar left, click on 'untagged'
+				- All untagged thumbnails should be displayed in gallery. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
+				- Below title, the 'untagged' tag with white 'tag' icon and icon with 'x' to its right. 
+				- On sidebar left, only automated semi tags (years) should be visible. 
+				- **Untagged + Year / Year + untagged?**
+			- Click on icon with 'x' on 'untagged' below the title.
+			- Should be back to 'all pictures'
+			- On sidebar left, click on 'untagged'
+			- Should be back to 'untagged'.
+			- On sidebar left, click on 'all pictures'
+			- Should be back to 'all pictures'
 
-When untagging, if no pictures left with that tag, remove tag from query.
+		Year 
+		Year + tag
+		Tag
+		Tag + Tag
+		Tag + Year
+		
 
-###Changing tags (adding tags & changing tags)
 
 
+	
+###Search tag
 
-##Search tag
+###Filter tag
 
-##Filter tag
 
-###Navigation with tags
 
 
 ##Share image
@@ -462,8 +574,4 @@ Not developed yet
 ##Payment process
 Not developed yet
 
-- Navigation
-check logo goes to 'view pictures'
-checl header navigates correctly
-check from import and upload, 'See all photos' goes to 'view pictures'
 
