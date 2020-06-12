@@ -142,8 +142,7 @@ Not developed yet
 		- Upload video with same name. 
 		- Repeated photo should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (1 repeated)".
 	- 'Upload folder'
-		- Prepare 2 folders with photos and videos. 
-		- Make sure that within each folder there are duplicated photos and videos.
+		- Prepare 2 folders with photos and videos. Make sure that within each folder there are duplicated photos and videos.
 		- Select 'upload folder'
 		- Select a folder 
 		- Add a tag
@@ -190,7 +189,7 @@ Not developed yet
 			- If 'x' button is clicked, view goes back to 'all pictures'. 
 		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded. 	
 
-###Image selection and tagging
+###File selection and tagging
 	- All the actions described below must be run for the following sub-views:
 		- All pictures
 		- Untagged (only if there are untagged files)
@@ -198,9 +197,9 @@ Not developed yet
 		- Each tag
 		- Combinations of tags
 		- Combinations of tags and semi tags
-	- **Select image**
-		- Select single image:
-			- Click on an image from the thumbnail gallery.
+	- **Select file(s)**
+		- Select single file:
+			- Click on an file from the thumbnail gallery.
 				- Sidebar left changes from 'navigation mode' to 'Organize pictures' mode. 
 					- Sidebar title must be 'Organize pictures (x)' where 'x' is amount of selected thumbnails. 
 						- Sidebar content and display described in tagging and untagging processes. 
@@ -217,12 +216,13 @@ Not developed yet
 					- Background color: #5b6eff
 					- Opacity: 20%
 			- Sort thumbnails from 'newest' (default) to 'oldest' to 'recently uploaded'. 
-				- Selection should remain with all parameters. 
+				- Selection should remain with all parameters.
+			- When scrolling down, if thumbnails are below the fold, the 'Organize Bar' is always visible at the top of image gallery. 
 			- Unselect thumbnail by clicking on the selected thumbanil. 
 			- The interface should return to 'navigation mode'. 
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
-			- Unselect thumbnail by clicking on amount of thumbnails selected icon in blue on 'Organize bar'.
+			- Unselect thumbnail by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
 			- The interface should return to 'navigation mode'. 
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
@@ -232,43 +232,216 @@ Not developed yet
 			- Interface should turn to 'organize view'.
 			- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
 			- The interface should return to 'navigation mode'. 
-
-
-
-		- Select multiple images:
-			- 
-
-**Download image(s)**
-**Rotate**
-**Select all**
-Scrolling
-**Unselect all**
-Scrolling
-**Delete image(s)**
-- Tagging from "all pictures"
+		- Select multiple files:
+			- Select multiple files by clicking each one:
+				- Select at least two (2) thumbnails by clicking on them:
+					- Sidebar must behave as described in 'select single file'.
+					- 'Organize bar' must behave as described in 'select single file'.
+					- 'Gallery title' must behave as described in 'select single file'.
+					- Thumbnails must must behave as described in 'select single file'.
+					- Sorting must behave as described in 'select single file'.
+				- Unselect thumbnails by clicking on the selected thumbanils. 
+				- The interface should return to 'navigation mode'. 
+				- Select thumbnails again.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnails by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
+				- The interface should return to 'navigation mode'. 
+				- Select thumbnails again.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar. 
+				- The interface should return to 'navigation mode'. 
+				- Select thumbnails again.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
+				- The interface should return to 'navigation mode'. 
+			- Select multiple images by using shift:
+				- Select a thumbnail. 
+				- While pressing the 'shift' key, select another thumbnail. 
+				- All thumbnails between initial thumbnail selection and second thumbnail selection should be selected.
+						- Sidebar must behave as described in 'select single image'.
+						- 'Organize bar' must behave as described in 'select single image'.
+						- 'Gallery title' must behave as described in 'select single image'.
+						- Thumbnails must must behave as described in 'select single image'.
+						- Sorting must behave as described in 'select single image'. 
+				- Unselect thumbnails by clicking on the selected thumbanils. 
+				- The interface should return to 'navigation mode'. 
+				- Select thumbnails again using the same methodology with 'shift'.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnails by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
+				- The interface should return to 'navigation mode'. 
+				- Select thumbnails again using the same methodology with 'shift'.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar. 
+				- The interface should return to 'navigation mode'. 
+				- Select thumbnails again using the same methodology with 'shift'.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
+				- The interface should return to 'navigation mode'. 
+			- Select multiple images by using 'select all' option
+				- Select a thumbnail.
+						- Sidebar must behave as described in 'select single image'.
+						- 'Organize bar' must behave as described in 'select single image'.
+						- 'Gallery title' must behave as described in 'select single image'.
+						- Thumbnails must must behave as described in 'select single image'.
+						- Sorting must behave as described in 'select single image'
+				- From 'Organize bar' click on 'select all'.
+					- All thumbnails of the gallery should be selected. 
+					- Gallery title must say 'x pictures, x selected' where 'x' is the same amount. 
+				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery. 
+					- All thumbnails must be selected. 
+				- Unselect thumbnails by clicking on number of amount of thumbnails selected icon in blue on 'Organize bar'.
+				- The interface should return to 'navigation mode'.
+				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
+					- All thumbnails must be unselected.   
+				- Select a thumbnail. 
+				- Interface should turn to 'organize view'.
+				- From 'Organize bar' click on 'select all'.
+				- Unselect thumbnails by clicking on 'x' in 'Organize pictures' sidebar. 
+				- The interface should return to 'navigation mode'. 
+				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
+					- All thumbnails must be unselected.   
+				- Select a thumbnail. 
+				- Interface should turn to 'organize view'.
+				- From 'Organize bar' click on 'select all'.
+				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'. 
+				- The interface should return to 'navigation mode'. 
+				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
+					- All thumbnails must be unselected.   
+	- **Download file(s)**
+		- Download single file.
+			- Select a thumbnail.
+				- Sidebar must behave as described in 'select single image'.
+				- 'Organize bar' must behave as described in 'select single image'.
+				- 'Gallery title' must behave as described in 'select single image'.
+				- Thumbnails must must behave as described in 'select single image'.
+				- Sorting must behave as described in 'select single image'.
+			- In 'Organize bar' click on 'download' icon.
+			- New tab on browser appear and prompt of 'save as' and location for download is displayed. 
+			- Click 'save'.
+				- Prompt dissapears.
+				- Tab closes automatically.
+				- Downloading starts 
+			- File is downloaded with original file extension to device in selected location. 
+		- Download multiple files. 
+			- Select a thumbnail.
+				- Sidebar must behave as described in 'select single image'.
+				- 'Organize bar' must behave as described in 'select single image'.
+				- 'Gallery title' must behave as described in 'select single image'.
+				- Thumbnails must must behave as described in 'select single image'.
+				- Sorting must behave as described in 'select single image'.
+			- Select multiple thumbnails using any of the methods described above.
+			- In 'Organize bar' click on 'download' icon.
+			- New tab on browser appear and prompt of 'save as' and location for download is displayed. The downloading format must be .zip.
+				- Click 'save'.
+				- Prompt dissapears.
+				- Tab closes automatically.
+				- Downloading starts  
+			- .zip is downloaded to device in selected location containing original files with corresponding file extensions.  
+	- **Rotate file(s)**
+		- Rotate a single thumbnail
+			- Select a thumbnail.
+			- In 'Organize bar' click on 'rotate' icon.
+			- The selected thumbnail should turn 90 degrees clockwise with every click. 
+		- Rotate a multiple thumbnails
+			- Select multiple thumbnails.
+			- In 'Organize bar' click on 'rotate' icon.
+			- The selected thumbnails should turn 90 degrees clockwise with every click. 
+	- **Delete file(s)**
+		- Delete single file
+			- Select a thumbnail.
+			- In 'Organize bar' click on 'delete' icon.
+			- Browser prompt of 'Are you sure you want to delete the 1 selected pictures?'
+			- Click 'yes' or 'OK' depending on browser. 
+			- Thumbnail should be eliminated from gallery. 
+			- Amount of thumbnails described in the Gallery title should change accordingly to the new amount of thumbnails. 
+		- Delete multiple files
+			- Select multiple thumbnails.
+			- In 'Organize bar' click on 'delete' icon.
+			- Browser prompt of 'Are you sure you want to delete the x selected pictures?' where 'x' is the amount of thumbnails selected. 
+			- Click 'yes' or 'OK' depending on browser. 
+			- Thumbnails should be eliminated from gallery. 
+			- Amount of thumbnails described in the Gallery title should change accordingly to the new amount of thumbnails. 
+	- **View file**
+		- Double-click on thumbnail
+		- File viewer opens in fullscreen
+			- Press ESC to exit fullscreen prompt appears. 
+			- If file is image:
+				- Image is displayed in full screen.
+			- If file is video:
+				- Video player loads and automatically plays video and audio. 
+			- Viewer has file date upper center. 
+			- x/y in bottom right of viewer where 'x' is position of file in gallery and 'y' is total amount of files in gallery.
+			- Arrow righ and left
+				- if arrows are clicked, it opens the viewer of the following file. Right arrow is following file, left arrow is previous.
+				- If left and right keys from keyboard are used, they behave like clicking on left and right arrows.
+			- 'Opposing arrows' icon on upper right side. 
+			- Click 'Opposing arrows' icon to exit fullscreen.
+			- Should be back to 'navigation mode'.
+		- Double-click on thumbnail
+		- File viewer opens in fullscreen
+			- Press ESC to exit fullscreen.
+		- Should be back to 'navigation mode'.
+	- **Tagging files**
+	(tagging from 'untagged' will change its flow. When changed, this script must be upated)	
+		- Select a thumbnail or group of thumbnails. 
+		- Sidebar left should change to 'Organize pictures' mode:
+			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
+			- By default, the 'attach tag' option should be selected. 
+			- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add new tag' button.
+			- If there are tags previously created by the user, they are listed:
+				- If the thumbnail(s) selected already have a tag or tags attached, the tag(s) must have a tick icon, indicating the tag is selected. All tags with tick must be at the top of the list. 
+				- For those tags not attached to the selected thumbnails, the tag must have a '+' icon. 
+			- If there are no tags previously created by the user, nothing is shown between the 'Add new tag' button and 'search for tag' bar. 
+		- Tagging file(s) using previously created tags:
+			- From the list of previously created tags, click on the '+' icon.
+			- The used tag from the list changes the icon to its right from '+' to tick. 
+			- A green snackbar with the message "Just tagged 'x' picture(s) with tag 'xyz'" where 'x' is the amount of files tagged and 'xyz' the name of the tag.
+			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag. 
+		- Tagging file(s) with new tags:
 			- Select a thumbnail or group of thumbnails. 
-			- Sidebar left should change to 'Organize pictures' mode:
-				- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
-				- By default, the 'attach option' should be selected. 
-				- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add a new tag' button.
-				- List of all tags created by the user:
-					- If the thumbnail(s) selected already have a tag attached, the tag must have a tick icon, indicating the tag is selected. 
-					- For those tags not attached to the selected thumbnails, the tag must have a '+' icon. 
-			- 
-			Sorting
+			- On the placeholder with 'Add tag name' enter a tag name. 
+			- Click 'Add new tag' button.
+			- The selected thumbnails should be tagged with the entered tag. 
+			- The entered tag now is added to the top of list of previously created tags and to its right the icon is a tick. 
+			- A green snackbar with the message "Just tagged 'x' picture(s) with tag 'xyz'" where 'x' is the amount of files tagged and 'xyz' the name of the entered tag.
+			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag.
+			- Select a thumbnail or group of thumbnails. 
+			- On the placeholder with 'Add tag name' enter a tag name. 
+			- Click enter.
+			- The selected thumbnails should be tagged with the entered tag. 
+			- The entered tag now is added to the top of list of previously created tags and to its right the icon is a tick. 
+			- A green snackbar with the message "Just tagged 'x' picture(s) with tag 'xyz'" where 'x' is the amount of files tagged and 'xyz' the name of the entered tag.
+			- Click on tag name to go to tag's view and verify that files have been correctly assigned to that tag.
+		- Tagging tagged files:
+			- If multiple files are selected and these have different tags (tags for file A are different from tags of file B)
+				- When tagging using previously created tags:
+					- All previously created tags will have a '+' icon, independently of if the selected files have those tags or not.
+					- If a tag or tags are applied, all selected files must be tagged with tag(s). 
+			- If multiple files are selected and these have common and different tags (tags for file A are '1' and '2' and tags for file B are '2' and '3').
+				- When tagging using previously created tags:
+					- All common tags (in this case '2') will have a tick icon and be at the top of the list
+					- All remaining previously created tags will have a '+' icon, independently of if the selected files have those tags or not.
+					- If a tag or tags are applied, all selected files must be tagged with tag(s). 
+	- **Removing tags**
+		- Select a thumbnail or group of thumbnails. 
+		- Sidebar left should change to 'Organize pictures' mode:
+			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery. 
+			- By default, the 'attach tag' option should be selected.
+			-  
+			- 'Attach new tag' title, placeholder below with 'Add tag name' and 'Add new tag' button.
+
+When untagging, if no pictures left with that tag, remove tag from query.
 
 ###Changing tags (adding tags & changing tags)
 
-###Removing tags
-When untagging, if no pictures left with that tag, remove tag from query.
 
-###View image
-Open picture and trigger fullscreen.
-Navigate images using arrows and keyboard left and right
-Video reproduction 
-If exit fullscreen, exit picture too. (using ESC key or arrows on top right)
+
+##Search tag
+
+##Filter tag
 
 ###Navigation with tags
+
 
 ##Share image
 Not developed yet
@@ -281,10 +454,6 @@ Not developed yet
 
 ##My Account
 Not developed yet
-
-##Search tag
-
-##Filter tag
 
 ##2GB limit reached
 Not developed yet

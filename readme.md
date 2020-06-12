@@ -53,10 +53,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    **For more reference, we can check line 387 of OML's client.js**
 
 - Pics
+   - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.  
    - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. 
       - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
          - Select thumbnail above the fold. Sort images from 'newest' (default) to 'oldest'. Now gallery is sorted backwards, and selected thumbail is below the fold. Scroll down. Image will be selected on gallery interface. Scroll back up in order to reach the sorting dropdown. Sort back from 'oldest' to 'newest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. At this point, scroll down and scroll back up. Now the selected image is effectively shown selected on interface. 
-      - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface. 
+      - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface.
+   - Video player still has 'rotate' option in bottom center of viewer.  
 
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
