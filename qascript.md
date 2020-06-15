@@ -236,7 +236,6 @@ Not developed yet
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
 			- Check in "View Pictures" view that video has been tagged correctly.
-  
 
 ##Import Pictures
 ###Google Drive
@@ -531,30 +530,185 @@ Not developed yet
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
 				- Below title, the 'untagged' tag with white 'tag' icon and icon with 'x' to its right. 
 				- On sidebar left, only automated semi tags (years) should be visible. 
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 				- **Untagged + Year / Year + untagged?**
 			- Click on icon with 'x' on 'untagged' below the title.
 			- Should be back to 'all pictures'
 			- On sidebar left, click on 'untagged'
 			- Should be back to 'untagged'.
-			- On sidebar left, click on 'all pictures'
+			- On sidebar left, click on 'all pictures'.
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on any year semi-tag
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
+				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right. 
+				- On sidebar left, only the year selected and tags with positive results should be available. If thumbnails aren't tagged, then no tag should be available for navigation on left. 
+			- Click on icon with 'x' on year below the title.
 			- Should be back to 'all pictures'
-
-		Year 
-		Year + tag
-		Tag
-		Tag + Tag
-		Tag + Year
-		
-
-
-
-	
-###Search tag
-
-###Filter tag
-
-
-
+			- On sidebar left, click on the same 'year' semi-tag
+			- Should be back to 'year' semi-tag view
+			- On sidebar left, click on 'all pictures'.
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on the same 'year' semi-tag
+			- Should be back to 'year' semi-tag view
+			- On sidebar left, click on the same 'year' semi-tag
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on any year semi-tag, but in this case, make sure there are tagged thumbnails. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right. 
+				- On sidebar left, only tags with positive results should be available. 
+			- Click on a tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ tag). 
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, and the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, only the year selected and tags with positive results to the intersection should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on year below the title.
+			- Gallery should only display selected tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on the tag below the title. 
+			- Should be back to 'all pictures'.
+			- Select the same intersection as before.
+			- On sidebar left, click on the 'year' semi-tag.
+			- Gallery should only display selected tag.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- On sidebar left, select the same year as before. 
+			- Gallery should display the category intersection (year ∩ tag). 
+			- On sidebar left, click on the tag being viewed.
+			- Gallery should display only the 'year' semi-tag previously selected. 
+			- On sidebar left, click on the same tag as before.
+			- Gallery should display the category intersection (year ∩ tag). 
+			- On sidebar left, click on 'all pictures'
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on any tag
+			- Gallery should only display selected tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on year below the title.
+			- Should be back to 'all pictures'
+			- On sidebar left, click on the same tag
+			- Should be back to tag view
+			- On sidebar left, click on 'all pictures'.
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on the same tag
+			- Should be back to tag view
+			- On sidebar left, click on the same tag
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on any tag, make sure this tag intersects with other tags.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for this tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, only years and tags with positive intersections should be available. 
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on another tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ tag). 
+				- Below title, boths tags with its corresponding color, 'tag names' and with 'x' to the right of each one.
+				- On sidebar left, only the tags selected, year and tags with positive results to the intersection should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tags.
+			- Click on any icon with 'x' on a tag below the title.
+			- Gallery should only display the other selected tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on the tag below the title. 
+			- Should be back to 'all pictures'.
+			- Select the same intersection as before.
+			- On sidebar left, click on one of the tags.
+			- Gallery should only display the other selected tag.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- On sidebar left, select the same second tag as before. 
+			- Gallery should display the category intersection (tag ∩ tag). 
+			- On sidebar left, click on one of the tags being viewed.
+			- Gallery should display only the other tag previously selected. 
+			- On sidebar left, click on the same tag as before.
+			- Gallery should display the category intersection (tag ∩ tag). 
+			- On sidebar left, click on 'all pictures'
+			- Should be back to 'all pictures'.
+			- On sidebar left, click on any tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for this tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, only years and tags with positive intersections should be available. 
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on any year semi-tag. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ year). 
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right, and the 'year' semi-tag with a 'clock' icon with 'x' to its right. 
+				- On sidebar left, only the year selected and tags with positive results to the intersection should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on year below the title.
+			- Gallery should only display selected tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on the tag below the title. 
+			- Should be back to 'all pictures'.
+			- Select the same intersection as before.
+			- On sidebar left, click on the 'year' semi-tag.
+			- Gallery should only display selected tag.
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- On sidebar left, select the same year as before. 
+			- Gallery should display the category intersection (year ∩ tag). 
+			- On sidebar left, click on the tag being viewed.
+			- Gallery should display only the 'year' semi-tag previously selected. 
+			- On sidebar left, click on the same tag as before.
+			- Gallery should display the category intersection (year ∩ tag). 
+			- On sidebar left, click on 'all pictures'
+			- Should be back to 'all pictures'.
+	- **Search tag**
+		- From 'all pictures'
+			- At the bottom of sidebar left is the search bar. 
+			- When there are no tags selected, the search back placeholder should say 'Search for a tag'
+			- Go to the search bar:
+				- Click on the search bar
+				- Cursor should blink.
+				- SLOWLY enter the name of a tag (NOT year tag). As you type, the sidebar left should be filtering tag names containing the letters inserted in the order they are typed: 't' should only return tags with 't' in its name, 'ta' only with 'ta' in its name, etc. 
+			- Select one of the resulting tags. 
+			- Gallery should only display selected tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- On search bar, the searched term should be there. 
+			- If search term is deleted:
+				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on the tag below the title. 
+			- Should be back to 'all pictures'.
+			- Go to the search bar:
+				- Click on the search bar
+				- Cursor should blink.
+				- SLOWLY enter a year. As you type, the sidebar left should be filtering tag names containing the numbers inserted in the order they are typed: '2' should only return tags with '2' in its name, '20' only with '20' in its name, etc.
+			- Select one of the resulting tags. 
+			- Gallery should only display selected year semi-tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this year semi-tag. 
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right.
+				- On sidebar left, the year selected.
+			- On search bar, the searched term should be there. 
+			- If search term is deleted:
+				- On sidebar left, the tags with positive results should be available.
+			- Click on icon with 'x' on the tag below the title. 
+			- Should be back to 'all pictures'.
+	- **Filter tag**
+		- From 'all pictures'
+			- Select any tag or year.
+			- With a tag selected, the search back placeholder should say 'Filter tag'
+			- Go to the search bar:
+				- Click on the search bar
+				- Cursor should blink.
+				- SLOWLY enter a year or tag. As you type, the sidebar left should be filtering tag names containing the numbers or letter inserted in the order they are typed.
+			- Select one of the resulting tags.
+			- Gallery should display the intersection selected (tag ∩ year / tag ∩ year / year ∩ tag / etc) 
+			- On search bar, the searched term should be there. 
+			- If search term is deleted:
+				- On sidebar left, the tags with positive results should be available.
+				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
+			- Click on icon with 'x' on the both tags below the title. 
+			- Should be back to 'all pictures'.
 
 ##Share image
 Not developed yet
@@ -573,5 +727,3 @@ Not developed yet
 
 ##Payment process
 Not developed yet
-
-
