@@ -11,7 +11,7 @@
       "redis":   "3.0.2",
       "redmin":  "0.1.1",
       "redport": "0.1.2",
-      "teishi":  "5.0.2",
+      "teishi":  "5.0.3",
       "archiver":                 "4.0.1",
       "aws-sdk":                  "2.602.0",
       "murmurhash":               "0.0.2",
