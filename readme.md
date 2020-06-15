@@ -58,8 +58,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
          - Select thumbnail above the fold. Sort images from 'newest' (default) to 'oldest'. Now gallery is sorted backwards, and selected thumbail is below the fold. Scroll down. Image will be selected on gallery interface. Scroll back up in order to reach the sorting dropdown. Sort back from 'oldest' to 'newest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. At this point, scroll down and scroll back up. Now the selected image is effectively shown selected on interface.
       - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface.
+   - [BUG] Untag. When a thumbnail with multiple tags is selected, on 'untag' there's a list of tags under 'Remove current tags'. If selected thumbnail has more than one (1) tag, upon untagging one (1) tag, the 'Remove current tags' dissapears although there are remaining tags on the list. the 'Remove current tags' should be there.
    - Video player still has 'rotate' option in bottom center of viewer.
-
+   - 'Untagged' should allow intersection. When I'm in 'untagged' I still have available the year semi tags (and eventually the geo tags). As of now, if I'm in 'untagged' and click on a year tag, I'm taken to the year tag and the system forgets the 'untagged'. If I want to see what 'untagged' photos I have for a particular year, so that I can apply the corresponding tags to them, I can't.
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
 - Geotagging enable/disable.
