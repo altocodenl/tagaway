@@ -93,14 +93,15 @@
 // -------------------------
 
 .sidebar__footer {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   height: 54px;
-  width: 100%;
+  width: 300px; // sidebar width
   display: flex;
   align-items: center;
   border-top: 1px solid $border-color;
+  border-right: 1px solid $border-color;
 }
 
 // -------------------------
