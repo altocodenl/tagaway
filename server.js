@@ -138,8 +138,6 @@ var notify = function (s, message) {
       clog (new Date ().toUTCString (), message);
       return s.next ();
    }
-   // TODO: turn off after testing
-   return clog (message);
    message.environment = ENV;
    SECRET.ping.send (message, function (error) {
       if (error) return s.next (null, error);
@@ -2567,35 +2565,4 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
          });
       });
    }],
-]);
-
-// *** TEMPORARY SCRIPT TO FIND GEODATA ***
-
-if (cicek.isMaster) a.stop ([
-   // Get list of pics and thumbs
-   [redis.keyscan, 'pic:*'],
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (id) {
-         multi.hgetall (id);
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      a.fork (s, s.last, function (pic) {
-         var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
-         return [
-            ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'],
-            function (s) {
-               if (pic.vid) var metadata = s.error.stderr;
-               else         var metadata = s.last.stdout;
-               H.getGeotags (s, metadata);
-            },
-            function (s) {
-               //clog ('result', pic.id, s.last);
-               s.next ();
-            }
-         ];
-      }, {max: 5});
-   }
 ]);
