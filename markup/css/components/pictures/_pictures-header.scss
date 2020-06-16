@@ -4,6 +4,8 @@
 .pictures-header {
   margin-bottom: spaceVer(2);
   padding-right: $padding--m;
+  position: relative;
+  z-index: 10;
 }
 
 .pictures-header__action-bar {
