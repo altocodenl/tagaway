@@ -142,6 +142,7 @@ Not developed yet
 			- Do not add tags.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
+			- Click on 'See all photos'. Go to 'view pictures'.
 			- The uploaded photos should be available in View Pictures > 'all pictures' and 'untagged'. 
 			- In your device, duplicate the same photos as the previous batch, making sure they have different filenames
 			- Choose 'upload files'
@@ -153,56 +154,79 @@ Not developed yet
 			- Choose 'upload files'
 			- Select photos for upload that have not been uploaded before.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
-			- Add a tag on upload.
+			- Insert a tag in placeholder with "add existing or new tags"
+			- Click on 'Add tag'.
 			- Click on "Start Upload"
-			- Check in "View Pictures" view that photo has been tagged correctly.
+			- Click on header "View Pictures" and go to gallery. 
+			- Check that files were tagged correctly.
 			- Choose "upload files".
 			- Select a video for upload.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
 			- Do not add a tag
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- The uploaded video should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- Click on 'ac;pic' logo. 
+			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'. 
 			- In your device, duplicate the same video as the previous batch, making sure it has different filenames
 			- Choose 'upload files'
-			- Select the same video.
+			- Select the same video with different name.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
 			- Do not add tags.
 			- Click on "Start Upload"
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
 			- Choose 'upload files'
 			- Select videos for upload that have not been uploaded before.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
-			- Add a tag on upload.
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
+			- Insert a tag in placeholder with "add existing or new tags"
+			- Press 'enter' on device keyboard. 
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Check in "View Pictures" view that video has been tagged correctly.
+			- Click on 'See all photos'. Go to 'view pictures'.
+			- Check that file(s) were tagged correctly.
 		- 'Upload folder'
 			- Prepare 2 folders with photos and videos. Make sure that within each folder there are duplicated photos and videos.
 			- Select 'upload folder'
 			- Select a folder
+			- Broser prompt should appear:
+				- "Upload 'x' files to this site?
+					This will upload all files from ' "folder name" '. Only do this if you trust this site."
+			- Click 'Upload' on prompt.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
-			- Add a tag
+				- If there are any unsopported formats, there should be listed in red below the amount of files selected.
+					- 'x' files have unsupported formats and will be ignored: 'format name'. 
+			- Select a previously used tag.
 			- Click on "Start Upload"
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-			- Check in "View Pictures" view that files have been tagged correctly.
+			- Click on header "View Pictures" and go to gallery. 
+			- Check that files were tagged correctly.
+			- Go to 'Upload'.
 			- Select 'upload folder'
-			- Select the second folder
+			- Select the second folder.
+			- Broser prompt should appear:
+				- "Upload 'x' files to this site?
+					This will upload all files from ' "folder name" '. Only do this if you trust this site."
+			- Click 'Upload' on prompt.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
-			- Do not add a tag
+				- If there are any unsopported formats, there should be listed in red below the amount of files selected.
+					- 'x' files have unsupported formats and will be ignored: 'format name'. 
+			- Do not add a tag.
+			- Before the upload is finished, click on 'View pictures' and go to thumbnail gallery. 
+			- Go to 'Upload'.
+			- The uploading process should still be going. 
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-			- Check in "View Pictures" view > 'untagged' that files have not been tagged.
+			- Click on 'ac;pic' logo. 
+			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'. 
    	- Drag and drop upload:
    		- Go to upload view
 		- 'Upload files'
 			- From device, select at least 2 photos to upload. 
-			- Have at least 2 photos to upload.
 			- From device select, drag and drop photos to any part of the 'upload interface' on browser.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
 			- Do not add tags.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- The uploaded photos should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- Click on 'See all photos'. 
+			- Check if uploaded files are available in View Pictures > 'all pictures' and 'untagged'. 
 			- In your device, duplicate the same photos as the previous batch, making sure they have different filenames.
 			- From device select those photos, drag and drop photos to any part of the 'upload interface' on browser.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
@@ -212,10 +236,12 @@ Not developed yet
 			- Have photos ready that have not been uploaded before.
 			- From device select, drag and drop photos to any part of the 'upload interface' on browser.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
-			- Add a tag.
+			- Insert a tag in placeholder with "add existing or new tags"
+			- Click on 'Add tag'.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Check in "View Pictures" view that video has been tagged correctly.
+			- Click on header "View Pictures" and go to gallery. 
+			- Check that files were tagged correctly. 
 			- Select a video for upload.
 			- From device select, drag and drop video to any part of the 'upload interface' on browser.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
@@ -232,10 +258,12 @@ Not developed yet
 			- Select videos for upload that have not been uploaded before.
 			- From device select, drag and drop video to any part of the 'upload interface' on browser.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
-			- Add a tag.
+			- Insert a tag in placeholder with "add existing or new tags"
+			- Click on 'Add tag'.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Check in "View Pictures" view that video has been tagged correctly.
+			- Click on header "View Pictures" and go to gallery. 
+			- Check that files were tagged correctly. 
 
 ##Import Pictures
 ###Google Drive

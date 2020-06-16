@@ -39,6 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
+- Users
+   - Admin Prod for Tom
+    - QA of Tuesday June 16, 2020 was done without invite process. 
+
 - Logo
    - svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
