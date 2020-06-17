@@ -56,6 +56,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When account is created. Green snackbar "Your account has been created."
    **For more reference, we can check line 387 of OML's client.js**
 
+- Upload
+   - [BUG] Enabled Geo by entering B.do ('toggle', 'geo') or B.do ('post', 'geo', {}, {operation: 'enable'}) in browser console. Upload failed. Tried with another DEV account without enabling Geo, upload works correctly. Prod works correctly. 
+
 - Pics
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
    - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
