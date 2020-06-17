@@ -497,6 +497,12 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', '2017'])},
    ]}, 400],
+   ['upload small picture with invalid tags #5', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'g::Buenos Aires'])},
+   ]}, 400],
    ['upload small picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -727,12 +733,45 @@ var main = [
       if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Wrong year tag.');
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
+      return true;
+   }],
+   ttester ('geotagging', 'post', 'geo', {}, [
+      ['operation', 'string'],
+   ]),
+   ['turn on geotagging (invalid)', 'post', 'geo', {}, {operation: 'foo'}, 400],
+   ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
+   ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.geo !== false) return clog ('Geo should be turned off');
+      return true;
+   }],
+   ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
+   ['turn on geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
+   ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'disable'}, 409, function (s, rq, rs, next) {
+      // Wait for pictures to be tagged
+      setTimeout (next, 1000);
+   }],
+   ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.geo !== true) return clog ('Geo should be turned on');
+      return true;
+   }],
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
+      if (! eq (rs.body.pics [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
+      // TODO: check two geotags
+      return true;
+   }],
+   ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
+   ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.geo !== false) return clog ('Geo should be turned off');
+      return true;
+   }],
+   // TODO:
+      // upload with geotagging enabled, check tags and untagged
+      // disable, see that it goes away
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.pics [0].loc !== undefined) return clog ('Location wasn\'t removed after disabling geotagging.');
       // Wait for S3
       setTimeout (next, 10000);
-   }],
-   ['get public stats before deleting pictures', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 6385276, bys3: 6128443, pics: 5, vids: 0, t200: 4, t900: 3, users: 1})) return clog ('Invalid public stats');
-      return true;
    }],
    dale.go (dale.times (5, 0), function (k) {
       return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
@@ -830,6 +869,8 @@ var main = [
    ['tag invalid #5', 'post', 'tag', {}, {tag: 'Untagged', ids: ['a']}, 400],
    ['tag invalid #6', 'post', 'tag', {}, {tag: 'ALL', ids: ['a']}, 400],
    ['tag invalid #7', 'post', 'tag', {}, {tag: 'hello', ids: ['a', 'a']}, 400],
+   ['tag invalid #8', 'post', 'tag', {}, {tag: 'g::', ids: ['a']}, 400],
+   ['tag invalid #9', 'post', 'tag', {}, {tag: 'g::something', ids: ['a']}, 400],
    ['tag invalid nonexisting #1', 'post', 'tag', {}, {tag: 'hello', ids: ['a']}, 404],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
@@ -1256,7 +1297,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 51 && rs.body.logs.length !== 52)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 54 && rs.body.logs.length !== 55)) return clog ('Invalid logs.');
       // Wait for S3
       setTimeout (next, 2000);
    }],

@@ -266,7 +266,7 @@ H.getGeotags = function (s, metadata) {
    if (! position) return s.next ([]);
    redis.georadius ('geo', position [1], position [0], 15, 'km', 'count', 1, 'asc', function (error, data) {
       if (error) return s.next (null, error);
-      if (! data [0]) return s.next ([]);
+      if (! data [0]) return s.next ([position [0], position [1]]);
       data = data [0].split (':');
       s.next ([position [0], position [1], 'g::' + countryCodes [data [0]], 'g::' + data [1]]);
    });
@@ -1443,7 +1443,7 @@ var routes = [
          function (s) {
             s.geotags = s.last;
             if (s.geotags.length) {
-               pic.gps = s.last [0] + ',' + s.last [1];
+               pic.loc = JSON.stringify ([s.last [0], s.last [1]]);
                s.geotags = s.geotags.slice (2);
             }
 
@@ -1493,7 +1493,7 @@ var routes = [
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic.id);
             });
 
-            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', pic.id);
+            if ((tags.length - s.geotags.length) === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', pic.id);
 
             multi.hmset ('pic:' + pic.id, pic);
             mexec (s, multi);
@@ -1651,7 +1651,7 @@ var routes = [
                var id = b.ids [k / 2];
 
                var extags = dale.acc (s.last [k + 1], 0, function (a, b) {
-                  return a + (H.isYear (b) ? 0 : 1);
+                  return a + ((H.isYear (b) || H.isGeo (b)) ? 0 : 1);
                });
 
                if (b.del) {
@@ -1845,7 +1845,7 @@ var routes = [
             });
             s.output.tags = dale.keys (tags);
             dale.go (s.output.pics, function (pic, k) {
-               s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined};
+               s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
             });
             reply (rs, 200, s.output);
          },
@@ -2005,7 +2005,7 @@ var routes = [
                   s3used: parseInt (s.last [2]) || 0
                },
                logs:     dale.go (s.last [0], JSON.parse),
-               geo:      rq.user.geo
+               geo:      !! rq.user.geo
             });
          }
       ]);
@@ -2026,21 +2026,28 @@ var routes = [
          [Redis, 'get', 'geo:' + rq.user.username],
          function (s) {
             if (s.last) return reply (rs, 409);
+            if (rq.user.geo   && b.operation === 'enable')  return reply (rs, 200);
+            if (! rq.user.geo && b.operation === 'disable') return reply (rs, 200);
             s.next ();
          },
          b.operation === 'disable' ? [
+            [a.set, 'allPics', [Redis, 'smembers', 'tag:' + rq.user.username + ':all']],
             [Redis, 'smembers', 'tags:' + rq.user.username],
             function (s) {
-               s.tags = s.last;
                var multi = redis.multi ();
-               dale.go (s.last, function (tag) {
-                  if (H.isGeo (tag)) multi.smembers ('tag:' + rq.user.username + ':' + tag);
+               s.geotags = dale.fil (s.last, undefined, function (tag) {
+                  if (! H.isGeo (tag)) return;
+                  multi.smembers ('tag:' + rq.user.username + ':' + tag);
+                  return tag;
                });
                mexec (s, multi);
             },
             function (s) {
                var multi = redis.multi ();
-               dale.go (s.tags, function (tag, k) {
+               dale.go (s.allPics, function (pic) {
+                  multi.hdel ('pic:' + pic, 'loc');
+               });
+               dale.go (s.geotags, function (tag, k) {
                   if (! H.isGeo (tag)) return;
                   multi.srem ('tags:' + rq.user.username, tag);
                   multi.del ('tag:' + rq.user.username + ':' + tag);
@@ -2051,8 +2058,17 @@ var routes = [
                multi.hdel ('users:' + rq.user.username, 'geo');
                mexec (s, multi);
             },
+            [H.log, rq.user.username, {a: 'geo', op: b.operation}],
+            [reply, rs, 200]
          ] : [
             [Redis, 'set', 'geo:' + rq.user.username, Date.now ()],
+            [Redis, 'hset', 'users:' + rq.user.username, 'geo', 1],
+            [H.log, rq.user.username, {a: 'geo', op: b.operation}],
+            function (s) {
+               // We don't wait for the process to be completed to respond to the request.
+               reply (rs, 200);
+               s.next ();
+            },
             [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
             function (s) {
                s.pics = s.last;
@@ -2063,30 +2079,32 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               a.fork (s, s.pics, function (pic, k) {
-                  var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic);
+               a.fork (s, s.pics, function (pic, K) {
+                  var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic);
+                  var vid = s.last [K];
                   return [
-                     ! s.last [k] ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'],
-                     // TODO
+                     ! vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'],
                      function (s) {
-                        var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
-                        var geotags = H.getGeodata (metadata);
+                        var metadata = ! vid ? s.last.stdout : s.error.stderr;
+                        H.getGeotags (s, metadata);
+                     },
+                     function (s) {
+                        if (! s.last.length) return s.next ();
+                        var loc = JSON.stringify ([s.last [0], s.last [1]]);
                         var multi = redis.multi ();
-                        dale.go (geotags, function (tag) {
-                           multi.sadd ('pict:' + pic,                          tag);
+                        multi.hset ('pic:'  + pic, 'loc', loc);
+                        dale.go (s.last.slice (2), function (tag) {
                            multi.sadd ('tags:' + rq.user.username,             tag);
                            multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic);
+                           multi.sadd ('pict:' + pic,                          tag);
                         });
                         mexec (s, multi);
                      }
                   ];
                }, {max: 5});
             },
-            [Redis, 'hset', 'users:' + rq.user.username, 'geo', 1],
             [Redis, 'del', 'geo:' + rq.user.username],
          ],
-         [H.log, rq.user.username, {a: 'geo', op: b.operation}],
-         [reply, rs, 200]
       ]);
    }],
 

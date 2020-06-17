@@ -41,7 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Users
    - Admin Prod for Tom
-    - QA of Tuesday June 16, 2020 was done without invite process. 
+    - QA of Tuesday June 16, 2020 was done without invite process.
 
 - Logo
    - svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
@@ -64,14 +64,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface.
    - [BUG] Untag. When a thumbnail with multiple tags is selected, on 'untag' there's a list of tags under 'Remove current tags'. If selected thumbnail has more than one (1) tag, upon untagging one (1) tag, the 'Remove current tags' dissapears although there are remaining tags on the list. the 'Remove current tags' should be there.
    - Video player still has 'rotate' option in bottom center of viewer.
-   - 'Untagged' should allow intersection. When I'm in 'untagged' I still have available the year semi tags (and eventually the geo tags). As of now, if I'm in 'untagged' and click on a year tag, I'm taken to the year tag and the system forgets the 'untagged'. If I want to see what 'untagged' photos I have for a particular year, so that I can apply the corresponding tags to them, I can't. Same happens if I'm in a particular year: 'untagged' is an option, but when I click my year is overriden and only 'untagged' are left. 
-    
+   - 'Untagged' should allow intersection. When I'm in 'untagged' I still have available the year semi tags (and eventually the geo tags). As of now, if I'm in 'untagged' and click on a year tag, I'm taken to the year tag and the system forgets the 'untagged'. If I want to see what 'untagged' photos I have for a particular year, so that I can apply the corresponding tags to them, I can't. Same happens if I'm in a particular year: 'untagged' is an option, but when I click my year is overriden and only 'untagged' are left.
+   - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
+
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
 
 - Geotagging enable/disable.
-   - enable/disable
-   - if enabled, add when uploading
-   - test: forbid, enable, disable
+   - last server tests
+   - document 2 client events
+   - add geotagging enable/disable event
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
@@ -422,7 +423,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...]}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...], geo: true|false}`.
 
 #### Debugging routes
 
@@ -564,6 +565,7 @@ All the routes below require an admin user to be logged in.
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pics downloaded (also includes cache)
+   loc: [INT, INT} or absent - latitude and longitude of picture taken from metadata, only if geotagging is enabled for the pic's owner.
 
 - pict:ID (set): list of all the tags belonging to a picture.
 
