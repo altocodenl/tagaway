@@ -1,7 +1,9 @@
+var ENV = process.argv [2] === 'local' ? undefined : process.argv [2];
+
 var DOMAIN = {
    dev:  'https://altocode.nl/picdev/',
    prod: 'https://altocode.nl/pic/',
-} [process.argv [2]];
+} [ENV];
 
 var LOGO = [
    ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
@@ -26,7 +28,7 @@ module.exports = {
    cookiename: 'ac-v1',
    allowedFormats: ['image/jpeg', 'image/png', 'video/mp4'],
    port: 1427,
-   basepath: process.argv [2] ? '/root/files' : '/tmp',
+   basepath: ENV ? '/root/files' : '/tmp',
    redisdb: 15,
    crypto: {
       algorithm: 'aes-256-gcm',

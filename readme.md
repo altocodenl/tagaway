@@ -71,8 +71,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Geotagging enable/disable.
    - last server tests
-   - document 2 client events
-   - add geotagging enable/disable event
+   - when enabling, refresh every n seconds until tags stabilize
+   - geoicons
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
@@ -680,7 +680,7 @@ Used by giz:
 6. `E.open`
    - Contained by: `E.pics`.
    - Depends on `State.open`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`, `goto location PIC`.
 
 ### Listeners
 
@@ -723,7 +723,7 @@ Used by giz:
 
 3. Pics
    1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is `pics` and there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
+   2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
    3. `change State.query`: sets `State.npics` and invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
@@ -748,6 +748,7 @@ Used by giz:
    5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture.
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
+   8. `goto location`: takes a `pic` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
 5. Upload
    1. `change State.page`: if `State.page` is `upload`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
@@ -766,6 +767,7 @@ Used by giz:
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
 6. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`.
+   2. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`.
 
 ### Store
 

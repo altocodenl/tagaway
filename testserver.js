@@ -757,7 +757,10 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
       if (! eq (rs.body.pics [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
-      // TODO: check two geotags
+      var tags = rs.body.pics [0].tags;
+      if (tags.length !== 5) return clog ('Geotags not added.');
+      if (tags.indexOf ('g::Dunkerque') === -1) return clog ('City geotag not added correctly.');
+      if (tags.indexOf ('g::France') === -1) return clog ('Country geotag not added correctly.');
       return true;
    }],
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
@@ -765,14 +768,17 @@ var main = [
       if (rs.body.geo !== false) return clog ('Geo should be turned off');
       return true;
    }],
-   // TODO:
-      // upload with geotagging enabled, check tags and untagged
-      // disable, see that it goes away
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.pics [0].loc !== undefined) return clog ('Location wasn\'t removed after disabling geotagging.');
+      var tags = rs.body.pics [0].tags;
+      if (tags.length !== 3) return clog ('Geotags not removed.');
+      if (tags.indexOf ('g::Dunkerque') !== -1) return clog ('City geotag not removed.');
+      if (tags.indexOf ('g::France') !== -1) return clog ('Country geotag not removed.');
       // Wait for S3
       setTimeout (next, 10000);
    }],
+   ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
+   // TODO: upload with geotagging enabled, check tags and untagged
    dale.go (dale.times (5, 0), function (k) {
       return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');

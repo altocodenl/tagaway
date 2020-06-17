@@ -1854,6 +1854,7 @@ dale.do ([
    }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
+      if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.do (x, 'query', 'pics');
       B.do (x, 'query', 'tags');
@@ -2217,6 +2218,18 @@ dale.do ([
       B.do (x, 'get', 'account', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your account information.');
          B.do (x, 'set', ['Data', 'account'], rs.body);
+      });
+   }],
+
+   ['toggle', 'geo', function (x) {
+      var operation = B.get ('Data', 'account', 'geo') ? 'disable' : 'enable';
+      B.do (x, 'post', 'geo', {}, {operation: operation}, function (x, error, rs) {
+         if (error) {
+            if (error.status === 409) return B.do (x, 'snackbar', 'yellow', 'Geotagging is currently in process and cannot be disabled; please wait a few minutes and try again.');
+            return B.do (x, 'snackbar', 'red', 'There was an error ' + operation + 'd geotagging.');
+         }
+         B.do (x, 'query', 'account');
+         B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully.');
       });
    }],
 
@@ -2780,9 +2793,6 @@ E.pics = function () {
                                     if (H.isYear (a) && ! H.isYear (b)) return -1;
                                     if (H.isYear (b) && ! H.isYear (a)) return 1;
                                     if (H.isYear (a) && H.isYear (b)) return a - b;
-                                    if (H.isGeo (a) && ! H.isGeo (b)) return -1;
-                                    if (H.isGeo (b) && ! H.isGeo (a)) return 1;
-                                    if (H.isGeo (a) && H.isGeo (b)) return a.toLowerCase () > b.toLowerCase ? 1 : -1;
 
                                     var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
                                     var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
@@ -2795,12 +2805,12 @@ E.pics = function () {
                                     if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : ''), tag = 'All pictures', action = ['onclick', 'set', ['State', 'query', 'tags'], []];
                                     else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']];
                                     else if (H.isYear (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--bolded' : '') + ' tag--time', tag = which, action = ['onclick', 'toggle', 'tag', tag];
-                                    else if (H.isGeo (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--bolded' : '') + ' tag--geo', tag = which, action = ['onclick', 'toggle', 'tag', tag];
+                                    else if (H.isGeo (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '') + ' tag--geo', tag = which, action = ['onclick', 'toggle', 'tag', tag];
                                     else                           var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
 
                                     // TODO v2: add inline SVG
                                     return ['li', B.ev ({class: Class, opaque: true}, action), [
-                                       ['span', {class: 'tag__title'}, tag],
+                                       ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
                                        // TODO: why must specify height so it looks exactly the same as markup?
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
@@ -2890,7 +2900,7 @@ E.pics = function () {
                                        });
                                     });
                                     var editTags = dale.fil (tags, undefined, function (number, tag) {
-                                       if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
+                                       if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
                                        if (filter) {
                                           if (! tag.match (H.makeRegex (filter))) return;
                                        }
@@ -3263,7 +3273,7 @@ E.upload = function () {
                                           // SEARCH FORM
                                           return B.view (['State', 'upload', 'tag'], {attrs: {class: 'search-form'}}, function (x, filter) {
                                              var Tags = dale.fil (tags, undefined, function (v, tag) {
-                                                if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
+                                                if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
                                                 if ((B.get ('State', 'upload', 'new', 'tags') || []).indexOf (tag) > -1) return;
                                                 if (filter === undefined || filter.length === 0) return tag;
                                                 if (tag.match (H.makeRegex (filter))) return tag;
