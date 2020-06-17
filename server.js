@@ -10,7 +10,7 @@ Please refer to readme.md to read the annotated source (but not yet!).
 
 var CONFIG = require ('./config.js');
 var SECRET = require ('./secret.js');
-var ENV    = process.argv [2];
+var ENV    = process.argv [2] === 'local' ? undefined : process.argv [2];
 
 var crypto = require ('crypto');
 var fs     = require ('fs');
@@ -134,7 +134,7 @@ SECRET.ping.send = function (payload, CB) {
 
 var notify = function (s, message) {
    if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
-   if (! ENV || ENV === 'local') {
+   if (! ENV) {
       clog (new Date ().toUTCString (), message);
       return s.next ();
    }
@@ -264,11 +264,18 @@ H.getGeotags = function (s, metadata) {
       return [lat, lon];
    });
    if (! position) return s.next ([]);
-   redis.georadius ('geo', position [1], position [0], 15, 'km', 'count', 1, 'asc', function (error, data) {
+   redis.georadius ('geo', position [1], position [0], 15, 'km', 'count', 100, 'asc', function (error, data) {
       if (error) return s.next (null, error);
-      if (! data [0]) return s.next ([position [0], position [1]]);
-      data = data [0].split (':');
-      s.next ([position [0], position [1], 'g::' + countryCodes [data [0]], 'g::' + data [1]]);
+      if (! data.length) return s.next ([position [0], position [1]]);
+      var biggestPop = 0, geotags = [];
+      dale.go (data, function (item) {
+         item = item.split (':');
+         var pop = parseInt (item [1]);
+         if (pop <= biggestPop) return;
+         biggestPop = pop;
+         geotags = ['g::' + countryCodes [item [0]], 'g::' + item [2]];
+      });
+      s.next ([position [0], position [1]].concat (geotags));
    });
 }
 
@@ -2571,10 +2578,10 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
          if (error) return errorCb (error);
          lines.on ('line', function (line) {
             line = line.split ('\t');
-            // name 1, lat 4, lon 5, country 8
+            // name 1, lat 4, lon 5, country 8, pop 14
             // https://redis.io/commands/geoadd - latitudes close to the pole cannot be added.
             if (Math.abs (parseFloat (line [4])) > 85.05112878) return;
-            redis.geoadd ('geo', line [5], line [4], line [8] + ':' + line [1], function (error) {
+            redis.geoadd ('geo', line [5], line [4], line [8] + ':' + line [14] + ':' + line [1], function (error) {
                if (error) throw error;
             });
          });
