@@ -2992,7 +2992,7 @@ E.pics = function () {
                                     return dale.do (tags, function (tag) {
                                        // TODO v2: add inline SVG
                                        return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
-                                          ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag],
+                                          ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag.replace (/^g::/, '')],
                                           // TODO: why must specify height so it looks exactly the same as markup?
                                           ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
