@@ -39,18 +39,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- Users
-   - Admin Prod for Tom
-    - QA of Tuesday June 16, 2020 was done without invite process.
-
 - Logo
    - svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
+
+- Invite
+   - [FEATURE] We should try to fix the 'double click' for sending invites. We risk sending 2 invites (happened).
+   - [BUG PROD] Invite email link does not redirect to signup. Link is pointing to https://altocode.nl/pic/#/signup/ when it should be pointing to https://altocode.nl/pic/app/#/signup. 
 
 - Sign Up
    - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
    - If user selects a username that is already in use. Red snackbar of "That username is already in use".
-   - Test email placeholder with non email formats. ie " test.test.com" and "test". In these cases, Red snackbar of "Please enter a valid email" on clicking "create account".
    - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
+   - When entering a username with invalida characters (such as '@'). Red snackbar of "Please enter a username without special characters like ! @ # $ % ^ & * " on clicking "create account". **Tom: not sure about the message on snackbar**
    - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
    - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
    - When account is created. Green snackbar "Your account has been created."
