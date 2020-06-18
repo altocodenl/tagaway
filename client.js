@@ -210,12 +210,12 @@ CSS.litc = [
    }]),
    ['.button--two', {
       border: '1px solid ' + CSS.vars.grey,
-      'background-color': '#fff',
-      color: CSS.vars.grey,
+      color: '#fff',
+      'background-color': CSS.vars.grey,
    }],
    media ('screen and (min-width: 1025px)', ['.button--two:hover', {
-      background: CSS.vars.grey,
-      color: '#fff',
+      color: CSS.vars.grey,
+      background: '#fff',
    }]),
    // Buttons icon
    ['.button__icon', {
