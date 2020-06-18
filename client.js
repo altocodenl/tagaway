@@ -2887,7 +2887,7 @@ E.pics = function () {
                               return [
                                  ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
                                  ['input', B.ev ({id: 'newTag', class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name', value: newTag}, ['oninput', 'set', ['State', 'newTag']])],
-                                 ['div', B.ev ({style: style ({cursor: 'pointer', 'margin-left': 0.25, 'margin-top': 5}), class: 'button button--one'}, ['onclick', 'tag', 'pics', true]), 'Add new tag']
+                                 ['div', B.ev ({style: style ({cursor: 'pointer', 'margin-left': 0.5, 'margin-top': 5}), class: 'button button--one'}, ['onclick', 'tag', 'pics', true]), 'Add new tag']
                               ];
                            }),
                         ]],
