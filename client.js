@@ -923,7 +923,6 @@ CSS.litc = [
    // *** dropdown.scss ***
    ['.dropdown', {
       position: 'relative',
-      'z-index': '1',
    }],
    ['.dropdown__button', {
       mixin1: CSS.vars.fontPrimaryMedium,
@@ -960,7 +959,7 @@ CSS.litc = [
       'padding-bottom': CSS.typography.spaceVer (0.7),
    }],
    ['.dropdown__list-item', {
-      'margin-bottom, margin-top': CSS.typography.spaceVer (0.25),
+      'margin-bottom, margin-top': CSS.typography.spaceVer (0.5),
       color: CSS.vars.grey,
       transition: CSS.vars.easeOutQuart,
       cursor: 'pointer',
@@ -1135,6 +1134,8 @@ CSS.litc = [
    ['.pictures-header', {
       'margin-bottom': CSS.typography.spaceVer (2),
       'padding-right': CSS.vars ['padding--m'],
+      position: 'relative',
+      'z-index': '10'
    }],
    ['.pictures-header__action-bar', {
       'margin-top': CSS.typography.spaceVer (0.5),
