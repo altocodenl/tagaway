@@ -3205,7 +3205,7 @@ E.open = function () {
 E.upload = function () {
    return ['div', [
       ['style', ['.upload-box__image-pic svg', {display: 'none'}]],
-      E.header (false, true),
+      E.header (true, true),
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
             // PAGE HEADER
@@ -3521,7 +3521,7 @@ E.upload = function () {
 
 E.import = function () {
    return ['div', [
-      E.header (true, false),
+      E.header (true, true),
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
             // PAGE HEADER
