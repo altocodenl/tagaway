@@ -44,7 +44,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Invite
    - [FEATURE] We should try to fix the 'double click' for sending invites. We risk sending 2 invites (happened).
-   - [BUG PROD] Invite email link does not redirect to signup. Link is pointing to https://altocode.nl/pic/#/signup/ when it should be pointing to https://altocode.nl/pic/app/#/signup. 
+   - [BUG PROD] Invite email link does not redirect to signup. Link is pointing to https://altocode.nl/pic/#/signup/ when it should be pointing to https://altocode.nl/pic/app/#/signup.
 
 - Sign Up
    - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
@@ -57,9 +57,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    **For more reference, we can check line 387 of OML's client.js**
 
 - Upload
-   - [BUG] Enabled Geo by entering B.do ('toggle', 'geo') or B.do ('post', 'geo', {}, {operation: 'enable'}) in browser console. Upload failed. Tried with another DEV account without enabling Geo, upload works correctly. Prod works correctly. 
+   - [BUG] Enabled Geo by entering B.do ('toggle', 'geo') or B.do ('post', 'geo', {}, {operation: 'enable'}) in browser console. Upload failed. Tried with another DEV account without enabling Geo, upload works correctly. Prod works correctly.
+   - Show both upload & import button.
+   - New upload flow
+      - Starting state: area from dropdown & button for files & button for folder upload.
+      - Uploading state: button for starting new upload and button for starting tagging state.
+      - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 - Pics
+   - When clicking on no man's land, unselect?
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
    - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
       - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
@@ -82,20 +88,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Email when import done or stopped.
 - Paid accounts.
 - Share.
-
-### Todo alpha remaining
-
-- Pics
-   - UI team changes (Ruben):
-      - Fix scroll height when having many tags on tag search.
-      - Fix z-index of dropdown.
-      - **Discuss**: When clicking on no man's land, unselect?
-- Upload
-   - UI team changes (Ruben):
-      - Upload flow
-         - Starting state: area from dropdown & button for files & button for folder upload.
-         - Uploading state: button for starting new upload and button for starting tagging state.
-         - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 ### Alpha version (DONE)
 

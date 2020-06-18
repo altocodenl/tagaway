@@ -407,13 +407,13 @@ CSS.litc = [
    ['.sidebar__switch', {'margin-bottom': CSS.typography.spaceVer (1)}],
    // Sidebar footer
    ['.sidebar__footer', {
-      position: 'absolute',
+      position: 'fixed',
       'bottom, left': 0,
       height: 54,
-      width: 1,
+      width: 300, // sidebar width
       display: 'flex',
       'align-items': 'center',
-      'border-top': '1px solid ' + CSS.vars ['border-color'],
+      'border-top, border-bottom': '1px solid ' + CSS.vars ['border-color'],
    }],
    // Sidebar -- Attach tags
    ['.app-attach-tags', [
@@ -458,7 +458,7 @@ CSS.litc = [
    ['.sidebar-search__input', {'padding-left, padding-right': CSS.vars ['padding--m']}],
    ['.sidebar-search__icon', {
       position: 'absolute',
-      right: CSS.vars ['padding--s'],
+      right: CSS.vars ['padding--m'],
       top: 0.5,
       'margin-top': -12,
       'width, height': 24,
