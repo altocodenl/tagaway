@@ -59,13 +59,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - [BUG] Enabled Geo by entering B.do ('toggle', 'geo') or B.do ('post', 'geo', {}, {operation: 'enable'}) in browser console. Upload failed. Tried with another DEV account without enabling Geo, upload works correctly. Prod works correctly.
    - Show both upload & import button.
+   - Suggest new tag on autocomplete upload
    - New upload flow
       - Starting state: area from dropdown & button for files & button for folder upload.
       - Uploading state: button for starting new upload and button for starting tagging state.
       - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 - Pics
-   - When clicking on no man's land, unselect?
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
    - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
       - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
@@ -75,8 +75,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Video player still has 'rotate' option in bottom center of viewer.
    - 'Untagged' should allow intersection. When I'm in 'untagged' I still have available the year semi tags (and eventually the geo tags). As of now, if I'm in 'untagged' and click on a year tag, I'm taken to the year tag and the system forgets the 'untagged'. If I want to see what 'untagged' photos I have for a particular year, so that I can apply the corresponding tags to them, I can't. Same happens if I'm in a particular year: 'untagged' is an option, but when I click my year is overriden and only 'untagged' are left.
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
-
+   - Align "add new tag" button to the right.
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
+   - When clicking on no man's land, unselect.
 
 - Geotagging enable/disable.
    - last server tests

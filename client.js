@@ -2886,7 +2886,7 @@ E.pics = function () {
                         ]],
                         // TODO v2: merge two elements into one
                         B.view (['State', 'untag'], {attrs: {class: 'sidebar__tags'}}, function (x, untag) {
-                           return B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
+                           return B.view (['State', 'filter'], function (x, filter) {
                               filter = (filter || '').trim ();
                               return [
                                  ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
