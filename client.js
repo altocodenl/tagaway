@@ -1971,12 +1971,14 @@ dale.do ([
    }],
    ['toggle', 'tag', function (x, tag) {
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
-      var untagged = B.get ('State', 'query', 'tags', 0) === 'untagged';
-      if (index > -1) B.do (x, 'rem', ['State', 'query', 'tags'], index);
-      else {
-         if (untagged) B.do (x, 'set', ['State', 'query', 'tags'], [tag]);
-         else          B.do (x, 'add', ['State', 'query', 'tags'], tag);
-      }
+      if (index > -1) return B.do (x, 'rem', ['State', 'query', 'tags'], index);
+
+      var isNormalTag = ! H.isYear (tag) && ! H.isGeo (tag);
+      B.do (x, 'set', ['State', 'query', 'tags'], dale.do (B.get ('State', 'query', 'tags'), function (existingTag) {
+         if (existingTag === 'untagged' && isNormalTag) return;
+         if (tag === 'untagged' && ! H.isYear (existingTag) && ! H.isGeo (existingTag)) return;
+         return existingTag;
+      }).concat (tag));
    }],
    ['select', 'all', function (x) {
       B.do (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pics'), function (pic) {
@@ -2809,7 +2811,7 @@ E.pics = function () {
                                  var untagged = teishi.eq (selected, ['untagged']);
                                  var makeTag  = function (which) {
                                     if      (which === 'all')      var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : ''), tag = 'All pictures', action = ['onclick', 'set', ['State', 'query', 'tags'], []];
-                                    else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'set', ['State', 'query', 'tags'], ['untagged']];
+                                    else if (which === 'untagged') var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : ''), tag = 'Untagged', action = ['onclick', 'toggle', 'tag', 'untagged'];
                                     else if (H.isYear (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--bolded' : '') + ' tag--time', tag = which, action = ['onclick', 'toggle', 'tag', tag];
                                     else if (H.isGeo (which))     var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '') + ' tag--geo', tag = which, action = ['onclick', 'toggle', 'tag', tag];
                                     else                           var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : ''), tag = which, action = ['onclick', 'toggle', 'tag', tag];
@@ -2998,7 +3000,7 @@ E.pics = function () {
                                     return dale.do (tags, function (tag) {
                                        // TODO v2: add inline SVG
                                        return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
-                                          ['span', {class: 'tag__title'}, tag === 'Untagged' ? 'untagged' : tag.replace (/^g::/, '')],
+                                          ['span', {class: 'tag__title'}, tag === 'untagged' ? 'Untagged' : tag.replace (/^g::/, '')],
                                           // TODO: why must specify height so it looks exactly the same as markup?
                                           ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [

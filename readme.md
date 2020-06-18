@@ -39,12 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- Logo
-   - svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
+- Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
+
+- [BUG] Snackbar is not visible on Mac/Chrome.
 
 - Invite
-   - [FEATURE] We should try to fix the 'double click' for sending invites. We risk sending 2 invites (happened).
-   - [BUG PROD] Invite email link does not redirect to signup. Link is pointing to https://altocode.nl/pic/#/signup/ when it should be pointing to https://altocode.nl/pic/app/#/signup.
+   - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
+   - [BUG PROD / CHECK FIXED] Invite email link does not redirect to signup. Link is pointing to https://altocode.nl/pic/#/signup/ when it should be pointing to https://altocode.nl/pic/app/#/signup.
 
 - Sign Up
    - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
@@ -58,22 +59,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upload
    - [BUG] Enabled Geo by entering B.do ('toggle', 'geo') or B.do ('post', 'geo', {}, {operation: 'enable'}) in browser console. Upload failed. Tried with another DEV account without enabling Geo, upload works correctly. Prod works correctly.
-   - Show both upload & import button.
    - Suggest new tag on autocomplete upload
-   - New upload flow
-      - Starting state: area from dropdown & button for files & button for folder upload.
-      - Uploading state: button for starting new upload and button for starting tagging state.
-      - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 - Pics
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
-   - [BUG] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
+
+   - [BUG / CHECK FIXED] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
       - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
          - Select thumbnail above the fold. Sort images from 'newest' (default) to 'oldest'. Now gallery is sorted backwards, and selected thumbail is below the fold. Scroll down. Image will be selected on gallery interface. Scroll back up in order to reach the sorting dropdown. Sort back from 'oldest' to 'newest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. At this point, scroll down and scroll back up. Now the selected image is effectively shown selected on interface.
       - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface.
-   - [BUG] Untag. When a thumbnail with multiple tags is selected, on 'untag' there's a list of tags under 'Remove current tags'. If selected thumbnail has more than one (1) tag, upon untagging one (1) tag, the 'Remove current tags' dissapears although there are remaining tags on the list. the 'Remove current tags' should be there.
-   - Video player still has 'rotate' option in bottom center of viewer.
-   - 'Untagged' should allow intersection. When I'm in 'untagged' I still have available the year semi tags (and eventually the geo tags). As of now, if I'm in 'untagged' and click on a year tag, I'm taken to the year tag and the system forgets the 'untagged'. If I want to see what 'untagged' photos I have for a particular year, so that I can apply the corresponding tags to them, I can't. Same happens if I'm in a particular year: 'untagged' is an option, but when I click my year is overriden and only 'untagged' are left.
+
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
    - Align "add new tag" button to the right.
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
@@ -102,6 +97,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When selecting pictures, see selection bar.
    - Hover on picture and see date.
    - Show untagged pictures.
+   - When querying untagged tag, remove non-year and non-geo tags. When querying normal tag, remove untagged tag.
    - See list of tags.
    - Query by tag or tags.
    - Show pictures according to the selected tags.
@@ -182,6 +178,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Report automatically for file extensions that are not allowed, for future expansion of formats.
    - Support 3gp, mov, heic, avi. Check for actual file type in server, not just extension.
    - Ignore deleted pictures flag.
+   - New upload flow
+      - Starting state: area from dropdown & button for files & button for folder upload.
+      - Uploading state: button for starting new upload and button for starting tagging state.
+      - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 - Account & payment
    - Account page.
@@ -623,7 +623,6 @@ Used by giz:
    - Depends on: `Data.tags`, `Data.pics`, `Data.queryTags`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
    - Events:
       - `click -> rem State.selected`
-      - `click -> set State.query.tags []|['untagged']`
       - `click -> toggle tag`
       - `click -> select all`
       - `click -> rem State.untag`

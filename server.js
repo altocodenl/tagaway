@@ -1370,7 +1370,8 @@ var routes = [
             s.last = s.next (error);
          }],
          function (s) {
-            var metadata = s.last [pic.vid ? 'stderr' : 'stdout'].split ('\n');
+            s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
+            var metadata = s.metadata.split ('\n');
             if (! pic.vid) {
                var error = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Warning/)) {
@@ -1445,7 +1446,7 @@ var routes = [
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
          function (s) {
             if (! s.last) return s.next ([]);
-            H.getGeotags (s, metadata);
+            H.getGeotags (s, s.metadata);
          },
          function (s) {
             s.geotags = s.last;
