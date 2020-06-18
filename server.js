@@ -41,7 +41,7 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
       if (arg && type (arg.log) === 'object') return arg;
    });
    // TODO remove this when fixed in cicek
-   if (! rs.connection.writable) return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
+   if (! rs.connection || ! rs.connection.writable) return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
    cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
       if (k === 0 && v && v.path && v.last && v.vars) return;
       return v;
