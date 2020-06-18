@@ -45,29 +45,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Invite
    - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
-   - [BUG PROD / CHECK FIXED] Invite email link does not redirect to signup. Link is pointing to https://altocode.nl/pic/#/signup/ when it should be pointing to https://altocode.nl/pic/app/#/signup.
 
 - Sign Up
-   - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
-   - If user selects a username that is already in use. Red snackbar of "That username is already in use".
-   - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
-   - When entering a username with invalida characters (such as '@'). Red snackbar of "Please enter a username without special characters like ! @ # $ % ^ & * " on clicking "create account". **Tom: not sure about the message on snackbar**
-   - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
-   - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
-   - When account is created. Green snackbar "Your account has been created."
+   - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case: 
+      - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
+      - If user selects a username that is already in use. Red snackbar of "That username is already in use".
+      - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
+      - When entering a username with invalida characters (such as '@'). Red snackbar of "Please enter a username without special characters like ! @ # $ % ^ & * " on clicking "create account". **Tom: not sure about the message on snackbar**
+      - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
+      - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
+      - When account is created. Green snackbar "Your account has been created."
    **For more reference, we can check line 387 of OML's client.js**
 
 - Upload
-   - [BUG] Enabled Geo by entering B.do ('toggle', 'geo') or B.do ('post', 'geo', {}, {operation: 'enable'}) in browser console. Upload failed. Tried with another DEV account without enabling Geo, upload works correctly. Prod works correctly.
    - Suggest new tag on autocomplete upload
 
 - Pics
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
-
-   - [BUG / CHECK FIXED] Choose a tag, semi tag (or if 'all pictures' has small amount of files) where all thumbnails are above the fold. Select image. Sort images from 'newest' (default) to 'oldest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface.
-      - In case where the amount of images in gallery require scrolling, then BUG behaves as such:
-         - Select thumbnail above the fold. Sort images from 'newest' (default) to 'oldest'. Now gallery is sorted backwards, and selected thumbail is below the fold. Scroll down. Image will be selected on gallery interface. Scroll back up in order to reach the sorting dropdown. Sort back from 'oldest' to 'newest'. The gallery title still says 'x pictures, 1 selected', but no images are selected on gallery interface. At this point, scroll down and scroll back up. Now the selected image is effectively shown selected on interface.
-      - Even when selected thumbnail is not shown in gallery interface, when selecting another thumbnail, then both original and new selected thumbnail appear as selected on gallery interface.
 
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
    - Align "add new tag" button to the right.
