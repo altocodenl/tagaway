@@ -1872,7 +1872,7 @@ dale.do ([
       var selectedPictures = dale.keys (B.get ('State', 'selected')).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
-         organise: ['app-organise', 'app-show-organise-bar', 'app-attach-tags'],
+         organise: ['app-organise', 'app-show-organise-bar', State.untag ? 'app-untag-tags' : 'app-attach-tags'],
       }
       var target = c ('#pics');
       if (! target) return;
@@ -1908,9 +1908,12 @@ dale.do ([
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
          });
          B.set (['State', 'selected'], selected);
-         B.do (x, 'change', ['State', 'selected'], selected);
 
-         if (B.get ('State', 'open') === undefined) return B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+         if (B.get ('State', 'open') === undefined) {
+            B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+            B.do (x, 'change', ['State', 'selected'], selected);
+            return;
+         }
 
          var open = B.get ('Data', 'pics') [B.get ('State', 'open')];
          var newOpen = dale.stopNot (rs.body.pics, undefined, function (pic, k) {
@@ -1928,6 +1931,8 @@ dale.do ([
          B.set (['Data', 'pics'], rs.body.pics);
          B.do (x, 'change', ['State', 'open']);
          B.do (x, 'change', ['Data', 'pics']);
+         B.do (x, 'change', ['State', 'selected'], selected);
+
       });
    }],
    ['click', 'pic', function (x, id, k) {
