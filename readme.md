@@ -67,8 +67,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
 
-- Geotagging enable/disable.
-   - last server tests
+- Geotagging
    - when enabling, refresh every n seconds until tags stabilize
    - geoicons
 - Import from GDrive/Dropbox.
