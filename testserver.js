@@ -129,7 +129,7 @@ var ttester = function (label, method, Path, headers, list, allErrors) {
 
 var intro = [
    ['get public stats at the beginning', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
+      if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
    ['submit client error, invalid 1', 'post', 'error', {}, '', 400],
@@ -306,7 +306,7 @@ var outro = [
    }],
    ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
    ['get public stats at the end', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
+      if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
 ];
@@ -321,7 +321,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
+      if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
       return true;
    }],
@@ -379,7 +379,7 @@ var main = [
    ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
-      if (! teishi.eq (rs.body.tags, ['2018'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags, ['2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       s.vids = dale.go (rs.body.pics, function (pic) {return pic.id});
       var vid1 = rs.body.pics [0], vid2 = rs.body.pics [1];
@@ -519,7 +519,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 1) return clog ('Invalid total count.');
-      if (! teishi.eq (rs.body.tags, ['2014'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags, ['2014'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       s.smallpic = teishi.copy (pic);
@@ -576,7 +576,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       if (pic.date !== H.getDate ('2018-06-03T00:00:00.000Z')) return clog ('Invalid pic.date');
@@ -604,7 +604,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 3) return clog ('Invalid total count.');
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures returned.');
       var pic = rs.body.pics [0];
@@ -642,7 +642,7 @@ var main = [
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 4) return clog ('Invalid total count.');
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
       var pic = rs.body.pics [0];
       if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
@@ -684,7 +684,7 @@ var main = [
       return {ids: [s.rotateid], deg: -90};
    }, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
       var pic = rs.body.pics [0];
       delete pic.id;
       if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
@@ -720,21 +720,6 @@ var main = [
          }],
       ];
    }),
-   ['upload picture with different date format', 'post', 'upload', {}, {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
-      {type: 'field',  name: 'lastModified', value: Date.now ()},
-      {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
-   ]}, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018', 'beach', 'dunkerque'])) return clog ('Invalid tags.');
-      var pic = rs.body.pics [0];
-      if (pic.date !== H.getDate ('2018:03:26 13:23:34')) return clog ('GPS timestamp wasn\'t ignored.');
-      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Wrong year tag.');
-      s.dunkerque = pic.id;
-      s.allpics = rs.body.pics;
-      return true;
-   }],
    ttester ('geotagging', 'post', 'geo', {}, [
       ['operation', 'string'],
    ]),
@@ -745,22 +730,27 @@ var main = [
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
-   ['turn on geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
-   ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'disable'}, 409, function (s, rq, rs, next) {
-      // Wait for pictures to be tagged
-      setTimeout (next, 1000);
-   }],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geo !== true) return clog ('Geo should be turned on');
       return true;
    }],
+   ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
+   ['turn on geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409, function (s, rq, rs, next) {
+      // Wait for pictures to be tagged
+      setTimeout (next, 1000);
+   }],
+   ['upload picture with different date format and geodata', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
+   ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
-      if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
-      if (! eq (rs.body.pics [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
-      var tags = rs.body.pics [0].tags;
-      if (tags.length !== 5) return clog ('Geotags not added.');
-      if (tags.indexOf ('g::Dunkerque') === -1) return clog ('City geotag not added correctly.');
-      if (tags.indexOf ('g::France') === -1) return clog ('Country geotag not added correctly.');
+      var pic = rs.body.pics [0];
+      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::France'])) return clog ('Invalid tags: ', pic.tags.sort ());
+      if (pic.date !== H.getDate ('2018:03:26 13:23:34')) return clog ('GPS timestamp wasn\'t ignored.');
+      s.dunkerque = pic.id;
+      s.allpics = rs.body.pics;
       return true;
    }],
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
@@ -768,17 +758,33 @@ var main = [
       if (rs.body.geo !== false) return clog ('Geo should be turned off');
       return true;
    }],
+   ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
+      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 5, dunkerque: 1, beach: 1})) return clog ('Invalid tags after geotagging disabled.');
+      return true;
+   }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.pics [0].loc !== undefined) return clog ('Location wasn\'t removed after disabling geotagging.');
       var tags = rs.body.pics [0].tags;
+      if (! eq (tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Geotags not removed.');
       if (tags.length !== 3) return clog ('Geotags not removed.');
-      if (tags.indexOf ('g::Dunkerque') !== -1) return clog ('City geotag not removed.');
-      if (tags.indexOf ('g::France') !== -1) return clog ('Country geotag not removed.');
-      // Wait for S3
-      setTimeout (next, 10000);
+      return true;
    }],
-   ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
-   // TODO: upload with geotagging enabled, check tags and untagged
+   ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200, function (s, rq, rs, next) {
+      // Wait for pictures to be tagged
+      setTimeout (next, 1500);
+   }],
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
+      if (! eq (rs.body.pics [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
+      var tags = rs.body.pics [0].tags;
+      if (! eq (tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::France'])) return clog ('Invalid tags: ', tags.sort ());
+      return true;
+   }],
+   ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
+      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 5, dunkerque: 1, 'g::France': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
+      // Wait for S3
+      setTimeout (next, 5000);
+   }],
    dale.go (dale.times (5, 0), function (k) {
       return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
@@ -932,7 +938,7 @@ var main = [
       return true;
    }],
    ['get tagged pic', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', 'foo'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', 'foo'])) return clog ('Invalid tags.');
       if (rs.body.total !== 1) return clog ('Searching by tag does not work.');
       if (! eq (rs.body.pics [0].tags, ['2014', 'foo'])) return clog ('Invalid tags');
       return true;
@@ -949,7 +955,7 @@ var main = [
       return true;
    }],
    ['get tagged pic after untagging', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
       if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
@@ -961,7 +967,7 @@ var main = [
       return true;
    }],
    ['get tagged pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2017', '2018', 'bla'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', '2017', '2018', 'bla'])) return clog ('Invalid tags.');
       if (! eq (rs.body.pics [0].tags, ['2018', 'bla'])) return clog ('Invalid tags');
       if (! eq (rs.body.pics [3].tags, ['2014', 'bla'])) return clog ('Invalid tags');
       return true;
@@ -982,7 +988,7 @@ var main = [
       return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id], del: true};
    }, 200],
    ['get tagged pics after untagging', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
       if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
@@ -1070,7 +1076,7 @@ var main = [
       return true;
    }],
    ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.tags.sort (), ['2014', '2018', 'bla'])) return clog ('Invalid tags.');
+      if (! eq (rs.body.tags.sort (), ['2014', '2018', 'bla'])) return clog ('Invalid tags.');
       if (rs.body.pics.length !== 2) return clog ('user2 should have two pics with this tag.');
       return true;
    }],
@@ -1308,11 +1314,11 @@ var main = [
       setTimeout (next, 2000);
    }],
    ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
+      if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
       return true;
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! teishi.eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
+      if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
       return true;
    }],
    // TODO: add admin/stats test
