@@ -1986,21 +1986,16 @@ dale.do ([
          return [pic.id, true];
       }));
    }],
-   ['query', 'tags', function (x, cb) {
+   ['query', 'tags', function (x) {
       B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {
-         cb = cb || function () {};
-         if (error) {
-            B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
-            return cb (error);
-         }
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
          B.do (x, 'set', ['Data', 'tags'], rs.body);
-         if (! B.get ('State', 'query', 'tags')) return cb ();
+         if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
             if (rs.body [tag]) return tag;
          });
-         if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return cb ();
+         if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
          B.do (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
-         cb ();
       });
    }],
    ['tag', 'pics', function (x, tag, del, ev) {
@@ -2244,18 +2239,20 @@ dale.do ([
          }
          if (operation === 'disable') {
             B.do (x, 'clear', 'updateGeotags');
-            B.do (x, 'query', 'tags');
+            B.do (x, 'query', 'pics');
          }
          if (operation === 'enable') {
-            var cb = function (error) {
-               clog ('dale', error);
-               if (error) return B.do (x, 'clear', 'updateGeotags');
-               var tags = B.get ('Data', 'tags');
-               if (teishi.eq (tags, B.get ('State', 'updateGeotags', 'tags'))) return B.do (x, 'clear', 'updateGeotags');
-               B.do (x, 'set', ['State', 'updateGeotags', 'tags'], tags);
-               B.do (x, 'query', 'tags', cb);
-            }
-            var update = setInterval (cb);
+            // TODO: query server directly
+            B.do (x, 'set', ['State', 'updateGeotags', 'interval'], setInterval (function () {
+               var tags = B.get ('Data', 'queryTags');
+               var change = ! teishi.eq (tags, B.get ('State', 'updateGeotags', 'tags'));
+               var repeat = B.get ('State', 'updateGeotags', 'repeat') || 0;
+               clog ('interval', change, repeat);
+               if (! change && repeat >= 3) return B.do (x, 'clear', 'updateGeotags');
+               B.do (x, 'set', ['State', 'updateGeotags', 'repeat'], change ? 0 : repeat + 1);
+               B.do (x, 'set', ['State', 'updateGeotags', 'tags'], teishi.c (tags));
+               B.do (x, 'query', 'pics');
+            }, 3000));
          }
          B.do (x, 'query', 'account');
          B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully.');
