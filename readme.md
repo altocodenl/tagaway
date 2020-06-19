@@ -47,7 +47,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
 
 - Sign Up
-   - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case: 
+   - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
       - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
       - If user selects a username that is already in use. Red snackbar of "That username is already in use".
       - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
@@ -64,7 +64,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
 
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
-   - Align "add new tag" button to the right.
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
 
