@@ -1986,16 +1986,21 @@ dale.do ([
          return [pic.id, true];
       }));
    }],
-   ['query', 'tags', function (x) {
+   ['query', 'tags', function (x, cb) {
       B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
+         cb = cb || function () {};
+         if (error) {
+            B.do (x, 'snackbar', 'red', 'There was an error getting your tags.');
+            return cb (error);
+         }
          B.do (x, 'set', ['Data', 'tags'], rs.body);
-         if (! B.get ('State', 'query', 'tags')) return;
+         if (! B.get ('State', 'query', 'tags')) return cb ();
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
             if (rs.body [tag]) return tag;
          });
-         if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
+         if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return cb ();
          B.do (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
+         cb ();
       });
    }],
    ['tag', 'pics', function (x, tag, del, ev) {
@@ -2237,9 +2242,30 @@ dale.do ([
             if (error.status === 409) return B.do (x, 'snackbar', 'yellow', 'Geotagging is currently in process and cannot be disabled; please wait a few minutes and try again.');
             return B.do (x, 'snackbar', 'red', 'There was an error ' + operation + 'd geotagging.');
          }
+         if (operation === 'disable') {
+            B.do (x, 'clear', 'updateGeotags');
+            B.do (x, 'query', 'tags');
+         }
+         if (operation === 'enable') {
+            var cb = function (error) {
+               clog ('dale', error);
+               if (error) return B.do (x, 'clear', 'updateGeotags');
+               var tags = B.get ('Data', 'tags');
+               if (teishi.eq (tags, B.get ('State', 'updateGeotags', 'tags'))) return B.do (x, 'clear', 'updateGeotags');
+               B.do (x, 'set', ['State', 'updateGeotags', 'tags'], tags);
+               B.do (x, 'query', 'tags', cb);
+            }
+            var update = setInterval (cb);
+         }
          B.do (x, 'query', 'account');
          B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully.');
       });
+   }],
+
+   ['clear', 'updateGeotags', function (x) {
+      if (! B.get ('State', 'updateGeotags')) return;
+      clearInterval (B.get ('State', 'updateGeotags', 'interval'));
+      B.do (x, 'rem', 'State', 'updateGeotags');
    }],
 
 ], function (v) {
