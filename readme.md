@@ -67,6 +67,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
 
+- Understand why existing client tests are failing. Add testclient.js
+
 - Geotagging
    - when enabling, refresh every n seconds until tags stabilize
    - geoicons
