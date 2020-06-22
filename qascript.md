@@ -11,7 +11,6 @@
 	- Opera
 	- Internet Explorer
 	- Miscrosoft Edge
-- Tests on slower connections TBD
 - Tester must have access to Development Environment admin and altocode's email.
 
 ##Invite process
@@ -117,8 +116,8 @@ Not developed yet
 
 ##General Navigation
 	- On first loading, app interface is 'View pictures'
-	- Click on 'Manage tags', green snackbar of "Coming soon, hang tight!" should appear. 
-	- On user icon, on :hover dropdown should appear. Click on "my account". Green snackbar of "Coming soon, hang tight!" should appear. 
+	- Click on 'Manage tags', green snackbar of "Coming soon, hang tight!" should appear.
+	- On user icon, on :hover dropdown should appear. Click on "my account". Green snackbar of "Coming soon, hang tight!" should appear.
 	- Click on 'Import pictures', go to 'import' view
 	- Click browser's 'back' button. Go back to 'view pictures'.
 	- Click browser's 'forward' button. Go back to 'import' view.
@@ -127,50 +126,50 @@ Not developed yet
 	- Click on 'See all photos'. Go to 'view pictures'.
 	- Click browser's 'back' button. Go back to 'upload' view.
 	- Click on 'View pictures' on header. Go to 'view pictures'.
-	- On user icon, on :hover dropdown should appear. 
-	- Click on 'logout'. Logged out. 
-	- Log in. 
+	- On user icon, on :hover dropdown should appear.
+	- Click on 'logout'. Logged out.
+	- Log in.
 
 ##Upload pictures
 (Flow will change before Beta release. It will be updated when flow change is implemented)
-	- Direct upload: 
+	- Direct upload:
 		- Go to upload view
 		- 'Upload files'
 			- Choose 'upload files'
 			- Select at least 2 photos to upload.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Do not add tags.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
 			- Click on 'See all photos'. Go to 'view pictures'.
-			- The uploaded photos should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- The uploaded photos should be available in View Pictures > 'all pictures' and 'untagged'.
 			- In your device, duplicate the same photos as the previous batch, making sure they have different filenames
 			- Choose 'upload files'
 			- Select those same photos.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Do not add tags.
 			- Click on "Start Upload"
-			- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload. 
+			- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
 			- Choose 'upload files'
 			- Select photos for upload that have not been uploaded before.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Insert a tag in placeholder with "add existing or new tags"
 			- Click on 'Add tag'.
 			- Click on "Start Upload"
-			- Click on header "View Pictures" and go to gallery. 
+			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
 			- Choose "upload files".
 			- Select a video for upload.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Do not add a tag
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Click on 'ac;pic' logo. 
-			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'. 
+			- Click on 'ac;pic' logo.
+			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'.
 			- In your device, duplicate the same video as the previous batch, making sure it has different filenames
 			- Choose 'upload files'
 			- Select the same video with different name.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
 			- Do not add tags.
 			- Click on "Start Upload"
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
@@ -178,7 +177,7 @@ Not developed yet
 			- Select videos for upload that have not been uploaded before.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
 			- Insert a tag in placeholder with "add existing or new tags"
-			- Press 'enter' on device keyboard. 
+			- Press 'enter' on device keyboard.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
 			- Click on 'See all photos'. Go to 'view pictures'.
@@ -191,13 +190,13 @@ Not developed yet
 				- "Upload 'x' files to this site?
 					This will upload all files from ' "folder name" '. Only do this if you trust this site."
 			- Click 'Upload' on prompt.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 				- If there are any unsopported formats, there should be listed in red below the amount of files selected.
-					- 'x' files have unsupported formats and will be ignored: 'format name'. 
+					- 'x' files have unsupported formats and will be ignored: 'format name'.
 			- Select a previously used tag.
 			- Click on "Start Upload"
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-			- Click on header "View Pictures" and go to gallery. 
+			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
 			- Go to 'Upload'.
 			- Select 'upload folder'
@@ -206,64 +205,64 @@ Not developed yet
 				- "Upload 'x' files to this site?
 					This will upload all files from ' "folder name" '. Only do this if you trust this site."
 			- Click 'Upload' on prompt.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 				- If there are any unsopported formats, there should be listed in red below the amount of files selected.
-					- 'x' files have unsupported formats and will be ignored: 'format name'. 
+					- 'x' files have unsupported formats and will be ignored: 'format name'.
 			- Do not add a tag.
-			- Before the upload is finished, click on 'View pictures' and go to thumbnail gallery. 
+			- Before the upload is finished, click on 'View pictures' and go to thumbnail gallery.
 			- Go to 'Upload'.
-			- The uploading process should still be going. 
+			- The uploading process should still be going.
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
-			- Click on 'ac;pic' logo. 
-			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'. 
+			- Click on 'ac;pic' logo.
+			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'.
    	- Drag and drop upload:
    		- Go to upload view
 		- 'Upload files'
-			- From device, select at least 2 photos to upload. 
+			- From device, select at least 2 photos to upload.
 			- From device select, drag and drop photos to any part of the 'upload interface' on browser.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Do not add tags.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Click on 'See all photos'. 
-			- Check if uploaded files are available in View Pictures > 'all pictures' and 'untagged'. 
+			- Click on 'See all photos'.
+			- Check if uploaded files are available in View Pictures > 'all pictures' and 'untagged'.
 			- In your device, duplicate the same photos as the previous batch, making sure they have different filenames.
 			- From device select those photos, drag and drop photos to any part of the 'upload interface' on browser.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Do not add tags.
 			- Click on "Start Upload"
-			- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload. 
+			- Repeated photos should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
 			- Have photos ready that have not been uploaded before.
 			- From device select, drag and drop photos to any part of the 'upload interface' on browser.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Insert a tag in placeholder with "add existing or new tags"
 			- Click on 'Add tag'.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Click on header "View Pictures" and go to gallery. 
-			- Check that files were tagged correctly. 
+			- Click on header "View Pictures" and go to gallery.
+			- Check that files were tagged correctly.
 			- Select a video for upload.
 			- From device select, drag and drop video to any part of the 'upload interface' on browser.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
 			- Do not add a tag
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- The uploaded video should be available in View Pictures > 'all pictures' and 'untagged'. 
+			- The uploaded video should be available in View Pictures > 'all pictures' and 'untagged'.
 			- In your device, duplicate the same video as the previous batch, making sure it has different filenames
 			- From device select, drag and drop video to any part of the 'upload interface' on browser.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
 			- Do not add tags.
 			- Click on "Start Upload"
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "0 pictures uploaded (X repeated)" where 'X' is the amount of photos selected for upload.
 			- Select videos for upload that have not been uploaded before.
 			- From device select, drag and drop video to any part of the 'upload interface' on browser.
-			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files. 
+			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
 			- Insert a tag in placeholder with "add existing or new tags"
 			- Click on 'Add tag'.
 			- Click on "Start Upload"
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
-			- Click on header "View Pictures" and go to gallery. 
-			- Check that files were tagged correctly. 
+			- Click on header "View Pictures" and go to gallery.
+			- Check that files were tagged correctly.
 
 ##Import Pictures
 ###Google Drive
@@ -539,25 +538,25 @@ Not developed yet
 			- By default, the 'attach tag' option should be selected.
 			- Select 'Untag'.
 			- If selected thumbnail has no tags:
-				- The list under 'Remove current tags' must be empty. 
+				- The list under 'Remove current tags' must be empty.
 			- If selected thumbnail has tags:
 				- The list under 'Remove current tags' must list all the tags atached to the selected thumbnail(s)
-				- Each tag listed must have the tick icon to its right. 
-			- On tag list, on :hover the tick icon should change to 'scissors' icon in red. 
+				- Each tag listed must have the tick icon to its right.
+			- On tag list, on :hover the tick icon should change to 'scissors' icon in red.
 			- Click on 'scissors' icon on :hover.
-			- Browser prompt 'Are you sure you want to remove the tag xxx from all selected pictures?' where 'xxx' is the tag's name. 
-			- Click 'Yes' or 'OK' depending on the browser. 
-			- Thumbnail(s) should be untagged of removed tag. 
+			- Browser prompt 'Are you sure you want to remove the tag xxx from all selected pictures?' where 'xxx' is the tag's name.
+			- Click 'Yes' or 'OK' depending on the browser.
+			- Thumbnail(s) should be untagged of removed tag.
 			- Tag should dissapear from list under 'Remove current tags'.
-			- If there are no thumbnails tagged with a particular tag, that tag should be eliminated from interface. From both sidebar left in 'navigation mode' as well as 'organize mode'. 
+			- If there are no thumbnails tagged with a particular tag, that tag should be eliminated from interface. From both sidebar left in 'navigation mode' as well as 'organize mode'.
 	- **Navigation with tags**
-		- From 'view pictures' view and with files uploaded and tagged. 
-			- Default option should be 'all pictures' unless navigation occured before.  
+		- From 'view pictures' view and with files uploaded and tagged.
+			- Default option should be 'all pictures' unless navigation occured before.
 			- On sidebar left, click on 'untagged'
-				- All untagged thumbnails should be displayed in gallery. 
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
-				- Below title, the 'untagged' tag with white 'tag' icon and icon with 'x' to its right. 
-				- On sidebar left, only automated semi tags (years) should be visible. 
+				- All untagged thumbnails should be displayed in gallery.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
+				- Below title, the 'untagged' tag with white 'tag' icon and icon with 'x' to its right.
+				- On sidebar left, only automated semi tags (years) should be visible.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 				- **Untagged + Year / Year + untagged?**
 			- Click on icon with 'x' on 'untagged' below the title.
@@ -567,9 +566,9 @@ Not developed yet
 			- On sidebar left, click on 'all pictures'.
 			- Should be back to 'all pictures'.
 			- On sidebar left, click on any year semi-tag
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
-				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right. 
-				- On sidebar left, only the year selected and tags with positive results should be available. If thumbnails aren't tagged, then no tag should be available for navigation on left. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
+				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
+				- On sidebar left, only the year selected and tags with positive results should be available. If thumbnails aren't tagged, then no tag should be available for navigation on left.
 			- Click on icon with 'x' on year below the title.
 			- Should be back to 'all pictures'
 			- On sidebar left, click on the same 'year' semi-tag
@@ -580,12 +579,12 @@ Not developed yet
 			- Should be back to 'year' semi-tag view
 			- On sidebar left, click on the same 'year' semi-tag
 			- Should be back to 'all pictures'.
-			- On sidebar left, click on any year semi-tag, but in this case, make sure there are tagged thumbnails. 
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this category. 
-				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right. 
-				- On sidebar left, only tags with positive results should be available. 
+			- On sidebar left, click on any year semi-tag, but in this case, make sure there are tagged thumbnails.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right.
+				- On sidebar left, only tags with positive results should be available.
 			- Click on a tag.
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ tag). 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ tag).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, and the tag with its corresponding color, 'tag name' and with 'x' to its right.
 				- On sidebar left, only the year selected and tags with positive results to the intersection should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
@@ -595,19 +594,19 @@ Not developed yet
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- Click on icon with 'x' on the tag below the title. 
+			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Select the same intersection as before.
 			- On sidebar left, click on the 'year' semi-tag.
 			- Gallery should only display selected tag.
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- On sidebar left, select the same year as before. 
-			- Gallery should display the category intersection (year ∩ tag). 
+			- On sidebar left, select the same year as before.
+			- Gallery should display the category intersection (year ∩ tag).
 			- On sidebar left, click on the tag being viewed.
-			- Gallery should display only the 'year' semi-tag previously selected. 
+			- Gallery should display only the 'year' semi-tag previously selected.
 			- On sidebar left, click on the same tag as before.
-			- Gallery should display the category intersection (year ∩ tag). 
+			- Gallery should display the category intersection (year ∩ tag).
 			- On sidebar left, click on 'all pictures'
 			- Should be back to 'all pictures'.
 			- On sidebar left, click on any tag
@@ -629,10 +628,10 @@ Not developed yet
 			- On sidebar left, click on any tag, make sure this tag intersects with other tags.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for this tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, only years and tags with positive intersections should be available. 
+				- On sidebar left, only years and tags with positive intersections should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on another tag.
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ tag). 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ tag).
 				- Below title, boths tags with its corresponding color, 'tag names' and with 'x' to the right of each one.
 				- On sidebar left, only the tags selected, year and tags with positive results to the intersection should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tags.
@@ -642,29 +641,29 @@ Not developed yet
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- Click on icon with 'x' on the tag below the title. 
+			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Select the same intersection as before.
 			- On sidebar left, click on one of the tags.
 			- Gallery should only display the other selected tag.
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- On sidebar left, select the same second tag as before. 
-			- Gallery should display the category intersection (tag ∩ tag). 
+			- On sidebar left, select the same second tag as before.
+			- Gallery should display the category intersection (tag ∩ tag).
 			- On sidebar left, click on one of the tags being viewed.
-			- Gallery should display only the other tag previously selected. 
+			- Gallery should display only the other tag previously selected.
 			- On sidebar left, click on the same tag as before.
-			- Gallery should display the category intersection (tag ∩ tag). 
+			- Gallery should display the category intersection (tag ∩ tag).
 			- On sidebar left, click on 'all pictures'
 			- Should be back to 'all pictures'.
 			- On sidebar left, click on any tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for this tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, only years and tags with positive intersections should be available. 
+				- On sidebar left, only years and tags with positive intersections should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- Click on any year semi-tag. 
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ year). 
-				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right, and the 'year' semi-tag with a 'clock' icon with 'x' to its right. 
+			- Click on any year semi-tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ year).
+				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right, and the 'year' semi-tag with a 'clock' icon with 'x' to its right.
 				- On sidebar left, only the year selected and tags with positive results to the intersection should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on year below the title.
@@ -673,53 +672,53 @@ Not developed yet
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- Click on icon with 'x' on the tag below the title. 
+			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Select the same intersection as before.
 			- On sidebar left, click on the 'year' semi-tag.
 			- Gallery should only display selected tag.
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- On sidebar left, select the same year as before. 
-			- Gallery should display the category intersection (year ∩ tag). 
+			- On sidebar left, select the same year as before.
+			- Gallery should display the category intersection (year ∩ tag).
 			- On sidebar left, click on the tag being viewed.
-			- Gallery should display only the 'year' semi-tag previously selected. 
+			- Gallery should display only the 'year' semi-tag previously selected.
 			- On sidebar left, click on the same tag as before.
-			- Gallery should display the category intersection (year ∩ tag). 
+			- Gallery should display the category intersection (year ∩ tag).
 			- On sidebar left, click on 'all pictures'
 			- Should be back to 'all pictures'.
 	- **Search tag**
 		- From 'all pictures'
-			- At the bottom of sidebar left is the search bar. 
+			- At the bottom of sidebar left is the search bar.
 			- When there are no tags selected, the search back placeholder should say 'Search for a tag'
 			- Go to the search bar:
 				- Click on the search bar
 				- Cursor should blink.
-				- SLOWLY enter the name of a tag (NOT year tag). As you type, the sidebar left should be filtering tag names containing the letters inserted in the order they are typed: 't' should only return tags with 't' in its name, 'ta' only with 'ta' in its name, etc. 
-			- Select one of the resulting tags. 
+				- SLOWLY enter the name of a tag (NOT year tag). As you type, the sidebar left should be filtering tag names containing the letters inserted in the order they are typed: 't' should only return tags with 't' in its name, 'ta' only with 'ta' in its name, etc.
+			- Select one of the resulting tags.
 			- Gallery should only display selected tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- On search bar, the searched term should be there. 
+			- On search bar, the searched term should be there.
 			- If search term is deleted:
 				- On sidebar left, the years and tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- Click on icon with 'x' on the tag below the title. 
+			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Go to the search bar:
 				- Click on the search bar
 				- Cursor should blink.
 				- SLOWLY enter a year. As you type, the sidebar left should be filtering tag names containing the numbers inserted in the order they are typed: '2' should only return tags with '2' in its name, '20' only with '20' in its name, etc.
-			- Select one of the resulting tags. 
+			- Select one of the resulting tags.
 			- Gallery should only display selected year semi-tag.
-				- Title with 'x pictures' where 'x' is amount of thumbails available in this year semi-tag. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this year semi-tag.
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right.
 				- On sidebar left, the year selected.
-			- On search bar, the searched term should be there. 
+			- On search bar, the searched term should be there.
 			- If search term is deleted:
 				- On sidebar left, the tags with positive results should be available.
-			- Click on icon with 'x' on the tag below the title. 
+			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 	- **Filter tag**
 		- From 'all pictures'
@@ -730,16 +729,13 @@ Not developed yet
 				- Cursor should blink.
 				- SLOWLY enter a year or tag. As you type, the sidebar left should be filtering tag names containing the numbers or letter inserted in the order they are typed.
 			- Select one of the resulting tags.
-			- Gallery should display the intersection selected (tag ∩ year / tag ∩ year / year ∩ tag / etc) 
-			- On search bar, the searched term should be there. 
+			- Gallery should display the intersection selected (tag ∩ year / tag ∩ year / year ∩ tag / etc)
+			- On search bar, the searched term should be there.
 			- If search term is deleted:
 				- On sidebar left, the tags with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-			- Click on icon with 'x' on the both tags below the title. 
+			- Click on icon with 'x' on the both tags below the title.
 			- Should be back to 'all pictures'.
-
-##Share image
-Not developed yet
 
 ##Share tag
 Not developed yet

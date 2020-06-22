@@ -44,6 +44,7 @@ c.fire = function (element, eventType) {
    element.dispatchEvent (ev);
 }
 
+var username = prompt ('Username?');
 var password = prompt ('Password?');
 
 c.test ([
@@ -56,7 +57,7 @@ c.test ([
       return B.get ('State', 'page') === 'login' && window.location.hash === '#/login';
    }],
    ['Invalid login', function (wait) {
-      c.set ('#auth-username', {value: 'fpereiro'});
+      c.set ('#auth-username', {value: username});
       c.set ('#auth-password', {value: 'foobar'});
       B.do ('login', []);
       wait (300);
@@ -64,7 +65,7 @@ c.test ([
       return B.get ('State', 'snackbar') !== undefined && B.get ('State', 'page') === 'login' && window.location.hash === '#/login';
    }],
    ['Login', function (wait) {
-      c.set ('#auth-username', {value: 'fpereiro'});
+      c.set ('#auth-username', {value: username});
       c.set ('#auth-password', {value: password});
       B.do ('login', []);
       wait (300);
@@ -106,7 +107,7 @@ c.test ([
       return B.get ('State', 'redirect') === 'foo';
    }],
    ['Login after invalid redirect', function (wait) {
-      c.set ('#auth-username', {value: 'fpereiro'});
+      c.set ('#auth-username', {value: username});
       c.set ('#auth-password', {value: password});
       B.do ('login', []);
       wait (300);
@@ -126,7 +127,7 @@ c.test ([
       return B.get ('State', 'redirect') === 'upload';
    }],
    ['Login after valid redirect', function (wait) {
-      c.set ('#auth-username', {value: 'fpereiro'});
+      c.set ('#auth-username', {value: username});
       c.set ('#auth-password', {value: password});
       B.do ('login', []);
       wait (300);
@@ -140,6 +141,7 @@ c.test ([
       wait (150);
    }, function () {
       if (! B.get ('State', 'snackbar')) return clog ('No error message shown.');
+      console.log (B.get ('State', 'snackbar', 'message'));
       if (B.get ('State', 'snackbar', 'message') !== 'Your session has expired. Please login again.') return clog ('Wrong error message shown.');
       return B.get ('State', 'page') === 'login' && window.location.hash === '#/login';
    }],
@@ -152,7 +154,7 @@ c.test ([
    }],
    // *** pictures ***
    ['Login', function (wait) {
-      c.set ('#auth-username', {value: 'fpereiro'});
+      c.set ('#auth-username', {value: username});
       c.set ('#auth-password', {value: password});
       B.do ('login', []);
       wait (300);
@@ -162,8 +164,9 @@ c.test ([
    // This assumes that the user has already uploaded pictures
    ['See that pictures are displayed with the right heading', function () {
       var picNumber = c ('.pictures-grid__item-picture').length;
-      var heading = c ('.pictures-header__title') [0].innerHTML;
-      if (heading !== picNumber + ' pictures') return clog ('Invalid heading.');
+      var heading = c ('.pictures-header__title') [0];
+      if (! heading) return clog ('no header found');
+      if (heading.innerHTML !== picNumber + ' pictures') return clog ('Invalid heading.');
       if (picNumber < 1) return clog ('No pictures.');
       return true;
    }],
@@ -180,6 +183,7 @@ c.test ([
    }],
    ['Change sort to `oldest`', function (wait) {
       var sortItems = c ('li.dropdown__list-item');
+      if (! sortItems) return clog ('No dropdown element.');
       c.fire (sortItems [1], 'click');
       wait (100);
    }, function () {
@@ -195,6 +199,7 @@ c.test ([
    }],
    ['Change sort to `upload`', function (wait) {
       var sortItems = c ('li.dropdown__list-item');
+      if (! sortItems) return clog ('No dropdown element');
       c.fire (sortItems [2], 'click');
       wait (100);
    }, function () {
@@ -210,6 +215,7 @@ c.test ([
    }],
    ['Change sort to `newest`', function (wait) {
       var sortItems = c ('li.dropdown__list-item');
+      if (! sortItems) return clog ('No dropdown element');
       c.fire (sortItems [0], 'click');
       wait (100);
    }, function () {
