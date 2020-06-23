@@ -41,8 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
-- [BUG] Snackbar is not visible on Mac/Chrome. **tested** Coomand B.do ('set', ['State', 'snackbar'], {color: '#ff0000', message: 'dale'}) works on Mac/Chrome.
-
 - Invite
    - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
 
@@ -55,11 +53,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
       - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
       - When account is created. Green snackbar "Your account has been created."
-   **For more reference, we can check line 387 of OML's client.js**
 
 - Log in
    - Message in Firefox 77.0.1 (64 bit) from PicDev console: Cookie “ac-v1” will be soon rejected because it has the “sameSite” attribute set to “none” or an invalid value, without the “secure” attribute. To know more about the “sameSite“ attribute, read https://developer.mozilla.org/docs/Web/HTTP/Headers/Set-Cookie/SameSite
-
 
 - Upload
    - Suggest new tag on autocomplete upload
@@ -71,11 +67,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
 
-- Understand why existing client tests are failing. Add testclient.js
-
 - Geotagging
    - when enabling, refresh every n seconds until tags stabilize
    - geoicons
+
+- Basic account view
+   - Enable/disable geotag
+   - Usage %
+
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
@@ -644,14 +643,16 @@ Used by giz:
       - `onclick -> upload cancel`
 3. `E.share`
 4. `E.tags`
-5. Auth:
-   5.1 `E.login`
+5. `E.import`
+6. `E.account`
+7. Auth:
+   7.1 `E.login`
       - Events: `click -> login`
-   5.2 `E.signup`
+   7.2 `E.signup`
       - Depends on: `Data.signup.username`.
       - Events: `click -> signup`
-   5.3 `E.recover`
-   5.4 `E.reset`
+   7.3 `E.recover`
+   7.4 `E.reset`
 
 **Other**:
 

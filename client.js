@@ -1743,7 +1743,7 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['pics', 'upload', 'share', 'tags', 'import'] : ['login', 'signup', 'recover', 'reset'];
+      var allowed = logged ? ['pics', 'upload', 'share', 'tags', 'import', 'account'] : ['login', 'signup', 'recover', 'reset'];
 
       if (allowed.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
@@ -3644,6 +3644,11 @@ E.import = function () {
          ]],
       ]],
    ]];
+}
+
+// *** ACCOUNT ELEMENT ***
+
+E.account = function () {
 }
 
 // *** INITIALIZATION ***
