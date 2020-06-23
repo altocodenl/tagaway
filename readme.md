@@ -61,6 +61,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Suggest new tag on autocomplete upload
 
 - Pics
+   - [FEATURE] Year/Geo navigation. When YEAR selected first and then COUNTRY, cities do not appear in sidebar. 
    - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
 
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
