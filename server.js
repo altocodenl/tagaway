@@ -273,7 +273,7 @@ H.getGeotags = function (s, metadata) {
          var pop = parseInt (item [1]);
          if (pop <= biggestPop) return;
          biggestPop = pop;
-         geotags = ['g::' + countryCodes [item [0]], 'g::' + item [2]];
+         geotags = ['g::' + item [0], 'g::' + item [2]];
       });
       s.next ([position [0], position [1]].concat (geotags));
    });

@@ -41,7 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
-- [BUG] Snackbar is not visible on Mac/Chrome. **tested** Coomand B.do ('set', ['State', 'snackbar'], {color: '#ff0000', message: 'dale'}) works on Mac/Chrome.   
+- [BUG] Snackbar is not visible on Mac/Chrome. **tested** Coomand B.do ('set', ['State', 'snackbar'], {color: '#ff0000', message: 'dale'}) works on Mac/Chrome.
 
 - Invite
    - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).

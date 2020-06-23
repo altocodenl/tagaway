@@ -747,7 +747,7 @@ var main = [
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       var pic = rs.body.pics [0];
-      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::France'])) return clog ('Invalid tags: ', pic.tags.sort ());
+      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::FR'])) return clog ('Invalid tags: ', pic.tags.sort ());
       if (pic.date !== H.getDate ('2018:03:26 13:23:34')) return clog ('GPS timestamp wasn\'t ignored.');
       s.dunkerque = pic.id;
       s.allpics = rs.body.pics;
@@ -777,11 +777,11 @@ var main = [
       if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
       if (! eq (rs.body.pics [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
       var tags = rs.body.pics [0].tags;
-      if (! eq (tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::France'])) return clog ('Invalid tags: ', tags.sort ());
+      if (! eq (tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::FR'])) return clog ('Invalid tags: ', tags.sort ());
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 5, dunkerque: 1, 'g::France': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
+      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 5, dunkerque: 1, 'g::FR': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
       // Wait for S3
       setTimeout (next, 5000);
    }],
