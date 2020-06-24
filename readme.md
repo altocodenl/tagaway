@@ -44,6 +44,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Invite
    - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
 
+- Welcome email
+   - Remove format to 'Welcome to ac;pic!' email. 
+
 - Sign Up
    - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
       - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
