@@ -2826,7 +2826,7 @@ E.pics = function () {
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
                            filter = (filter || '').trim ();
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
-                              var geotagSelected = dale.stopNot (selected, undefined, function (tag) {
+                              var geotagSelected = dale.stop (selected, true, function (tag) {
                                  return H.isGeo (tag);
                               });
 
