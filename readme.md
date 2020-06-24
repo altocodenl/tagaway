@@ -72,7 +72,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Geotagging
    - when enabling, refresh every n seconds until tags stabilize
-   - geoicons
 
 - Basic account view
    - Enable/disable geotag
