@@ -354,6 +354,7 @@ dale.do ([
    ['create', 'invite', function (x) {
       B.do (x, 'post', 'admin/invites', {}, B.get ('State', 'newInvite'), function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error creating the invite.');
+         B.do (x, 'snackbar', 'green', 'Invite sent!');
          B.do (x, 'rem', 'State', 'newInvite');
          B.do (x, 'retrieve', 'invites');
       });
