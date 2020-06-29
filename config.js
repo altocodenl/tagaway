@@ -15,6 +15,7 @@ var LOGO = [
 
 var TEMPLATE = function (content) {
    return ['body', {style: 'width: 50%; margin-left: 25%'}, [
+      //['style', ['p.email', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}]],
       ['p', {style: 'text-align: center; font-size: 28px; font-family: \'Lucida Bright\', Georgia, serif'}, ['a', {href: DOMAIN, style: 'color: inherit; text-decoration: none'}, LOGO]],
       content,
    ]];
@@ -129,7 +130,7 @@ module.exports = {
       reset: {
          subject: 'You just changed your password',
          message: function (username) {
-            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+            return TEMPLATE (['p', {class: 'email'} , [
                GREETING (username),
                ['br'],
                'We just changed your password. If you performed this change, no further action is necessary.',
