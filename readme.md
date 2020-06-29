@@ -41,37 +41,30 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
-- Invite
-   - Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
-
-- Welcome email
-   - Remove format to 'Welcome to ac;pic!' email.
-
-- Sign Up
-   - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
-      - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
-      - If user selects a username that is already in use. Red snackbar of "That username is already in use".
-      - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
-      - When entering a username with invalida characters (such as '@'). Red snackbar of "Please enter a username without special characters like ! @ # $ % ^ & * " on clicking "create account". **Tom: not sure about the message on snackbar**
-      - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
-      - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
-      - When account is created. Green snackbar "Your account has been created."
-
-- Log in
-   - Message in Firefox 77.0.1 (64 bit) from PicDev console: Cookie “ac-v1” will be soon rejected because it has the “sameSite” attribute set to “none” or an invalid value, without the “secure” attribute. To know more about the “sameSite“ attribute, read https://developer.mozilla.org/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+- Review
+   - Invite: Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
+   - Welcome email: remove format to 'Welcome to ac;pic!' email.
+   - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
+   - Sign Up
+      - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
+         - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
+         - If user selects a username that is already in use. Red snackbar of "That username is already in use".
+         - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
+         - When entering a username with invalida characters (such as '@'). Red snackbar of "Please enter a username without special characters like ! @ # $ % ^ & * " on clicking "create account". **Tom: not sure about the message on snackbar**
+         - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
+         - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
+         - When account is created. Green snackbar "Your account has been created."
 
 - Upload
    - Suggest new tag on autocomplete upload
 
-- Pics
-   - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
+- Geotagging
+   - when enabling, refresh every n seconds until tags stabilize
 
+- Pics
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
    - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
-
-- Geotagging
-   - when enabling, refresh every n seconds until tags stabilize
 
 - Basic account view
    - Enable/disable geotag

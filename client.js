@@ -1614,6 +1614,12 @@ H.if = function (condition, then, Else) {
    return condition ? then : Else;
 }
 
+H.email = /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+
+H.trim = function (string) {
+   return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+}
+
 // *** ELEMENTS ***
 
 var E = {};
@@ -1792,14 +1798,24 @@ dale.do ([
       });
    }],
    ['signup', [], function (x) {
+      var username = H.trim (c ('#auth-username').value);
+      var password = c ('#auth-password').value;
+      if (username.match ('@')) return B.do (x, 'snackbar', 'yellow', 'Your username cannot contain an @ sign.');
+      if (username.length < 3) return B.do (x, 'snackbar', 'yellow', 'Your username must be at least three characters long.');
+      if (password.length < 6) return B.do (x, 'snackbar', 'yellow', 'Your password must be at least six characters long.');
       if (c ('#auth-password').value !== c ('#auth-confirm').value) return B.do (x, 'snackbar' ,'red', 'Please enter the same password twice.');
       B.do (x, 'post', 'auth/signup', {}, {
          email: B.get ('Data', 'signup', 'email'),
          token: B.get ('Data', 'signup', 'token'),
-         username: c ('#auth-username').value,
-         password: c ('#auth-password').value,
+         username: username,
+         password: password
       }, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error creating your account.');
+         if (error) {
+            var parsedError = teishi.parse (error.responseText);
+            if (parsedError && parsedError.error === 'email')    return B.do (x, 'snackbar', 'red', 'That email is already in use.');
+            if (parsedError && parsedError.error === 'username') return B.do (x, 'snackbar', 'red', 'That username is already in use.');
+            return B.do (x, 'snackbar', 'red', 'There was an error creating your account.');
+         }
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
       });
    }],
