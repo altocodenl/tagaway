@@ -836,7 +836,7 @@ var routes = [
                }],
                [H.log, s.username, {a: 'log', ip: rq.origin, ua: rq.headers ['user-agent'], tz: b.tz}],
                function (s) {
-                  reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+                  reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
                }
             ])}
          }],
@@ -916,7 +916,7 @@ var routes = [
                });
             }],
             function (s) {
-               reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+               reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
             },
          ],
       ]);
@@ -1104,7 +1104,8 @@ var routes = [
       astop (rs, [
          [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
          [Redis, 'del', 'csrf:' + rq.data.cookie [CONFIG.cookiename]],
-         [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {path: '/'})}],
+         // Firefox throws a console error if it receives an empty body.
+         [reply, rs, 200, {}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {httponly: true, samesite: 'Lax', path: '/'})}],
       ]);
    }],
 
@@ -1146,7 +1147,7 @@ var routes = [
          },
          [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
          [H.log, rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']}],
-         [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false)}],
+         [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {httponly: true, samesite: 'Lax', path: '/'})}],
       ]);
    }],
 
