@@ -900,16 +900,28 @@ var main = [
       return [
          ['get pic #' + (k + 1), 'get', function (s) {
             return 'pic/' + s.pics [k].id;
-         }, {}, '', 200],
+         }, {}, '', 200, function (s, rq, rs) {
+            if (! rs.headers ['content-type']) return clog ('No content type');
+            return true;
+         }],
          ['get thumb of pic #' + (k + 1), 'get', function (s) {
             return 'thumbof/' + s.pics [k].id;
-         }, {}, '', 200],
+         }, {}, '', 200, function (s, rq, rs) {
+            if (! rs.headers ['content-type']) return clog ('No content type');
+            return true;
+         }],
          k === 3 ? [] : ['get thumb 200 #' + (k + 1), 'get', function (s) {
             return 'thumb/' + s.pics [k].t200;
-         }, {}, '', 200],
+         }, {}, '', 200, function (s, rq, rs) {
+            if (! rs.headers ['content-type']) return clog ('No content type');
+            return true;
+         }],
          k === 3 ? [] : ['get thumb 900 #' + (k + 1), 'get', function (s) {
             return 'thumb/' + s.pics [k].t200;
-         }, {}, '', 200],
+         }, {}, '', 200, function (s, rq, rs) {
+            if (! rs.headers ['content-type']) return clog ('No content type');
+            return true;
+         }],
       ];
    }),
    ['tag nonexisting #2', 'post', 'tag', {}, function (s) {
