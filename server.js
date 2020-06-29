@@ -1245,7 +1245,7 @@ var routes = [
          },
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
          function (s) {
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath]);
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], {'content-type': mime.lookup (s.pic.name)});
          }
       ]);
    }],
@@ -1277,7 +1277,7 @@ var routes = [
             Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt' + (rq.data.params.id === s.pic.t200 ? 2 : 9), 1);
          },
          function (s) {
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), rq.data.params.id), [CONFIG.basepath]);
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], {'content-type': mime.lookup (s.pic.name)});
          }
       ]);
    }],
@@ -1308,7 +1308,7 @@ var routes = [
             Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt2', 1);
          },
          function (s) {
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.t200 || s.pic.id), [CONFIG.basepath]);
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], {'content-type': mime.lookup (s.pic.name)});
          }
       ]);
    }],
