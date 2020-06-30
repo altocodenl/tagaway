@@ -39,8 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- ac;pic Home: change gif to image 
-
 - Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
 - Review
