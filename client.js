@@ -2092,7 +2092,15 @@ dale.do ([
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
       if (! ids.length) return;
-      if (ids.length === 1) return window.open ('pic/' + ids [0], '_blank');
+      if (ids.length === 1) {
+         var a = document.createElement ('a');
+         a.href     = 'pic/' + ids [0];
+         a.download = 'pic/' + ids [0];
+         document.body.appendChild (a);
+         a.click ();
+         document.body.removeChild (a);
+         return;
+      }
       B.do (x, 'post', 'download', {}, {ids: ids}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error downloading your picture(s).');
          window.open ('download/' + rs.body.id);
