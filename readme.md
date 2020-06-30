@@ -39,6 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
+- ac;pic Home: change gif to image 
+
 - Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
 - Review
@@ -54,15 +56,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Geotagging
    - when enabling, refresh every n seconds until tags stabilize
+   - Sidebar enable geo
 
 - Pics
    - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
-   - Untagged tagging: add "commit tags" button and warning if you leave selection or page.
+   - Untagged tagging: add "done tagging" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
+
 
 - Basic account view
    - Enable/disable geotag
    - Usage %
+
+- Paid plan landing
+
+- Running out of space box
+   - Import
+   - Upload
 
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
