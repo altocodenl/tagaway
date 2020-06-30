@@ -42,9 +42,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
 
 - Review
-   - Invite: Fix admin 'double click' for sending invites. We risk sending 2 invites (happened).
-   - Welcome email: remove format to 'Welcome to ac;pic!' email.
-   - [BUG] On single image or video download, images don't have the corresponding file extension. Device reads as 'textEdit' file. For multiple file download, the .zip contains the correct files extensions. Bug only affects individual file downloads.
    - Sign Up
       - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
          - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
