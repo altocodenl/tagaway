@@ -52,9 +52,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
          - When account is created. Green snackbar "Your account has been created."
 
-- Upload
-   - Suggest new tag on autocomplete upload
-
 - Geotagging
    - when enabling, refresh every n seconds until tags stabilize
 
