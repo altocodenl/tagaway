@@ -5,20 +5,21 @@ var DOMAIN = {
    prod: 'https://altocode.nl/pic/app/',
 } [ENV];
 
-var LOGO = [
-   ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'}, 'ac;'],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'},   'p'],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'}, 'i'],
-   ['span', {style: 'font-family: \'Kadwa\', serif; font-weight: bold; color: #5b6eff;'},  'c'],
-];
+var LOGO = ['span', {style: 'font-family: \'Montserrat\', serif; font-weight: bold; color: #5b6eff;'}, 'ac;pic'];
 
 var TEMPLATE = function (content) {
-   return ['body', {style: 'width: 50%; margin-left: 25%'}, [
-      //['style', ['p.email', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}]],
-      ['p', {style: 'text-align: center; font-size: 28px; font-family: \'Lucida Bright\', Georgia, serif'}, ['a', {href: DOMAIN, style: 'color: inherit; text-decoration: none'}, LOGO]],
-      content,
-   ]];
+   return [
+      ['head', [
+         ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
+      ]],
+      ['body', [
+         ['style', [
+            ['p', {'font-family': '\'Montserrat\', sans-serif'}],
+         ]],
+         ['p', ['a', {href: DOMAIN, style: 'font-size: 200%; text-decoration: none'}, LOGO]],
+         content,
+      ]],
+   ];
 }
 var GREETING = function (username) {
    username = username [0].toUpperCase () + username.slice (1);
@@ -48,7 +49,7 @@ module.exports = {
       feedback: {
          subject: 'Thank you for your feedback!',
          message: function (username, feedback) {
-            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+            return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
                'We have received your feedback and we are ever so thankful for having received it.',
@@ -67,11 +68,10 @@ module.exports = {
       invite: {
          subject: 'Your invitation to join ac;pic',
          message: function (username, token, email) {
-            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+            return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
-               'You have been officially invited to join ', LOGO, '!',
-               ['br'],
+               'You have been officially invited to join ', LOGO, '! ',
                ['a', {href: DOMAIN + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
@@ -83,7 +83,7 @@ module.exports = {
       verify: {
          subject: 'Please verify your email',
          message: function (username, token) {
-            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+            return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
                'Welcome to ', LOGO, ' ! Please verify your email by clicking on the following link: ',
@@ -98,7 +98,7 @@ module.exports = {
       welcome: {
          subject: 'Welcome to ac;pic!',
          message: function (username, token) {
-            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+            return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
                'Welcome to ', LOGO, ' ! We are thrilled to have you with us.',
@@ -114,7 +114,7 @@ module.exports = {
       recover: {
          subject: 'Did you forget your password?',
          message: function (username, token) {
-            return TEMPLATE (['p', {style: "color: black; font-size: 16px; font-family: 'Lucida Bright', Georgia, serif;"}, [
+            return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
                'Did you forget your password? If you did, all is well: please ', ['a', {href: DOMAIN + '#/auth/reset/' + encodeURIComponent (token) + '/' + encodeURIComponent (username)}, 'click on this link to set a new password.'],
@@ -130,7 +130,7 @@ module.exports = {
       reset: {
          subject: 'You just changed your password',
          message: function (username) {
-            return TEMPLATE (['p', {class: 'email'} , [
+            return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
                'We just changed your password. If you performed this change, no further action is necessary.',
@@ -163,6 +163,7 @@ module.exports = {
    ses: {
       accessKeyId:     'KEY',
       secretAccessKey: 'SECRETKEY',
+      region:          'REGION'
    },
    crypto: {
       password: 'CRYPTOSTRONGPASSWORD'
