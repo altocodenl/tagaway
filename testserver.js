@@ -725,19 +725,28 @@ var main = [
    ]),
    ['turn on geotagging (invalid)', 'post', 'geo', {}, {operation: 'foo'}, 400],
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
+   ['dismiss geotagging suggestion', 'post', 'geo', {}, {operation: 'dismiss'}, 200],
    ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.geo !== false) return clog ('Geo should be turned off');
+      if (rs.body.geo !== undefined)           return clog ('Geo should be turned off');
+      if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
+      var lastLog = rs.body.logs [0];
+      if (lastLog.a !== 'geo' || lastLog.op !== 'dismiss') return clog ('Geo suggestion dismissal not registered.');
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.geo !== true) return clog ('Geo should be turned on');
+      if (rs.body.geo !== true)           return clog ('Geo should be turned on');
+      if (rs.body.geoInProgress !== true) return clog ('Geo progress should be turned on');
       return true;
    }],
    ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
    ['turn on geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409, function (s, rq, rs, next) {
       // Wait for pictures to be tagged
       setTimeout (next, 1000);
+   }],
+   ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
+      return true;
    }],
    ['upload picture with different date format and geodata', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
@@ -755,7 +764,7 @@ var main = [
    }],
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
    ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.geo !== false) return clog ('Geo should be turned off');
+      if (rs.body.geo !== undefined) return clog ('Geo should be turned off');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
@@ -1321,7 +1330,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 54 && rs.body.logs.length !== 55)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 55 && rs.body.logs.length !== 56)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, 2000);
    }],

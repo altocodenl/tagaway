@@ -2000,6 +2000,7 @@ var routes = [
             multi.lrange ('ulog:' + rq.user.username, 0, -1);
             multi.get    ('stat:s:byfs-' + rq.user.username);
             multi.get    ('stat:s:bys3-' + rq.user.username);
+            multi.get    ('geo:'         + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
@@ -2013,8 +2014,9 @@ var routes = [
                   fsused: parseInt (s.last [1]) || 0,
                   s3used: parseInt (s.last [2]) || 0
                },
-               logs:     dale.go (s.last [0], JSON.parse),
-               geo:      !! rq.user.geo
+               logs:          dale.go (s.last [0], JSON.parse),
+               geo:           rq.user.geo ? true : undefined,
+               geoInProgress: s.last [3]  ? true : undefined,
             });
          }
       ]);
@@ -2028,8 +2030,13 @@ var routes = [
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['operation'], 'eachOf', teishi.test.equal],
-         ['operation', b.operation, ['enable', 'disable'], 'oneOf', teishi.test.equal]
+         ['operation', b.operation, ['enable', 'disable', 'dismiss'], 'oneOf', teishi.test.equal]
       ])) return;
+
+      if (b.operation === 'dismiss') return astop (rs, [
+         [H.log, rq.user.username, {a: 'geo', op: b.operation}],
+         [reply, rs, 200]
+      ]);
 
       astop (rs, [
          [Redis, 'get', 'geo:' + rq.user.username],

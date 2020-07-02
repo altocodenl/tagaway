@@ -5,7 +5,7 @@ B.forget ('eventlog');
 
 var T = teishi.time ();
 B.listen ('*', [], {priority: 1000000}, function (x) {
-   //x.args ? console.log (teishi.time () - T, x.verb, x.path, x.args) : console.log (teishi.time () - T, x.verb, x.path);
+   if (B.logall) x.args ? console.log (teishi.time () - T, x.verb, x.path, x.args) : console.log (teishi.time () - T, x.verb, x.path);
 });
 
 lith.css.style = function (attributes, prod) {
@@ -2255,10 +2255,17 @@ dale.do ([
 
    // *** ACCOUNT LISTENERS ***
 
-   ['query', 'account', function (x) {
+   ['query', 'account', function (x, cb) {
       B.do (x, 'get', 'account', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your account information.');
          B.do (x, 'set', ['Data', 'account'], rs.body);
+         if (cb) cb ();
+      });
+   }],
+
+   ['dismiss', 'geo', function (x) {
+      B.do (x, 'post', 'geo', {}, {operation: 'dismiss'}, function (x, error, rs) {
+         return B.do (x, 'snackbar', 'red', 'There was an error communicating with the server.');
       });
    }],
 
@@ -2274,16 +2281,11 @@ dale.do ([
             B.do (x, 'query', 'pics');
          }
          if (operation === 'enable') {
-            // TODO: query server directly
-            B.do (x, 'set', ['State', 'updateGeotags', 'interval'], setInterval (function () {
-               var tags = B.get ('Data', 'queryTags');
-               var change = ! teishi.eq (tags, B.get ('State', 'updateGeotags', 'tags'));
-               var repeat = B.get ('State', 'updateGeotags', 'repeat') || 0;
-               clog ('interval', change, repeat);
-               if (! change && repeat >= 3) return B.do (x, 'clear', 'updateGeotags');
-               B.do (x, 'set', ['State', 'updateGeotags', 'repeat'], change ? 0 : repeat + 1);
-               B.do (x, 'set', ['State', 'updateGeotags', 'tags'], teishi.c (tags));
-               B.do (x, 'query', 'pics');
+            B.do (x, 'set', ['State', 'updateGeotags'], setInterval (function () {
+               B.do (x, 'query', 'account', function () {
+                  if (! B.get ('Data', 'account', 'geoInProgress')) return B.do (x, 'clear', 'updateGeotags');
+                  B.do (x, 'query', 'pics');
+               });
             }, 3000));
          }
          B.do (x, 'query', 'account');
@@ -2293,7 +2295,7 @@ dale.do ([
 
    ['clear', 'updateGeotags', function (x) {
       if (! B.get ('State', 'updateGeotags')) return;
-      clearInterval (B.get ('State', 'updateGeotags', 'interval'));
+      clearInterval (B.get ('State', 'updateGeotags'));
       B.do (x, 'rem', 'State', 'updateGeotags');
    }],
 

@@ -39,7 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- Logo: svg logo in app (upper left) is ac:pic but in title and all communication is ac;pic.
+- Change svg logo to "ac;pic"
 
 - Review
    - Sign Up
@@ -52,15 +52,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
          - When account is created. Green snackbar "Your account has been created."
 
-- Geotagging
-   - when enabling, refresh every n seconds until tags stabilize
-   - Sidebar enable geo
-
 - Pics
-   - [BUG] on pics without thumbnail, don't rotate if metadata is picked up by browser?
+   - Sidebar suggestion enable geo.
    - Untagged tagging: add "done tagging" button and warning if you leave selection or page.
    - When clicking on no man's land, unselect.
 
+- Create thumbnails for all sizes (t200 always, t900 if not small), to eliminate metadata unless downloading original picture.
 
 - Basic account view
    - Enable/disable geotag
@@ -109,6 +106,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Download a single picture.
    - Download multiple pictures as one zip file.
    - Only show tags relevant to the current query.
+   - When just enabling geotagging, update tags every 3 seconds.
+   - Suggest geotagging when having a few pictures uploaded, but only once; either enable it or dismiss the message, and don't show it again.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -148,6 +147,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Login/logout.
    - Signup with invite.
    - Store auth log.
+   - Enable/disable geotagging.
 
 - Admin
    - Store statistics.
@@ -408,12 +408,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 `POST /geo`
    - Enables or disables geotagging.
-   - Body must be of the form `{operation: 'enable|disable'}`.
+   - Body must be of the form `{operation: 'enable|disable|dismissSuggestion'}`.
    - If an operation is ongoing while the request is being made, the server will reply with a 409 code. Otherwise it will reply with a 200 code.
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...], geo: true|false}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...], geo: true|undefined, geoInProgress: true|undefined}`.
 
 #### Debugging routes
 
@@ -581,7 +581,7 @@ All the routes below require an admin user to be logged in.
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
-   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
+   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismissSuggestion'}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -673,7 +673,7 @@ Used by giz:
    - Depends on `State.open`.
    - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`, `goto location PIC`.
 
-### Listeners
+### Responders
 
 1. Native
    1. `error` -> `error`
@@ -705,7 +705,7 @@ Used by giz:
    9. `test`: loads test suite.
 
 2. Auth
-   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.page` so that the listener that handles page changes gets fired.
+   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.page` so that the responder that handles page changes gets fired.
    2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
    3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
@@ -713,7 +713,7 @@ Used by giz:
    6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 3. Pics
-   1. `change []`: stopgap listener to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
+   1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
    3. `change State.query`: sets `State.npics` and invokes `query pics`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
@@ -757,8 +757,10 @@ Used by giz:
       - If query is successful, invokes `query account` and `query tags`.
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
 6. Account
-   1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`.
-   2. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`.
+   1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
+   2. `dismiss geo`: `post geo`; if unsuccessful, invokes `snackbar`.
+   3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
+   4. `clear updateGeotags`: if `State.updateGeotags` is defined, it invokes `clearInterval` on `State.updateGeotags` and then `rem State.updateGeotags`
 
 ### Store
 
@@ -776,6 +778,7 @@ Used by giz:
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
+   - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
    - `upload`:
       - `new`: {format: ['FILENAME', ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
@@ -810,7 +813,7 @@ Only things that differ from client are noted.
    - Events:
       - `click -> deploy client`
 
-### Listeners
+### Responders
 
 1. Invites
    1. `retrieve invites`: invokes `get admin/invites`.
