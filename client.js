@@ -1620,6 +1620,10 @@ H.trim = function (string) {
    return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
 }
 
+H.stopPropagation = function (ev) {
+   return [['onclick', 'stop', 'propagation', {rawArgs: 'event'}], ev];
+}
+
 // *** ELEMENTS ***
 
 var E = {};
@@ -2105,6 +2109,9 @@ dale.do ([
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error downloading your picture(s).');
          window.open ('download/' + rs.body.id);
       });
+   }],
+   ['stop', 'propagation', function (x, ev) {
+      ev.stopPropagation ();
    }],
 
    // *** OPEN LISTENERS ***
@@ -2748,7 +2755,7 @@ E.header = function (showUpload, showImport) {
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#/pics', class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item'},                           ['a', B.ev ({class: 'main-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'Manage tags']],
+            ['li', {class: 'main-menu__item'},                           ['a', B.ev ({class: 'main-menu__item-link'}, H.stopPropagation (['onclick', 'snackbar', 'green', 'Coming soon, hang tight!'])), 'Manage tags']],
          ]]
       ]],
       // ACCOUNT MENU
@@ -2757,8 +2764,8 @@ E.header = function (showUpload, showImport) {
             // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
-                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, ['onclick', 'snackbar', 'green', 'Coming soon, hang tight!']), 'My account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, ['onclick', 'logout', []]), 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, H.stopPropagation (['onclick', 'snackbar', 'green', 'Coming soon, hang tight!'])), 'My account']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, H.stopPropagation (['onclick', 'logout', []])), 'Logout']],
                ]],
             ]],
          ]],
@@ -2819,7 +2826,7 @@ E.empty = function () {
 // *** PICS ELEMENT ***
 
 E.pics = function () {
-   return ['div', {id: 'pics', class: 'app-pictures app-all-tags'}, [
+   return ['div', B.ev ({id: 'pics', class: 'app-pictures app-all-tags'}, ['onclick', 'rem', 'State', 'selected']), [
       E.header (true, true),
       E.open (),
       // TODO v2: merge two elements into one
@@ -2882,16 +2889,16 @@ E.pics = function () {
                                     if (H.isGeo (which) && ! H.isCountry (which) && ! geotagSelected) return;
 
                                     var tag = which;
-                                    var action = ['onclick', 'toggle', 'tag', tag];
+                                    var action = H.stopPropagation (['onclick', 'toggle', 'tag', tag]);
                                     if (which === 'all') {
                                        var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
                                        tag = 'All pictures';
-                                       action = ['onclick', 'set', ['State', 'query', 'tags'], []];
+                                       action = H.stopPropagation (['onclick', 'set', ['State', 'query', 'tags'], []]);
                                     }
                                     else if (which === 'untagged') {
                                        var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
                                        var tag = 'Untagged';
-                                       var action = ['onclick', 'toggle', 'tag', 'untagged'];
+                                       var action = H.stopPropagation (['onclick', 'toggle', 'tag', 'untagged']);
                                     }
                                     else if (H.isYear (which)) {
                                        var Class = 'tag-list__item tag tag-list__item--time' + (selected.indexOf (which) > -1 ? ' tag--bolded' : '');
@@ -2948,7 +2955,7 @@ E.pics = function () {
                      ]],
                      // Sidebar section -- Organise pictures
                      ['div', {class: 'sidebar__inner-section'}, [
-                        ['div', B.ev ({class: 'sidebar__close-section-button'}, ['onclick', 'rem', 'State', 'selected']), [
+                        ['div', B.ev ({class: 'sidebar__close-section-button'}, H.stopPropagation (['onclick', 'rem', 'State', 'selected'])), [
                            ['div', {class: 'cross-button cross-button--big'}, [
                               ['span', {class: 'cross-button__cross'}],
                            ]],
@@ -2967,13 +2974,13 @@ E.pics = function () {
                            // Switch
                            ['div', {class: 'switch'}, [
                               ['ul', {class: 'switch-list'}, [
-                                 ['li', B.ev ({class: 'switch-list__item'}, ['onclick', 'rem', 'State', 'untag']), [
+                                 ['li', B.ev ({class: 'switch-list__item'}, H.stopPropagation (['onclick', 'rem', 'State', 'untag'])), [
                                     // TODO v2: add inline SVG
                                     ['div', {class: 'switch-list__button switch-list__button--attach', opaque: true}, [
                                        ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
                                     ]],
                                  ]],
-                                 ['li', B.ev ({class: 'switch-list__item', style: style ({width: 110})}, ['onclick', 'set', ['State', 'untag'], true]), [
+                                 ['li', B.ev ({class: 'switch-list__item', style: style ({width: 110})}, H.stopPropagation (['onclick', 'set', ['State', 'untag'], true])), [
                                     // TODO v2: add inline SVG
                                     ['div', {class: 'switch-list__button switch-list__button--untag', opaque: true}, [
                                        ['span', {class: 'switch-list__button-text'}, 'Untag '],
@@ -2988,7 +2995,7 @@ E.pics = function () {
                               return [
                                  ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
                                  ['input', B.ev ({id: 'newTag', class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name', value: newTag}, ['oninput', 'set', ['State', 'newTag']])],
-                                 ['div', B.ev ({style: style ({cursor: 'pointer', 'margin-left': 0.48, 'margin-top': 10}), class: 'button button--one'}, ['onclick', 'tag', 'pics', true]), 'Add new tag']
+                                 ['div', B.ev ({style: style ({cursor: 'pointer', 'margin-left': 0.48, 'margin-top': 10}), class: 'button button--one'}, H.stopPropagation (['onclick', 'tag', 'pics', true])), 'Add new tag']
                               ];
                            }),
                         ]],
@@ -3023,9 +3030,9 @@ E.pics = function () {
                                     return dale.do (editTags, function (tag) {
                                        var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
                                        // TODO v2: add inline SVG
-                                       return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, ['onclick', 'goto', 'tag', tag]), [
+                                       return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, H.stopPropagation (['onclick', 'goto', 'tag', tag])), [
                                           ['span', {class: 'tag__title'}, tag],
-                                          ['div', B.ev ({class: 'tag__actions'}, ['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}]), [
+                                          ['div', B.ev ({class: 'tag__actions'}, H.stopPropagation (['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}])), [
                                              ['div', {class: 'tag-actions'}, [
                                                 // TODO v2: add inline SVG
                                                 ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
@@ -3061,29 +3068,29 @@ E.pics = function () {
                      ['div', {class: 'organise-bar__selected'}, [
                         ['div', {class: 'selected-box'}, [
                            // TODO v2: add inline SVG
-                           ['span', B.ev ({class: 'selected-box__close', opaque: true}, ['onclick', 'rem', 'State', 'selected'])],
+                           ['span', B.ev ({class: 'selected-box__close', opaque: true}, H.stopPropagation (['onclick', 'rem', 'State', 'selected']))],
                            ['span', {class: 'selected-box__count'}, dale.keys (selected).length],
                         ]],
                         ['p', {class: 'organise-bar__selected-title'}, 'Selected'],
                      ]],
                      // TODO v2: add inline SVG
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, ['onclick', 'select', 'all']), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, H.stopPropagation (['onclick', 'select', 'all'])), [
                         ['span', {class: 'organise-bar__button-title'}, 'Select all'],
                      ]],
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--rotate'}, ['onclick', 'rotate', 'pics', 90]), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--rotate'}, H.stopPropagation (['onclick', 'rotate', 'pics', 90])), [
                         // TODO v2: add inline SVG
                         ['div', {class: 'organise-bar__button-icon-container', opaque: true}],
                         ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
                      ]],
                      // TODO v2: add inline SVG
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, ['onclick', 'rem', 'State', 'selected']), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, H.stopPropagation (['onclick', 'rem', 'State', 'selected'])), [
                         ['span', {class: 'organise-bar__button-title'}, 'Unselect all'],
                      ]],
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--download', opaque: true}, ['onclick', 'download', []]), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--download', opaque: true}, H.stopPropagation (['onclick', 'download', []])), [
                         ['span', {class: 'organise-bar__button-title'}, 'Download'],
                      ]],
                      // TODO v2: add inline SVG
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--delete', opaque: true}, ['onclick', 'delete', 'pics']), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--delete', opaque: true}, H.stopPropagation (['onclick', 'delete', 'pics'])), [
                         ['span', {class: 'organise-bar__button-title'}, 'Delete'],
                      ]],
                   ]];
@@ -3106,7 +3113,7 @@ E.pics = function () {
                                           ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
                                                 // TODO v2: add inline SVG
-                                                ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['onclick', 'toggle', 'tag', tag])],
+                                                ['div', B.ev ({class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, H.stopPropagation (['onclick', 'toggle', 'tag', tag]))],
                                              ]],
                                           ]],
                                        ]];
@@ -3120,7 +3127,7 @@ E.pics = function () {
                                        ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'recently uploaded' : query.sort],
                                        ['ul', {class: 'dropdown__list'}, [
                                           dale.do (['newest', 'oldest', 'upload'], function (sort) {
-                                             return ['li', B.ev ({class: 'dropdown__list-item'}, ['onclick', 'set', ['State', 'query', 'sort'], sort]), sort === 'upload' ? 'recently uploaded' : sort];
+                                             return ['li', B.ev ({class: 'dropdown__list-item'}, H.stopPropagation (['onclick', 'set', ['State', 'query', 'sort'], sort])), sort === 'upload' ? 'recently uploaded' : sort];
                                           })
                                        ]],
                                     ];
@@ -3223,7 +3230,7 @@ E.grid = function () {
                   ['div', B.ev ({
                      class: 'pictures-grid__item-picture',
                      id: pic.id,
-                  }, ['onclick', 'click', 'pic', pic.id, k]), [
+                  }, H.stopPropagation (['onclick', 'click', 'pic', pic.id, k])), [
                      ['div', {
                         class: 'inner',
                         style: style ({

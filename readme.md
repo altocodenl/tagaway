@@ -41,7 +41,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Change svg logo to "ac;pic"
 
-- Review
+- Review Tom
+   - When clicking on no man's land, unselect.
    - Sign Up
       - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
          - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
@@ -55,7 +56,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pics
    - Sidebar suggestion enable geo.
    - Untagged tagging: add "done tagging" button and warning if you leave selection or page.
-   - When clicking on no man's land, unselect.
 
 - Create thumbnails for all sizes (t200 always, t900 if not small), to eliminate metadata unless downloading original picture.
 
@@ -108,6 +108,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Only show tags relevant to the current query.
    - When just enabling geotagging, update tags every 3 seconds.
    - Suggest geotagging when having a few pictures uploaded, but only once; either enable it or dismiss the message, and don't show it again.
+   - When clicking on no man's land, unselect.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -730,6 +731,8 @@ Used by giz:
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
    16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible; 3) the number of pictures in `Data.pics` is larger than `State.nPics`. If it increases `State.nPics`, it will do so by 20.
    17. `change Data.pics|State.nPics|Data.tags`: if `State.page` is `pics` and any of the three paths change, and the following conditions are met: 1) there are already pictures in `Data.pics`; 2) `State.nPics` is smaller than the amount of pics in `Data.pics`; and 3) all the pictures are visible; then, `State.nPics` will be increased by 20. This has the result of filling the screen with pictures, in increments of 20. The reason for including a change event for `Data.tags` is that `E.pics` also depends on `Data.tags`, so depending on the order of the redraws, there might be no pictures on the screen when the event is triggered by a change on `Data.pics`.
+   18. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
+   19. `stop propagation`: stops propagation of the `ev` passed as an argument.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
