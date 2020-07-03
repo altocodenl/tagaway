@@ -39,8 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- Change svg logo to "ac;pic"
-
 - Review Tom
    - When clicking on no man's land, unselect.
    - Sign Up
@@ -617,6 +615,7 @@ Used by giz:
 1. `E.pics`
    - Depends on: `Data.tags`, `Data.pics`, `Data.queryTags`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
    - Events:
+      - `click -> stop propagation`
       - `click -> rem State.selected`
       - `click -> toggle tag`
       - `click -> select all`
