@@ -2861,7 +2861,6 @@ E.pics = function () {
                                     if (! account) return;
                                     var firstGeo = true, suggestGeotagging = account.geo !== true;
                                     if (suggestGeotagging) dale.stop (account.logs, true, function (log) {
-                                       clog ('log', log, log.a, log.op);
                                        if (log.a === 'geo' && log.op === 'dismiss') {
                                           suggestGeotagging = false;
                                           return true;

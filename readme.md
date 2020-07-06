@@ -52,8 +52,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - When account is created. Green snackbar "Your account has been created."
 
 - Pics
-   - Sidebar suggestion enable geo.
-   - Untagged tagging: add "done tagging" button and warning if you leave selection or page.
+   - Fix geotag icon on top bar.
+   - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 
 - Create thumbnails for all sizes (t200 always, t900 if not small), to eliminate metadata unless downloading original picture.
 
@@ -87,6 +87,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Hover on picture and see date.
    - Show untagged pictures.
    - When querying untagged tag, remove non-year and non-geo tags. When querying normal tag, remove untagged tag.
+   - When modifying pictures with `untagged` in the query, add button for confirming operation; show alert if user navigates away.
    - See list of tags.
    - Query by tag or tags.
    - Show pictures according to the selected tags.
