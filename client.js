@@ -1753,7 +1753,7 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['pics', 'upload', 'share', 'tags', 'import', 'account'] : ['login', 'signup', 'recover', 'reset'];
+      var allowed = logged ? ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'] : ['login', 'signup', 'recover', 'reset'];
 
       if (allowed.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
@@ -2755,7 +2755,7 @@ E.header = function (showUpload, showImport) {
             // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
-                  ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, H.stopPropagation (['onclick', 'snackbar', 'green', 'Coming soon, hang tight!'])), 'My account']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'My account']],
                   ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, H.stopPropagation (['onclick', 'logout', []])), 'Logout']],
                ]],
             ]],
@@ -3676,6 +3676,25 @@ E.import = function () {
 // *** ACCOUNT ELEMENT ***
 
 E.account = function () {
+   return [
+      E.header (true, true),
+      B.view (['Data', 'account'], function (x, account) {
+         var paid = true;
+         if (paid) return E.accountPaid ();
+         else      return E.accountFree ();
+      })
+   ];
+}
+
+E.accountFree = function () {
+}
+
+E.accountPaid = function () {
+}
+
+// *** UPGRADE ELEMENT ***
+
+E.upgrade = function () {
 }
 
 // *** INITIALIZATION ***
