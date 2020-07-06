@@ -2271,7 +2271,9 @@ dale.do ([
 
    ['dismiss', 'geo', function (x) {
       B.do (x, 'post', 'geo', {}, {operation: 'dismiss'}, function (x, error, rs) {
-         return B.do (x, 'snackbar', 'red', 'There was an error communicating with the server.');
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error communicating with the server.');
+         B.do (x, 'query', 'account');
+         B.do (x, 'snackbar', 'green', 'Understood! You can always enable geotagging from My Account.');
       });
    }],
 
@@ -2295,7 +2297,7 @@ dale.do ([
             }, 3000));
          }
          B.do (x, 'query', 'account');
-         B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully.');
+         B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully. You can always change this from My Account.');
       });
    }],
 
@@ -2855,91 +2857,116 @@ E.pics = function () {
                               });
 
                               return B.view (['Data', 'queryTags'], function (x, tags) {
-                                 var firstGeo = true;
-                                 var taglist = dale.fil (tags, undefined, function (tag) {
-                                    if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
-                                    if (! filter) return tag;
-                                    if (tag.match (H.makeRegex (filter))) return tag;
-                                 }).sort (function (a, b) {
-                                    if (H.isYear (a) && ! H.isYear (b)) return -1;
-                                    if (H.isYear (b) && ! H.isYear (a)) return 1;
-                                    if (H.isYear (a) && H.isYear (b)) return a - b;
-                                    if (H.isCountry (a) && H.isCountry (b)) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
-                                    if (H.isCountry (a) && ! H.isCountry (b)) return -1;
-                                    if (! H.isCountry (a) && H.isCountry (b)) return 1;
+                                 return B.view (['Data', 'account'], function (x, account) {
+                                    if (! account) return;
+                                    var firstGeo = true, suggestGeotagging = account.geo !== true;
+                                    if (suggestGeotagging) dale.stop (account.logs, true, function (log) {
+                                       clog ('log', log, log.a, log.op);
+                                       if (log.a === 'geo' && log.op === 'dismiss') {
+                                          suggestGeotagging = false;
+                                          return true;
+                                       }
+                                    });
 
-                                    var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
-                                    var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
-                                    if (aSelected !== bSelected) return aSelected ? -1 : 1;
-                                    return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
-                                 });
-                                 var all      = teishi.eq (selected, []);
-                                 var untagged = teishi.eq (selected, ['untagged']);
-                                 var makeTag  = function (which) {
-                                    // Ignore geotags for cities if no other (country) geotag is selected.
-                                    if (H.isGeo (which) && ! H.isCountry (which) && ! geotagSelected) return;
+                                    var yearlist = dale.fil (tags, undefined, function (tag) {
+                                       if (! H.isYear (tag)) return;
+                                       if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
+                                       if (! filter) return tag;
+                                       if (tag.match (H.makeRegex (filter))) return tag;
+                                    }).sort (function (a, b) {return a - b});
 
-                                    var tag = which;
-                                    var action = H.stopPropagation (['onclick', 'toggle', 'tag', tag]);
-                                    if (which === 'all') {
-                                       var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
-                                       tag = 'All pictures';
-                                       action = H.stopPropagation (['onclick', 'set', ['State', 'query', 'tags'], []]);
-                                    }
-                                    else if (which === 'untagged') {
-                                       var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
-                                       var tag = 'Untagged';
-                                       var action = H.stopPropagation (['onclick', 'toggle', 'tag', 'untagged']);
-                                    }
-                                    else if (H.isYear (which)) {
-                                       var Class = 'tag-list__item tag tag-list__item--time' + (selected.indexOf (which) > -1 ? ' tag--bolded' : '');
-                                    }
-                                    else if (H.isGeo (which)) {
-                                       var isCountry = H.isCountry (which);
-                                       if (isCountry) {
-                                          var Class = 'tag-list__item tag tag-list__item--geo-country';
-                                          if (selected.indexOf (which) > -1) Class += ' tag--bolded';
-                                          if (firstGeo) {
-                                             Class += ' clear-both';
-                                             firstGeo = false;
+                                    var taglist = dale.fil (tags, undefined, function (tag) {
+                                       if (H.isYear (tag)) return;
+                                       if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
+                                       if (! filter) return tag;
+                                       if (tag.match (H.makeRegex (filter))) return tag;
+                                    }).sort (function (a, b) {
+                                       if (H.isCountry (a) && H.isCountry (b)) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                       if (H.isCountry (a) && ! H.isCountry (b)) return -1;
+                                       if (! H.isCountry (a) && H.isCountry (b)) return 1;
+
+                                       var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
+                                       var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
+                                       if (aSelected !== bSelected) return aSelected ? -1 : 1;
+                                       return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                    });
+                                    var all      = teishi.eq (selected, []);
+                                    var untagged = teishi.eq (selected, ['untagged']);
+                                    var makeTag  = function (which) {
+                                       // Ignore geotags for cities if no other (country) geotag is selected.
+                                       if (H.isGeo (which) && ! H.isCountry (which) && ! geotagSelected) return;
+
+                                       var tag = which;
+                                       var action = H.stopPropagation (['onclick', 'toggle', 'tag', tag]);
+                                       if (which === 'all') {
+                                          var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
+                                          tag = 'All pictures';
+                                          action = H.stopPropagation (['onclick', 'set', ['State', 'query', 'tags'], []]);
+                                       }
+                                       else if (which === 'untagged') {
+                                          var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
+                                          var tag = 'Untagged';
+                                          var action = H.stopPropagation (['onclick', 'toggle', 'tag', 'untagged']);
+                                       }
+                                       else if (H.isYear (which)) {
+                                          var Class = 'tag-list__item tag tag-list__item--time' + (selected.indexOf (which) > -1 ? ' tag--bolded' : '');
+                                       }
+                                       else if (H.isGeo (which)) {
+                                          var isCountry = H.isCountry (which);
+                                          if (isCountry) {
+                                             var Class = 'tag-list__item tag tag-list__item--geo-country';
+                                             if (selected.indexOf (which) > -1) Class += ' tag--bolded';
+                                             if (firstGeo) {
+                                                Class += ' clear-both';
+                                                firstGeo = false;
+                                             }
+                                          }
+                                          else {
+                                             var Class = 'tag-list__item tag tag-list__item--geo-city';
+                                             if (selected.indexOf (which) > -1) Class += ' tag--selected';
                                           }
                                        }
                                        else {
-                                          var Class = 'tag-list__item tag tag-list__item--geo-city';
-                                          if (selected.indexOf (which) > -1) Class += ' tag--selected';
+                                          var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '');
                                        }
-                                    }
-                                    else {
-                                       var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '');
-                                    }
 
-                                    // TODO v2: add inline SVG
-                                    return [
-                                       ['li', B.ev ({class: Class, opaque: true}, action), [
-                                          ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
-                                          // TODO: why must specify height so it looks exactly the same as markup?
-                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                             ['div', {class: 'tag-actions'}, [
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                       // TODO v2: add inline SVG
+                                       return [
+                                          ['li', B.ev ({class: Class, opaque: true}, action), [
+                                             ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
+                                             // TODO: why must specify height so it looks exactly the same as markup?
+                                             ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                                ['div', {class: 'tag-actions'}, [
+                                                   // TODO v2: add inline SVG
+                                                   ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
+                                                   // TODO v2: add inline SVG
+                                                   ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
+                                                   // TODO v2: add inline SVG
+                                                   ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
+                                                   // TODO v2: add inline SVG
+                                                   ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
+                                                   // TODO v2: add inline SVG
+                                                   ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                                ]]
                                              ]]
-                                          ]]
-                                       ]],
+                                          ]],
+                                       ];
+                                    }
+                                    return [
+                                       makeTag ('all'),
+                                       makeTag ('untagged'),
+                                       dale.do (yearlist, makeTag),
+                                       H.if (suggestGeotagging, [
+                                          ['p', {style: style ({clear: 'both', display: 'block'})}, [
+                                             ['a', B.ev (['onclick', 'toggle', 'geo', true]),  'Enable geotagging'],
+                                             ' - ',
+                                             ['a', B.ev (['onclick', 'dismiss', 'geo']), 'Dismiss'],
+                                          ]],
+                                          ['br'],
+                                       ]),
+                                       dale.do (taglist, makeTag)
                                     ];
-                                 }
-                                 return [
-                                    makeTag ('all'),
-                                    makeTag ('untagged'),
-                                    dale.do (taglist, makeTag)
-                                 ];
+                                 });
                               });
                            });
                         }),

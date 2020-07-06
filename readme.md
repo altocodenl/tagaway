@@ -580,7 +580,7 @@ All the routes below require an admin user to be logged in.
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
-   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismissSuggestion'}
+   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -613,7 +613,7 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.tags`, `Data.pics`, `Data.queryTags`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
+   - Depends on: `Data.tags`, `Data.pics`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -760,7 +760,7 @@ Used by giz:
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
 6. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
-   2. `dismiss geo`: `post geo`; if unsuccessful, invokes `snackbar`.
+   2. `dismiss geo`: `post geo`; invokes `snackbar`. If successful, invokes `query account`.
    3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
    4. `clear updateGeotags`: if `State.updateGeotags` is defined, it invokes `clearInterval` on `State.updateGeotags` and then `rem State.updateGeotags`
 
