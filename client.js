@@ -2778,7 +2778,7 @@ E.signup = function () {
 E.header = function (showUpload, showImport) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, E.logo (24)],
+         ['div', {class: 'logo'}, ['a', {href: '#/pics'}, E.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
@@ -3159,8 +3159,11 @@ E.pics = function () {
                               ['div', {class: 'pictures-header__selected-tags'}, [
                                  B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list-horizontal'}}, function (x, tags) {
                                     return dale.do (tags, function (tag) {
+                                       var Class = 'tag tag-list-horizontal__item ';
+                                       if (H.isGeo (tag)) Class += H.isCountry (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
+                                       else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
                                        // TODO v2: add inline SVG
-                                       return ['li', {class: 'tag-list-horizontal__item tag-list-horizontal__item--' + H.tagColor (tag) + ' tag', opaque: true}, [
+                                       return ['li', {class: Class, opaque: true}, [
                                           ['span', {class: 'tag__title'}, tag === 'untagged' ? 'Untagged' : tag.replace (/^g::/, '')],
                                           // TODO: why must specify height so it looks exactly the same as markup?
                                           ['div', {class: 'tag__actions', style: style ({height: 24})}, [

@@ -52,9 +52,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - When account is created. Green snackbar "Your account has been created."
 
 - Pics
-   - Fix geotag icon on top bar.
    - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
-
+- etags in redis
 - Create thumbnails for all sizes (t200 always, t900 if not small), to eliminate metadata unless downloading original picture.
 
 - Basic account view
