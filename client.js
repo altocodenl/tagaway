@@ -1130,6 +1130,42 @@ CSS.litc = [
       'line-height': CSS.typography.spaceVer (1.5),
       'margin-bottom': CSS.typography.spaceVer (1),
    }],
+   // MY ACCOUNT
+   ['.account-box', {
+      display: 'flex',
+      'padding-left': CSS.vars ['padding--m'],
+      'padding-right': CSS.vars ['padding--l'],
+      'padding-top, padding-bottom': CSS.typography.spaceVer (1),
+   }],
+   ['.account-box__margin', {
+      display: 'flex',
+      'align-items, justify-content': 'center',
+      'width, height': 80,
+      'margin-right': CSS.vars ['padding--l'],
+   }],
+   ['.account-box__main', {
+      display: 'flex',
+      flex: '1',
+      'flex-direction': 'column',
+      'padding-top': 5,
+   }],
+   ['.account-content-container', {
+      display: 'flex',
+    'flex-direction': 'column',
+    'justify-content': 'center',
+     width: 1,
+     border: '1px dashed ' + CSS.vars ['border-color--dark'],
+      'border-radius': CSS.vars ['border-radius--m'],
+     'padding-left, padding-right': CSS.vars ['padding--m'],
+     'padding-top, padding-bottom': CSS.typography.spaceVer (1.5),
+   }],
+   ['.usage-and-account-type', {
+      'font-size': CSS.typography.fontSize (1),
+      'line-height': CSS.typography.spaceVer (1.25),
+      'margin-bottom': CSS.typography.spaceVer (0.5),
+      'text-align': 'center',
+      'margin-right, margin-left': 'auto',
+   }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
       'margin-bottom': CSS.typography.spaceVer (2),
@@ -3713,9 +3749,114 @@ E.account = function () {
 }
 
 E.accountFree = function () {
+   return [
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            //PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'My account'], 
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
+            ]],
+            ['div', {class: 'page-section'}, [
+               //PAGE CONTENT
+               ['div', {class: 'account-box'}, [
+                  ['div', {class:'account-box__margin'}],
+                  ['div', {class: 'account-box__main'}, [
+                     ['div', {class: 'upload-box__section'}, [
+                        ['h3', {class: 'upload-box__section-title'}, 'This is a temporary text'],
+                        ['div', {class: 'account-content-container'},[
+                           ['table', {class: 'geo-and-password-table'}, [
+                              ['tr', {class: 'enable-geotagging'}, [
+                                 ['td', {class: 'text-left-table'},'Enable geotagging'],
+                                 ['td', {class: 'geo-slider'}]
+                              ]],
+                              ['tr', {class: 'change-password'}, [
+                                 ['td', {class: 'text-left-table'}, 'Password'],
+                                 ['td', {class: 'change-password-button'}]
+                              ]],
+                           ]],
+                           ['div', {class: 'change-password-form'}],
+                           ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
+                           ['table', {class: 'account-data'}, [
+                              ['tr', {class: 'space-usage'}, [
+                                 ['td', {class: 'text-left-table'}, 'Usage: 75% (1.5 GB)'],
+                                 ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, 'Of your free 2 GB']
+                              ]],
+                              ['tr', {class: 'account-type'}, [
+                                 ['td', {class: 'text-left-table'}, 'Account type: Free'],
+                                 ['td', {class: 'call-to-action-text'}, 'Upgrade your account']
+                              ]],
+                           ]],
+                        ]], 
+                     ]],
+                  ]],
+               ]],
+            ]],
+         ]],
+      ]],
+   ];
 }
 
 E.accountPaid = function () {
+   return [
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            //PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'My account'], 
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
+            ]],
+            ['div', {class: 'page-section'}, [
+               //PAGE CONTENT
+               ['div', {class: 'account-box'}, [
+                  ['div', {class:'account-box__margin'}],
+                  ['div', {class: 'account-box__main'}, [
+                     ['div', {class: 'upload-box__section'}, [
+                        ['h3', {class: 'upload-box__section-title'}, 'This is a temporary text'],
+                        ['div', {class: 'account-content-container'},[
+                           ['table', {class: 'geo-and-password-table'}, [
+                              ['tr', {class: 'enable-geotagging'}, [
+                                 ['td', {class: 'text-left-table'},'Enable geotagging'],
+                                 ['td', {class: 'geo-slider'}]
+                              ]],
+                              ['tr', {class: 'change-password'}, [
+                                 ['td', {class: 'text-left-table'}, 'Password'],
+                                 ['td', {class: 'change-password-button'}]
+                              ]],
+                           ]],
+                           ['div', {class: 'change-password-form'}],
+                           ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
+                           ['table', {class: 'account-data'}, [
+                              ['tr', {class: 'space-usage'}, [
+                                 ['td', {class: 'text-left-table'}, 'Usage: 100% (2 GB)'],
+                                 ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, 'Of your free 2 GB']
+                              ]],
+                              ['tr', {class: 'space-limit'}, [
+                                 ['td', {class: 'text-left-table'}, 'Space limit'],
+                                 ['td', {class: 'space-limit-box', 'rowspan':'2'}, '100']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, 'You can set your monthly limit up to 100 GB.']
+                              ]],
+                              ['tr', {class: 'account-type'}, [
+                                 ['td', {class: 'text-left-table'}, 'Account type: Paid'],
+                                 ['td', {class: 'values-right-table'}, '€ 2 / Month']
+                              ]],
+                           ]],
+                        ]], 
+                     ]],
+                  ]],
+               ]],
+            ]],
+         ]],
+      ]],
+   ];
 }
 
 // *** UPGRADE ELEMENT ***
