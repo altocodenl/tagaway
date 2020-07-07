@@ -1751,7 +1751,7 @@ dale.do ([
       }, 4000);
       B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
-   [/get|post/, [], function (x, headers, body, cb) {
+   [/^get|post$/, [], function (x, headers, body, cb) {
       var path = x.path [0], authRequest = (path.match (/^auth/) && path !== 'auth/logout') || path === 'requestInvite';
       // CSRF protection
       if (x.verb === 'post' && ! authRequest) {
@@ -3754,7 +3754,7 @@ E.accountFree = function () {
          ['div', {class: 'main-centered__inner max-width--m'}, [
             //PAGE HEADER
             ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'My account'], 
+               ['h1', {class: 'page-header__title page-title'}, 'My account'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
             ]],
             ['div', {class: 'page-section'}, [
@@ -3790,7 +3790,7 @@ E.accountFree = function () {
                                  ['td', {class: 'call-to-action-text'}, 'Upgrade your account']
                               ]],
                            ]],
-                        ]], 
+                        ]],
                      ]],
                   ]],
                ]],
@@ -3806,7 +3806,7 @@ E.accountPaid = function () {
          ['div', {class: 'main-centered__inner max-width--m'}, [
             //PAGE HEADER
             ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'My account'], 
+               ['h1', {class: 'page-header__title page-title'}, 'My account'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
             ]],
             ['div', {class: 'page-section'}, [
@@ -3849,7 +3849,7 @@ E.accountPaid = function () {
                                  ['td', {class: 'values-right-table'}, '€ 2 / Month']
                               ]],
                            ]],
-                        ]], 
+                        ]],
                      ]],
                   ]],
                ]],
