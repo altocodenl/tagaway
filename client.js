@@ -1166,6 +1166,12 @@ CSS.litc = [
       'text-align': 'center',
       'margin-right, margin-left': 'auto',
    }],
+   ['.text-left-table', {
+
+   }],
+   ['.values-right-table', {
+      'float': 'right'
+   }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
       'margin-bottom': CSS.typography.spaceVer (2),
@@ -3846,7 +3852,35 @@ E.accountPaid = function () {
                               ]],
                               ['tr', {class: 'account-type'}, [
                                  ['td', {class: 'text-left-table'}, 'Account type: Paid'],
-                                 ['td', {class: 'values-right-table'}, '€ 2 / Month']
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 2 / Month']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, 'This month you only pay for 15 days. Monthly cost is € 4.00']
+                              ]],
+                              ['tr', {class: 'paid-space-used'}, [
+                                 ['td', {class: 'text-left-table'}, 'Paid space used: 55 GB'],
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, 'Based on your average space used and your current use.']
+                              ]],
+                              ['tr', {class: 'average-paid-space-used'}, [
+                                 ['td', {class: 'text-left-table'}, 'Average paid space used: 40 GB'],
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 0.01 / Month']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, 'Average amount of GB you used this month so far.']
+                              ]],
+                              ['tr', {class: 'paid-space-currently-used'}, [
+                                 ['td', {class: 'text-left-table'}, 'Paid space currently using: 70 GB'],
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.80 / Month']
+                              ]],
+                              ['tr', [
+                                 ['td', {class: 'subtext-left-table'}, '70 GB * 15 remaining days this month. Each GB is  € 0.05.']
+                              ]],
+                              ['tr', {class: 'total-estimated-cost'}, [
+                                 ['td', {class: 'text-left-table'}, 'Total estimated cost for this month:'],
+                                 ['td', {class: 'values-right-table'}, '€ 3.81']
                               ]],
                            ]],
                         ]], 
