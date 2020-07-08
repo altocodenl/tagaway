@@ -1159,17 +1159,30 @@ CSS.litc = [
      'padding-left, padding-right': CSS.vars ['padding--m'],
      'padding-top, padding-bottom': CSS.typography.spaceVer (1.5),
    }],
+   ['tr, .geo-and-password-table, .account-data', {
+      'border': 'solid 1px black'
+   }],
    ['.usage-and-account-type', {
-      'font-size': CSS.typography.fontSize (1),
+      'font-size': CSS.typography.fontSize (2),
       'line-height': CSS.typography.spaceVer (1.25),
       'margin-bottom': CSS.typography.spaceVer (0.5),
       'text-align': 'center',
       'margin-right, margin-left': 'auto',
    }],
    ['.text-left-table', {
-
+      'font-size': CSS.typography.fontSize (1),
+   }],
+   ['.subtext-left-table', {
+      'font-size': CSS.typography.fontSize (-1),
+      'margin-bottom': CSS.typography.spaceVer (2),
    }],
    ['.values-right-table', {
+      'text-align': 'right'
+   }],
+   ['.geo-slider', {
+      'float': 'right'
+   }],
+   ['.change-password-button',{
       'float': 'right'
    }],
    // *** pictures-header.scss ***
@@ -3777,11 +3790,11 @@ E.accountFree = function () {
                            ['table', {class: 'geo-and-password-table'}, [
                               ['tr', {class: 'enable-geotagging'}, [
                                  ['td', {class: 'text-left-table'},'Enable geotagging'],
-                                 ['td', {class: 'geo-slider'}]
+                                 ['td', {class: 'geo-slider'},'Slider here']
                               ]],
                               ['tr', {class: 'change-password'}, [
                                  ['td', {class: 'text-left-table'}, 'Password'],
-                                 ['td', {class: 'change-password-button'}]
+                                 ['td', {class: 'change-password-button'}, 'Button']
                               ]],
                            ]],
                            ['div', {class: 'change-password-form'}],
@@ -3829,11 +3842,11 @@ E.accountPaid = function () {
                            ['table', {class: 'geo-and-password-table'}, [
                               ['tr', {class: 'enable-geotagging'}, [
                                  ['td', {class: 'text-left-table'},'Enable geotagging'],
-                                 ['td', {class: 'geo-slider'}]
+                                 ['td', {class: 'geo-slider'}, 'Slider here']
                               ]],
                               ['tr', {class: 'change-password'}, [
                                  ['td', {class: 'text-left-table'}, 'Password'],
-                                 ['td', {class: 'change-password-button'}]
+                                 ['td', {class: 'change-password-button'}, 'Button']
                               ]],
                            ]],
                            ['div', {class: 'change-password-form'}],
@@ -3858,7 +3871,7 @@ E.accountPaid = function () {
                                  ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 2 / Month']
                               ]],
                               ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'This month you only pay for 15 days. Monthly cost is € 4.00']
+                                 ['td', {class: 'subtext-left-table'}, 'This month you pay for 15 days. Monthly cost is € 4.00']
                               ]],
                               ['tr', {class: 'paid-space-used'}, [
                                  ['td', {class: 'text-left-table'}, 'Paid space used: 55 GB'],
