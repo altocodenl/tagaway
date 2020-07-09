@@ -1133,9 +1133,6 @@ CSS.litc = [
    // MY ACCOUNT
    ['.account-box', {
       display: 'flex',
-      'padding-left': CSS.vars ['padding--m'],
-      'padding-right': CSS.vars ['padding--l'],
-      'padding-top, padding-bottom': CSS.typography.spaceVer (1),
    }],
    ['.account-box__margin', {
       display: 'flex',
@@ -1154,36 +1151,68 @@ CSS.litc = [
     'flex-direction': 'column',
     'justify-content': 'center',
      width: 1,
-     border: '1px dashed ' + CSS.vars ['border-color--dark'],
-      'border-radius': CSS.vars ['border-radius--m'],
-     'padding-left, padding-right': CSS.vars ['padding--m'],
-     'padding-top, padding-bottom': CSS.typography.spaceVer (1.5),
-   }],
-   ['tr, .geo-and-password-table, .account-data', {
-      'border': 'solid 1px black'
    }],
    ['.usage-and-account-type', {
       'font-size': CSS.typography.fontSize (2),
-      'line-height': CSS.typography.spaceVer (1.25),
-      'margin-bottom': CSS.typography.spaceVer (0.5),
+      'line-height': CSS.typography.spaceVer (3),
+      'margin-top': CSS.typography.spaceVer (1),
+      'margin-bottom': CSS.typography.spaceVer (1),
       'text-align': 'center',
       'margin-right, margin-left': 'auto',
+      'color': CSS.vars ['grey--darker'],
+      'font-weight': CSS.vars.fontPrimaryMedium,
    }],
-   ['.text-left-table', {
+   ['.enable-geotagging, .change-password', {
+      'height': CSS.typography.spaceVer (3),
+      'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
+   }],
+   ['.text-left-table, .geo-slider, .change-password-button', {
+      'font-size': CSS.typography.fontSize (1),
+      'vertical-align': 'middle',
+   }],
+   ['.geo-slider, .change-password-button, .space-usage-bar, .space-limit-box', {
+      'text-align': 'right'
+   }],
+   ['.space-limit, .account-type, .paid-space-used, .average-paid-space-used, .paid-space-currently-used, .total-estimated-cost', {
+      'border-top': '1px solid ' + CSS.vars ['border-color--dark'],
+   }],
+   ['.text-left-account-data-table', {
       'font-size': CSS.typography.fontSize (1),
    }],
    ['.subtext-left-table', {
       'font-size': CSS.typography.fontSize (-1),
-      'margin-bottom': CSS.typography.spaceVer (2),
+   }],
+   ['.text-left-account-data-table', {
+      'padding-top': CSS.typography.spaceVer (1),
+   }],
+   ['.subtext-left-table td', {
+      'padding-bottom': CSS.typography.spaceVer (1),
    }],
    ['.values-right-table', {
-      'text-align': 'right'
+      'text-align': 'right',
+      'font-size': CSS.typography.fontSize (1),
    }],
-   ['.geo-slider', {
-      'float': 'right'
+   ['.total-estimated-cost', {
+      'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
+      'color': CSS.vars ['grey--darker'],
+      'font-weight': CSS.vars.fontPrimaryMedium,
    }],
-   ['.change-password-button',{
-      'float': 'right'
+   ['.total-estimated-cost td',{
+      'padding-bottom': CSS.typography.spaceVer (1),
+   }],
+   ['.call-to-action-text', {
+      'text-align': 'right',
+      'color': '#5b6eff',
+      'font-size': CSS.typography.fontSize (1),
+      'font-weight': CSS.vars.fontPrimaryMedium,
+      'text-decoration': 'underline',
+      'cursor': 'pointer',
+   }],
+   ['.cancel-account', {
+      'padding-top': CSS.typography.spaceVer (1),
+      'font-size': CSS.typography.fontSize (1),
+      'cursor': 'pointer',
+      'text-decoration': 'underline',
    }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
@@ -3774,7 +3803,7 @@ E.accountFree = function () {
    return [
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
-            //PAGE HEADER
+            // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'My account'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
@@ -3782,43 +3811,40 @@ E.accountFree = function () {
             ['div', {class: 'page-section'}, [
                //PAGE CONTENT
                ['div', {class: 'account-box'}, [
-                  ['div', {class:'account-box__margin'}],
-                  ['div', {class: 'account-box__main'}, [
-                     ['div', {class: 'upload-box__section'}, [
-                        ['h3', {class: 'upload-box__section-title'}, 'This is a temporary text'],
-                        ['div', {class: 'account-content-container'},[
-                           ['table', {class: 'geo-and-password-table'}, [
-                              ['tr', {class: 'enable-geotagging'}, [
-                                 ['td', {class: 'text-left-table'},'Enable geotagging'],
-                                 ['td', {class: 'geo-slider'},'Slider here']
-                              ]],
-                              ['tr', {class: 'change-password'}, [
-                                 ['td', {class: 'text-left-table'}, 'Password'],
-                                 ['td', {class: 'change-password-button'}, 'Button']
-                              ]],
+                  ['div', {class: 'account-content-container'}, [
+                     ['table', {class: 'geo-and-password-table'}, [
+                        ['tr', {class: 'enable-geotagging'}, [
+                           ['td', {class: 'text-left-table'},'Enable geotagging'],
+                           ['td', {class: 'geo-slider'},'Slider here']
+                        ]],
+                        ['tr', {class: 'change-password'}, [
+                           ['td', {class: 'text-left-table'}, 'Password'],
+                           ['td', {class: 'change-password-button'}, 'Button']
+                        ]],
+                     ]],
+                     ['div', {class: 'change-password-form'}],
+                     ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
+                     ['table', {class: 'account-data'}, [
+                        ['tr', {class: 'space-usage'}, [
+                           ['td', {class: 'text-left-account-data-table'}, 'Usage: 75% (1.5 GB)'],
+                           ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', 'Of your free 2 GB']
+                        ]],
+                        ['tr', {class: 'account-type'}, [
+                           ['td', {class: 'text-left-account-data-table'}, [
+                              ['span', 'Account type: '],
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, 'Free']
                            ]],
-                           ['div', {class: 'change-password-form'}],
-                           ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
-                           ['table', {class: 'account-data'}, [
-                              ['tr', {class: 'space-usage'}, [
-                                 ['td', {class: 'text-left-table'}, 'Usage: 75% (1.5 GB)'],
-                                 ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'Of your free 2 GB']
-                              ]],
-                              ['tr', {class: 'account-type'}, [
-                                 ['td', {class: 'text-left-table'}, 'Account type: Free'],
-                                 ['td', {class: 'call-to-action-text'}, 'Upgrade your account']
-                              ]],
-                           ]],
+                           ['td', {class: 'call-to-action-text'}, 'Upgrade your account']
                         ]],
                      ]],
                   ]],
                ]],
             ]],
          ]],
-      ]],
+      ]], 
    ];
 }
 
@@ -3826,7 +3852,7 @@ E.accountPaid = function () {
    return [
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
-            //PAGE HEADER
+            // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'My account'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
@@ -3834,78 +3860,85 @@ E.accountPaid = function () {
             ['div', {class: 'page-section'}, [
                //PAGE CONTENT
                ['div', {class: 'account-box'}, [
-                  ['div', {class:'account-box__margin'}],
-                  ['div', {class: 'account-box__main'}, [
-                     ['div', {class: 'upload-box__section'}, [
-                        ['h3', {class: 'upload-box__section-title'}, 'This is a temporary text'],
-                        ['div', {class: 'account-content-container'},[
-                           ['table', {class: 'geo-and-password-table'}, [
-                              ['tr', {class: 'enable-geotagging'}, [
-                                 ['td', {class: 'text-left-table'},'Enable geotagging'],
-                                 ['td', {class: 'geo-slider'}, 'Slider here']
-                              ]],
-                              ['tr', {class: 'change-password'}, [
-                                 ['td', {class: 'text-left-table'}, 'Password'],
-                                 ['td', {class: 'change-password-button'}, 'Button']
-                              ]],
-                           ]],
-                           ['div', {class: 'change-password-form'}],
-                           ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
-                           ['table', {class: 'account-data'}, [
-                              ['tr', {class: 'space-usage'}, [
-                                 ['td', {class: 'text-left-table'}, 'Usage: 100% (2 GB)'],
-                                 ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'Of your free 2 GB']
-                              ]],
-                              ['tr', {class: 'space-limit'}, [
-                                 ['td', {class: 'text-left-table'}, 'Space limit'],
-                                 ['td', {class: 'space-limit-box', 'rowspan':'2'}, '100']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'You can set your monthly limit up to 100 GB.']
-                              ]],
-                              ['tr', {class: 'account-type'}, [
-                                 ['td', {class: 'text-left-table'}, 'Account type: Paid'],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 2 / Month']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'This month you pay for 15 days. Monthly cost is € 4.00']
-                              ]],
-                              ['tr', {class: 'paid-space-used'}, [
-                                 ['td', {class: 'text-left-table'}, 'Paid space used: 55 GB'],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'Based on your average space used and your current use.']
-                              ]],
-                              ['tr', {class: 'average-paid-space-used'}, [
-                                 ['td', {class: 'text-left-table'}, 'Average paid space used: 40 GB'],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 0.01 / Month']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, 'Average amount of GB you used this month so far.']
-                              ]],
-                              ['tr', {class: 'paid-space-currently-used'}, [
-                                 ['td', {class: 'text-left-table'}, 'Paid space currently using: 70 GB'],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.80 / Month']
-                              ]],
-                              ['tr', [
-                                 ['td', {class: 'subtext-left-table'}, '70 GB * 15 remaining days this month. Each GB is  € 0.05.']
-                              ]],
-                              ['tr', {class: 'total-estimated-cost'}, [
-                                 ['td', {class: 'text-left-table'}, 'Total estimated cost for this month:'],
-                                 ['td', {class: 'values-right-table'}, '€ 3.81']
-                              ]],
-                           ]],
+                  ['div', {class: 'account-content-container'}, [
+                     ['table', {class: 'geo-and-password-table'}, [
+                        ['tr', {class: 'enable-geotagging'}, [
+                           ['td', {class: 'text-left-table'},'Enable geotagging'],
+                           ['td', {class: 'geo-slider'},'Slider here']
+                        ]],
+                        ['tr', {class: 'change-password'}, [
+                           ['td', {class: 'text-left-table'}, 'Password'],
+                           ['td', {class: 'change-password-button'}, 'Button']
                         ]],
                      ]],
+                     ['div', {class: 'change-password-form'}],
+                     ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
+                     ['table', {class: 'account-data'}, [
+                        ['tr', {class: 'space-usage'}, [
+                           ['td', {class: 'text-left-account-data-table'}, 'Usage: 100% (2 GB)'],
+                           ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', 'Of your free 2 GB'],
+                        ]],
+                        ['tr', {class: 'space-limit'}, [
+                           ['td', {class: 'text-left-account-data-table'}, 'Space limit'],
+                           ['td', {class: 'space-limit-box', 'rowspan':'2'}, 'Box with 100']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', 'You can set your monthly limit up to 100 GB.']
+                        ]],
+                        ['tr', {class: 'account-type'}, [
+                           ['td', {class: 'text-left-account-data-table'}, [
+                              ['span', 'Account type: '],
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, 'Paid']
+                              ]],
+                           ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 2 / Month']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', 'This month you pay for 15 days. Monthly cost is € 4.00']
+                        ]],
+                        ['tr', {class: 'paid-space-used'}, [
+                           ['td', {class: 'text-left-account-data-table'}, [
+                              ['span', 'Paid space used: '],
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB']
+                           ]],
+                           ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', 'Based on your average space used and your current use.']
+                        ]],
+                        ['tr', {class: 'average-paid-space-used'}, [
+                           ['td', {class: 'text-left-account-data-table'}, [
+                              ['span', 'Average paid space used: '],
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '40 GB']
+                           ]],
+                           ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 0.01 / Month']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', 'Average amount of GB you used this month so far.']
+                        ]],
+                        ['tr', {class: 'paid-space-currently-used'}, [
+                           ['td', {class: 'text-left-account-data-table'}, [
+                              ['span', 'Paid space currently using: '],
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '70 GB']
+                           ]],
+                           ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.80 / Month']
+                        ]],
+                        ['tr', {class: 'subtext-left-table'}, [
+                           ['td', '70 GB * 15 remaining days this month. Each GB is  € 0.05.']
+                        ]],
+                        ['tr', {class: 'total-estimated-cost'}, [
+                           ['td', {class: 'text-left-account-data-table'}, 'Total estimated cost for this month:'],
+                           ['td', {class: 'values-right-table'}, '€ 3.81']
+                        ]],
+                     ]],
+                     ['div', {class: 'cancel-account'}, 'Cancel your account']     
                   ]],
                ]],
             ]],
          ]],
-      ]],
+      ]], 
    ];
 }
 
