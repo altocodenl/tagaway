@@ -1152,16 +1152,6 @@ CSS.litc = [
     'justify-content': 'center',
      width: 1,
    }],
-   ['.usage-and-account-type', {
-      'font-size': CSS.typography.fontSize (2),
-      'line-height': CSS.typography.spaceVer (3),
-      'margin-top': CSS.typography.spaceVer (1),
-      'margin-bottom': CSS.typography.spaceVer (1),
-      'text-align': 'center',
-      'margin-right, margin-left': 'auto',
-      'color': CSS.vars ['grey--darker'],
-      'font-weight': CSS.vars.fontPrimaryMedium,
-   }],
    ['.enable-geotagging, .change-password', {
       'height': CSS.typography.spaceVer (3),
       'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
@@ -1227,6 +1217,50 @@ CSS.litc = [
    ['.text-left-table, .geo-slider, .change-password-button', {
       'font-size': CSS.typography.fontSize (1),
       'vertical-align': 'middle',
+   }],
+   ['.change-password-form', {
+      width: .5,
+      'margin-left': .5
+   }],
+   ['.change-password-placeholder', {
+      'margin-top': CSS.typography.spaceVer (1),
+      'margin-bottom': CSS.typography.spaceVer (1),
+   }],
+   ['.change-password-buttons', {
+
+   }],
+   ['.change-password-button-confirm', {
+      border: '1px solid #5b6eff',
+      color: '#fff',
+      'background-color': '#5b6eff',
+      'float': 'left',
+      cursor: 'pointer',
+      'margin-left': .2
+   }],
+   ['.change-password-button-confirm:hover', {
+      color: '#5b6eff',
+      'background-color': '#fff',
+   }],
+   ['.change-password-button-cancel', {
+      border: '1px solid #8b8b8b',
+      color: '#8b8b8b',
+      'background-color': '#fff',
+      'float': 'right',
+      cursor: 'pointer',
+   }],
+   ['.change-password-button-cancel:hover', {
+      color: '#fff',
+      'background-color': '#8b8b8b',
+   }],
+   ['.usage-and-account-type', {
+      'font-size': CSS.typography.fontSize (2),
+      'line-height': CSS.typography.spaceVer (3),
+      'margin-top': CSS.typography.spaceVer (1),
+      'margin-bottom': CSS.typography.spaceVer (1),
+      'text-align': 'center',
+      'margin-right, margin-left': 'auto',
+      'color': CSS.vars ['grey--darker'],
+      'font-weight': CSS.vars.fontPrimaryMedium,
    }],
    ['.space-usage-bar, .space-limit-box', {
       'text-align': 'right'
@@ -3887,7 +3921,15 @@ E.accountFree = function () {
                            ]],
                         ]],
                      ]],
-                     ['div', {class: 'change-password-form'}],
+                     ['div', {class: 'change-password-form'}, [
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-old-password', type: 'password', placeholder: 'Insert your old password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-new-password', type: 'password', placeholder: 'Insert your new password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'repeat-new-password', type: 'password', placeholder: 'Repeat your new password'}],
+                        ['div', {class: 'change-password-buttons'}, [
+                           ['span', {class: 'change-password-button-confirm button'}, 'Change password'],
+                           ['span', {class: 'change-password-button-cancel button'}, 'Cancel']
+                           ]],
+                     ]],
                      ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
                      ['table', {class: 'account-data'}, [
                         ['tr', {class: 'space-usage'}, [
@@ -3943,7 +3985,15 @@ E.accountPaid = function () {
                            ]],
                         ]],
                      ]],
-                     ['div', {class: 'change-password-form'}],
+                     ['div', {class: 'change-password-form'}, [
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-old-password', type: 'password', placeholder: 'Insert your old password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-new-password', type: 'password', placeholder: 'Insert your new password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'repeat-new-password', type: 'password', placeholder: 'Repeat your new password'}],
+                        ['div', {class: 'change-password-buttons'}, [
+                           ['span', {class: 'change-password-button-confirm button'}, 'Change password'],
+                           ['span', {class: 'change-password-button-cancel button'}, 'Cancel']
+                           ]],
+                     ]],
                      ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
                      ['table', {class: 'account-data'}, [
                         ['tr', {class: 'space-usage'}, [
