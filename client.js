@@ -1166,6 +1166,53 @@ CSS.litc = [
       'height': CSS.typography.spaceVer (3),
       'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
    }],
+   ['.switch', {
+      'position': 'relative',
+      'float': 'right',
+      display: 'inline-block',
+      width: '60px',
+      height: '34px'
+   }],
+   ['.switch input', {
+      opacity: 0,
+      width: 0,
+      height: 0
+   }],
+   ['.geo-slider', {
+      position: 'absolute',
+      cursor: 'pointer',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      'background-color': '#dedede',
+      '-webkit-transition': '.4s',
+      'transition': '.4s',
+      'border-radius': '34px'
+   }],
+   ['.geo-slider:before', {
+      position: 'absolute',
+      content: '""',
+      height: '26px',
+      width: '26px',
+      left: '4px',
+      bottom: '4px',
+      'background-color': 'white',
+      '-webkit-transition': '.4s',
+      'transition': '.4s',
+      'border-radius': .5
+   }],
+   ['input:checked + .geo-slider', {
+      'background-color': '#5b6eff'
+   }],
+   ['input:focus + .geo-slider', {
+      'box-shadow': '0 0 1px #5b6eff'
+   }],
+   ['input:checked + .geo-slider:before', {
+      '-webkit-transform': 'translateX(26px)',
+      '-ms-transform': 'translateX(26px)',
+      'transform': 'translateX(26px)',
+   }],
    ['.change-password-button', {
       border: '1px solid #8b8b8b',
       color: '#8b8b8b',
@@ -1181,7 +1228,7 @@ CSS.litc = [
       'font-size': CSS.typography.fontSize (1),
       'vertical-align': 'middle',
    }],
-   ['.geo-slider, .space-usage-bar, .space-limit-box', {
+   ['.space-usage-bar, .space-limit-box', {
       'text-align': 'right'
    }],
    ['.space-limit, .account-type, .paid-space-used, .average-paid-space-used, .paid-space-currently-used, .total-estimated-cost', {
@@ -3803,7 +3850,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = false;
+         var paid = true;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })
@@ -3826,7 +3873,12 @@ E.accountFree = function () {
                      ['table', {class: 'geo-and-password-table'}, [
                         ['tr', {class: 'enable-geotagging'}, [
                            ['td', {class: 'text-left-table'},'Enable geotagging'],
-                           ['td', {class: 'geo-slider'},'Slider here']
+                           ['td', {style: style ({'vertical-align': 'middle'})}, [
+                              ['label', {class: 'switch'}, [
+                                 ['input', {type: 'checkbox'}],
+                                 ['span', {class: 'geo-slider'}]
+                              ]],
+                           ]],
                         ]],
                         ['tr', {class: 'change-password'}, [
                            ['td', {class: 'text-left-table'}, 'Password'],
@@ -3877,11 +3929,18 @@ E.accountPaid = function () {
                      ['table', {class: 'geo-and-password-table'}, [
                         ['tr', {class: 'enable-geotagging'}, [
                            ['td', {class: 'text-left-table'},'Enable geotagging'],
-                           ['td', {class: 'geo-slider'},'Slider here']
+                           ['td', {style: style ({'vertical-align': 'middle'})}, [
+                              ['label', {class: 'switch'}, [
+                                 ['input', {type: 'checkbox'}],
+                                 ['span', {class: 'geo-slider'}]
+                              ]],
+                           ]],
                         ]],
                         ['tr', {class: 'change-password'}, [
                            ['td', {class: 'text-left-table'}, 'Password'],
-                           ['td', {class: 'change-password-button'}, 'Button']
+                           ['td', {style: style ({'vertical-align': 'middle'})}, [
+                              ['span', {class: 'change-password-button button'}, 'Change password']
+                           ]],
                         ]],
                      ]],
                      ['div', {class: 'change-password-form'}],
