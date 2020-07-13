@@ -1166,11 +1166,22 @@ CSS.litc = [
       'height': CSS.typography.spaceVer (3),
       'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
    }],
+   ['.change-password-button', {
+      border: '1px solid #8b8b8b',
+      color: '#8b8b8b',
+      'background-color': '#fff',
+      'float': 'right',
+      cursor: 'pointer',
+   }],
+   ['.change-password-button:hover', {
+      color: '#fff',
+      'background-color': '#8b8b8b'
+   }],
    ['.text-left-table, .geo-slider, .change-password-button', {
       'font-size': CSS.typography.fontSize (1),
       'vertical-align': 'middle',
    }],
-   ['.geo-slider, .change-password-button, .space-usage-bar, .space-limit-box', {
+   ['.geo-slider, .space-usage-bar, .space-limit-box', {
       'text-align': 'right'
    }],
    ['.space-limit, .account-type, .paid-space-used, .average-paid-space-used, .paid-space-currently-used, .total-estimated-cost', {
@@ -3792,7 +3803,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = true;
+         var paid = false;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })
@@ -3819,7 +3830,9 @@ E.accountFree = function () {
                         ]],
                         ['tr', {class: 'change-password'}, [
                            ['td', {class: 'text-left-table'}, 'Password'],
-                           ['td', {class: 'change-password-button'}, 'Button']
+                           ['td', {style: style ({'vertical-align': 'middle'})}, [
+                              ['span', {class: 'change-password-button button'}, 'Change password']
+                           ]],
                         ]],
                      ]],
                      ['div', {class: 'change-password-form'}],
