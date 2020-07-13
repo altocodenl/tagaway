@@ -3884,7 +3884,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = true;
+         var paid = false;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })
@@ -3922,9 +3922,9 @@ E.accountFree = function () {
                         ]],
                      ]],
                      ['div', {class: 'change-password-form'}, [
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-old-password', type: 'password', placeholder: 'Insert your old password'}],
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-new-password', type: 'password', placeholder: 'Insert your new password'}],
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'repeat-new-password', type: 'password', placeholder: 'Repeat your new password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your current password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your new password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Repeat your new password'}],
                         ['div', {class: 'change-password-buttons'}, [
                            ['span', {class: 'change-password-button-confirm button'}, 'Change password'],
                            ['span', {class: 'change-password-button-cancel button'}, 'Cancel']
@@ -3986,9 +3986,9 @@ E.accountPaid = function () {
                         ]],
                      ]],
                      ['div', {class: 'change-password-form'}, [
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-old-password', type: 'password', placeholder: 'Insert your old password'}],
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'insert-new-password', type: 'password', placeholder: 'Insert your new password'}],
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', id: 'repeat-new-password', type: 'password', placeholder: 'Repeat your new password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your current password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your new password'}],
+                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Repeat your new password'}],
                         ['div', {class: 'change-password-buttons'}, [
                            ['span', {class: 'change-password-button-confirm button'}, 'Change password'],
                            ['span', {class: 'change-password-button-cancel button'}, 'Cancel']
