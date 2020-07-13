@@ -1262,8 +1262,26 @@ CSS.litc = [
       'color': CSS.vars ['grey--darker'],
       'font-weight': CSS.vars.fontPrimaryMedium,
    }],
-   ['.space-usage-bar, .space-limit-box', {
-      'text-align': 'right'
+   ['.space-usage-bar', {
+      'float': 'right',
+      height: '42px',
+      width: '200px',
+      'border': '1px solid ' + CSS.vars ['border-color--dark'],
+      'border-radius': '100px',
+      'background': 'linear-gradient(90deg, #8b8b8b 75%, #fff 25%)',
+   }],
+    ['.space-usage-bar-paid', { // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar  
+      'float': 'right',
+      height: '42px',
+      width: '200px',
+      'border': '1px solid ' + CSS.vars ['border-color--dark'],
+      'border-radius': '100px',
+      'background': 'linear-gradient(90deg, #8b8b8b 100%, #fff 0%)',
+   }],
+   ['.space-limit-box', {
+      width: .5,
+      'float': 'right',
+      'text-align': 'center',
    }],
    ['.space-limit, .account-type, .paid-space-used, .average-paid-space-used, .paid-space-currently-used, .total-estimated-cost', {
       'border-top': '1px solid ' + CSS.vars ['border-color--dark'],
@@ -3884,7 +3902,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = false;
+         var paid = true;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })
@@ -3934,7 +3952,9 @@ E.accountFree = function () {
                      ['table', {class: 'account-data'}, [
                         ['tr', {class: 'space-usage'}, [
                            ['td', {class: 'text-left-account-data-table'}, 'Usage: 75% (1.5 GB)'],
-                           ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
+                           ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                              ['span', {class: 'space-usage-bar'}],
+                           ]],
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
                            ['td', 'Of your free 2 GB']
@@ -3998,14 +4018,18 @@ E.accountPaid = function () {
                      ['table', {class: 'account-data'}, [
                         ['tr', {class: 'space-usage'}, [
                            ['td', {class: 'text-left-account-data-table'}, 'Usage: 100% (2 GB)'],
-                           ['td', {class: 'space-usage-bar', 'rowspan':'2'}, 'Usage bar goes here']
+                           ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                              ['span', {class: 'space-usage-bar-paid'}], // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar  
+                           ]],
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
                            ['td', 'Of your free 2 GB'],
                         ]],
                         ['tr', {class: 'space-limit'}, [
                            ['td', {class: 'text-left-account-data-table'}, 'Space limit'],
-                           ['td', {class: 'space-limit-box', 'rowspan':'2'}, 'Box with 100']
+                           ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                              ['input', {class: 'search-form__input search-input space-limit-box', type: 'text', placeholder: '100'}]
+                           ]],
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
                            ['td', 'You can set your monthly limit up to 100 GB.']
