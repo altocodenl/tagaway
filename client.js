@@ -4055,24 +4055,24 @@ E.accountPaid = function () {
                            ['td', 'Based on your average space used and your current use.']
                         ]],
                         ['tr', {class: 'average-paid-space-used'}, [
-                           ['td', {class: 'text-left-account-data-table'}, [
+                           ['td', {style: style ({'padding-left': '5%'}), class: 'text-left-account-data-table'}, [
                               ['span', 'Average paid space used: '],
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '40 GB']
                            ]],
                            ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 0.01 / Month']
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
-                           ['td', 'Average amount of GB you used this month so far.']
+                           ['td', {style: style ({'padding-left': '5%'})}, 'Average amount of GB you used this month so far.']
                         ]],
                         ['tr', {class: 'paid-space-currently-used'}, [
-                           ['td', {class: 'text-left-account-data-table'}, [
+                           ['td', {style: style ({'padding-left': '5%'}), class: 'text-left-account-data-table'}, [
                               ['span', 'Paid space currently using: '],
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '70 GB']
                            ]],
                            ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.80 / Month']
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
-                           ['td', '70 GB * 15 remaining days this month. Each GB is  € 0.05.']
+                           ['td', {style: style ({'padding-left': '5%'})}, '70 GB * 15 remaining days this month. Each GB is  € 0.05.']
                         ]],
                         ['tr', {class: 'total-estimated-cost'}, [
                            ['td', {class: 'text-left-account-data-table'}, 'Total estimated cost for this month:'],
