@@ -795,7 +795,7 @@ var main = [
       setTimeout (next, 5000);
    }],
    dale.go (dale.times (5, 0), function (k) {
-      return {tag: 'get original pic', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
+      return {tag: 'get original pic from S3', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
          var original = require ('fs').readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
          if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded picture!');
@@ -911,24 +911,28 @@ var main = [
             return 'pic/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
+            if ({'medium.jpg': 21450, 'rotate.jpg': 826476, 'large.jpeg': 3302468, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
             return true;
          }],
          ['get thumb of pic #' + (k + 1), 'get', function (s) {
             return 'thumbof/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
+            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
             return true;
          }],
          k === 3 ? [] : ['get thumb 200 #' + (k + 1), 'get', function (s) {
             return 'thumb/' + s.pics [k].t200;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
+            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
             return true;
          }],
-         k === 3 ? [] : ['get thumb 900 #' + (k + 1), 'get', function (s) {
-            return 'thumb/' + s.pics [k].t200;
+         (k === 0 || k === 3) ? [] : ['get thumb 900 #' + (k + 1), 'get', function (s) {
+            return 'thumb/' + s.pics [k].t900;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
+            if ({'rotate.jpg': 50585, 'large.jpeg': 123478} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
             return true;
          }],
       ];
