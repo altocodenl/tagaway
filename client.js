@@ -1152,6 +1152,9 @@ CSS.litc = [
     'justify-content': 'center',
      width: 1,
    }],
+   ['.geo-and-password-table', {
+      width: 1,
+   }],
    ['.enable-geotagging, .change-password', {
       'height': CSS.typography.spaceVer (3),
       'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
@@ -1262,11 +1265,14 @@ CSS.litc = [
       'color': CSS.vars ['grey--darker'],
       'font-weight': CSS.vars.fontPrimaryMedium,
    }],
+   ['.account-data', {
+      width: 1,
+   }],
    ['.space-usage-bar', {
       'float': 'right',
       height: '42px',
       width: '200px',
-      'border': '1px solid ' + CSS.vars ['border-color--dark'],
+      'border': '1px solid #8b8b8b',
       'border-radius': '100px',
       'background': 'linear-gradient(90deg, #8b8b8b 75%, #fff 25%)',
    }],
@@ -1274,7 +1280,7 @@ CSS.litc = [
       'float': 'right',
       height: '42px',
       width: '200px',
-      'border': '1px solid ' + CSS.vars ['border-color--dark'],
+      'border': '1px solid #8b8b8b',
       'border-radius': '100px',
       'background': 'linear-gradient(90deg, #8b8b8b 100%, #fff 0%)',
    }],
@@ -1285,6 +1291,14 @@ CSS.litc = [
    }],
    ['.space-limit, .account-type, .paid-space-used, .average-paid-space-used, .paid-space-currently-used, .total-estimated-cost', {
       'border-top': '1px solid ' + CSS.vars ['border-color--dark'],
+   }],
+   ['.right-pointing-triangle', {
+      display: 'inline',
+      cursor: 'pointer'
+   }],
+   ['.down-pointing-triangle', {
+      display: 'none',
+      cursor: 'pointer'
    }],
    ['.text-left-account-data-table', {
       'font-size': CSS.typography.fontSize (1),
@@ -4046,13 +4060,17 @@ E.accountPaid = function () {
                         ]],
                         ['tr', {class: 'paid-space-used'}, [
                            ['td', {class: 'text-left-account-data-table'}, [
+                              ['span', {class: 'right-pointing-triangle'}, '▶ '],
+                              ['span', {class: 'down-pointing-triangle'}, '▼ '],
                               ['span', 'Paid space used: '],
-                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB']
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB'], 
                            ]],
                            ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
-                           ['td', 'Based on your average space used and your current use.']
+                           ['td', [
+                              ['span',{style: style ({'margin-left': '4%'})}, 'Based on your average space used and your current use.']
+                           ]],
                         ]],
                         ['tr', {class: 'average-paid-space-used'}, [
                            ['td', {style: style ({'padding-left': '5%'}), class: 'text-left-account-data-table'}, [
@@ -4079,7 +4097,7 @@ E.accountPaid = function () {
                            ['td', {class: 'values-right-table'}, '€ 3.81']
                         ]],
                      ]],
-                     ['div', {class: 'cancel-account'}, 'Cancel your account']     
+                     ['div', {class: 'cancel-account'}, 'Cancel your account'] 
                   ]],
                ]],
             ]],
