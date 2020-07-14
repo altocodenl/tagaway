@@ -1338,6 +1338,31 @@ CSS.litc = [
       'cursor': 'pointer',
       'text-decoration': 'underline',
    }],
+   // UPGRADE VIEW
+   ['.free-vs-paid', {
+      'font-size': CSS.typography.fontSize (2),
+      'line-height': CSS.typography.spaceVer (3),
+      //'margin-top': CSS.typography.spaceVer (1),
+      'margin-bottom': CSS.typography.spaceVer (1),
+      'text-align': 'center',
+      'margin-right, margin-left': 'auto',
+      'color': CSS.vars ['grey--darker'],
+      'font-weight': CSS.vars.fontPrimaryMedium,
+   }],
+   ['.upgrade-table', {
+      width: 1,
+      'border-collapse': 'collapse'
+   }],
+   ['.upgrade-table, td', {
+      'border': '1px solid ' + CSS.vars ['border-color--dark'],
+   }],
+   ['.free-vs-paid-col-1', {
+      width: .5
+   }],
+   ['.free-vs-paid-col-2, .free-vs-paid-col-3', {
+      width: .25,
+      'text-align': 'center'
+   }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
       'margin-bottom': CSS.typography.spaceVer (2),
@@ -4109,6 +4134,129 @@ E.accountPaid = function () {
 // *** UPGRADE ELEMENT ***
 
 E.upgrade = function () {
+   return ['div', [
+      E.header (true, true),
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            // PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'Upgrade account'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Get all the space you want']
+            ]],
+            ['div', {class: 'page-section'}, [
+               //PAGE CONTENT
+               ['div', {class: 'account-box'}, [
+                  ['div', {class: 'account-content-container'}, [
+                     ['div', {class: 'free-vs-paid'}, 'Free vs paid plan'],
+                     ['table', {class: 'upgrade-table'}, [
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}],
+                           ['td', {class: 'free-vs-paid-col-2'}, [
+                              ['span', 'Free Plan'],
+                              ['br'],
+                              ['span', 'You are here']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-3'}, [
+                              ['span', 'Paid Plan'],
+                              ['br'],
+                              ['span', '€ 4/mo + € 0.05 per GB/mo.']
+                           ]],
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Automated tags (Year & Location)'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✔'],
+                           ['td', {class: 'free-vs-paid-col-3'}, '✔']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Detects duplicate photos & videos'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✔'],
+                           ['td', {class: 'free-vs-paid-col-3'}, '✔']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'No compression of photos or videos'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✔'],
+                           ['td', {class: 'free-vs-paid-col-3'}, '✔']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Import from Google Drive & Dropbox']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✔'],
+                           ['td', {class: 'free-vs-paid-col-3'}, '✔']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Share tags'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✔'],
+                           ['td', {class: 'free-vs-paid-col-3'}, '✔']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Space available'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, [
+                              ['span', '2 GB']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-3'}, [
+                              ['span', '2 TB']
+                           ]],
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Control your space usage']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✘'],
+                           ['td', {class: 'free-vs-paid-col-3'}, [
+                              ['span', 'Set a monthly limit']
+                           ]],
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Contribute to Altocode'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✘'],
+                           ['td', {class: 'free-vs-paid-col-3'}, [
+                              ['span', '€ 4/mo']
+                           ]],
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}, [
+                              ['span', {class: 'text-left-account-data-table'}, 'Pay for what you use'],
+                              ['span', 'i']
+                           ]],
+                           ['td', {class: 'free-vs-paid-col-2'}, '✘'],
+                           ['td', {class: 'free-vs-paid-col-3'}, [
+                              ['span', '€ 4/mo']]]
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'free-vs-paid-col-1'}],
+                           ['td', {class: 'free-vs-paid-col-2'}],
+                           ['td', {class: 'free-vs-paid-col-3'}, [
+                              ['span', 'Upgrade now'],
+                              ['br'],
+                              ['span', 'You’ll be taken to Stripe and then back. Thank you!']
+                           ]],
+                        ]],
+                     ]],
+                  ]],
+               ]],
+            ]],
+         ]],
+      ]], 
+   ]];
 }
 
 // *** INITIALIZATION ***
