@@ -794,6 +794,7 @@ var main = [
       // Wait for S3
       setTimeout (next, 5000);
    }],
+   ['get nonexisting picture from S3', 'get', 'original/foobar', {}, '', 404],
    dale.go (dale.times (5, 0), function (k) {
       return {tag: 'get original pic from S3', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
@@ -918,21 +919,21 @@ var main = [
             return 'thumbof/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
+            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumbof #' + (k + 1));
             return true;
          }],
          k === 3 ? [] : ['get thumb 200 #' + (k + 1), 'get', function (s) {
             return 'thumb/' + s.pics [k].t200;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
+            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for t200 #' + (k + 1));
             return true;
          }],
          (k === 0 || k === 3) ? [] : ['get thumb 900 #' + (k + 1), 'get', function (s) {
             return 'thumb/' + s.pics [k].t900;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'rotate.jpg': 50585, 'large.jpeg': 123478} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
+            if ({'rotate.jpg': 50585, 'large.jpeg': 123478} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for t900 #' + (k + 1));
             return true;
          }],
       ];

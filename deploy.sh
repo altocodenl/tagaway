@@ -37,8 +37,6 @@ fi
 
 if [ "$2" == "server" ] ; then
    scp server.js $HOST:$FOLDER
-   # TODO REMOVE AFTER UPDATING CICEK
-   scp ../cicek/cicek.js $HOST:$FOLDER/node_modules/cicek
    ssh $HOST "cd $FOLDER && mg restart"
    exit 0
 fi
@@ -52,8 +50,6 @@ fi
 scp $TAR $HOST:
 ssh $HOST tar xzvf $TAR
 echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
-# TODO REMOVE AFTER UPDATING CICEK
-scp cicek/cicek.js $HOST:$FOLDER/node_modules/cicek
 ssh $HOST "cd $FOLDER && npm i --no-save --production && mg restart"
 ssh $HOST rm $TAR
 rm $TAR
