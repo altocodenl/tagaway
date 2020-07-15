@@ -1286,7 +1286,7 @@ var routes = [
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.name)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], {'content-type': mime.lookup (s.pic.name)});
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
          }
       ]);
    }],
@@ -1321,7 +1321,7 @@ var routes = [
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.name)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], {'content-type': mime.lookup (s.pic.name)});
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
          }
       ]);
    }],
