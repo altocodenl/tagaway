@@ -1342,7 +1342,6 @@ CSS.litc = [
    ['.free-vs-paid', {
       'font-size': CSS.typography.fontSize (2),
       'line-height': CSS.typography.spaceVer (3),
-      //'margin-top': CSS.typography.spaceVer (1),
       'margin-bottom': CSS.typography.spaceVer (1),
       'text-align': 'center',
       'margin-right, margin-left': 'auto',
@@ -1353,15 +1352,32 @@ CSS.litc = [
       width: 1,
       'border-collapse': 'collapse'
    }],
-   ['.upgrade-table, td', {
+   ['.upgrade-table tr', {
+      'height': CSS.typography.spaceVer (3),
+   }],
+   ['.upgrade-table td', {
       'border': '1px solid ' + CSS.vars ['border-color--dark'],
+      'vertical-align': 'middle',
    }],
    ['.free-vs-paid-col-1', {
-      width: .5
+      width: .5,
+      'padding-left': CSS.vars ['padding--xs'],
    }],
    ['.free-vs-paid-col-2, .free-vs-paid-col-3', {
       width: .25,
-      'text-align': 'center'
+      'text-align': 'center',
+      'font-size': CSS.typography.fontSize (1),
+   }],
+   ['.call-to-action-upgrade', {
+      'color': '#5b6eff',
+      'font-size': CSS.typography.fontSize (1),
+      'font-weight': CSS.vars.fontPrimaryMedium,
+      'text-decoration': 'underline',
+      'cursor': 'pointer',
+   }],
+   ['.stripe-message-upgrade', {
+      'font-size': CSS.typography.fontSize (-1),
+      'padding-left, padding-right': CSS.vars ['padding--xs'],
    }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
@@ -4151,15 +4167,15 @@ E.upgrade = function () {
                      ['table', {class: 'upgrade-table'}, [
                         ['tr', [
                            ['td', {class: 'free-vs-paid-col-1'}],
-                           ['td', {class: 'free-vs-paid-col-2'}, [
-                              ['span', 'Free Plan'],
+                           ['td', {class: 'free-vs-paid-col-2', style: style ({'vertical-align': 'baseline'})}, [
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Free Plan'],
                               ['br'],
-                              ['span', 'You are here']
+                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1)})}, 'You are here']
                            ]],
-                           ['td', {class: 'free-vs-paid-col-3'}, [
-                              ['span', 'Paid Plan'],
+                           ['td', {class: 'free-vs-paid-col-3', style: style ({'vertical-align': 'baseline'})}, [
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Paid Plan'],
                               ['br'],
-                              ['span', '€ 4/mo + € 0.05 per GB/mo.']
+                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1)})}, '€ 4/mo + € 0.05 per GB/mo.']
                            ]],
                         ]],
                         ['tr', [
@@ -4245,9 +4261,9 @@ E.upgrade = function () {
                            ['td', {class: 'free-vs-paid-col-1'}],
                            ['td', {class: 'free-vs-paid-col-2'}],
                            ['td', {class: 'free-vs-paid-col-3'}, [
-                              ['span', 'Upgrade now'],
+                              ['span', {class: 'call-to-action-upgrade'}, 'Upgrade now'],
                               ['br'],
-                              ['span', 'You’ll be taken to Stripe and then back. Thank you!']
+                              ['span', {class: 'stripe-message-upgrade'}, 'You’ll be taken to Stripe and then back. Thank you!']
                            ]],
                         ]],
                      ]],
