@@ -1385,7 +1385,7 @@ CSS.litc = [
    }],
    ['.upgrade-table-info-comment .hover-text', {
       'visibility': 'hidden',
-      'width': '150px',
+      'width': '310px',
       'background-color': '#fff',
       'color': CSS.vars ['grey--darker'],
       'border': '1px solid ' + CSS.vars ['border-color'],
@@ -4219,18 +4219,12 @@ E.upgrade = function () {
                            ['td', {class: 'free-vs-paid-col-3', style: style ({'vertical-align': 'baseline'})}, [
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Paid Plan'],
                               ['br'],
-                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1)})}, '€ 4/mo + € 0.05 per GB/mo.']
+                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1), 'padding-left, padding-right': CSS.vars ['padding--xs']})}, '€ 4/mo + € 0.05 per GB/mo.']
                            ]],
                         ]],
                         ['tr', [
                            ['td', {class: 'free-vs-paid-col-1'}, [
                               ['span', {class: 'text-left-account-data-table'}, 'Automated tags (Year & Location)'],
-                              ['span', {class: 'upgrade-table-info'}, [
-                                 ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
-                                 ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
-                                 ]],
-                              ]],
                            ]],
                            ['td', {class: 'free-vs-paid-col-2'}, '✔'],
                            ['td', {class: 'free-vs-paid-col-3'}, '✔']
@@ -4241,7 +4235,7 @@ E.upgrade = function () {
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
+                                    ['span', {class: 'hover-text'}, 'For identical pics and videos, regardless of filename or metadata.']
                                  ]],
                               ]],
                            ]],
@@ -4250,11 +4244,11 @@ E.upgrade = function () {
                         ]],
                         ['tr', [
                            ['td', {class: 'free-vs-paid-col-1'}, [
-                              ['span', {class: 'text-left-account-data-table'}, 'No compression of photos or videos'],
+                              ['span', {class: 'text-left-account-data-table'}, 'Preserve original size and quality'],
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
+                                    ['span', {class: 'hover-text'}, 'No compression or loss of data in photos & videos.']
                                  ]],
                               ]],
                            ]],
@@ -4274,7 +4268,7 @@ E.upgrade = function () {
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
+                                    ['span', {class: 'hover-text'}, 'Share by link (anyone with link can access) or with specific user(s).']
                                  ]],
                               ]],
                            ]],
@@ -4284,12 +4278,6 @@ E.upgrade = function () {
                         ['tr', [
                            ['td', {class: 'free-vs-paid-col-1'}, [
                               ['span', {class: 'text-left-account-data-table'}, 'Space available'],
-                              ['span', {class: 'upgrade-table-info'}, [
-                                 ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
-                                 ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
-                                 ]],
-                              ]],
                            ]],
                            ['td', {class: 'free-vs-paid-col-2'}, [
                               ['span', '2 GB']
@@ -4313,7 +4301,7 @@ E.upgrade = function () {
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
+                                    ['span', {class: 'hover-text'}, 'Your monthly subscription enables us to create and maintain ac;pic.']
                                  ]],
                               ]],
                            ]],
@@ -4324,11 +4312,11 @@ E.upgrade = function () {
                         ]],
                         ['tr', [
                            ['td', {class: 'free-vs-paid-col-1'}, [
-                              ['span', {class: 'text-left-account-data-table'}, 'Pay for what you use'],
+                              ['span', {class: 'text-left-account-data-table'}, 'Pay only for what you use'],
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Lorem ipsum dolor sit amet']
+                                    ['span', {class: 'hover-text'}, 'We charge a lineal fee based on how much space you use. We charge you at cost, no markup.']
                                  ]],
                               ]],
                            ]],
