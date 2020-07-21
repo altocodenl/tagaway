@@ -874,6 +874,32 @@ var main = [
       }))) return clog ('Invalid pic date sorting');
       return true;
    }],
+   ['upload medium picture with rotation data', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'rotatemedium.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
+   ]}, 200],
+   ['upload small picture with rotation data', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'rotatesmall.jpg'},
+      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
+   ]}, 200],
+   ['get non-large pictures with rotation data and check they have thumbnails', 'post', 'query', {}, {from: 1, to: 2, tags: ['rotatethumb'], sort: 'upload'}, 200, function (s, rq, rs) {
+      s.thumbpics = rs.body.pics;
+      if (s.thumbpics.length !== 2) return clog ('Expected two pictures.');
+      if (! s.thumbpics [0].t200) return clog ('Small picture should have t200.');
+      if (s.thumbpics [0].t900) return clog ('Small picture should not have t900.');
+      if (! s.thumbpics [1].t200) return clog ('Medium picture should have t200.');
+      if (! s.thumbpics [1].t900) return clog ('Medium picture should have t290.');
+      return true;
+   }],
+   dale.go (dale.times (2, 0), function (k) {
+      return ['delete thumbpic #' + (k + 1), 'post', 'delete', {}, function (s) {
+         return {ids: [s.thumbpics [k].id]};
+      }, 200];
+   }),
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
@@ -1335,7 +1361,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 55 && rs.body.logs.length !== 56)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 59 && rs.body.logs.length !== 60)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, 2000);
    }],
