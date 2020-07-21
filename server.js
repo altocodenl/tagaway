@@ -2372,18 +2372,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
       [a.make (H.encrypt), CONFIG.backup.path],
       [a.get, a.make (s3.upload, s3), {Key: new Date ().toUTCString () + '-dump.rdb', Body: '@last'}],
    ], function (s, error) {
-      a.seq ([
-         [notify, {priority: 'critical', type: 'backup error', error: error}],
-         [a.fork, [SECRET.admins [0]], function (v) {
-            return [sendmail, {
-               from1:   'ac;pic backup',
-               to1:     'ac;pic admin',
-               to2:     SECRET.admins [0],
-               subject: 'Backup failed!',
-               message: ['pre', error.toString ()],
-            }];
-         }, {max: 5}],
-      ]);
+      notify (s, {priority: 'critical', type: 'backup error', error: error});
    });
 }, CONFIG.backup.frequency * 60 * 1000);
 

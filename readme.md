@@ -54,8 +54,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pics
    - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - etags based on file id.
-
-- etag in test
 - request t200 or t900 directly referring to ids, remove ids from returned payloads.
 - why 403 from GET csrf when already logged but open browser anew?
 
