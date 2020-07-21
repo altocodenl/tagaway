@@ -285,21 +285,29 @@ H.mkdirif = function (s, path) {
    });
 }
 
-H.thumbPic = function (s, path, Max) {
+H.thumbPic = function (s, path, thumbSize, pic) {
    a.stop (s, [
       [H.size, path],
       function (s) {
-         if (s.size.w <= Max && s.size.h <= Max) return s.next ();
-         s ['t' + Max] = uuid ();
-         var perc = Math.round (Max / Math.max (s.size.h, s.size.w) * 100);
-         k (s, 'convert', path, '-quality', 75, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + Max]));
+         var picMax = Math.max (s.size.w, s.size.h);
+         if (picMax <= thumbSize) {
+            if (! pic.deg) return s.next (true);
+            // if picture has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
+            // If picture is smaller than 200px and we're deciding whether to do the 900px thumb, we skip it since we don't need it.
+            if (picMax < 200 && thumbSize === 900) return s.next (true);
+         }
+         s ['t' + thumbSize] = uuid ();
+         // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
+         var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
+         k (s, 'convert', path, '-quality', 75, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize]));
       },
       function (s) {
-         if (s.size.w <= Max && s.size.h <= Max) return s.next ();
-         a.make (fs.stat) (s, Path.join (Path.dirname (path), s ['t' + Max]));
+         if (s.last === true) return s.next (true);
+         a.make (fs.stat) (s, Path.join (Path.dirname (path), s ['t' + thumbSize]));
       },
       function (s) {
-         s ['t' + Max + 'size'] = s.last.size;
+         if (s.last === true) return s.next ();
+         s ['t' + thumbSize + 'size'] = s.last.size;
          s.next ();
       }
    ]);
@@ -1453,8 +1461,8 @@ var routes = [
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
          ! pic.vid ? [a.fork, [
-            [[H.thumbPic, newpath, 200], [perfTrack, 'resize200']],
-            [[H.thumbPic, newpath, 900], [perfTrack, 'resize900']],
+            [[H.thumbPic, newpath, 200, pic], [perfTrack, 'resize200']],
+            [[H.thumbPic, newpath, 900, pic], [perfTrack, 'resize900']],
          ], function (v) {return v}] : [H.thumbVid, newpath],
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
@@ -2613,3 +2621,99 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
       });
    }],
 ]);
+
+// *** TEMPORARY SCRIPT TO CREATE THUMBNAILS OF SMALL/MEDIUM PICTURES WITH ROTATION METADATA ***
+
+if (cicek.isMaster) a.stop ([
+   // Get all picture data from the DB
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (id) {
+         multi.hgetall (id);
+      });
+      mexec (s, multi);
+   },
+   // Get only small or medium pictures
+   function (s) {
+      var pics = dale.fil (s.last, undefined, function (pic) {
+         pic.dimh = parseInt (pic.dimh);
+         pic.dimw = parseInt (pic.dimw);
+         pic.max = Math.max (pic.dimh, pic.dimw);
+         if (pic.max <= 900) return pic;
+      });
+      delete s.last;
+      // For each of the small (<= 200) or medium (<= 900) pictures:
+      a.fork (s, pics, function (pic) {
+         var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
+         return [
+            [k, 'exiftool', path],
+            function (s) {
+               try {
+                  var metadata = s.last.stdout.split ('\n');
+               }
+               catch (error) {
+                  return s.next ();
+               }
+               var rotation = dale.stopNot (metadata, undefined, function (line) {
+                  if (line.match (/^Orientation/)) return line;
+               }) || '';
+               var hasRotation = false;
+
+               if      (rotation.match ('270')) hasRotation = true;
+               else if (rotation.match ('90'))  hasRotation = true;
+               else if (rotation.match ('180')) hasRotation = true;
+               // If picture has no rotation metadata, or the rotation metadata doesn't imply a rotation, then no work is needed for this picture
+               if (! hasRotation) return s.next (0);
+               // If there's already a t200, we don't need to create a t200.
+               var t200 = pic.t200 ? undefined : uuid ();
+               // If there's already a t900, or the picture is small, we don't have to create a t900.
+               var t900 = (pic.t900 || pic.max <= 200) ? undefined : uuid ();
+               // If neither a t200 nor a t900 is required, then no work is needed for this picture.
+               if (! t200 && ! t900) return s.next (0);
+               a.seq (s, [
+                  ! t200 ? [] : [
+                     [k, 'convert', path, '-quality', 75, '-thumbnail', Math.min (100, Math.round (200 / pic.max * 100)) + '%', Path.join (Path.dirname (path), t200)],
+                     [a.set, 't200', [a.make (fs.stat), Path.join (Path.dirname (path), t200)]],
+                  ],
+                  ! t900 ? [] : [
+                     [k, 'convert', path, '-quality', 75, '-thumbnail', Math.min (100, Math.round (900 / pic.max * 100)) + '%', Path.join (Path.dirname (path), t900)],
+                     [a.set, 't900', [a.make (fs.stat), Path.join (Path.dirname (path), t900)]],
+                  ],
+                  function (s) {
+                     var multi = redis.multi ();
+                     if (t200) {
+                        multi.hset ('pic:' + pic.id, 't200',  t200);
+                        multi.hset ('pic:' + pic.id, 'by200', s.t200.size);
+                        multi.set  ('thu:' + t200, pic.id);
+                     }
+                     if (t900) {
+                        multi.hset ('pic:' + pic.id, 't900',  t900);
+                        multi.hset ('pic:' + pic.id, 'by900', s.t900.size);
+                        multi.set  ('thu:' + t900, pic.id);
+                     }
+                     mexec (s, multi);
+                  },
+                  function (s) {
+                     H.stat.w (s, [
+                        ['stock', 'byfs',              (t200 ? s.t200.size : 0) + (t900 ? s.t900.size : 0)],
+                        ['stock', 'byfs-' + pic.owner, (t200 ? s.t200.size : 0) + (t900 ? s.t900.size : 0)],
+                        t200 ? ['stock', 't200', 1] : [],
+                        t900 ? ['stock', 't900', 1] : [],
+                     ]);
+                  },
+                  function (s) {
+                     s.next ({id: pic.id, dimw: pic.dimw, dimh: pic.dimh, t200: t200 ? true : undefined, t900: t900 ? true : undefined});
+                  }
+               ]);
+            }
+         ];
+      }, {max: 5});
+   },
+   function (s) {
+      var pics = dale.fil (s.last, 0, function (v) {return v});
+      notify (s, {priority: 'critical', type: 'Script to create thumbnails for small/medium pictures with orientation metadata successful.', pics: pics});
+   }
+], function (s, error) {
+   notify (s, {priority: 'critical', type: 'Script to create thumbnails for small/medium pictures with orientation metadata error.', error: error});
+});
