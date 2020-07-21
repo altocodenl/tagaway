@@ -1133,7 +1133,7 @@ CSS.litc = [
    // SPACE ALERT
    ['.space-alert', {
       display: 'flex',
-      'margin-top': CSS.vars ['padding--l'],
+      'margin-top': CSS.vars ['padding--xxl'],
       border: '1px solid ' + CSS.vars ['border-color--dark'],
       'border-radius': CSS.vars ['border-radius--m'],
       'padding-left': CSS.vars ['padding--m'],
@@ -1153,7 +1153,47 @@ CSS.litc = [
       'height': 28,
       display: 'inline-block',
       transform: 'scale(1.5)',
-   }, ['path', {fill: CSS.vars.grey}]],
+   }, ['path', {fill: CSS.vars ['color--remove']}]],
+   ['.space-alert__main', {
+      display: 'flex',
+      flex: '1',
+      'flex-direction': 'column',
+      'padding-top': 5,
+   }],
+   ['.space-alert-message', {
+      color: CSS.vars ['color--one'],
+      display: 'flex',
+      'align-items': 'center',
+      mixin1: CSS.vars.fontPrimaryMedium,
+   }],
+   ['.space-alert-icon-small', {
+      display: 'inline-block',
+      'width, height': 24,
+      'margin-right': 7,
+   }, ['path', {fill: CSS.vars ['color--remove']}]],
+   ['.delete-some-files-button', {
+      'float': 'left',
+      'border': '1px solid #8b8b8b',
+      'color': '#8b8b8b',
+      'background-color': '#fff',
+      'cursor': 'pointer',
+   }],
+   ['.delete-some-files-button:hover', {
+      color: '#fff',
+      'background-color': '#8b8b8b',
+   }],
+   ['.upgrade-your-account-button', {
+      float: 'right',
+      border: '1px solid #5b6eff',
+      color: '#5b6eff',
+      'background-color': '#fff',
+      cursor: 'pointer',
+      //'margin-left': .2
+   }],
+   ['.upgrade-your-account-button:hover', {
+      color: '#fff',
+      'background-color': '#5b6eff',
+   }],
    // MY ACCOUNT
    ['.account-box', {
       display: 'flex',
@@ -2193,6 +2233,7 @@ dale.do ([
       putSvg ('.tag-list__item--geo-city', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;" xml:space="preserve"><path d="M56.4,5.8C53.6,5,48.9,4.8,46,5.3C28.6,8.5,17.2,26.2,24,42.2c7.7,18,17.4,35.2,26,52.8  c8.6-17.6,18.3-34.7,26-52.7C82.5,27,72.5,10.3,56.4,5.8z M50,49.2c-8.4,0-15.2-6.9-15.2-15.4S41.6,18.5,50,18.5s15.2,6.9,15.2,15.4  S58.4,49.2,50,49.2z"/></svg>');
       putSvg ('.tag-list__item--geo-country', 'afterBegin', '<svg width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;stroke-width: 1.5;" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#000000" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>');
       putSvg ('.space-alert-icon', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>');
+      putSvg ('.space-alert-icon-small', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>');
    }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -3982,11 +4023,16 @@ E.import = function () {
                ]],
                ['div', {class: 'space-alert__main'}, [
                   ['div', {class: 'upload-box__section'}, [
-                     ['p', {class: 'upload-progress'}, [
-                        ['span', {class: 'upload-progress__icon', opaque: true}],
-                        ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']]]]],
-                  ['div', {class: 'upload-box__section'}],
-                  ['div', {class: 'upload-box__section'}]
+                     ['p', {class: 'space-alert-message'}, [
+                        ['span', {class: 'space-alert-icon-small', opaque: true}],
+                        ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']
+                     ]],
+                     ['div', {class: 'progress-bar'}],
+                  ]],
+                  ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                     ['div', {class: 'delete-some-files-button button'}, 'Delete some files'],
+                     ['div', {class: 'upgrade-your-account-button button'}, 'Upgrade your account'],
+                  ]],
                ]],
             ]],
             ['div', {class: 'page-header'}, [
