@@ -53,8 +53,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
-- why 403 from GET csrf when already logged but open browser anew?
-- broken slider attach/untag tag.
 
 - Basic account view
    - Enable/disable geotag
@@ -213,6 +211,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Favicon & icons.
    - Status & stats public page.
    - Spanish support.
+
+- Bugs
+   - Intermittent 403 from GET csrf when already being logged in.
 
 ### Future
 

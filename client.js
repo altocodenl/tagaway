@@ -1223,14 +1223,14 @@ CSS.litc = [
       'height': CSS.typography.spaceVer (3),
       'border-bottom': '1px solid ' + CSS.vars ['border-color--dark'],
    }],
-   ['.switch', {
+   ['label.switch', {
       'position': 'relative',
       'float': 'right',
       display: 'inline-block',
       width: '60px',
       height: '34px'
    }],
-   ['.switch input', {
+   ['label.switch input', {
       opacity: 0,
       width: 0,
       height: 0
@@ -1340,7 +1340,7 @@ CSS.litc = [
       'border-radius': '100px',
       'background': 'linear-gradient(90deg, #8b8b8b 75%, #fff 25%)',
    }],
-    ['.space-usage-bar-paid', { // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar  
+    ['.space-usage-bar-paid', { // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar
       'float': 'right',
       height: '42px',
       width: '200px',
@@ -4150,7 +4150,7 @@ E.accountFree = function () {
                ]],
             ]],
          ]],
-      ]], 
+      ]],
    ];
 }
 
@@ -4198,7 +4198,7 @@ E.accountPaid = function () {
                         ['tr', {class: 'space-usage'}, [
                            ['td', {class: 'text-left-account-data-table'}, 'Usage: 100% (2 GB)'],
                            ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
-                              ['span', {class: 'space-usage-bar-paid'}], // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar  
+                              ['span', {class: 'space-usage-bar-paid'}], // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar
                            ]],
                         ]],
                         ['tr', {class: 'subtext-left-table'}, [
@@ -4228,7 +4228,7 @@ E.accountPaid = function () {
                               ['span', {class: 'right-pointing-triangle'}, '▶ '],
                               ['span', {class: 'down-pointing-triangle'}, '▼ '],
                               ['span', 'Paid space used: '],
-                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB'], 
+                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB'],
                            ]],
                            ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
                         ]],
@@ -4262,12 +4262,12 @@ E.accountPaid = function () {
                            ['td', {class: 'values-right-table'}, '€ 3.81']
                         ]],
                      ]],
-                     ['div', {class: 'cancel-account'}, 'Cancel your account'] 
+                     ['div', {class: 'cancel-account'}, 'Cancel your account']
                   ]],
                ]],
             ]],
          ]],
-      ]], 
+      ]],
    ];
 }
 
@@ -4418,7 +4418,7 @@ E.upgrade = function () {
                ]],
             ]],
          ]],
-      ]], 
+      ]],
    ]];
 }
 
