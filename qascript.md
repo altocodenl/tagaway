@@ -75,7 +75,7 @@
 Not developed yet
 
 ##Change password
-Not developed yet
+	- 'My account' view flow
 
 ##General layout
 	- Header:
@@ -275,7 +275,8 @@ Not developed yet
 	Email when import done or stopped.
 
 ##Enabling Geo Tagging
-Not developed yet
+	- Enable geotagging from sidebar
+	- Enable geotagging from 'My acount'
 
 ##View pictures
 	- All Pictures
@@ -327,7 +328,7 @@ Not developed yet
 			- Sort thumbnails from 'newest' (default) to 'oldest' to 'recently uploaded'.
 				- Selection should remain with all parameters.
 			- When scrolling down, if thumbnails are below the fold, the 'Organize Bar' is always visible at the top of image gallery.
-			- Unselect thumbnail by clicking on the selected thumbanil.
+			- Unselect thumbnail by clicking on the selected thumbnail.
 			- The interface should return to 'navigation mode'.
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
@@ -341,6 +342,10 @@ Not developed yet
 			- Interface should turn to 'organize view'.
 			- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
 			- The interface should return to 'navigation mode'.
+			- Select a thumbnail again.
+			- Interface should turn to 'organize view'.
+			- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'. 
+			- The interface should return to 'navigation mode'.
 		- Select multiple files:
 			- Select multiple files by clicking each one:
 				- Select at least two (2) thumbnails by clicking on them:
@@ -349,7 +354,7 @@ Not developed yet
 					- 'Gallery title' must behave as described in 'select single file'.
 					- Thumbnails must must behave as described in 'select single file'.
 					- Sorting must behave as described in 'select single file'.
-				- Unselect thumbnails by clicking on the selected thumbanils.
+				- Unselect thumbnails by clicking on the selected thumbnails.
 				- The interface should return to 'navigation mode'.
 				- Select thumbnails again.
 				- Interface should turn to 'organize view'.
@@ -361,7 +366,11 @@ Not developed yet
 				- The interface should return to 'navigation mode'.
 				- Select thumbnails again.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+				- Unselect thumbnails by clicking on 'unselect all' in 'organize bar'.
+				- The interface should return to 'navigation mode'.
+				- Select thumbnails again.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnails by clicking on any part of the interface where the cursor is NOT 'pointer'. 
 				- The interface should return to 'navigation mode'.
 			- Select multiple images by using shift:
 				- Select a thumbnail.
@@ -372,7 +381,7 @@ Not developed yet
 						- 'Gallery title' must behave as described in 'select single image'.
 						- Thumbnails must must behave as described in 'select single image'.
 						- Sorting must behave as described in 'select single image'.
-				- Unselect thumbnails by clicking on the selected thumbanils.
+				- Unselect thumbnails by clicking on the selected thumbnails.
 				- The interface should return to 'navigation mode'.
 				- Select thumbnails again using the same methodology with 'shift'.
 				- Interface should turn to 'organize view'.
@@ -385,6 +394,10 @@ Not developed yet
 				- Select thumbnails again using the same methodology with 'shift'.
 				- Interface should turn to 'organize view'.
 				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+				- The interface should return to 'navigation mode'.
+				- Select thumbnails again using the same methodology with 'shift'.
+				- Interface should turn to 'organize view'.
+				- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'. 
 				- The interface should return to 'navigation mode'.
 			- Select multiple images by using 'select all' option
 				- Select a thumbnail.
@@ -413,6 +426,11 @@ Not developed yet
 				- Interface should turn to 'organize view'.
 				- From 'Organize bar' click on 'select all'.
 				- Unselect thumbnail by clicking on 'unselect all' in 'organize bar'.
+				- The interface should return to 'navigation mode'.
+				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
+					- All thumbnails must be unselected.
+				- From 'Organize bar' click on 'select all'.
+				- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'. 
 				- The interface should return to 'navigation mode'.
 				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
 					- All thumbnails must be unselected.
@@ -491,8 +509,9 @@ Not developed yet
 			- Press ESC to exit fullscreen.
 		- Should be back to 'navigation mode'.
 	- **Tagging files**
-	(tagging from 'untagged' will change its flow. When changed, this script must be upated)
 		- Select a thumbnail or group of thumbnails.
+		- Tagging files from 'Untagged':
+			- INCLUDE NEW FLOW
 		- Sidebar left should change to 'Organize pictures' mode:
 			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery.
 			- By default, the 'attach tag' option should be selected.
@@ -744,10 +763,15 @@ Not developed yet
 Not developed yet
 
 ##My Account
-Not developed yet
+	- Free account
+	- Paid account
 
 ##2GB limit reached
-Not developed yet
+	- Space alert (upload & import).
+	- Upgrade view
+
+##Cancel account
+	- 'My account' paid account.
 
 ##Payment process
 Not developed yet
