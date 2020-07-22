@@ -368,7 +368,7 @@ CSS.litc = [
       'z-index': '99',
       left: 0,
       top: 58, // height main header
-      'padding-bottom': 54, // height sidebar search
+      'padding-bottom': 114, // height sidebar search
       width: CSS.vars ['sidebar-width'],
       display: 'flex',
       'flex-direction': 'column',
@@ -409,7 +409,7 @@ CSS.litc = [
    ['.sidebar__footer', {
       position: 'fixed',
       'bottom, left': 0,
-      height: 54,
+      height: 114,
       width: 300, // sidebar width
       display: 'flex',
       'align-items': 'center',
@@ -3429,9 +3429,12 @@ E.pics = function () {
                   // SIDEBAR SEARCH
                   B.view (['State', 'query', 'tags'], {attrs: B.ev ({class: 'sidebar__footer'}, ['onclick', 'stop', 'propagation', {rawArgs: 'event'}])}, function (x, tags) {
                      tags = tags || [];
-                     return B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
-                        return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
-                     });
+                     return [
+                        ['div', B.ev ({style: style ({cursor: 'pointer', 'width': 1, 'margin-bottom': 5}), class: 'button button--one'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],
+                        B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
+                           return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
+                        })
+                     ];
                   }),
                ]],
                // ORGANISE BAR
