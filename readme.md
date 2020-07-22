@@ -54,6 +54,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 
+- CSS: fix style of "done tagging", fix style of "enable geotagging" in sidebar
+
 - Basic account view
    - Enable/disable geotag
    - Usage %
