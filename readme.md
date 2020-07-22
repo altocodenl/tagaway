@@ -51,12 +51,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
          - When account is created. Green snackbar "Your account has been created."
 
-- Pics
-   - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
-- etags based on file id.
-- request t200 or t900 directly referring to ids, remove ids from returned payloads.
+- Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
+- request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 - why 403 from GET csrf when already logged but open browser anew?
-
 - broken slider attach/untag tag.
 
 - Basic account view
