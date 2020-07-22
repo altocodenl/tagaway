@@ -449,6 +449,21 @@ CSS.litc = [
    ]],
    // Sidebar title
    ['.sidebar-header__title', {'font-size': CSS.typography.fontSize (3)}],
+   // Sidebar Done Tagging button
+   ['.done-tagging-button', {
+      display: 'block',
+      float: 'right',
+      'cursor': 'pointer',
+      'margin-left': .43, 
+      'width': .5, 
+      border: '1px solid #87D7AB',
+      color: '#fff',
+      'background-color': CSS.vars ['color--attach'],
+   }], 
+   ['.done-tagging-button:hover', {
+      color: CSS.vars ['color--attach'],
+      'background-color': '#fff'
+   }],
    // *** sidebar-search.scss
    ['.sidebar-search', {
       position: 'relative',
@@ -3441,11 +3456,12 @@ E.pics = function () {
                         })
                      ]],
                   ]],
+                  // DONE TAGGING BUTTON
+                  ['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],
                   // SIDEBAR SEARCH
                   B.view (['State', 'query', 'tags'], {attrs: B.ev ({class: 'sidebar__footer'}, ['onclick', 'stop', 'propagation', {rawArgs: 'event'}])}, function (x, tags) {
                      tags = tags || [];
                      return [
-                        ['div', B.ev ({style: style ({cursor: 'pointer', 'width': 1, 'margin-bottom': 5}), class: 'button button--one'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
                            return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
                         })
