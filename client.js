@@ -517,6 +517,22 @@ CSS.litc = [
          ['.switch-list__button-icon path', {fill: CSS.vars ['grey--darker']}],
       ]],
    ]),
+   // Sidebar Suggest Geotagging
+   ['.suggest-geotagging', {
+      'clear': 'both',
+      'display': 'block',
+      'padding-top, padding-bottom': CSS.vars ['padding--m'],
+      'font-size': CSS.typography.fontSize (1),
+   }],
+   ['.suggest-geotagging-enable', {
+      'float': 'left',
+      'font-weight': CSS.vars.fontPrimarySemiBoldItalic,
+      'text-decoration': 'underline',
+   }],
+   ['.suggest-geotagging-dismiss', {
+      'float': 'right', 
+      'color': CSS.vars ['grey--darker'],
+   }],
    // *** attach_form.scss ***
    ['.attach-form__title', {
       'padding-left': 10,
@@ -3310,11 +3326,10 @@ E.pics = function () {
                                        makeTag ('all'),
                                        makeTag ('untagged'),
                                        dale.do (yearlist, makeTag),
-                                       H.if (suggestGeotagging, [
-                                          ['p', {style: style ({clear: 'both', display: 'block'})}, [
-                                             ['a', B.ev (['onclick', 'toggle', 'geo', true]),  'Enable geotagging'],
-                                             ' - ',
-                                             ['a', B.ev (['onclick', 'dismiss', 'geo']), 'Dismiss'],
+                                       H.if (suggestGeotagging, [   
+                                          ['p', {class: 'suggest-geotagging'}, [
+                                             ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Enable geotagging'],
+                                             ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Dismiss'],
                                           ]],
                                           ['br'],
                                        ]),
