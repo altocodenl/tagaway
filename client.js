@@ -541,12 +541,13 @@ CSS.litc = [
    }],
    ['.suggest-geotagging-enable', {
       'float': 'left',
-      'font-weight': CSS.vars.fontPrimarySemiBoldItalic,
+      'font-weight': CSS.vars.fontPrimary,
       'text-decoration': 'underline',
    }],
    ['.suggest-geotagging-dismiss', {
       'float': 'right', 
       'color': CSS.vars ['grey--darker'],
+      'text-decoration': 'underline',
    }],
    // *** attach_form.scss ***
    ['.attach-form__title', {
@@ -3341,10 +3342,10 @@ E.pics = function () {
                                        makeTag ('all'),
                                        makeTag ('untagged'),
                                        dale.do (yearlist, makeTag),
-                                       H.if (suggestGeotagging, [   
+                                       H.if (suggestGeotagging, [
                                           ['p', {class: 'suggest-geotagging'}, [
                                              ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Enable geotagging'],
-                                             ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Dismiss'],
+                                             ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Maybe later'],
                                           ]],
                                           ['br'],
                                        ]),
