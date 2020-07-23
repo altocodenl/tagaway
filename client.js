@@ -412,8 +412,10 @@ CSS.litc = [
       height: 114,
       width: 300, // sidebar width
       display: 'flex',
+      'flex-direction': 'column-reverse', // FIX FOR '.done-tagging-button'
+      'background-color': '#ffffff', // FIX FOR '.done-tagging-button'
       'align-items': 'center',
-      'border-top, border-bottom': '1px solid ' + CSS.vars ['border-color'],
+      //'border-top, border-bottom': '1px solid ' + CSS.vars ['border-color'], // COMMENTED AS A FIX FOR '.done-tagging-button'
    }],
    // Sidebar -- Attach tags
    ['.app-attach-tags', [
@@ -454,7 +456,8 @@ CSS.litc = [
       display: 'block',
       float: 'right',
       'cursor': 'pointer',
-      'margin-left': .43, 
+      'margin-left': .33,
+      'margin-bottom': CSS.vars ['padding--xs'],
       'width': .5, 
       border: '1px solid #87D7AB',
       color: '#fff',
@@ -469,6 +472,7 @@ CSS.litc = [
       position: 'relative',
       display: 'flex',
       'width, height': 1,
+      'border-top, border-bottom': '1px solid ' + CSS.vars ['border-color'], // ORIGINALLY IN '.sidebar__footer'. MOVED HERE AS A FIX TO ACCOMODATE '.done-tagging-button'
    }],
    ['.sidebar-search__input', {'padding-left, padding-right': CSS.vars ['padding--m']}],
    ['.sidebar-search__icon', {
@@ -3457,15 +3461,16 @@ E.pics = function () {
                         })
                      ]],
                   ]],
-                  // DONE TAGGING BUTTON
-                  ['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],
-                  // SIDEBAR SEARCH
+                  
+                 // SIDEBAR SEARCH
                   B.view (['State', 'query', 'tags'], {attrs: B.ev ({class: 'sidebar__footer'}, ['onclick', 'stop', 'propagation', {rawArgs: 'event'}])}, function (x, tags) {
                      tags = tags || [];
                      return [
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
                            return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
-                        })
+                        }),
+                        // DONE TAGGING BUTTON
+                  		['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],	
                      ];
                   }),
                ]],
