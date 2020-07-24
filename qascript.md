@@ -763,8 +763,55 @@ Not developed yet
 Not developed yet
 
 ##My Account
-	- Free account
-	- Paid account
+	- Free account:
+		- On header, hover on 'user' icon, a dropdown of options should be displayed: 'My account' and 'Log out'.
+		- If account is free, then the view should be:
+		- Layout from top to bottom, left to right:
+		- Title: 'My account'
+		- Subtitle: 'Manage your settings and usage'
+		- 'Enable geotagging' to the left of the table, switch off/on to the right. By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
+		- 'Password' to the left, 'Change password' button to the right. 
+			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
+		- Click 'Change password' button. 
+		- A form should open below with the following placeholders:
+			- Enter your current password
+			- Enter your new password
+			- Repeat your new password
+			- 'Change password' button, background color '#5b6eff' color '#fff'. On hover background color '#fff' color: '#5b6eff'.
+			- 'Cancel' button, background color '#fff' color: '#484848'. On hover background color '#484848' color '#fff'.
+		- Title 'Usage and account type'
+		- Usage % of the free space on the left, Usage: X% (2 GB) Of your free 2 GB. Usage bar to the right. 
+		- 'Space limit'. 'You can set your monthly limit up to 100 GB.' to the left. Placeholder with '100' to the right. 
+		- 'Account type: Free'. To the right 'Upgrade your account' link, which takes to /upgrade view. color '#5b6eff'; text-decoration:underlined; cursor:pointer;
+	- Paid account:
+		- On header, hover on 'user' icon, a dropdown of options should be displayed: 'My account' and 'Log out'.
+		- If account is paid, then the view should be:
+		- Layout from top to bottom, left to right:
+		- Title: 'My account'
+		- Subtitle: 'Manage your settings and usage'
+		- 'Enable geotagging' to the left of the table, switch off/on to the right. By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
+		- 'Password' to the left, 'Change password' button to the right. 
+			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
+		- Click 'Change password' button. 
+		- A form should open below with the following placeholders:
+			- Enter your current password
+			- Enter your new password
+			- Repeat your new password
+			- 'Change password' button, background color '#5b6eff' color '#fff'. On hover background color '#fff' color: '#5b6eff'.
+			- 'Cancel' button, background color '#fff' color: '#484848'. On hover background color '#484848' color '#fff'.
+		- Title 'Usage and account type'
+		- Usage % of the free space on the left, Usage: X% (2 GB) Of your free 2 GB. Usage bar to the right. 
+		- 'Space limit'. 'You can set your monthly limit up to 100 GB.' to the left. Placeholder with '100' to the right. 
+		- 'Account type: Paid'. In case account was turned paid in the middle of a particular month, during that month, there should be the text 'This month you pay for X days.'. In all cases, the text 'Monthly cost is € 4.00'. To the right, the amount of the fixed cost '€ x / Month', where 'x' is the fixed amount charged by Altocode - during first month is the corresponding amount on days of service accrued.  
+		- '▶' icon to the left of 'Paid space used: X GB'. cursor: pointer;
+		- 'Paid space used: X GB', where X is the average space used and current use. Text 'Based on your average space used and your current use.' should be below on the left. To the right, the  expected cost for the space used '€ x / Month', where 'x' is the expected cost. 
+			- Click on the '▶'. The icon should turn to '▼' and 2 rows display. 
+			- Both rows have 'padding-left': 5%, hence being a child of previous row. 
+				- 'Average paid space used: x GB' where x is the amount of paid GB used on the current month. Below, text 'Average amount of GB you used this month so far.'. To the right '€ x / Month' where x is the cost of paid GB used in the current month.
+				- 'Paid space currently using: x GB' where x is the amount of GB currently being used by the paid user. Below the text 'x GB * Y remaining days this month. Each GB is € 0.05.' where x is the amount of GB currently being used by the paid user and Y is the amount of remaining days of the current month. To the right '€ x / Month' where x is the cost of the current space being used. 
+		- 'Total estimated cost for this month:' to the left and '€ X' where X is the total estimated cost of the current month. 
+		- 'Cancel your account' link, cursor:pointer; text-decoration: underlined; 
+
 
 ##2GB limit reached
 	- Space alert (upload & import).

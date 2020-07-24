@@ -4121,7 +4121,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = true;
+         var paid = false;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })
