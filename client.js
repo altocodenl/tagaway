@@ -3346,7 +3346,8 @@ E.pics = function () {
                                        makeTag ('all'),
                                        makeTag ('untagged'),
                                        dale.do (yearlist, makeTag),
-                                       H.if (suggestGeotagging, [
+                                       //H.if (suggestGeotagging, [
+                                       H.if (true, [   
                                           ['p', {class: 'suggest-geotagging'}, [
                                              ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Enable geotagging'],
                                              ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Maybe later'],
@@ -4121,7 +4122,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = false;
+         var paid = true;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })

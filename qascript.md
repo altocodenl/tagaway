@@ -75,7 +75,7 @@
 Not developed yet
 
 ##Change password
-	- 'My account' view flow
+	- Included in 'My account' view flow
 
 ##General layout
 	- Header:
@@ -275,8 +275,19 @@ Not developed yet
 	Email when import done or stopped.
 
 ##Enabling Geo Tagging
-	- Enable geotagging from sidebar
-	- Enable geotagging from 'My acount'
+	- Enable geotagging from sidebar: 
+		- On first batch of files uploaded/imported, on sidebar left, below the 'Years' semi tags:
+			- Enable Geotagging 	Maybe later
+			- 'Enable Geotagging' color: #5b6eff; text-decoration: underlined;
+			- 'Maybe later' color: #484848; text-decoration: underlined;
+		- If click on 'Enable Geotagging':
+			- Green snackbar: 'Geotagging enabled successfully. You can always change this from My Account'
+			- Both messages dissapear. Are replaced by location icons. 
+		- If click on 'Maybe later'
+			- Green snackbar: ''Understood! You can always enable geotagging from My Account.'
+			-  
+
+	- Enable geotagging from 'My acount' > see section for 'My account'
 
 ##View pictures
 	- All Pictures
@@ -769,7 +780,12 @@ Not developed yet
 		- Layout from top to bottom, left to right:
 		- Title: 'My account'
 		- Subtitle: 'Manage your settings and usage'
-		- 'Enable geotagging' to the left of the table, switch off/on to the right. By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
+		- 'Enable geotagging' to the left of the table, switch off/on to the right. 
+			- By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
+				- If slide to right, 'on': 
+				- background-color: #5b6eff. 
+				- 'Geotagging enabled succesfully. You can always turn off with the same switch'
+				- Geotagging should be on. 
 		- 'Password' to the left, 'Change password' button to the right. 
 			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
 		- Click 'Change password' button. 
@@ -789,7 +805,12 @@ Not developed yet
 		- Layout from top to bottom, left to right:
 		- Title: 'My account'
 		- Subtitle: 'Manage your settings and usage'
-		- 'Enable geotagging' to the left of the table, switch off/on to the right. By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
+		- 'Enable geotagging' to the left of the table, switch off/on to the right. 
+			- By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
+				- If slide to right, 'on': 
+				- background-color: #5b6eff. 
+				- 'Geotagging enabled succesfully. You can always turn off with the same switch'
+				- Geotagging should be on. 
 		- 'Password' to the left, 'Change password' button to the right. 
 			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
 		- Click 'Change password' button. 
