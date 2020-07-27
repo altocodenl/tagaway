@@ -3346,8 +3346,7 @@ E.pics = function () {
                                        makeTag ('all'),
                                        makeTag ('untagged'),
                                        dale.do (yearlist, makeTag),
-                                       //H.if (suggestGeotagging, [
-                                       H.if (true, [   
+                                       H.if (suggestGeotagging, [
                                           ['p', {class: 'suggest-geotagging'}, [
                                              ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Enable geotagging'],
                                              ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Maybe later'],

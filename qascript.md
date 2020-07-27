@@ -13,7 +13,7 @@
 	- Miscrosoft Edge
 - Tester must have access to Development Environment admin and altocode's email.
 
-##Invite process
+## Invite process
 	- On log in view, click on "Don't have an account? Request an invite."
 	- Browser prompt "Send us your email and we'll send you an invite link to create your account! We will *only* use your email to send you an invite."
 	- Insert an invalid address, such as 'test','test@' or 'test@test'
@@ -25,7 +25,7 @@
 	- Invite should arrive to entered email address.
 	- Click on email link "Please click on this link to create your account.", should be directed to "Sign Up" view.
 
-##Sign Up
+## Sign Up
 	- Upon clicking on "Please click on this link to create your account." on invite email, the Sign Up view should be accesed.
 	- There should be 3 placeholders:
 		- Username
@@ -47,7 +47,7 @@
 		- Green snackbar of "Your account has been created." should appear."
 	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.
 
-##Log In
+## Log In
 	- Click 'log in' with empty form:
 		- Red snackbar of "Please submit valid credentials." should appear on clicking "log in".
 	- Insert incorrect username and correct password:
@@ -71,13 +71,13 @@
 	- Log in
 	- Should be logged in and redirected to 'empty' View Pictures view.
 
-##Recover password
+## Recover password
 Not developed yet
 
-##Change password
+## Change password
 	- Included in 'My account' view flow
 
-##General layout
+## General layout
 	- Header:
 		- From left to right:
 			- ac;pic logo
@@ -114,7 +114,7 @@ Not developed yet
 				- Recent uploaded
 			- Photos and videos gallery.
 
-##General Navigation
+## General Navigation
 	- On first loading, app interface is 'View pictures'
 	- Click on 'Manage tags', green snackbar of "Coming soon, hang tight!" should appear.
 	- On user icon, on :hover dropdown should appear. Click on "my account". Green snackbar of "Coming soon, hang tight!" should appear.
@@ -130,7 +130,7 @@ Not developed yet
 	- Click on 'logout'. Logged out.
 	- Log in.
 
-##Upload pictures
+## Upload pictures
 (Flow will change before Beta release. It will be updated when flow change is implemented)
 	- Direct upload:
 		- Go to upload view
@@ -264,32 +264,33 @@ Not developed yet
 			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
 
-##Import Pictures
-###Google Drive
+## Import Pictures
+### Google Drive
 Not developed yet
 	Check for duplicates
 	Email when import done or stopped.
-###Dropbox
+### Dropbox
 Not developed yet
 	Check for duplicates
 	Email when import done or stopped.
 
-##Enabling Geo Tagging
+## Enabling Geo Tagging
 	- Enable geotagging from sidebar: 
 		- On first batch of files uploaded/imported, on sidebar left, below the 'Years' semi tags:
 			- Enable Geotagging 	Maybe later
 			- 'Enable Geotagging' color: #5b6eff; text-decoration: underlined;
 			- 'Maybe later' color: #484848; text-decoration: underlined;
-		- If click on 'Enable Geotagging':
-			- Green snackbar: 'Geotagging enabled successfully. You can always change this from My Account'
-			- Both messages dissapear. Are replaced by location icons. 
 		- If click on 'Maybe later'
 			- Green snackbar: ''Understood! You can always enable geotagging from My Account.'
-			-  
+			- Both messages dissapear. That space is replaced with regular tags. 
+		- If click on 'Enable Geotagging':
+			- Green snackbar: 'Geotagging enabled successfully. You can always change this from My Account'
+			- Both messages dissapear. Are replaced by location icons.
+				- Location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.) 
 
 	- Enable geotagging from 'My acount' > see section for 'My account'
 
-##View pictures
+## View pictures
 	- All Pictures
 		- When 'All Pictures' is selected, the 'eye' icon must be visible next to the section name.
 		- Initial 'General layout' described above must be correct for header ('view pictures' must be in light blue, marking the user's location), sidebar, and center view.
@@ -310,7 +311,7 @@ Not developed yet
 			- If 'x' button is clicked, view goes back to 'all pictures'.
 		- Scroll down, below the fold the thumbnails must load and scrolling should continue until all thumbnails are uploaded.
 
-###File selection and tagging
+### File selection and tagging
 	- All the actions described below must be run for the following sub-views:
 		- All pictures
 		- Untagged (only if there are untagged files)
@@ -522,7 +523,7 @@ Not developed yet
 	- **Tagging files**
 		- Select a thumbnail or group of thumbnails.
 		- Tagging files from 'Untagged':
-			- INCLUDE NEW FLOW
+			- INCLUDE NEW FLOW WHEN READY
 		- Sidebar left should change to 'Organize pictures' mode:
 			- Sidebar title 'Organize pictures (x)' where 'x' is the amount of thumbnails selected on the image gallery.
 			- By default, the 'attach tag' option should be selected.
@@ -579,16 +580,15 @@ Not developed yet
 			- Thumbnail(s) should be untagged of removed tag.
 			- Tag should dissapear from list under 'Remove current tags'.
 			- If there are no thumbnails tagged with a particular tag, that tag should be eliminated from interface. From both sidebar left in 'navigation mode' as well as 'organize mode'.
-	- **Navigation with tags**
-		- From 'view pictures' view and with files uploaded and tagged.
+	- **Navigation with tags** ADD GEOTAGGING ENABLED
+		- From 'view pictures' view, with files uploaded and tagged, and geotagging enabled (and files with geotags)
 			- Default option should be 'all pictures' unless navigation occured before.
 			- On sidebar left, click on 'untagged'
 				- All untagged thumbnails should be displayed in gallery.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'untagged' tag with white 'tag' icon and icon with 'x' to its right.
-				- On sidebar left, only automated semi tags (years) should be visible.
+				- On sidebar left, only automated semi tags (years) and location semi tags should be visible.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
-				- **Untagged + Year / Year + untagged?**
 			- Click on icon with 'x' on 'untagged' below the title.
 			- Should be back to 'all pictures'
 			- On sidebar left, click on 'untagged'
@@ -598,7 +598,7 @@ Not developed yet
 			- On sidebar left, click on any year semi-tag
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
-				- On sidebar left, only the year selected and tags with positive results should be available. If thumbnails aren't tagged, then no tag should be available for navigation on left.
+				- On sidebar left, only the year selected and tags with positive results should be available (both location semi tags and/or tags). If thumbnails aren't tagged, then no tag should be available for navigation on left.
 			- Click on icon with 'x' on year below the title.
 			- Should be back to 'all pictures'
 			- On sidebar left, click on the same 'year' semi-tag
@@ -612,24 +612,24 @@ Not developed yet
 			- On sidebar left, click on any year semi-tag, but in this case, make sure there are tagged thumbnails.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right.
-				- On sidebar left, only tags with positive results should be available.
+				- On sidebar left, only tags with positive results - for both location semi tags and tags - should be available.
 			- Click on a tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ tag).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, and the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, only the year selected and tags with positive results to the intersection should be available.
+				- On sidebar left, only the year selected and tags - for both location semi tags and tags - with positive results to the intersection should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on year below the title.
 			- Gallery should only display selected tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags  - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Select the same intersection as before.
 			- On sidebar left, click on the 'year' semi-tag.
 			- Gallery should only display selected tag.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags  - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- On sidebar left, select the same year as before.
 			- Gallery should display the category intersection (year ∩ tag).
@@ -643,7 +643,7 @@ Not developed yet
 			- Gallery should only display selected tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on year below the title.
 			- Should be back to 'all pictures'
@@ -658,25 +658,25 @@ Not developed yet
 			- On sidebar left, click on any tag, make sure this tag intersects with other tags.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for this tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, only years and tags with positive intersections should be available.
+				- On sidebar left, only years and tags - for both location semi tags and tags - with positive intersections should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on another tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ tag).
 				- Below title, boths tags with its corresponding color, 'tag names' and with 'x' to the right of each one.
-				- On sidebar left, only the tags selected, year and tags with positive results to the intersection should be available.
+				- On sidebar left, only the tags selected, year and tags - for both location semi tags and tags - with positive results to the intersection should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tags.
 			- Click on any icon with 'x' on a tag below the title.
 			- Gallery should only display the other selected tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Select the same intersection as before.
 			- On sidebar left, click on one of the tags.
 			- Gallery should only display the other selected tag.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- On sidebar left, select the same second tag as before.
 			- Gallery should display the category intersection (tag ∩ tag).
@@ -689,25 +689,25 @@ Not developed yet
 			- On sidebar left, click on any tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for this tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, only years and tags with positive intersections should be available.
+				- On sidebar left, only years and tags - for both location semi tags and tags - with positive intersections should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on any year semi-tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ year).
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right, and the 'year' semi-tag with a 'clock' icon with 'x' to its right.
-				- On sidebar left, only the year selected and tags with positive results to the intersection should be available.
+				- On sidebar left, only the year selected and tags - for both location semi tags and tags - with positive results to the intersection should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on year below the title.
 			- Gallery should only display selected tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected tag.
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- Click on icon with 'x' on the tag below the title.
 			- Should be back to 'all pictures'.
 			- Select the same intersection as before.
 			- On sidebar left, click on the 'year' semi-tag.
 			- Gallery should only display selected tag.
-				- On sidebar left, the years and tags with positive results should be available.
+				- On sidebar left, the years and tags - for both location semi tags and tags - with positive results should be available.
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 			- On sidebar left, select the same year as before.
 			- Gallery should display the category intersection (year ∩ tag).
@@ -767,13 +767,13 @@ Not developed yet
 			- Click on icon with 'x' on the both tags below the title.
 			- Should be back to 'all pictures'.
 
-##Share tag
+## Share tag
 Not developed yet
 
-##Manage Tags view
+## Manage Tags view
 Not developed yet
 
-##My Account
+## My Account
 	- Free account:
 		- On header, hover on 'user' icon, a dropdown of options should be displayed: 'My account' and 'Log out'.
 		- If account is free, then the view should be:
@@ -784,8 +784,9 @@ Not developed yet
 			- By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
 				- If slide to right, 'on': 
 				- background-color: #5b6eff. 
-				- 'Geotagging enabled succesfully. You can always turn off with the same switch'
-				- Geotagging should be on. 
+				- Green snackbar. 'Geotagging enabled succesfully. You can always turn off with the same switch'
+				- Geotagging should be on.
+					- In 'view pictures view', location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.) 
 		- 'Password' to the left, 'Change password' button to the right. 
 			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
 		- Click 'Change password' button. 
@@ -809,8 +810,9 @@ Not developed yet
 			- By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
 				- If slide to right, 'on': 
 				- background-color: #5b6eff. 
-				- 'Geotagging enabled succesfully. You can always turn off with the same switch'
-				- Geotagging should be on. 
+				- Green snackbar. 'Geotagging enabled succesfully. You can always turn off with the same switch'
+				- Geotagging should be on.
+					- In 'view pictures view', location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.) 
 		- 'Password' to the left, 'Change password' button to the right. 
 			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
 		- Click 'Change password' button. 
@@ -834,12 +836,12 @@ Not developed yet
 		- 'Cancel your account' link, cursor:pointer; text-decoration: underlined; 
 
 
-##2GB limit reached
+## 2GB limit reached
 	- Space alert (upload & import).
 	- Upgrade view
 
-##Cancel account
+## Cancel account
 	- 'My account' paid account.
 
-##Payment process
+## Payment process
 Not developed yet
