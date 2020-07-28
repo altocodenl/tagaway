@@ -749,13 +749,27 @@ Geo alone>	- On sidebar left, click on a geo tag. All geotags on sidebar left mu
 			- Should be back to COUNTRY view.
 			- On sidebar left, click on the same COUNTRY geo tag
 			- Should be back to 'all pictures'.
-					
-			- Geo alone (COUNTRY>CITY)	
-			- Geo and year (COUNTRY>YEAR>CITY, COUNTRY>CITY>YEAR, YEAR>COUNTRY>CITY)
-			- Geo and tag (COUNTRY>CITY>TAG, COUNTRY>TAG>CITY, TAG>COUNTRY>CITY)
-			- Geo and year and tag (COUNTRY>CITY>YEAR>TAG, COUNTRY>CITY>TAG>YEAR, COUNTRY>TAG>CITY>YEAR, COUNTRY>TAG>YEAR>CITY, COUNTRY>YEAR>CITY>TAG, COUNTRY>YEAR>TAG>CITY, 
-									YEAR>COUNTRY>CITY>TAG, YEAR>TAG>COUNTRY>CITY,
-									TAG>YEAR>COUNTRY>CITY, TAG>COUNTRY>CITY>YEAR)
+			- 		
+
+
+			- Geo alone 	(COUNTRY>CITY) 			✔	
+			- Geo and year 	(COUNTRY>YEAR>CITY, 
+							COUNTRY>CITY>YEAR, 
+							YEAR>COUNTRY>CITY)
+			- Geo and tag 	(COUNTRY>CITY>TAG,
+						 	COUNTRY>TAG>CITY, 
+						 	TAG>COUNTRY>CITY)
+			- Geo and year and tag 
+							(COUNTRY>CITY>YEAR>TAG, 
+							COUNTRY>CITY>TAG>YEAR, 
+							COUNTRY>TAG>CITY>YEAR, 
+							COUNTRY>TAG>YEAR>CITY, 
+							COUNTRY>YEAR>CITY>TAG, 
+							COUNTRY>YEAR>TAG>CITY, 
+							YEAR>COUNTRY>CITY>TAG, 
+							YEAR>TAG>COUNTRY>CITY,
+							TAG>YEAR>COUNTRY>CITY, 
+							TAG>COUNTRY>CITY>YEAR)
 			
 
 	- **Search tag**
