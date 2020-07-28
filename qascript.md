@@ -580,7 +580,7 @@ Not developed yet
 			- Thumbnail(s) should be untagged of removed tag.
 			- Tag should dissapear from list under 'Remove current tags'.
 			- If there are no thumbnails tagged with a particular tag, that tag should be eliminated from interface. From both sidebar left in 'navigation mode' as well as 'organize mode'.
-	- **Navigation with tags** ADD GEOTAGGING ENABLED
+	- **Navigation with tags** 
 		- From 'view pictures' view, with files uploaded and tagged, and geotagging enabled (and files with geotags)
 			- Default option should be 'all pictures' unless navigation occured before.
 			- On sidebar left, click on 'untagged'
@@ -717,6 +717,47 @@ Not developed yet
 			- Gallery should display the category intersection (year ∩ tag).
 			- On sidebar left, click on 'all pictures'
 			- Should be back to 'all pictures'.
+Geo alone>	- On sidebar left, click on a geo tag. All geotags on sidebar left must in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
+			- On sidebar click on geo country icon. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
+				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
+				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
+					- Geo CITY tags icons have a filled black icon.
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Regular tags are below the column of geo CITY tags.
+			- On sidebar left, click on a geo CITY tag. 
+			- Gallery should display the thumbnails for files that were geo tagged in this CITY.
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
+				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
+				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
+				- On sidebar left, years and regular tags with positive intersections should be available. 
+					- There should NOT be any other COUNTRY and CITY tags visible, other than the selected ones.
+			- Click on icon with 'x' on CITY tag below the title.
+			- Gallery should thumbnails correspondy to CONTRY tag
+			- Click on icon with 'x' on COUNTRY tag below the title.
+			- Should be back to 'all pictures'
+			- On sidebar left, select the same COUNTRY & CITY tags as before.
+			- Should be back to CITY geo tag view.
+			- On sidebar left, click on 'all pictures'.
+			- Should be back to 'all pictures'.
+			- On sidebar left, select the same COUNTRY & CITY tags as before.
+			- Should be back to CITY geo tag view.
+			- On sidebar left, click on the same CITY geo tag
+			- Should be back to COUNTRY view.
+			- On sidebar left, click on the same COUNTRY geo tag
+			- Should be back to 'all pictures'.
+					
+			- Geo alone (COUNTRY>CITY)	
+			- Geo and year (COUNTRY>YEAR>CITY, COUNTRY>CITY>YEAR, YEAR>COUNTRY>CITY)
+			- Geo and tag (COUNTRY>CITY>TAG, COUNTRY>TAG>CITY, TAG>COUNTRY>CITY)
+			- Geo and year and tag (COUNTRY>CITY>YEAR>TAG, COUNTRY>CITY>TAG>YEAR, COUNTRY>TAG>CITY>YEAR, COUNTRY>TAG>YEAR>CITY, COUNTRY>YEAR>CITY>TAG, COUNTRY>YEAR>TAG>CITY, 
+									YEAR>COUNTRY>CITY>TAG, YEAR>TAG>COUNTRY>CITY,
+									TAG>YEAR>COUNTRY>CITY, TAG>COUNTRY>CITY>YEAR)
+			
+
 	- **Search tag**
 		- From 'all pictures'
 			- At the bottom of sidebar left is the search bar.
