@@ -54,24 +54,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 
-- CSS: fix style of "done tagging", fix style of "enable geotagging" in sidebar
-
-- Basic account view
-   - Enable/disable geotag
-   - Usage %
-
-- Paid plan landing
-
-- Running out of space box
-   - Import
-   - Upload
+- Dynamize
+   - Basic account view
+   - Paid plan landing
+   - Running out of space box (import & upload)
 
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
    - Email when import done or stopped.
 - Paid accounts.
-- Share.
 
 ### Alpha version (DONE)
 
@@ -178,8 +170,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Account & payment
    - Account page.
-   - Payment.
    - Recover/reset password.
+   - Payment.
    - Change email, password & username.
    - Delete account.
    - Export/import all data.
@@ -367,6 +359,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
    - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated; space-like characters in the middle will be replaced with a single space).
    - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`, or any tag that when lowercased equals `all` or `untagged`.
+   - `tag` cannot start with `g::`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
    - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
@@ -840,6 +833,207 @@ Only things that differ from client are noted.
 ## Version history
 
 - Alpha/v0: bfa9ad50b5e54c78ba804ba35fe1f6310e55dced
+
+## Annotated source code
+
+For now, we only have annotated fragments of the code. This might be expanded comprehensively later.
+
+### Server
+
+We create an array `ytags` to store the year tags in the query.
+
+```javascript
+      var ytags = [];
+```
+
+We create an object `tags`, which will have each tag as a key, and as a value an array with one or more usernames. We iterate the tags of the query; for each of them, if it's not a year tag, we put it in an object `tags` with the value being an array with the username of the user. If it is a year tag, we simply append it to `ytags`.
+
+```javascript
+      var tags = dale.obj (b.tags, function (tag) {
+         if (! H.isYear (tag)) return [tag, [rq.user.username]];
+         ytags.push (tag);
+      });
+```
+
+We start the query process, invoking `astop`. We first bring all the tags shared with the user.
+
+```javascript
+      astop (rs, [
+         [Redis, 'smembers', 'shm:' + rq.user.username],
+```
+
+If the user sent no tags, we set a variable `allMode` to denote that we want all possible pictures.
+
+```javascript
+         function (s) {
+            var allMode = b.tags.length === 0;
+```
+
+If we're in `allMode`, we create an entry for the `all` tag inside `tags`, with the same shape of the entries already there.
+
+```javascript
+            if (allMode) tags.all = [rq.user.username];
+```
+
+We iterate the list of tags shared with the user, retrieved on the call to the database we just did.
+
+```javascript
+            dale.go (s.last, function (sharedTag) {
+```
+
+We clean up the shared tag, which is of the form `USERNAME:TAG`; to do this, we strip the tag of all the characters preceding the colon, plus the colon itself. Usernames cannot have colons because we forbid them, so there's no risk of a colon meaning something else than the separator between the username and the tag. We store the cleaned shared tag into a variable `tag`.
+
+```javascript
+               var tag = sharedTag.replace (/[^:]+:/, '');
+```
+
+If the tag is not already in `tags` and we're not in `allMode`, we ignore this tag.
+
+```javascript
+               if (! tags [tag] && ! allMode) return;
+```
+
+If the entry for the tag does not exist yet in `tags` (which can only happen if we're in `allMode`), we create the entry.
+
+```javascript
+               if (! tags [tag]) tags [tag] = [];
+```
+
+We push the username of the shared tag to the entry for that tag. We extract the username by finding all the characters in the tag that are before the colon. This concludes our iteration of the shared tags.
+
+```javascript
+               tags [tag].push (sharedTag.match (/[^:]+/) [0]);
+            });
+```
+
+We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of picture ids in redis for the purposes of this query.
+
+```javascript
+            var multi = redis.multi (), qid = 'query:' + uuid ();
+```
+
+If we have year tags, we bring the ids of all the pictures belonging to each of them and store their union in the query key.
+
+```javascript
+            if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
+               return 'tag:' + rq.user.username + ':' + ytag;
+            }));
+```
+
+If we have recently tagged pictures, we add the ids to a set with id `QID:QID`.
+
+```javascript
+            if (b.recentlyTagged && b.recentlyTagged.length) multi.sadd (qid + ':' + qid, b.recentlyTagged || []);
+```
+
+We iterate the tags. For each tag, for each of its users, we store the ids of the corresponding pictures onto a key made by appending the tag to the query key.
+
+```javascript
+            dale.go (tags, function (users, tag) {
+               multi.sunionstore (qid + ':' + tag, dale.go (users, function (user) {
+                  return 'tag:' + user + ':' + tag;
+               }));
+            });
+```
+
+We compute the ids of all the pictures that match the query. This will be either the union (in case of `allMode`) or the intersection (if we're in a normal query) of all the ids for each tag. If there are `ytags`, we also use the query key.
+
+The year tags are queried separately from normal tags because 1) if more than one year tag is sent, we want the union (not the intersection) of their pictures; and 2) it's not possible to share a year tag with another user, so the querying is simpler.
+
+```javascript
+            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
+               return qid + ':' + tag;
+            }).concat (ytags.length ? qid : []));
+```
+
+We get all the pictures without regard to the year tags, for the purposes of getting tags that match with the query. We also use this to bring the information about `b.recentlyTagged` pictures, if any.
+
+```javascript
+            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
+               return qid + ':' + tag;
+            }).concat (ytags.length ? qid : []).concat (qid + ':' + qid));
+```
+
+We delete all the temporary sets of ids we created for the query.
+
+```javascript
+            multi.del (qid);
+            multi.del (qid + ':' + qid);
+            dale.go (tags, function (users, tag) {
+               multi.del (qid + ':' + tag);
+            });
+```
+
+We run the transaction and move to the next step of the process.
+
+```javascript
+            mexec (s, multi);
+         },
+```
+
+We
+
+```javascript
+         function (s) {
+            var pics  = teishi.last (s.last, 5);
+            s.tagpics = teishi.last (s.last, 4);
+```
+
+            var multi = redis.multi ();
+            dale.go (pics, function (pic) {
+               multi.hgetall ('pic:' + pic);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            var pics = s.last;
+            if (pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
+            var output = {pics: []};
+
+            var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
+
+            dale.go (pics, function (pic) {
+               var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
+               if (d >= mindate && d <= maxdate) output.pics.push (pic);
+            });
+
+            // Sort own pictures first.
+            output.pics.sort (function (a, b) {
+               if (a.owner === rq.user.username) return -1;
+               if (b.owner === rq.user.username) return 1;
+               return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
+            });
+
+            // To avoid returning duplicated picture if someone shares a picture you already have with you. Own picture has priority.
+            var hashes = {};
+            output.pics = dale.fil (output.pics, undefined, function (pic, k) {
+               if (! hashes [pic.hash]) {
+                  hashes [pic.hash] = true;
+                  return pic;
+               }
+            });
+
+            // Sort pictures by criteria.
+            output.pics.sort (function (a, B) {
+               var d1 = parseInt (a [b.sort === 'upload' ? 'dateup' : 'date']);
+               var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
+               return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
+            });
+
+            output.total = output.pics.length;
+
+            output.pics = output.pics.slice (b.from - 1, b.to);
+
+            var multi = redis.multi ();
+            dale.go (output.pics, function (pic) {
+               multi.smembers ('pict:' + pic.id);
+            });
+            dale.go (s.tagpics, function (pic) {
+               multi.smembers ('pict:' + pic);
+            });
+            s.output = output;
+            mexec (s, multi);
+         },
 
 ## License
 
