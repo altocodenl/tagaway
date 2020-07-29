@@ -458,11 +458,11 @@ CSS.litc = [
       'cursor': 'pointer',
       'margin-left': .33,
       'margin-bottom': CSS.vars ['padding--xs'],
-      'width': .5, 
+      'width': .5,
       border: '1px solid #87D7AB',
       color: '#fff',
       'background-color': CSS.vars ['color--attach'],
-   }], 
+   }],
    ['.done-tagging-button:hover', {
       color: CSS.vars ['color--attach'],
       'background-color': '#fff'
@@ -549,7 +549,7 @@ CSS.litc = [
       'text-decoration': 'underline',
    }],
    ['.suggest-geotagging-dismiss', {
-      'float': 'right', 
+      'float': 'right',
       'color': CSS.vars ['grey--darker'],
       'text-decoration': 'underline',
    }],
@@ -3274,6 +3274,9 @@ E.pics = function () {
                                        if (H.isCountry (a) && H.isCountry (b)) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                                        if (H.isCountry (a) && ! H.isCountry (b)) return -1;
                                        if (! H.isCountry (a) && H.isCountry (b)) return 1;
+                                       if (H.isGeo (a) && H.isGeo (b)) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                       if (H.isGeo (a) && ! H.isGeo (b)) return -1;
+                                       if (! H.isGeo (a) && H.isGeo (b)) return 1;
 
                                        var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
                                        var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
@@ -3461,7 +3464,7 @@ E.pics = function () {
                         })
                      ]],
                   ]],
-                  
+
                  // SIDEBAR SEARCH
                   B.view (['State', 'query', 'tags'], {attrs: B.ev ({class: 'sidebar__footer'}, ['onclick', 'stop', 'propagation', {rawArgs: 'event'}])}, function (x, tags) {
                      tags = tags || [];
@@ -3470,7 +3473,7 @@ E.pics = function () {
                            return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
                         }),
                         // DONE TAGGING BUTTON
-                  		['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],	
+                  		['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],
                      ];
                   }),
                ]],
