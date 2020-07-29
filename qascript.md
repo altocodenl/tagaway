@@ -763,7 +763,9 @@ COUNTRY>YEAR>CITY
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ YEAR).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
-				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available. 
+				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available.
+			- On sidebar left, click on a CITY tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ YEAR ∩ CITY).
 							
 
 			- Geo alone 	COUNTRY>CITY) 			✔	
