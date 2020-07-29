@@ -72,7 +72,7 @@
 	- Should be logged in and redirected to 'empty' View Pictures view.
 
 ## Recover password
-Not developed yet
+Not developed yet INCLUDE
 
 ## Change password
 	- Included in 'My account' view flow
@@ -892,11 +892,11 @@ Not developed yet
 
 
 ## 2GB limit reached
-	- Space alert (upload & import).
+	- Space alert (upload & import). INCLUDE
 	- Upgrade view
 
 ## Cancel account
-	- 'My account' paid account.
+	- 'My account' paid account. EMAIL TO USER AND US. 
 
 ## Payment process
 Not developed yet
