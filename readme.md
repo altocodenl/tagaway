@@ -39,6 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
+- [BUG GEOTAGGING - VIEW PICTURES] When navegating with geo tags, normal tags are display on top and below the geo tags.
+- [BUG GEOTAGGING - UNTAGGED] Geo icons do are not displayed on sidebar left when view is in 'untagged'
+
+
 - Review Tom
    - When clicking on no man's land, unselect.
    - Sign Up
