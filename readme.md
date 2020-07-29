@@ -39,22 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- [BUG GEOTAGGING - VIEW PICTURES] When navegating with geo tags, normal tags are display on top and below the geo tags.
 - [BUG GEOTAGGING - UNTAGGED] Geo icons do are not displayed on sidebar left when view is in 'untagged'
-
-
-- Review Tom
-   - When clicking on no man's land, unselect.
-   - Sign Up
-      - **Tom: Note** As of now, only one snackbar is triggered in Sign Up: "There was an error creating your account." Below is what snackbar should be triggered for each case:
-         - Enter email address in username holder. Red snackbar of "Your username cannot be an email" on clicking "create account".
-         - If user selects a username that is already in use. Red snackbar of "That username is already in use".
-         - When entering a username of 2 or less characters. Red snackbar of "Please enter a username with 3 or more characters" on clicking "create account".
-         - When entering a username with invalida characters (such as '@'). Red snackbar of "Please enter a username without special characters like ! @ # $ % ^ & * " on clicking "create account". **Tom: not sure about the message on snackbar**
-         - When entering a password of 5 characters or less. Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
-         - When mismatching passwords are entered. Red snackbar of "Repeated password does not match." on clicking "create account".
-         - When account is created. Green snackbar "Your account has been created."
-
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 
