@@ -717,8 +717,8 @@ Not developed yet
 			- Gallery should display the category intersection (year ∩ tag).
 			- On sidebar left, click on 'all pictures'
 			- Should be back to 'all pictures'.
-Geo alone>	- On sidebar left, click on a geo tag. All geotags on sidebar left must in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- On sidebar click on geo country icon. 
+COUNTRY>CITY
+			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
 			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
@@ -749,27 +749,60 @@ Geo alone>	- On sidebar left, click on a geo tag. All geotags on sidebar left mu
 			- Should be back to COUNTRY view.
 			- On sidebar left, click on the same COUNTRY geo tag
 			- Should be back to 'all pictures'.
-			- 		
+COUNTRY>YEAR>CITY
+			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
+				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
+				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
+					- Geo CITY tags icons have a filled black icon.
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Regular tags are below the column of geo CITY tags.		
+			- On sidebar left, click on a year semi tag.
+				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ YEAR).
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
+				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
+				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available. 
+							
 
-
-			- Geo alone 	(COUNTRY>CITY) 			✔	
-			- Geo and year 	(COUNTRY>YEAR>CITY, 
+			- Geo alone 	COUNTRY>CITY) 			✔	
+			- Geo and year 	COUNTRY>YEAR>CITY, 
 							COUNTRY>CITY>YEAR, 
 							YEAR>COUNTRY>CITY)
-			- Geo and tag 	(COUNTRY>CITY>TAG,
+			- Geo and tag 	COUNTRY>CITY>TAG,
 						 	COUNTRY>TAG>CITY, 
 						 	TAG>COUNTRY>CITY)
+			- Geo and untagged
+							COUNTRY>CITY>UNTAGGED
+							COUNTRY>UNTAGGED>CITY
+							UNTAGGED>COUNTRY>CITY
+			- Geo and year and untagged
+							COUNTRY>CITY>YEAR>UNTAGGED
+							COUNTRY>CITY>UNTAGGED>YEAR
+							COUNTRY>UNTAGGED>CITY>YEAR
+							COUNTRY>UNTAGGED>YEAR>CITY
+							COUNTRY>YEAR>UNTAGGED>CITY
+							COUNTRY>YEAR>CITY>UNTAGGED
+							YEAR>COUNTRY>CITY>UNTAGGED
+							YEAR>COUNTRY>UNTAGGED>CITY
+							YEAR>UNTAGGED>COUNTRY>CITY
+							UNTAGGED>YEAR>COUNTRY>CITY
+							UNTAGGED>COUNTRY>YEAR>CITY
+							UNTAGGED>COUNTRY>CITY>YEAR			 	
 			- Geo and year and tag 
-							(COUNTRY>CITY>YEAR>TAG, 
+							COUNTRY>CITY>YEAR>TAG, 
 							COUNTRY>CITY>TAG>YEAR, 
 							COUNTRY>TAG>CITY>YEAR, 
 							COUNTRY>TAG>YEAR>CITY, 
 							COUNTRY>YEAR>CITY>TAG, 
 							COUNTRY>YEAR>TAG>CITY, 
-							YEAR>COUNTRY>CITY>TAG, 
+							YEAR>COUNTRY>CITY>TAG,
+							YEAR>COUNTRY>TAG>CITY 
 							YEAR>TAG>COUNTRY>CITY,
 							TAG>YEAR>COUNTRY>CITY, 
-							TAG>COUNTRY>CITY>YEAR)
+							TAG>COUNTRY>CITY>YEAR
+							TAG>COUNTRY>YEAR>CITY
 			
 
 	- **Search tag**
