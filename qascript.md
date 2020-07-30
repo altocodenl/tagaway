@@ -837,6 +837,12 @@ YEAR>COUNTRY>CITY
 				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags). 
 			- On sidebar left, click on a geo tag (only COUNTRY should be available). All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY).
+
+				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right and the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
+				
+				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
+				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
+				- On sidebar left, regular tags with positive intersections should be available.
 				
 				
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
