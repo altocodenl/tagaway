@@ -40,6 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - [BUG GEOTAGGING - UNTAGGED] Geo icons do are not displayed on sidebar left when view is in 'untagged'
+- [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon dissapears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title. 
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 
