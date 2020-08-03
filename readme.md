@@ -39,22 +39,27 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- [FEATURE - INVITE EMAIL] Remove colors and format from email text. Email should be:
+- [FEATURE - INVITE EMAIL] Remove colors and format from email text:
 '
 ac;pic
 
 Hi [uName],
-You have been officially invited to join ac;pic! 
-
-<a>Please click on this link to create your account.</a>
-
+You have been officially invited to join ac;pic!
+<br>
+<a href="">Please click on this link to create your account.</a>
+<br>
 Have an amazing [dayOfWeek]!
-
+<br>
 The ac;pic team
-
 ' 
-- [FEATURE - SIGN UP]: If user enters an alreaady used username, there's no feedback. Red snackbar of "That username is already in use" should appear.
-- [BUG GEOTAGGING - UNTAGGED] Geo icons do are not displayed on sidebar left when view is in 'untagged'
+- [BUG - SIGN UP]: If user enters an already used username, there's no feedback. Red snackbar of "That username is already in use" should appear.
+- [FEATURE - SIGN UP]: If user enters an email as username, we have a yellow snackbar of 'Your username cannot contain an @ sign.' on clicking "create account". It would be better to have "Your username cannot be an email".
+- [FEATURE - SIGN UP] If user enters missmatching passwords, we have red snackbar "Please enter the same password twice." on clicking "create account". It would be better to have "Repeated password does not match.". By telling the user that "the repeated password does not match" we're reducing friction and pointing to the exact problem. 
+- [FEATURE - WELCOME EMAIL]: Remove format from email. 
+- [FEATURE - UPLOAD]: If in middle of upload process 'cancel' is clicked, the green snackbar "Upload completed successfully. You can see the pictures in the "View Pictures" section." appears. We should have a green snackbar "Upload successfully cancelled. [x] where uploaded". Otherwise user might be confused if uploading process was indeed cancelled. 
+- [FEATURE - GEOTAGGING] As of now geotagging doesn't work unless the user refreshes page. If we can make it work without the user refreshing, great (in which case we should tell the user to wait a few seconds for the tags to appear). If not, we have to let the user know. 
+- [BUG - TAG VIEW] Select a tag in 'sidebar left' > Click on 'untagged' on sidebar left. App freezes. No navigation possible, images don't open. 
+- [BUG GEOTAGGING - UNTAGGED | INCONSISTENCIES: on 2 different dev environments, in one appears in another one it doesn't] Geo icons do are not displayed on sidebar left when view is in 'untagged'.
 - [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon dissapears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title. 
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.

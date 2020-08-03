@@ -32,20 +32,21 @@
 		- Password
 		- Repeat password
 	- Enter a 2-character username:
-		- Red snackbar of "Your username must be at least 3 characters long." should appear on clicking "create account".
+		- Yellow snackbar of "Your username must be at least 3 characters long." should appear on clicking "create account".
 	- Enter email address on username placeholder:
-		- Red snackbar of "Your username cannot be an email" should appear on clicking "create account".
+		- Yellow snackbar of "Your username cannot be an email" should appear on clicking "create account".
 	- Enter username that tester knows its being used, like 'admin':
 		- Red snackbar of "That username is already in use" should appear.
 	- Test mismatching passwords:
 		- Red snackbar of "Repeated password does not match." should appear on clicking "create account":
 	- Test passwords with 5 characters or less:
-		- Red snackbar of "Your password must be at least 6 characters long." on clicking "create account".
+		- Yellow snackbar of "Your password must be at least 6 characters long." on clicking "create account".
 	- Test passwords with special characters '@' '$' '%' '^' '*' '!'
 		- Password should be accepted.
 	- Account is created:
 		- Green snackbar of "Your account has been created." should appear."
 	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.
+	- Log out. 
 
 ## Log In
 	- Click 'log in' with empty form:
@@ -66,7 +67,7 @@
 	- The user should be logged in.
 	- Log out
 	- Should be back to "log in" view.
-	- Refresh broswer.
+	- Refresh browser.
 	- Should be back to "Log in" view.
 	- Log in
 	- Should be logged in and redirected to 'empty' View Pictures view.
@@ -156,8 +157,10 @@ Not developed yet INCLUDE
 			- Insert a tag in placeholder with "add existing or new tags"
 			- Click on 'Add tag'.
 			- Click on "Start Upload"
+			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
 			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
+			- Go back to upload view.  
 			- Choose "upload files".
 			- Select a video for upload.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
@@ -166,7 +169,8 @@ Not developed yet INCLUDE
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
 			- Click on 'ac;pic' logo.
 			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'.
-			- In your device, duplicate the same video as the previous batch, making sure it has different filenames
+			- In your device, duplicate the same video as the previous batch, making sure it has different filenames.
+			- Go back to upload view.  
 			- Choose 'upload files'
 			- Select the same video with different name.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
@@ -198,7 +202,7 @@ Not developed yet INCLUDE
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
 			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
-			- Go to 'Upload'.
+			- Go back to upload view.  
 			- Select 'upload folder'
 			- Select the second folder.
 			- Broser prompt should appear:
@@ -281,7 +285,7 @@ Not developed yet
 			- 'Enable Geotagging' color: #5b6eff; text-decoration: underlined;
 			- 'Maybe later' color: #484848; text-decoration: underlined;
 		- If click on 'Maybe later'
-			- Green snackbar: ''Understood! You can always enable geotagging from My Account.'
+			- Green snackbar: 'Understood! You can always enable geotagging from My Account.'
 			- Both messages dissapear. That space is replaced with regular tags. 
 		- If click on 'Enable Geotagging':
 			- Green snackbar: 'Geotagging enabled successfully. You can always change this from My Account'
