@@ -32,7 +32,7 @@
 		- Password
 		- Repeat password
 	- Enter a 2-character username:
-		- Red snackbar of "Please enter a username with 3 or more characters" should appear on clicking "create account".
+		- Red snackbar of "Your username must be at least 3 characters long." should appear on clicking "create account".
 	- Enter email address on username placeholder:
 		- Red snackbar of "Your username cannot be an email" should appear on clicking "create account".
 	- Enter username that tester knows its being used, like 'admin':
@@ -40,7 +40,7 @@
 	- Test mismatching passwords:
 		- Red snackbar of "Repeated password does not match." should appear on clicking "create account":
 	- Test passwords with 5 characters or less:
-		- Red snackbar of "Please enter a password with six or more characters" on clicking "create account".
+		- Red snackbar of "Your password must be at least 6 characters long." on clicking "create account".
 	- Test passwords with special characters '@' '$' '%' '^' '*' '!'
 		- Password should be accepted.
 	- Account is created:
