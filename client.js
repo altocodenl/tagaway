@@ -4124,7 +4124,7 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = true;
+         var paid = false;
          if (paid) return E.accountPaid ();
          else      return E.accountFree ();
       })
@@ -4146,7 +4146,7 @@ E.accountFree = function () {
                   ['div', {class: 'account-content-container'}, [
                      ['table', {class: 'geo-and-password-table'}, [
                         ['tr', {class: 'enable-geotagging'}, [
-                           ['td', {class: 'text-left-table'},'Enable geotagging'],
+                           ['td', {class: 'text-left-table'},'Geotagging'],
                            ['td', {style: style ({'vertical-align': 'middle'})}, [
                               ['label', {class: 'switch'}, [
                                  ['input', {type: 'checkbox'}],
@@ -4212,7 +4212,7 @@ E.accountPaid = function () {
                   ['div', {class: 'account-content-container'}, [
                      ['table', {class: 'geo-and-password-table'}, [
                         ['tr', {class: 'enable-geotagging'}, [
-                           ['td', {class: 'text-left-table'},'Enable geotagging'],
+                           ['td', {class: 'text-left-table'},'Geotagging'],
                            ['td', {style: style ({'vertical-align': 'middle'})}, [
                               ['label', {class: 'switch'}, [
                                  ['input', {type: 'checkbox'}],
