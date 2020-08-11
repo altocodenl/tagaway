@@ -2664,7 +2664,7 @@ dale.do ([
       B.do (x, 'post', 'geo', {}, {operation: 'dismiss'}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error communicating with the server.');
          B.do (x, 'query', 'account');
-         B.do (x, 'snackbar', 'green', 'Understood! You can always enable geotagging from My Account.');
+         B.do (x, 'snackbar', 'green', 'Understood! You can always turn on geotagging from My Account.');
       });
    }],
 
