@@ -1221,14 +1221,14 @@ CSS.litc = [
    ['.upgrade-your-account-button', {
       float: 'right',
       border: '1px solid #5b6eff',
-      color: '#5b6eff',
-      'background-color': '#fff',
+      color: '#fff',
+      'background-color': '#5b6eff',
       cursor: 'pointer',
       //'margin-left': .2
    }],
    ['.upgrade-your-account-button:hover', {
-      color: '#fff',
-      'background-color': '#5b6eff',
+      color: '#5b6eff',
+      'background-color': '#fff',
    }],
    // MY ACCOUNT
    ['.account-box', {
