@@ -51,19 +51,25 @@ You have been officially invited to join ac;pic!
 Have an amazing [dayOfWeek]!
 <br>
 The ac;pic team
-' 
+'
 - [BUG - SIGN UP]: If user enters an already used username, there's no feedback. Red snackbar of "That username is already in use" should appear.
 - [FEATURE - SIGN UP]: If user enters an email as username, we have a yellow snackbar of 'Your username cannot contain an @ sign.' on clicking "create account". It would be better to have "Your username cannot be an email".
-- [FEATURE - SIGN UP] If user enters missmatching passwords, we have red snackbar "Please enter the same password twice." on clicking "create account". It would be better to have "Repeated password does not match.". By telling the user that "the repeated password does not match" we're reducing friction and pointing to the exact problem. 
-- [FEATURE - WELCOME EMAIL]: Remove format from email. 
-- [FEATURE - UPLOAD]: If in middle of upload process 'cancel' is clicked, the green snackbar "Upload completed successfully. You can see the pictures in the "View Pictures" section." appears. We should have a green snackbar "Upload successfully cancelled. [x] where uploaded". Otherwise user might be confused if uploading process was indeed cancelled. 
+- [FEATURE - SIGN UP] If user enters missmatching passwords, we have red snackbar "Please enter the same password twice." on clicking "create account". It would be better to have "Repeated password does not match.". By telling the user that "the repeated password does not match" we're reducing friction and pointing to the exact problem.
+- [FEATURE - WELCOME EMAIL]: Remove format from email.
+- [FEATURE - UPLOAD]: If in middle of upload process 'cancel' is clicked, the green snackbar "Upload completed successfully. You can see the pictures in the "View Pictures" section." appears. We should have a green snackbar "Upload successfully cancelled. [x] where uploaded". Otherwise user might be confused if uploading process was indeed cancelled.
 - [FEATURE - GEOTAGGING] As of now geotagging doesn't work unless the user refreshes page. If we can make it work without the user refreshing, great (in which case we should tell the user to wait a few seconds for the tags to appear). If not, we have to let the user know.
-- [FEATURE - GEOTAGGING] When turned on or off, snackbar reads 'Understood! You can always turn on geotagging from My Account.' UI best practices say: Don’t use “you” and “your” with “me” and “my” in the same sentence. It is very confusing and can throw off your readers. Try to avoid using them in the same context when addressing the user. For example, instead of saying “Change your preferences in My Account”, use “Change preferences in My Account”. (sources: https://material.io/design/communication/writing.html#principles https://www.uxpin.com/studio/blog/13-ways-to-make-your-ui-writing-better/ http://babich.biz/effective-writing-for-your-ui-things-to-avoid/). Not sure on better wording for this snackbar. To be discussed. 
-- [BUG - TAG VIEW] Select a tag in 'sidebar left' > Click on 'untagged' on sidebar left. App freezes. No navigation possible, images don't open. 
+- [FEATURE - GEOTAGGING] When turned on or off, snackbar reads 'Understood! You can always turn on geotagging from My Account.' UI best practices say: Don’t use “you” and “your” with “me” and “my” in the same sentence. It is very confusing and can throw off your readers. Try to avoid using them in the same context when addressing the user. For example, instead of saying “Change your preferences in My Account”, use “Change preferences in My Account”. (sources: https://material.io/design/communication/writing.html#principles https://www.uxpin.com/studio/blog/13-ways-to-make-your-ui-writing-better/ http://babich.biz/effective-writing-for-your-ui-things-to-avoid/). Not sure on better wording for this snackbar. To be discussed.
+- [BUG - TAG VIEW] Select a tag in 'sidebar left' > Click on 'untagged' on sidebar left. App freezes. No navigation possible, images don't open.
 - [BUG GEOTAGGING - UNTAGGED | INCONSISTENCIES: on 2 different dev environments, in one appears in another one it doesn't] Geo icons do are not displayed on sidebar left when view is in 'untagged'.
-- [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon dissapears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title. 
+- [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon dissapears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title.
 - Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
+
+- check delete account if picture belongs to more than one tag.
+- endpoint to delete account.
+- fix line 1526 untagged picture with geotagging
+- no eye on untagged + year/geotag
+- when cancelling upload, recognize that in the snackbar.
 
 - Dynamize
    - Basic account view
@@ -849,7 +855,7 @@ Only things that differ from client are noted.
 
 For now, we only have annotated fragments of the code. This might be expanded comprehensively later.
 
-### Server
+### `server.js`
 
 We create an array `ytags` to store the year tags in the query.
 
@@ -892,13 +898,13 @@ We iterate the list of tags shared with the user, retrieved on the call to the d
             dale.go (s.last, function (sharedTag) {
 ```
 
-We clean up the shared tag, which is of the form `USERNAME:TAG`; to do this, we strip the tag of all the characters preceding the colon, plus the colon itself. Usernames cannot have colons because we forbid them, so there's no risk of a colon meaning something else than the separator between the username and the tag. We store the cleaned shared tag into a variable `tag`.
+We clean up the shared tag, which is of the form `USERNAME:TAG`; to do this, we strip the tag of all the characters preceding the colon, plus the colon itself. Usernames cannot have colons because we forbid it, so there's no risk of a colon meaning something else than the separator between the username and the tag. We store the cleaned shared tag into a variable `tag`.
 
 ```javascript
                var tag = sharedTag.replace (/[^:]+:/, '');
 ```
 
-If the tag is not already in `tags` and we're not in `allMode`, we ignore this tag.
+If the tag is not already in `tags` and we're not in `allMode`, we ignore this tag. However, if we're in `allMode`, even though the user didn't specifically request for this tag, we will still consider it.
 
 ```javascript
                if (! tags [tag] && ! allMode) return;
@@ -917,7 +923,9 @@ We push the username of the shared tag to the entry for that tag. We extract the
             });
 ```
 
-We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of picture ids in redis for the purposes of this query.
+By now, `tags` will be an object with each key as a tag, and each value as an array of one or more usernames, with the first one being the username of the user itself: `{KEY1: [USERID1, ...], ...}`. This gives us a list of all the tag + username combination that are relevant to the query.
+
+We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of picture ids in redis for the purposes of the query.
 
 ```javascript
             var multi = redis.multi (), qid = 'query:' + uuid ();
@@ -929,12 +937,6 @@ If we have year tags, we bring the ids of all the pictures belonging to each of 
             if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
                return 'tag:' + rq.user.username + ':' + ytag;
             }));
-```
-
-If we have recently tagged pictures, we add the ids to a set with id `QID:QID`.
-
-```javascript
-            if (b.recentlyTagged && b.recentlyTagged.length) multi.sadd (qid + ':' + qid, b.recentlyTagged || []);
 ```
 
 We iterate the tags. For each tag, for each of its users, we store the ids of the corresponding pictures onto a key made by appending the tag to the query key.
@@ -957,19 +959,10 @@ The year tags are queried separately from normal tags because 1) if more than on
             }).concat (ytags.length ? qid : []));
 ```
 
-We get all the pictures without regard to the year tags, for the purposes of getting tags that match with the query. We also use this to bring the information about `b.recentlyTagged` pictures, if any.
-
-```javascript
-            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
-               return qid + ':' + tag;
-            }).concat (ytags.length ? qid : []).concat (qid + ':' + qid));
-```
-
 We delete all the temporary sets of ids we created for the query.
 
 ```javascript
             multi.del (qid);
-            multi.del (qid + ':' + qid);
             dale.go (tags, function (users, tag) {
                multi.del (qid + ':' + tag);
             });
@@ -986,8 +979,12 @@ We
 
 ```javascript
          function (s) {
-            var pics  = teishi.last (s.last, 5);
-            s.tagpics = teishi.last (s.last, 4);
+            s.pics = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
+            dale.go (s.pics, function (pic) {
+               multi.hgetall ('pic:' + pic);
+            });
+            mexec (s, multi);
+         },
 ```
 
             var multi = redis.multi ();
