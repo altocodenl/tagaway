@@ -2193,10 +2193,10 @@ dale.do ([
    ['signup', [], function (x) {
       var username = H.trim (c ('#auth-username').value);
       var password = c ('#auth-password').value;
-      if (username.match ('@')) return B.do (x, 'snackbar', 'yellow', 'Your username cannot contain an @ sign.');
+      if (username.match ('@')) return B.do (x, 'snackbar', 'yellow', 'Your username cannot be an email or contain an @ symbol.');
       if (username.length < 3)  return B.do (x, 'snackbar', 'yellow', 'Your username must be at least 3 characters long.');
       if (password.length < 6)  return B.do (x, 'snackbar', 'yellow', 'Your password must be at least 6 characters long.');
-      if (c ('#auth-password').value !== c ('#auth-confirm').value) return B.do (x, 'snackbar' ,'red', 'Please enter the same password twice.');
+      if (c ('#auth-password').value !== c ('#auth-confirm').value) return B.do (x, 'snackbar' ,'red', 'The repeated password does not match.');
       B.do (x, 'post', 'auth/signup', {}, {
          email: B.get ('Data', 'signup', 'email'),
          token: B.get ('Data', 'signup', 'token'),
