@@ -5,8 +5,6 @@ var DOMAIN = {
    prod: 'https://altocode.nl/pic/app/',
 } [ENV];
 
-var LOGO = ['span', {style: 'font-family: \'Montserrat\', serif; font-weight: bold; color: #5b6eff;'}, 'ac;pic'];
-
 var TEMPLATE = function (content) {
    return [
       ['head', [
@@ -16,14 +14,14 @@ var TEMPLATE = function (content) {
          ['style', [
             ['p', {'font-family': '\'Montserrat\', sans-serif'}],
          ]],
-         ['p', ['a', {href: DOMAIN, style: 'font-size: 200%; text-decoration: none'}, LOGO]],
          content,
       ]],
    ];
 }
+
 var GREETING = function (username) {
    username = username [0].toUpperCase () + username.slice (1);
-   return ['Hi ', ['span', {style: 'font-weight: bold; color: red'}, username], ','];
+   return ['Hi ', ['span', username], ','];
 }
 
 module.exports = {
@@ -61,7 +59,7 @@ module.exports = {
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', LOGO, ' team'
+               ['span', {class: 'bold'}, 'The ac;pic team']
             ]]);
          }
       },
@@ -71,12 +69,12 @@ module.exports = {
             return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
-               'You have been officially invited to join ', LOGO, '! ',
+               'You have been officially invited to join ac;pic',
                ['a', {href: DOMAIN + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', LOGO, ' team'
+               ['span', {class: 'bold'}, 'The ac;pic team']
             ]]);
          }
       },
@@ -86,12 +84,12 @@ module.exports = {
             return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
-               'Welcome to ', LOGO, ' ! Please verify your email by clicking on the following link: ',
+               'Welcome to ac;pic! Please verify your email by clicking on the following link: ',
                ['a', {href: DOMAIN + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', LOGO, ' team'
+               ['span', {class: 'bold'}, 'The ac;pic team']
             ]]);
          }
       },
@@ -101,13 +99,13 @@ module.exports = {
             return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
-               'Welcome to ', LOGO, ' ! We are thrilled to have you with us.',
+               'Welcome to ac;pic! We are thrilled to have you with us.',
                ['br'],
-               LOGO, ' is just getting started; we would love to have your feedback. Feel free to tell us how we can make ', LOGO, ' work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
+               'ac;pic is just getting started; we would love to have your feedback. Feel free to tell us how we can make ac;pic work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', LOGO, ' team'
+               ['span', {class: 'bold'}, 'The ac;pic team']
             ]]);
          }
       },
@@ -123,7 +121,7 @@ module.exports = {
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', LOGO, ' team'
+               ['span', {class: 'bold'}, 'The ac;pic team']
             ]]);
          }
       },
@@ -139,7 +137,7 @@ module.exports = {
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
                ['br'],
-               'The ', LOGO, ' team'
+               ['span', {class: 'bold'}, 'The ac;pic team']
             ]]);
          }
       },
