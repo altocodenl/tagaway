@@ -2682,8 +2682,8 @@ dale.do ([
          if (operation === 'enable') {
             B.do (x, 'set', ['State', 'updateGeotags'], setInterval (function () {
                B.do (x, 'query', 'account', function () {
-                  if (! B.get ('Data', 'account', 'geoInProgress')) return B.do (x, 'clear', 'updateGeotags');
                   B.do (x, 'query', 'pics');
+                  if (! B.get ('Data', 'account', 'geoInProgress')) return B.do (x, 'clear', 'updateGeotags');
                });
             }, 3000));
          }
