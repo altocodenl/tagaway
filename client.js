@@ -1230,7 +1230,7 @@ CSS.litc = [
       color: '#5b6eff',
       'background-color': '#fff',
    }],
-   // MY ACCOUNT
+   // ACCOUNT
    ['.account-box', {
       display: 'flex',
    }],
@@ -2664,7 +2664,7 @@ dale.do ([
       B.do (x, 'post', 'geo', {}, {operation: 'dismiss'}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error communicating with the server.');
          B.do (x, 'query', 'account');
-         B.do (x, 'snackbar', 'green', 'Understood! You can always turn on geotagging from My Account.');
+         B.do (x, 'snackbar', 'green', 'Understood! You can always turn on geotagging from Account.');
       });
    }],
 
@@ -2688,7 +2688,7 @@ dale.do ([
             }, 3000));
          }
          B.do (x, 'query', 'account');
-         B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully. You can always change this from My Account.');
+         B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully. You can always change this from Account.');
       });
    }],
 
@@ -3148,7 +3148,7 @@ E.header = function (showUpload, showImport) {
             // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
                ['ul', {class: 'account-sub-menu'}, [
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'My account']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
                   ['li', {class: 'account-sub-menu__item'}, ['a', B.ev ({class: 'account-sub-menu__item-link'}, H.stopPropagation (['onclick', 'logout', []])), 'Logout']],
                ]],
             ]],
@@ -4137,7 +4137,7 @@ E.accountFree = function () {
          ['div', {class: 'main-centered__inner max-width--m'}, [
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'My account'],
+               ['h1', {class: 'page-header__title page-title'}, 'Account'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
             ]],
             ['div', {class: 'page-section'}, [
@@ -4203,7 +4203,7 @@ E.accountPaid = function () {
          ['div', {class: 'main-centered__inner max-width--m'}, [
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'My account'],
+               ['h1', {class: 'page-header__title page-title'}, 'Account'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
             ]],
             ['div', {class: 'page-section'}, [
