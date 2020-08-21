@@ -2204,7 +2204,7 @@ dale.do ([
          password: password
       }, function (x, error, rs) {
          if (error) {
-            var parsedError = teishi.parse (error.responseText);
+            var parsedError = teishi.p (error.responseText);
             if (parsedError && parsedError.error === 'email')    return B.do (x, 'snackbar', 'red', 'That email is already in use.');
             if (parsedError && parsedError.error === 'username') return B.do (x, 'snackbar', 'red', 'That username is already in use.');
             return B.do (x, 'snackbar', 'red', 'There was an error creating your account.');
@@ -2393,7 +2393,7 @@ dale.do ([
       if (index > -1) return B.do (x, 'rem', ['State', 'query', 'tags'], index);
 
       var isNormalTag = ! H.isYear (tag) && ! H.isGeo (tag);
-      B.do (x, 'set', ['State', 'query', 'tags'], dale.do (B.get ('State', 'query', 'tags'), function (existingTag) {
+      B.do (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'untagged' && isNormalTag) return;
          if (tag === 'untagged' && ! H.isYear (existingTag) && ! H.isGeo (existingTag)) return;
          return existingTag;
