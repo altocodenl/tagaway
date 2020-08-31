@@ -419,6 +419,14 @@ var main = [
       })) return clog ('Invalid vid #2 fields.');
       return true;
    }],
+   ['get pics (videos), untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (! eq (rs.body.tags, ['2018'])) return clog ('Invalid tags.');
+      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
+      if (rs.body.pics.length !== 2) return clog ('Invalid amount of pictures.');
+      return true;
+   }],
    dale.go (dale.times (2, 0), function (k) {
       return {tag: 'get videos', method: 'get', path: function (s) {return 'pic/' + s.vids [k]}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
@@ -970,6 +978,21 @@ var main = [
    ['tag valid #1', 'post', 'tag', {}, function (s) {
       return {tag: '\tfoo', ids: [s.pics [3].id]};
    }, 200],
+   ['get pics, untagged with invalid recentlyTagged #1', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: {}, sort: 'newest', from: 1, to: 10}}, 400],
+   ['get pics, untagged with invalid recentlyTagged #2', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: '', sort: 'newest', from: 1, to: 10}}, 400],
+   ['get pics, untagged with invalid recentlyTagged #3', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: [1], sort: 'newest', from: 1, to: 10}}, 400],
+   ['get pics, untagged with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: [s.pics [3].id], sort: 'newest', from: 1, to: 10}}, 200, function (s, rq, rs, next) {
+      if (rs.body.total !== 4) return clog ('Invalid total.');
+      if (rs.body.pics.length !== 4) return clog ('Invalid amount of pics.');
+      if (rs.body.pics [3].id !== s.pics [3].id) return clog ('Recently tagged picture not returned.');
+      return true;
+   }],
+   ['get pics, untagged with recentlyTagged (non-existent pictures)', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: ['foo', s.pics [3].id, 'bar'], sort: 'newest', from: 1, to: 10}}, 200, function (s, rq, rs, next) {
+      if (rs.body.total !== 4) return clog ('Invalid total.');
+      if (rs.body.pics.length !== 4) return clog ('Invalid amount of pics.');
+      if (rs.body.pics [3].id !== s.pics [3].id) return clog ('Recently tagged picture not returned.');
+      return true;
+   }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 3, foo: 1})) return clog ('Invalid tags', rs.body);
       return true;
@@ -1130,6 +1153,11 @@ var main = [
    ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), ['2014', '2018', 'bla'])) return clog ('Invalid tags.');
       if (rs.body.pics.length !== 2) return clog ('user2 should have two pics with this tag.');
+      return true;
+   }],
+   ['get pics as user2 with recentlyTagged ids from other user', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: dale.go (s.pics, function (v) {return v.id}), sort: 'upload', from: 1, to: 10}}, 200, function (s, rq, rs) {
+      if (! eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
+      if (rs.body.pics.length !== 0) return clog ('user2 should have no pics.');
       return true;
    }],
    ['get shared pic as user2', 'get', function (s) {

@@ -564,6 +564,31 @@ H.deletePic = function (s, id, username) {
    ]);
 }
 
+H.hasAccess = function (S, username, picId) {
+   a.stop ([
+      [Redis, 'hgetall', 'pic:' + picId],
+      function (s) {
+         if (! s.last)             return S.next (false);
+         s.owner = s.last.owner;
+         if (s.owner === username) return S.next (true);
+         Redis (s, 'smembers', 'pict:' + picId);
+      },
+      function (s) {
+         if (s.last.length === 0) return S.next (false);
+         var multi = redis.multi ();
+         dale.go (s.last, function (tag) {
+            multi.sismember ('shm:' + username, s.owner + ':' + tag);
+         });
+         mexec (s, multi);
+      },
+      function (s) {
+         S.next (dale.stop (s.last, true, function (v) {return !! v}) || false);
+      }
+   ], function (s, error) {
+      S.next (undefined, error);
+   });
+}
+
 // *** STATISTICS ***
 
 H.stat = {};
@@ -1234,25 +1259,7 @@ var routes = [
    ['get', 'pic/:id', function (rq, rs) {
       astop (rs, [
          [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
-         function (s) {
-            if (rq.user.username === s.pic.owner) return s.next ();
-            a.stop (s, [
-               [a.set, 'tags', [Redis, 'smembers', 'pict:' + s.pic.id]],
-               function (s) {
-                  if (s.tags.length === 0) return reply (rs, 404);
-                  var multi = redis.multi ();
-                  dale.go (s.tags, function (tag) {
-                     multi.sismember ('shm:' + rq.user.username, s.pic.owner + ':' + tag);
-                  });
-                  mexec (s, multi);
-               },
-               function (s) {
-                  var authorized = dale.stop (s.last, true, function (v) {return !! v});
-                  if (! authorized) return reply (rs, 404);
-                  s.next ();
-               }
-            ]);
-         },
+         [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
@@ -1265,27 +1272,9 @@ var routes = [
 
    ['get', 'thumb/:id', function (rq, rs) {
       astop (rs, [
-         [a.cond, [Redis, 'get', 'thu:' + rq.data.params.id], {null: [reply, rs, 404]}],
-         [a.cond, [a.set, 'pic', [a.get, Redis, 'hgetall', 'pic:@last'], true], {null: [reply, rs, 404]}],
-         function (s) {
-            if (rq.user.username === s.pic.owner) return s.next ();
-            a.stop (s, [
-               [a.set, 'tags', [Redis, 'smembers', 'pict:' + s.pic.id]],
-               function (s) {
-                  if (s.tags.length === 0) return reply (rs, 404);
-                  var multi = redis.multi ();
-                  dale.go (s.tags, function (tag) {
-                     multi.sismember ('shm:' + rq.user.username, s.pic.owner + ':' + tag);
-                  });
-                  mexec (s, multi);
-               },
-               function (s) {
-                  var authorized = dale.stop (s.last, true, function (v) {return !! v});
-                  if (! authorized) return reply (rs, 404);
-                  s.next ();
-               }
-            ]);
-         },
+         [a.cond, [a.set, 'id', [Redis, 'get', 'thu:' + rq.data.params.id]], {null: [reply, rs, 404]}],
+         [a.cond, [a.get, H.hasAccess, rq.user.username, '@id'], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'pic', [a.get, Redis, 'hgetall', 'pic:@id'], true], {null: [reply, rs, 404]}],
          function (s) {
             Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt' + (rq.data.params.id === s.pic.t200 ? 2 : 9), 1);
          },
@@ -1302,25 +1291,7 @@ var routes = [
    ['get', 'thumbof/:id', function (rq, rs) {
       astop (rs, [
          [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
-         function (s) {
-            if (rq.user.username === s.pic.owner) return s.next ();
-            a.stop (s, [
-               [a.set, 'tags', [Redis, 'smembers', 'pict:' + s.pic.id]],
-               function (s) {
-                  if (s.tags.length === 0) return reply (rs, 404);
-                  var multi = redis.multi ();
-                  dale.go (s.tags, function (tag) {
-                     multi.sismember ('shm:' + rq.user.username, s.pic.owner + ':' + tag);
-                  });
-                  mexec (s, multi);
-               },
-               function (s) {
-                  var authorized = dale.stop (s.last, true, function (v) {return !! v});
-                  if (! authorized) return reply (rs, 404);
-                  s.next ();
-               }
-            ]);
-         },
+         [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
          function (s) {
             Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt2', 1);
          },
@@ -1740,7 +1711,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -1750,13 +1721,17 @@ var routes = [
          ['body.to',      b.to,   'integer'],
          ['body.from',    b.from, {min: 1},      teishi.test.range],
          ['body.to',      b.to,   {min: b.from}, teishi.test.range],
+         b.recentlyTagged === undefined ? [] : [
+            ['body.recentlyTagged', b.recentlyTagged, 'array'],
+            ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
+         ],
       ])) return;
 
       if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: 'all'});
+      if (b.recentlyTagged && b.tags.indexOf ('untagged') === -1) return reply (rs, 400, {error: 'recentlyTagged'});
 
       var ytags = [];
 
-      //{tag1: [USERID], ...}
       var tags = dale.obj (b.tags, function (tag) {
          if (! H.isYear (tag)) return [tag, [rq.user.username]];
          ytags.push (tag);
@@ -1765,20 +1740,17 @@ var routes = [
       astop (rs, [
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
-            var allmode = dale.keys (tags).length === 0 && ytags.length === 0;
+            var allMode = b.tags.length === 0;
 
-            if (allmode) tags.all = [rq.user.username];
+            if (allMode) tags.all = [rq.user.username];
 
             dale.go (s.last, function (sharedTag) {
                var tag = sharedTag.replace (/[^:]+:/, '');
-               if (allmode || tags [tag]) {
-                  if (! tags [tag]) tags [tag] = [];
-                  // {tag1: [USERID, USERID2], ...}
-                  tags [tag].push (sharedTag.match (/[^:]+/) [0]);
-               }
+               if (! tags [tag] && ! allMode) return;
+               if (! tags [tag]) tags [tag] = [];
+               tags [tag].push (sharedTag.match (/[^:]+/) [0]);
             });
 
-            // for each tag (or all tags if all is there) list users per tag that share it with you. run a sunion per tag, also including your own username. then do a sinter of the whole thing.
             var multi = redis.multi (), qid = 'query:' + uuid ();
             if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
                return 'tag:' + rq.user.username + ':' + ytag;
@@ -1790,16 +1762,11 @@ var routes = [
                }));
             });
 
-            multi [allmode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
+            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
                return qid + ':' + tag;
             }).concat (ytags.length ? qid : []));
 
-            // We get all the pictures without regard to the year tags, for the purposes of getting tags that match with the query.
-            multi [allmode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
-               return qid + ':' + tag;
-            }).concat (ytags.length ? qid : []));
-
-            if (ytags.length) multi.del (qid);
+            multi.del (qid);
             dale.go (tags, function (users, tag) {
                multi.del (qid + ':' + tag);
             });
@@ -1807,22 +1774,33 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            var pics  = s.last [dale.keys (tags).length + (ytags.length ? 1 : 0)];
-            s.tagpics = s.last [dale.keys (tags).length + (ytags.length ? 1 : 0) + 1];
-            var multi = redis.multi ();
-            dale.go (pics, function (pic) {
-               multi.hgetall ('pic:' + pic);
+            s.pics = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
+            var multi = redis.multi (), ids = {};
+            dale.go (s.pics, function (id) {
+               multi.hgetall ('pic:' + id);
+               if (b.recentlyTagged) ids [id] = true;
+            });
+            s.recentlyTagged = dale.fil (b.recentlyTagged, undefined, function (id) {
+               if (ids [id]) return;
+               multi.hgetall ('pic:' + id);
+               return id;
             });
             mexec (s, multi);
          },
          function (s) {
-            var pics = s.last;
-            if (pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
+            var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
+               if (! s.last [s.pics.length + k] || s.last [s.pics.length + k].owner !== rq.user.username) return;
+               return s.last [s.pics.length + k];
+            });
+            s.pics = s.last.slice (0, s.pics.length).concat (recentlyTagged);
+
+            if (s.pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
+
             var output = {pics: []};
 
             var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
 
-            dale.go (pics, function (pic) {
+            dale.go (s.pics, function (pic) {
                var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
                if (d >= mindate && d <= maxdate) output.pics.push (pic);
             });
@@ -1858,22 +1836,14 @@ var routes = [
             dale.go (output.pics, function (pic) {
                multi.smembers ('pict:' + pic.id);
             });
-            dale.go (s.tagpics, function (pic) {
-               multi.smembers ('pict:' + pic);
-            });
+            multi.sunion (dale.go (s.pics, function (pic) {
+               return 'pict:' + pic.id;
+            }));
             s.output = output;
             mexec (s, multi);
          },
          function (s) {
-            // for years, we'd need to query outside of them and show all possible years
-            var tags = {};
-            dale.go (s.last, function (v, k) {
-               if (k < s.output.pics.length) return;
-               dale.go (v, function (v2) {
-                  tags [v2] = true;
-               });
-            });
-            s.output.tags = dale.keys (tags);
+            s.output.tags = teishi.last (s.last).sort ();
             dale.go (s.output.pics, function (pic, k) {
                s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
             });

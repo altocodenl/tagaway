@@ -45,13 +45,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon disappears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title.
 
+- client: Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
+- fix line 1526 untagged picture with geotagging & add test.
+- request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 - check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
 - admin endpoint to delete account.
-- fix line 1526 untagged picture with geotagging & add test.
 - no eye on untagged + year/geotag.
 - when cancelling upload, recognize that in the snackbar.
-- Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
-- request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 
 - Dynamize
    - Basic account view
@@ -194,6 +194,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Set up proper lifecycle of pics bucket in S3.
    - Frontend tests.
    - Disable THP for redis.
+   - Check graceful app shutdown on mg restart.
+   - Downgrade read ECONNRESET errors priority?
    - Reference users internaly by id, not username.
    - Test for maximum capacity.
    - Report slow queries & slow redraws.
@@ -367,12 +369,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Returns an object of the form `{tag1: INT, tag2: INT, ...}`. Includes a field for `untagged` and one for `all`.
 
 - `POST /query`
-   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT}`. Otherwise, a 400 is returned with body `{error: ...}`.
+   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last picture to be returned from a certain query. If both are equal to 1, the first picture for the query will be returned. If they are 1 & 10 respectively, the first ten pictures for the query will be returned.
    - `all` cannot be included on `body.tags`. If you want to search for all available pictures, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
    - `untagged` can be included on `body.tags` to retrieve untagged pictures.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
+   - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of picture owned by the user, will be included as a result of the query, even if they are not untagged pictures.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...]}`.
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
@@ -930,7 +933,7 @@ We iterate the tags. For each tag, for each of its users, we store the ids of th
             });
 ```
 
-We compute the ids of all the pictures that match the query. This will be either the union (in case of `allMode`) or the intersection (if we're in a normal query) of all the ids for each tag. If there are `ytags`, we also use the query key.
+We compute the ids of all the pictures that match the query. This will be either the intersection of all the ids for each tag. If there are `ytags`, we also use the query key. In the case of `allMode`, we perform the *union* of all tags, since there might be shared tags for the user.
 
 The year tags are queried separately from normal tags because 1) if more than one year tag is sent, we want the union (not the intersection) of their pictures; and 2) it's not possible to share a year tag with another user, so the querying is simpler.
 
@@ -956,73 +959,81 @@ We run the transaction and move to the next step of the process.
          },
 ```
 
-We
+By now, we have a list of all the ids of the pictures matching the query. To access them, we look for a certain item returned by the last call to redis. This item will be at index N (where N is the number of `tags`) or N+1, depending on whether the query has `ytags` or not.
 
 ```javascript
          function (s) {
             s.pics = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
-            dale.go (s.pics, function (pic) {
-               multi.hgetall ('pic:' + pic);
+```
+
+We create another `multi` transaction to retrieve the information for all the pictures. We also create an object `ids`, which we'll review in a minute.
+
+```javascript
+            var multi = redis.multi (), ids = {};
+```
+
+We retrieve all the info for this picture. If `b.recentlyTagged` is passed, we also set an entry for this id into the `ids` object.
+
+```javascript
+            dale.go (s.pics, function (id) {
+               multi.hgetall ('pic:' + id);
+               if (b.recentlyTagged) ids [id] = true;
             });
+```
+
+We iterate `b.recentlyTagged` (this will be a no-op if it's not defined) and store the result into `s.recentlyTagged`.
+
+```javascript
+            s.recentlyTagged = dale.fil (b.recentlyTagged, undefined, function (id) {
+```
+
+If the picture that is inside `b.recentlyTagged` is already covered by the query, we ignore it.
+
+```javascript
+               if (ids [id]) return;
+```
+
+Otherwise, we bring its information from the database and return its `id`, so that it will be contained in `s.recentlyTagged`; this last variable will be then an array with the list of the recently tagged pictures that are in excess of the query.
+
+```javascript
+               multi.hgetall ('pic:' + id);
+               return id;
+            });
+```
+
+We perform the call to redis to retrieve picture information and move to the next step.
+
+```javascript
             mexec (s, multi);
          },
 ```
 
-            var multi = redis.multi ();
-            dale.go (pics, function (pic) {
-               multi.hgetall ('pic:' + pic);
-            });
-            mexec (s, multi);
-         },
+We iterate the pictures in `s.recentlyTagged`, which are those in `b.recentlyTagged` that are not already contained in the rest of the query. The goal is to prevent returning info from pictures for which the user shouldn't have access.
+
+```javascript
          function (s) {
-            var pics = s.last;
-            if (pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
-            var output = {pics: []};
+            var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
+```
 
-            var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
+If there's no such picture or the picture doesn't belong to the user, it cannot be a recently tagged picture by the user (since the user cannot tag a picture that is not theirs). In this case, we ignore the picture. Otherwise, we return the actuali picture information.
 
-            dale.go (pics, function (pic) {
-               var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
-               if (d >= mindate && d <= maxdate) output.pics.push (pic);
+```javascript
+               if (! s.last [s.pics.length + k] || s.last [s.pics.length + k].owner !== rq.user.username) return;
+               return s.last [s.pics.length + k];
             });
+```
 
-            // Sort own pictures first.
-            output.pics.sort (function (a, b) {
-               if (a.owner === rq.user.username) return -1;
-               if (b.owner === rq.user.username) return 1;
-               return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
-            });
+We set `s.pics` to hold the info of the pictures queried, ignoring those coming from `b.recentlyTagged`; we concatenate to it the pictures in `recentlyTagged`, which have been filtered both by existence and ownership. This is the set of pictures that will match the query.
 
-            // To avoid returning duplicated picture if someone shares a picture you already have with you. Own picture has priority.
-            var hashes = {};
-            output.pics = dale.fil (output.pics, undefined, function (pic, k) {
-               if (! hashes [pic.hash]) {
-                  hashes [pic.hash] = true;
-                  return pic;
-               }
-            });
+```javascript
+            s.pics = s.last.slice (0, s.pics.length).concat (recentlyTagged);
+```
 
-            // Sort pictures by criteria.
-            output.pics.sort (function (a, B) {
-               var d1 = parseInt (a [b.sort === 'upload' ? 'dateup' : 'date']);
-               var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
-               return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
-            });
+If there's no pictures, we return an object representing an empty query. The fields are `total`, `pics` and `tags`.
 
-            output.total = output.pics.length;
-
-            output.pics = output.pics.slice (b.from - 1, b.to);
-
-            var multi = redis.multi ();
-            dale.go (output.pics, function (pic) {
-               multi.smembers ('pict:' + pic.id);
-            });
-            dale.go (s.tagpics, function (pic) {
-               multi.smembers ('pict:' + pic);
-            });
-            s.output = output;
-            mexec (s, multi);
-         },
+```javascript
+            if (s.pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
+```
 
 ## License
 
