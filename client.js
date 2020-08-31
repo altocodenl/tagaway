@@ -3876,7 +3876,7 @@ E.upload = function () {
                               ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                                  // TODO v2: add inline SVG
                                  (! upload.ok || ! upload.ok [0]) ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                    'background-image': 'url(thumbof/' + teishi.last (upload.ok).id + ')',
+                                    'background-image': 'url(thumb/200/' + teishi.last (upload.ok).id + ')',
                                     'background-position': 'center',
                                     'background-repeat': 'no-repeat',
                                     'background-size': 'cover',
@@ -3979,7 +3979,7 @@ E.upload = function () {
                               // UPLOAD BOX
                               ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                                  ! ok [0] ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                    'background-image': 'url(thumbof/' + teishi.last (ok).id + ')',
+                                    'background-image': 'url(thumb/200/' + teishi.last (ok).id + ')',
                                     'background-position': 'center',
                                     'background-repeat': 'no-repeat',
                                     'background-size': 'cover',
