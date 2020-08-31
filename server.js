@@ -1494,7 +1494,7 @@ var routes = [
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic.id);
             });
 
-            if ((tags.length - s.geotags.length) === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', pic.id);
+            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', pic.id);
 
             multi.hmset ('pic:' + pic.id, pic);
             mexec (s, multi);

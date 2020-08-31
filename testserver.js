@@ -776,7 +776,7 @@ var main = [
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 5, dunkerque: 1, beach: 1})) return clog ('Invalid tags after geotagging disabled.');
+      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 4, dunkerque: 1, beach: 1})) return clog ('Invalid tags after geotagging disabled.');
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
@@ -798,7 +798,7 @@ var main = [
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 5, dunkerque: 1, 'g::FR': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
+      if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 4, dunkerque: 1, 'g::FR': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
       // Wait for S3
       setTimeout (next, 5000);
    }],

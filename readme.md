@@ -46,7 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon disappears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title.
 
 - client: Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
-- fix line 1526 untagged picture with geotagging & add test.
 - request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 - check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
 - admin endpoint to delete account.
