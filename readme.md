@@ -46,7 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon disappears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title.
 
 - client: Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
-- request t200 or t900 directly referring to ids, remove t200/t900 from returned payloads.
 - check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
 - admin endpoint to delete account.
 - no eye on untagged + year/geotag.
@@ -315,8 +314,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
-- `GET /thumb/ID`
+- `GET /thumb/SIZE/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
+   - Size must be 200 or 900.
+   - If the picture has no thumbnail for that size, the original picture is returned.
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
@@ -376,7 +377,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of picture owned by the user, will be included as a result of the query, even if they are not untagged pictures.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...]}`.
-      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING, t200: STRING|UNDEFINED, t900: STRING|UNDEFINED, owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
+      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
       - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
 
@@ -549,7 +550,7 @@ All the routes below require an admin user to be logged in.
    vid: `1` or absent
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
-   xp:  INT or absent, number of pics downloaded (also includes cache)
+   xp:  INT or absent, number of pics downloaded (also includes cached hits)
    loc: [INT, INT} or absent - latitude and longitude of picture taken from metadata, only if geotagging is enabled for the pic's owner.
 
 - pict:ID (set): list of all the tags belonging to a picture.

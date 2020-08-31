@@ -949,25 +949,18 @@ var main = [
             if ({'medium.jpg': 21450, 'rotate.jpg': 826476, 'large.jpeg': 3302468, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
             return true;
          }],
-         ['get thumb of pic #' + (k + 1), 'get', function (s) {
-            return 'thumbof/' + s.pics [k].id;
+         ['get thumb 200 of pic #' + (k + 1), 'get', function (s) {
+            return 'thumb/200/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumbof #' + (k + 1));
+            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
             return true;
          }],
-         k === 3 ? [] : ['get thumb 200 #' + (k + 1), 'get', function (s) {
-            return 'thumb/' + s.pics [k].t200;
+         ['get thumb 900 of pic #' + (k + 1), 'get', function (s) {
+            return 'thumb/900/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for t200 #' + (k + 1));
-            return true;
-         }],
-         (k === 0 || k === 3) ? [] : ['get thumb 900 #' + (k + 1), 'get', function (s) {
-            return 'thumb/' + s.pics [k].t900;
-         }, {}, '', 200, function (s, rq, rs) {
-            if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'rotate.jpg': 50585, 'large.jpeg': 123478} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for t900 #' + (k + 1));
+            if ({'rotate.jpg': 50585, 'medium.jpg': 21450, 'large.jpeg': 123478, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
             return true;
          }],
       ];
@@ -1163,8 +1156,11 @@ var main = [
    ['get shared pic as user2', 'get', function (s) {
       return 'pic/' + s.shared [0].id;
    }, {}, '', 200],
-   ['get thumbnail of shared pic as user2', 'get', function (s) {
-      return 'thumbof/' + s.shared [0].id;
+   ['get thumbnail 200 of shared pic as user2', 'get', function (s) {
+      return 'thumb/200/' + s.shared [0].id;
+   }, {}, '', 200],
+   ['get thumbnail 900 of shared pic as user2', 'get', function (s) {
+      return 'thumb/900/' + s.shared [0].id;
    }, {}, '', 200],
    ['fail getting nonshared pic as user2', 'get', function (s) {
       return 'pic/' + s.pics [0].id;
@@ -1272,11 +1268,11 @@ var main = [
          ['get pic #' + (k + 1), 'get', function (s) {
             return 'pic/' + s.pics2 [k].id;
          }, {}, '', 200],
-         k === 1 ? [] : ['get thumb 200 #' + (k + 1), 'get', function (s) {
-            return 'thumb/' + s.pics2 [k].t200;
+         ['get thumb 200 #' + (k + 1), 'get', function (s) {
+            return 'thumb/200/' + s.pics2 [k].id;
          }, {}, '', 200],
-         k === 1 ? [] : ['get thumb 900 #' + (k + 1), 'get', function (s) {
-            return 'thumb/' + s.pics2 [k].t200;
+         ['get thumb 900 #' + (k + 1), 'get', function (s) {
+            return 'thumb/900/' + s.pics2 [k].id;
          }, {}, '', 200],
       ];
    }),

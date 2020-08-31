@@ -1955,13 +1955,6 @@ CSS.litc = [
 
 var H = {};
 
-H.path = function (pic, large) {
-   if (pic.vid) return 'thumb/' + (pic.t900 || pic.t200);
-   if (! large && pic.t200) return 'thumb/' + pic.t200;
-   if (pic.t900)            return 'thumb/' + pic.t900;
-   return 'pic/' + pic.id;
-}
-
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
 H.dateFormat = function (d) {
@@ -3655,7 +3648,7 @@ E.grid = function () {
                            'border-radius': 'inherit',
                            width: askance ? frameHeight : frameWidth,
                            height: askance ? frameWidth : frameHeight,
-                           'background-image': 'url(' + H.path (pic) + ')',
+                           'background-image': 'url(thumb/200/' + pic.id + ')',
                            'background-position': 'center',
                            'background-repeat': 'no-repeat',
                            'background-size': 'cover',
@@ -3708,7 +3701,7 @@ E.open = function () {
                ['.fullscreen__image-container', {padding: 0}],
             ])],
             ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, [
-               ! pic.vid ? ['img', {class: 'fullscreen__image', src: H.path (pic, true), alt: 'picture'}] : ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: H.path (pic, true), preload: 'auto'}],
+               ! pic.vid ? ['img', {class: 'fullscreen__image', src: 'thumb/900/' + pic.id, alt: 'picture'}] : ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: 'thumb/900/' + pic.id, preload: 'auto'}],
             ]],
             ['div', {class: 'fullscreen__actions'}, [
                H.if (! pic.vid, ['div', B.ev ({style: style ({'margin-right': 15}), class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
@@ -3727,7 +3720,7 @@ E.open = function () {
                '/',
                ['span', {class: 'fullscreen__count-total'}, pics.length],
             ]],
-            next ? ['img', {src: H.path (next, true), style: style ({display: 'none'})}] : [],
+            next ? ['img', {src: 'thumb/900/' + next.id, style: style ({display: 'none'})}] : [],
          ];
       });
    });

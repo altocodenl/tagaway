@@ -566,11 +566,12 @@ H.deletePic = function (s, id, username) {
 
 H.hasAccess = function (S, username, picId) {
    a.stop ([
-      [Redis, 'hgetall', 'pic:' + picId],
+      [a.set, 'pic', [Redis, 'hgetall', 'pic:' + picId], true],
       function (s) {
          if (! s.last)             return S.next (false);
+         S.pic = s.pic;
          s.owner = s.last.owner;
-         if (s.owner === username) return S.next (true);
+         if (s.owner === username) return S.next (s.pic);
          Redis (s, 'smembers', 'pict:' + picId);
       },
       function (s) {
@@ -582,7 +583,7 @@ H.hasAccess = function (S, username, picId) {
          mexec (s, multi);
       },
       function (s) {
-         S.next (dale.stop (s.last, true, function (v) {return !! v}) || false);
+         S.next (dale.stop (s.last, true, function (v) {return !! v}) ? s.pic : false);
       }
    ], function (s, error) {
       S.next (undefined, error);
@@ -1258,7 +1259,6 @@ var routes = [
 
    ['get', 'pic/:id', function (rq, rs) {
       astop (rs, [
-         [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
          function (s) {
@@ -1270,33 +1270,13 @@ var routes = [
       ]);
    }],
 
-   ['get', 'thumb/:id', function (rq, rs) {
+   ['get', 'thumb/:size/:id', function (rq, rs) {
+      if (['200', '900'].indexOf (rq.data.params.size) === -1) return reply (rs, 400);
       astop (rs, [
-         [a.cond, [a.set, 'id', [Redis, 'get', 'thu:' + rq.data.params.id]], {null: [reply, rs, 404]}],
-         [a.cond, [a.get, H.hasAccess, rq.user.username, '@id'], {false: [reply, rs, 404]}],
-         [a.cond, [a.set, 'pic', [a.get, Redis, 'hgetall', 'pic:@id'], true], {null: [reply, rs, 404]}],
-         function (s) {
-            Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt' + (rq.data.params.id === s.pic.t200 ? 2 : 9), 1);
-         },
-         function (s) {
-            var id = rq.data.params.id === s.pic.t200 ? s.pic.t200 : s.pic.t900;
-            // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.name)};
-            if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
-         }
-      ]);
-   }],
-
-   ['get', 'thumbof/:id', function (rq, rs) {
-      astop (rs, [
-         [a.cond, [a.set, 'pic', [Redis, 'hgetall', 'pic:' + rq.data.params.id], true], {null: [reply, rs, 404]}],
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
+         [Redis, 'hincrby', 'pic:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
          function (s) {
-            Redis (s, 'hincrby', 'pic:' + s.pic.id, 'xt2', 1);
-         },
-         function (s) {
-            var id = s.pic.t200 || s.pic.id;
+            var id = s.pic ['t' + rq.data.params.size] || s.pic.id;
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.name)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
@@ -1845,7 +1825,7 @@ var routes = [
          function (s) {
             s.output.tags = teishi.last (s.last).sort ();
             dale.go (s.output.pics, function (pic, k) {
-               s.output.pics [k] = {id: pic.id, t200: pic.t200, t900: pic.t900, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
+               s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
             });
             reply (rs, 200, s.output);
          },
@@ -2236,7 +2216,8 @@ cicek.apres = function (rs) {
    if (rs.log.code >= 400) {
       logs.push (['flow', 'rq-bad', 1]);
       var report = function () {
-         if (rs.log.code === 404 && rs.log.url.match (/^\/thumbof/)) return false;
+         // TODO: do we need this?
+         // if (rs.log.code === 404 && rs.log.url.match (/^\/thumbof/)) return false;
          if (['/assets/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
          return true;
       }
