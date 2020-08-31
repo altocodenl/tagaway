@@ -3277,7 +3277,7 @@ E.pics = function () {
                                        return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                                     });
                                     var all      = teishi.eq (selected, []);
-                                    var untagged = teishi.eq (selected, ['untagged']);
+                                    var untagged = selected.indexOf ('untagged') > -1;
                                     var makeTag  = function (which) {
                                        // Ignore geotags for cities if no other (country) geotag is selected.
                                        if (H.isGeo (which) && ! H.isCountry (which) && ! geotagSelected) return;
