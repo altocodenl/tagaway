@@ -43,9 +43,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - [FEATURE - UPLOAD]: If in middle of upload process 'cancel' is clicked, the green snackbar "Upload completed successfully. You can see the pictures in the "View Pictures" section." appears. We should have a green snackbar "Upload successfully cancelled. [x] where uploaded". Otherwise user might be confused if uploading process was indeed cancelled.
 
-- [FEATURE - UNTAGGED] When mixed with other queries (ie: year) the 'eye' icon disappears from sidebar left next to 'untagged'. It should be there, in the same way as it is there on CITY tags and regular tags. There has to be clear markings on sidebar left as well as querie array below title.
-
-- client: Untagged tagging: add "done tagging" button, "sticky untagged" pictures: remove on taking out untagged from query or querying another tag.
+- client: fix "done tagging" button style
 - client: when cancelling upload, recognize that in the snackbar.
 - check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
 - admin endpoint to delete account.
@@ -94,6 +92,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When just enabling geotagging, update tags every 3 seconds.
    - Suggest geotagging when having a few pictures uploaded, but only once; either enable it or dismiss the message, and don't show it again.
    - When clicking on no man's land, unselect.
+   - When querying untagged pictures AND pictures are selected, show "Done tagging" button. When tagging those pictures, they remain in selection until either 1) "Done tagging" button is clicked; 2) all pictures are unselected; or 3) "untagged" is removed from query.
 
 - Open
    - Open picture and trigger fullscreen.
@@ -711,16 +710,16 @@ Used by giz:
 3. Pics
    1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
-   3. `change State.query`: sets `State.npics` and invokes `query pics`.
-   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`.
+   3. `change State.query`: sets `State.npics` and invokes `query pics`, but only if the change is not to `State.query.recentlyTagged`.
+   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `Data.pics` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
-   9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it.
+   9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
    10. `select all`: sets `State.selected` to all the pictures in the current query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
-   12. `tag pics`: invokes `post tag`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
+   12. `tag pics`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.

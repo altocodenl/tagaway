@@ -2274,7 +2274,7 @@ dale.do ([
       B.do (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], function (x) {
-      B.do (x, 'set', ['State', 'nPics'], 20);
+      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.do (x, 'set', ['State', 'nPics'], 20);
       B.do (x, 'query', 'pics');
    }],
    ['change', ['State', 'selected'], function (x) {
@@ -2301,6 +2301,11 @@ dale.do ([
       }, 0);
 
       if (B.get ('State', 'untag') && ! selectedPictures) B.do (x, 'rem', 'State', 'untag');
+
+      if (! selectedPictures && B.get ('State', 'query', 'recentlyTagged')) {
+         B.do (x, 'rem', ['State', 'query'], 'recentlyTagged');
+         B.do (x, 'snackbar', 'green', 'You can find your pictures under the tags you just used.');
+      }
    }],
    ['change', ['State', 'untag'], function (x) {
       var untag = B.get ('State', 'untag');
@@ -2312,7 +2317,7 @@ dale.do ([
       var query = B.get ('State', 'query');
       if (! query) return;
 
-      B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: 10000}, function (x, error, rs) {
+      B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: 10000, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
          B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
@@ -2383,7 +2388,10 @@ dale.do ([
    }],
    ['toggle', 'tag', function (x, tag) {
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
-      if (index > -1) return B.do (x, 'rem', ['State', 'query', 'tags'], index);
+      if (index > -1) {
+         if (tag === 'untagged' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
+         return B.do (x, 'rem', ['State', 'query', 'tags'], index);
+      }
 
       var isNormalTag = ! H.isYear (tag) && ! H.isGeo (tag);
       B.do (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
@@ -2416,8 +2424,16 @@ dale.do ([
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
       if (['all', 'untagged'].indexOf (tag.toLowerCase ()) > -1) return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
       if (H.isYear (tag) || H.isGeo (tag)) return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+
       var ids = dale.keys (B.get ('State', 'selected'));
       if (ids.length === 0) return;
+
+      var query = B.get ('State', 'query');
+      if (! del && query.tags.indexOf ('untagged') > -1) {
+         dale.do (ids, function (id) {
+            if ((query.recentlyTagged || []).indexOf (id) === -1) B.add (['State', 'query', 'recentlyTagged'], id);
+         });
+      }
       var payload = {tag: tag, ids: ids, del: del}
       B.do (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
@@ -3458,15 +3474,17 @@ E.pics = function () {
                      ]],
                   ]],
 
-                 // SIDEBAR SEARCH
-                  B.view (['State', 'query', 'tags'], {attrs: B.ev ({class: 'sidebar__footer'}, ['onclick', 'stop', 'propagation', {rawArgs: 'event'}])}, function (x, tags) {
-                     tags = tags || [];
+                  // SIDEBAR SEARCH
+                  B.view (['State', 'query'], {attrs: B.ev ({class: 'sidebar__footer'}, ['onclick', 'stop', 'propagation', {rawArgs: 'event'}])}, function (x, query) {
+                     var tags = query ? query.tags : [];
                      return [
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
                            return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
                         }),
                         // DONE TAGGING BUTTON
-                  		['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'foo', 'bar'])), 'Done tagging'],
+                        B.view (['State', 'selected'], function (x, selected) {
+                           if (tags.indexOf ('untagged') > -1 && dale.keys (selected).length) return ['div', B.ev ({class: 'done-tagging-button button'}, H.stopPropagation (['onclick', 'rem', 'State', 'selected'])), 'Done tagging'];
+                        }),
                      ];
                   }),
                ]],
