@@ -39,14 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- [BUG - SIGN UP]: If user enters an already used username, there's no feedback. Red snackbar of "That username is already in use" should appear.
-
-- [FEATURE - UPLOAD]: If in middle of upload process 'cancel' is clicked, the green snackbar "Upload completed successfully. You can see the pictures in the "View Pictures" section." appears. We should have a green snackbar "Upload successfully cancelled. [x] where uploaded". Otherwise user might be confused if uploading process was indeed cancelled.
-
 - client: fix "done tagging" button style
-- client: when cancelling upload, recognize that in the snackbar.
-- check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
-- admin endpoint to delete account.
+- server: check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
+- server: admin endpoint to delete account.
+- client: [BUG - SIGN UP]: If user enters an already used username, there's no feedback. Red snackbar of "That username is already in use" should appear.
 
 - Dynamize
    - Basic account view
@@ -123,7 +119,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pics periodically if there's an upload in the background.
    - Show thumbnail of last picture on each upload.
-   - Cancel current upload.
+   - Cancel current upload. After cancelling, show snackbar that indicates how many pictures were uploaded for the given upload.
    - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Snackbar with success message when pics are finished uploading.
    - Show errors.
@@ -743,13 +739,13 @@ Used by giz:
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
    4. `upload start`: adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and `change State.upload.queue`.
-   5. `upload cancel`: has `uid` as its first argument; finds all the files on `State.upload.queue` with `uid`, filters them out and updates `State.upload.queue`.
+   5. `upload cancel`: has `uid` as its first argument; adds `uid` to `State.upload.cancelled`; finds all the files on `State.upload.queue` with `uid`, filters them out and updates `State.upload.queue`.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `change State.upload.queue`:
       - Sets `State.upload.summary.UID.tags`.
       - Invokes `post upload`.
       - Removes an element from `State.upload.queue`.
-      - Conditionally invokes `snackbar` on error; also on success of entire upload.
+      - Conditionally invokes `snackbar` on error; also on success of entire upload, also depending on `State.upload.cancelled` to ascertain if the upload concluded or was cancelled.
       - Adds an item to either `State.upload.summary.UID.ok`, `State.upload.summary.UID.error` or `State.upload.summary.UID.repeat`.
       - If query is successful, invokes `query account` and `query tags`.
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
@@ -780,7 +776,11 @@ Used by giz:
       - `new`: {format: ['FILENAME', ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
-      - `summary`: {ok: [{id: ID, deg: 90|-90|180|undefined}, ...]|UNDEFINED, error: {name: STRING, error: STRING}|UNDEFINED, repeat: [FILENAME, ...]|UNDEFINED}
+      - `summary`: {
+         UID: {ok: [{id: ID, deg: 90|-90|180|undefined}, ...]|UNDEFINED, error: {name: STRING, error: STRING}|UNDEFINED, repeat: [FILENAME, ...]|UNDEFINED},
+         ...
+      }
+      - `cancelled`: [ID, ...]|undefined, to list the ids of the uploads that were cancelled by an user.
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.

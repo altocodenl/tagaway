@@ -2607,6 +2607,7 @@ dale.do ([
       B.do (x, 'change', ['State', 'upload', 'queue']);
    }],
    ['upload', 'cancel', function (x, uid) {
+      B.do (x, 'add', ['State', 'upload', 'cancelled'], uid);
       B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
          if (file.uid !== uid) return file;
       }));
@@ -2640,17 +2641,26 @@ dale.do ([
             var lastFromUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
                if (v.uid === file.uid) return v;
             });
-            if (lastFromUpload) B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
-            if (error) {
+
+            if (! error) B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'ok'], {id: rs.body.id, deg: rs.body.deg});
+            else if (error && error.status === 409 && error.responseText.match ('repeated')) B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'repeat'], file.file.name);
+            else {
                if (error.status === 409) {
-                  if (error.responseText.match ('repeated')) return B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'repeat'], file.file.name);
                   B.do (x, 'set', ['State', 'upload', 'queue'], []);
                   return B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
                }
                B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'error'], {name: file.file.name, error: error.responseText});
                return B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
-            B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'ok'], {id: rs.body.id, deg: rs.body.deg});
+
+            if (lastFromUpload) {
+               var cancelled = B.get ('State', 'upload', 'cancelled').indexOf (file.uid) > -1;
+               if (cancelled) {
+                  B.do (x, 'snackbar', 'green', 'Upload cancelled successfully. ' + (B.get ('State', 'upload', 'summary', file.uid, 'ok') || []).length + ' pictures were uploaded.');
+               }
+               else B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
+            }
+
             B.do (x, 'query', 'account');
             B.do (x, 'query', 'tags');
             // If we're back in the pics page, refresh the query after each successful upload.
