@@ -40,10 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - client: fix "done tagging" button style
-- server: check delete account if picture belongs to more than one tag (repeated operation, wouldn't this give error? add test).
-- server: admin endpoint to delete account.
-- client: [BUG - SIGN UP]: If user enters an already used username, there's no feedback. Red snackbar of "That username is already in use" should appear.
-
 - Dynamize
    - Basic account view
    - Paid plan landing
@@ -289,10 +285,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Unless there's an error, the route will return a 302 code with the `location` header set to `/`.
 
 - `POST /auth/delete`.
-   - Temporarily disabled (route always returns 501).
    - User must be logged in, otherwise a 403 is returned.
-   - The body is ignored.
-   - If successful, a 302 is returned redirecting to `/`.
+   - Can be used to delete own account or to delete another user account (if admin).
+   - Temporarily disabled in non-local environments if used to delete own account (route always returns 501).
+   - If the body contains a key `user` with the id of an user, said user's account will be deleted if the user performing the request is an admin. To delete own account, send an empty object.
 
 - `POST /auth/changePassword`.
    - Body must be `{old: STRING, new: STRING}`.
@@ -565,7 +561,7 @@ All the routes below require an admin user to be logged in.
    - For recover:         {t: INT, a: 'rec', ip: STRING, ua: STRING, token: STRING}
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
-   - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING}
+   - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
    - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
@@ -814,11 +810,16 @@ Only things that differ from client are noted.
 
 1. Invites
    1. `retrieve invites`: invokes `get admin/invites`.
-   2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites` and `rem State.newInvite`, otherwise it invokes `snackbar`.
-   3. `delete invite`: invokes `delete admin/invites/EMAIL`; if successful, invokes `retrieve invites`, otherwise it invokes `snackbar`.
+   2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites` and `rem State.newInvite`. It also invokes `snackbar`.
+   3. `delete invite`: invokes `delete admin/invites/EMAIL`; if successful, invokes `retrieve invites`. It also invokes `snackbar`.
    4. `change State.page`: if current page is `invites` and there's no `Data.invites`, it invokes `retrieve invites`.
 
-2. Deploy
+2. Users
+   1. `retrieve users`: invokes `get admin/users`.
+   2. `delete user`: invokes `post auth/delete`; if successful, invokes `retrieve users`. It also invokes `snackbar`.
+   3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
+
+3. Deploy
    1. `deploy client`: invokes `post admin/deploy` and `snackbar`.
 
 ### Store

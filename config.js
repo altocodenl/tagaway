@@ -69,7 +69,7 @@ module.exports = {
             return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
-               'You have been officially invited to join ac;pic',
+               'You have been officially invited to join ac;pic. ',
                ['a', {href: DOMAIN + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
                ['br'], ['br'],
                'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',

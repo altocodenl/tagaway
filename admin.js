@@ -228,9 +228,9 @@ var E = {};
 
 // *** NATIVE LISTENERS ***
 
-window.addEventListener ('error', function () {
+window.onerror = function () {
    B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
-});
+}
 
 window.addEventListener ('hashchange', function () {
    B.do ('read', 'hash');
@@ -263,16 +263,16 @@ dale.do ([
       clearTimeout (existing.timeout);
       B.do (x, 'rem', 'State', 'snackbar');
    }],
-   ['snackbar', [], function (x, snackbar) {
+   ['snackbar', [], function (x, message) {
       B.do (x, 'clear', 'snackbar');
       var colors = {green: '#04E762', red: '#D33E43', yellow: '#ffff00'};
       var timeout = setTimeout (function () {
          B.do (x, 'rem', 'State', 'snackbar');
       }, 4000);
-      B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
+      B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: message, timeout: timeout});
    }],
    [/get|post/, [], function (x, headers, body, cb) {
-      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout';
+      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout' && path !== 'auth/delete';
       // CSRF protection
       if (x.verb === 'post' && ! authRequest) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
@@ -303,7 +303,7 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['dashboard', 'invites', 'deploy'] : ['login'];
+      var allowed = logged ? ['dashboard', 'invites', 'users', 'deploy'] : ['login'];
 
       if (allowed.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
@@ -363,12 +363,35 @@ dale.do ([
       if (! confirm ('Are you sure you want to delete the invite?')) return;
       B.do (x, 'post', 'admin/invites/delete', {}, {email: email}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the invite.');
+         B.do (x, 'snackbar', 'green', 'Invite deleted successfully.');
          B.do (x, 'retrieve', 'invites');
       });
    }],
    ['change', ['State', 'page'], function (x) {
-      if (B.get ('State', 'page') !== 'invites') return;
-      if (! B.get ('Data', 'invites')) B.do (x, 'retrieve', 'invites');
+      if (B.get ('State', 'page') === 'invites') {
+         if (! B.get ('Data', 'invites')) B.do (x, 'retrieve', 'invites');
+      }
+      if (B.get ('State', 'page') === 'users') {
+         if (! B.get ('Data', 'users')) B.do (x, 'retrieve', 'users');
+      }
+   }],
+
+   // *** USERS LISTENERS ***
+
+   ['delete', 'user', function (x, username) {
+      if (! confirm ('Are you sure you want to delete the user ' + username + '?')) return;
+      B.do (x, 'post', 'auth/delete', {}, {username: username}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the user.');
+         B.do (x, 'snackbar', 'green', 'User deleted successfully.');
+         B.do (x, 'retrieve', 'users');
+      });
+   }],
+
+   ['retrieve', 'users', function (x, username) {
+      B.do (x, 'get', 'admin/users', {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving users.');
+         B.do (x, 'set', ['Data', 'users'], rs.body);
+      });
    }],
 
    // *** DEPLOY LISTENERS ***
@@ -663,6 +686,8 @@ E.dashboard = function (x) {
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/invites'}, 'Invites']],
       ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/users'}, 'Users']],
+      ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/deploy'}, 'Deploy client']],
    ]];
 }
@@ -702,6 +727,27 @@ E.invites = function () {
                ['span', B.ev ({class: 'action'}, ['onclick', 'rem', 'State', 'newInvite']), 'Cancel'],
             ];
          }),
+      ]];
+   });
+}
+
+// *** USERS VIEW ***
+
+E.users = function () {
+   return B.view (['Data', 'users'], function (x, users) {
+      var columns = ['username', 'email', 'type', 'created', 'actions'];
+      return ['div', {style: style ({padding: 60})}, [
+         ['h3', 'Users'],
+         ['table', {class: 'pure-table pure-table-striped'}, [
+            ['tr', dale.do (columns, function (v) {return ['th', v]})],
+            dale.do (Data.users, function (user) {
+               return ['tr', dale.do (columns, function (k) {
+                  if (k === 'actions') return ['td', ['span', B.ev ({class: 'action'}, ['onclick', 'delete', 'user', user.username]), 'Delete user']];
+                  if (k === 'created') return ['td', new Date (parseInt (user [k])).toUTCString ()];
+                  return ['td', user [k]];
+               })];
+            }),
+         ]],
       ]];
    });
 }

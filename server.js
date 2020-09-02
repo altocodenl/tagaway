@@ -1147,41 +1147,58 @@ var routes = [
 
    ['post', 'auth/delete', function (rq, rs) {
 
-      // We temporarily disable account deletions.
-      if (ENV) return reply (rs, 501);
+      var b = rq.body;
 
-      var multi = redis.multi ();
-      multi.smembers ('tag:'  + rq.user.username + ':all');
-      multi.smembers ('tags:' + rq.user.username);
+      if (type (b) !== 'object') return reply (rs, 400, 'body must be an object.');
+
+      if (b.username !== undefined && type (b.username) !== 'string') return reply (rs, 400, 'body.user must be either undefined or a string.');
+
+      // We temporarily disable own account deletions in non-local environments.
+      if (ENV && ! b.username) return reply (rs, 501);
+
+      // Only admins can delete another user.
+      if (b.username !== undefined && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
 
       astop (rs, [
-         [a.set, 'data', [mexec, multi]],
-         [a.make (giz.destroy), rq.user.username],
+         [function (s) {
+            if (b.username === undefined) return s.next (rq.user);
+            Redis (s, 'hgetall', 'users:' + b.username);
+         }],
          function (s) {
-            a.fork (s, s.data [0], function (pic) {
-               return [H.deletePic, pic, rq.user.username];
-            }, {max: 5});
-         },
-         [H.stat.w, 'stock', 'users', -1],
-         function (s) {
-            var multi = redis.multi ();
-            multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
-            multi.hdel ('emails',  rq.user.email);
-            multi.hdel ('invites', rq.user.email);
-            dale.go (s.data [1].concat (['all', 'untagged']), function (tag) {
-               multi.del ('tag:' + rq.user.username + ':' + tag);
-            });
-            multi.del ('tags:'  + rq.user.username);
-            multi.del ('upic:'  + rq.user.username);
-            multi.del ('upicd:' + rq.user.username);
-            multi.del ('shm:'   + rq.user.username);
-            multi.del ('sho:'   + rq.user.username);
-            multi.del ('ulog:'  + rq.user.username);
-            mexec (s, multi);
-         },
-         [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
-         [H.log, rq.user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent']}],
-         [reply, rs, 200, '', {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {httponly: true, samesite: 'Lax', path: '/'})}],
+            if (! s.last) return reply (rs, 404);
+            var multi = redis.multi (), user = s.last;
+            multi.smembers ('tag:'  + user.username + ':all');
+            multi.smembers ('tags:' + user.username);
+            a.seq (s, [
+               [a.set, 'data', [mexec, multi]],
+               [a.make (giz.destroy), user.username],
+               function (s) {
+                  a.fork (s, s.data [0], function (pic) {
+                     return [H.deletePic, pic, user.username];
+                  }, {max: 5});
+               },
+               [H.stat.w, 'stock', 'users', -1],
+               function (s) {
+                  var multi = redis.multi ();
+                  if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
+                  multi.hdel ('emails',  user.email);
+                  multi.hdel ('invites', user.email);
+                  dale.go (s.data [1].concat (['all', 'untagged']), function (tag) {
+                     multi.del ('tag:' + user.username + ':' + tag);
+                  });
+                  multi.del ('tags:'  + user.username);
+                  multi.del ('upic:'  + user.username);
+                  multi.del ('upicd:' + user.username);
+                  multi.del ('shm:'   + user.username);
+                  multi.del ('sho:'   + user.username);
+                  multi.del ('ulog:'  + user.username);
+                  mexec (s, multi);
+               },
+               b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]] : [],
+               [H.log, user.username, {a: 'des', ip: rq.origin, ua: rq.headers ['user-agent'], admin: b.username !== undefined ? true : undefined}],
+               [reply, rs, 200, '', b.username === undefined ? {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {httponly: true, samesite: 'Lax', path: '/'})} : {}],
+            ]);
+         }
       ]);
    }],
 
@@ -2175,11 +2192,30 @@ var routes = [
       ]);
    }],
 
+   ['get', 'admin/users', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'hgetall', 'emails'],
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (s.last, function (username) {
+               multi.hgetall ('users:' + username);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            reply (rs, 200, dale.go (s.last, function (user) {
+               delete user.password;
+               return user;
+            }));
+         }
+      ]);
+   }],
+
    // *** ADMIN: STATS ***
 
    ['post', 'admin/stats', function (rq, rs) {
       astop (rs, [
-         [H.stat.r, rs.body],
+         [H.stat.r, rq.body],
          [a.get, reply, rs, 200, '@last'],
       ]);
    }],
@@ -2652,7 +2688,7 @@ if (cicek.isMaster) a.stop ([
    },
    function (s) {
       var pics = dale.fil (s.last, 0, function (v) {return v});
-      notify (s, {priority: 'critical', type: 'Script to create thumbnails for small/medium pictures with orientation metadata successful.', pics: pics});
+      if (pics.length) notify (s, {priority: 'critical', type: 'Script to create thumbnails for small/medium pictures with orientation metadata successful.', pics: pics});
    }
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Script to create thumbnails for small/medium pictures with orientation metadata error.', error: error});
