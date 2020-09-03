@@ -2006,11 +2006,11 @@ H.stopPropagation = function (ev) {
    return [['onclick', 'stop', 'propagation', {rawArgs: 'event'}], ev];
 }
 
-// *** ELEMENTS ***
+// *** VIEWS ***
 
 var E = {};
 
-// *** NATIVE LISTENERS ***
+// *** NATIVE RESPONDERS ***
 
 window.onerror = function () {
    B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
@@ -2061,11 +2061,11 @@ document.body.addEventListener ('touchend', function (ev) {
    B.do ('touch', 'end', ev);
 });
 
-// *** LISTENERS ***
+// *** RESPONDERS ***
 
 dale.do ([
 
-   // *** GENERAL LISTENERS ***
+   // *** GENERAL RESPONDERS ***
 
    ['initialize', [], {burn: true}, function (x) {
       document.querySelector ('meta[name="viewport"]').content = 'width=1200';
@@ -2156,7 +2156,7 @@ dale.do ([
       });
    }],
 
-   // *** AUTH LISTENERS ***
+   // *** AUTH RESPONDERS ***
 
    ['retrieve', 'csrf', function (x) {
       B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
@@ -2214,7 +2214,7 @@ dale.do ([
       });
    }],
 
-   // *** PICS LISTENERS ***
+   // *** PICS RESPONDERS ***
 
    // TODO v2: remove, use literals
    ['change', [], {priority: -10000}, function (x) {
@@ -2267,7 +2267,6 @@ dale.do ([
    }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
-      if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.do (x, 'query', 'pics');
       B.do (x, 'query', 'tags');
@@ -2513,7 +2512,7 @@ dale.do ([
       ev.stopPropagation ();
    }],
 
-   // *** OPEN LISTENERS ***
+   // *** OPEN RESPONDERS ***
 
    ['key', 'down', function (x, keyCode) {
       if (B.get ('State', 'open') === undefined) return;
@@ -2571,7 +2570,7 @@ dale.do ([
       loc.focus ();
    }],
 
-   // *** UPLOAD LISTENERS ***
+   // *** UPLOAD RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'upload') return;
@@ -2669,7 +2668,15 @@ dale.do ([
       });
    }],
 
-   // *** ACCOUNT LISTENERS ***
+   // *** IMPORT RESPONDERS ***
+
+   ['change', ['State', 'page'], function (x) {
+      if (B.get ('State', 'page') !== 'import') return;
+      if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
+      if (! B.get ('Data', 'tags'))    B.do (x, 'query', 'tags');
+   }],
+
+   // *** ACCOUNT RESPONDERS ***
 
    ['query', 'account', function (x, cb) {
       B.do (x, 'get', 'account', {}, '', function (x, error, rs) {
@@ -2721,7 +2728,7 @@ dale.do ([
    B.listen.apply (null, v);
 });
 
-// *** LOGO ELEMENT ***
+// *** LOGO VIEW ***
 
 E.logo = function (size) {
    return [
@@ -2729,7 +2736,7 @@ E.logo = function (size) {
    ];
 }
 
-// *** BASE ELEMENT ***
+// *** BASE VIEW ***
 
 E.base = function () {
    return [
@@ -2744,7 +2751,7 @@ E.base = function () {
    ];
 }
 
-// *** SNACKBAR ELEMENT ***
+// *** SNACKBAR VIEW ***
 
 E.snackbar = function () {
    return [
@@ -2811,7 +2818,7 @@ E.snackbar = function () {
    ];
 }
 
-// *** LOGIN ELEMENT ***
+// *** LOGIN VIEW ***
 
 E.login = function () {
    return [
@@ -2980,7 +2987,7 @@ E.login = function () {
    ];
 }
 
-// *** SIGNUP ELEMENT ***
+// *** SIGNUP VIEW ***
 
 E.signup = function () {
    return [
@@ -3147,7 +3154,7 @@ E.signup = function () {
    ];
 }
 
-// *** HEADER ELEMENT ***
+// *** HEADER VIEW ***
 
 E.header = function (showUpload, showImport) {
    return ['header', {class: 'header'}, [
@@ -3180,7 +3187,7 @@ E.header = function (showUpload, showImport) {
    ]];
 }
 
-// *** EMPTY ELEMENT ***
+// *** EMPTY VIEW ***
 
 E.empty = function () {
    return [
@@ -3226,7 +3233,7 @@ E.empty = function () {
    ];
 }
 
-// *** PICS ELEMENT ***
+// *** PICS VIEW ***
 
 E.pics = function () {
    return ['div', B.ev ({id: 'pics', class: 'app-pictures app-all-tags'}, ['onclick', 'rem', 'State', 'selected']), [
@@ -3585,7 +3592,7 @@ E.pics = function () {
    ]];
 }
 
-// *** GRID ELEMENT ***
+// *** GRID VIEW ***
 
 E.grid = function () {
    return [
@@ -3698,7 +3705,7 @@ E.grid = function () {
    ];
 }
 
-// *** OPEN ELEMENT ***
+// *** OPEN VIEW ***
 
 E.open = function () {
    return B.view (['State', 'open'], {attrs: {class: 'fullscreen'}}, function (x, open) {
@@ -3754,7 +3761,7 @@ E.open = function () {
    });
 }
 
-// *** UPLOAD ELEMENT ***
+// *** UPLOAD VIEW ***
 
 E.upload = function () {
    return ['div', [
@@ -3762,6 +3769,7 @@ E.upload = function () {
       E.header (true, true),
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
+            E.noSpace (),
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
@@ -3780,112 +3788,117 @@ E.upload = function () {
                            ['div', {class: 'upload-box__image', opaque: true}],
                            ['div', {class: 'upload-box__main'}, [
                               // UPLOAD BOX SECTION
-                              ['div', {class: 'upload-box__section'}, [
-                                 ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
-                                 // DRAG & DROP
-                                 // TODO v2: add inline SVG
-                                 ['div', {class: 'drag-and-drop', opaque: true}, H.isMobile () ? [
-                                    ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
-                                 ] : [
-                                    'Drag and drop photos here or ',
-                                    ['br'], ['br'],
-                                    ['div', [
+                              B.view (['Data', 'account'], {attrs: {class: 'upload-box__section'}}, function (x, account) {
+                                 var noSpace = account && account.usage.fsused >= account.usage.limit;
+                                 // TODO: remove after testing
+                                 noSpace = ! noSpace;
+                                 return [
+                                    ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
+                                    // DRAG & DROP
+                                    // TODO v2: add inline SVG
+                                    ['div', {draggable: noSpace ? false : undefined, class: 'drag-and-drop', opaque: true}, H.isMobile () ? [
                                        ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
-                                       ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'button button--one', onclick: 'c ("#folder-upload").click ()'}, 'Upload folder'],
-                                    ]],
-                                 ]],
-                                 // UPLOAD SELECTION
-                                 B.view (['State', 'upload', 'new'], {attrs: {class: 'upload-box__selection'}}, function (x, newUpload) {
-                                    var selected = B.get ('State', 'upload', 'new', 'files')  || [];
-                                    var format   = B.get ('State', 'upload', 'new', 'format') || [];
-                                    return [
-                                       // TODO v2: add inline SVG
-                                       ['div', {class: 'upload-selection', opaque: true}, [
-                                          ['p', {class: 'upload-selection__text'}, (! selected.length ? 'No' : selected.length) + ' pictures selected'],
-                                           H.if (selected.length, ['div', B.ev ({class: 'upload-selection__remove'}, [
-                                             ['onclick', 'rem', ['State', 'upload'], 'new'],
-                                          ]), [
-                                             ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
-                                          ]]),
-                                       ]],
-                                       // TODO v2: add inline SVG
-                                       H.if (format.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
-                                          ['style', ['.no-svg svg', {display: 'none'}]],
-                                          ['p', {class: 'upload-selection__text'}, [
-                                             [format.length, ' files have unsupported formats and will be ignored:'],
-                                             ['ul', dale.do (format, function (file) {return ['li', file]})]
-                                          ]]
-                                       ]]),
-                                    ];
-                                 }),
-                                 // UPLOAD BOX SECTION
-                                 B.view (['State', 'upload', 'new'], function (x, newUpload) {
-                                    if (! B.get ('State', 'upload', 'new', 'files')) return;
-                                    return ['div', {class: 'upload-box__section'}, [
-                                       ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
-                                       // TODO v2: merge two elements into one
-                                       B.view (['Data', 'tags'], {attrs: {class: 'upload-box__search'}}, function (x, tags) {
-                                          // SEARCH FORM
-                                          return B.view (['State', 'upload', 'tag'], {attrs: {class: 'search-form'}}, function (x, filter) {
-                                             var Tags = dale.fil (tags, undefined, function (v, tag) {
-                                                if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
-                                                if ((B.get ('State', 'upload', 'new', 'tags') || []).indexOf (tag) > -1) return;
-                                                if (filter === undefined || filter.length === 0) return tag;
-                                                if (tag.match (H.makeRegex (filter))) return tag;
-                                             });
-                                             if (filter && dale.keys (tags).indexOf (filter) === -1) {
-                                                if (! H.isYear (filter) && ! H.isGeo (filter) && filter !== 'all' && filter !== 'untagged') Tags.unshift (filter + ' (new tag)');
-                                             }
-                                             return [
-                                                ['input', B.ev ({autocomplete: 'off', value: filter, id: 'uploadTag', class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}, ['oninput', 'set', ['State', 'upload', 'tag']])],
-                                                // TODO v2: add inline SVG, remove span
-                                                ['span', {class: 'search-form-svg', opaque: true}],
-                                                ['div', {class: 'search-form__dropdown'}, [
-                                                   // TAG LIST DROPDOWN
-                                                   ['ul', {class: 'tag-list-dropdown'}, dale.do (Tags, function (tag) {
-                                                      return ['li', B.ev ({class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, ['onclick', 'upload', 'tag', tag]), [
-                                                         // TODO v2: add inline SVG
-                                                         ['div', {class: 'tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
-                                                            ['span', {class: 'tag__title'}, tag]
-                                                         ]],
-                                                      ]];
-                                                   })],
-                                                ]],
-                                             ];
-                                          });
-                                       }),
-                                       // TAG LIST HORIZONTAL
-                                       ['ul', {class: 'tag-list-horizontal'}, [
-                                          dale.do (newUpload.tags, function (tag, k) {
-                                             // TODO v2: add inline SVG
-                                             return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
-                                                ['span', {class: 'tag__title'}, tag],
-                                                // TODO: why must specify height so it looks exactly the same as markup?
-                                                ['div', B.ev ({class: 'tag__actions', style: style ({height: 24})}, ['onclick', 'rem', ['State', 'upload', 'new', 'tags'], k]), [
-                                                   ['div', {class: 'tag-actions'}, [
-                                                      // TODO v2: add inline SVG
-                                                      // TODO: why must specify height so it looks exactly the same as markup?
-                                                      ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}],
-                                                   ]],
-                                                ]],
-                                             ]];
-                                          }),
-                                       ]],
+                                    ] : [
+                                       'Drag and drop photos here or ',
+                                       ['br'], ['br'],
                                        ['div', [
-                                          ['br'], ['br'],
-                                          ['div', B.ev ({style: style ({float: 'left', width: 'inherit', 'margin-right': 10}), class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'tag', true]), [
-                                             ['a', {class: 'upload-box__upload-button button button--two'}, 'Add tag'],
-                                          ]],
-                                          ['div', B.ev ({style: style ({float: 'left', width: 'inherit'}), class: 'upload-box__section upload-box__section--buttons'}, [
-                                             ['onclick', 'upload', 'tag', true],
-                                             ['onclick', 'upload', 'start']
-                                          ]), [
-                                             ['a', {class: 'upload-box__upload-button button button--one'}, 'Start upload'],
-                                          ]],
+                                          ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one' + (noSpace ? ' whatever' : ''), onclick: noSpace ? '' : 'c ("#files-upload").click ()'}, 'Upload files'],
+                                          ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'button button--one' + (noSpace ? ' whatever' : ''), onclick: noSpace ? '' : 'c ("#folder-upload").click ()'}, 'Upload folder'],
                                        ]],
-                                    ]];
-                                 }),
-                              ]],
+                                    ]],
+                                    // UPLOAD SELECTION
+                                    B.view (['State', 'upload', 'new'], {attrs: {class: 'upload-box__selection'}}, function (x, newUpload) {
+                                       var selected = B.get ('State', 'upload', 'new', 'files')  || [];
+                                       var format   = B.get ('State', 'upload', 'new', 'format') || [];
+                                       return [
+                                          // TODO v2: add inline SVG
+                                          ['div', {class: 'upload-selection', opaque: true}, [
+                                             ['p', {class: 'upload-selection__text'}, (! selected.length ? 'No' : selected.length) + ' pictures selected'],
+                                              H.if (selected.length, ['div', B.ev ({class: 'upload-selection__remove'}, [
+                                                ['onclick', 'rem', ['State', 'upload'], 'new'],
+                                             ]), [
+                                                ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
+                                             ]]),
+                                          ]],
+                                          // TODO v2: add inline SVG
+                                          H.if (format.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
+                                             ['style', ['.no-svg svg', {display: 'none'}]],
+                                             ['p', {class: 'upload-selection__text'}, [
+                                                [format.length, ' files have unsupported formats and will be ignored:'],
+                                                ['ul', dale.do (format, function (file) {return ['li', file]})]
+                                             ]]
+                                          ]]),
+                                       ];
+                                    }),
+                                    // UPLOAD BOX SECTION
+                                    B.view (['State', 'upload', 'new'], function (x, newUpload) {
+                                       if (! B.get ('State', 'upload', 'new', 'files')) return;
+                                       return ['div', {class: 'upload-box__section'}, [
+                                          ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
+                                          // TODO v2: merge two elements into one
+                                          B.view (['Data', 'tags'], {attrs: {class: 'upload-box__search'}}, function (x, tags) {
+                                             // SEARCH FORM
+                                             return B.view (['State', 'upload', 'tag'], {attrs: {class: 'search-form'}}, function (x, filter) {
+                                                var Tags = dale.fil (tags, undefined, function (v, tag) {
+                                                   if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
+                                                   if ((B.get ('State', 'upload', 'new', 'tags') || []).indexOf (tag) > -1) return;
+                                                   if (filter === undefined || filter.length === 0) return tag;
+                                                   if (tag.match (H.makeRegex (filter))) return tag;
+                                                });
+                                                if (filter && dale.keys (tags).indexOf (filter) === -1) {
+                                                   if (! H.isYear (filter) && ! H.isGeo (filter) && filter !== 'all' && filter !== 'untagged') Tags.unshift (filter + ' (new tag)');
+                                                }
+                                                return [
+                                                   ['input', B.ev ({autocomplete: 'off', value: filter, id: 'uploadTag', class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}, ['oninput', 'set', ['State', 'upload', 'tag']])],
+                                                   // TODO v2: add inline SVG, remove span
+                                                   ['span', {class: 'search-form-svg', opaque: true}],
+                                                   ['div', {class: 'search-form__dropdown'}, [
+                                                      // TAG LIST DROPDOWN
+                                                      ['ul', {class: 'tag-list-dropdown'}, dale.do (Tags, function (tag) {
+                                                         return ['li', B.ev ({class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, ['onclick', 'upload', 'tag', tag]), [
+                                                            // TODO v2: add inline SVG
+                                                            ['div', {class: 'tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
+                                                               ['span', {class: 'tag__title'}, tag]
+                                                            ]],
+                                                         ]];
+                                                      })],
+                                                   ]],
+                                                ];
+                                             });
+                                          }),
+                                          // TAG LIST HORIZONTAL
+                                          ['ul', {class: 'tag-list-horizontal'}, [
+                                             dale.do (newUpload.tags, function (tag, k) {
+                                                // TODO v2: add inline SVG
+                                                return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
+                                                   ['span', {class: 'tag__title'}, tag],
+                                                   // TODO: why must specify height so it looks exactly the same as markup?
+                                                   ['div', B.ev ({class: 'tag__actions', style: style ({height: 24})}, ['onclick', 'rem', ['State', 'upload', 'new', 'tags'], k]), [
+                                                      ['div', {class: 'tag-actions'}, [
+                                                         // TODO v2: add inline SVG
+                                                         // TODO: why must specify height so it looks exactly the same as markup?
+                                                         ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}],
+                                                      ]],
+                                                   ]],
+                                                ]];
+                                             }),
+                                          ]],
+                                          ['div', [
+                                             ['br'], ['br'],
+                                             ['div', B.ev ({style: style ({float: 'left', width: 'inherit', 'margin-right': 10}), class: 'upload-box__section upload-box__section--buttons'}, ['onclick', 'upload', 'tag', true]), [
+                                                ['a', {class: 'upload-box__upload-button button button--two'}, 'Add tag'],
+                                             ]],
+                                             ['div', B.ev ({style: style ({float: 'left', width: 'inherit'}), class: 'upload-box__section upload-box__section--buttons'}, [
+                                                ['onclick', 'upload', 'tag', true],
+                                                ['onclick', 'upload', 'start']
+                                             ]), [
+                                                ['a', {class: 'upload-box__upload-button button button--one'}, 'Start upload'],
+                                             ]],
+                                          ]],
+                                       ]];
+                                    }),
+                                 ];
+                              })
                            ]]
                         ]],
                      ]],
@@ -4074,32 +4087,43 @@ E.upload = function () {
    ]];
 }
 
-// *** IMPORT ELEMENT ***
+// *** RUN OUT OF SPACE VIEW ***
+
+E.noSpace = function () {
+   return B.view (['Data', 'account'], function (x, account) {
+      var noSpace = account && account.usage.fsused >= account.usage.limit;
+      // TODO: remove after testing
+      noSpace = ! noSpace;
+      if (noSpace) return ['div', {class: 'space-alert'}, [
+         ['div', {class: 'space-alert__image', opaque: true}, [
+            ['div', {class: 'space-alert-icon', opaque: true}]
+         ]],
+         ['div', {class: 'space-alert__main'}, [
+            ['div', {class: 'upload-box__section'}, [
+               ['p', {class: 'space-alert-message'}, [
+                  ['span', {class: 'space-alert-icon-small', opaque: true}],
+                  ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']
+               ]],
+               ['div', {class: 'progress-bar'}],
+            ]],
+            ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+               ['div', {class: 'delete-some-files-button button'}, ['a', {href: '#/pics'}, 'Delete some files']],
+               ['div', {class: 'upgrade-your-account-button button'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']],
+            ]],
+         ]],
+      ]];
+   });
+}
+
+// *** IMPORT VIEW ***
 
 E.import = function () {
    return ['div', [
       E.header (true, true),
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
+            E.noSpace (),
             // PAGE HEADER
-            ['div', {class: 'space-alert'}, [
-               ['div', {class: 'space-alert__image', opaque: true}, [
-                  ['div', {class: 'space-alert-icon', opaque: true}]
-               ]],
-               ['div', {class: 'space-alert__main'}, [
-                  ['div', {class: 'upload-box__section'}, [
-                     ['p', {class: 'space-alert-message'}, [
-                        ['span', {class: 'space-alert-icon-small', opaque: true}],
-                        ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']
-                     ]],
-                     ['div', {class: 'progress-bar'}],
-                  ]],
-                  ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                     ['div', {class: 'delete-some-files-button button'}, 'Delete some files'],
-                     ['div', {class: 'upgrade-your-account-button button'}, 'Upgrade your account'],
-                  ]],
-               ]],
-            ]],
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
@@ -4116,6 +4140,7 @@ E.import = function () {
                            ['div', 'Import photos and videos from these services'],
                            ['br'],['br'],
                            ['div', [
+                              // TODO: when dynamizing, place condition on responder to check if there's enough space left.
                               ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}],
                               ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
                            ]],
@@ -4139,7 +4164,7 @@ E.import = function () {
    ]];
 }
 
-// *** ACCOUNT ELEMENT ***
+// *** ACCOUNT VIEW ***
 
 E.account = function () {
    return [
@@ -4335,7 +4360,7 @@ E.accountPaid = function () {
    ];
 }
 
-// *** UPGRADE ELEMENT ***
+// *** UPGRADE VIEW ***
 
 E.upgrade = function () {
    return ['div', [
@@ -4363,7 +4388,7 @@ E.upgrade = function () {
                            ['td', {class: 'free-vs-paid-col-3', style: style ({'vertical-align': 'baseline'})}, [
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Paid Plan'],
                               ['br'],
-                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1), 'padding-left, padding-right': CSS.vars ['padding--xs']})}, '€ 4/mo + € 0.05 per GB/mo.']
+                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1), 'padding-left, padding-right': CSS.vars ['padding--xs']})}, '€ 7/mo + € 0.05 per GB/mo.']
                            ]],
                         ]],
                         ['tr', [
@@ -4451,7 +4476,7 @@ E.upgrade = function () {
                            ]],
                            ['td', {class: 'free-vs-paid-col-2'}, '✘'],
                            ['td', {class: 'free-vs-paid-col-3'}, [
-                              ['span', '€ 4/mo']
+                              ['span', '€ 7/mo']
                            ]],
                         ]],
                         ['tr', [
@@ -4472,7 +4497,7 @@ E.upgrade = function () {
                            ['td', {class: 'free-vs-paid-col-1'}],
                            ['td', {class: 'free-vs-paid-col-2'}],
                            ['td', {class: 'free-vs-paid-col-3'}, [
-                              ['span', {class: 'call-to-action-upgrade'}, 'Upgrade now'],
+                              ['span', B.ev ({class: 'call-to-action-upgrade'}, ['onclick', 'snackbar', 'green', 'Coming soon!']), 'Upgrade now'],
                               ['br'],
                               ['span', {class: 'stripe-message-upgrade'}, 'You’ll be taken to Stripe and then back. Thank you!']
                            ]],

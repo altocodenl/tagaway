@@ -40,10 +40,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - client: fix "done tagging" button style
-- Dynamize
+- client: text-decoration none to elements inside E.noSpace
+- client: check why E.noSpace is not showing in upload but yes in import
+- client: add proper CSS class to disabled buttons in E.import
+
+- client: Dynamize
    - Basic account view
-   - Paid plan landing
-   - Running out of space box (import & upload)
+      - Type of account
+      - Geotagging on/off
+      - Change password
+      - Account data: usage
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
@@ -593,9 +599,9 @@ Used by giz:
 
 ## Client
 
-### Elements
+### Views
 
-**Container**: `E.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other elements.
+**Container**: `E.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other views.
 
 **Pages**:
 
@@ -616,7 +622,7 @@ Used by giz:
       - `input -> set State.filter`
       - `click -> goto tag`
 2. `E.upload`
-   - Depends on: `State.upload.summary`, `State.upload.new`, `Data.tags`, `State.upload.tag`, `State.upload.queue`
+   - Depends on: `State.upload.summary`, `State.upload.new`, `Data.tags`, `State.upload.tag`, `State.upload.queue`, `Data.account`
    - Events:
       - `onchange -> upload files|folder`
       - `onclick -> rem State.upload.new`
@@ -659,6 +665,9 @@ Used by giz:
    - Contained by: `E.pics`.
    - Depends on `State.open`.
    - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`, `goto location PIC`.
+7. `E.noSpace`
+   - Contained by: `E.import`, `E.upload`.
+   - Depends on `Data.account`.
 
 ### Responders
 
@@ -745,7 +754,11 @@ Used by giz:
       - Adds an item to either `State.upload.summary.UID.ok`, `State.upload.summary.UID.error` or `State.upload.summary.UID.repeat`.
       - If query is successful, invokes `query account` and `query tags`.
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
-6. Account
+
+6. Upload
+   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
+
+7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
    2. `dismiss geo`: `post geo`; invokes `snackbar`. If successful, invokes `query account`.
    3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
@@ -790,7 +803,7 @@ Used by giz:
 
 Only things that differ from client are noted.
 
-### Elements
+### Views
 
 **Pages**:
 

@@ -222,11 +222,11 @@ CSS.litc = [
    }],
 ];
 
-// *** ELEMENTS ***
+// *** VIEWS ***
 
 var E = {};
 
-// *** NATIVE LISTENERS ***
+// *** NATIVE RESPONDERS ***
 
 window.onerror = function () {
    B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
@@ -236,11 +236,11 @@ window.addEventListener ('hashchange', function () {
    B.do ('read', 'hash');
 });
 
-// *** LISTENERS ***
+// *** RESPONDERS ***
 
 dale.do ([
 
-   // *** GENERAL LISTENERS ***
+   // *** GENERAL RESPONDERS ***
 
    ['initialize', [], {burn: true}, function (x) {
       B.do (x, 'reset',    'store');
@@ -315,7 +315,7 @@ dale.do ([
       if (window.location.hash.replace ('#/', '').split ('/') [0] !== page) window.location.hash = '#/' + page;
    }],
 
-   // *** AUTH LISTENERS ***
+   // *** AUTH RESPONDERS ***
 
    ['retrieve', 'csrf', function (x) {
       B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
@@ -343,7 +343,7 @@ dale.do ([
       });
    }],
 
-   // *** INVITE LISTENERS ***
+   // *** INVITE RESPONDERS ***
 
    ['retrieve', 'invites', function (x) {
       B.do (x, 'get', 'admin/invites', {}, '', function (x, error, rs) {
@@ -376,7 +376,7 @@ dale.do ([
       }
    }],
 
-   // *** USERS LISTENERS ***
+   // *** USERS RESPONDERS ***
 
    ['delete', 'user', function (x, username) {
       if (! confirm ('Are you sure you want to delete the user ' + username + '?')) return;
@@ -394,7 +394,7 @@ dale.do ([
       });
    }],
 
-   // *** DEPLOY LISTENERS ***
+   // *** DEPLOY RESPONDERS ***
 
    ['deploy', 'client', function (x) {
       var input = c ('#deploy');
@@ -412,7 +412,7 @@ dale.do ([
    B.listen.apply (null, v);
 });
 
-// *** LOGO ELEMENT ***
+// *** LOGO VIEW ***
 
 E.logo = function (size) {
    return [
@@ -424,7 +424,7 @@ E.logo = function (size) {
    ];
 }
 
-// *** BASE ELEMENT ***
+// *** BASE VIEW ***
 
 E.base = function () {
    return [
@@ -445,7 +445,7 @@ E.base = function () {
    ];
 }
 
-// *** SNACKBAR ELEMENT ***
+// *** SNACKBAR VIEW ***
 
 E.snackbar = function () {
    return [
@@ -512,7 +512,7 @@ E.snackbar = function () {
    ];
 }
 
-// *** LOGIN ELEMENT ***
+// *** LOGIN VIEW ***
 
 E.login = function () {
    return [
