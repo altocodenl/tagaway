@@ -21,7 +21,7 @@
    },
    "devDependencies": {
       "css":       "2.2.4",
-      "node-sass": "4.13.0"
+      "node-sass": "4.14.1"
    },
    "main": "server.js",
    "author": "Federico Pereiro <fpereiro@gmail.com>",
