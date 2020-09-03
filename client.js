@@ -1374,7 +1374,7 @@ CSS.litc = [
       width: '200px',
       'border': '1px solid #8b8b8b',
       'border-radius': '100px',
-      'background': 'linear-gradient(90deg, #8b8b8b 75%, #fff 25%)',
+      'background': 'linear-gradient(90deg, #8b8b8b 100%)',
    }],
     ['.space-usage-bar-paid', { // NOTE THAT CLASS NAME IS ONLY FOR STATIC AND EXAMPLE PURPOSES. THE CLASS NAME IS .space-usage-bar
       'float': 'right',
@@ -2678,6 +2678,11 @@ dale.do ([
 
    // *** ACCOUNT RESPONDERS ***
 
+   ['change', ['State', 'page'], function (x) {
+      if (B.get ('State', 'page') !== 'account') return;
+      if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
+   }],
+
    ['query', 'account', function (x, cb) {
       B.do (x, 'get', 'account', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your account information.');
@@ -2698,7 +2703,10 @@ dale.do ([
       var operation = B.get ('Data', 'account', 'geo') ? 'disable' : 'enable';
       B.do (x, 'post', 'geo', {}, {operation: operation}, function (x, error, rs) {
          if (error) {
-            if (error.status === 409) return B.do (x, 'snackbar', 'yellow', 'Geotagging is currently in process and cannot be disabled; please wait a few minutes and try again.');
+            if (error.status === 409) {
+               if (c ('#geoCheckbox')) c ('#geoCheckbox').checked = true;
+               return B.do (x, 'snackbar', 'yellow', 'Geotagging is currently in process and cannot be disabled; please wait a few minutes and try again.');
+            }
             return B.do (x, 'snackbar', 'red', 'There was an error ' + operation + 'd geotagging.');
          }
          if (operation === 'disable') {
@@ -4193,12 +4201,12 @@ E.accountFree = function () {
                      ['table', {class: 'geo-and-password-table'}, [
                         ['tr', {class: 'enable-geotagging'}, [
                            ['td', {class: 'text-left-table'},'Geotagging'],
-                           ['td', {style: style ({'vertical-align': 'middle'})}, [
-                              ['label', {class: 'switch'}, [
-                                 ['input', {type: 'checkbox'}],
+                           B.view (['Data', 'account'], {tag: 'td', attrs: {style: style ({'vertical-align': 'middle'})}}, function (x, account) {
+                              return ['label', {class: 'switch'}, [
+                                 ['input', B.ev ({id: 'geoCheckbox', type: 'checkbox', checked: account && account.geo}, ['onclick', 'toggle', 'geo'])],
                                  ['span', {class: 'geo-slider'}]
-                              ]],
-                           ]],
+                              ]];
+                           }),
                         ]],
                         ['tr', {class: 'change-password'}, [
                            ['td', {class: 'text-left-table'}, 'Password'],
@@ -4217,24 +4225,31 @@ E.accountFree = function () {
                            ]],
                      ]],
                      ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
-                     ['table', {class: 'account-data'}, [
-                        ['tr', {class: 'space-usage'}, [
-                           ['td', {class: 'text-left-account-data-table'}, 'Usage: 75% (1.5 GB)'],
-                           ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
-                              ['span', {class: 'space-usage-bar'}],
+                     B.view (['Data', 'account'], {tag: 'table', attrs: {class: 'account-data'}}, function (x, account) {
+                        if (! account) return;
+                        var percUsed = Math.round ((account.usage.fsused / account.usage.limit) * 100);
+                        var gbUsed = Math.round (account.usage.fsused * 10 / 1000000000) / 10;
+                        return [
+                           ['tr', {class: 'space-usage'}, [
+                              ['td', {class: 'text-left-account-data-table'}, 'Usage: ' + percUsed + '% (' + gbUsed + ' GB)'],
+                              ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                                 ['span', {class: 'space-usage-bar', style: style ({
+                                    background: 'linear-gradient(90deg, #8b8b8b ' + percUsed + '%, #fff ' + (100 - percUsed) + '%)',
+                                 })}],
+                              ]],
                            ]],
-                        ]],
-                        ['tr', {class: 'subtext-left-table'}, [
-                           ['td', 'Of your free 2 GB']
-                        ]],
-                        ['tr', {class: 'account-type'}, [
-                           ['td', {class: 'text-left-account-data-table'}, [
-                              ['span', 'Account type: '],
-                              ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, 'Free']
+                           ['tr', {class: 'subtext-left-table'}, [
+                              ['td', 'Of your free 2 GB']
                            ]],
-                           ['td', {class: 'call-to-action-text'}, 'Upgrade your account']
-                        ]],
-                     ]],
+                           ['tr', {class: 'account-type'}, [
+                              ['td', {class: 'text-left-account-data-table'}, [
+                                 ['span', 'Account type: '],
+                                 ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, 'Free']
+                              ]],
+                              ['td', {class: 'call-to-action-text'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']]
+                           ]],
+                        ];
+                     }),
                   ]],
                ]],
             ]],

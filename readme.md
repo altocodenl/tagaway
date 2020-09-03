@@ -40,16 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - client: fix "done tagging" button style
-- client: text-decoration none to elements inside E.noSpace
+- client: text-decoration none to elements inside E.noSpace; also for upgrade in E.accountFree
 - client: check why E.noSpace is not showing in upload but yes in import
 - client: add proper CSS class to disabled buttons in E.import
+- client: fix slider
 
-- client: Dynamize
-   - Basic account view
-      - Type of account
-      - Geotagging on/off
-      - Change password
-      - Account data: usage
+- client: password & merge account subviews
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
