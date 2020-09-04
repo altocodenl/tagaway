@@ -1408,6 +1408,7 @@ CSS.litc = [
    }],
    ['.text-left-account-data-table', {
       'padding-top': CSS.typography.spaceVer (1),
+      'padding-left': CSS.typography.spaceVer (.25),
    }],
    ['.subtext-left-table td', {
       'padding-bottom': CSS.typography.spaceVer (1),
@@ -4464,12 +4465,12 @@ E.upgrade = function () {
                      ['table', {class: 'upgrade-table'}, [
                         ['tr', [
                            ['td', {class: 'free-vs-paid-col-1'}],
-                           ['td', {class: 'free-vs-paid-col-2', style: style ({'vertical-align': 'baseline'})}, [
+                           ['td', {class: 'free-vs-paid-col-2'}, [
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Free Plan'],
                               ['br'],
                               ['span', {style: style ({'font-size': CSS.typography.fontSize (-1)})}, 'You are here']
                            ]],
-                           ['td', {class: 'free-vs-paid-col-3', style: style ({'vertical-align': 'baseline'})}, [
+                           ['td', {class: 'free-vs-paid-col-3'}, [
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Paid Plan'],
                               ['br'],
                               ['span', {style: style ({'font-size': CSS.typography.fontSize (-1), 'padding-left, padding-right': CSS.vars ['padding--xs']})}, '€ 7/mo + € 0.05 GB/mo']
