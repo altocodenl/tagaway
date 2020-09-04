@@ -39,8 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- client: clean up CSS classes on account & make sure that space limit line goes all the way.
-
 - [BUG] Let's review the button disable logic for upload when E.noSpace is displayed. As of now, even if E.noSpace is not showing, the button disabling class is added anyways. 
 
 - Import from GDrive/Dropbox.
