@@ -39,21 +39,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- [BUG] Sidebar left is gone. 
-- [BUG] console says "(2020-09-03T20:46:18.939Z) diff took too long, trampling instead!: в5 gotoB.min.js.1"
-
 - client: fix "done tagging" button style
 - client: text-decoration none to elements inside E.noSpace; also for upgrade in E.accountFree
 - client: check why E.noSpace is not showing in upload but yes in import
 - client: add proper CSS class to disabled buttons in E.import
-- client: fix slider
+- client: upgrade, more space on the top of free plan/paid plan, more space on the left of the list of features
+- client: clean up CSS classes on account & make sure that space limit line goes all the way.
 
-- client: password & merge account subviews
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
    - Email when import done or stopped.
-- Paid accounts.
+- (paid) accounts
+   - Delete my account with confirmation.
+   - Show/hide paid space in account.
+   - Retrieve data on payment cycle.
+   - Retrieve used space so far (stats).
+   - Downgrade my account alert.
 
 ### Alpha version (DONE)
 
@@ -634,6 +636,10 @@ Used by giz:
 4. `E.tags`
 5. `E.import`
 6. `E.account`
+   - Depends on: `Data.account`.
+   - Events:
+      - `click -> clear changePassword`.
+      - `click -> submit changePassword`.
 7. Auth:
    7.1 `E.login`
       - Events: `click -> login`
@@ -692,7 +698,7 @@ Used by giz:
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
-      - Adds `Data.csrf` to `POST` requests.
+      - Adds `Data.csrf` to most `POST` requests.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` (with truthy `logout` argument) and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
    7. `read hash`: places the first part of `window.location.hash` into (`State.page`). If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
@@ -762,10 +768,13 @@ Used by giz:
    2. `dismiss geo`: `post geo`; invokes `snackbar`. If successful, invokes `query account`.
    3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
    4. `clear updateGeotags`: if `State.updateGeotags` is defined, it invokes `clearInterval` on `State.updateGeotags` and then `rem State.updateGeotags`
+   5. `submit changePassword`: invokes `post auth/changePassword`, invokes `snackbar`; if successful, invokes `clear changePassword`.
+   6. `clear changePassword`: clears inputs of the change password fields and removes `State.changePassword`.
 
 ### Store
 
 - `State`:
+   - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.

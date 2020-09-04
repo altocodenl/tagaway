@@ -2098,14 +2098,14 @@ dale.do ([
       B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^get|post$/, [], function (x, headers, body, cb) {
-      var path = x.path [0], authRequest = (path.match (/^auth/) && path !== 'auth/logout') || path === 'requestInvite';
+      var path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && ['auth/logout', 'auth/delete', 'auth/changePassword'].indexOf (path) === -1);
       // CSRF protection
-      if (x.verb === 'post' && ! authRequest) {
+      if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
       // TODO v2: uncomment
-      //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
+      //if (signup/login/recover/reset/changepassword) teishi.last (B.r.log).args [1] = 'OMITTED';
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
             B.do (x, 'reset', 'store', true);
@@ -2267,6 +2267,7 @@ dale.do ([
    }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
+      if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.do (x, 'query', 'pics');
       B.do (x, 'query', 'tags');
@@ -2730,6 +2731,24 @@ dale.do ([
       if (! B.get ('State', 'updateGeotags')) return;
       clearInterval (B.get ('State', 'updateGeotags'));
       B.do (x, 'rem', 'State', 'updateGeotags');
+   }],
+
+   ['submit', 'changePassword', function (x) {
+      if (! c ('#password-current').value) return B.do (x, 'snackbar', 'yellow', 'Please enter your current password.');
+      if (! c ('#password-new').value)     return B.do (x, 'snackbar', 'yellow', 'Please enter your new password.');
+      if (c ('#password-new').value !== c ('#password-new-repeat').value) return B.do (x, 'snackbar', 'yellow', 'The repeated password does not match.');
+      B.do (x, 'post', 'auth/changePassword', {}, {old: c ('#password-current').value, new: c ('#password-new').value}, function (x, error) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error changing your password.');
+         B.do (x, 'snackbar', 'green', 'Your password was changed successfully.');
+         B.do (x, 'clear', 'changePassword');
+      });
+   }],
+
+   ['clear', 'changePassword', function (x) {
+      c ('#password-current').value     = '';
+      c ('#password-new').value         = '';
+      c ('#password-new-repeat').value  = '';
+      B.do (x, 'rem', 'State', 'changePassword');
    }],
 
 ], function (v) {
@@ -4178,86 +4197,136 @@ E.account = function () {
    return [
       E.header (true, true),
       B.view (['Data', 'account'], function (x, account) {
-         var paid = false;
-         if (paid) return E.accountPaid ();
-         else      return E.accountFree ();
-      })
-   ];
-}
-
-E.accountFree = function () {
-   return [
-      ['div', {class: 'main-centered'}, [
-         ['div', {class: 'main-centered__inner max-width--m'}, [
-            // PAGE HEADER
-            ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'Account'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
-            ]],
-            ['div', {class: 'page-section'}, [
-               //PAGE CONTENT
-               ['div', {class: 'account-box'}, [
-                  ['div', {class: 'account-content-container'}, [
-                     ['table', {class: 'geo-and-password-table'}, [
-                        ['tr', {class: 'enable-geotagging'}, [
-                           ['td', {class: 'text-left-table'},'Geotagging'],
-                           B.view (['Data', 'account'], {tag: 'td', attrs: {style: style ({'vertical-align': 'middle'})}}, function (x, account) {
-                              return ['label', {class: 'switch'}, [
-                                 ['input', B.ev ({id: 'geoCheckbox', type: 'checkbox', checked: account && account.geo}, ['onclick', 'toggle', 'geo'])],
-                                 ['span', {class: 'geo-slider'}]
-                              ]];
+         if (! account) return;
+         var percUsed = Math.round ((account.usage.fsused / account.usage.limit) * 100);
+         var gbUsed = Math.round (account.usage.fsused * 10 / 1000000000) / 10;
+         var free   = account.type !== 'free';
+         return ['div', {class: 'main-centered'}, [
+            ['div', {class: 'main-centered__inner max-width--m'}, [
+               // PAGE HEADER
+               ['div', {class: 'page-header'}, [
+                  ['h1', {class: 'page-header__title page-title'}, 'Account'],
+                  ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Manage your settings and usage']
+               ]],
+               ['div', {class: 'page-section'}, [
+                  //PAGE CONTENT
+                  ['div', {class: 'account-box'}, [
+                     ['div', {class: 'account-content-container'}, [
+                        ['table', {class: 'geo-and-password-table'}, [
+                           ['tr', {class: 'enable-geotagging'}, [
+                              ['td', {class: 'text-left-table'},'Geotagging'],
+                              B.view (['Data', 'account'], {tag: 'td', attrs: {style: style ({'vertical-align': 'middle'})}}, function (x, account) {
+                                 return ['label', {class: 'switch'}, [
+                                    ['input', B.ev ({id: 'geoCheckbox', type: 'checkbox', checked: account && account.geo}, ['onclick', 'toggle', 'geo'])],
+                                    ['span', {class: 'geo-slider'}]
+                                 ]];
+                              }),
+                           ]],
+                           B.view (['State', 'changePassword'], {tag: 'tr', attrs: {class: 'change-password'}}, function (x, changePassword) {
+                              return [
+                                 ['td', {class: 'text-left-table'}, 'Password'],
+                                 ['td', {style: style ({'vertical-align': 'middle'})}, [
+                                    ! changePassword ? ['span', B.ev ({class: 'change-password-button button'}, ['onclick', 'set', ['State', 'changePassword'], true]), 'Change password'] : [],
+                                 ]],
+                              ];
                            }),
                         ]],
-                        ['tr', {class: 'change-password'}, [
-                           ['td', {class: 'text-left-table'}, 'Password'],
-                           ['td', {style: style ({'vertical-align': 'middle'})}, [
-                              ['span', {class: 'change-password-button button'}, 'Change password']
-                           ]],
-                        ]],
-                     ]],
-                     ['div', {class: 'change-password-form'}, [
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your current password'}],
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your new password'}],
-                        ['input', {class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Repeat your new password'}],
-                        ['div', {class: 'change-password-buttons'}, [
-                           ['span', {class: 'change-password-button-confirm button'}, 'Change password'],
-                           ['span', {class: 'change-password-button-cancel button'}, 'Cancel']
-                           ]],
-                     ]],
-                     ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
-                     B.view (['Data', 'account'], {tag: 'table', attrs: {class: 'account-data'}}, function (x, account) {
-                        if (! account) return;
-                        var percUsed = Math.round ((account.usage.fsused / account.usage.limit) * 100);
-                        var gbUsed = Math.round (account.usage.fsused * 10 / 1000000000) / 10;
-                        return [
+                        B.view (['State', 'changePassword'], {attrs: {class: 'change-password-form'}}, function (x, changePassword) {
+                           if (! changePassword) return;
+                           return [
+                              ['input', {id: 'password-current', class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your current password'}],
+                              ['input', {id: 'password-new', class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Enter your new password'}],
+                              ['input', {id: 'password-new-repeat', class: 'search-form__input search-input change-password-placeholder', type: 'password', placeholder: 'Repeat your new password'}],
+                              ['div', {class: 'change-password-buttons'}, [
+                                 ['span', B.ev ({class: 'change-password-button-confirm button'}, ['onclick', 'submit', 'changePassword']), 'Change password'],
+                                 ['span', B.ev ({class: 'change-password-button-cancel button'}, ['onclick', 'clear', 'changePassword']), 'Cancel']
+                                 ]],
+                           ];
+                        }),
+                        ['h2', {class: 'usage-and-account-type'}, 'Usage and account type'],
+                        ['table', {class: 'account-data'}, [
                            ['tr', {class: 'space-usage'}, [
                               ['td', {class: 'text-left-account-data-table'}, 'Usage: ' + percUsed + '% (' + gbUsed + ' GB)'],
                               ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
                                  ['span', {class: 'space-usage-bar', style: style ({
-                                    background: 'linear-gradient(90deg, #8b8b8b ' + percUsed + '%, #fff ' + (100 - percUsed) + '%)',
+                                    background: 'linear-gradient(90deg, #8b8b8b ' + percUsed + '%, #fff ' + percUsed + '%)',
                                  })}],
                               ]],
                            ]],
                            ['tr', {class: 'subtext-left-table'}, [
                               ['td', 'Of your free 2 GB']
                            ]],
+                           free ? [] : ['tr', {class: 'space-limit'}, [
+                              ['td', {class: 'text-left-account-data-table'}, 'Space limit'],
+                              ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                                 ['input', {class: 'search-form__input search-input space-limit-box', type: 'text', placeholder: '100'}]
+                              ]],
+                           ]],
+                           free ? [] : ['tr', {class: 'subtext-left-table'}, [
+                              ['td', 'You can set your monthly limit up to 100 GB.']
+                           ]],
                            ['tr', {class: 'account-type'}, [
                               ['td', {class: 'text-left-account-data-table'}, [
                                  ['span', 'Account type: '],
-                                 ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, 'Free']
+                                 ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, account.type [0].toUpperCase () + account.type.slice (1)]
                               ]],
-                              ['td', {class: 'call-to-action-text'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']]
+                              free ? ['td', {class: 'call-to-action-text'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']] : []
                            ]],
-                        ];
-                     }),
+                           free ? [] : [
+                              ['tr', {class: 'subtext-left-table'}, [
+                                 ['td', 'This month you pay for 15 days. Monthly cost is € 4.00']
+                              ]],
+                              ['tr', {class: 'paid-space-used'}, [
+                                 ['td', {class: 'text-left-account-data-table'}, [
+                                    ['span', {class: 'right-pointing-triangle'}, '▶ '],
+                                    ['span', {class: 'down-pointing-triangle'}, '▼ '],
+                                    ['span', 'Paid space used: '],
+                                    ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB'],
+                                 ]],
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
+                              ]],
+                              ['tr', {class: 'subtext-left-table'}, [
+                                 ['td', [
+                                    ['span',{style: style ({'margin-left': '4%'})}, 'Based on your average space used and your current use.']
+                                 ]],
+                              ]],
+                              ['tr', {class: 'average-paid-space-used'}, [
+                                 ['td', {style: style ({'padding-left': '5%'}), class: 'text-left-account-data-table'}, [
+                                    ['span', 'Average paid space used: '],
+                                    ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '40 GB']
+                                 ]],
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 0.01 / Month']
+                              ]],
+                              ['tr', {class: 'subtext-left-table'}, [
+                                 ['td', {style: style ({'padding-left': '5%'})}, 'Average amount of GB you used this month so far.']
+                              ]],
+                              ['tr', {class: 'paid-space-currently-used'}, [
+                                 ['td', {style: style ({'padding-left': '5%'}), class: 'text-left-account-data-table'}, [
+                                    ['span', 'Paid space currently using: '],
+                                    ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '70 GB']
+                                 ]],
+                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.80 / Month']
+                              ]],
+                              ['tr', {class: 'subtext-left-table'}, [
+                                 ['td', {style: style ({'padding-left': '5%'})}, '70 GB * 15 remaining days this month. Each GB is  € 0.05.']
+                              ]],
+                              ['tr', {class: 'total-estimated-cost'}, [
+                                 ['td', {class: 'text-left-account-data-table'}, 'Total estimated cost for this month:'],
+                                 ['td', {class: 'values-right-table'}, '€ 3.81']
+                              ]],
+                           ]
+                        ]],
+                        free ? [] : ['div', {class: 'cancel-account'}, 'Downgrade your subscription']
+                     ]]
                   ]],
                ]],
             ]],
-         ]],
-      ]],
+         ]];
+      })
    ];
 }
 
+// TODO: remove after finishing account view
 E.accountPaid = function () {
    return [
       ['div', {class: 'main-centered'}, [
@@ -4366,7 +4435,7 @@ E.accountPaid = function () {
                            ['td', {class: 'values-right-table'}, '€ 3.81']
                         ]],
                      ]],
-                     ['div', {class: 'cancel-account'}, 'Cancel your account']
+                     ['div', {class: 'cancel-account'}, 'Downgrade your subscription']
                   ]],
                ]],
             ]],
@@ -4385,7 +4454,7 @@ E.upgrade = function () {
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Upgrade account'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Get all the space you want']
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Get all the space you need']
             ]],
             ['div', {class: 'page-section'}, [
                //PAGE CONTENT
@@ -4403,7 +4472,7 @@ E.upgrade = function () {
                            ['td', {class: 'free-vs-paid-col-3', style: style ({'vertical-align': 'baseline'})}, [
                               ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium, 'font-size': CSS.typography.fontSize (2)})}, 'Paid Plan'],
                               ['br'],
-                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1), 'padding-left, padding-right': CSS.vars ['padding--xs']})}, '€ 7/mo + € 0.05 per GB/mo.']
+                              ['span', {style: style ({'font-size': CSS.typography.fontSize (-1), 'padding-left, padding-right': CSS.vars ['padding--xs']})}, '€ 7/mo + € 0.05 GB/mo']
                            ]],
                         ]],
                         ['tr', [

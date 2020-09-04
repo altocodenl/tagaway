@@ -1995,7 +1995,7 @@ var routes = [
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
-               type:     rq.user.type,
+               type:     rq.user.type === 'tier1' ? 'free' : 'paid',
                created:  parseInt (rq.user.created),
                usage:    {
                   limit:  CONFIG.storelimit [rq.user.type],

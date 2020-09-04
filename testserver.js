@@ -319,7 +319,7 @@ var main = [
    ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
    ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
-      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
+      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
@@ -1383,7 +1383,7 @@ var main = [
    ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
    ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
-      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'tier1'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
+      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 59 && rs.body.logs.length !== 60)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
