@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- client: fix "done tagging" button style
 - client: add proper CSS class to disabled buttons in E.upload
 - client: clean up CSS classes on account & make sure that space limit line goes all the way.
 
