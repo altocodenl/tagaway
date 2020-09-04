@@ -203,6 +203,7 @@ CSS.litc = [
       border: '1px solid ' + CSS.vars ['color--one'],
       'background-color': CSS.vars ['color--one'],
       color: '#fff',
+      cursor: 'pointer',
    }],
    media ('screen and (min-width: 1025px)', ['.button--one:hover', {
       'background-color': '#fff',
@@ -1063,6 +1064,18 @@ CSS.litc = [
       color: CSS.vars.grey,
    }],
    ['.upload-box__upload-button', {'margin-left': 'auto'}],
+   // BLOCKED BUTTONS WHEN E.noSpace IS SHOWING
+   ['.blocked-button', {
+      cursor: 'default',
+      'background-color': '#8b8b8b',
+      border: '#8b8b8b'
+   }],
+   ['.blocked-button:hover', {
+      cursor: 'default',
+      color: '#fff',
+      'background-color': '#8b8b8b',
+      border: '#8b8b8b'
+   }],
    // *** drag-and-drop.scss ***
    // Drag and drop
    ['.drag-and-drop', {
@@ -3829,8 +3842,8 @@ E.upload = function () {
                                        'Drag and drop photos here or ',
                                        ['br'], ['br'],
                                        ['div', [
-                                          ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one' + (noSpace ? ' whatever' : ''), onclick: noSpace ? '' : 'c ("#files-upload").click ()'}, 'Upload files'],
-                                          ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'button button--one' + (noSpace ? ' whatever' : ''), onclick: noSpace ? '' : 'c ("#folder-upload").click ()'}, 'Upload folder'],
+                                          ['div', {style: style ({float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#files-upload").click ()'}, 'Upload files'],
+                                          ['div', {style: style ({float: 'left', display: 'inline-block'}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#folder-upload").click ()'}, 'Upload folder'],
                                        ]],
                                     ]],
                                     // UPLOAD SELECTION
@@ -4118,7 +4131,7 @@ E.upload = function () {
 
 E.noSpace = function () {
    return B.view (['Data', 'account'], function (x, account) {
-      var noSpace = account && account.usage.fsused >= account.usage.limit;
+      var noSpace = account && account.usage.fsused <= account.usage.limit;
       // TODO: remove after testing
       noSpace = ! noSpace;
       if (noSpace) return ['div', {class: 'space-alert'}, [
