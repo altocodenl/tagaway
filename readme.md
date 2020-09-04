@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo v1 now
 
 - client: fix "done tagging" button style
-- client: text-decoration none to elements inside E.noSpace; also for upgrade in E.accountFree
 - client: check why E.noSpace is not showing in upload but yes in import
 - client: add proper CSS class to disabled buttons in E.import
 - client: upgrade, more space on the top of free plan/paid plan, more space on the left of the list of features

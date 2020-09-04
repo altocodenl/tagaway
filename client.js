@@ -176,7 +176,7 @@ CSS.litc = [
    }],
    // *** main-styles.scss ***
    ['a, .pointer', {cursor: 'pointer'}],
-   ['a', {'text-decoration': 'none'}],
+   ['a, a:hover, a:focus, a:active', {'text-decoration': 'none', 'color': 'inherit'}],
    ['*', {'box-sizing': 'border-box'}], // Makes padding included in width
    ['input:focus, textarea:focus', {outline: 'none'}],
    ['body', {'width, height': 1}],
