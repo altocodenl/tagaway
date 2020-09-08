@@ -39,8 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
-- [BUG] Let's review the button disable logic for upload when E.noSpace is displayed. As of now, even if E.noSpace is not showing, the button disabling class is added anyways. 
-
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
