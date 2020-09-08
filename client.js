@@ -3821,8 +3821,6 @@ E.upload = function () {
                               // UPLOAD BOX SECTION
                               B.view (['Data', 'account'], {attrs: {class: 'upload-box__section'}}, function (x, account) {
                                  var noSpace = account && account.usage.fsused >= account.usage.limit;
-                                 // TODO: remove after testing
-                                 noSpace = ! noSpace;
                                  return [
                                     ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
                                     // DRAG & DROP
@@ -4122,9 +4120,7 @@ E.upload = function () {
 
 E.noSpace = function () {
    return B.view (['Data', 'account'], function (x, account) {
-      var noSpace = account && account.usage.fsused <= account.usage.limit;
-      // TODO: remove after testing
-      noSpace = ! noSpace;
+      var noSpace = account && account.usage.fsused >= account.usage.limit;
       if (noSpace) return ['div', {class: 'space-alert'}, [
          ['div', {class: 'space-alert__image', opaque: true}, [
             ['div', {class: 'space-alert-icon', opaque: true}]
