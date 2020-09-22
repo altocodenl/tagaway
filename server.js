@@ -2600,7 +2600,7 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
 
 // *** TEMPORARY SCRIPT TO CREATE THUMBNAILS OF SMALL/MEDIUM PICTURES WITH ROTATION METADATA ***
 
-if (cicek.isMaster) a.stop ([
+if (cicek.isMaster && process.argv [3] === 'createMissingThumbs') a.stop ([
    // Get all picture data from the DB
    [redis.keyscan, 'pic:*'],
    function (s) {
