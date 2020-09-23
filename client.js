@@ -4153,6 +4153,8 @@ E.import = function () {
       [['Entire Drive', 'Vacations', 'Japan 2019'], 125]
    ];
 
+   showList = true;
+
    return ['div', [
       E.header (true, true),
       ['div', {class: 'main-centered'}, [
@@ -4164,8 +4166,10 @@ E.import = function () {
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
             ]],
             ['div', {class: 'page-section'}, [
-               // IMPORT BOX
-               ['div', {class:'upload-box'}, [
+               showList ? ['div', {class: 'import-file-list'}, [
+                  // TODO: ADD MOCKUP
+               ]] : ['div', {class:'upload-box'}, [
+                  // IMPORT BOX
                   ['div', {class:'upload-box__image', opaque: true}],
                   ['div', {class:'upload-box__main'}, [
                      // IMPORT BOX SECTION
