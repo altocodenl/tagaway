@@ -4145,6 +4145,14 @@ E.noSpace = function () {
 // *** IMPORT VIEW ***
 
 E.import = function () {
+
+   var folderList = [
+      [['Entire Drive'], 280],
+      [['Entire Drive', 'Vacations'], 225],
+      [['Entire Drive', 'Vacations', 'Las Vegas 2010'], 100],
+      [['Entire Drive', 'Vacations', 'Japan 2019'], 125]
+   ];
+
    return ['div', [
       E.header (true, true),
       ['div', {class: 'main-centered'}, [
