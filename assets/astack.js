@@ -122,8 +122,9 @@ Please refer to readme.md to read the annotated source.
 
       (function inner (path) {
          if (error) return;
-         if (type (path) === 'function') return output [index++] = [path];
-         if (type (path) !== 'array')    return error = 'a.parse error: the provided path is invalid. It has type ' + type (path);
+         var t = type (path);
+         if (t === 'function') return output [index++] = [path];
+         if (t !== 'array')    return error = 'a.parse error: the provided path is invalid. It has type ' + t + ' and value ' + path;
          if (path.length === 0)          return;
          var typeFirst = type (path [0]);
          if (typeFirst === 'function')   return output [index++] = path;
@@ -268,7 +269,7 @@ Please refer to readme.md to read the annotated source.
       var fun     = arguments [arg++];
       var opts    = arguments [arg];
 
-      if (type (s.next) !== 'function' || type (a.parse (s.path)) !== 'array' || type (s.vars) !== 'object') throw new Error ('Invalid stack passed to a.stop: ' + JSON.stringify (s));
+      if (type (s.next) !== 'function' || type (a.parse (s.path)) !== 'array' || type (s.vars) !== 'object') throw new Error ('Invalid stack passed to a.fork: ' + JSON.stringify (s));
 
       var dataType = type (data);
 
