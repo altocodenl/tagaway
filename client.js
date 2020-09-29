@@ -1203,6 +1203,19 @@ CSS.litc = [
    ['.import-process-box-back', {
       border: '1px solid ' + CSS.vars ['border-color--dark'],
       width: .15,
+      'text-align': 'center',
+      position: 'relative',
+   }],
+   ['.import-process-box-back-icon', {
+      left: '10% !important',
+   }],
+   ['.import-process-box-back-text', {
+      'margin': 0,
+      'position': 'absolute',
+      'top': .49,
+      'left': .3,
+      '-ms-transform': 'translateY(-50%)',
+      'transform': 'translateY(-50%)',
    }],
    ['.import-process-box-list', {
       border: '1px solid ' + CSS.vars ['border-color--dark'],
@@ -4224,8 +4237,8 @@ E.import = function () {
                      ]], 
                      ['div', {class: 'import-process-box'}, [
                         ['div', {class: 'import-process-box-back'}, [
-                           ['div', {class: 'fullscreen__nav fullscreen__nav--left', opaque: true}],
-                           ['span', 'Back']
+                           ['div', {class: 'fullscreen__nav fullscreen__nav--left import-process-box-back-icon', opaque: true}],
+                           ['div',{class: 'import-process-box-back-text'}, 'Back']
                            ]],
                         ['div', {class: 'import-process-box-list'}, [
                            ['div', {class: 'import-process-box-list-up'}, [
