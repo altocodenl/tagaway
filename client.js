@@ -1178,6 +1178,25 @@ CSS.litc = [
       'line-height': CSS.typography.spaceVer (1.5),
       'margin-bottom': CSS.typography.spaceVer (1),
    }],
+   // IMPORT PROCESS
+   ['.import-file-list'],
+   ['.import-breadcrumb'],
+   ['.import-process-box'],
+   ['.import-process-box-back'],
+   ['.import-process-box-list'],
+   ['.import-process-box-list-up'],
+   ['.up-icon'],
+   ['.import-process-box-list-folders'],
+   ['.import-process-box-list-folders-row'],
+   ['.select-folder-box'],
+   ['.folder-icon'],
+   ['.import-folder-name'],
+   ['.import-folder-files'],
+   ['.import-process-box-selected'],
+   ['.import-process-box-selected-title'],
+   ['.import-process-box-selected-row'],
+   ['.folder-icon'],
+   ['.selected-folder-name'],
    // SPACE ALERT
    ['.space-alert', {
       display: 'flex',
@@ -4167,7 +4186,39 @@ E.import = function () {
             ]],
             ['div', {class: 'page-section'}, [
                showList ? ['div', {class: 'import-file-list'}, [
-                  // TODO: ADD MOCKUP
+                  ['div', {class: 'upload-box'},[ 
+                     ['div', {class: 'import-breadcrumb'}, [
+                        ['span', 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur > Adipiscing > Elit']
+                     ]], 
+                     ['div', {class: 'import-process-box'}, [
+                        ['div', {class: 'import-process-box-back'}, [
+                           ['div', {class: 'fullscreen__nav fullscreen__nav--left', opaque: true}],
+                           ['span', 'Back']
+                           ]],
+                        ['div', {class: 'import-process-box-list'}, [
+                           ['div', {class: 'import-process-box-list-up'}, [
+                              ['div', {class: 'up-icon', opaque: true}],
+                              ['span', 'Up']
+                           ]],
+                           ['div', {class: 'import-process-box-list-folders'}, [
+                              ['div', {class: 'import-process-box-list-folders-row'}, [
+                                 ['div', {class: 'select-folder-box'}],
+                                 ['div', {class: 'folder-icon'}],
+                                 ['div', {class: 'import-folder-name'}, 'Las Vegas 2010'],
+                                 ['div', {class: 'import-folder-files'}, '(100 files)']
+                              ]],
+                           ]]
+                        ]],
+                        ['div', {class: 'import-process-box-selected'}, [
+                           ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Las Vegas 2010'],
+                              ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}]
+                           ]],
+                        ]],
+                     ]],
+                  ]],
                ]] : ['div', {class:'upload-box'}, [
                   // IMPORT BOX
                   ['div', {class:'upload-box__image', opaque: true}],
