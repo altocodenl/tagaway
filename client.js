@@ -1180,19 +1180,50 @@ CSS.litc = [
    }],
    // IMPORT PROCESS
    ['.import-file-list'],
-   ['.import-breadcrumb'],
-   ['.import-process-box'],
-   ['.import-process-box-back'],
-   ['.import-process-box-list'],
+   ['.import-breadcrumb-container', {
+      position: 'absolute',
+      width: 'inherit',
+      height: CSS.typography.spaceVer (1.5),
+   }],
+   ['.import-breadcrumb-buffer', {
+      width: .15
+   }],
+   ['.import-breadcrumb', {
+      'background-color': 'blue', 
+      color: 'white',
+      height: 'inherit',
+   }],
+   ['.import-process-box', {
+      'background-color': 'red',
+      display: 'inline-flex',
+      'flex-grow': '1',
+      height: CSS.typography.spaceVer (10),
+      'margin-top': CSS.typography.spaceVer (1.5),
+   }],
+   ['.import-process-box-back', {
+      border: '1px solid ' + CSS.vars ['border-color--dark'],
+      width: .15,
+   }],
+   ['.import-process-box-list', {
+      border: '1px solid ' + CSS.vars ['border-color--dark'],
+      width: .6,
+   }],
    ['.import-process-box-list-up'],
    ['.up-icon'],
    ['.import-process-box-list-folders'],
-   ['.import-process-box-list-folders-row'],
-   ['.select-folder-box'],
+   ['.import-process-box-list-folders-row', {
+      display: 'inline-flex',
+   }],
+   ['.select-folder-box', {
+      display: 'inline-flex',
+   }],
    ['.folder-icon'],
    ['.import-folder-name'],
    ['.import-folder-files'],
-   ['.import-process-box-selected'],
+   ['.import-process-box-selected', {
+      border: '1px solid ' + CSS.vars ['border-color--dark'],
+      width: .25,
+   }],
    ['.import-process-box-selected-title'],
    ['.import-process-box-selected-row'],
    ['.folder-icon'],
@@ -4187,8 +4218,9 @@ E.import = function () {
             ['div', {class: 'page-section'}, [
                showList ? ['div', {class: 'import-file-list'}, [
                   ['div', {class: 'upload-box'},[ 
-                     ['div', {class: 'import-breadcrumb'}, [
-                        ['span', 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur > Adipiscing > Elit']
+                     ['div', {class: 'import-breadcrumb-container'}, [
+                        ['div', {class: 'import-breadcrumb-buffer'}],
+                        ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur > Adipiscing > Elit']
                      ]], 
                      ['div', {class: 'import-process-box'}, [
                         ['div', {class: 'import-process-box-back'}, [
