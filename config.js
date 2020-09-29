@@ -43,6 +43,10 @@ module.exports = {
       frequency: 10,
       path: '/var/lib/redis/dump.rdb',
    },
+   email: {
+      address: 'info@altocode.nl',
+      name: 'acpic'
+   },
    etemplates: {
       feedback: {
          subject: 'Thank you for your feedback!',
@@ -148,6 +152,7 @@ module.exports = {
 /*
 module.exports = {
    cookieSecret: 'COOKIESECRET',
+   admins: ['EMAIL1', 'EMAIL2', ...],
    s3: {
       accessKeyId:     'KEY',
       secretAccessKey: 'SECRETKEY',
@@ -166,11 +171,13 @@ module.exports = {
    crypto: {
       password: 'CRYPTOSTRONGPASSWORD'
    },
-   admins: ['EMAIL1', 'EMAIL2', ...],
-   emailAddress: 'EMAIL',
-   emailName: 'NAME',
+   google: {
+      key:    'KEY',
+      client: 'CLIENTID',
+      secret: 'SECRET'
+   },
    ping: {
-      // Your cells credentials here. Cells hasn't been published yet, so you can use an empty object instead.
+      // Your ac;log credentials here. ac;log hasn't been published yet, so you can use an empty object instead.
    }
 }
 */
