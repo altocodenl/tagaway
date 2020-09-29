@@ -148,10 +148,10 @@ var notify = function (s, message) {
 // *** SENDMAIL ***
 
 var sendmail = function (s, o) {
-   o.from1 = o.from1 || SECRET.emailName;
-   o.from2 = o.from2 || SECRET.emailAddress;
+   o.from1 = o.from1 || CONFIG.email.name;
+   o.from2 = o.from2 || CONFIG.email.address;
    mailer.sendMail ({
-      from:    o.from1 + ' <' + SECRET.emailAddress + '>',
+      from:    o.from1 + ' <' + CONFIG.email.address + '>',
       to:      o.to1   + ' <' + o.to2 + '>',
       replyTo: o.from2,
       subject: o.subject,
@@ -795,7 +795,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [sendmail, {to1: 'Altocode', to2: SECRET.emailAddress, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
+         [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
          [reply, rs, 200],
       ]);
    }],
