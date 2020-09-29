@@ -39,6 +39,38 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo v1 now
 
+// have data on account: google yes or no. if no, send to redirect.
+// if yes, call list and return.
+// report errors on auth that are not expires
+// whenever listing or getting, always use the getToken route, so always fresh.
+
+// https://developers.google.com/identity/protocols/oauth2/web-server
+
+// get all, sort
+// https://developers.google.com/drive/api/v3/reference/files/list
+// https://developers.google.com/drive/api/v3/reference/files#resource
+// https://developers.google.com/drive/api/v2/reference/files/export
+// corpora=user; fields=??; orderBy=modifiedTime pageSize=1000 pageToken=...(comes from before) spaces=drive,appDataFolder,photos
+// q=mimeType...
+// id, name, mimeType, createdTime, modifiedTime
+
+- two operations: list & import. carried by the thread that does them, but activity reported on the import key. import entry per user and provider.
+- list request:
+   - is import for that provider (google/dropbox) taking place? report & return error.
+   - branches:
+      - no access or refresh token: redirect to google auth.
+      - refresh token but no access token: get access token, list. if error, report error.
+      - access token: list. if error, report error.
+   - list pages one by one, calling auth just before.
+      - if auth fails, report error.
+      - put pages of list on import key.
+      - log page operation with number of files.
+      - if error on list, interrupt & report error.
+
+- import process:
+   - if error on a file, report but continue.
+   - ok, keep state on the thread, but report status. if thread fails, can clean it up with a cancel or we can have a timeout on it too, a last activity indicator.
+
 - Import from GDrive/Dropbox.
    - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
    - Import stops if: 1) API error; 2) space limit.
@@ -401,6 +433,20 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...], geo: true|undefined, geoInProgress: true|undefined}`.
 
+`GET /import/list/PROVIDER`
+   - Lists available pictures in the PROVIDER's cloud, or redirects to its oauth flow if authorization is not present or expired.
+   - `PROVIDER` can be either `google` or `dropbox`.
+   - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
+   - If there's access or refresh tokens, the PROVIDER's API is queried and a list of pictures is returned. The returned body is an array of objects, each of them with the following shape: `{...}`. (TODO: complete when we know what info will be listed per provider)
+   - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
+
+`GET /import/oauth/PROVIDER`
+   - Receives the redirection from the oauth provider containing a temporary authorization code.
+   - If no query parameters are received, the route responds with a 400.
+   - If no authorization code is received, the route responds with a 403.
+   - If the request for an access token is not successful, the route responds with a 403 and with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
+   - If the request for an access token is successful, the route responds with a 200.
+
 #### Debugging routes
 
 `POST /error`
@@ -568,6 +614,8 @@ All the routes below require an admin user to be logged in.
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
+   - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
+   - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -581,6 +629,9 @@ All the routes below require an admin user to be logged in.
    - s3:queue (list): items yet to be processed
    - s3:proc (string): number of queue items being processed
    - s3:files (hash): each key is the name of the object in S3, each value is `true|INT` - if `true`, it means that the upload is ongoing; if INT, it shows the amount of bytes taken by the file in S3.
+
+- oa:g:acc:USERID (string): access token for google for USERID
+- oa:g:ref:USERID (string): refresh token for google for USERID
 
 Used by giz:
 

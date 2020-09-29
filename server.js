@@ -590,6 +590,54 @@ H.hasAccess = function (S, username, picId) {
    });
 }
 
+// *** OAUTH HELPERS ***
+
+H.getGoogleToken = function (S, username) {
+   a.stop ([
+      [Redis, 'get', 'oa:g:acc:' + username],
+      function (s) {
+         // There is an access token, return it.
+         if (s.last) return S.next (s.last);
+         // No access token, check if there's a refresh token.
+         Redis (s, 'get', 'oa:g:ref:' + username);
+      },
+      function (s) {
+         // No access or refresh token, report an error to (optionally) restart authentication with provider.
+         if (! s.last) return S.next (null, 'No access or refresh token.');
+         var body = [
+            'code='          + rq.data.query.code,
+            'client_id='     + SECRET.google.clientId,
+            'client_secret=' + SECRET.google.secret,
+            'grant_type='    + 'refresh_token',
+            'refresh_token=' + encodeURIComponent (s.last),
+         ].join ('&');
+         hitit.one ({}, {timeout: 15, host: 'oauth2.googleapis.com/token', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.secret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.clientId, code: '*', apres: function (s, rq, rs) {
+            console.log ('DEBUG REFRESH', rs.code, rs.body);
+            // If the refresh token failed
+            if (rs.code !== 200) return a.stop (S, [
+               // Delete refresh token
+               [Redis, 'del', 'oa:g:ref:' + username],
+               function (s) {
+                  // Report an error
+                  s.next (null, {code: rs.code, error: 'Refresh token failed', body: rs.body});
+               }
+            ]);
+            // Refresh token was successful
+            a.stop (S, [
+               // Store access token
+               [Redis, 'setex', 'oa:g:acc:' + username, rs.body.expires_in, rs.body.access_token],
+               function (s) {
+                  // Return access token
+                  s.next (rs.body.access.token);
+               }
+            ]);
+         }});
+      }
+   ], function (s, error) {
+      S.next (null, error);
+   });
+}
+
 // *** STATISTICS ***
 
 H.stat = {};
@@ -2110,6 +2158,45 @@ var routes = [
             [Redis, 'del', 'geo:' + rq.user.username],
          ],
       ]);
+   }],
+
+   // *** INTEGRATION WITH OTHER APIS ***
+
+   ['get', 'import/oauth/google', function (rq, rs) {
+      console.log ('DEBUG QUERY', rq.data.query);
+      if (! rq.data.query) return reply (rs, 400, {error: 'No query parameters.'});
+      if (! rq.data.query.code) return reply (rs, 403, {error: 'No code parameter.'});
+      if (rq.data.query.state !== rq.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
+      var body = [
+         'code='          + rq.data.query.code,
+         'client_id='     + SECRET.google.clientId,
+         'client_secret=' + SECRET.google.secret,
+         'grant_type='    + 'authorization_code'
+      ].join ('&');
+      hitit.one ({}, {timeout: 15, https: true, method: 'post', host: 'oauth2.googleapis.com', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: body, code: '*', apres: function (s, rq, rs) {
+         console.log ('DEBUG AFTER REQUEST TOKEN');
+         if (rs.code !== 200) return reply (rs, 403, {code: rs.code, error: rs.body});
+         var multi = redis.multi ();
+         multi.setex ('oa:g:acc:' + rq.user.username, body.expires_in, body.access_token);
+         multi.set   ('oa:g:ref:' + rq.user.username, body.refresh_token);
+         multi.exec (function (error) {
+            if (error) return reply (rs, 500, {error: error});
+            reply (rs, 200);
+            H.log (a.creat (), rq.user.username, {a: 'imp', s: 'grant', pro: 'google'});
+         });
+      }});
+   }],
+
+   ['get', 'import/list/google', function (rq, rs) {
+      a.stop ([
+         [H.getGoogleToken],
+         function (s) {
+            reply (rs, 200, {boo: 'yah'});
+         }
+      ], function (s, error) {
+         reply (rs, 302, {}, {location: 'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.DOMAIN + 'import/oauth/google') + 'prompt=consent&response_type=code&client_id=' + SECRET.google.client + '&scope=Drive+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly&access_type=offline&code=' + rq.csrf});
+         H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
+      });
    }],
 
    // *** ADMIN AREA ***
