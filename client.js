@@ -1232,9 +1232,9 @@ CSS.litc = [
    }],
    ['.up-icon__svg', {
       display: 'inline-block',
-      width: 25,
-      height: 33,
-      'margin-bottom': CSS.typography.spaceVer (0.25),
+      width: 20,
+      height: 26,
+      'margin-bottom, margin-top': CSS.typography.spaceVer (0.25),
    }, ['path', {fill: CSS.vars ['grey--light']}]],
    ['.import-process-box-list-folders'],
    ['.import-process-box-list-folders-row', {
@@ -1268,9 +1268,8 @@ CSS.litc = [
       'position': 'absolute',
       'top': '0',
       'left': '0',
-      'height': '25px',
-      'width': '25px',
-      'background-color': '#eee',
+      'height, width': '20px',
+      border: '0.5px solid ' + CSS.vars ['border-color--dark'],
    }],
    /* On mouse-over, add a background color */
    ['.checkbox-container:hover input ~ .select-folder-box-checkmark', {
@@ -1292,9 +1291,9 @@ CSS.litc = [
    }],
    /* Style the checkmark/indicator */
    ['.checkbox-container .select-folder-box-checkmark:after', {
-      'left': '9px',
-      'top': '5px',
-      'width': '5px',
+      'left': '6px',
+      'top': '1px',
+      'width': '4px',
       'height': '10px',
       'border': 'solid white',
       'border-width': '0 3px 3px 0',
@@ -1310,13 +1309,17 @@ CSS.litc = [
    ['.import-folder-name', {
       'margin-right': CSS.vars ['padding--xs'],
    }],
-   ['.import-folder-files'],
+   ['.import-folder-files', {
+      'color': CSS.vars ['grey--darker'],
+      'font-weight': CSS.vars.fontPrimaryMedium,
+   }],
    ['.import-process-box-selected', {
       border: '1px solid ' + CSS.vars ['border-color--dark'],
       width: .25,
    }],
    ['.import-process-box-selected-title', {
       'text-align': 'center',
+      'font-weight': CSS.vars.fontPrimaryMedium,
       'margin-bottom': CSS.vars ['padding--xs'],
    }],
    ['.import-process-box-selected-row', {
@@ -2414,7 +2417,7 @@ dale.do ([
       putSvg ('.tag-list__item--geo-country', 'afterBegin', '<svg width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;stroke-width: 1.5;" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#000000" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>');
       putSvg ('.space-alert-icon', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>');
       putSvg ('.space-alert-icon-small', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>');
-      putSvg ('.folder-icon', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 36 45" style="enable-background:new 0 0 36 36;" xml:space="preserve"><g><path d="M32.5,13.5H30V10c0-0.28-0.22-0.5-0.5-0.5H15.81l-1.86-3.72C13.86,5.61,13.69,5.5,13.5,5.5h-10C3.22,5.5,3,5.72,3,6v24   c0,0,0,0,0,0s0,0,0,0v0c0,0,0,0,0,0c0,0,0,0,0,0s0,0,0,0v0v0c0,0,0,0,0,0c0,0.13,0.05,0.24,0.13,0.33c0.03,0.03,0.06,0.06,0.1,0.08   c0,0,0,0,0,0c0.07,0.04,0.15,0.07,0.24,0.08c0.01,0,0.02,0,0.03,0c0,0,0,0,0.01,0H28.5c0.23,0,0.43-0.16,0.49-0.38l4-16   c0.04-0.15,0-0.31-0.09-0.43S32.65,13.5,32.5,13.5z M4,6.5h9.19l1.86,3.72c0.08,0.17,0.26,0.28,0.45,0.28H29v3H7.5   c-0.23,0-0.43,0.16-0.49,0.38L4,25.94V6.5z M28.11,29.5H4.14l3.75-15h23.97L28.11,29.5z"/></g></svg>');
+      putSvg ('.folder-icon', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 36 36" style="enable-background:new 0 0 36 36;" xml:space="preserve"><g><path d="M32.5,13.5H30V10c0-0.28-0.22-0.5-0.5-0.5H15.81l-1.86-3.72C13.86,5.61,13.69,5.5,13.5,5.5h-10C3.22,5.5,3,5.72,3,6v24   c0,0,0,0,0,0s0,0,0,0v0c0,0,0,0,0,0c0,0,0,0,0,0s0,0,0,0v0v0c0,0,0,0,0,0c0,0.13,0.05,0.24,0.13,0.33c0.03,0.03,0.06,0.06,0.1,0.08   c0,0,0,0,0,0c0.07,0.04,0.15,0.07,0.24,0.08c0.01,0,0.02,0,0.03,0c0,0,0,0,0.01,0H28.5c0.23,0,0.43-0.16,0.49-0.38l4-16   c0.04-0.15,0-0.31-0.09-0.43S32.65,13.5,32.5,13.5z M4,6.5h9.19l1.86,3.72c0.08,0.17,0.26,0.28,0.45,0.28H29v3H7.5   c-0.23,0-0.43,0.16-0.49,0.38L4,25.94V6.5z M28.11,29.5H4.14l3.75-15h23.97L28.11,29.5z"/></g></svg>');
       putSvg ('.up-icon', 'afterBegin', '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>');
    }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
@@ -4326,7 +4329,7 @@ E.import = function () {
                   ['div', {class: 'upload-box'},[
                      ['div', {class: 'import-breadcrumb-container'}, [
                         ['div', {class: 'import-breadcrumb-buffer'}],
-                        ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur > Adipiscing > Elit']
+                        ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
                      ]],
                      ['div', {class: 'import-process-box'}, [
                         ['div', {class: 'import-process-box-back'}, [
@@ -4350,7 +4353,51 @@ E.import = function () {
                                  ['div', {class: 'import-folder-name'}, 'Las Vegas 2010'],
                                  ['div', {class: 'import-folder-files'}, '(100 files)']
                               ]],
-                           ]]
+                              ['div', {class: 'import-process-box-list-folders-row'}, [
+                                 ['div', {class: 'select-folder-box'}, [
+                                    ['label', {class: 'checkbox-container'}, [
+                                       ['input', {type: 'checkbox'}],
+                                       ['span', {class: 'select-folder-box-checkmark'}]
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'folder-icon', opaque: true}],
+                                 ['div', {class: 'import-folder-name'}, 'Japan 2019'],
+                                 ['div', {class: 'import-folder-files'}, '(125 files)']
+                              ]],
+                              ['div', {class: 'import-process-box-list-folders-row'}, [
+                                 ['div', {class: 'select-folder-box'}, [
+                                    ['label', {class: 'checkbox-container'}, [
+                                       ['input', {type: 'checkbox'}],
+                                       ['span', {class: 'select-folder-box-checkmark'}]
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'folder-icon', opaque: true}],
+                                 ['div', {class: 'import-folder-name'}, 'Los Angeles 2018'],
+                                 ['div', {class: 'import-folder-files'}, '(567 files)']
+                              ]],
+                              ['div', {class: 'import-process-box-list-folders-row'}, [
+                                 ['div', {class: 'select-folder-box'}, [
+                                    ['label', {class: 'checkbox-container'}, [
+                                       ['input', {type: 'checkbox'}],
+                                       ['span', {class: 'select-folder-box-checkmark'}]
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'folder-icon', opaque: true}],
+                                 ['div', {class: 'import-folder-name'}, 'Germany 2017'],
+                                 ['div', {class: 'import-folder-files'}, '(985 files)']
+                              ]],
+                              ['div', {class: 'import-process-box-list-folders-row'}, [
+                                 ['div', {class: 'select-folder-box'}, [
+                                    ['label', {class: 'checkbox-container'}, [
+                                       ['input', {type: 'checkbox'}],
+                                       ['span', {class: 'select-folder-box-checkmark'}]
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'folder-icon', opaque: true}],
+                                 ['div', {class: 'import-folder-name'}, 'Austria 2017'],
+                                 ['div', {class: 'import-folder-files'}, '(4567 files)']
+                              ]],
+                           ]],
                         ]],
                         ['div', {class: 'import-process-box-selected'}, [
                            ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
