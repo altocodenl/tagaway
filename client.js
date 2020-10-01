@@ -1257,9 +1257,9 @@ CSS.litc = [
      'user-select': 'none',
    }],
    ['.checkbox-container input',{
-      'position': 'absolute', 
+      'position': 'absolute',
       'opacity': '0',
-      'cursor': 'pointer', 
+      'cursor': 'pointer',
       'height': '0',
       'width': '0',
    }],
@@ -1278,7 +1278,7 @@ CSS.litc = [
    }],
    /* When the checkbox is checked, add a background */
    ['.checkbox-container input:checked ~ .select-folder-box-checkmark', {
-      'background-color': '#5b6eff',    
+      'background-color': '#5b6eff',
    }],
    /* Create the checkmark/indicator (hidden when not checked) */
    ['.select-folder-box-checkmark:after', {
@@ -1300,7 +1300,7 @@ CSS.litc = [
       'border-width': '0 3px 3px 0',
       '-webkit-transform': 'rotate(45deg)',
       '-ms-transform': 'rotate(45deg)',
-      'transform': 'rotate(45deg)',    
+      'transform': 'rotate(45deg)',
    }],
    ['.folder-icon', {
       height: 20,
@@ -2829,6 +2829,13 @@ dale.do ([
       if (! B.get ('Data', 'tags'))    B.do (x, 'query', 'tags');
    }],
 
+   ['import', 'list', function (x, provider) {
+      B.do (x, 'get', 'import/list/' + provider, {}, '', function (x, error, rs) {
+         clog (error);
+         clog (rs.body);
+      });
+   }],
+
    // *** ACCOUNT RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {
@@ -4301,6 +4308,7 @@ E.import = function () {
       [['Entire Drive', 'Vacations', 'Japan 2019'], 125]
    ];
 
+   showList = false;
    showList = true;
 
    return ['div', [
@@ -4315,11 +4323,11 @@ E.import = function () {
             ]],
             ['div', {class: 'page-section'}, [
                showList ? ['div', {class: 'import-file-list'}, [
-                  ['div', {class: 'upload-box'},[ 
+                  ['div', {class: 'upload-box'},[
                      ['div', {class: 'import-breadcrumb-container'}, [
                         ['div', {class: 'import-breadcrumb-buffer'}],
                         ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur > Adipiscing > Elit']
-                     ]], 
+                     ]],
                      ['div', {class: 'import-process-box'}, [
                         ['div', {class: 'import-process-box-back'}, [
                            ['div', {class: 'fullscreen__nav fullscreen__nav--left import-process-box-back-icon', opaque: true}],
@@ -4366,7 +4374,7 @@ E.import = function () {
                            ['br'],['br'],
                            ['div', [
                               // TODO: when dynamizing, place condition on responder to check if there's enough space left.
-                              ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}],
+                              ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, ['onclick', 'import', 'list', 'google'])],
                               ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
                            ]],
                         ]],

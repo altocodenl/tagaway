@@ -606,12 +606,12 @@ H.getGoogleToken = function (S, username) {
          if (! s.last) return S.next (null, 'No access or refresh token.');
          var body = [
             'code='          + rq.data.query.code,
-            'client_id='     + SECRET.google.clientId,
-            'client_secret=' + SECRET.google.secret,
+            'client_id='     + SECRET.google.oauth.client,
+            'client_secret=' + SECRET.google.oauth.secret,
             'grant_type='    + 'refresh_token',
             'refresh_token=' + encodeURIComponent (s.last),
          ].join ('&');
-         hitit.one ({}, {timeout: 15, host: 'oauth2.googleapis.com/token', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.secret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.clientId, code: '*', apres: function (s, rq, rs) {
+         hitit.one ({}, {timeout: 15, host: 'oauth2.googleapis.com/token', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.oauth.secret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.oauth.client, code: '*', apres: function (s, rq, rs) {
             console.log ('DEBUG REFRESH', rs.code, rs.body);
             // If the refresh token failed
             if (rs.code !== 200) return a.stop (S, [
@@ -2169,8 +2169,8 @@ var routes = [
       if (rq.data.query.state !== rq.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
       var body = [
          'code='          + rq.data.query.code,
-         'client_id='     + SECRET.google.clientId,
-         'client_secret=' + SECRET.google.secret,
+         'client_id='     + SECRET.google.oauth.clientId,
+         'client_secret=' + SECRET.google.oauth.secret,
          'grant_type='    + 'authorization_code'
       ].join ('&');
       hitit.one ({}, {timeout: 15, https: true, method: 'post', host: 'oauth2.googleapis.com', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: body, code: '*', apres: function (s, rq, rs) {
@@ -2191,10 +2191,18 @@ var routes = [
       a.stop ([
          [H.getGoogleToken],
          function (s) {
-            reply (rs, 200, {boo: 'yah'});
+            reply (rs, 200, {list: ['boo', 'yah']});
          }
       ], function (s, error) {
-         reply (rs, 302, {}, {location: 'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.DOMAIN + 'import/oauth/google') + 'prompt=consent&response_type=code&client_id=' + SECRET.google.client + '&scope=Drive+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly&access_type=offline&code=' + rq.csrf});
+         reply (rs, 200, {redirect: [
+            'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+            'prompt=consent',
+            'response_type=code',
+            'client_id=' + SECRET.google.oauth.client,
+            '&scope=Drive+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+            'access_type=offline',
+            'state=' + rq.csrf
+         ].join ('&')});
          H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
       });
    }],

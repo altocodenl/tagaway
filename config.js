@@ -25,6 +25,7 @@ var GREETING = function (username) {
 }
 
 module.exports = {
+   domain: DOMAIN,
    cookiename: 'ac-v1',
    allowedFormats: ['image/jpeg', 'image/png', 'video/mp4'],
    port: 1427,
@@ -172,9 +173,15 @@ module.exports = {
       password: 'CRYPTOSTRONGPASSWORD'
    },
    google: {
-      key:    'KEY',
-      client: 'CLIENTID',
-      secret: 'SECRET'
+      api: {
+         key:    'KEY',
+         client: 'CLIENTID',
+         secret: 'SECRET'
+      },
+      oauth: {
+         client: 'CLIENTID',
+         secret: 'SECRET'
+      },
    },
    ping: {
       // Your ac;log credentials here. ac;log hasn't been published yet, so you can use an empty object instead.
