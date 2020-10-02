@@ -1255,6 +1255,7 @@ CSS.litc = [
       'margin-bottom, margin-top': CSS.typography.spaceVer (0.25),
    }, ['path', {fill: CSS.vars ['grey--light']}]],
    ['.import-process-box-list-folders', {
+      'padding-bottom': CSS.vars ['padding--xs'],
    }],
    ['.import-process-box-list-folders-row', {
       display: 'inline-flex',
@@ -1336,6 +1337,7 @@ CSS.litc = [
    ['.import-process-box-selected', {
       width: .30,
       'overflow-y': 'auto',
+      'padding-bottom': CSS.vars ['padding--xs'],
    }],
    ['.import-process-box-selected-title', {
       'text-align': 'center',
