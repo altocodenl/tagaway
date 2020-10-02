@@ -1398,6 +1398,10 @@ var routes = [
       astop (rs, [
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
+            var limit = CONFIG.storelimit [rq.user.type];
+            // TODO: remove
+            // Temporarily override limit for admins until we roll out paid accounts.
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 40 * 1000 * 1000 * 1000;
             if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
@@ -2040,13 +2044,18 @@ var routes = [
             mexec (s, multi);
          }],
          function (s) {
+            // TODO: remove
+            // Temporarily override limit for admins until we roll out paid accounts.
+            var limit = CONFIG.storelimit [rq.user.type];
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 40 * 1000 * 1000 * 1000;
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
                type:     rq.user.type === 'tier1' ? 'free' : 'paid',
                created:  parseInt (rq.user.created),
                usage:    {
-                  limit:  CONFIG.storelimit [rq.user.type],
+                  //limit:  CONFIG.storelimit [rq.user.type],
+                  limit:  limit,
                   fsused: parseInt (s.last [1]) || 0,
                   s3used: parseInt (s.last [2]) || 0
                },
