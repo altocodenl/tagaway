@@ -37,8 +37,7 @@ module.exports = {
       tagLength: 16,
    },
    storelimit: {
-      tier1: 2   * 1024 * 1024 * 1024,
-      tier2: 100 * 1024 * 1024 * 1024,
+      tier1: 2 * 1000 * 1000 * 1000,
    },
    backup: {
       frequency: 10,
