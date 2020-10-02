@@ -1233,6 +1233,7 @@ CSS.litc = [
    ['.import-process-box-list', {
       'border-right': '1px solid ' + CSS.vars ['border-color--dark'],
       width: .55,
+      'overflow-y': 'auto',
    }],
    ['.import-process-box-list-up', {
       display: 'inline-flex',
@@ -1253,7 +1254,8 @@ CSS.litc = [
       height: 26,
       'margin-bottom, margin-top': CSS.typography.spaceVer (0.25),
    }, ['path', {fill: CSS.vars ['grey--light']}]],
-   ['.import-process-box-list-folders'],
+   ['.import-process-box-list-folders', {
+   }],
    ['.import-process-box-list-folders-row', {
       display: 'inline-flex',
       height: 20,
@@ -1333,6 +1335,7 @@ CSS.litc = [
    }],
    ['.import-process-box-selected', {
       width: .30,
+      'overflow-y': 'auto',
    }],
    ['.import-process-box-selected-title', {
       'text-align': 'center',
@@ -4443,6 +4446,17 @@ E.import = function () {
                                  ['div', {class: 'import-folder-name'}, 'Buenos Aires 2015'],
                                  ['div', {class: 'import-folder-files'}, '(4567 files)']
                               ]],
+                              ['div', {class: 'import-process-box-list-folders-row'}, [
+                                 ['div', {class: 'select-folder-box'}, [
+                                    ['label', {class: 'checkbox-container'}, [
+                                       ['input', {type: 'checkbox'}],
+                                       ['span', {class: 'select-folder-box-checkmark'}]
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'folder-icon', opaque: true}],
+                                 ['div', {class: 'import-folder-name'}, 'NYC 2014'],
+                                 ['div', {class: 'import-folder-files'}, '(567 files)']
+                              ]],
                            ]],
                         ]],
                         ['div', {class: 'import-process-box-selected'}, [
@@ -4450,6 +4464,41 @@ E.import = function () {
                            ['div', {class: 'import-process-box-selected-row'}, [
                               ['div', {class: 'folder-icon'}],
                               ['div', {class: 'selected-folder-name'}, 'Las Vegas 2010'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Joe’s wedding'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Mom’s birthday'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Camping 2005'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Birthday 2012'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Party at Steven’s'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Miami 2014'],
+                              ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                           ]],
+                           ['div', {class: 'import-process-box-selected-row'}, [
+                              ['div', {class: 'folder-icon'}],
+                              ['div', {class: 'selected-folder-name'}, 'Mexico 2013'],
                               ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
                            ]],
                         ]],
