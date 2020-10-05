@@ -2178,7 +2178,7 @@ var routes = [
       if (rq.data.query.state !== rq.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
       var body = [
          'code='          + rq.data.query.code,
-         'client_id='     + SECRET.google.oauth.clientId,
+         'client_id='     + SECRET.google.oauth.client,
          'client_secret=' + SECRET.google.oauth.secret,
          'grant_type='    + 'authorization_code'
       ].join ('&');
