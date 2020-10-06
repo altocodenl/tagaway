@@ -1398,11 +1398,12 @@ var routes = [
       astop (rs, [
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
+            var used = parseInt (s.last) || 0;
             var limit = CONFIG.storelimit [rq.user.type];
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
             if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 40 * 1000 * 1000 * 1000;
-            if (s.last !== null && (CONFIG.storelimit [rq.user.type]) < parseInt (s.last)) return reply (rs, 409, {error: 'capacity'});
+            if (used >= limit) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
          [perfTrack, 'capacity'],
