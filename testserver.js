@@ -1387,7 +1387,7 @@ var main = [
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 59 && rs.body.logs.length !== 60)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
-      setTimeout (next, 2000);
+      setTimeout (next, 3000);
    }],
    ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
