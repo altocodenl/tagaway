@@ -1205,7 +1205,7 @@ CSS.litc = [
       'text-align': 'center',
       position: 'relative',
    }],
-   ['.import-process-box-back-icon', {      
+   ['.import-process-box-back-icon', {
       position: 'absolute',
       top: 0.4,
       left: .1,
@@ -2874,8 +2874,9 @@ dale.do ([
 
    ['import', 'list', function (x, provider) {
       B.do (x, 'get', 'import/list/' + provider, {}, '', function (x, error, rs) {
-         clog (error);
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
          clog (rs.body);
+         if (rs.body.redirect) window.open (rs.body.redirect);
       });
    }],
 
@@ -4351,8 +4352,8 @@ E.import = function () {
       [['Entire Drive', 'Vacations', 'Japan 2019'], 125]
    ];
 
-   showList = false;
    showList = true;
+   showList = false;
 
    return ['div', [
       E.header (true, true),
