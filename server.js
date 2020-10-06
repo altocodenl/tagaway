@@ -2702,3 +2702,57 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
       });
    }],
 ]);
+
+// *** TEMPORARY SCRIPT TO CREATE THUMBNAILS OF SMALL/MEDIUM PICTURES WITH ROTATION METADATA ***
+
+// https://github.com/altocodenl/acpic/commit/b66be1b568f6037df0a1cb408720c9668062c6ee#diff-78c12f5adc1848d13b1c6f07055d996e
+if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
+   // Get all picture data from the DB
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (id) {
+         multi.hgetall (id);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      var pics = s.last;
+      delete s.last;
+      // For each picture/video
+      a.fork (s, pics, function (pic) {
+         if (! pic.vid) return [];
+         var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
+         return [
+            [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
+               if (error.code !== 0) return s.next (null, {id: pic.id, call: s.last});
+               // ffprobe always logs to stderr, so we need to put stderr onto s.last
+               s.next (error);
+            }],
+            function (s) {
+               var metadata = (pic.vid ? s.last.stderr : s.last.stdout).split ('\n');
+               if (! pic.vid) {
+                  var format = dale.stopNot (metadata, undefined, function (line) {
+                     if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
+                  });
+                  if (! format) return s.next (null, {id: pic.id, error: 'no format'});
+                  format = format.toLowerCase ();
+                  console.log ('pic', pic.id, format);
+               }
+               else {
+                  var formats = dale.fil (metadata, undefined, function (line) {
+                     if (! line.match (/^\s+Stream/)) return;
+                     line = line.split (':') [3];
+                     console.log ('debug', pic.id, line);
+                     return line.match (/[a-zA-Z0-9]+/) [0];
+                  });
+                  console.log ('vid', pic.id, formats);
+               }
+               s.next ();
+            }
+         ];
+      }, {max: 5});
+   },
+], function (s, error) {
+   notify (s, {priority: 'critical', type: 'Script to add format information.', error: error});
+});
