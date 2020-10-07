@@ -2875,8 +2875,8 @@ dale.do ([
    ['import', 'list', function (x, provider) {
       B.do (x, 'get', 'import/list/' + provider, {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
-         clog (rs.body);
-         if (rs.body.redirect) window.open (rs.body.redirect);
+         if (rs.body.redirect) return location.replace (rs.body.redirect);
+         console.log ('list', rs.body);
       });
    }],
 

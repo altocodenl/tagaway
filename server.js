@@ -605,14 +605,12 @@ H.getGoogleToken = function (S, username) {
          // No access or refresh token, report an error to (optionally) restart authentication with provider.
          if (! s.last) return S.next (null, 'No access or refresh token.');
          var body = [
-            'code='          + rq.data.query.code,
             'client_id='     + SECRET.google.oauth.client,
             'client_secret=' + SECRET.google.oauth.secret,
             'grant_type='    + 'refresh_token',
             'refresh_token=' + encodeURIComponent (s.last),
          ].join ('&');
-         hitit.one ({}, {timeout: 15, host: 'oauth2.googleapis.com/token', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.oauth.secret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.oauth.client, code: '*', apres: function (s, rq, rs) {
-            console.log ('DEBUG REFRESH', rs.code, rs.body);
+         hitit.one ({}, {https: true, timeout: 15, host: 'oauth2.googleapis.com', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.oauth.secret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.oauth.client, code: '*', apres: function (s, rq, rs) {
             // If the refresh token failed
             if (rs.code !== 200) return a.stop (S, [
                // Delete refresh token
@@ -628,7 +626,7 @@ H.getGoogleToken = function (S, username) {
                [Redis, 'setex', 'oa:g:acc:' + username, rs.body.expires_in, rs.body.access_token],
                function (s) {
                   // Return access token
-                  s.next (rs.body.access.token);
+                  s.next (rs.body.access_token);
                }
             ]);
          }});
@@ -2173,7 +2171,6 @@ var routes = [
    // *** INTEGRATION WITH OTHER APIS ***
 
    ['get', 'import/oauth/google', function (rq, rs) {
-      console.log ('DEBUG QUERY', rq.data.query);
       if (! rq.data.query) return reply (rs, 400, {error: 'No query parameters.'});
       if (! rq.data.query.code) return reply (rs, 403, {error: 'No code parameter.'});
       if (rq.data.query.state !== rq.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
@@ -2181,17 +2178,17 @@ var routes = [
          'code='          + rq.data.query.code,
          'client_id='     + SECRET.google.oauth.client,
          'client_secret=' + SECRET.google.oauth.secret,
-         'grant_type='    + 'authorization_code'
+         'grant_type='    + 'authorization_code',
+         'redirect_uri='  + encodeURIComponent (CONFIG.domain + 'import/oauth/google')
       ].join ('&');
-      hitit.one ({}, {timeout: 15, https: true, method: 'post', host: 'oauth2.googleapis.com', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: body, code: '*', apres: function (s, rq, rs) {
-         console.log ('DEBUG AFTER REQUEST TOKEN');
-         if (rs.code !== 200) return reply (rs, 403, {code: rs.code, error: rs.body});
+      hitit.one ({}, {timeout: 15, https: true, method: 'post', host: 'oauth2.googleapis.com', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: body, code: '*', apres: function (s, RQ, RS) {
+         if (RS.code !== 200) return reply (rs, 403, {code: RS.code, error: RS.body});
          var multi = redis.multi ();
-         multi.setex ('oa:g:acc:' + rq.user.username, body.expires_in, body.access_token);
-         multi.set   ('oa:g:ref:' + rq.user.username, body.refresh_token);
+         multi.setex ('oa:g:acc:' + rq.user.username, RS.body.expires_in, RS.body.access_token);
+         multi.set   ('oa:g:ref:' + rq.user.username, RS.body.refresh_token);
          multi.exec (function (error) {
             if (error) return reply (rs, 500, {error: error});
-            reply (rs, 200);
+            reply (rs, 302, {}, {location: CONFIG.domain + '#/import'});
             H.log (a.creat (), rq.user.username, {a: 'imp', s: 'grant', pro: 'google'});
          });
       }});
@@ -2199,7 +2196,7 @@ var routes = [
 
    ['get', 'import/list/google', function (rq, rs) {
       a.stop ([
-         [H.getGoogleToken],
+         [H.getGoogleToken, rq.user.username],
          function (s) {
             reply (rs, 200, {list: ['boo', 'yah']});
          }
@@ -2209,7 +2206,7 @@ var routes = [
             'prompt=consent',
             'response_type=code',
             'client_id=' + SECRET.google.oauth.client,
-            '&scope=Drive+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+            '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
             'access_type=offline',
             'state=' + rq.csrf
          ].join ('&')});
