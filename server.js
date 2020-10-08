@@ -2198,7 +2198,28 @@ var routes = [
       a.stop ([
          [H.getGoogleToken, rq.user.username],
          function (s) {
-            reply (rs, 200, {list: ['boo', 'yah']});
+            var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents'];
+            var path = 'drive/v3/files?' + [
+               'key=' + SECRET.google.api.key,
+               //'fields=' + fields.join ('%2C'),
+               'fields=id%2Cname%2CmimeType%2CcreatedTime%2CmodifiedTime%2Cowners%2Cparents',
+               // could also be corpora=domain
+               'corpora=user',
+               'includeItemsFromAllDrives=true',
+               'orderBy=modifiedTime',
+               'pageSize=10',
+               'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
+               //'q=' + 'mimeType%3D%27image%2Fjpeg%27',
+               'supportsAllDrives=true',
+               // pageToken if on second page
+               'spaces=drive,photos'
+            ].join ('&');
+            console.log (path);
+            hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (s, RQ, RS) {
+               clog (RS.code, RS.body);
+               if (RS.body.error) clog (RS.body.error.errors);
+               reply (rs, 200, {list: ['boo', 'yah']});
+            }});
          }
       ], function (s, error) {
          reply (rs, 200, {redirect: [
