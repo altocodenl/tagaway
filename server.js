@@ -2196,9 +2196,11 @@ var routes = [
 
    ['get', 'import/list/google', function (rq, rs) {
 
-      var output = [], counter = 1;
+      var output = [], counter = 1, parents = {}, roots = {};
 
       var getNextPage = function (s, nextPageToken) {
+
+         if (! s.token) s.token = s.last;
 
          var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
 
@@ -2220,22 +2222,48 @@ var routes = [
          console.log ('DEBUG request page', counter++, path);
 
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            clog ('DEBUG response page', counter, RS.code, dale.go (RS.body.files, function (v) {
-               return dale.obj (v, function (v2, k2) {
-                  return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
-               });
-            }));
 
-            if (RS.body.error) s.next (null, RS.body.error.errors);
-            output.concat (RS.body.files);
+            if (RS.code !== 200) return s.next (null, RS.body);
+
+            dale.go (RS.body.files, function (v) {
+               dale.go (v.parents, function (v2) {
+                  parents [v2] = true;
+               });
+            });
+
+            output = output.concat (RS.body.files);
 
             // Just bring three pages for now.
-            if (counter === 3) return s.next ();
+            if (counter === 3) return s.next (output);
 
             if (RS.body.nextPageToken) setTimeout (function () {
                getNextPage (s, RS.body.nextPageToken);
             }, 500);
-            else s.next ();
+            else s.next (output);
+         }});
+      }
+
+      var getParent = function (s, id) {
+         var path = 'drive/v3/files/' + id + '?' + [
+            'key=' + SECRET.google.api.key,
+            'fields=name,parents'
+         ].join ('&');
+
+         console.log ('DEBUG request parent', path);
+
+         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
+            console.log ('GET PARENT', id, RS.body);
+            if (RS.code !== 200) return s.next (null, RS.body);
+            parents [id] = RS.body;
+            if (! RS.body.parents || RS.body.parents.length === 0) {
+               console.log ('IS ROOT', RS.body);
+               roots [id] = true;
+               return s.next ();
+            }
+
+            a.fork (s, RS.body.parents, function (v) {
+               return [getParent, v];
+            }, {max: 1});
          }});
       }
 
@@ -2243,6 +2271,17 @@ var routes = [
          [H.getGoogleToken, rq.user.username],
          getNextPage,
          function (s) {
+            a.fork (s, parents, function (v, id) {
+               return [getParent, id];
+            }, {max: 1});
+         },
+         function (s) {
+            console.log ('RESULTS', dale.go (s.last, function (v) {
+               return dale.obj (v, function (v2, k2) {
+                  return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
+               });
+            }));
+            console.log ('PARENTS', parents);
             reply (rs, 200, {list: output});
             H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
          }
