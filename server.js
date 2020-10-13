@@ -2195,34 +2195,59 @@ var routes = [
    }],
 
    ['get', 'import/list/google', function (rq, rs) {
+
+      var output = [], counter = 1;
+
+      var getNextPage = function (s, nextPageToken) {
+
+         var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
+
+         var path = 'drive/v3/files?' + [
+            'key=' + SECRET.google.api.key,
+            // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
+            'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
+               return 'files/' + v;
+            }).join (','),
+            'corpora=user',
+            'includeItemsFromAllDrives=true',
+            'orderBy=modifiedTime',
+            'pageSize=10',
+            'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
+            'supportsAllDrives=true',
+            'spaces=drive,photos',
+         ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
+
+         console.log ('DEBUG request page', counter++, path);
+
+         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
+            clog ('DEBUG response page', counter, RS.code, dale.go (RS.body.files, function (v) {
+               return dale.obj (v, function (v2, k2) {
+                  return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
+               });
+            }));
+
+            if (RS.body.error) s.next (null, RS.body.error.errors);
+            output.concat (RS.body.files);
+
+            // Just bring three pages for now.
+            if (counter === 3) return s.next ();
+
+            if (RS.body.nextPageToken) setTimeout (function () {
+               getNextPage (s, RS.body.nextPageToken);
+            }, 500);
+            else s.next ();
+         }});
+      }
+
       a.stop ([
          [H.getGoogleToken, rq.user.username],
+         getNextPage,
          function (s) {
-            var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents'];
-            var path = 'drive/v3/files?' + [
-               'key=' + SECRET.google.api.key,
-               //'fields=' + fields.join ('%2C'),
-               'fields=id%2Cname%2CmimeType%2CcreatedTime%2CmodifiedTime%2Cowners%2Cparents',
-               // could also be corpora=domain
-               'corpora=user',
-               'includeItemsFromAllDrives=true',
-               'orderBy=modifiedTime',
-               'pageSize=10',
-               'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
-               //'q=' + 'mimeType%3D%27image%2Fjpeg%27',
-               'supportsAllDrives=true',
-               // pageToken if on second page
-               'spaces=drive,photos'
-            ].join ('&');
-            console.log (path);
-            hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (s, RQ, RS) {
-               clog (RS.code, RS.body);
-               if (RS.body.error) clog (RS.body.error.errors);
-               reply (rs, 200, {list: ['boo', 'yah']});
-            }});
+            reply (rs, 200, {list: output});
+            H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
          }
       ], function (s, error) {
-         reply (rs, 200, {redirect: [
+         reply (rs, 200, {error: error, redirect: [
             'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
             'prompt=consent',
             'response_type=code',
@@ -2231,7 +2256,6 @@ var routes = [
             'access_type=offline',
             'state=' + rq.csrf
          ].join ('&')});
-         H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
       });
    }],
 

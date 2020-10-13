@@ -41,24 +41,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 
 - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
+- Remove big bmps from repo history.
 - Add format to DB.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
 
 
-// have data on account: google yes or no. if no, send to redirect.
-// if yes, call list and return.
-// report errors on auth that are not expires
-// whenever listing or getting, always use the getToken route, so always fresh.
-
 // https://developers.google.com/identity/protocols/oauth2/web-server
-
 // get all, sort
 // https://developers.google.com/drive/api/v3/reference/files/list
 // https://developers.google.com/drive/api/v3/reference/files#resource
 // https://developers.google.com/drive/api/v2/reference/files/export
-// corpora=user; fields=??; orderBy=modifiedTime pageSize=1000 pageToken=...(comes from before) spaces=drive,appDataFolder,photos
-// q=mimeType...
-// id, name, mimeType, createdTime, modifiedTime
 
 - two operations: list & import. carried by the thread that does them, but activity reported on the import key. import entry per user and provider.
 - list request:
