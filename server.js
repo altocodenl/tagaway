@@ -2196,7 +2196,9 @@ var routes = [
 
    ['get', 'import/list/google', function (rq, rs) {
 
-      var output = [], counter = 1, parents = {}, roots = {};
+      var PAGESIZE = 10, PAGES = 1;
+
+      var output = [], counter = 1, parents = {}, roots = {}, children = {};
 
       var getNextPage = function (s, nextPageToken) {
 
@@ -2213,13 +2215,13 @@ var routes = [
             'corpora=user',
             'includeItemsFromAllDrives=true',
             'orderBy=modifiedTime',
-            'pageSize=10',
+            'pageSize=' + PAGESIZE,
             'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
             'supportsAllDrives=true',
             'spaces=drive,photos',
          ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-         console.log ('DEBUG request page', counter++, path);
+         console.log ('DEBUG request page', counter++);
 
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
@@ -2227,14 +2229,17 @@ var routes = [
 
             dale.go (RS.body.files, function (v) {
                dale.go (v.parents, function (v2) {
-                  parents [v2] = true;
+                  if (! parents [v2]) parents [v2] = {count: 0, pending: true};
+                  parents [v2].count++;
+                  if (! children [v2]) children [v2] = [];
+                  children [v2].push (v.id);
                });
             });
 
             output = output.concat (RS.body.files);
 
             // Just bring three pages for now.
-            if (counter === 3) return s.next (output);
+            if (counter > PAGES) return s.next (output);
 
             if (RS.body.nextPageToken) setTimeout (function () {
                getNextPage (s, RS.body.nextPageToken);
@@ -2243,26 +2248,37 @@ var routes = [
          }});
       }
 
-      var getParent = function (s, id) {
+      var getParent = function (s, id, child) {
+         if (child) {
+            if (! children [id]) children [id] = [];
+            children [id].push (child);
+         }
+
+         if (! parents [id].pending) {
+            console.log ('DEBUG already have parent, skipping', id, parents [id]);
+            return s.next ();
+         }
+
          var path = 'drive/v3/files/' + id + '?' + [
             'key=' + SECRET.google.api.key,
             'fields=name,parents'
          ].join ('&');
 
-         console.log ('DEBUG request parent', path);
+         console.log ('DEBUG request parent', id);
 
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            console.log ('GET PARENT', id, RS.body);
+            console.log ('DEBUG response parent', id, RS.code);
             if (RS.code !== 200) return s.next (null, RS.body);
-            parents [id] = RS.body;
+            parents [id] = {count: parents [id].count, name: RS.body.name, parents: RS.body.parents};
             if (! RS.body.parents || RS.body.parents.length === 0) {
-               console.log ('IS ROOT', RS.body);
                roots [id] = true;
                return s.next ();
             }
 
             a.fork (s, RS.body.parents, function (v) {
-               return [getParent, v];
+               if (! parents [v]) parents [v] = {count: 0, pending: true};
+               parents [v].count += parents [id].count;
+               return [getParent, v, id];
             }, {max: 1});
          }});
       }
@@ -2276,12 +2292,28 @@ var routes = [
             }, {max: 1});
          },
          function (s) {
-            console.log ('RESULTS', dale.go (s.last, function (v) {
+            console.log ('RESULTS', dale.go (output, function (v) {
                return dale.obj (v, function (v2, k2) {
                   return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
                });
             }));
             console.log ('PARENTS', parents);
+            console.log ('ROOTS', roots);
+            children = dale.obj (children, function (v, k) {
+               return [parents [k].name, dale.go (v, function (v2) {
+                  return [parents [v2] ? parents [v2].name : v2];
+               })];
+            });
+            console.log ('CHILDREN', children);
+
+            /* FINAL OBJECT IS OF THE FORM:
+            [
+               [{id: '...', name: 'root1', count: ..., children: [...]],
+               [{id: '...', name: 'root2', count: ..., children: [...]],
+               ...
+            ]
+            */
+
             reply (rs, 200, {list: output});
             H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
          }
