@@ -2198,7 +2198,7 @@ var routes = [
 
       var PAGESIZE = 10, PAGES = 1;
 
-      var output = [], counter = 1, parents = {}, roots = {}, children = {};
+      var pics = [], page = 1, folders = {}, roots = {}, children = {};
 
       var getNextPage = function (s, nextPageToken) {
 
@@ -2221,7 +2221,7 @@ var routes = [
             'spaces=drive,photos',
          ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-         console.log ('DEBUG request page', counter++);
+         console.log ('DEBUG request page', page++);
 
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
@@ -2229,22 +2229,21 @@ var routes = [
 
             dale.go (RS.body.files, function (v) {
                dale.go (v.parents, function (v2) {
-                  if (! parents [v2]) parents [v2] = {count: 0, pending: true};
-                  parents [v2].count++;
+                  if (! folders [v2]) folders [v2] = {pending: true};
                   if (! children [v2]) children [v2] = [];
                   children [v2].push (v.id);
                });
             });
 
-            output = output.concat (RS.body.files);
+            pics = pics.concat (RS.body.files);
 
-            // Just bring three pages for now.
-            if (counter > PAGES) return s.next (output);
+            // Bring a maximum of PAGES pages.
+            if (page > PAGES) return s.next (pics);
 
             if (RS.body.nextPageToken) setTimeout (function () {
                getNextPage (s, RS.body.nextPageToken);
             }, 500);
-            else s.next (output);
+            else s.next (pics);
          }});
       }
 
@@ -2254,8 +2253,8 @@ var routes = [
             children [id].push (child);
          }
 
-         if (! parents [id].pending) {
-            console.log ('DEBUG already have parent, skipping', id, parents [id]);
+         if (! folders [id].pending) {
+            console.log ('DEBUG already have parent, skipping', id, folders [id]);
             return s.next ();
          }
 
@@ -2269,15 +2268,14 @@ var routes = [
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
             console.log ('DEBUG response parent', id, RS.code);
             if (RS.code !== 200) return s.next (null, RS.body);
-            parents [id] = {count: parents [id].count, name: RS.body.name, parents: RS.body.parents};
+            folders [id] = {name: RS.body.name, parents: RS.body.parents};
             if (! RS.body.parents || RS.body.parents.length === 0) {
                roots [id] = true;
                return s.next ();
             }
 
             a.fork (s, RS.body.parents, function (v) {
-               if (! parents [v]) parents [v] = {count: 0, pending: true};
-               parents [v].count += parents [id].count;
+               if (! folders [v]) folders [v] = {pending: true};
                return [getParent, v, id];
             }, {max: 1});
          }});
@@ -2287,24 +2285,52 @@ var routes = [
          [H.getGoogleToken, rq.user.username],
          getNextPage,
          function (s) {
-            a.fork (s, parents, function (v, id) {
+            a.fork (s, folders, function (v, id) {
+               // The first folders already have the children set, so we don't have to pass a second argument to the function.
                return [getParent, id];
             }, {max: 1});
          },
          function (s) {
-            console.log ('RESULTS', dale.go (output, function (v) {
+            console.log ('PICTURES', pics.length, dale.go (pics, function (v) {
+               return v.name;
                return dale.obj (v, function (v2, k2) {
                   return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
                });
             }));
-            console.log ('PARENTS', parents);
+
+            var porotoSum = function (id) {
+               if (! folders [id].count) folders [id].count = 0;
+               folders [id].count++;
+               dale.go (folders [id].parents, porotoSum);
+            }
+
+            dale.go (pics, function (pic) {
+               dale.go (pic.parents, porotoSum);
+            });
+
+            console.log ('FOLDERS', folders);
             console.log ('ROOTS', roots);
+
+            /*
             children = dale.obj (children, function (v, k) {
-               return [parents [k].name, dale.go (v, function (v2) {
-                  return [parents [v2] ? parents [v2].name : v2];
+               return [folders [k].name, dale.go (v, function (v2) {
+                  return folders [v2] ? folders [v2].name : v2;
                })];
             });
+            */
             console.log ('CHILDREN', children);
+
+            var putInForm = function (id) {
+               // If there's no folder entry, it is a picture.
+               if (! folders [id]) return;
+               return [{id: id, name: folders [id].name, count: folders [id].count, children: dale.fil (children [id], undefined, putInForm)}];
+            }
+
+            var output = dale.go (roots, function (v, id) {
+               return putInForm (id);
+            });
+
+            console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
             /* FINAL OBJECT IS OF THE FORM:
             [
@@ -2318,6 +2344,7 @@ var routes = [
             H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
          }
       ], function (s, error) {
+         console.log ('ERROR', JSON.stringify (error));
          reply (rs, 200, {error: error, redirect: [
             'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
             'prompt=consent',
