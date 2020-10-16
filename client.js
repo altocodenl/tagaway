@@ -2880,6 +2880,10 @@ dale.do ([
       });
    }],
 
+   ['import', 'navigate', function (x, provider, folder) {
+      B.do (x, 'set', ['State', 'import', provider, 'currentFolder'], folder);
+   }],
+
    // *** ACCOUNT RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {

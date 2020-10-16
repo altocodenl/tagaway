@@ -2291,13 +2291,6 @@ var routes = [
             }, {max: 1});
          },
          function (s) {
-            console.log ('PICTURES', pics.length, dale.go (pics, function (v) {
-               return v.name;
-               return dale.obj (v, function (v2, k2) {
-                  return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
-               });
-            }));
-
             var porotoSum = function (id) {
                if (! folders [id].count) folders [id].count = 0;
                folders [id].count++;
@@ -2308,26 +2301,10 @@ var routes = [
                dale.go (pic.parents, porotoSum);
             });
 
-            console.log ('FOLDERS', folders);
-            console.log ('ROOTS', roots);
+            var output = {roots: roots, folders: {}};
 
-            /*
-            children = dale.obj (children, function (v, k) {
-               return [folders [k].name, dale.go (v, function (v2) {
-                  return folders [v2] ? folders [v2].name : v2;
-               })];
-            });
-            */
-            console.log ('CHILDREN', children);
-
-            var putInForm = function (id) {
-               // If there's no folder entry, it is a picture.
-               if (! folders [id]) return;
-               return [{id: id, name: folders [id].name, count: folders [id].count, children: dale.fil (children [id], undefined, putInForm)}];
-            }
-
-            var output = dale.go (roots, function (v, id) {
-               return putInForm (id);
+            dale.go (folders, function (folder, id) {
+               output.folders [id] = {name: folder.name, count: folder.count, children: folder.children, parent: parents [id] [0]};
             });
 
             console.log ('OUTPUT', JSON.stringify (output, null, '   '));
