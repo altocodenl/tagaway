@@ -2880,10 +2880,6 @@ dale.do ([
       });
    }],
 
-   ['import', 'navigate', function (x, provider, folder) {
-      B.do (x, 'set', ['State', 'import', provider, 'currentFolder'], folder);
-   }],
-
    // *** ACCOUNT RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {
@@ -4347,10 +4343,12 @@ E.noSpace = function () {
 
 // *** IMPORT VIEW ***
 
-E.importList = function (list) {
+E.importList = function (list, provider) {
+   return B.view (['State', 'import', provider], {attrs: {class: 'import-file-list'}}, function (x, Import) {
+      Import = Import || {};
+      var folderList = ! Import.currentFolder ? list.roots : list.folders [Import.currentFolder].children;
 
-   return ['div', {class: 'import-file-list'}, [
-      ['div', {class: 'upload-box'}, [
+      return ['div', {class: 'upload-box'}, [
          ['div', {class: 'import-breadcrumb-container'}, [
             ['div', {class: 'import-breadcrumb-buffer'}],
             ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
@@ -4359,13 +4357,28 @@ E.importList = function (list) {
             ['div', {class: 'import-process-box-back'}, [
                ['div', {class: 'import-process-box-back-icon', opaque: true}],
                ['div',{class: 'import-process-box-back-text'}, 'Back']
-               ]],
+            ]],
             ['div', {class: 'import-process-box-list'}, [
-               ['div', {class: 'import-process-box-list-up'}, [
+               ! Import.currentFolder ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], list.folders [Import.currentFolder].parent]), [
                   ['div', {class: 'up-icon', opaque: true}],
                   ['span', 'Up']
                ]],
-               ['div', {class: 'import-process-box-list-folders'}, [
+               ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
+                  var folder = list.folders [id];
+                  if (! folder) return;
+                  return ['div', {class: 'import-process-box-list-folders-row'}, [
+                     ['div', {class: 'select-folder-box'}, [
+                        ['label', {class: 'checkbox-container'}, [
+                           ['input', {type: 'checkbox', checked: false}],
+                           ['span', {class: 'select-folder-box-checkmark'}]
+                        ]],
+                     ]],
+                     ['div', {class: 'folder-icon', opaque: true}],
+                     ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], id]), folder.name],
+                     ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
+                  ]];
+                  /*
+
                   ['div', {class: 'import-process-box-list-folders-row'}, [
                      ['div', {class: 'select-folder-box'}, [
                         ['label', {class: 'checkbox-container'}, [
@@ -4443,7 +4456,8 @@ E.importList = function (list) {
                      ['div', {class: 'import-folder-name'}, 'NYC 2014'],
                      ['div', {class: 'import-folder-files'}, '(567 files)']
                   ]],
-               ]],
+               */
+               })],
             ]],
             ['div', {class: 'import-process-box-selected'}, [
                ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
@@ -4489,8 +4503,8 @@ E.importList = function (list) {
                ]],
             ]],
          ]],
-      ]],
-   ]]
+      ]];
+   });
 }
 
 E.importBox = function () {
@@ -4535,7 +4549,7 @@ E.import = function (list) {
             ]],
             B.view (['Data', 'import', 'google'], {attrs: {class: 'page-section'}}, function (x, list) {
                return [
-                  list ? E.importList (list) : E.importBox (),
+                  list ? E.importList (list, 'google') : E.importBox (),
                   // RECENT IMPORTS
                   ['h2', {class:'recent-imports__title'}, 'Recent imports'],
                   // BACK LINK

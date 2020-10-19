@@ -592,6 +592,7 @@ H.hasAccess = function (S, username, picId) {
 
 // *** OAUTH HELPERS ***
 
+// https://developers.google.com/identity/protocols/oauth2/web-server
 H.getGoogleToken = function (S, username) {
    a.stop ([
       [Redis, 'get', 'oa:g:acc:' + username],
@@ -2194,9 +2195,12 @@ var routes = [
       }});
    }],
 
+   // https://developers.google.com/drive/api/v3/reference/files/list
+   // https://developers.google.com/drive/api/v3/reference/files#resource
+   // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 10, PAGES = 1;
+      var PAGESIZE = 50, PAGES = 1;
 
       var pics = [], page = 1, folders = {}, roots = {}, children = {};
 
@@ -2301,21 +2305,20 @@ var routes = [
                dale.go (pic.parents, porotoSum);
             });
 
-            var output = {roots: roots, folders: {}};
+            var output = {roots: dale.keys (roots), folders: {}};
 
             dale.go (folders, function (folder, id) {
-               output.folders [id] = {name: folder.name, count: folder.count, children: folder.children, parent: folders [id] [0]};
+               output.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
             });
 
-            console.log ('OUTPUT', JSON.stringify (output, null, '   '));
-
             /* FINAL OBJECT IS OF THE FORM:
-            [
-               [{id: '...', name: 'root1', count: ..., children: [...]],
-               [{id: '...', name: 'root2', count: ..., children: [...]],
+            {roots: [...], folders: [
+               {id: '...', name: '...', count: ..., parent: ..., children: [...]},
                ...
-            ]
+            ]}
             */
+
+            console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
             reply (rs, 200, {list: output});
             H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
@@ -2332,6 +2335,11 @@ var routes = [
             'state=' + rq.csrf
          ].join ('&')});
       });
+   }],
+
+   // https://developers.google.com/drive/api/v2/reference/files/export
+   ['post', 'import/file/google/:username/:id', function (rq, rs) {
+      reply (rs, 409);
    }],
 
    // *** ADMIN AREA ***
