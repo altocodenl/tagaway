@@ -2304,7 +2304,7 @@ var routes = [
             var output = {roots: roots, folders: {}};
 
             dale.go (folders, function (folder, id) {
-               output.folders [id] = {name: folder.name, count: folder.count, children: folder.children, parent: parents [id] [0]};
+               output.folders [id] = {name: folder.name, count: folder.count, children: folder.children, parent: folders [id] [0]};
             });
 
             console.log ('OUTPUT', JSON.stringify (output, null, '   '));

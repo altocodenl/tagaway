@@ -41,7 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 
 - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
-- Remove big bmps from repo history.
+- Remove big bmps from repo history: nara-deer, coffee
 - Add format to DB.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
 
