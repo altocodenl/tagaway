@@ -2200,7 +2200,7 @@ var routes = [
    // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 50, PAGES = 1;
+      var PAGESIZE = 1000, PAGES = 2;
 
       var pics = [], page = 1, folders = {}, roots = {}, children = {};
 
@@ -2257,20 +2257,14 @@ var routes = [
             children [id].push (child);
          }
 
-         if (! folders [id].pending) {
-            console.log ('DEBUG already have parent, skipping', id, folders [id]);
-            return s.next ();
-         }
+         if (! folders [id].pending) return s.next ();
 
          var path = 'drive/v3/files/' + id + '?' + [
             'key=' + SECRET.google.api.key,
             'fields=name,parents'
          ].join ('&');
 
-         console.log ('DEBUG request parent', id);
-
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            console.log ('DEBUG response parent', id, RS.code);
             if (RS.code !== 200) return s.next (null, RS.body);
             folders [id] = {name: RS.body.name, parents: RS.body.parents};
             if (! RS.body.parents || RS.body.parents.length === 0) {
@@ -2285,6 +2279,43 @@ var routes = [
          }});
       }
 
+      /* TODO: get changes to update list
+      var getChangeToken = function (s) {
+         var path = 'drive/v3/changes/startPageToken?' + [
+            'key=' + SECRET.google.api.key,
+            'fields=*',
+            'includeItemsFromAllDrives=true',
+            'supportsAllDrives=true',
+            'spaces=drive,photos',
+         ].join ('&');
+         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
+            if (RS.code !== 200) return s.next (null, RS.body);
+            s.changesToken = RS.body.startPageToken;
+            s.next ();
+         }});
+      }
+
+      var getChanges = function (s, nextPageToken) {
+
+         var PAGESIZE = 10;
+
+         var path = 'drive/v3/changes?' + [
+            'key=' + SECRET.google.api.key,
+            'fields=*',
+            'includeItemsFromAllDrives=true',
+            'pageSize=' + PAGESIZE,
+            'pageToken=' + (nextPageToken || s.changesToken),
+            'supportsAllDrives=true',
+            'spaces=drive,photos',
+         ].join ('&');
+
+         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
+            if (RS.code !== 200) return s.next (null, RS.body);
+            s.next ();
+         }});
+      }
+      */
+
       a.stop ([
          [H.getGoogleToken, rq.user.username],
          getNextPage,
@@ -2294,6 +2325,8 @@ var routes = [
                return [getParent, id];
             }, {max: 1});
          },
+         //getChangeToken,
+         //getChanges,
          function (s) {
             var porotoSum = function (id) {
                if (! folders [id].count) folders [id].count = 0;
