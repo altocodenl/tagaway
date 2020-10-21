@@ -45,10 +45,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
 - Import from GDrive.
    - List.
+      - Track list progress in redis.
+      - Delete list after 3 hours.
       - Store list in log.
       - Batch listing.
-      - Email when listing is complete.
    - Import.
+      - Email when import is complete.
 - Import from Dropbox.
 - Paid accounts
    - Set account space limit.
@@ -136,7 +138,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Change password.
 
 - Admin
-   -https://developers.google.com/drive/api/v3/batchhttps://developers.google.com/drive/api/v3/batch Store statistics.
    - Block further uploads if storage limits are exceeded.
    - See & send invites.
 

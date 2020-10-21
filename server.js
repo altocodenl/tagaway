@@ -2200,7 +2200,7 @@ var routes = [
    // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 1000, PAGES = 2;
+      var PAGESIZE = 10, PAGES = 1;
 
       var pics = [], page = 1, folders = {}, roots = {}, children = {};
 
@@ -2248,6 +2248,36 @@ var routes = [
                getNextPage (s, RS.body.nextPageToken);
             }, 500);
             else s.next (pics);
+         }});
+      }
+
+      var getParentBatch = function (s, items) {
+         'multipart/mixed';
+         var boundary = Math.floor (Math.random () * Math.pow (10, 16));
+         var batch = items.splice (0, 100);
+         if (batch.length === 0) return s.next ();
+
+         var body = '';
+         // https://github.com/tanaikech/BatchRequest/blob/master/BatchRequests.js
+         dale.go (batch, function (id) {
+            body += '--' + boundary + '\r\n';
+            body += 'Content-Type: application/http' + '\r\n';
+            //body += 'GET https://www.googleapis.com/drive/v3/files/' + id + '\r\n';
+            body += 'GET /drive/v3/files/' + id + '\r\n';
+         });
+         body += '--' + boundary + '--\r\n';
+
+         var path = 'batch/drive/v3?' + [
+            'key=' + SECRET.google.api.key
+         ].join ('&');
+
+         console.log (path);
+         console.log (body);
+
+         hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
+            console.log ('BATCH', RS.code, RS.headers, RS.body);
+            if (RS.code !== 200) return s.next (null, RS.body);
+            s.next ();
          }});
       }
 
@@ -2328,6 +2358,9 @@ var routes = [
          //getChangeToken,
          //getChanges,
          function (s) {
+            getParentBatch (s, dale.keys (folders));
+         },
+         function (s) {
             var porotoSum = function (id) {
                if (! folders [id].count) folders [id].count = 0;
                folders [id].count++;
@@ -2351,7 +2384,7 @@ var routes = [
             ]}
             */
 
-            console.log ('OUTPUT', JSON.stringify (output, null, '   '));
+            //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
             reply (rs, 200, {list: output});
             H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
