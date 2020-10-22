@@ -2211,7 +2211,6 @@ var routes = [
          var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
 
          var path = 'drive/v3/files?' + [
-            'key=' + SECRET.google.api.key,
             // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
             'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
                return 'files/' + v;
@@ -2252,31 +2251,49 @@ var routes = [
       }
 
       var getParentBatch = function (s, items) {
-         'multipart/mixed';
          var boundary = Math.floor (Math.random () * Math.pow (10, 16));
          var batch = items.splice (0, 100);
          if (batch.length === 0) return s.next ();
 
-         var body = '';
-         // https://github.com/tanaikech/BatchRequest/blob/master/BatchRequests.js
+         var body = '--' + boundary + '\r\n';
          dale.go (batch, function (id) {
+            var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
+               'fields=id,name,parents'
+            ].join ('&');
+
+            body += 'Content-Type: application/http' + '\r\n\r\n';
+            // The double \r\n is critical for the request to return meaningful results.
+            body += 'GET ' + path + '\r\n\r\n';
             body += '--' + boundary + '\r\n';
-            body += 'Content-Type: application/http' + '\r\n';
-            //body += 'GET https://www.googleapis.com/drive/v3/files/' + id + '\r\n';
-            body += 'GET /drive/v3/files/' + id + '\r\n';
          });
-         body += '--' + boundary + '--\r\n';
+         body += '--';
 
-         var path = 'batch/drive/v3?' + [
-            'key=' + SECRET.google.api.key
-         ].join ('&');
-
-         console.log (path);
-         console.log (body);
-
-         hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
-            console.log ('BATCH', RS.code, RS.headers, RS.body);
+         hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
             if (RS.code !== 200) return s.next (null, RS.body);
+            if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
+            var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
+            var parts = RS.body.split (boundary);
+            dale.go (parts.slice (1, -1), function (part) {
+               var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+
+               folders [json.id] = {name: json.name, parents: json.parents};
+               if (! json.parents) roots [id] = true;
+               dale.go (json.parents, function (id) {
+                  if (! children [id]) children [id] = [];
+                  children [id].push (json.id);
+                  // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
+                  if (! folders [id] && items.indexOf (id) === -1) items.push (id);
+               });
+            });
+
+
+            a.fork (s, RS.body.parents, function (v) {
+               if (! folders [v]) folders [v] = {pending: true};
+               return [getParent, v, id];
+            }, {max: 1});
+            });
+            //console.log ('BATCH', RS.code, RS.headers, RS.body);
+            //console.log ('BATCH', parts);
             s.next ();
          }});
       }
@@ -2290,7 +2307,6 @@ var routes = [
          if (! folders [id].pending) return s.next ();
 
          var path = 'drive/v3/files/' + id + '?' + [
-            'key=' + SECRET.google.api.key,
             'fields=name,parents'
          ].join ('&');
 
@@ -2312,7 +2328,6 @@ var routes = [
       /* TODO: get changes to update list
       var getChangeToken = function (s) {
          var path = 'drive/v3/changes/startPageToken?' + [
-            'key=' + SECRET.google.api.key,
             'fields=*',
             'includeItemsFromAllDrives=true',
             'supportsAllDrives=true',
@@ -2330,7 +2345,6 @@ var routes = [
          var PAGESIZE = 10;
 
          var path = 'drive/v3/changes?' + [
-            'key=' + SECRET.google.api.key,
             'fields=*',
             'includeItemsFromAllDrives=true',
             'pageSize=' + PAGESIZE,
