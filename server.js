@@ -2200,9 +2200,9 @@ var routes = [
    // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 10, PAGES = 1;
+      var PAGESIZE = 50, PAGES = 1;
 
-      var pics = [], page = 1, folders = {}, roots = {}, children = {};
+      var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
 
       var getNextPage = function (s, nextPageToken) {
 
@@ -2224,7 +2224,7 @@ var routes = [
             'spaces=drive,photos',
          ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-         console.log ('DEBUG request page', page++);
+         console.log ('DEBUG request image page', page++);
 
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
@@ -2232,7 +2232,7 @@ var routes = [
 
             dale.go (RS.body.files, function (v) {
                dale.go (v.parents, function (v2) {
-                  if (! folders [v2]) folders [v2] = {pending: true};
+                  if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
                   if (! children [v2]) children [v2] = [];
                   children [v2].push (v.id);
                });
@@ -2250,9 +2250,9 @@ var routes = [
          }});
       }
 
-      var getParentBatch = function (s, items) {
+      var getParentBatch = function (s) {
          var boundary = Math.floor (Math.random () * Math.pow (10, 16));
-         var batch = items.splice (0, 100);
+         var batch = parentsToRetrieve.splice (0, 100);
          if (batch.length === 0) return s.next ();
 
          var body = '--' + boundary + '\r\n';
@@ -2268,33 +2268,37 @@ var routes = [
          });
          body += '--';
 
+         console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
+
          hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
             if (RS.code !== 200) return s.next (null, RS.body);
             if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
             var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
             var parts = RS.body.split (boundary);
+            var error;
             dale.go (parts.slice (1, -1), function (part) {
                var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+               if (json.error) return error = error;
 
                folders [json.id] = {name: json.name, parents: json.parents};
-               if (! json.parents) roots [id] = true;
+               console.log ('DEBUG json', json);
+               if (! json.parents) roots [json.id] = true;
                dale.go (json.parents, function (id) {
                   if (! children [id]) children [id] = [];
                   children [id].push (json.id);
                   // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
-                  if (! folders [id] && items.indexOf (id) === -1) items.push (id);
+                  if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
                });
             });
+            if (error) {
+               console.log ('DEBUG API ERROR', error);
+               return s.next (null, error);
+            }
 
-
-            a.fork (s, RS.body.parents, function (v) {
-               if (! folders [v]) folders [v] = {pending: true};
-               return [getParent, v, id];
-            }, {max: 1});
-            });
-            //console.log ('BATCH', RS.code, RS.headers, RS.body);
-            //console.log ('BATCH', parts);
-            s.next ();
+            if (parentsToRetrieve.length === 0) s.next ();
+            else                                setTimeout (function () {
+               getParentBatch (s);
+            }, 100);
          }});
       }
 
@@ -2363,18 +2367,9 @@ var routes = [
       a.stop ([
          [H.getGoogleToken, rq.user.username],
          getNextPage,
+         getParentBatch,
          function (s) {
-            a.fork (s, folders, function (v, id) {
-               // The first folders already have the children set, so we don't have to pass a second argument to the function.
-               return [getParent, id];
-            }, {max: 1});
-         },
-         //getChangeToken,
-         //getChanges,
-         function (s) {
-            getParentBatch (s, dale.keys (folders));
-         },
-         function (s) {
+            console.log ('DEBUG FOLDERS', folders);
             var porotoSum = function (id) {
                if (! folders [id].count) folders [id].count = 0;
                folders [id].count++;
