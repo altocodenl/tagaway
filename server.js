@@ -2200,9 +2200,13 @@ var routes = [
    // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 50, PAGES = 1;
+      var PAGESIZE = 1000, PAGES = 5;
 
       var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
+      var limits = [], setLimit = function (n) {
+         var d = Date.now ();
+         limits.unshift ([d - d % 1000, n || 1]);
+      }
 
       var getNextPage = function (s, nextPageToken) {
 
@@ -2226,6 +2230,7 @@ var routes = [
 
          console.log ('DEBUG request image page', page++);
 
+         setLimit ();
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
             if (RS.code !== 200) return s.next (null, RS.body);
@@ -2243,16 +2248,17 @@ var routes = [
             // Bring a maximum of PAGES pages.
             if (page > PAGES) return s.next (pics);
 
-            if (RS.body.nextPageToken) setTimeout (function () {
-               getNextPage (s, RS.body.nextPageToken);
-            }, 500);
+            if (RS.body.nextPageToken) getNextPage (s, RS.body.nextPageToken);
             else s.next (pics);
          }});
       }
 
-      var getParentBatch = function (s) {
+      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
+
+      var getParentBatch = function (s, maxRequests) {
+         var REQUESTLIMIT = 99;
          var boundary = Math.floor (Math.random () * Math.pow (10, 16));
-         var batch = parentsToRetrieve.splice (0, 100);
+         var batch = parentsToRetrieve.splice (0, maxRequests || REQUESTLIMIT);
          if (batch.length === 0) return s.next ();
 
          var body = '--' + boundary + '\r\n';
@@ -2269,63 +2275,61 @@ var routes = [
          body += '--';
 
          console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
-
+         setLimit (batch.length);
          hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
             if (RS.code !== 200) return s.next (null, RS.body);
             if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
             var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
             var parts = RS.body.split (boundary);
             var error;
-            dale.go (parts.slice (1, -1), function (part) {
+            dale.stopNot (parts.slice (1, -1), undefined, function (part) {
                var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
-               if (json.error) return error = error;
+               if (json.error) return error = json.error;
 
                folders [json.id] = {name: json.name, parents: json.parents};
-               console.log ('DEBUG json', json);
                if (! json.parents) roots [json.id] = true;
                dale.go (json.parents, function (id) {
                   if (! children [id]) children [id] = [];
-                  children [id].push (json.id);
+                  if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
                   // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
                   if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
                });
             });
-            if (error) {
-               console.log ('DEBUG API ERROR', error);
-               return s.next (null, error);
-            }
+            if (error) return s.next (null, error);
 
-            if (parentsToRetrieve.length === 0) s.next ();
-            else                                setTimeout (function () {
+            if (parentsToRetrieve.length === 0) return s.next ();
+
+            var timeWindow = 10;
+
+            var d = Date.now ();
+            d = d - d % 1000;
+            var lastPeriodTotal = 0, lastPeriodRequest;
+            dale.go (limits, function (limit) {
+               if (((d - limit [0]) / 1000) < timeWindow) {
+                  lastPeriodTotal += limit [1];
+                  lastPeriodRequest = limit;
+               }
+               console.log ('limit', limit [1], (d - limit [0]) / 1000, 'seconds ago');
+            });
+
+            var timeNow = new Date (d).toISOString (), changui = 1000;
+
+            // If absolutely no capacity, must wait.
+            if (lastPeriodTotal >= REQUESTLIMIT) {
+               console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]) + changui, 'ms to make', lastPeriodRequest [1], 'requests');
+               setTimeout (function () {
+                  getParentBatch (s, lastPeriodRequest [1]);
+               }, timeWindow * 1000 - (d - lastPeriodRequest [0]) + changui);
+            }
+            // If some capacity but not unrestricted, send a limited request immediately.
+            else if (parentsToRetrieve.length > (REQUESTLIMIT- lastPeriodTotal)) {
+               console.log (timeNow, 'limited capacity', 'make only', REQUESTLIMIT - lastPeriodTotal, 'requests');
+               getParentBatch (s, REQUESTLIMIT - lastPeriodTotal);
+            }
+            else {
+               console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
                getParentBatch (s);
-            }, 100);
-         }});
-      }
-
-      var getParent = function (s, id, child) {
-         if (child) {
-            if (! children [id]) children [id] = [];
-            children [id].push (child);
-         }
-
-         if (! folders [id].pending) return s.next ();
-
-         var path = 'drive/v3/files/' + id + '?' + [
-            'fields=name,parents'
-         ].join ('&');
-
-         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            if (RS.code !== 200) return s.next (null, RS.body);
-            folders [id] = {name: RS.body.name, parents: RS.body.parents};
-            if (! RS.body.parents || RS.body.parents.length === 0) {
-               roots [id] = true;
-               return s.next ();
             }
-
-            a.fork (s, RS.body.parents, function (v) {
-               if (! folders [v]) folders [v] = {pending: true};
-               return [getParent, v, id];
-            }, {max: 1});
          }});
       }
 
@@ -2369,7 +2373,6 @@ var routes = [
          getNextPage,
          getParentBatch,
          function (s) {
-            console.log ('DEBUG FOLDERS', folders);
             var porotoSum = function (id) {
                if (! folders [id].count) folders [id].count = 0;
                folders [id].count++;
