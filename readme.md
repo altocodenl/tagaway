@@ -37,43 +37,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
-### Todo v1 now
+### Todo before launch
 
-
-- Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
-- Remove big bmps from repo history.
-- Add format to DB.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
-
-
-// https://developers.google.com/identity/protocols/oauth2/web-server
-// get all, sort
-// https://developers.google.com/drive/api/v3/reference/files/list
-// https://developers.google.com/drive/api/v3/reference/files#resource
-// https://developers.google.com/drive/api/v2/reference/files/export
-
-- two operations: list & import. carried by the thread that does them, but activity reported on the import key. import entry per user and provider.
-- list request:
-   - is import for that provider (google/dropbox) taking place? report & return error.
-   - branches:
-      - no access or refresh token: redirect to google auth.
-      - refresh token but no access token: get access token, list. if error, report error.
-      - access token: list. if error, report error.
-   - list pages one by one, calling auth just before.
-      - if auth fails, report error.
-      - put pages of list on import key.
-      - log page operation with number of files.
-      - if error on list, interrupt & report error.
-
-- import process:
-   - if error on a file, report but continue.
-   - ok, keep state on the thread, but report status. if thread fails, can clean it up with a cancel or we can have a timeout on it too, a last activity indicator.
-
-- Import from GDrive/Dropbox.
-   - Import is list, then upload (pass param to upload). Import in db, but uploads on log one at a time.
-   - Import stops if: 1) API error; 2) space limit.
-   - Email when import done or stopped.
-- (paid) accounts
+- Formats.
+   - Add format to DB.
+   - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
+- Import from GDrive.
+   - List.
+      - Track list progress in redis.
+      - Delete list after 3 hours.
+      - Store list in log.
+      - Batch listing.
+   - Import.
+      - Email when import is complete.
+- Import from Dropbox.
+- Paid accounts
+   - Set account space limit.
    - Delete my account with confirmation.
    - Show/hide paid space in account.
    - Retrieve data on payment cycle.
@@ -155,9 +135,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Signup with invite.
    - Store auth log.
    - Enable/disable geotagging.
+   - Change password.
 
 - Admin
-   - Store statistics.
    - Block further uploads if storage limits are exceeded.
    - See & send invites.
 

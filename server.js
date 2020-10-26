@@ -592,6 +592,7 @@ H.hasAccess = function (S, username, picId) {
 
 // *** OAUTH HELPERS ***
 
+// https://developers.google.com/identity/protocols/oauth2/web-server
 H.getGoogleToken = function (S, username) {
    a.stop ([
       [Redis, 'get', 'oa:g:acc:' + username],
@@ -2194,11 +2195,18 @@ var routes = [
       }});
    }],
 
+   // https://developers.google.com/drive/api/v3/reference/files/list
+   // https://developers.google.com/drive/api/v3/reference/files#resource
+   // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 10, PAGES = 1;
+      var PAGESIZE = 1000, PAGES = 5;
 
-      var output = [], counter = 1, parents = {}, roots = {}, children = {};
+      var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
+      var limits = [], setLimit = function (n) {
+         var d = Date.now ();
+         limits.unshift ([d - d % 1000, n || 1]);
+      }
 
       var getNextPage = function (s, nextPageToken) {
 
@@ -2207,7 +2215,6 @@ var routes = [
          var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
 
          var path = 'drive/v3/files?' + [
-            'key=' + SECRET.google.api.key,
             // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
             'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
                return 'files/' + v;
@@ -2221,103 +2228,181 @@ var routes = [
             'spaces=drive,photos',
          ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-         console.log ('DEBUG request page', counter++);
+         console.log ('DEBUG request image page', page++);
 
+         setLimit ();
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
             if (RS.code !== 200) return s.next (null, RS.body);
 
             dale.go (RS.body.files, function (v) {
                dale.go (v.parents, function (v2) {
-                  if (! parents [v2]) parents [v2] = {count: 0, pending: true};
-                  parents [v2].count++;
+                  if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
                   if (! children [v2]) children [v2] = [];
                   children [v2].push (v.id);
                });
             });
 
-            output = output.concat (RS.body.files);
+            pics = pics.concat (RS.body.files);
 
-            // Just bring three pages for now.
-            if (counter > PAGES) return s.next (output);
+            // Bring a maximum of PAGES pages.
+            if (page > PAGES) return s.next (pics);
 
-            if (RS.body.nextPageToken) setTimeout (function () {
-               getNextPage (s, RS.body.nextPageToken);
-            }, 500);
-            else s.next (output);
+            if (RS.body.nextPageToken) getNextPage (s, RS.body.nextPageToken);
+            else s.next (pics);
          }});
       }
 
-      var getParent = function (s, id, child) {
-         if (child) {
-            if (! children [id]) children [id] = [];
-            children [id].push (child);
-         }
+      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
 
-         if (! parents [id].pending) {
-            console.log ('DEBUG already have parent, skipping', id, parents [id]);
-            return s.next ();
-         }
+      var getParentBatch = function (s, maxRequests) {
+         var REQUESTLIMIT = 99;
+         var boundary = Math.floor (Math.random () * Math.pow (10, 16));
+         var batch = parentsToRetrieve.splice (0, maxRequests || REQUESTLIMIT);
+         if (batch.length === 0) return s.next ();
 
-         var path = 'drive/v3/files/' + id + '?' + [
-            'key=' + SECRET.google.api.key,
-            'fields=name,parents'
+         var body = '--' + boundary + '\r\n';
+         dale.go (batch, function (id) {
+            var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
+               'fields=id,name,parents'
+            ].join ('&');
+
+            body += 'Content-Type: application/http' + '\r\n\r\n';
+            // The double \r\n is critical for the request to return meaningful results.
+            body += 'GET ' + path + '\r\n\r\n';
+            body += '--' + boundary + '\r\n';
+         });
+         body += '--';
+
+         console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
+         setLimit (batch.length);
+         hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
+            if (RS.code !== 200) return s.next (null, RS.body);
+            if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
+            var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
+            var parts = RS.body.split (boundary);
+            var error;
+            dale.stopNot (parts.slice (1, -1), undefined, function (part) {
+               var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+               if (json.error) return error = json.error;
+
+               folders [json.id] = {name: json.name, parents: json.parents};
+               if (! json.parents) roots [json.id] = true;
+               dale.go (json.parents, function (id) {
+                  if (! children [id]) children [id] = [];
+                  if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
+                  // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
+                  if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+               });
+            });
+            if (error) return s.next (null, error);
+
+            if (parentsToRetrieve.length === 0) return s.next ();
+
+            var timeWindow = 10;
+
+            var d = Date.now ();
+            d = d - d % 1000;
+            var lastPeriodTotal = 0, lastPeriodRequest;
+            dale.go (limits, function (limit) {
+               if (((d - limit [0]) / 1000) < timeWindow) {
+                  lastPeriodTotal += limit [1];
+                  lastPeriodRequest = limit;
+               }
+               console.log ('limit', limit [1], (d - limit [0]) / 1000, 'seconds ago');
+            });
+
+            var timeNow = new Date (d).toISOString (), changui = 1000;
+
+            // If absolutely no capacity, must wait.
+            if (lastPeriodTotal >= REQUESTLIMIT) {
+               console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]) + changui, 'ms to make', lastPeriodRequest [1], 'requests');
+               setTimeout (function () {
+                  getParentBatch (s, lastPeriodRequest [1]);
+               }, timeWindow * 1000 - (d - lastPeriodRequest [0]) + changui);
+            }
+            // If some capacity but not unrestricted, send a limited request immediately.
+            else if (parentsToRetrieve.length > (REQUESTLIMIT- lastPeriodTotal)) {
+               console.log (timeNow, 'limited capacity', 'make only', REQUESTLIMIT - lastPeriodTotal, 'requests');
+               getParentBatch (s, REQUESTLIMIT - lastPeriodTotal);
+            }
+            else {
+               console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
+               getParentBatch (s);
+            }
+         }});
+      }
+
+      /* TODO: get changes to update list
+      var getChangeToken = function (s) {
+         var path = 'drive/v3/changes/startPageToken?' + [
+            'fields=*',
+            'includeItemsFromAllDrives=true',
+            'supportsAllDrives=true',
+            'spaces=drive,photos',
+         ].join ('&');
+         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
+            if (RS.code !== 200) return s.next (null, RS.body);
+            s.changesToken = RS.body.startPageToken;
+            s.next ();
+         }});
+      }
+
+      var getChanges = function (s, nextPageToken) {
+
+         var PAGESIZE = 10;
+
+         var path = 'drive/v3/changes?' + [
+            'fields=*',
+            'includeItemsFromAllDrives=true',
+            'pageSize=' + PAGESIZE,
+            'pageToken=' + (nextPageToken || s.changesToken),
+            'supportsAllDrives=true',
+            'spaces=drive,photos',
          ].join ('&');
 
-         console.log ('DEBUG request parent', id);
-
          hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            console.log ('DEBUG response parent', id, RS.code);
             if (RS.code !== 200) return s.next (null, RS.body);
-            parents [id] = {count: parents [id].count, name: RS.body.name, parents: RS.body.parents};
-            if (! RS.body.parents || RS.body.parents.length === 0) {
-               roots [id] = true;
-               return s.next ();
-            }
-
-            a.fork (s, RS.body.parents, function (v) {
-               if (! parents [v]) parents [v] = {count: 0, pending: true};
-               parents [v].count += parents [id].count;
-               return [getParent, v, id];
-            }, {max: 1});
+            s.next ();
          }});
       }
+      */
 
       a.stop ([
          [H.getGoogleToken, rq.user.username],
          getNextPage,
+         getParentBatch,
          function (s) {
-            a.fork (s, parents, function (v, id) {
-               return [getParent, id];
-            }, {max: 1});
-         },
-         function (s) {
-            console.log ('RESULTS', dale.go (output, function (v) {
-               return dale.obj (v, function (v2, k2) {
-                  return [k2, type (v2) === 'array' ? JSON.stringify (v2) : v2];
-               });
-            }));
-            console.log ('PARENTS', parents);
-            console.log ('ROOTS', roots);
-            children = dale.obj (children, function (v, k) {
-               return [parents [k].name, dale.go (v, function (v2) {
-                  return [parents [v2] ? parents [v2].name : v2];
-               })];
+            var porotoSum = function (id) {
+               if (! folders [id].count) folders [id].count = 0;
+               folders [id].count++;
+               dale.go (folders [id].parents, porotoSum);
+            }
+
+            dale.go (pics, function (pic) {
+               dale.go (pic.parents, porotoSum);
             });
-            console.log ('CHILDREN', children);
+
+            var output = {roots: dale.keys (roots), folders: {}};
+
+            dale.go (folders, function (folder, id) {
+               output.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
+            });
 
             /* FINAL OBJECT IS OF THE FORM:
-            [
-               [{id: '...', name: 'root1', count: ..., children: [...]],
-               [{id: '...', name: 'root2', count: ..., children: [...]],
+            {roots: [...], folders: [
+               {id: '...', name: '...', count: ..., parent: ..., children: [...]},
                ...
-            ]
+            ]}
             */
+
+            //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
             reply (rs, 200, {list: output});
             H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
          }
       ], function (s, error) {
+         console.log ('ERROR', JSON.stringify (error));
          reply (rs, 200, {error: error, redirect: [
             'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
             'prompt=consent',
@@ -2328,6 +2413,11 @@ var routes = [
             'state=' + rq.csrf
          ].join ('&')});
       });
+   }],
+
+   // https://developers.google.com/drive/api/v2/reference/files/export
+   ['post', 'import/file/google/:username/:id', function (rq, rs) {
+      reply (rs, 409);
    }],
 
    // *** ADMIN AREA ***
