@@ -2200,7 +2200,7 @@ var routes = [
    // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 1000, PAGES = 5;
+      var PAGESIZE = 1000, PAGES = 2;
 
       var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
       var limits = [], setLimit = function (n) {
@@ -2254,9 +2254,11 @@ var routes = [
       }
 
       // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
+      // don't extrapolate over limit: 10 requests/second.
 
       var getParentBatch = function (s, maxRequests) {
-         var REQUESTLIMIT = 99;
+         //var REQUESTLIMIT = 99;
+         var REQUESTLIMIT = 12;
          var boundary = Math.floor (Math.random () * Math.pow (10, 16));
          var batch = parentsToRetrieve.splice (0, maxRequests || REQUESTLIMIT);
          if (batch.length === 0) return s.next ();
@@ -2299,7 +2301,7 @@ var routes = [
 
             if (parentsToRetrieve.length === 0) return s.next ();
 
-            var timeWindow = 10;
+            var timeWindow = 2;
 
             var d = Date.now ();
             d = d - d % 1000;
