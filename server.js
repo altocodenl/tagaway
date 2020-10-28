@@ -598,13 +598,16 @@ H.getGoogleToken = function (S, username) {
       [Redis, 'get', 'oa:g:acc:' + username],
       function (s) {
          // There is an access token, return it.
-         if (s.last) return S.next (s.last);
+         if (s.last) {
+            S.token = s.last;
+            return S.next (s.last);
+         }
          // No access token, check if there's a refresh token.
          Redis (s, 'get', 'oa:g:ref:' + username);
       },
       function (s) {
          // No access or refresh token, report an error to (optionally) restart authentication with provider.
-         if (! s.last) return S.next (null, 'No access or refresh token.');
+         if (! s.last) return S.next (null, {errorCode: 1, error: 'No access or refresh token.'});
          var body = [
             'client_id='     + SECRET.google.oauth.client,
             'client_secret=' + SECRET.google.oauth.secret,
@@ -618,7 +621,7 @@ H.getGoogleToken = function (S, username) {
                [Redis, 'del', 'oa:g:ref:' + username],
                function (s) {
                   // Report an error
-                  s.next (null, {code: rs.code, error: 'Refresh token failed', body: rs.body});
+                  s.next (null, {errorCode: 2, code: rs.code, error: 'Refresh token failed', body: rs.body});
                }
             ]);
             // Refresh token was successful
@@ -627,6 +630,7 @@ H.getGoogleToken = function (S, username) {
                [Redis, 'setex', 'oa:g:acc:' + username, rs.body.expires_in, rs.body.access_token],
                function (s) {
                   // Return access token
+                  s.token = rs.body.access_token;
                   s.next (rs.body.access_token);
                }
             ]);
@@ -2200,220 +2204,202 @@ var routes = [
    // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
-      var PAGESIZE = 1000, PAGES = 2;
-
-      var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
-      var limits = [], setLimit = function (n) {
-         var d = Date.now ();
-         limits.unshift ([d - d % 1000, n || 1]);
-      }
-
-      var getNextPage = function (s, nextPageToken) {
-
-         if (! s.token) s.token = s.last;
-
-         var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
-
-         var path = 'drive/v3/files?' + [
-            // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
-            'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
-               return 'files/' + v;
-            }).join (','),
-            'corpora=user',
-            'includeItemsFromAllDrives=true',
-            'orderBy=modifiedTime',
-            'pageSize=' + PAGESIZE,
-            'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
-            'supportsAllDrives=true',
-            'spaces=drive,photos',
-         ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
-
-         console.log ('DEBUG request image page', page++);
-
-         setLimit ();
-         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.last, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-
-            if (RS.code !== 200) return s.next (null, RS.body);
-
-            dale.go (RS.body.files, function (v) {
-               dale.go (v.parents, function (v2) {
-                  if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
-                  if (! children [v2]) children [v2] = [];
-                  children [v2].push (v.id);
-               });
-            });
-
-            pics = pics.concat (RS.body.files);
-
-            // Bring a maximum of PAGES pages.
-            if (page > PAGES) return s.next (pics);
-
-            if (RS.body.nextPageToken) getNextPage (s, RS.body.nextPageToken);
-            else s.next (pics);
-         }});
-      }
-
-      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
-      // don't extrapolate over limit: 10 requests/second.
-
-      var getParentBatch = function (s, maxRequests) {
-         //var REQUESTLIMIT = 99;
-         var REQUESTLIMIT = 12;
-         var boundary = Math.floor (Math.random () * Math.pow (10, 16));
-         var batch = parentsToRetrieve.splice (0, maxRequests || REQUESTLIMIT);
-         if (batch.length === 0) return s.next ();
-
-         var body = '--' + boundary + '\r\n';
-         dale.go (batch, function (id) {
-            var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
-               'fields=id,name,parents'
-            ].join ('&');
-
-            body += 'Content-Type: application/http' + '\r\n\r\n';
-            // The double \r\n is critical for the request to return meaningful results.
-            body += 'GET ' + path + '\r\n\r\n';
-            body += '--' + boundary + '\r\n';
-         });
-         body += '--';
-
-         console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
-         setLimit (batch.length);
-         hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
-            if (RS.code !== 200) return s.next (null, RS.body);
-            if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
-            var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
-            var parts = RS.body.split (boundary);
-            var error;
-            dale.stopNot (parts.slice (1, -1), undefined, function (part) {
-               var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
-               if (json.error) return error = json.error;
-
-               folders [json.id] = {name: json.name, parents: json.parents};
-               if (! json.parents) roots [json.id] = true;
-               dale.go (json.parents, function (id) {
-                  if (! children [id]) children [id] = [];
-                  if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
-                  // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
-                  if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
-               });
-            });
-            if (error) return s.next (null, error);
-
-            if (parentsToRetrieve.length === 0) return s.next ();
-
-            var timeWindow = 2;
-
-            var d = Date.now ();
-            d = d - d % 1000;
-            var lastPeriodTotal = 0, lastPeriodRequest;
-            dale.go (limits, function (limit) {
-               if (((d - limit [0]) / 1000) < timeWindow) {
-                  lastPeriodTotal += limit [1];
-                  lastPeriodRequest = limit;
-               }
-               console.log ('limit', limit [1], (d - limit [0]) / 1000, 'seconds ago');
-            });
-
-            var timeNow = new Date (d).toISOString (), changui = 1000;
-
-            // If absolutely no capacity, must wait.
-            if (lastPeriodTotal >= REQUESTLIMIT) {
-               console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]) + changui, 'ms to make', lastPeriodRequest [1], 'requests');
-               setTimeout (function () {
-                  getParentBatch (s, lastPeriodRequest [1]);
-               }, timeWindow * 1000 - (d - lastPeriodRequest [0]) + changui);
-            }
-            // If some capacity but not unrestricted, send a limited request immediately.
-            else if (parentsToRetrieve.length > (REQUESTLIMIT- lastPeriodTotal)) {
-               console.log (timeNow, 'limited capacity', 'make only', REQUESTLIMIT - lastPeriodTotal, 'requests');
-               getParentBatch (s, REQUESTLIMIT - lastPeriodTotal);
-            }
-            else {
-               console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
-               getParentBatch (s);
-            }
-         }});
-      }
-
-      /* TODO: get changes to update list
-      var getChangeToken = function (s) {
-         var path = 'drive/v3/changes/startPageToken?' + [
-            'fields=*',
-            'includeItemsFromAllDrives=true',
-            'supportsAllDrives=true',
-            'spaces=drive,photos',
-         ].join ('&');
-         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            if (RS.code !== 200) return s.next (null, RS.body);
-            s.changesToken = RS.body.startPageToken;
-            s.next ();
-         }});
-      }
-
-      var getChanges = function (s, nextPageToken) {
-
-         var PAGESIZE = 10;
-
-         var path = 'drive/v3/changes?' + [
-            'fields=*',
-            'includeItemsFromAllDrives=true',
-            'pageSize=' + PAGESIZE,
-            'pageToken=' + (nextPageToken || s.changesToken),
-            'supportsAllDrives=true',
-            'spaces=drive,photos',
-         ].join ('&');
-
-         hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
-            if (RS.code !== 200) return s.next (null, RS.body);
-            s.next ();
-         }});
-      }
-      */
-
       a.stop ([
-         [H.getGoogleToken, rq.user.username],
-         getNextPage,
-         getParentBatch,
+         [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
+            if (error.errorCode === 1) return reply (rs, 200, {error: error, redirect: [
+               'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+               'prompt=consent',
+               'response_type=code',
+               'client_id=' + SECRET.google.oauth.client,
+               '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+               'access_type=offline',
+               'state=' + rq.csrf
+            ].join ('&')});
+
+            reply (rs, error.code ? error.code : 500, error);
+         }],
+         [Redis, 'get', 'imp:g:' + rq.user.username],
          function (s) {
-            var porotoSum = function (id) {
-               if (! folders [id].count) folders [id].count = 0;
-               folders [id].count++;
-               dale.go (folders [id].parents, porotoSum);
+            if (s.last) return reply (rs, 200, {fileCount: parseInt (s.last.fileCount), folderCount: parseInt (s.last.folderCount), list: JSON.parse (s.last.list)});
+
+            // If no process ongoing, we start it.
+            reply (rs, 200, {fileCount: 0, folderCount: 0});
+            s.next ();
+         },
+         [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
+         function (s) {
+
+            var PAGESIZE = 1000, PAGES = 2;
+
+            var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
+            var limits = [], setLimit = function (n) {
+               var d = Date.now ();
+               limits.unshift ([d - d % 1000, n || 1]);
             }
 
-            dale.go (pics, function (pic) {
-               dale.go (pic.parents, porotoSum);
-            });
+            var getFilePage = function (s, nextPageToken) {
 
-            var output = {roots: dale.keys (roots), folders: {}};
+               var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
 
-            dale.go (folders, function (folder, id) {
-               output.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
-            });
+               var path = 'drive/v3/files?' + [
+                  // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
+                  'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
+                     return 'files/' + v;
+                  }).join (','),
+                  'corpora=user',
+                  'includeItemsFromAllDrives=true',
+                  'orderBy=modifiedTime',
+                  'pageSize=' + PAGESIZE,
+                  'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
+                  'supportsAllDrives=true',
+                  'spaces=drive,photos',
+               ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-            /* FINAL OBJECT IS OF THE FORM:
-            {roots: [...], folders: [
-               {id: '...', name: '...', count: ..., parent: ..., children: [...]},
-               ...
-            ]}
-            */
+               console.log ('DEBUG request image page', page++);
 
-            //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
+               setLimit ();
+               hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
-            reply (rs, 200, {list: output});
-            H.log (s, rq.user.username, {a: 'imp', s: 'request', pro: 'google'});
+                  if (RS.code !== 200) return s.next (null, RS.body);
+
+                  redis.hincrby ('imp:g:' + rq.user.username, 'fileCount', RS.body.files.length);
+
+                  dale.go (RS.body.files, function (v) {
+                     dale.go (v.parents, function (v2) {
+                        if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
+                        if (! children [v2]) children [v2] = [];
+                        children [v2].push (v.id);
+                     });
+                  });
+
+                  pics = pics.concat (RS.body.files);
+
+                  // Bring a maximum of PAGES pages.
+                  if (page > PAGES) return s.next (pics);
+
+                  if (RS.body.nextPageToken) getFilePage (s, RS.body.nextPageToken);
+                  else s.next (pics);
+               }});
+            }
+
+            // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
+            // don't extrapolate over user limit: 10 requests/second.
+
+            var getParentBatch = function (s, maxRequests) {
+               var REQUESTLIMIT = 10;
+               var boundary = Math.floor (Math.random () * Math.pow (10, 16));
+               var batch = parentsToRetrieve.splice (0, maxRequests || REQUESTLIMIT);
+               if (batch.length === 0) return s.next ();
+
+               var body = '--' + boundary + '\r\n';
+               dale.go (batch, function (id) {
+                  var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
+                     'fields=id,name,parents'
+                  ].join ('&');
+
+                  body += 'Content-Type: application/http' + '\r\n\r\n';
+                  // The double \r\n is critical for the request to return meaningful results.
+                  body += 'GET ' + path + '\r\n\r\n';
+                  body += '--' + boundary + '\r\n';
+               });
+               body += '--';
+
+               console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
+               setLimit (batch.length);
+               hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
+                  if (RS.code !== 200) return s.next (null, RS.body);
+
+                  redis.hincrby ('imp:g:' + rq.user.username, 'folderCount', batch.length);
+
+                  if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
+                  var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
+                  var parts = RS.body.split (boundary);
+                  var error;
+                  dale.stopNot (parts.slice (1, -1), undefined, function (part) {
+                     var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+                     if (json.error) return error = json.error;
+
+                     folders [json.id] = {name: json.name, parents: json.parents};
+                     if (! json.parents) roots [json.id] = true;
+                     dale.go (json.parents, function (id) {
+                        if (! children [id]) children [id] = [];
+                        if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
+                        // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
+                        if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                     });
+                  });
+                  if (error) return s.next (null, error);
+
+                  if (parentsToRetrieve.length === 0) return s.next ();
+
+                  var timeWindow = 2;
+
+                  var d = Date.now ();
+                  d = d - d % 1000;
+                  var lastPeriodTotal = 0, lastPeriodRequest;
+                  dale.go (limits, function (limit) {
+                     if (((d - limit [0]) / 1000) < timeWindow) {
+                        lastPeriodTotal += limit [1];
+                        lastPeriodRequest = limit;
+                     }
+                     console.log ('limit', limit [1], (d - limit [0]) / 1000, 'seconds ago');
+                  });
+
+                  var timeNow = new Date (d).toISOString ();
+
+                  // If absolutely no capacity, must wait.
+                  if (lastPeriodTotal >= REQUESTLIMIT) {
+                     console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
+                     setTimeout (function () {
+                        getParentBatch (s, lastPeriodRequest [1]);
+                     }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
+                  }
+                  // If some capacity but not unrestricted, send a limited request immediately.
+                  else if (parentsToRetrieve.length > (REQUESTLIMIT- lastPeriodTotal)) {
+                     console.log (timeNow, 'limited capacity', 'make only', REQUESTLIMIT - lastPeriodTotal, 'requests');
+                     getParentBatch (s, REQUESTLIMIT - lastPeriodTotal);
+                  }
+                  else {
+                     console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
+                     getParentBatch (s);
+                  }
+               }});
+            }
+
+            a.stop (s, [
+               [getFilePage],
+               getParentBatch,
+               function (s) {
+                  var porotoSum = function (id) {
+                     if (! folders [id].count) folders [id].count = 0;
+                     folders [id].count++;
+                     dale.go (folders [id].parents, porotoSum);
+                  }
+
+                  dale.go (pics, function (pic) {
+                     dale.go (pic.parents, porotoSum);
+                  });
+
+                  var output = {roots: dale.keys (roots), folders: {}};
+
+                  dale.go (folders, function (folder, id) {
+                     output.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
+                  });
+
+                  /* FINAL OBJECT IS OF THE FORM:
+                  {roots: [...], folders: [
+                     {id: '...', name: '...', count: ..., parent: ..., children: [...]},
+                     ...
+                  ]}
+                  */
+                  //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
+                  redis.hset ('imp:g:' + rq.user.username, 'list', JSON.stringify (output));
+               }
+            ]);
          }
       ], function (s, error) {
-         console.log ('ERROR', JSON.stringify (error));
-         reply (rs, 200, {error: error, redirect: [
-            'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
-            'prompt=consent',
-            'response_type=code',
-            'client_id=' + SECRET.google.oauth.client,
-            '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
-            'access_type=offline',
-            'state=' + rq.csrf
-         ].join ('&')});
+         // TODO: log in redis
+         console.log ('DEBUG ERROR', error);
       });
    }],
 

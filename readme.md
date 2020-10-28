@@ -45,6 +45,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
 - Import from GDrive.
    - List.
+      - Dual endpoint: start or give state.
       - Track list progress in redis.
       - Delete list after 3 hours.
       - Store list in log.
@@ -610,6 +611,8 @@ All the routes below require an admin user to be logged in.
 
 - oa:g:acc:USERID (string): access token for google for USERID
 - oa:g:ref:USERID (string): refresh token for google for USERID
+
+- imp:g:USERID (hash): information of current import operation from google. Has the shape `{fileCount: INT, folderCount: INT, files: [...], folders: [...]}`.
 
 Used by giz:
 
