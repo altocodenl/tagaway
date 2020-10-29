@@ -4354,7 +4354,7 @@ E.importList = function (list, provider) {
          ! list.error ? [] : ['p', ['ERROR ', list.error]]
       ]];
 
-      var folderList = ! Import.currentFolder ? list.list.roots : list.folders [Import.currentFolder].children;
+      var folderList = ! Import.currentFolder ? list.list.roots : list.list.folders [Import.currentFolder].children;
       return ['div', {class: 'upload-box'}, [
          ['div', {class: 'import-breadcrumb-container'}, [
             ['div', {class: 'import-breadcrumb-buffer'}],

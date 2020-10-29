@@ -2230,7 +2230,7 @@ var routes = [
             s.next ();
          },
          [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
-         [Redis, 'hset', 'img:g:' + rq.user.username, 'start', Date.now ()],
+         [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],
          function (s) {
 
             var PAGESIZE = 1000, PAGES = 1000;
@@ -2280,7 +2280,7 @@ var routes = [
 
                   pics = pics.concat (RS.body.files);
 
-                  // TODO: remove
+                  // TODO: remove after debugging
                   // Bring a maximum of PAGES pages.
                   if (page > PAGES) return s.next (pics);
 
@@ -2348,7 +2348,6 @@ var routes = [
                         lastPeriodTotal += limit [1];
                         lastPeriodRequest = limit;
                      }
-                     console.log ('limit', limit [1], (d - limit [0]) / 1000, 'seconds ago');
                   });
 
                   var timeNow = new Date (d).toISOString ();
@@ -2408,7 +2407,7 @@ var routes = [
             ]);
          }
       ], function (s, error) {
-         redis.hset ('imp:g:' + rq.user.username, 'error', teishi.complex (error) ? JSON.stringify (error) : error);
+         redis.hmset ('imp:g:' + rq.user.username, {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()});
          console.log ('DEBUG ERROR', error);
       });
    }],
