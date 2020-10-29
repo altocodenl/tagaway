@@ -2199,9 +2199,6 @@ var routes = [
       }});
    }],
 
-   // https://developers.google.com/drive/api/v3/reference/files/list
-   // https://developers.google.com/drive/api/v3/reference/files#resource
-   // https://developers.google.com/drive/api/v3/batch
    ['get', 'import/list/google', function (rq, rs) {
 
       a.stop ([
@@ -2218,18 +2215,25 @@ var routes = [
 
             reply (rs, error.code ? error.code : 500, error);
          }],
-         [Redis, 'get', 'imp:g:' + rq.user.username],
+         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
          function (s) {
-            if (s.last) return reply (rs, 200, {fileCount: parseInt (s.last.fileCount), folderCount: parseInt (s.last.folderCount), list: JSON.parse (s.last.list)});
-
+            if (s.last) {
+               if (s.last.list) {
+                  s.last.list = JSON.parse (s.last.list);
+                  // We don't return the full list of pictures to the client.
+                  delete s.last.list.pics;
+               }
+               return reply (rs, 200, {fileCount: parseInt (s.last.fileCount), folderCount: parseInt (s.last.folderCount), error: s.last.error, start: parseInt (s.last.start), list: s.last.list});
+            }
             // If no process ongoing, we start it.
             reply (rs, 200, {fileCount: 0, folderCount: 0});
             s.next ();
          },
          [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
+         [Redis, 'hset', 'img:g:' + rq.user.username, 'start', Date.now ()],
          function (s) {
 
-            var PAGESIZE = 1000, PAGES = 2;
+            var PAGESIZE = 1000, PAGES = 1000;
 
             var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -2241,6 +2245,8 @@ var routes = [
 
                var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
 
+               // https://developers.google.com/drive/api/v3/reference/files/list
+               // https://developers.google.com/drive/api/v3/reference/files#resource
                var path = 'drive/v3/files?' + [
                   // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
                   'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
@@ -2274,6 +2280,7 @@ var routes = [
 
                   pics = pics.concat (RS.body.files);
 
+                  // TODO: remove
                   // Bring a maximum of PAGES pages.
                   if (page > PAGES) return s.next (pics);
 
@@ -2282,16 +2289,17 @@ var routes = [
                }});
             }
 
-            // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
-            // don't extrapolate over user limit: 10 requests/second.
-
             var getParentBatch = function (s, maxRequests) {
-               var REQUESTLIMIT = 10;
+               // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
+               // don't extrapolate over user limit: 10 requests/second.
+               var requestLimit = 10, timeWindow = 2;
+
                var boundary = Math.floor (Math.random () * Math.pow (10, 16));
-               var batch = parentsToRetrieve.splice (0, maxRequests || REQUESTLIMIT);
+               var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
                if (batch.length === 0) return s.next ();
 
                var body = '--' + boundary + '\r\n';
+               // https://developers.google.com/drive/api/v3/batch
                dale.go (batch, function (id) {
                   var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
                      'fields=id,name,parents'
@@ -2332,8 +2340,6 @@ var routes = [
 
                   if (parentsToRetrieve.length === 0) return s.next ();
 
-                  var timeWindow = 2;
-
                   var d = Date.now ();
                   d = d - d % 1000;
                   var lastPeriodTotal = 0, lastPeriodRequest;
@@ -2348,16 +2354,16 @@ var routes = [
                   var timeNow = new Date (d).toISOString ();
 
                   // If absolutely no capacity, must wait.
-                  if (lastPeriodTotal >= REQUESTLIMIT) {
+                  if (lastPeriodTotal >= requestLimit) {
                      console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
                      setTimeout (function () {
                         getParentBatch (s, lastPeriodRequest [1]);
                      }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
                   }
                   // If some capacity but not unrestricted, send a limited request immediately.
-                  else if (parentsToRetrieve.length > (REQUESTLIMIT- lastPeriodTotal)) {
-                     console.log (timeNow, 'limited capacity', 'make only', REQUESTLIMIT - lastPeriodTotal, 'requests');
-                     getParentBatch (s, REQUESTLIMIT - lastPeriodTotal);
+                  else if (parentsToRetrieve.length > (requestLimit- lastPeriodTotal)) {
+                     console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
+                     getParentBatch (s, requestLimit - lastPeriodTotal);
                   }
                   else {
                      console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
@@ -2380,7 +2386,7 @@ var routes = [
                      dale.go (pic.parents, porotoSum);
                   });
 
-                  var output = {roots: dale.keys (roots), folders: {}};
+                  var output = {roots: dale.keys (roots), folders: {}, pics: pics};
 
                   dale.go (folders, function (folder, id) {
                      output.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
@@ -2390,15 +2396,19 @@ var routes = [
                   {roots: [...], folders: [
                      {id: '...', name: '...', count: ..., parent: ..., children: [...]},
                      ...
-                  ]}
+                  ], pics: [...]}
                   */
                   //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
+
                   redis.hset ('imp:g:' + rq.user.username, 'list', JSON.stringify (output));
+                  // TODO: uncomment
+                  // Keep result for three hours.
+                  //redis.expire ('imp:g:' + rq.user.username, 60 * 60 * 3);
                }
             ]);
          }
       ], function (s, error) {
-         // TODO: log in redis
+         redis.hset ('imp:g:' + rq.user.username, 'error', teishi.complex (error) ? JSON.stringify (error) : error);
          console.log ('DEBUG ERROR', error);
       });
    }],

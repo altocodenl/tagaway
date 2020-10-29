@@ -47,9 +47,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - List.
       - Dual endpoint: start or give state.
       - Track list progress in redis.
-      - Delete list after 3 hours.
+      - Delete list after 1 hours.
       - Store list in log.
       - Batch listing.
+
+      - Update frontend to show & query.
+      - Delete current list & refresh.
    - Import.
       - Email when import is complete.
 - Import from Dropbox.
@@ -416,8 +419,9 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Lists available pictures in the PROVIDER's cloud, or redirects to its oauth flow if authorization is not present or expired.
    - `PROVIDER` can be either `google` or `dropbox`.
    - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
-   - If there's access or refresh tokens, the PROVIDER's API is queried and a list of pictures is returned. The returned body is an array of objects, each of them with the following shape: `{...}`. (TODO: complete when we know what info will be listed per provider)
    - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
+   - If there's access or refresh tokens, a process is started to query the PROVIDER's API and 200 is returned to the client.
+   - The return body is of the shape `{fileCount: INTEGER, folderCount: INTEGER, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
 
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -612,7 +616,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERID (string): access token for google for USERID
 - oa:g:ref:USERID (string): refresh token for google for USERID
 
-- imp:g:USERID (hash): information of current import operation from google. Has the shape `{fileCount: INT, folderCount: INT, files: [...], folders: [...]}`.
+- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, fileCount: INT, folderCount: INT, roots: [...], folders: [...], files: [...], error: UNDEFINED|STRING|OBJECT}`.
 
 Used by giz:
 
@@ -785,8 +789,9 @@ Used by giz:
       - If query is successful, invokes `query account` and `query tags`.
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
 
-6. Upload
+6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
+   2. `import list`: `get import/list/PROVIDER`. If result has a field `redirect`, redirects the page there. Otherwise, stores the result in `Data.import.PROVIDER`.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.

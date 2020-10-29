@@ -2876,7 +2876,7 @@ dale.do ([
       B.do (x, 'get', 'import/list/' + provider, {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
          if (rs.body.redirect) return location.replace (rs.body.redirect);
-         B.do (x, 'set', ['Data', 'import', 'google'], rs.body.list);
+         B.do (x, 'set', ['Data', 'import', 'google'], rs.body);
       });
    }],
 
@@ -4346,8 +4346,15 @@ E.noSpace = function () {
 E.importList = function (list, provider) {
    return B.view (['State', 'import', provider], {attrs: {class: 'import-file-list'}}, function (x, Import) {
       Import = Import || {};
-      var folderList = ! Import.currentFolder ? list.roots : list.folders [Import.currentFolder].children;
 
+      if (! list.list) return ['div', [
+         ['p', ['In progress']],
+         ['p', ['pics so far ', list.fileCount || 0]],
+         ['p', ['folders so far ', list.folderCount || 0]],
+         ! list.error ? [] : ['p', ['ERROR ', list.error]]
+      ]];
+
+      var folderList = ! Import.currentFolder ? list.list.roots : list.folders [Import.currentFolder].children;
       return ['div', {class: 'upload-box'}, [
          ['div', {class: 'import-breadcrumb-container'}, [
             ['div', {class: 'import-breadcrumb-buffer'}],
@@ -4359,12 +4366,12 @@ E.importList = function (list, provider) {
                ['div',{class: 'import-process-box-back-text'}, 'Back']
             ]],
             ['div', {class: 'import-process-box-list'}, [
-               ! Import.currentFolder ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], list.folders [Import.currentFolder].parent]), [
+               ! Import.currentFolder ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], list.list.folders [Import.currentFolder].parent]), [
                   ['div', {class: 'up-icon', opaque: true}],
                   ['span', 'Up']
                ]],
                ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
-                  var folder = list.folders [id];
+                  var folder = list.list.folders [id];
                   if (! folder) return;
                   return ['div', {class: 'import-process-box-list-folders-row'}, [
                      ['div', {class: 'select-folder-box'}, [
