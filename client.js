@@ -1365,8 +1365,8 @@ CSS.litc = [
    ['.selected-folder-deselect__icon', {
       'width, height': 24,
    }],
-   // SPACE ALERT
-   ['.space-alert', {
+   // BOXED ALERTS
+   ['.boxed-alert', {
       display: 'flex',
       'margin-top': CSS.vars ['padding--xxl'],
       border: '1px solid ' + CSS.vars ['border-color--dark'],
@@ -1389,13 +1389,13 @@ CSS.litc = [
       display: 'inline-block',
       transform: 'scale(1.5)',
    }, ['path', {fill: CSS.vars ['color--remove']}]],
-   ['.space-alert__main', {
+   ['.boxed-alert__main', {
       display: 'flex',
       flex: '1',
       'flex-direction': 'column',
       'padding-top': 5,
    }],
-   ['.space-alert-message', {
+   ['.boxed-alert-message', {
       color: CSS.vars ['color--one'],
       display: 'flex',
       'align-items': 'center',
@@ -1406,18 +1406,18 @@ CSS.litc = [
       'width, height': 24,
       'margin-right': 7,
    }, ['path', {fill: CSS.vars ['color--remove']}]],
-   ['.delete-some-files-button', {
+   ['.boxed-alert-button-left', {
       'float': 'left',
       'border': '1px solid #8b8b8b',
       'color': '#8b8b8b',
       'background-color': '#fff',
       'cursor': 'pointer',
    }],
-   ['.delete-some-files-button:hover', {
+   ['.boxed-alert-button-left:hover', {
       color: '#fff',
       'background-color': '#8b8b8b',
    }],
-   ['.upgrade-your-account-button', {
+   ['.boxed-alert-button-right', {
       float: 'right',
       border: '1px solid #5b6eff',
       color: '#fff',
@@ -1425,7 +1425,7 @@ CSS.litc = [
       cursor: 'pointer',
       //'margin-left': .2
    }],
-   ['.upgrade-your-account-button:hover', {
+   ['.boxed-alert-button-right:hover', {
       color: '#5b6eff',
       'background-color': '#fff',
    }],
@@ -4320,21 +4320,21 @@ E.upload = function () {
 E.noSpace = function () {
    return B.view (['Data', 'account'], function (x, account) {
       var noSpace = account && account.usage.fsused >= account.usage.limit;
-      if (noSpace) return ['div', {class: 'space-alert'}, [
+      if (noSpace) return ['div', {class: 'boxed-alert'}, [
          ['div', {class: 'space-alert__image', opaque: true}, [
             ['div', {class: 'space-alert-icon', opaque: true}]
          ]],
-         ['div', {class: 'space-alert__main'}, [
+         ['div', {class: 'boxed-alert__main'}, [
             ['div', {class: 'upload-box__section'}, [
-               ['p', {class: 'space-alert-message'}, [
+               ['p', {class: 'boxed-alert-message'}, [
                   ['span', {class: 'space-alert-icon-small', opaque: true}],
                   ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']
                ]],
                ['div', {class: 'progress-bar'}],
             ]],
             ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-               ['div', {class: 'delete-some-files-button button'}, ['a', {href: '#/pics'}, 'Delete some files']],
-               ['div', {class: 'upgrade-your-account-button button'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']],
+               ['div', {class: 'boxed-alert-button-left button'}, ['a', {href: '#/pics'}, 'Delete some files']],
+               ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']],
             ]],
          ]],
       ]];
