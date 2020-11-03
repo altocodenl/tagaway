@@ -1078,7 +1078,7 @@ CSS.litc = [
    }],
    // *** drag-and-drop.scss ***
    // Drag and drop
-   ['.drag-and-drop', {
+   ['.drag-and-drop, .drag-and-drop-import', {
       display: 'flex',
       'flex-direction': 'column',
       'justify-content, align-items': 'center',
@@ -4522,9 +4522,7 @@ E.importBox = function () {
          // IMPORT BOX SECTION
          ['div', {class: 'upload-box__section'},[
             ['h3', {class: 'upload-box__section-title'}, 'Import files'],
-            ['div', {class: 'drag-and-drop', opaque: true}, [
-               ['div', 'Import photos and videos from these services'],
-               ['br'], ['br'],
+            ['div', {class: 'drag-and-drop-import', opaque: true}, [
                ['div', [
                   // TODO: when dynamizing, place condition on responder to check if there's enough space left.
                   ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, ['onclick', 'import', 'list', 'google'])],
