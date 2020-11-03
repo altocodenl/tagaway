@@ -39,23 +39,24 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
 - Formats.
    - Add format to DB.
+   - Reply to thumbnails with content-type
    - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
 - Import from GDrive.
    - List.
-      - Dual endpoint: start or give state.
-      - Track list progress in redis.
-      - Delete list after 1 hours.
-      - Store list in log.
-      - Batch listing.
+      - Endpoint: start listing or give existing list.
+      - Track list progress.
+      - Store full list.
 
       - Update frontend to show & query.
       - Delete current list & refresh.
    - Import.
       - Email when import is complete.
 - Import from Dropbox.
+- Fix astack issue with geotagging not concluding after all files are processed.
+- [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
+
 - Paid accounts
    - Set account space limit.
    - Delete my account with confirmation.
