@@ -2223,7 +2223,7 @@ var routes = [
                   // We don't return the full list of pictures to the client.
                   delete s.last.list.pics;
                }
-               return reply (rs, 200, {fileCount: parseInt (s.last.fileCount), folderCount: parseInt (s.last.folderCount), error: s.last.error, start: parseInt (s.last.start), list: s.last.list});
+               return reply (rs, 200, {fileCount: parseInt (s.last.fileCount), folderCount: parseInt (s.last.folderCount), error: s.last.error, start: parseInt (s.last.start), end: parseInt (s.last.end || 0), list: s.last.list});
             }
             // If no process ongoing, we start it.
             reply (rs, 200, {fileCount: 0, folderCount: 0});
