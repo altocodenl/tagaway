@@ -15,7 +15,6 @@ var ENV    = process.argv [2] === 'local' ? undefined : process.argv [2];
 var crypto = require ('crypto');
 var fs     = require ('fs');
 var Path   = require ('path');
-var stream = require ('stream');
 var os     = require ('os');
 Error.stackTraceLimit = Infinity;
 
@@ -1226,7 +1225,7 @@ var routes = [
                function (s) {
                   a.fork (s, s.data [0], function (pic) {
                      return [H.deletePic, pic, user.username];
-                  }, {max: 5});
+                  }, {max: os.cpus ().length});
                },
                [H.stat.w, 'stock', 'users', -1],
                function (s) {
@@ -1591,7 +1590,7 @@ var routes = [
       a.stop ([
          [a.fork, b.ids, function (id) {
             return [H.deletePic, id, rq.user.username];
-         }, {max: 5}],
+         }, {max: os.cpus ().length}],
          [H.log, rq.user.username, {a: 'del', ids: b.ids}],
          [reply, rs, 200],
       ], function (s, error) {
@@ -2144,17 +2143,45 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               a.fork (s, s.pics, function (pic, K) {
+               // TODO: replace by a.fork when bug is fixed: f7cdb4f4381c85dae1e6282d39348e260c3cafce
+               var asyncFork = function (data, simult, fun, cb) {
+                  console.log ('debug 0 asyncfork', data.length, simult);
+                  var counter = 0, done = 0, results = [], fire = function () {
+                     console.log ('debug 1 counter', counter, 'done', done);
+                     if (counter === false) return;
+                     if (counter === data.length) return;
+                     var c = counter++;
+                     console.log ('debug 2 firing', c);
+                     fun (data [c], c, function (error, result) {
+                        if (counter === false) return;
+                        if (error) {
+                           counter = false;
+                           return cb (error);
+                        }
+                        results [c] = result;
+                        console.log ('debug 3 done', c, 'counter', counter, 'done', done + 1, 'finish', done + 1 === data.length);
+                        if (++done === data.length) return cb (null, results);
+                        console.log ('debug 4 firing again', c);
+                        fire ();
+                     });
+                  }
+                  dale.go (dale.times (simult), fire);
+               }
+               asyncFork (s.pics, os.cpus ().length, function (pic, K, cb) {
                   var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic);
                   var vid = s.last [K];
-                  return [
-                     ! vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'],
+                  a.stop ([
+                     [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
+                        if (error.code !== 0) return s.next (null, {id: pic.id, call: s.last});
+                        // ffprobe always logs to stderr, so we need to put stderr onto s.last
+                        s.next (error);
+                     }],
                      function (s) {
                         var metadata = ! vid ? s.last.stdout : s.error.stderr;
                         H.getGeotags (s, metadata);
                      },
                      function (s) {
-                        if (! s.last.length) return s.next ();
+                        if (! s.last.length) return cb ();
                         var loc = JSON.stringify ([s.last [0], s.last [1]]);
                         var multi = redis.multi ();
                         multi.hset ('pic:'  + pic, 'loc', loc);
@@ -2163,10 +2190,17 @@ var routes = [
                            multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic);
                            multi.sadd ('pict:' + pic,                          tag);
                         });
-                        mexec (s, multi);
+                        multi.exec (cb);
                      }
-                  ];
-               }, {max: 5});
+                  ], function (s, error) {
+                     console.log ('debug 5 internal error', K);
+                     cb (error);
+                  });
+               }, function (error) {
+                  console.log ('debug 6 asyncfork done', error);
+                  if (error) notify (s, {priority: 'important', type: 'geotagging error', user: rq.user.username, error: error});
+                  else       s.next ();
+               });
             },
             [Redis, 'del', 'geo:' + rq.user.username],
          ],
@@ -2400,9 +2434,6 @@ var routes = [
                   //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
                   redis.hset ('imp:g:' + rq.user.username, 'list', JSON.stringify (output));
-                  // TODO: uncomment
-                  // Keep result for three hours.
-                  //redis.expire ('imp:g:' + rq.user.username, 60 * 60 * 3);
                }
             ]);
          }
@@ -2557,8 +2588,6 @@ cicek.apres = function (rs) {
    if (rs.log.code >= 400) {
       logs.push (['flow', 'rq-bad', 1]);
       var report = function () {
-         // TODO: do we need this?
-         // if (rs.log.code === 404 && rs.log.url.match (/^\/thumbof/)) return false;
          if (['/assets/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
          return true;
       }
@@ -2731,7 +2760,7 @@ if (cicek.isMaster) a.stop ([
             }));
          }
       ];
-   }, {max: 5}],
+   }, {max: os.cpus ().length}],
    function (s) {
       s.fsfiles = {};
       dale.go (s.last, function (folder) {
@@ -2798,7 +2827,7 @@ if (cicek.isMaster) a.stop ([
    // Extraneous FS files: delete. Don't update the statistics.
    [a.get, a.fork, '@fsextra', function (v) {
       return [a.make (fs.unlink), Path.join (CONFIG.basepath, v)];
-   }, {max: 5}],
+   }, {max: os.cpus ().length}],
    // Missing FS files: nothing to do but report.
    function (s) {
       var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: 'File consistency check success.'}, function (k) {
@@ -2950,7 +2979,7 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
                s.next ();
             }
          ];
-      }, {max: 5});
+      }, {max: os.cpus ().length});
    },
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Script to add format information.', error: error});
