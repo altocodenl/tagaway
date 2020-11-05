@@ -2167,8 +2167,8 @@ var routes = [
                   var vid = s.last [K];
                   a.stop ([
                      [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
-                        if (error.code !== 0) return s.next (null, {id: pic.id, call: s.last});
                         // ffprobe always logs to stderr, so we need to put stderr onto s.last
+                        if (error.code !== 0) return s.next (null, {id: pic.id, call: s.last});
                         s.next (error);
                      }],
                      function (s) {
@@ -2942,7 +2942,6 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
       delete s.last;
       // For each picture/video
       a.fork (s, pics, function (pic) {
-         if (pic.vid) return [];
          var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
          return [
             [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
@@ -2951,24 +2950,23 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
                s.next (error);
             }],
             function (s) {
-               var metadata = (pic.vid ? s.last.stderr : s.last.stdout).split ('\n');
+               var metadata = (pic.vid ? s.last.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
+               var format;
                if (! pic.vid) {
-                  var format = dale.stopNot (metadata, undefined, function (line) {
+                  format = dale.stopNot (metadata, undefined, function (line) {
                      if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
                   });
-                  if (! format) return s.next (null, {id: pic.id, error: 'no format'});
+                  if (! format) return s.next (null, {id: pic.id, type: 'pic', error: 'no format', metadata: metadata});
                   format = format.toLowerCase ();
-                  console.log ('DEBUG format pic', pic.id, format);
                }
                else {
-                  var formats = dale.fil (metadata, undefined, function (line) {
-                     if (! line.match (/^\s+Stream/)) return;
-                     line = line.split (':') [3];
-                     console.log ('DEBUG format vid line', pic.id, line);
-                     return line.match (/[a-zA-Z0-9]+/) [0];
+                  format = dale.fil (metadata, undefined, function (line) {
+                     if (line.match (/^codec_name/)) return line.split ('=') [1];
                   });
-                  console.log ('DEBUG FORMAT vid', pic.id, formats);
+                  if (format.length === 0) return s.next (null, {id: pic.id, type: 'vid', error: 'no format', metadata: metadata});
+                  format = format.join ('/');
                }
+               console.log ('format', pic.id, format);
                s.next ();
             }
          ];

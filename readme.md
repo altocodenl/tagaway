@@ -40,21 +40,21 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Formats.
-   - Add format to DB.
-   - Reply to thumbnails with content-type
-   - Support for .heic and .mov (including thumbnails & conversion .mov to .mp4)
+   - Identify format; add format to metadata, add to stats, add to tests.
+   - Reply to thumbnails with content-type & add to tests.
+   - Add formats to DB retroactively.
+   - Support for extra formats (including thumbnails & conversion .mov to .mp4): .heic, .mov and others.
 - Import from GDrive.
    - List.
       - Endpoint: start listing or give existing list.
-      - Track list progress.
+      - Track and query listing progress.
       - Store full list.
+      - Update frontend to show list.
 
-      - Update frontend to show & query.
-      - Delete current list & refresh.
+      - Delete current list.
    - Import.
       - Email when import is complete.
 - Import from Dropbox.
-- Fix astack issue with geotagging not concluding after all files are processed.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
 
 - Paid accounts
