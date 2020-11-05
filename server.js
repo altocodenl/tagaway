@@ -2805,7 +2805,7 @@ if (cicek.isMaster) a.stop ([
       });
 
       if (s.s3extra.length)   notify (a.creat (), {priority: 'important', type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra});
-      if (s.fsextra.length)   notify (a.creat (), {priority: 'important', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra});
+      if (s.fsextra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra});
       if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing});
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing});
 
@@ -2882,7 +2882,7 @@ if (cicek.isMaster) a.stop ([
 
       if (mismatch.length === 0) return;
 
-      notify (a.creat (), {priority: 'important', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
+      notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
 
       if (process.argv [3] !== 'makeConsistent') return;
 
