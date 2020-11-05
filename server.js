@@ -2145,13 +2145,10 @@ var routes = [
             function (s) {
                // TODO: replace by a.fork when bug is fixed: f7cdb4f4381c85dae1e6282d39348e260c3cafce
                var asyncFork = function (data, simult, fun, cb) {
-                  console.log ('debug 0 asyncfork', data.length, simult);
                   var counter = 0, done = 0, results = [], fire = function () {
-                     console.log ('debug 1 counter', counter, 'done', done);
                      if (counter === false) return;
                      if (counter === data.length) return;
                      var c = counter++;
-                     console.log ('debug 2 firing', c);
                      fun (data [c], c, function (error, result) {
                         if (counter === false) return;
                         if (error) {
@@ -2159,9 +2156,7 @@ var routes = [
                            return cb (error);
                         }
                         results [c] = result;
-                        console.log ('debug 3 done', c, 'counter', counter, 'done', done + 1, 'finish', done + 1 === data.length);
                         if (++done === data.length) return cb (null, results);
-                        console.log ('debug 4 firing again', c);
                         fire ();
                      });
                   }
@@ -2177,7 +2172,7 @@ var routes = [
                         s.next (error);
                      }],
                      function (s) {
-                        var metadata = ! vid ? s.last.stdout : s.error.stderr;
+                        var metadata = ! vid ? s.last.stdout : s.last.stderr;
                         H.getGeotags (s, metadata);
                      },
                      function (s) {
@@ -2193,11 +2188,9 @@ var routes = [
                         multi.exec (cb);
                      }
                   ], function (s, error) {
-                     console.log ('debug 5 internal error', K);
                      cb (error);
                   });
                }, function (error) {
-                  console.log ('debug 6 asyncfork done', error);
                   if (error) notify (s, {priority: 'important', type: 'geotagging error', user: rq.user.username, error: error});
                   else       s.next ();
                });
