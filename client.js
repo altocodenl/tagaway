@@ -1464,16 +1464,16 @@ CSS.litc = [
    }],
    //LISTING ALERT
    ['.files-found-so-far, .folders-found-so-far', {
-   	display: 'flex',
+      display: 'flex',
    }],
    ['.files-found-so-far', {
-   	'margin-bottom': CSS.vars ['padding--xs'],
+      'margin-bottom': CSS.vars ['padding--xs'],
    }],
    ['.files-found-so-far div, .folders-found-so-far div', {
-   	'margin-left': CSS.vars ['padding--xs'],
+      'margin-left': CSS.vars ['padding--xs'],
    }],
    ['.listing-progress', {
-   	display: 'inline-block',
+      display: 'inline-block',
    }],
    // ACCOUNT
    ['.account-box', {
@@ -4591,6 +4591,45 @@ E.import = function (list) {
       [['Entire Drive', 'Vacations', 'Japan 2019'], 125]
    ];
 
+   var boxMaker = function (type, provider, list) {
+      if (provider === 'google') provider = 'google-drive';
+
+      if (type === 'listing') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: provider + '-icon', opaque: true}]
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'boxed-alert-message'}, [
+                     ['span', {class: provider + '-icon-small', opaque: true}],
+                     ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', {class:'listing-progress'}, [
+                     ['div', {class:'files-found-so-far'}, [
+                        // TODO: dynamize
+                        ['span', 'XXXXX'],
+                        ['div', ' pics & vids found so far'],
+                     ]],
+                     ['div', {class:'folders-found-so-far'}, [
+                        // TODO: dynamize
+                        ['span', 'XXXXX'],
+                        ['div', ' folders found so far'],
+                     ]],
+                  ]],
+                  ['div', {class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, 'Cancel']
+               ]],
+            ]],
+         ]],
+      ]];
+
+      if (type === 'ready')     return [];
+      if (type === 'importing') return [];
+   }
+
    return ['div', [
       E.header (true, true),
       ['div', {class: 'main-centered'}, [
@@ -4601,12 +4640,15 @@ E.import = function (list) {
                ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
             ]],
+            // TODO: change to Data.import
             B.view (['Data', 'import', 'google'], {attrs: {class: 'page-section'}}, function (x, list) {
+               // Iterate Data.import (provider)
                return [
+                  // TODO: add extra state to show/hide list
                   list ? E.importList (list, 'google') : E.importBox (),
                   // LISTING ALERT
                   ['div', {class: 'listing-in-process'}, [
-						    ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+                      ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
                         ['div', {class: 'space-alert__image', opaque: true}, [
                            ['div', {class: 'google-drive-icon', opaque: true}]
                         ]],
@@ -4619,47 +4661,47 @@ E.import = function (list) {
                               ['div', {class: 'progress-bar'}],
                            ]],
                            ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-	                       		['div', {class:'listing-progress'}, [
-	                       			['div', {class:'files-found-so-far'}, [
-	                       				['span', 'XXXXX'],
-	                       				['div', ' pics & vids found so far'],
-	                       				]],
-	                       			['div', {class:'folders-found-so-far'}, [
-	                       				['span', 'XXXXX'],
-	                       				['div', ' folders found so far'],
-	                       				]],
-	                       			]],
+                                ['div', {class:'listing-progress'}, [
+                                   ['div', {class:'files-found-so-far'}, [
+                                      ['span', 'XXXXX'],
+                                      ['div', ' pics & vids found so far'],
+                                      ]],
+                                   ['div', {class:'folders-found-so-far'}, [
+                                      ['span', 'XXXXX'],
+                                      ['div', ' folders found so far'],
+                                      ]],
+                                   ]],
                               ['div', {class: 'boxed-alert-button-left button', style: style({float: 'right'})}, 'Cancel']
-		                        ],
-	                        ]],
-	                     ]],
-	                  ]],
-						],
-						// READY TO BE IMPORTED ALERT
-						['div', {class: 'listing-in-process'}, [
-						    ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-	                        ['div', {class: 'space-alert__image', opaque: true}, [
-	                           ['div', {class: 'google-drive-icon', opaque: true}]
-	                        ]],
-	                        ['div', {class: 'boxed-alert__main'}, [
-	                           ['div', {class: 'upload-box__section'}, [
-	                              ['p', {class: 'boxed-alert-message'}, [
-	                                 ['span', {class: 'google-drive-icon-small', opaque: true}],
-	                                 ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
-	                              ]],
-	                              ['div', {class: 'progress-bar'}],
-	                           ]],
-	                           ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-	                              ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
-	                              ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Select folders'],
-	                           ]],
-	                        ]],
-	                     ]],
-							]],
-						],
-						// FILES BEING IMPORTED ALERT
-						['div', {class: 'listing-in-process'}, [
-						    ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+                              ],
+                           ]],
+                        ]],
+                     ]],
+                  ],
+                  // READY TO BE IMPORTED ALERT
+                  ['div', {class: 'listing-in-process'}, [
+                      ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+                           ['div', {class: 'space-alert__image', opaque: true}, [
+                              ['div', {class: 'google-drive-icon', opaque: true}]
+                           ]],
+                           ['div', {class: 'boxed-alert__main'}, [
+                              ['div', {class: 'upload-box__section'}, [
+                                 ['p', {class: 'boxed-alert-message'}, [
+                                    ['span', {class: 'google-drive-icon-small', opaque: true}],
+                                    ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
+                                 ]],
+                                 ['div', {class: 'progress-bar'}],
+                              ]],
+                              ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                                 ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
+                                 ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Select folders'],
+                              ]],
+                           ]],
+                        ]],
+                     ]],
+                  ],
+                  // FILES BEING IMPORTED ALERT
+                  ['div', {class: 'listing-in-process'}, [
+                      ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
                         ['div', {class: 'space-alert__image', opaque: true}, [
                            ['div', {class: 'dropbox-icon', opaque: true}]
                         ]],
@@ -4672,20 +4714,20 @@ E.import = function (list) {
                               ['div', {class: 'progress-bar'}],
                            ]],
                            ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                       		['div', {class:'listing-progress'}, [
-                       			['div', {class:'files-found-so-far'}, [
-                       				['span', 'XXXXX'],
-                       				['span', ' / '],
-                       				['span', 'XXXXX'],
-                       				['div', ' imported so far'],
-                       				]],
-                       			]],
+                             ['div', {class:'listing-progress'}, [
+                                ['div', {class:'files-found-so-far'}, [
+                                   ['span', 'XXXXX'],
+                                   ['span', ' / '],
+                                   ['span', 'XXXXX'],
+                                   ['div', ' imported so far'],
+                                   ]],
+                                ]],
                               ['div', {class: 'boxed-alert-button-left button', style: style({float: 'right'})}, 'Cancel']
-		                        ],
-	                        ]],
-	                     ]],
-	                  ]],
-						],
+                              ],
+                           ]],
+                        ]],
+                     ]],
+                  ],
                   // RECENT IMPORTS
                   ['h2', {class:'recent-imports__title'}, 'Recent imports'],
                   // BACK LINK

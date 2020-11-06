@@ -50,6 +50,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Track and query listing progress.
       - Store full list.
       - Update frontend to show list.
+      - Document frontend for import so far.
 
       - Delete current list.
    - Import.
@@ -665,6 +666,7 @@ Used by giz:
 3. `E.share`
 4. `E.tags`
 5. `E.import`
+   - Depends on: `Data.import`.
 6. `E.account`
    - Depends on: `Data.account`.
    - Events:
@@ -833,6 +835,7 @@ Used by giz:
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
+   - `import`:
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
