@@ -1187,7 +1187,7 @@ CSS.litc = [
       height: CSS.typography.spaceVer (1.5),
    }],
    ['.import-breadcrumb-buffer', {
-      padding: CSS.vars ['padding--xl'],
+      //padding: CSS.vars ['padding--xl'],
    }],
    ['.import-breadcrumb', {
       height: 'inherit',
@@ -4406,7 +4406,7 @@ E.importList = function (list, provider) {
       var folderList = ! Import.currentFolder ? list.list.roots : list.list.folders [Import.currentFolder].children;
       return ['div', {class: 'upload-box'}, [
          ['div', {class: 'import-breadcrumb-container'}, [
-            ['div', {class: 'import-breadcrumb-buffer'}],
+            ['div', {class: 'import-breadcrumb-buffer google-drive-icon-small'}],
             ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
          ]],
          ['div', {class: 'import-process-box'}, [
@@ -4559,6 +4559,7 @@ E.importList = function (list, provider) {
                ]],
             ]],
          ]],
+         ['div', {class:'start-import-button'}, 'This will be a button'],
       ]];
    });
 }
