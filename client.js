@@ -4693,12 +4693,11 @@ E.import = function (list) {
                               ]],
                               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                                  ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
-                                 ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Select folders'],
+                                 ['div', {class: 'boxed-alert-button-right button'}, 'Select folders'],
                               ]],
                            ]],
                         ]],
                      ]],
-                  ],
                   // FILES BEING IMPORTED ALERT
                   ['div', {class: 'listing-in-process'}, [
                       ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
