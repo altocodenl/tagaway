@@ -2250,10 +2250,17 @@ var routes = [
                   // We don't return the full list of pictures to the client.
                   delete s.last.list.pics;
                }
-               return reply (rs, 200, {fileCount: parseInt (s.last.fileCount), folderCount: parseInt (s.last.folderCount), error: s.last.error, start: parseInt (s.last.start), end: parseInt (s.last.end || 0), list: s.last.list});
+               return reply (rs, 200, {
+                  start: parseInt (s.last.start),
+                  end: parseInt (s.last.end || 0),
+                  fileCount: parseInt (s.last.fileCount),
+                  folderCount: parseInt (s.last.folderCount),
+                  error: s.last.error,
+                  list: s.last.list
+               });
             }
             // If no process ongoing, we start it.
-            reply (rs, 200, {fileCount: 0, folderCount: 0});
+            reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
             s.next ();
          },
          [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
@@ -2426,7 +2433,7 @@ var routes = [
                   */
                   //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
-                  redis.hset ('imp:g:' + rq.user.username, 'list', JSON.stringify (output));
+                  redis.hmset ('imp:g:' + rq.user.username, {list: JSON.stringify (output), end: Date.now ()});
                }
             ]);
          }

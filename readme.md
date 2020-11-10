@@ -423,7 +423,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
    - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
    - If there's access or refresh tokens, a process is started to query the PROVIDER's API and 200 is returned to the client.
-   - The return body is of the shape `{fileCount: INTEGER, folderCount: INTEGER, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
+   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
 
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -618,7 +618,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERID (string): access token for google for USERID
 - oa:g:ref:USERID (string): refresh token for google for USERID
 
-- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, fileCount: INT, folderCount: INT, roots: [...], folders: [...], files: [...], error: UNDEFINED|STRING|OBJECT}`.
+- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, roots: [...], folders: [...], pics: [...], error: UNDEFINED|STRING|OBJECT}`.
 
 Used by giz:
 
@@ -819,6 +819,7 @@ Used by giz:
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
+   - `showImportList`: either `undefined`, `'google'` or `'dropbox'`. Shows list of folders for import from the indicated provider.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
    - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
@@ -835,7 +836,7 @@ Used by giz:
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
-   - `import`:
+   - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, has the shape: `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.

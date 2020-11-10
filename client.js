@@ -4392,7 +4392,158 @@ E.noSpace = function () {
 
 // *** IMPORT VIEW ***
 
-E.importList = function (list, provider) {
+E.import = function () {
+
+   var boxMaker = function (type, provider, data) {
+      if (provider === 'google') provider = 'google-drive';
+
+      if (type === 'listing') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: provider + '-icon', opaque: true}]
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'boxed-alert-message'}, [
+                     ['span', {class: provider + '-icon-small', opaque: true}],
+                     ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', {class:'listing-progress'}, [
+                     ['div', {class:'files-found-so-far'}, [
+                        ['span', data.fileCount],
+                        ['div', ' pics & vids found so far'],
+                     ]],
+                     ['div', {class:'folders-found-so-far'}, [
+                        ['span', data.folderCount],
+                        ['div', ' folders found so far'],
+                     ]],
+                  ]],
+                  // TODO: implement cancel
+                  ['div', {class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, 'Cancel']
+               ]],
+            ]],
+         ]],
+      ]];
+
+      if (type === 'listReady') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: 'google-drive-icon', opaque: true}]
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'boxed-alert-message'}, [
+                     ['span', {class: 'google-drive-icon-small', opaque: true}],
+                     ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  // TODO: implement cancel
+                  ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
+                  ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'showImportList'], provider]), 'Select folders'],
+               ]],
+            ]],
+         ]],
+      ]];
+
+      if (type === 'importing') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: 'dropbox-icon', opaque: true}]
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'boxed-alert-message'}, [
+                     ['span', {class: 'dropbox-icon-small', opaque: true}],
+                     ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', {class:'listing-progress'}, [
+                     ['div', {class:'files-found-so-far'}, [
+                        // TODO: dynamize
+                        ['span', 'XXXXX'],
+                        ['span', ' / '],
+                        ['span', data.fileCount],
+                        ['div', ' imported so far'],
+                     ]],
+                  ]],
+                  // TODO: implement cancel
+                  ['div', {class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, 'Cancel']
+               ]],
+            ]],
+         ]],
+      ]];
+   }
+
+   return ['div', [
+      E.header (true, true),
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            E.noSpace (),
+            // PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
+            ]],
+            // TODO: change to Data.import
+            B.view (['Data', 'import'], {attrs: {class: 'page-section'}}, function (x, importData) {
+               return B.view (['State', 'showImportList'], function (x, listProvider) {
+                  if (importList) return E.importList (listProvider, importData [listProvider]);
+                  return [
+                     // IMPORT BOX SECTION
+                     ['div', {class:'upload-box'}, [
+                        ['div', {class:'upload-box__image', opaque: true}],
+                        ['div', {class:'upload-box__main'}, [
+                           ['div', {class: 'upload-box__section'}, [
+                              ['h3', {class: 'upload-box__section-title'}, 'Import files'],
+                              ['div', {class: 'drag-and-drop-import', opaque: true}, [
+                                 ['div', [
+                                    // TODO: when dynamizing, place condition on responder to check if there's enough space left.
+                                    ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, ['onclick', 'import', 'list', 'google'])],
+                                    ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
+                                 ]],
+                              ]],
+                           ]]
+                        ]],
+                     ]],
+                     dale.do (importData, function (data, provider) {
+                        if      (! importData.end)       boxMaker ('listing',   provider, data);
+                        else if (! importData.importing) boxMaker ('listReady', provider, data);
+                        else                             boxMaker ('importing', provider, data);
+                     })
+                  ];
+               })
+            }),
+            // RECENT IMPORTS
+            ['h2', {class:'recent-imports__title'}, 'Recent imports'],
+            // BACK LINK
+            ['div', {class: 'page-section'}, [
+               ['div', {class: 'back-link back-link--uploads'}, [
+                  ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
+                     ['span', {class: 'back-link__link-text'}, 'See all photos'],
+                  ]],
+               ]],
+            ]],
+         ]],
+      ]],
+   ]];
+}
+
+E.importList = function (provider, data) {
+   // TODO:
+   /*
+   - add missing state: current folder & current selection
+   - document both views
+   - store current selection in list (backend, responder)
+   - delete current list (also interrupts listing process)
+   */
+
    return B.view (['State', 'import', provider], {attrs: {class: 'import-file-list'}}, function (x, Import) {
       Import = Import || {};
 
@@ -4433,86 +4584,6 @@ E.importList = function (list, provider) {
                      ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], id]), folder.name],
                      ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                   ]];
-                  /*
-
-                  ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox', checked: 'checked'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'Las Vegas 2010'],
-                     ['div', {class: 'import-folder-files'}, '(100 files)']
-                  ]],
-                  ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'Japan 2019'],
-                     ['div', {class: 'import-folder-files'}, '(125 files)']
-                  ]],
-                  ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'Los Angeles 2018'],
-                     ['div', {class: 'import-folder-files'}, '(567 files)']
-                  ]],
-                  ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'Germany 2017'],
-                     ['div', {class: 'import-folder-files'}, '(985 files)']
-                  ]],
-                              ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'Teotihuacan, Mexico 2016'],
-                     ['div', {class: 'import-folder-files'}, '(4567 files)']
-                  ]],
-                  ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'Buenos Aires 2015'],
-                     ['div', {class: 'import-folder-files'}, '(4567 files)']
-                  ]],
-                  ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox'}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', {class: 'import-folder-name'}, 'NYC 2014'],
-                     ['div', {class: 'import-folder-files'}, '(567 files)']
-                  ]],
-               */
                })],
             ]],
             ['div', {class: 'import-process-box-selected'}, [
@@ -4562,187 +4633,6 @@ E.importList = function (list, provider) {
          ['div', {class:'start-import-button'}, 'This will be a button'],
       ]];
    });
-}
-
-E.importBox = function () {
-   return ['div', {class:'upload-box'}, [
-      // IMPORT BOX
-      ['div', {class:'upload-box__image', opaque: true}],
-      ['div', {class:'upload-box__main'}, [
-         // IMPORT BOX SECTION
-         ['div', {class: 'upload-box__section'},[
-            ['h3', {class: 'upload-box__section-title'}, 'Import files'],
-            ['div', {class: 'drag-and-drop-import', opaque: true}, [
-               ['div', [
-                  // TODO: when dynamizing, place condition on responder to check if there's enough space left.
-                  ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, ['onclick', 'import', 'list', 'google'])],
-                  ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
-               ]],
-            ]],
-         ]]
-      ]],
-   ]];
-}
-
-E.import = function (list) {
-   var folderList = [
-      [['Entire Drive'], 280],
-      [['Entire Drive', 'Vacations'], 225],
-      [['Entire Drive', 'Vacations', 'Las Vegas 2010'], 100],
-      [['Entire Drive', 'Vacations', 'Japan 2019'], 125]
-   ];
-
-   var boxMaker = function (type, provider, list) {
-      if (provider === 'google') provider = 'google-drive';
-
-      if (type === 'listing') return ['div', {class: 'listing-in-process'}, [
-         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: provider + '-icon', opaque: true}]
-            ]],
-            ['div', {class: 'boxed-alert__main'}, [
-               ['div', {class: 'upload-box__section'}, [
-                  ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: provider + '-icon-small', opaque: true}],
-                     ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
-                  ]],
-                  ['div', {class: 'progress-bar'}],
-               ]],
-               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', {class:'listing-progress'}, [
-                     ['div', {class:'files-found-so-far'}, [
-                        // TODO: dynamize
-                        ['span', 'XXXXX'],
-                        ['div', ' pics & vids found so far'],
-                     ]],
-                     ['div', {class:'folders-found-so-far'}, [
-                        // TODO: dynamize
-                        ['span', 'XXXXX'],
-                        ['div', ' folders found so far'],
-                     ]],
-                  ]],
-                  ['div', {class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, 'Cancel']
-               ]],
-            ]],
-         ]],
-      ]];
-
-      if (type === 'ready')     return [];
-      if (type === 'importing') return [];
-   }
-
-   return ['div', [
-      E.header (true, true),
-      ['div', {class: 'main-centered'}, [
-         ['div', {class: 'main-centered__inner max-width--m'}, [
-            E.noSpace (),
-            // PAGE HEADER
-            ['div', {class: 'page-header'}, [
-               ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
-            ]],
-            // TODO: change to Data.import
-            B.view (['Data', 'import', 'google'], {attrs: {class: 'page-section'}}, function (x, list) {
-               // Iterate Data.import (provider)
-               return [
-                  // TODO: add extra state to show/hide list
-                  list ? E.importList (list, 'google') : E.importBox (),
-                  // LISTING ALERT
-                  ['div', {class: 'listing-in-process'}, [
-                      ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-                        ['div', {class: 'space-alert__image', opaque: true}, [
-                           ['div', {class: 'google-drive-icon', opaque: true}]
-                        ]],
-                        ['div', {class: 'boxed-alert__main'}, [
-                           ['div', {class: 'upload-box__section'}, [
-                              ['p', {class: 'boxed-alert-message'}, [
-                                 ['span', {class: 'google-drive-icon-small', opaque: true}],
-                                 ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
-                              ]],
-                              ['div', {class: 'progress-bar'}],
-                           ]],
-                           ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                                ['div', {class:'listing-progress'}, [
-                                   ['div', {class:'files-found-so-far'}, [
-                                      ['span', 'XXXXX'],
-                                      ['div', ' pics & vids found so far'],
-                                      ]],
-                                   ['div', {class:'folders-found-so-far'}, [
-                                      ['span', 'XXXXX'],
-                                      ['div', ' folders found so far'],
-                                      ]],
-                                   ]],
-                              ['div', {class: 'boxed-alert-button-left button', style: style({float: 'right'})}, 'Cancel']
-                              ],
-                           ]],
-                        ]],
-                     ]],
-                  ],
-                  // READY TO BE IMPORTED ALERT
-                  ['div', {class: 'listing-in-process'}, [
-                      ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-                           ['div', {class: 'space-alert__image', opaque: true}, [
-                              ['div', {class: 'google-drive-icon', opaque: true}]
-                           ]],
-                           ['div', {class: 'boxed-alert__main'}, [
-                              ['div', {class: 'upload-box__section'}, [
-                                 ['p', {class: 'boxed-alert-message'}, [
-                                    ['span', {class: 'google-drive-icon-small', opaque: true}],
-                                    ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
-                                 ]],
-                                 ['div', {class: 'progress-bar'}],
-                              ]],
-                              ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                                 ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
-                                 ['div', {class: 'boxed-alert-button-right button'}, 'Select folders'],
-                              ]],
-                           ]],
-                        ]],
-                     ]],
-                  // FILES BEING IMPORTED ALERT
-                  ['div', {class: 'listing-in-process'}, [
-                      ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-                        ['div', {class: 'space-alert__image', opaque: true}, [
-                           ['div', {class: 'dropbox-icon', opaque: true}]
-                        ]],
-                        ['div', {class: 'boxed-alert__main'}, [
-                           ['div', {class: 'upload-box__section'}, [
-                              ['p', {class: 'boxed-alert-message'}, [
-                                 ['span', {class: 'dropbox-icon-small', opaque: true}],
-                                 ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
-                              ]],
-                              ['div', {class: 'progress-bar'}],
-                           ]],
-                           ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                             ['div', {class:'listing-progress'}, [
-                                ['div', {class:'files-found-so-far'}, [
-                                   ['span', 'XXXXX'],
-                                   ['span', ' / '],
-                                   ['span', 'XXXXX'],
-                                   ['div', ' imported so far'],
-                                   ]],
-                                ]],
-                              ['div', {class: 'boxed-alert-button-left button', style: style({float: 'right'})}, 'Cancel']
-                              ],
-                           ]],
-                        ]],
-                     ]],
-                  ],
-                  // RECENT IMPORTS
-                  ['h2', {class:'recent-imports__title'}, 'Recent imports'],
-                  // BACK LINK
-                  ['div', {class: 'page-section'}, [
-                     ['div', {class: 'back-link back-link--uploads'}, [
-                        ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
-                           ['span', {class: 'back-link__link-text'}, 'See all photos'],
-                        ]],
-                     ]],
-                  ]],
-               ];
-            })
-         ]],
-      ]],
-   ]];
 }
 
 // *** ACCOUNT VIEW ***
