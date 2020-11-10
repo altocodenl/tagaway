@@ -1182,22 +1182,25 @@ CSS.litc = [
    // IMPORT PROCESS
    ['.import-file-list'],
    ['.import-breadcrumb-container', {
+      width: 1,
       display: 'inline-flex',
-      position: 'absolute',
+      'flex-grow': '1',
       height: CSS.typography.spaceVer (1.5),
    }],
-   ['.import-breadcrumb-buffer', {
-      //padding: CSS.vars ['padding--xl'],
+   ['.import-breadcrumb-icon', {
+      width: .15,
+      'text-align': 'center',
+      'padding-left': '7px',
    }],
    ['.import-breadcrumb', {
       height: 'inherit',
-      'max-width': 512,
+      width: .85,
    }],
    ['.import-process-box', {
       display: 'inline-flex',
       'flex-grow': '1',
       height: CSS.typography.spaceVer (11),
-      'margin-top': CSS.typography.spaceVer (1.5),
+      //'margin-top': CSS.typography.spaceVer (1.5),
       border: '1px solid ' + CSS.vars ['border-color--dark'],
    }],
    ['.import-process-box-back', {
@@ -4422,7 +4425,9 @@ E.importList = function (list, provider) {
       return ['div', {class: 'upload-box'}, [
 	      ['div', {class:'listing-table-container'}, [
 	         ['div', {class: 'import-breadcrumb-container'}, [
-	            ['div', {class: 'import-breadcrumb-buffer google-drive-icon-small'}],
+	            ['div', {class: 'import-breadcrumb-icon'}, [
+		            ['div', {class:'google-drive-icon-small'}]
+		            ]],
 	            ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
 	         ]],
 	         ['div', {class: 'import-process-box'}, [
