@@ -1182,22 +1182,25 @@ CSS.litc = [
    // IMPORT PROCESS
    ['.import-file-list'],
    ['.import-breadcrumb-container', {
+      width: 1,
       display: 'inline-flex',
-      position: 'absolute',
+      'flex-grow': '1',
       height: CSS.typography.spaceVer (1.5),
    }],
-   ['.import-breadcrumb-buffer', {
-      //padding: CSS.vars ['padding--xl'],
+   ['.import-breadcrumb-icon', {
+      width: .15,
+      'text-align': 'center',
+      'padding-left': '7px',
    }],
    ['.import-breadcrumb', {
       height: 'inherit',
-      'max-width': 512,
+      width: .85,
    }],
    ['.import-process-box', {
       display: 'inline-flex',
       'flex-grow': '1',
       height: CSS.typography.spaceVer (11),
-      'margin-top': CSS.typography.spaceVer (1.5),
+      //'margin-top': CSS.typography.spaceVer (1.5),
       border: '1px solid ' + CSS.vars ['border-color--dark'],
    }],
    ['.import-process-box-back', {
@@ -1365,6 +1368,21 @@ CSS.litc = [
    ['.selected-folder-deselect:hover', {fill: CSS.vars ['grey--darker']}],
    ['.selected-folder-deselect__icon', {
       'width, height': 24,
+   }],
+   ['.listing-table-container', {
+   	display: 'inline-block',
+   }],
+   ['.start-import-button', {
+   	float: 'right',
+      border: '1px solid #5b6eff',
+      color: '#fff',
+      'background-color': '#5b6eff',
+      cursor: 'pointer',
+      'margin-top': CSS.vars ['padding--xs'],
+   }],
+   ['.start-import-button:hover', {
+      color: '#5b6eff',
+      'background-color': '#fff',
    }],
    // BOXED ALERTS
    ['.boxed-alert', {
@@ -4556,81 +4574,165 @@ E.importList = function (provider, data) {
 
       var folderList = ! Import.currentFolder ? list.list.roots : list.list.folders [Import.currentFolder].children;
       return ['div', {class: 'upload-box'}, [
-         ['div', {class: 'import-breadcrumb-container'}, [
-            ['div', {class: 'import-breadcrumb-buffer google-drive-icon-small'}],
-            ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
-         ]],
-         ['div', {class: 'import-process-box'}, [
-            ['div', {class: 'import-process-box-back'}, [
-               ['div', {class: 'import-process-box-back-icon', opaque: true}],
-               ['div',{class: 'import-process-box-back-text'}, 'Back']
-            ]],
-            ['div', {class: 'import-process-box-list'}, [
-               ! Import.currentFolder ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], list.list.folders [Import.currentFolder].parent]), [
-                  ['div', {class: 'up-icon', opaque: true}],
-                  ['span', 'Up']
-               ]],
-               ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
-                  var folder = list.list.folders [id];
-                  if (! folder) return;
-                  return ['div', {class: 'import-process-box-list-folders-row'}, [
-                     ['div', {class: 'select-folder-box'}, [
-                        ['label', {class: 'checkbox-container'}, [
-                           ['input', {type: 'checkbox', checked: false}],
-                           ['span', {class: 'select-folder-box-checkmark'}]
-                        ]],
-                     ]],
-                     ['div', {class: 'folder-icon', opaque: true}],
-                     ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], id]), folder.name],
-                     ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
-                  ]];
-               })],
-            ]],
-            ['div', {class: 'import-process-box-selected'}, [
-               ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Las Vegas 2010'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Joe’s wedding'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Mom’s birthday'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Camping 2005'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Birthday 2012'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Party at Steven’s'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Miami 2014'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-               ['div', {class: 'import-process-box-selected-row'}, [
-                  ['div', {class: 'folder-icon'}],
-                  ['div', {class: 'selected-folder-name'}, 'Mexico 2013'],
-                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-               ]],
-            ]],
-         ]],
-         ['div', {class:'start-import-button'}, 'This will be a button'],
+	      ['div', {class:'listing-table-container'}, [
+	         ['div', {class: 'import-breadcrumb-container'}, [
+	            ['div', {class: 'import-breadcrumb-icon'}, [
+		            ['div', {class:'google-drive-icon-small'}]
+		            ]],
+	            ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
+	         ]],
+	         ['div', {class: 'import-process-box'}, [
+	            ['div', {class: 'import-process-box-back'}, [
+	               ['div', {class: 'import-process-box-back-icon', opaque: true}],
+	               ['div',{class: 'import-process-box-back-text'}, 'Back']
+	            ]],
+	            ['div', {class: 'import-process-box-list'}, [
+	               ! Import.currentFolder ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], list.list.folders [Import.currentFolder].parent]), [
+	                  ['div', {class: 'up-icon', opaque: true}],
+	                  ['span', 'Up']
+	               ]],
+	               ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
+	                  var folder = list.list.folders [id];
+	                  if (! folder) return;
+	                  return ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox', checked: false}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], id]), folder.name],
+	                     ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
+	                  ]];
+	                  /*
+
+	                  ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox', checked: 'checked'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'Las Vegas 2010'],
+	                     ['div', {class: 'import-folder-files'}, '(100 files)']
+	                  ]],
+	                  ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'Japan 2019'],
+	                     ['div', {class: 'import-folder-files'}, '(125 files)']
+	                  ]],
+	                  ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'Los Angeles 2018'],
+	                     ['div', {class: 'import-folder-files'}, '(567 files)']
+	                  ]],
+	                  ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'Germany 2017'],
+	                     ['div', {class: 'import-folder-files'}, '(985 files)']
+	                  ]],
+	                              ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'Teotihuacan, Mexico 2016'],
+	                     ['div', {class: 'import-folder-files'}, '(4567 files)']
+	                  ]],
+	                  ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'Buenos Aires 2015'],
+	                     ['div', {class: 'import-folder-files'}, '(4567 files)']
+	                  ]],
+	                  ['div', {class: 'import-process-box-list-folders-row'}, [
+	                     ['div', {class: 'select-folder-box'}, [
+	                        ['label', {class: 'checkbox-container'}, [
+	                           ['input', {type: 'checkbox'}],
+	                           ['span', {class: 'select-folder-box-checkmark'}]
+	                        ]],
+	                     ]],
+	                     ['div', {class: 'folder-icon', opaque: true}],
+	                     ['div', {class: 'import-folder-name'}, 'NYC 2014'],
+	                     ['div', {class: 'import-folder-files'}, '(567 files)']
+	                  ]],
+	               */
+	               })],
+	            ]],
+	            ['div', {class: 'import-process-box-selected'}, [
+	               ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Las Vegas 2010'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Joe’s wedding'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Mom’s birthday'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Camping 2005'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Birthday 2012'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Party at Steven’s'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Miami 2014'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	               ['div', {class: 'import-process-box-selected-row'}, [
+	                  ['div', {class: 'folder-icon'}],
+	                  ['div', {class: 'selected-folder-name'}, 'Mexico 2013'],
+	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+	               ]],
+	            ]],
+	         ]],
+	         ['div', {class:'start-import-button button'}, 'Start import'],
+        	]],
       ]];
    });
 }
