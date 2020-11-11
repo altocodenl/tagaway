@@ -49,10 +49,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Endpoint: start listing or give existing list.
       - Track and query listing progress.
       - Store full list.
-      - Update frontend to show list.
-      - Document frontend for import so far.
-
       - Delete current list.
+
+         - dynamize breadcrumb & folder selection
+         - add endpoint for listing only & query that instead
+         - document both views
+         - store current selection in list (backend, responder)
+         - delete current list (also interrupts listing process)
+
    - Import.
       - Email when import is complete.
 - Import from Dropbox.
@@ -809,6 +813,7 @@ Used by giz:
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
+   - `import`: if defined, it is an object of the form `{list: UNDEFINED|google|dropbox, current: UNDEFINED|STRING, selection: [STRING, ...]`. `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selection` is a list of folders to be imported.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
    - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
@@ -819,7 +824,6 @@ Used by giz:
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
-   - `showImportList`: either `undefined`, `'google'` or `'dropbox'`. Shows list of folders for import from the indicated provider.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
    - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.

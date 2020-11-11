@@ -4413,17 +4413,17 @@ E.noSpace = function () {
 E.import = function () {
 
    var boxMaker = function (type, provider, data) {
-      if (provider === 'google') provider = 'google-drive';
+      var className = provider === 'google' ? 'google-drive' : provider;
 
       if (type === 'listing') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: provider + '-icon', opaque: true}]
+               ['div', {class: className + '-icon', opaque: true}]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: provider + '-icon-small', opaque: true}],
+                     ['span', {class: className + '-icon-small', opaque: true}],
                      ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4462,7 +4462,7 @@ E.import = function () {
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   // TODO: implement cancel
                   ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
-                  ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'showImportList'], provider]), 'Select folders'],
+                  ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'import', 'list'], provider]), 'Select folders'],
                ]],
             ]],
          ]],
@@ -4509,31 +4509,33 @@ E.import = function () {
                ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
             ]],
-            // TODO: change to Data.import
             B.view (['Data', 'import'], {attrs: {class: 'page-section'}}, function (x, importData) {
-               return B.view (['State', 'showImportList'], function (x, listProvider) {
-                  if (importList) return E.importList (listProvider, importData [listProvider]);
+               return B.view (['State', 'import'], function (x, importState) {
+                  if (importState && importState.list) return E.importList (importState, importData [importState.list]);
                   return [
                      // IMPORT BOX SECTION
                      ['div', {class:'upload-box'}, [
                         ['div', {class:'upload-box__image', opaque: true}],
                         ['div', {class:'upload-box__main'}, [
-                           ['div', {class: 'upload-box__section'}, [
-                              ['h3', {class: 'upload-box__section-title'}, 'Import files'],
-                              ['div', {class: 'drag-and-drop-import', opaque: true}, [
-                                 ['div', [
-                                    // TODO: when dynamizing, place condition on responder to check if there's enough space left.
-                                    ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, ['onclick', 'import', 'list', 'google'])],
-                                    ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
+                           B.view (['Data', 'account'], {attrs: {class: 'upload-box__section'}}, function (x, account) {
+                              var noSpace = account && account.usage.fsused >= account.usage.limit;
+                              return [
+                                 ['h3', {class: 'upload-box__section-title'}, 'Import files'],
+                                 ['div', {class: 'drag-and-drop-import', opaque: true}, [
+                                    ['div', [
+                                       // TODO: when migrating to gotoB v2, don't use foo.bar if there's no space.
+                                       ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, noSpace ? ['onclick', 'foo', 'bar'] : ['onclick', 'import', 'list', 'google'])],
+                                       ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
+                                    ]],
                                  ]],
-                              ]],
-                           ]]
+                              ];
+                           })
                         ]],
                      ]],
                      dale.do (importData, function (data, provider) {
-                        if      (! importData.end)       boxMaker ('listing',   provider, data);
-                        else if (! importData.importing) boxMaker ('listReady', provider, data);
-                        else                             boxMaker ('importing', provider, data);
+                        if (! data.end)       return boxMaker ('listing',   provider, data);
+                        if (! data.importing) return boxMaker ('listReady', provider, data);
+                        return boxMaker ('importing', provider, data);
                      })
                   ];
                })
@@ -4553,27 +4555,10 @@ E.import = function () {
    ]];
 }
 
-E.importList = function (provider, data) {
-   // TODO:
-   /*
-   - add missing state: current folder & current selection
-   - document both views
-   - store current selection in list (backend, responder)
-   - delete current list (also interrupts listing process)
-   */
-
-   return B.view (['State', 'import', provider], {attrs: {class: 'import-file-list'}}, function (x, Import) {
-      Import = Import || {};
-
-      if (! list.list) return ['div', [
-         ['p', ['In progress']],
-         ['p', ['pics so far ', list.fileCount || 0]],
-         ['p', ['folders so far ', list.folderCount || 0]],
-         ! list.error ? [] : ['p', ['ERROR ', list.error]]
-      ]];
-
-      var folderList = ! Import.currentFolder ? list.list.roots : list.list.folders [Import.currentFolder].children;
-      return ['div', {class: 'upload-box'}, [
+E.importList = function (importState, importData) {
+   var folderList = ! importState.current ? importData.list.roots : importData.list.folders [importState.current].children;
+   return ['div', {class: 'import-file-list'}, [
+      ['div', {class: 'upload-box'}, [
 	      ['div', {class:'listing-table-container'}, [
 	         ['div', {class: 'import-breadcrumb-container'}, [
 	            ['div', {class: 'import-breadcrumb-icon'}, [
@@ -4587,12 +4572,12 @@ E.importList = function (provider, data) {
 	               ['div',{class: 'import-process-box-back-text'}, 'Back']
 	            ]],
 	            ['div', {class: 'import-process-box-list'}, [
-	               ! Import.currentFolder ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], list.list.folders [Import.currentFolder].parent]), [
+	               ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
 	                  ['div', {class: 'up-icon', opaque: true}],
 	                  ['span', 'Up']
 	               ]],
 	               ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
-	                  var folder = list.list.folders [id];
+	                  var folder = importData.list.folders [id];
 	                  if (! folder) return;
 	                  return ['div', {class: 'import-process-box-list-folders-row'}, [
 	                     ['div', {class: 'select-folder-box'}, [
@@ -4602,139 +4587,26 @@ E.importList = function (provider, data) {
 	                        ]],
 	                     ]],
 	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', provider, 'currentFolder'], id]), folder.name],
+	                     ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', 'current'], id]), folder.name],
 	                     ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
 	                  ]];
-	                  /*
-
-	                  ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox', checked: 'checked'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'Las Vegas 2010'],
-	                     ['div', {class: 'import-folder-files'}, '(100 files)']
-	                  ]],
-	                  ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'Japan 2019'],
-	                     ['div', {class: 'import-folder-files'}, '(125 files)']
-	                  ]],
-	                  ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'Los Angeles 2018'],
-	                     ['div', {class: 'import-folder-files'}, '(567 files)']
-	                  ]],
-	                  ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'Germany 2017'],
-	                     ['div', {class: 'import-folder-files'}, '(985 files)']
-	                  ]],
-	                              ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'Teotihuacan, Mexico 2016'],
-	                     ['div', {class: 'import-folder-files'}, '(4567 files)']
-	                  ]],
-	                  ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'Buenos Aires 2015'],
-	                     ['div', {class: 'import-folder-files'}, '(4567 files)']
-	                  ]],
-	                  ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox'}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', {class: 'import-folder-name'}, 'NYC 2014'],
-	                     ['div', {class: 'import-folder-files'}, '(567 files)']
-	                  ]],
-	               */
 	               })],
 	            ]],
 	            ['div', {class: 'import-process-box-selected'}, [
 	               ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Las Vegas 2010'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Joe’s wedding'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Mom’s birthday'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Camping 2005'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Birthday 2012'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Party at Steven’s'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Miami 2014'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
-	               ['div', {class: 'import-process-box-selected-row'}, [
-	                  ['div', {class: 'folder-icon'}],
-	                  ['div', {class: 'selected-folder-name'}, 'Mexico 2013'],
-	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-	               ]],
+                  dale.do (['Las Vegas 2010', 'Joe\'s wedding', 'Mom\'s birthday', 'Camping 2005', 'Birthday 2012', 'Party at Steven\'s', 'Miami 2014', 'Mexico 2013'], function (folder) {
+                     return ['div', {class: 'import-process-box-selected-row'}, [
+   	                  ['div', {class: 'folder-icon'}],
+   	                  ['div', {class: 'selected-folder-name'}, folder],
+   	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+   	               ]];
+                  })
 	            ]],
 	         ]],
 	         ['div', {class:'start-import-button button'}, 'Start import'],
         	]],
-      ]];
-   });
+      ]]
+   ]];
 }
 
 // *** ACCOUNT VIEW ***
