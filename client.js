@@ -1263,6 +1263,7 @@ CSS.litc = [
    }],
    ['.import-process-box-list-folders-row', {
       display: 'inline-flex',
+      width: 1,
       height: 20,
    }],
    ['.select-folder-box', {
@@ -1333,6 +1334,8 @@ CSS.litc = [
    }],
    ['.import-folder-name', {
       'margin-right': CSS.vars ['padding--xs'],
+      width: .45,
+      overflow: 'auto', //NOT FINAL SOLUTION
    }],
    ['.import-folder-files', {
       'color': CSS.vars ['grey--darker'],
@@ -1340,13 +1343,16 @@ CSS.litc = [
    }],
    ['.import-process-box-selected', {
       width: .30,
-      'overflow-y': 'auto',
       'padding-bottom': CSS.vars ['padding--xs'],
    }],
    ['.import-process-box-selected-title', {
       'text-align': 'center',
       'font-weight': CSS.vars.fontPrimaryMedium,
       'margin-bottom': CSS.vars ['padding--xs'],
+   }],
+   ['.import-process-box-selected-row-container', {
+   	'overflow-y': 'auto',
+   	height: '187px',
    }],
    ['.import-process-box-selected-row', {
       width: 1,
@@ -4594,6 +4600,7 @@ E.importList = function (importState, importData) {
 	            ]],
 	            ['div', {class: 'import-process-box-selected'}, [
 	               ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
+	               ['div', {class:'import-process-box-selected-row-container'}, [
                   dale.do (['Las Vegas 2010', 'Joe\'s wedding', 'Mom\'s birthday', 'Camping 2005', 'Birthday 2012', 'Party at Steven\'s', 'Miami 2014', 'Mexico 2013'], function (folder) {
                      return ['div', {class: 'import-process-box-selected-row'}, [
    	                  ['div', {class: 'folder-icon'}],
@@ -4601,6 +4608,7 @@ E.importList = function (importState, importData) {
    	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
    	               ]];
                   })
+                  ]],
 	            ]],
 	         ]],
 	         ['div', {class:'start-import-button button'}, 'Start import'],
