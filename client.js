@@ -1351,8 +1351,8 @@ CSS.litc = [
       'margin-bottom': CSS.vars ['padding--xs'],
    }],
    ['.import-process-box-selected-row-container', {
-   	'overflow-y': 'auto',
-   	height: '187px',
+      'overflow-y': 'auto',
+      height: '187px',
    }],
    ['.import-process-box-selected-row', {
       width: 1,
@@ -1376,10 +1376,10 @@ CSS.litc = [
       'width, height': 24,
    }],
    ['.listing-table-container', {
-   	display: 'inline-block',
+      display: 'inline-block',
    }],
    ['.start-import-button', {
-   	float: 'right',
+      float: 'right',
       border: '1px solid #5b6eff',
       color: '#fff',
       'background-color': '#5b6eff',
@@ -4563,56 +4563,72 @@ E.import = function () {
 
 E.importList = function (importState, importData) {
    var folderList = ! importState.current ? importData.list.roots : importData.list.folders [importState.current].children;
+   folderList.sort (function (a, b) {
+      var roots = ['Мой диск', 'My Drive'];
+      var nameA = importData.list.folders [a].name;
+      var nameB = importData.list.folders [b].name;
+      if (roots.indexOf (nameA) !== -1) return -1;
+      if (roots.indexOf (nameB) !== -1) return 1;
+      return nameA.toLowerCase () > nameB.toLowerCase () ? 1 : -1;
+   });
+   var breadcrumb = [], addParent = function (id) {
+      breadcrumb.unshift (id);
+      if (importData.list.folders [id].parent) addParent (importData.list.folders [id].parent);
+   }
+   if (importState.current) addParent (importState.current);
+   breadcrumb.unshift (importState.list === 'google' ? 'Google Drive' : 'Dropbox');
    return ['div', {class: 'import-file-list'}, [
       ['div', {class: 'upload-box'}, [
-	      ['div', {class:'listing-table-container'}, [
-	         ['div', {class: 'import-breadcrumb-container'}, [
-	            ['div', {class: 'import-breadcrumb-icon'}, [
-		            ['div', {class:'google-drive-icon-small'}]
-		            ]],
-	            ['div', {class: 'import-breadcrumb'}, 'My Drive > Vacations > Lorem ipsum > Dolor sit amet > Consectetur']
-	         ]],
-	         ['div', {class: 'import-process-box'}, [
-	            ['div', {class: 'import-process-box-back'}, [
-	               ['div', {class: 'import-process-box-back-icon', opaque: true}],
-	               ['div',{class: 'import-process-box-back-text'}, 'Back']
-	            ]],
-	            ['div', {class: 'import-process-box-list'}, [
-	               ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
-	                  ['div', {class: 'up-icon', opaque: true}],
-	                  ['span', 'Up']
-	               ]],
-	               ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
-	                  var folder = importData.list.folders [id];
-	                  if (! folder) return;
-	                  return ['div', {class: 'import-process-box-list-folders-row'}, [
-	                     ['div', {class: 'select-folder-box'}, [
-	                        ['label', {class: 'checkbox-container'}, [
-	                           ['input', {type: 'checkbox', checked: false}],
-	                           ['span', {class: 'select-folder-box-checkmark'}]
-	                        ]],
-	                     ]],
-	                     ['div', {class: 'folder-icon', opaque: true}],
-	                     ['div', ! folder.children ? {class: 'import-folder-name'} : B.ev ({class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', 'current'], id]), folder.name],
-	                     ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
-	                  ]];
-	               })],
-	            ]],
-	            ['div', {class: 'import-process-box-selected'}, [
-	               ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
-	               ['div', {class:'import-process-box-selected-row-container'}, [
+         ['div', {class:'listing-table-container'}, [
+            ['div', {class: 'import-breadcrumb-container'}, [
+               ['div', {class: 'import-breadcrumb-icon'}, [
+                  ['div', {class:'google-drive-icon-small'}]
+               ]],
+               ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (id) {
+                  return (importData.list.folders [id] || {}).name || id;
+               }).join (' > ')]
+            ]],
+            ['div', {class: 'import-process-box'}, [
+               ['div', {class: 'import-process-box-back'}, [
+                  ['div', {class: 'import-process-box-back-icon', opaque: true}],
+                  ['div',{class: 'import-process-box-back-text'}, 'Back']
+               ]],
+               ['div', {class: 'import-process-box-list'}, [
+                  ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
+                     ['div', {class: 'up-icon', opaque: true}],
+                     ['span', 'Up']
+                  ]],
+                  ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
+                     var folder = importData.list.folders [id];
+                     if (! folder) return;
+                     return ['div', {class: 'import-process-box-list-folders-row'}, [
+                        ['div', {class: 'select-folder-box'}, [
+                           ['label', {class: 'checkbox-container'}, [
+                              ['input', {type: 'checkbox', checked: false}],
+                              ['span', {class: 'select-folder-box-checkmark'}]
+                           ]],
+                        ]],
+                        ['div', {class: 'folder-icon', opaque: true}],
+                        ['div', ! folder.children ? {title: folder.name, class: 'import-folder-name'} : B.ev ({title: folder.name, class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', 'current'], id]), folder.name],
+                        ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
+                     ]];
+                  })],
+               ]],
+               ['div', {class: 'import-process-box-selected'}, [
+                  ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
+                  ['div', {class:'import-process-box-selected-row-container'}, [
                   dale.do (['Las Vegas 2010', 'Joe\'s wedding', 'Mom\'s birthday', 'Camping 2005', 'Birthday 2012', 'Party at Steven\'s', 'Miami 2014', 'Mexico 2013'], function (folder) {
                      return ['div', {class: 'import-process-box-selected-row'}, [
-   	                  ['div', {class: 'folder-icon'}],
-   	                  ['div', {class: 'selected-folder-name'}, folder],
-   	                  ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
-   	               ]];
+                        ['div', {class: 'folder-icon'}],
+                        ['div', {title: folder, class: 'selected-folder-name'}, folder],
+                        ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                     ]];
                   })
                   ]],
-	            ]],
-	         ]],
-	         ['div', {class:'start-import-button button'}, 'Start import'],
-        	]],
+               ]],
+            ]],
+            ['div', {class:'start-import-button button'}, 'Start import'],
+         ]],
       ]]
    ]];
 }

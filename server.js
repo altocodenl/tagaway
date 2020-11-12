@@ -2250,14 +2250,21 @@ var routes = [
                   // We don't return the full list of pictures to the client.
                   delete s.last.list.pics;
                }
-               return reply (rs, 200, {
+               var output = {
                   start: parseInt (s.last.start),
                   end: parseInt (s.last.end || 0),
                   fileCount: parseInt (s.last.fileCount),
                   folderCount: parseInt (s.last.folderCount),
                   error: s.last.error,
                   list: s.last.list
+               };
+               dale.go (output.list.folders, function (folder, id) {
+                  output.list.folders [id].children = dale.fil (folder.children, undefined, function (child) {
+                     // Filter out pictures (those ids that have no entry in list.folders)
+                     if (output.list.folders [child]) return child;
+                  });
                });
+               return reply (rs, 200, output);
             }
             // If no process ongoing, we start it.
             reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
