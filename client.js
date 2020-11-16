@@ -1237,7 +1237,6 @@ CSS.litc = [
    ['.import-process-box-list', {
       'border-right': '1px solid ' + CSS.vars ['border-color--dark'],
       width: .55,
-      'overflow-y': 'auto',
    }],
    ['.import-process-box-list-up', {
       display: 'inline-flex',
@@ -1260,6 +1259,7 @@ CSS.litc = [
    }, ['path', {fill: CSS.vars ['grey--light']}]],
    ['.import-process-box-list-folders', {
       'padding-bottom': CSS.vars ['padding--xs'],
+      'overflow-y': 'auto',
    }],
    ['.import-process-box-list-folders-row', {
       display: 'inline-flex',
