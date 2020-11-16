@@ -4598,7 +4598,7 @@ E.importList = function (importState, importData) {
                      ['div', {class: 'up-icon', opaque: true}],
                      ['span', 'Up']
                   ]],
-                  ['div', {class: 'import-process-box-list-folders'}, dale.do (folderList, function (id) {
+                  ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.current ? 210 : 163})}, dale.do (folderList, function (id) {
                      var folder = importData.list.folders [id];
                      if (! folder) return;
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
