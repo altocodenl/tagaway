@@ -4548,6 +4548,31 @@ E.import = function () {
             }),
             // RECENT IMPORTS
             ['h2', {class:'recent-imports__title'}, 'Recent imports'],
+            // RECENT IMPORTS BOX
+           ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
+			   ['div', {class: 'space-alert__image', opaque: true}, [
+			      ['div', {class: 'google-drive-icon', opaque: true}]
+			   ]],
+			   ['div', {class: 'upload-box__main'}, [
+			      ['div', {class: 'upload-box__section'}, [
+			         ['p', {class: 'upload-progress', opaque: true}, [
+			         ['span', {class: 'upload-progress__amount-uploaded'}],
+			         ['LITERAL', '&nbsp'],
+			         ['span', {class: 'upload-progress__default-text'}, 'Pictures imported']
+			         ]],
+			      ['div', {class: 'upload-box__section'}, [
+			         ['ul', {class: 'tag-list-horizontal'}, [
+			            ['li', {class: 'tag-list-horizontal__item tag tag-list__item--green', opaque: true}, [
+			               ['span', {class: 'tag__title'}, 'Tag']
+			            ]],
+			            ['li', {class: 'tag-list-horizontal__item tag tag-list__item--orange', opaque: true}, [
+			               ['span', {class: 'tag__title'}, 'Tag 2']
+			            ]],
+			         ]],
+			      ]],
+			      ]],
+			   ]],
+			]],
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
