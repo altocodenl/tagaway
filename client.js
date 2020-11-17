@@ -4550,29 +4550,19 @@ E.import = function () {
             ['h2', {class:'recent-imports__title'}, 'Recent imports'],
             // RECENT IMPORTS BOX
            ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
-			   ['div', {class: 'space-alert__image', opaque: true}, [
-			      ['div', {class: 'google-drive-icon', opaque: true}]
-			   ]],
-			   ['div', {class: 'upload-box__main'}, [
-			      ['div', {class: 'upload-box__section'}, [
-			         ['p', {class: 'upload-progress', opaque: true}, [
-			         ['span', {class: 'upload-progress__amount-uploaded'}],
-			         ['LITERAL', '&nbsp'],
-			         ['span', {class: 'upload-progress__default-text'}, 'Pictures imported']
-			         ]],
-			      ['div', {class: 'upload-box__section'}, [
-			         ['ul', {class: 'tag-list-horizontal'}, [
-			            ['li', {class: 'tag-list-horizontal__item tag tag-list__item--green', opaque: true}, [
-			               ['span', {class: 'tag__title'}, 'Tag']
-			            ]],
-			            ['li', {class: 'tag-list-horizontal__item tag tag-list__item--orange', opaque: true}, [
-			               ['span', {class: 'tag__title'}, 'Tag 2']
-			            ]],
-			         ]],
-			      ]],
-			      ]],
-			   ]],
-			]],
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: 'google-drive-icon', opaque: true}]
+            ]],
+            ['div', {class: 'upload-box__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'upload-progress', opaque: true}, [
+                     ['span', {class: 'upload-progress__amount-uploaded'}, 'XXX'],
+                     ['LITERAL', '&nbsp'],
+                     ['span', {class: 'upload-progress__default-text'}, 'Pictures imported']
+                  ]],
+               ]],
+            ]],
+         ]],
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
@@ -4602,6 +4592,20 @@ E.importList = function (importState, importData) {
    }
    if (importState.current) addParent (importState.current);
    breadcrumb.unshift (importState.list === 'google' ? 'Google Drive' : 'Dropbox');
+   (function () {
+      // first title is uncompressible
+      // last title must always be there but can be compressed (what's the maximum width?)
+      // intermediate titles can be either compressed or omitted
+      // compute width of '...'
+      var breadcrumbContainer = c ('.import-breadcrumb') [0];
+      if (! breadcrumbContainer) return;
+      var container = document.createElement ('span');
+      container.innerHTML = 'dale dale dale';
+      document.body.insertAdjacentElement ('beforeEnd', container);
+      console.log (breadcrumbContainer.clientWidth, container.getBoundingClientRect ().width);
+      document.body.removeChild (container);
+
+   }) ();
    return ['div', {class: 'import-file-list'}, [
       ['div', {class: 'upload-box'}, [
          ['div', {class:'listing-table-container'}, [
@@ -4609,14 +4613,15 @@ E.importList = function (importState, importData) {
                ['div', {class: 'import-breadcrumb-icon'}, [
                   ['div', {class:'google-drive-icon-small'}]
                ]],
-               ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (id) {
-                  return (importData.list.folders [id] || {}).name || id;
-               }).join (' > ')]
+               ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (id, k) {
+                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'current']), id];
+                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'import', 'current'], id]), ' > ' + importData.list.folders [id].name];
+               })],
             ]],
             ['div', {class: 'import-process-box'}, [
-               ['div', {class: 'import-process-box-back'}, [
+               ['div', B.ev ({class: 'import-process-box-back pointer'}, ['onclick', 'rem', ['State', 'import'], 'list']), [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
-                  ['div',{class: 'import-process-box-back-text'}, 'Back']
+                  ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
                   ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
