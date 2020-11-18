@@ -4599,12 +4599,53 @@ E.importList = function (importState, importData) {
       // compute width of '...'
       var breadcrumbContainer = c ('.import-breadcrumb') [0];
       if (! breadcrumbContainer) return;
-      var container = document.createElement ('span');
-      container.innerHTML = 'dale dale dale';
-      document.body.insertAdjacentElement ('beforeEnd', container);
-      console.log (breadcrumbContainer.clientWidth, container.getBoundingClientRect ().width);
-      document.body.removeChild (container);
 
+      // We give ourselves a padding of 5px to the right.
+      var availableWidth = breadcrumbContainer.clientWidth - 5;
+
+      var calculateWidth = function (text) {
+         var container = document.createElement ('span');
+         container.innerHTML = text;
+         document.body.insertAdjacentElement ('beforeEnd', container);
+         var width = Math.ceil (container.getBoundingClientRect ().width);
+         document.body.removeChild (container);
+         return width;
+      }
+      var widths = {};
+      dale.do (breadcrumb, function (item, k) {
+         widths [k] = calculateWidth (k === 0 ? item : ' > ' + importData.list.folders [item].name);
+      });
+      widths.dots   = calculateWidth ('...');
+      widths.gmdots = calculateWidth ('...');
+      // Width used is set to the width of the first item of the breadcrumb, which is always visible.
+      var widthUsed = widths [0];
+      var shortenedBreadcrumb = [breadcrumb [0]];
+
+      dale.stop (dale.times (breadcrumb.length - 1, breadcrumb.length - 1, -1), true, function (index) {
+         var name = importData.list.folders [breadcrumb [index]].name;
+
+         // if not the last element to add (the second one in breadcrumb) leave space for "> ..."
+         if ((widthUsed + widths [index] + (index === 1 ? 0 : widths.gmdots)) <= availableWidth) {
+            shortenedBreadcrumb.splice (1, 0, {id: breadcrumb [index], name: name});
+            widthUsed += widths [index];
+            return;
+         }
+         if (availableWidth - widthUsed < 100) {
+            shortenedBreadcrumb.splice (1, 0, {name: ' > ...'});
+            return true;
+         }
+         // to remove = total - available + dots
+         // multiply char width x3 just to be sure
+         var toRemoveChars = Math.ceil (name.length * ((widths [index] - (availableWidth - widthUsed) + widths.dots) / widths [index])) * 3;
+         var shortenedName = name.slice (0, Math.floor (name.length / 2) - Math.ceil (toRemoveChars / 2));
+         shortenedName += '...';
+         shortenedName += name.slice (Math.floor (name.length / 2) + Math.floor (toRemoveChars / 2));
+         shortenedBreadcrumb.splice (1, 0, {id: breadcrumb [index], name: shortenedName});
+         widthUsed += calculateWidth (shortenedName);
+         return true;
+      });
+
+      breadcrumb = shortenedBreadcrumb;
    }) ();
    return ['div', {class: 'import-file-list'}, [
       ['div', {class: 'upload-box'}, [
@@ -4613,9 +4654,11 @@ E.importList = function (importState, importData) {
                ['div', {class: 'import-breadcrumb-icon'}, [
                   ['div', {class:'google-drive-icon-small'}]
                ]],
-               ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (id, k) {
-                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'current']), id];
-                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'import', 'current'], id]), ' > ' + importData.list.folders [id].name];
+               ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (item, k) {
+                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'current']), item];
+                  // This case is the "> ..." to omit certain items
+                  if (! item.id) return ['span', item.name];
+                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'import', 'current'], item.id]), ' > ' + item.name];
                })],
             ]],
             ['div', {class: 'import-process-box'}, [
@@ -4631,7 +4674,7 @@ E.importList = function (importState, importData) {
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.current ? 210 : 163})}, dale.do (folderList, function (id) {
                      var folder = importData.list.folders [id];
                      if (! folder) return;
-                     return ['div', {class: 'import-process-box-list-folders-row'}, [
+                     return ['div', {class: 'import-process-box-list-folders-row pointer'}, [
                         ['div', {class: 'select-folder-box'}, [
                            ['label', {class: 'checkbox-container'}, [
                               ['input', {type: 'checkbox', checked: false}],
