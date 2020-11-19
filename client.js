@@ -4608,6 +4608,8 @@ E.importList = function (importState, importData) {
          container.innerHTML = text;
          document.body.insertAdjacentElement ('beforeEnd', container);
          var width = Math.ceil (container.getBoundingClientRect ().width);
+         // We add 3px to each item because of a discrepancy when getting the width of the span when it has other spans to the left, vs being the only span.
+         width += 3;
          document.body.removeChild (container);
          return width;
       }
@@ -4630,18 +4632,24 @@ E.importList = function (importState, importData) {
             widthUsed += widths [index];
             return;
          }
-         if (availableWidth - widthUsed < 100) {
+
+         // to remove = total - available + dots
+         var toRemovePixels = widths [index] - (availableWidth - widthUsed) + widths.dots;
+         // multiply char width x3 to be on the safe side if the removed characters are much thinner than average
+         var toRemoveChars = Math.ceil (name.length * (toRemovePixels / widths [index])) * 3;
+
+         // If less than 8 characters left on shortened name, omit entry altogether.
+         if (name.length - toRemoveChars < 8) {
             shortenedBreadcrumb.splice (1, 0, {name: ' > ...'});
             return true;
          }
-         // to remove = total - available + dots
-         // multiply char width x3 just to be sure
-         var toRemoveChars = Math.ceil (name.length * ((widths [index] - (availableWidth - widthUsed) + widths.dots) / widths [index])) * 3;
+
          var shortenedName = name.slice (0, Math.floor (name.length / 2) - Math.ceil (toRemoveChars / 2));
          shortenedName += '...';
          shortenedName += name.slice (Math.floor (name.length / 2) + Math.floor (toRemoveChars / 2));
          shortenedBreadcrumb.splice (1, 0, {id: breadcrumb [index], name: shortenedName});
          widthUsed += calculateWidth (shortenedName);
+         // If we're already shortening the name, we won't have space for the next entry.
          return true;
       });
 
@@ -4667,7 +4675,7 @@ E.importList = function (importState, importData) {
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
-                  ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
+                  ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
                      ['div', {class: 'up-icon', opaque: true}],
                      ['span', 'Up']
                   ]],
