@@ -813,7 +813,7 @@ Used by giz:
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
-   - `import`: if defined, it is an object of the form `{list: UNDEFINED|google|dropbox, current: UNDEFINED|STRING, selection: [STRING, ...]`. `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selection` is a list of folders to be imported.
+   - `import`: if defined, it is an object of the form `{list: UNDEFINED|google|dropbox, current: UNDEFINED|STRING, selection: {ID1: true, ...}`. `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selection` is a list of folders to be imported.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
    - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
