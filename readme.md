@@ -49,13 +49,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Endpoint: start listing or give existing list.
       - Track and query listing progress.
       - Store full list.
+      - Select folders to import in a persistent manner.
       - Delete current list.
 
-         - dynamize breadcrumb & folder selection
-         - add endpoint for listing only & query that instead
-         - document both views
-         - store current selection in list (backend, responder)
+         - list & query that instead
+         - store selection of folders
          - delete current list (also interrupts listing process)
+         - document both views
 
    - Import.
       - Email when import is complete.

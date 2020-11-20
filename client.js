@@ -4684,11 +4684,12 @@ E.importList = function (importState, importData) {
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.current ? 210 : 163})}, dale.do (folderList, function (id) {
                      var folder = importData.list.folders [id];
+                     var selected = !! selection [id];
                      if (! folder) return;
                      return ['div', {class: 'import-process-box-list-folders-row pointer'}, [
                         ['div', {class: 'select-folder-box'}, [
                            ['label', {class: 'checkbox-container'}, [
-                              ['input', B.ev ({type: 'checkbox', checked: !! selection [id]}, ['onchange', 'set', ['State', 'import', 'selection', id], ! selection [id]])],
+                              ['input', B.ev ({type: 'checkbox', checked: selected}, selected ? ['onchange', 'rem', ['State', 'import', 'selection'], id] : ['onchange', 'set', ['State', 'import', 'selection', id], true])],
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
@@ -4701,11 +4702,12 @@ E.importList = function (importState, importData) {
                ['div', {class: 'import-process-box-selected'}, [
                   ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
                   ['div', {class:'import-process-box-selected-row-container'}, [
-                  dale.do (dale.keys (importState.selection)/*['Las Vegas 2010', 'Joe\'s wedding', 'Mom\'s birthday', 'Camping 2005', 'Birthday 2012', 'Party at Steven\'s', 'Miami 2014', 'Mexico 2013']*/, function (folder) {
+                  dale.do (importState.selection, function (selected, id) {
+                     var name = importData.list.folders [id].name;
                      return ['div', {class: 'import-process-box-selected-row'}, [
                         ['div', {class: 'folder-icon'}],
-                        ['div', {title: folder, class: 'selected-folder-name'}, folder],
-                        ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true}]
+                        ['div', {title: name, class: 'selected-folder-name'}, name],
+                        ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'import', 'selection'], id])]
                      ]];
                   })
                   ]],
