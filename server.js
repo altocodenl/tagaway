@@ -2202,6 +2202,7 @@ var routes = [
 
    // *** INTEGRATION WITH OTHER APIS ***
 
+   // This route is executed after the OAuth flow, the provider redirects here.
    ['get', 'import/oauth/google', function (rq, rs) {
       if (! rq.data.query) return reply (rs, 400, {error: 'No query parameters.'});
       if (! rq.data.query.code) return reply (rs, 403, {error: 'No code parameter.'});
@@ -2266,9 +2267,12 @@ var routes = [
                });
                return reply (rs, 200, output);
             }
-            // If no process ongoing, we start it.
-            reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
-            s.next ();
+            // If no process ongoing, we start the process only if the query parameter `startList` is present
+            if (req.data.query && req.data.query.startList) {
+               reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
+               s.next ();
+            }
+            else reply (rs, 200, {});
          },
          [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],

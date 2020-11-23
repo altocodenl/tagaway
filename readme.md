@@ -50,7 +50,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Track and query listing progress.
       - Store full list.
       - Select folders to import in a persistent manner.
-      - Delete current list.
+      - Delete current list (change logic so that you know auth is ok but no list)
 
          - list & query that instead
          - store selection of folders
@@ -421,13 +421,14 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...], geo: true|undefined, geoInProgress: true|undefined}`.
 
-`GET /import/list/PROVIDER`
-   - Lists available pictures in the PROVIDER's cloud, or redirects to its oauth flow if authorization is not present or expired.
+`GET /import/list/PROVIDER[?startList=1]`
+   - Lists available folders with pictures in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if authorization is not present or expired.
+   - If there's a list process ongoing or the list process is ready, the endpoint will serve that list. If there's no list yet, the query parameter `startList` must be present with a value of `1` to trigger the listing process. If there's no list and no `startList` parameter is provided, the responde will be an empty object.
    - `PROVIDER` can be either `google` or `dropbox`.
    - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
    - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
    - If there's access or refresh tokens, a process is started to query the PROVIDER's API and 200 is returned to the client.
-   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
+   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process. If there's auth access but no list and `startList` wasn't passed, the return body will be an empty object.
 
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -797,8 +798,8 @@ Used by giz:
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
 
 6. Import
-   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
-   2. `import list`: `get import/list/PROVIDER`. If result has a field `redirect`, redirects the page there. Otherwise, stores the result in `Data.import.PROVIDER`.
+   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
+   2. `import list PROVIDER STARTLIST`: `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
@@ -840,7 +841,14 @@ Used by giz:
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
-   - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, has the shape: `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
+   - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, it has the shape:
+```
+{
+      redirect: STRING|UNDEFINED,
+      list: UNDEFINED|{provider: start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}
+}
+```
+   If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.

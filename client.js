@@ -2942,13 +2942,15 @@ dale.do ([
    ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'import') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
-      if (! B.get ('Data', 'tags'))    B.do (x, 'query', 'tags');
+      dale.do (['google'], function (provider) {
+         if (! B.get ('Data', 'import', provider)) B.do (x, 'import', 'list', provider);
+      });
    }],
 
-   ['import', 'list', function (x, provider) {
-      B.do (x, 'get', 'import/list/' + provider, {}, '', function (x, error, rs) {
+   ['import', 'list', function (x, provider, startList) {
+      B.do (x, 'get', 'import/list/' + provider + (startList ? '?startList=1' : ''), {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
-         if (rs.body.redirect) return location.replace (rs.body.redirect);
+         if (rs.body.redirect) return B.do (x, 'set', ['Data', 'import', 'google', 'redirect'], rs.body.redirect);
          B.do (x, 'set', ['Data', 'import', 'google'], rs.body);
       });
    }],
@@ -4466,7 +4468,7 @@ E.import = function () {
                   ['div', {class: 'progress-bar'}],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  // TODO: implement cancel
+                  // TODO: implement delete
                   ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
                   ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'import', 'list'], provider]), 'Select folders'],
                ]],
@@ -4516,29 +4518,38 @@ E.import = function () {
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
             ]],
             B.view (['Data', 'import'], {attrs: {class: 'page-section'}}, function (x, importData) {
+               if (! importData) return;
                return B.view (['State', 'import'], function (x, importState) {
+                  console.log ('redrawing', importState);
                   if (importState && importState.list) return E.importList (importState, importData [importState.list]);
                   return [
                      // IMPORT BOX SECTION
-                     ['div', {class:'upload-box'}, [
-                        ['div', {class:'upload-box__image', opaque: true}],
-                        ['div', {class:'upload-box__main'}, [
+                     ['div', {class: 'upload-box'}, [
+                        ['div', {class: 'upload-box__image', opaque: true}],
+                        ['div', {class: 'upload-box__main'}, [
                            B.view (['Data', 'account'], {attrs: {class: 'upload-box__section'}}, function (x, account) {
                               var noSpace = account && account.usage.fsused >= account.usage.limit;
                               return [
                                  ['h3', {class: 'upload-box__section-title'}, 'Import files'],
                                  ['div', {class: 'drag-and-drop-import', opaque: true}, [
-                                    ['div', [
-                                       // TODO: when migrating to gotoB v2, don't use foo.bar if there's no space.
-                                       ['div', B.ev ({style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: 'google-drive-logo'}, noSpace ? ['onclick', 'foo', 'bar'] : ['onclick', 'import', 'list', 'google'])],
-                                       ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block'}), class: 'dropbox-logo'}]
-                                    ]],
+                                    ['div', dale.do ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo'}], function (provider) {
+                                       var providerData = importData [provider.provider];
+                                       if (! providerData) return;
+                                       var attrs = {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class};
+                                       if (noSpace) return ['div', attrs];
+                                       if (providerData.redirect) return ['div', attrs, ['a', {href: providerData.redirect}, 'Go']];
+                                       // If no list, trigger listing.
+                                       if (! providerData.list) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider, true])];
+                                       // There's already a list, show it.
+                                       return ['div', B.ev (attrs, ['onclick', 'set', ['State', 'import', 'list'], provider.provider])];
+                                    })]
                                  ]],
                               ];
                            })
                         ]],
                      ]],
                      dale.do (importData, function (data, provider) {
+                        if (! data) return;
                         if (! data.end)       return boxMaker ('listing',   provider, data);
                         if (! data.importing) return boxMaker ('listReady', provider, data);
                         return boxMaker ('importing', provider, data);
@@ -4673,6 +4684,7 @@ E.importList = function (importState, importData) {
                })],
             ]],
             ['div', {class: 'import-process-box'}, [
+               // TODO: when upgrading gotoB v2, remove workaround div and check that recycle doesn't trigger onclick twice
                ['div', B.ev ({class: 'import-process-box-back pointer'}, ['onclick', 'rem', ['State', 'import'], 'list']), [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
