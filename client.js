@@ -1362,6 +1362,7 @@ CSS.litc = [
    }],
    ['.selected-folder-name', {
       'margin-right': CSS.vars ['padding--xs'],
+      width: .65,
    }],
    ['.selected-folder-deselect', {
       display: 'inline-block',

@@ -45,6 +45,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Add formats to DB retroactively.
    - Support for extra formats (including thumbnails & conversion .mov to .mp4): .heic, .mov and others.
 - Import from GDrive.
+- [BUG] On list table, when empty, if click on 'Import Folder Name', table collapses.  
    - List.
       - Endpoint: start listing or give existing list.
       - Track and query listing progress.
