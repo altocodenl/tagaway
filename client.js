@@ -1199,10 +1199,10 @@ CSS.litc = [
    ['.import-process-box', {
       display: 'inline-flex',
       'flex-grow': '1',
+      width: 1,
       height: CSS.typography.spaceVer (11),
       //'margin-top': CSS.typography.spaceVer (1.5),
       border: '1px solid ' + CSS.vars ['border-color--dark'],
-      width: 1
    }],
    ['.import-process-box-back', {
       'border-right': '1px solid ' + CSS.vars ['border-color--dark'],
@@ -1379,6 +1379,7 @@ CSS.litc = [
    }],
    ['.listing-table-container', {
       display: 'inline-block',
+      width: 1
    }],
    ['.start-import-button', {
       float: 'right',
@@ -4708,15 +4709,15 @@ E.importList = function (importState, importData) {
                      var folder = importData.list.folders [id];
                      var selected = !! selection [id];
                      if (! folder) return;
-                     return ['div', {class: 'import-process-box-list-folders-row pointer'}, [
-                        ['div', {class: 'select-folder-box'}, [
+                     return ['div', {class: 'import-process-box-list-folders-row'}, [
+                        ['div', {class: 'select-folder-box pointer'}, [
                            ['label', {class: 'checkbox-container'}, [
                               ['input', B.ev ({type: 'checkbox', checked: selected}, selected ? ['onchange', 'rem', ['State', 'import', 'selection'], id] : ['onchange', 'set', ['State', 'import', 'selection', id], true])],
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
                         ['div', {class: 'folder-icon', opaque: true}],
-                        ['div', ! folder.children ? {title: folder.name, class: 'import-folder-name'} : B.ev ({title: folder.name, class: 'import-folder-name'}, ['onclick', 'set', ['State', 'import', 'current'], id]), folder.name],
+                        ['div', ! folder.children ? {title: folder.name, class: 'import-folder-name pointer'} : B.ev ({title: folder.name, class: 'import-folder-name pointer'}, ['onclick', 'set', ['State', 'import', 'current'], id]), folder.name],
                         ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                      ]];
                   })],
