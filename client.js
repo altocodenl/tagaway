@@ -1202,6 +1202,7 @@ CSS.litc = [
       height: CSS.typography.spaceVer (11),
       //'margin-top': CSS.typography.spaceVer (1.5),
       border: '1px solid ' + CSS.vars ['border-color--dark'],
+      width: 1
    }],
    ['.import-process-box-back', {
       'border-right': '1px solid ' + CSS.vars ['border-color--dark'],
@@ -2956,6 +2957,13 @@ dale.do ([
       });
    }],
 
+   ['import', 'delete', function (x, provider) {
+      B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
+         B.do (x, 'import', 'list');
+      });
+   }],
+
    // *** ACCOUNT RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {
@@ -4448,8 +4456,7 @@ E.import = function () {
                         ['div', ' folders found so far'],
                      ]],
                   ]],
-                  // TODO: implement cancel
-                  ['div', {class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, 'Cancel']
+                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'delete', provider]), 'Cancel']
                ]],
             ]],
          ]],
@@ -4469,8 +4476,7 @@ E.import = function () {
                   ['div', {class: 'progress-bar'}],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  // TODO: implement delete
-                  ['div', {class: 'boxed-alert-button-left button'}, 'Delete list'],
+                  ['div', B.ev ({class: 'boxed-alert-button-left button'}, ['onclick', 'import', 'delete', provider]), 'Delete list'],
                   ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'import', 'list'], provider]), 'Select folders'],
                ]],
             ]],
@@ -4521,7 +4527,6 @@ E.import = function () {
             B.view (['Data', 'import'], {attrs: {class: 'page-section'}}, function (x, importData) {
                if (! importData) return;
                return B.view (['State', 'import'], function (x, importState) {
-                  console.log ('redrawing', importState);
                   if (importState && importState.list) return E.importList (importState, importData [importState.list]);
                   return [
                      // IMPORT BOX SECTION
@@ -4550,7 +4555,7 @@ E.import = function () {
                         ]],
                      ]],
                      dale.do (importData, function (data, provider) {
-                        if (! data) return;
+                        if (! data || ! data.start) return;
                         if (! data.end)       return boxMaker ('listing',   provider, data);
                         if (! data.importing) return boxMaker ('listReady', provider, data);
                         return boxMaker ('importing', provider, data);
@@ -4685,7 +4690,11 @@ E.importList = function (importState, importData) {
                })],
             ]],
             ['div', {class: 'import-process-box'}, [
-               // TODO: when upgrading gotoB v2, remove workaround div and check that recycle doesn't trigger onclick twice
+               // TODO: when upgrading gotoB v2, remove decoy div and check that recycle doesn't trigger onclick twice
+               ['div', B.ev ({style: 'display: none', class: 'import-process-box-back pointer'}, ['onclick', 'foo', 'bar']), [
+                  ['div', {class: 'import-process-box-back-icon', opaque: true}],
+                  ['div', {class: 'import-process-box-back-text'}, 'Back']
+               ]],
                ['div', B.ev ({class: 'import-process-box-back pointer'}, ['onclick', 'rem', ['State', 'import'], 'list']), [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']

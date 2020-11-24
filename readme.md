@@ -45,7 +45,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Add formats to DB retroactively.
    - Support for extra formats (including thumbnails & conversion .mov to .mp4): .heic, .mov and others.
 - Import from GDrive.
-- [BUG] On list table, when empty, if click on 'Import Folder Name', table collapses.  
    - List.
       - Endpoint: start listing or give existing list.
       - Track and query listing progress.
@@ -53,10 +52,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Select folders to import in a persistent manner.
       - Delete current list (change logic so that you know auth is ok but no list)
 
-         - list & query that instead
+         - check overall flow: auth, list, cancel, delete full list
+         - add refresh timeout when list in progress
          - store selection of folders
-         - delete current list (also interrupts listing process)
-         - document both views
+         - document import views
 
    - Import.
       - Email when import is complete.
@@ -438,6 +437,11 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the request for an access token is not successful, the route responds with a 403 and with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If the request for an access token is successful, the route responds with a 200.
 
+`POST /import/delete/PROVIDER`
+   - Deletes list of files/folders available in the PROVIDER's cloud.
+   - If no listing was done, the route succeeds anyway.
+   - If successful, the route returns no body.
+
 #### Debugging routes
 
 `POST /error`
@@ -801,6 +805,7 @@ Used by giz:
 6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
    2. `import list PROVIDER STARTLIST`: `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy.
+   3. `import delete PROVIDER`: `post import/list/PROVIDER/delete`.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.

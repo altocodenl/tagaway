@@ -2227,6 +2227,15 @@ var routes = [
       }});
    }],
 
+   ['post', 'import/delete/google', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'del', 'imp:g:' + rq.user.username],
+         function (s) {
+            reply (rs, 200);
+         }
+      ]);
+   }],
+
    ['get', 'import/list/google', function (rq, rs) {
 
       a.stop ([
@@ -2257,7 +2266,7 @@ var routes = [
                   fileCount: parseInt (s.last.fileCount),
                   folderCount: parseInt (s.last.folderCount),
                   error: s.last.error,
-                  list: s.last.list
+                  list: s.last.list || {}
                };
                dale.go (output.list.folders, function (folder, id) {
                   output.list.folders [id].children = dale.fil (folder.children, undefined, function (child) {
@@ -2268,7 +2277,7 @@ var routes = [
                return reply (rs, 200, output);
             }
             // If no process ongoing, we start the process only if the query parameter `startList` is present
-            if (req.data.query && req.data.query.startList) {
+            if (rq.data.query && rq.data.query.startList) {
                reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
                s.next ();
             }
@@ -2278,7 +2287,8 @@ var routes = [
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],
          function (s) {
 
-            var PAGESIZE = 1000, PAGES = 1000;
+            // TODO: change PAGES to a large number after debugging client flows
+            var PAGESIZE = 1000, PAGES = 3;
 
             var pics = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -2313,24 +2323,31 @@ var routes = [
 
                   if (RS.code !== 200) return s.next (null, RS.body);
 
-                  redis.hincrby ('imp:g:' + rq.user.username, 'fileCount', RS.body.files.length);
+                  redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
+                     if (error) return s.next (null, error);
+                     // If key was deleted, process was cancelled. The process stops.
+                     if (! exists) return;
+                     redis.hincrby ('imp:g:' + rq.user.username, 'fileCount', RS.body.files.length, function (error) {
+                        if (error) return s.next (null, error);
 
-                  dale.go (RS.body.files, function (v) {
-                     dale.go (v.parents, function (v2) {
-                        if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
-                        if (! children [v2]) children [v2] = [];
-                        children [v2].push (v.id);
+                        dale.go (RS.body.files, function (v) {
+                           dale.go (v.parents, function (v2) {
+                              if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
+                              if (! children [v2]) children [v2] = [];
+                              children [v2].push (v.id);
+                           });
+                        });
+
+                        pics = pics.concat (RS.body.files);
+
+                        // TODO: remove after debugging
+                        // Bring a maximum of PAGES pages.
+                        if (page > PAGES) return s.next (pics);
+
+                        if (RS.body.nextPageToken) getFilePage (s, RS.body.nextPageToken);
+                        else s.next (pics);
                      });
                   });
-
-                  pics = pics.concat (RS.body.files);
-
-                  // TODO: remove after debugging
-                  // Bring a maximum of PAGES pages.
-                  if (page > PAGES) return s.next (pics);
-
-                  if (RS.body.nextPageToken) getFilePage (s, RS.body.nextPageToken);
-                  else s.next (pics);
                }});
             }
 
@@ -2362,57 +2379,64 @@ var routes = [
                hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
                   if (RS.code !== 200) return s.next (null, RS.body);
 
-                  redis.hincrby ('imp:g:' + rq.user.username, 'folderCount', batch.length);
+                  redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
+                     if (error) return s.next (null, error);
+                     // If key was deleted, process was cancelled. The process stops.
+                     if (! exists) return;
+                     redis.hincrby ('imp:g:' + rq.user.username, 'folderCount', batch.length, function (error) {
+                        if (error) return s.next (null, error);
 
-                  if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
-                  var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
-                  var parts = RS.body.split (boundary);
-                  var error;
-                  dale.stopNot (parts.slice (1, -1), undefined, function (part) {
-                     var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
-                     if (json.error) return error = json.error;
+                        if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
+                        var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
+                        var parts = RS.body.split (boundary);
+                        var error;
+                        dale.stopNot (parts.slice (1, -1), undefined, function (part) {
+                           var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+                           if (json.error) return error = json.error;
 
-                     folders [json.id] = {name: json.name, parents: json.parents};
-                     if (! json.parents) roots [json.id] = true;
-                     dale.go (json.parents, function (id) {
-                        if (! children [id]) children [id] = [];
-                        if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
-                        // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
-                        if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                           folders [json.id] = {name: json.name, parents: json.parents};
+                           if (! json.parents) roots [json.id] = true;
+                           dale.go (json.parents, function (id) {
+                              if (! children [id]) children [id] = [];
+                              if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
+                              // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
+                              if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                           });
+                        });
+                        if (error) return s.next (null, error);
+
+                        if (parentsToRetrieve.length === 0) return s.next ();
+
+                        var d = Date.now ();
+                        d = d - d % 1000;
+                        var lastPeriodTotal = 0, lastPeriodRequest;
+                        dale.go (limits, function (limit) {
+                           if (((d - limit [0]) / 1000) < timeWindow) {
+                              lastPeriodTotal += limit [1];
+                              lastPeriodRequest = limit;
+                           }
+                        });
+
+                        var timeNow = new Date (d).toISOString ();
+
+                        // If absolutely no capacity, must wait.
+                        if (lastPeriodTotal >= requestLimit) {
+                           console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
+                           setTimeout (function () {
+                              getParentBatch (s, lastPeriodRequest [1]);
+                           }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
+                        }
+                        // If some capacity but not unrestricted, send a limited request immediately.
+                        else if (parentsToRetrieve.length > (requestLimit- lastPeriodTotal)) {
+                           console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
+                           getParentBatch (s, requestLimit - lastPeriodTotal);
+                        }
+                        else {
+                           console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
+                           getParentBatch (s);
+                        }
                      });
                   });
-                  if (error) return s.next (null, error);
-
-                  if (parentsToRetrieve.length === 0) return s.next ();
-
-                  var d = Date.now ();
-                  d = d - d % 1000;
-                  var lastPeriodTotal = 0, lastPeriodRequest;
-                  dale.go (limits, function (limit) {
-                     if (((d - limit [0]) / 1000) < timeWindow) {
-                        lastPeriodTotal += limit [1];
-                        lastPeriodRequest = limit;
-                     }
-                  });
-
-                  var timeNow = new Date (d).toISOString ();
-
-                  // If absolutely no capacity, must wait.
-                  if (lastPeriodTotal >= requestLimit) {
-                     console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
-                     setTimeout (function () {
-                        getParentBatch (s, lastPeriodRequest [1]);
-                     }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
-                  }
-                  // If some capacity but not unrestricted, send a limited request immediately.
-                  else if (parentsToRetrieve.length > (requestLimit- lastPeriodTotal)) {
-                     console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
-                     getParentBatch (s, requestLimit - lastPeriodTotal);
-                  }
-                  else {
-                     console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
-                     getParentBatch (s);
-                  }
                }});
             }
 
@@ -2444,13 +2468,27 @@ var routes = [
                   */
                   //console.log ('OUTPUT', JSON.stringify (output, null, '   '));
 
-                  redis.hmset ('imp:g:' + rq.user.username, {list: JSON.stringify (output), end: Date.now ()});
+                  redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
+                     if (error) return s.next (null, error);
+                     // If key was deleted, process was cancelled. The process stops.
+                     if (! exists) return;
+                     redis.hmset ('imp:g:' + rq.user.username, {list: JSON.stringify (output), end: Date.now ()}, function (error) {
+                        if (error) return s.next (null, error);
+                     });
+                  });
                }
             ]);
          }
       ], function (s, error) {
-         redis.hmset ('imp:g:' + rq.user.username, {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()});
-         console.log ('DEBUG ERROR', error);
+         notify (s, {priority: 'important', type: 'Import error.', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}});
+         redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
+            if (error) return s.next (null, error);
+            // If key was deleted, process was cancelled. The process stops.
+            if (! exists) return;
+            redis.hmset ('imp:g:' + rq.user.username, {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()}, function (error) {
+               if (error) return s.next (null, error);
+            });
+         });
       });
    }],
 
