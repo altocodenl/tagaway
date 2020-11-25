@@ -2263,8 +2263,8 @@ var routes = [
                var output = {
                   start: parseInt (s.last.start),
                   end: parseInt (s.last.end || 0),
-                  fileCount: parseInt (s.last.fileCount),
-                  folderCount: parseInt (s.last.folderCount),
+                  fileCount: parseInt (s.last.fileCount) || 0,
+                  folderCount: parseInt (s.last.folderCount) || 0,
                   error: s.last.error,
                   list: s.last.list || {}
                };
@@ -2352,6 +2352,7 @@ var routes = [
             }
 
             var getParentBatch = function (s, maxRequests) {
+               console.log ('GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
                // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                // don't extrapolate over user limit: 10 requests/second.
                var requestLimit = 10, timeWindow = 2;
@@ -2427,7 +2428,7 @@ var routes = [
                            }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
                         }
                         // If some capacity but not unrestricted, send a limited request immediately.
-                        else if (parentsToRetrieve.length > (requestLimit- lastPeriodTotal)) {
+                        else if (parentsToRetrieve.length > (requestLimit - lastPeriodTotal)) {
                            console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
                            getParentBatch (s, requestLimit - lastPeriodTotal);
                         }
@@ -2444,6 +2445,7 @@ var routes = [
                [getFilePage],
                getParentBatch,
                function (s) {
+                  console.log ('DONE RETRIEVING DATA');
                   var porotoSum = function (id) {
                      if (! folders [id].count) folders [id].count = 0;
                      folders [id].count++;
@@ -2480,6 +2482,7 @@ var routes = [
             ]);
          }
       ], function (s, error) {
+         console.log ('IMPORT ERROR', error);
          notify (s, {priority: 'important', type: 'Import error.', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}});
          redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
             if (error) return s.next (null, error);

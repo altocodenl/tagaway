@@ -2961,7 +2961,7 @@ dale.do ([
    ['import', 'delete', function (x, provider) {
       B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
-         B.do (x, 'import', 'list');
+         B.do (x, 'import', 'list', provider);
       });
    }],
 
