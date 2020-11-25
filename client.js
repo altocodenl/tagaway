@@ -2390,6 +2390,12 @@ dale.do ([
             window.location.hash = '#/signup';
          }
       }
+      if (hash [0] === 'import') {
+         if (hash [1] === 'success' && hash [2]) {
+            B.do (x, 'set', ['Data', 'import', hash [2], 'authOK'], true);
+            window.location.hash = '#/import';
+         }
+      }
    }],
    ['change', ['State', 'page'], function (x) {
       var page = B.get ('State', 'page'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
@@ -2946,6 +2952,10 @@ dale.do ([
       if (B.get ('State', 'page') !== 'import') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       dale.do (['google'], function (provider) {
+         if (B.get ('Data', 'import', provider, 'authOK')) {
+            B.do (x, 'rem', ['Data', 'import', provider], authOK);
+            return B.do (x, 'import', 'list', provider, true);
+         }
          if (! B.get ('Data', 'import', provider)) B.do (x, 'import', 'list', provider);
       });
    }],
@@ -4701,7 +4711,8 @@ E.importList = function (importState, importData) {
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
-                  ! importState.current ? [] : ['div', B.ev ({class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'import', 'current'], importData.list.folders [importState.current].parent]), [
+                  // TODO: when upgrading gotoB v2, remove decoy div and check that recycle doesn't trigger onclick twice
+                  ['div', B.ev ({style: importState.current ? '' : 'display: none', class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'import', 'current'], importState.current ? importData.list.folders [importState.current].parent : '']), [
                      ['div', {class: 'up-icon', opaque: true}],
                      ['span', 'Up']
                   ]],

@@ -46,16 +46,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Support for extra formats (including thumbnails & conversion .mov to .mp4): .heic, .mov and others.
 - Import from GDrive.
    - List.
-      - Endpoint: start listing or give existing list.
-      - Track and query listing progress.
-      - Store full list.
+      - If no auth access, provide link to start auth flow.
+      - Start listing or give existing list.
+      - When listing, update listing progress.
+      - Show full list of folders when done listing.
+      - Delete current list (change logic so that you know auth is ok but no list).
       - Select folders to import in a persistent manner.
-      - Delete current list (change logic so that you know auth is ok but no list)
 
-         - check overall flow: auth, list, cancel, delete full list
-         - add refresh timeout when list in progress
-         - store selection of folders
-         - document import views
+      - Add timeout depending on state of list in progress. self-delete when done. works for starting the list and also for loading client while a list happens.
+      - store selection of folders
+      - document import views
 
    - Import.
       - Email when import is complete.
@@ -743,7 +743,10 @@ Used by giz:
       - Adds `Data.csrf` to most `POST` requests.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` (with truthy `logout` argument) and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
-   7. `read hash`: places the first part of `window.location.hash` into (`State.page`). If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
+   7. `read hash`:
+      - Places the first part of `window.location.hash` into (`State.page`).
+      - If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
+      - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `Data.import.PROVIDER.authOK` to `true`.
    8. `change State.page`: validates whether a certain page can be shown, based on 1) whether the page exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.page` and overwrites `window.location.hash`.
    9. `test`: loads test suite.
 
@@ -803,7 +806,7 @@ Used by giz:
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
 
 6. Import
-   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
+   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
    2. `import list PROVIDER STARTLIST`: `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy.
    3. `import delete PROVIDER`: `post import/list/PROVIDER/delete`.
 
@@ -850,6 +853,7 @@ Used by giz:
    - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, it has the shape:
 ```
 {
+      authOK: true|UNDEFINED (present when server redirects back to app after a successful auth flow)
       redirect: STRING|UNDEFINED,
       list: UNDEFINED|{provider: start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}
 }

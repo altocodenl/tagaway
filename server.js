@@ -2221,7 +2221,7 @@ var routes = [
          multi.set   ('oa:g:ref:' + rq.user.username, RS.body.refresh_token);
          multi.exec (function (error) {
             if (error) return reply (rs, 500, {error: error});
-            reply (rs, 302, {}, {location: CONFIG.domain + '#/import'});
+            reply (rs, 302, {}, {location: CONFIG.domain + '#/import/success/google'});
             H.log (a.creat (), rq.user.username, {a: 'imp', s: 'grant', pro: 'google'});
          });
       }});
