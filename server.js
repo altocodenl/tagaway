@@ -2484,10 +2484,11 @@ var routes = [
       ], function (s, error) {
          console.log ('IMPORT ERROR', error);
          notify (s, {priority: 'important', type: 'Import error.', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}});
-         redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
-            if (error) return s.next (null, error);
+         redis.exists ('imp:g:' + rq.user.username, function (Error, exists) {
+            if (error) return s.next (null, Error);
             // If key was deleted, process was cancelled. The process stops.
             if (! exists) return;
+            console.log ('STORING ERROR', {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()});
             redis.hmset ('imp:g:' + rq.user.username, {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()}, function (error) {
                if (error) return s.next (null, error);
             });

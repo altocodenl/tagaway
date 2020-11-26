@@ -2975,6 +2975,22 @@ dale.do ([
       });
    }],
 
+   // TODO: when moving to gotoB v2, change path to Data.import.*.list and remove the concats below.
+   ['change', ['Data', 'import', '*'], function (x) {
+      var provider = x.path [2], data = B.get ('Data', 'import', provider) || {};
+      if (! data.start || data.end) return;
+      if (B.get ('State', 'import', provider, 'update')) return;
+      var interval = setInterval (function () {
+         console.log ('DEBUG interval');
+         var data = B.get ('Data', 'import', provider) || {};
+         // If list exists and is still ongoing, refresh the list and let the interval keep on going.
+         if (data.start && ! data.end && ! data.error) return B.do (x, 'import', 'list', provider);
+         clearInterval (interval);
+         B.do (x, 'rem', ['State', 'import', provider], 'update');
+      }, 2000);
+      B.do (x, 'set', ['State', 'import', provider, 'update'], interval);
+   }],
+
    // *** ACCOUNT RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {

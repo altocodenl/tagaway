@@ -53,7 +53,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Delete current list (change logic so that you know auth is ok but no list).
       - Select folders to import in a persistent manner.
 
-      - Add timeout depending on state of list in progress. self-delete when done. works for starting the list and also for loading client while a list happens.
+      - document interval responder.
+      - report error in responder and delete list directly.
+      - when listing, if click on drive button, say "in progress, please wait".
       - store selection of folders
       - document import views
 
@@ -823,7 +825,7 @@ Used by giz:
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
-   - `import`: if defined, it is an object of the form `{list: UNDEFINED|google|dropbox, current: UNDEFINED|STRING, selection: {ID1: true, ...}`. `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selection` is a list of folders to be imported.
+   - `import`: if defined, it is an object of the form `{list: UNDEFINED|google|dropbox, current: UNDEFINED|STRING, selection: {ID1: true, ...}, update: UNDEFINED|INTERVAL}`. `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selection` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
    - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
