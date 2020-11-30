@@ -2236,6 +2236,41 @@ var routes = [
       ]);
    }],
 
+   ['post', 'import/select/google', function (rq, rs) {
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+      ])) return;
+
+      b.ids = dale.keys (b.ids).sort ();
+
+      astop (rs, [
+         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
+         function (s) {
+            var data = s.last;
+            if (! data || ! data.end) return reply (rs, 404);
+            if (data.error)           return reply (rs, 409);
+            var list = JSON.parse (list.list);
+            var folderIds = dale.obj (list.folders, function (folder) {
+               return [folder.id, true];
+            });
+
+            var invalidId = dale.stop (b.ids, function (id) {
+               if (! folderIds [id]) return id;
+            });
+            if (invalidId) return reply (rs, 409, {error: 'No such id: ' + invalidId});
+
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selected', JSON.stringify (b.ids));
+         },
+         function (s) {
+            reply (rs, 200);
+         }
+      ]);
+   }],
+
    ['get', 'import/list/google', function (rq, rs) {
 
       a.stop ([

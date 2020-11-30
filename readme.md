@@ -54,6 +54,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Select folders to import in a persistent manner.
 
       - store selection of folders
+         - document route
+         - return list of selected on endpoint
+         - show selected folders on client
+         - implement & document save/select endpoint (on back and on "start import")
       - document import views
 
    - Import.
@@ -627,7 +631,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERID (string): access token for google for USERID
 - oa:g:ref:USERID (string): refresh token for google for USERID
 
-- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, roots: [...], folders: [...], pics: [...], error: UNDEFINED|STRING|OBJECT}`.
+- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...], error: UNDEFINED|STRING|OBJECT, selected: UNDEFINED|[ID, ...]}`.
 
 Used by giz:
 
