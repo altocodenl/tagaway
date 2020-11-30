@@ -53,9 +53,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Delete current list (change logic so that you know auth is ok but no list).
       - Select folders to import in a persistent manner.
 
-      - document interval responder.
-      - report error in responder and delete list directly.
-      - when listing, if click on drive button, say "in progress, please wait".
       - store selection of folders
       - document import views
 
@@ -811,6 +808,8 @@ Used by giz:
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
    2. `import list PROVIDER STARTLIST`: `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy.
    3. `import delete PROVIDER`: `post import/list/PROVIDER/delete`.
+   4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) the responder does nothing. But if there's provider data and a listing is in process, then the responder checks whether `State.import.PROVIDER.update` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.PROVIDER.update` that runs every 2 seconds that invokes `import list PROVIDER`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.PROVIDER.update`).
+   5. `import retry PROVIDER`: invokes `import delete PROVIDER` and then `import list PROVIDER true`.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.

@@ -2975,7 +2975,6 @@ dale.do ([
       });
    }],
 
-   // TODO: when moving to gotoB v2, change path to Data.import.*.list and remove the concats below.
    ['change', ['Data', 'import', '*'], function (x) {
       var provider = x.path [2], data = B.get ('Data', 'import', provider) || {};
       if (! data.start || data.end) return;
@@ -2989,6 +2988,13 @@ dale.do ([
          B.do (x, 'rem', ['State', 'import', provider], 'update');
       }, 2000);
       B.do (x, 'set', ['State', 'import', provider, 'update'], interval);
+   }],
+
+   ['import', 'retry', function (x, provider) {
+      B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
+         B.do (x, 'import', 'list', provider, true);
+      });
    }],
 
    // *** ACCOUNT RESPONDERS ***
@@ -4539,6 +4545,26 @@ E.import = function () {
             ]],
          ]],
       ]];
+
+      if (type === 'error') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: 'space-alert-icon', opaque: true}]
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'boxed-alert-message'}, [
+                     ['span', {class: 'space-alert-icon-small', opaque: true}],
+                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + data.error]]
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'retry', provider]), 'Try again']
+               ]],
+            ]],
+         ]]
+      ]];
    }
 
    return ['div', [
@@ -4571,9 +4597,12 @@ E.import = function () {
                                        var attrs = {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class};
                                        if (noSpace) return ['div', attrs];
                                        if (providerData.redirect) return ['div', attrs, ['a', {href: providerData.redirect}, 'Go']];
+                                       if (providerData.error) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
                                        // If no list, trigger listing.
-                                       if (! providerData.list) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider, true])];
-                                       // There's already a list, show it.
+                                       if (! providerData.start) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider, true])];
+                                       // If currently listing, show snackbar.
+                                       if (! providerData.end) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being listed, please wait.'])];
+                                       // There's already a completed list, show it.
                                        return ['div', B.ev (attrs, ['onclick', 'set', ['State', 'import', 'list'], provider.provider])];
                                     })]
                                  ]],
@@ -4583,6 +4612,7 @@ E.import = function () {
                      ]],
                      dale.do (importData, function (data, provider) {
                         if (! data || ! data.start) return;
+                        if (data.error)       return boxMaker ('error',     provider, data);
                         if (! data.end)       return boxMaker ('listing',   provider, data);
                         if (! data.importing) return boxMaker ('listReady', provider, data);
                         return boxMaker ('importing', provider, data);
