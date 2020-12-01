@@ -2245,7 +2245,7 @@ var routes = [
          ['body.ids', b.ids, 'string', 'each'],
       ])) return;
 
-      b.ids = dale.keys (b.ids).sort ();
+      b.ids = b.ids.sort ();
 
       astop (rs, [
          [Redis, 'hgetall', 'imp:g:' + rq.user.username],
@@ -2253,17 +2253,17 @@ var routes = [
             var data = s.last;
             if (! data || ! data.end) return reply (rs, 404);
             if (data.error)           return reply (rs, 409);
-            var list = JSON.parse (list.list);
-            var folderIds = dale.obj (list.folders, function (folder) {
-               return [folder.id, true];
+            var list = JSON.parse (data.list);
+            var folderIds = dale.obj (list.folders, function (folder, id) {
+               return [id, true];
             });
 
-            var invalidId = dale.stop (b.ids, function (id) {
+            var invalidId = dale.stopNot (b.ids, undefined, function (id) {
                if (! folderIds [id]) return id;
             });
-            if (invalidId) return reply (rs, 409, {error: 'No such id: ' + invalidId});
+            if (invalidId) return reply (rs, 400, {error: 'No such id: ' + invalidId});
 
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selected', JSON.stringify (b.ids));
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
          },
          function (s) {
             reply (rs, 200);
@@ -2301,7 +2301,8 @@ var routes = [
                   fileCount: parseInt (s.last.fileCount) || 0,
                   folderCount: parseInt (s.last.folderCount) || 0,
                   error: s.last.error,
-                  list: s.last.list || {}
+                  list: s.last.list || {},
+                  selection: s.last.selection ? JSON.parse (s.last.selection) : undefined
                };
                dale.go (output.list.folders, function (folder, id) {
                   output.list.folders [id].children = dale.fil (folder.children, undefined, function (child) {

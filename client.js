@@ -265,7 +265,7 @@ CSS.litc = [
    ['.header__menu', {'padding-left': CSS.vars ['padding--l']}],
    ['.header__user', {'margin-left': 'auto'}],
    ['.header__upload-button', {'margin-left, margin-right': CSS.vars ['padding--m']}],
-   ['.header__import-button', {'margin-left':'22px', 'margin-right':'-12px'}],
+   ['.header__import-button', {'margin-left': 22, 'margin-right': -12}],
    // *** logo.scss ***
    ['.logo__img', {
       display: 'inline-block',
@@ -1168,8 +1168,8 @@ CSS.litc = [
       width: '152.35px'
    }],
    ['.google-drive-logo', {
-      height:'30px',
-      width:'98px',
+      height: 30,
+      width: 98,
       'background-size': '98px 30px',
       'background-image': 'url(assets/img/google-drive-logo.png)',
    }],
@@ -2963,8 +2963,11 @@ dale.do ([
    ['import', 'list', function (x, provider, startList) {
       B.do (x, 'get', 'import/list/' + provider + (startList ? '?startList=1' : ''), {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
-         if (rs.body.redirect) return B.do (x, 'set', ['Data', 'import', 'google', 'redirect'], rs.body.redirect);
-         B.do (x, 'set', ['Data', 'import', 'google'], rs.body);
+         if (rs.body.redirect) return B.do (x, 'set', ['Data', 'import', provider, 'redirect'], rs.body.redirect);
+         B.do (x, 'set', ['Data', 'import', provider], rs.body);
+         B.do (x, 'set', ['State', 'import', 'selection', provider], dale.obj (rs.body.selection, function (v) {
+            return [v, true];
+         }));
       });
    }],
 
@@ -2978,22 +2981,28 @@ dale.do ([
    ['change', ['Data', 'import', '*'], function (x) {
       var provider = x.path [2], data = B.get ('Data', 'import', provider) || {};
       if (! data.start || data.end) return;
-      if (B.get ('State', 'import', provider, 'update')) return;
+      if (B.get ('State', 'import', 'update', provider)) return;
       var interval = setInterval (function () {
-         console.log ('DEBUG interval');
          var data = B.get ('Data', 'import', provider) || {};
          // If list exists and is still ongoing, refresh the list and let the interval keep on going.
          if (data.start && ! data.end && ! data.error) return B.do (x, 'import', 'list', provider);
          clearInterval (interval);
-         B.do (x, 'rem', ['State', 'import', provider], 'update');
+         B.do (x, 'rem', ['State', 'import', 'update'], provider);
       }, 2000);
-      B.do (x, 'set', ['State', 'import', provider, 'update'], interval);
+      B.do (x, 'set', ['State', 'import', 'update', provider], interval);
    }],
 
    ['import', 'retry', function (x, provider) {
       B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
          B.do (x, 'import', 'list', provider, true);
+      });
+   }],
+
+   ['import', 'select', function (x, provider) {
+      B.do (x, 'post', 'import/select/' + provider, {}, {ids: dale.keys (B.get ('State', 'import', 'selection', provider))}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
+         B.do (x, 'import', 'list', provider);
       });
    }],
 
@@ -4479,12 +4488,12 @@ E.import = function () {
                   ['div', {class: 'progress-bar'}],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', {class:'listing-progress'}, [
-                     ['div', {class:'files-found-so-far'}, [
+                  ['div', {class: 'listing-progress'}, [
+                     ['div', {class: 'files-found-so-far'}, [
                         ['span', data.fileCount],
                         ['div', ' pics & vids found so far'],
                      ]],
-                     ['div', {class:'folders-found-so-far'}, [
+                     ['div', {class: 'folders-found-so-far'}, [
                         ['span', data.folderCount],
                         ['div', ' folders found so far'],
                      ]],
@@ -4530,8 +4539,8 @@ E.import = function () {
                   ['div', {class: 'progress-bar'}],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', {class:'listing-progress'}, [
-                     ['div', {class:'files-found-so-far'}, [
+                  ['div', {class: 'listing-progress'}, [
+                     ['div', {class: 'files-found-so-far'}, [
                         // TODO: dynamize
                         ['span', 'XXXXX'],
                         ['span', ' / '],
@@ -4621,7 +4630,7 @@ E.import = function () {
                })
             }),
             // RECENT IMPORTS
-            ['h2', {class:'recent-imports__title'}, 'Recent imports'],
+            ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
             // RECENT IMPORTS BOX
            ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
@@ -4730,14 +4739,15 @@ E.importList = function (importState, importData) {
       breadcrumb = shortenedBreadcrumb;
    }) ();
 
-   var selection = importState.selection || {};
+   var provider  = importState.list;
+   var selection = importState.selection [provider] || {};
 
    return ['div', {class: 'import-file-list'}, [
       ['div', {class: 'upload-box'}, [
-         ['div', {class:'listing-table-container'}, [
+         ['div', {class: 'listing-table-container'}, [
             ['div', {class: 'import-breadcrumb-container'}, [
                ['div', {class: 'import-breadcrumb-icon'}, [
-                  ['div', {class:'google-drive-icon-small'}]
+                  ['div', {class: 'google-drive-icon-small'}]
                ]],
                ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (item, k) {
                   if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'current']), item];
@@ -4752,7 +4762,11 @@ E.importList = function (importState, importData) {
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
-               ['div', B.ev ({class: 'import-process-box-back pointer'}, ['onclick', 'rem', ['State', 'import'], 'list']), [
+               ['div', B.ev ({class: 'import-process-box-back pointer'}, [
+                  ['onclick', 'import', 'select', provider],
+                  ['onclick', 'rem', ['State', 'import'], 'list'],
+                  ['onclick', 'rem', ['State', 'import'], 'current']
+               ]), [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
@@ -4769,7 +4783,7 @@ E.importList = function (importState, importData) {
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
                            ['label', {class: 'checkbox-container'}, [
-                              ['input', B.ev ({type: 'checkbox', checked: selected}, selected ? ['onchange', 'rem', ['State', 'import', 'selection'], id] : ['onchange', 'set', ['State', 'import', 'selection', id], true])],
+                              ['input', B.ev ({type: 'checkbox', checked: selected}, selected ? ['onchange', 'rem', ['State', 'import', 'selection', provider], id] : ['onchange', 'set', ['State', 'import', 'selection', provider, id], true])],
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
@@ -4781,19 +4795,19 @@ E.importList = function (importState, importData) {
                ]],
                ['div', {class: 'import-process-box-selected'}, [
                   ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
-                  ['div', {class:'import-process-box-selected-row-container'}, [
-                  dale.do (importState.selection, function (selected, id) {
-                     var name = importData.list.folders [id].name;
-                     return ['div', {class: 'import-process-box-selected-row'}, [
-                        ['div', {class: 'folder-icon'}],
-                        ['div', {title: name, class: 'selected-folder-name'}, name],
-                        ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'import', 'selection'], id])]
-                     ]];
-                  })
+                  ['div', {class: 'import-process-box-selected-row-container'}, [
+                     dale.do (selection, function (selected, id) {
+                        var name = importData.list.folders [id].name;
+                        return ['div', {class: 'import-process-box-selected-row'}, [
+                           ['div', {class: 'folder-icon'}],
+                           ['div', {title: name, class: 'selected-folder-name'}, name],
+                           ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'import', 'selection', provider], id])]
+                        ]];
+                     })
                   ]],
                ]],
             ]],
-            ['div', {class:'start-import-button button'}, 'Start import'],
+            ['div', B.ev ({class: 'start-import-button button'}, ['onclick', 'import', 'select', provider]), 'Start import'],
          ]],
       ]]
    ]];
@@ -4855,7 +4869,7 @@ E.account = function () {
                         ['table', {class: 'account-data'}, [
                            ['tr', {class: 'space-usage'}, [
                               ['td', {class: 'text-left-account-data-table'}, 'Usage: ' + percUsed + '% (' + gbUsed + ' GB)'],
-                              ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                              ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan': '2'}, [
                                  ['span', {class: 'space-usage-bar', style: style ({
                                     background: 'linear-gradient(90deg, #8b8b8b ' + percUsed + '%, #fff ' + percUsed + '%)',
                                  })}],
@@ -4866,7 +4880,7 @@ E.account = function () {
                            ]],
                            free ? [] : ['tr', {class: 'space-limit'}, [
                               ['td', {class: 'text-left-account-data-table'}, 'Space limit'],
-                              ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan':'2'}, [
+                              ['td', {style: style ({'vertical-align': 'middle'}), 'rowspan': '2'}, [
                                  ['input', {class: 'search-form__input search-input space-limit-box', type: 'text', placeholder: '100'}]
                               ]],
                            ]],
@@ -4878,7 +4892,7 @@ E.account = function () {
                                  ['span', 'Account type: '],
                                  ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, account.type [0].toUpperCase () + account.type.slice (1)]
                               ]],
-                              free ? ['td', {class: 'call-to-action-text'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']] : ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 3.5 / Month']
+                              free ? ['td', {class: 'call-to-action-text'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']] : ['td', {class: 'values-right-table', 'rowspan': '2'}, '€ 3.5 / Month']
                            ]],
                            free ? [] : [
                               ['tr', {class: 'subtext-left-table'}, [
@@ -4891,7 +4905,7 @@ E.account = function () {
                                     ['span', 'Paid space used: '],
                                     ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '55 GB'],
                                  ]],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.81 / Month']
+                                 ['td', {class: 'values-right-table', 'rowspan': '2'}, '€ 1.81 / Month']
                               ]],
                               ['tr', {class: 'subtext-left-table'}, [
                                  ['td', [
@@ -4903,7 +4917,7 @@ E.account = function () {
                                     ['span', 'Average paid space used: '],
                                     ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '40 GB']
                                  ]],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 0.01 / Month']
+                                 ['td', {class: 'values-right-table', 'rowspan': '2'}, '€ 0.01 / Month']
                               ]],
                               ['tr', {class: 'subtext-left-table'}, [
                                  ['td', {style: style ({'padding-left': '5%'})}, 'Average amount of GB you used this month so far.']
@@ -4913,7 +4927,7 @@ E.account = function () {
                                     ['span', 'Paid space currently using: '],
                                     ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, '70 GB']
                                  ]],
-                                 ['td', {class: 'values-right-table', 'rowspan':'2'}, '€ 1.80 / Month']
+                                 ['td', {class: 'values-right-table', 'rowspan': '2'}, '€ 1.80 / Month']
                               ]],
                               ['tr', {class: 'subtext-left-table'}, [
                                  ['td', {style: style ({'padding-left': '5%'})}, '70 GB * 15 remaining days this month. Each GB is  € 0.05.']

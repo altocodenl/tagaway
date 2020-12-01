@@ -53,14 +53,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Delete current list (change logic so that you know auth is ok but no list).
       - Select folders to import in a persistent manner.
 
-      - store selection of folders
-         - document route
-         - return list of selected on endpoint
-         - show selected folders on client
-         - implement & document save/select endpoint (on back and on "start import")
-      - document import views
-
    - Import.
+      - Update progress.
       - Email when import is complete.
 - Import from Dropbox.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
@@ -431,7 +425,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
    - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
    - If there's access or refresh tokens, a process is started to query the PROVIDER's API and 200 is returned to the client.
-   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process. If there's auth access but no list and `startList` wasn't passed, the return body will be an empty object.
+   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}, selection: UNDEFINED|[ID, ...]}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process. If there's auth access but no list and `startList` wasn't passed, the return body will be an empty object.
 
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -444,6 +438,14 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Deletes list of files/folders available in the PROVIDER's cloud.
    - If no listing was done, the route succeeds anyway.
    - If successful, the route returns no body.
+
+`POST /import/select/PROVIDER`
+   - Updates the list of selected folders for import from `PROVIDER`.
+   - Requires a finished list of files to be present; otherwise a 404 is returned.
+   - If the finished list of files finished in error, a 409 is returned.
+   - The body must be of the shape `{ids: [ID, ...]}`.
+   - If any of the ids doesn't belong to a folder id on the `PROVIDER`'s list, a 400 is returned.
+   - If there previously was an array of selected folder ids on the list, it will be overwritten.
 
 #### Debugging routes
 
@@ -631,7 +633,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERID (string): access token for google for USERID
 - oa:g:ref:USERID (string): refresh token for google for USERID
 
-- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...], error: UNDEFINED|STRING|OBJECT, selected: UNDEFINED|[ID, ...]}`.
+- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...]}`.
 
 Used by giz:
 
@@ -679,7 +681,14 @@ Used by giz:
 3. `E.share`
 4. `E.tags`
 5. `E.import`
-   - Depends on: `Data.import`.
+   - Depends on: `Data.import`, `State.import` and `Data.account`.
+   - Events:
+      - `onclick -> import delete`
+      - `onclick -> set State.import.list`
+      - `onclick -> import retry`
+      - `onclick -> snackbar red/yellow`
+      - `onclick -> import list`
+      - `onclick -> set State.import.list`
 6. `E.account`
    - Depends on: `Data.account`.
    - Events:
@@ -718,6 +727,16 @@ Used by giz:
 7. `E.noSpace`
    - Contained by: `E.import`, `E.upload`.
    - Depends on `Data.account`.
+8. `E.importList`
+   - Contained by: `E.import`.
+   - Depends on: `Data.import` and `State.import`.
+   - Events:
+      - `onclick -> rem State.import.current`
+      - `onclick -> set State.import.current`
+      - `onclick -> import select`
+      - `onclick -> rem State.import.list`
+      - `onclick -> set State.import.selection.PROVIDER`
+      - `onclick -> rem State.import.selection.PROVIDER`
 
 ### Responders
 
@@ -810,10 +829,11 @@ Used by giz:
 
 6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
-   2. `import list PROVIDER STARTLIST`: `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy.
+   2. `import list PROVIDER STARTLIST`: `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy. It will also set `State.import.selection.PROVIDER`.
    3. `import delete PROVIDER`: `post import/list/PROVIDER/delete`.
-   4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) the responder does nothing. But if there's provider data and a listing is in process, then the responder checks whether `State.import.PROVIDER.update` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.PROVIDER.update` that runs every 2 seconds that invokes `import list PROVIDER`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.PROVIDER.update`).
-   5. `import retry PROVIDER`: invokes `import delete PROVIDER` and then `import list PROVIDER true`.
+   4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) the responder does nothing. But if there's provider data and a listing is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
+   5. `import retry PROVIDER`: invokes `post import/delete/PROVIDER` and then `import list PROVIDER true`.
+   6. `import select PROVIDER`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
@@ -828,7 +848,16 @@ Used by giz:
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
-   - `import`: if defined, it is an object of the form `{list: UNDEFINED|google|dropbox, current: UNDEFINED|STRING, selection: {ID1: true, ...}, update: UNDEFINED|INTERVAL}`. `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selection` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
+   - `import`: if defined, it is an object of the form:
+```
+{
+   list: UNDEFINED|google|dropbox,
+   current: UNDEFINED|STRING,
+   selection: UNDEFINED|{PROVIDER: UNDEFINED|{ID1: true, ...}, ...},
+   update: UNDEFINED|{PROVIDER: UNDEFINED|INTERVAL, ...},
+}
+```
+  `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selected` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
    - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
    - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
@@ -860,7 +889,13 @@ Used by giz:
 {
       authOK: true|UNDEFINED (present when server redirects back to app after a successful auth flow)
       redirect: STRING|UNDEFINED,
-      list: UNDEFINED|{provider: start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}}}
+      start: INTEGER|UNDEFINED,
+      end: INTEGER|UNDEFINED,
+      fileCount: INTEGER|UNDEFINED,
+      folderCount: INTEGER|UNDEFINED,
+      error: STRING|UNDEFINED,
+      list: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}
+      selection: UNDEFINED|[ID, ...]
 }
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
