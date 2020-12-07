@@ -54,8 +54,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Select folders to import in a persistent manner.
 
    - Import.
+      - finish backend endpoint
+      - document backend endpoint
       - Update progress.
+
+      - refactor upload to ignore uploads from provider
+      - refactor import to retrieve uploads from provider (and ignore those without provider)
+      - block provider box clicking if files are being imported
+      - block update list of folders if import is ongoing
+      - send to main view when clicking "start import"
+      - query progress during upload
       - Email when import is complete.
+
 - Import from Dropbox.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
 
@@ -339,7 +349,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
    - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
-   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified` and `tags`; the last one is optional.
+   - Can contain a field `provider` with value `'google'` or `'dropbox'`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `provider`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
@@ -425,7 +436,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
    - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
    - If there's access or refresh tokens, a process is started to query the PROVIDER's API and 200 is returned to the client.
-   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}, selection: UNDEFINED|[ID, ...]}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process. If there's auth access but no list and `startList` wasn't passed, the return body will be an empty object.
+   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER}, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}, selection: UNDEFINED|[ID, ...]}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process. If there's auth access but no list and `startList` wasn't passed, the return body will be an empty object.
 
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -441,11 +452,19 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 `POST /import/select/PROVIDER`
    - Updates the list of selected folders for import from `PROVIDER`.
-   - Requires a finished list of files to be present; otherwise a 404 is returned.
-   - If the finished list of files finished in error, a 409 is returned.
+   - Requires a list of files to be present; otherwise a 404 is returned.
+   - If the list of files finished is not finished, or has an error, or is currently importing files, a 409 is returned.
    - The body must be of the shape `{ids: [ID, ...]}`.
    - If any of the ids doesn't belong to a folder id on the `PROVIDER`'s list, a 400 is returned.
    - If there previously was an array of selected folder ids on the list, it will be overwritten.
+
+`POST /import/upload/PROVIDER`
+   - If there's no access or refresh tokens for `PROVIDER`, returns a 403.
+   - If there's no import list present, returns a 404.
+   - If there's an import list present but 1) the listing process is ongoing; or 2) there was an error; or 3) there are no folders selected yet; or 4) the import process already started; the endpoint returns a 409.
+   - If all initial checks pass, the endpoint will return 200 and perform its operations asynchronously.
+   - The endpoint will upload one by one the files from supported formats that are in the selection of folders. The import key will be updated so that the user can query for updates by retrieving the list.
+   - Depending on whether the process ends with an error or with success, the endpoint will update either the import entry (in case of error) or delete it and add an user log entry (in case of success).
 
 #### Debugging routes
 
@@ -608,7 +627,7 @@ All the routes below require an admin user to be logged in.
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
-   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED}
+   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, provider: UNDEFINED|STRING}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
@@ -616,6 +635,7 @@ All the routes below require an admin user to be logged in.
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
    - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
+   - For import:          {t: INT, a: 'imp', s: 'import', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: INTEGER, providerErrors: UNDEFINED|[...]}}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -633,7 +653,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERID (string): access token for google for USERID
 - oa:g:ref:USERID (string): refresh token for google for USERID
 
-- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...]}`.
+- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, list: {roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...]}, unsupported: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...], import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, repeated: UNDEFINED|INTEGER, errors: [...]}}`.
 
 Used by giz:
 
@@ -833,7 +853,7 @@ Used by giz:
    3. `import delete PROVIDER`: `post import/list/PROVIDER/delete`.
    4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) the responder does nothing. But if there's provider data and a listing is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
    5. `import retry PROVIDER`: invokes `post import/delete/PROVIDER` and then `import list PROVIDER true`.
-   6. `import select PROVIDER`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`.
+   6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`. If `start` is `true`, the responder invokes `post import/start/PROVIDER` before invoking `import list PROVIDER`, to trigger the start of the import process.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
@@ -894,8 +914,9 @@ Used by giz:
       fileCount: INTEGER|UNDEFINED,
       folderCount: INTEGER|UNDEFINED,
       error: STRING|UNDEFINED,
-      list: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}
-      selection: UNDEFINED|[ID, ...]
+      list: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]},
+      selection: UNDEFINED|[ID, ...],
+      import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER}
 }
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
