@@ -1483,11 +1483,21 @@ CSS.litc = [
       color: '#fff',
       'background-color': '#5b6eff',
       cursor: 'pointer',
-      //'margin-left': .2
    }],
    ['.boxed-alert-button-right:hover', {
       color: '#5b6eff',
       'background-color': '#fff',
+   }],
+   ['.boxed-try-again-alert-button-left', {
+      'float': 'left',
+      'border': '1px solid orange',
+      'color': 'orange',
+      'background-color': '#fff',
+      'cursor': 'pointer',
+   }],
+   ['.boxed-try-again-alert-button-left:hover', {
+      color: '#fff',
+      'background-color': 'orange',
    }],
    //LISTING ALERT
    ['.files-found-so-far, .folders-found-so-far', {
@@ -4569,7 +4579,7 @@ E.import = function () {
                   ['div', {class: 'progress-bar'}],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'retry', provider]), 'Try again']
+                  ['div', B.ev ({class: 'boxed-try-again-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'retry', provider]), 'Try again']
                ]],
             ]],
          ]]
