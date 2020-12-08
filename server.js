@@ -1557,7 +1557,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, provider: rq.data.fields.provider});
+            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: rq.data.fields.provider});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2306,7 +2306,7 @@ var routes = [
                   fileCount: parseInt (s.last.fileCount) || 0,
                   folderCount: parseInt (s.last.folderCount) || 0,
                   error: s.last.error,
-                  import: s.last.import ? JSON.parse (s.last.import) : undefined,
+                  upload: s.last.upload ? JSON.parse (s.last.upload) : undefined,
                   list: s.last.list || {},
                   selection: s.last.selection ? JSON.parse (s.last.selection) : undefined
                };
@@ -2330,7 +2330,7 @@ var routes = [
          function (s) {
 
             // TODO: change PAGES to a large number after debugging client flows
-            var PAGESIZE = 1000, PAGES = 1;
+            var PAGESIZE = 10, PAGES = 1;
 
             var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -2580,8 +2580,6 @@ var routes = [
             });
 
             var ids = dale.keys (filesToUpload);
-            // We return a 200 since the rest of the process will be done asynchronously.
-            reply (rs, 200);
 
             if (ids.length === 0) return;
 
@@ -2591,7 +2589,7 @@ var routes = [
             });
             s.start = Date.now ();
 
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'import', JSON.stringify ({start: s.start, total: ids.length, done: 0}));
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length, done: 0}));
          },
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
@@ -2604,12 +2602,15 @@ var routes = [
          },
          function (s) {
 
+            // We return a 200 since the rest of the process will be done asynchronously.
+            reply (rs, 200);
+
             var importFile = function (s, index) {
 
-               redis.hget ('imp:g:' + rq.user.username, 'import', function (error, Import) {
+               redis.hget ('imp:g:' + rq.user.username, 'upload', function (error, upload) {
                   if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
-                  if (! Import) return;
-                  Import = JSON.parse (Import);
+                  if (! upload) return;
+                  upload = JSON.parse (upload);
 
                   // If we reached the end of the list, we're done.
                   if (index === s.list.length) {
@@ -2623,7 +2624,7 @@ var routes = [
 
                      return redis.del ('imp:g:' + rq.user.username, function (error) {
                         if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
-                        return H.log (s, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: Import.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: Import.done, repeated: Import.repeated, providerErrors: Import.providerErrors}});
+                        return H.log (s, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors}});
                      });
                   }
 
@@ -2640,9 +2641,9 @@ var routes = [
                      console.log ('DEBUG response file', file.id, RS.code);
 
                      if (RS.code !== 200) {
-                        if (! Import.providerErrors) Import.providerErrors = [];
-                        Import.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
-                        return redis.hset ('imp:g:' + username, 'import', JSON.stringify (Import), function (error) {
+                        if (! upload.providerErrors) upload.providerErrors = [];
+                        upload.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
+                        return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                            if (error) return notify (a.creat (), {priority: 'important', type: 'import error', user: username, error: error});
                            importFile (s, index + 1);
                         });
@@ -2653,7 +2654,7 @@ var routes = [
                         if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
                         hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
                            {type: 'file',  name: 'pic', path: tempPath, filename: file.name},
-                           {type: 'field', name: 'uid', value: Import.start},
+                           {type: 'field', name: 'uid', value: upload.start},
                            // Use oldest date, whether createdTime or updatedTime
                            {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.createdTime).getTime ())},
                            {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
@@ -2663,9 +2664,9 @@ var routes = [
 
                            // Repeated file, increment repeated counter and continue
                            if (RS.code === 409 && eq (RS.body, {error: 'repeated'})) {
-                              if (! Import.repeated) Import.repeated = 0;
-                              Import.repeated++;
-                              return redis.hset ('imp:g:' + username, 'import', JSON.stringify (Import), function (error) {
+                              if (! upload.repeated) upload.repeated = 0;
+                              upload.repeated++;
+                              return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                  if (error) return notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: error});
                                  importFile (s, index + 1);
                               });
@@ -2682,9 +2683,9 @@ var routes = [
                            if (RS.code !== 200) return notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
                            fs.unlink (tempPath, function (error) {
                               if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
-                              if (! Import.done) Import.done = 0;
-                              Import.done++;
-                              redis.hset ('imp:g:' + username, 'import', JSON.stringify (Import), function (error) {
+                              if (! upload.done) upload.done = 0;
+                              upload.done++;
+                              redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                  if (error) return notify (s, {priority: 'critical', type: 'redis error', redisError: Error});
                                  importFile (s, index + 1);
                               });
@@ -2704,7 +2705,7 @@ var routes = [
             if (Error) return notify (s, {priority: 'critical', type: 'redis error', redisError: Error});
             // If key was deleted, process was cancelled. The process stops.
             if (! exists) return;
-            Import.end = end;
+            upload.end = end;
             redis.hset ('imp:g:' + rq.user.username, 'error', JSON.stringify (error), function (error) {
                if (error) return notify (s, {priority: 'critical', type: 'redis error', redisError: error});
             });

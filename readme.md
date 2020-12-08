@@ -54,16 +54,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Select folders to import in a persistent manner.
 
    - Import.
-      - finish backend endpoint
-      - document backend endpoint
-      - Update progress.
+      - Show progress.
+      - Block new import from the same provider.
+      - Allow cancelling.
+      - Send back to main view when click on "start import".
 
-      - refactor upload to ignore uploads from provider
-      - refactor import to retrieve uploads from provider (and ignore those without provider)
-      - block provider box clicking if files are being imported
-      - block update list of folders if import is ongoing
-      - send to main view when clicking "start import"
-      - query progress during upload
+      - Fix cancel in server
+      - Sort recent imports properly
+
+
+
       - Email when import is complete.
 
 - Import from Dropbox.
@@ -627,7 +627,7 @@ All the routes below require an admin user to be logged in.
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
-   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, provider: UNDEFINED|STRING}
+   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
@@ -635,7 +635,7 @@ All the routes below require an admin user to be logged in.
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
    - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
-   - For import:          {t: INT, a: 'imp', s: 'import', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: INTEGER, providerErrors: UNDEFINED|[...]}}
+   - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: INTEGER, providerErrors: UNDEFINED|[...]}}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
