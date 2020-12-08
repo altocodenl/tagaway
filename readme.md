@@ -65,7 +65,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Fix icon in upload in progress box.
       - Document frontend changes.
 
-      - Email when import is complete.
+      - When 'listing' is finished:
+         - 1) User receives email of 'your [PROVIDER] files have been fully listed. Log in and select the folders you want to import to ac;pic'.
+         - 2) Snackbar: ‘listing [PROVIDER] files is done, go to import and select your folders to bring to ac;pic’. (Text tentative, not thought about).
+      - When 'import' is complete:
+         - 1) User receives email of 'your [PROVIDER] files are now in ac;pic. Log in to view them'. (Text tentative, not thought about).
+         - 2) Snackbar: ‘[PROVIDER] import process is finished, you can see your files in 'View Pictures’ view. (Text tentative, not thought about).
+      - If there's a problem with import process (such as source error, transfer error or insufficient storage) user gets notified by email and interface with type of error.
+         - Email sent and snackbar on interface of 'import interrupted' (as with 'upload cancelled'). 
+
 
 - Import from Dropbox.
 - [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
