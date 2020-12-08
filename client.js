@@ -1490,14 +1490,14 @@ CSS.litc = [
    }],
    ['.boxed-try-again-alert-button-left', {
       'float': 'left',
-      'border': '1px solid orange',
-      'color': 'orange',
+      'border': '1px solid coral',
+      'color': 'coral',
       'background-color': '#fff',
       'cursor': 'pointer',
    }],
    ['.boxed-try-again-alert-button-left:hover', {
       color: '#fff',
-      'background-color': 'orange',
+      'background-color': 'coral',
    }],
    //LISTING ALERT
    ['.files-found-so-far, .folders-found-so-far', {
