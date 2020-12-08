@@ -59,10 +59,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Allow cancelling.
       - Send back to main view when click on "start import".
 
-      - Fix cancel in server
-      - Sort recent imports properly
-
-
+      - Fix cancel in server.
+      - Sort recent imports properly.
+      - Fix icon in upload in progress box.
+      - Document frontend changes.
 
       - Email when import is complete.
 

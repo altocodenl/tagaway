@@ -2990,12 +2990,16 @@ dale.do ([
 
    ['change', ['Data', 'import', '*'], function (x) {
       var provider = x.path [2], data = B.get ('Data', 'import', provider) || {};
-      if (! data.start || data.end) return;
+      if (! data.start || (data.end && ! data.upload)) return;
       if (B.get ('State', 'import', 'update', provider)) return;
       var interval = setInterval (function () {
          var data = B.get ('Data', 'import', provider) || {};
          // If list exists and is still ongoing, refresh the list and let the interval keep on going.
-         if (data.start && ! data.end && ! data.error) return B.do (x, 'import', 'list', provider);
+         if (data.start && ! data.error && (! data.end || data.upload)) {
+            // If we're back in the pics page and there's an upload process ongoing, refresh the query after each successful refresh.
+            if (data.upload && B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
+            return B.do (x, 'import', 'list', provider);
+         }
          clearInterval (interval);
          B.do (x, 'rem', ['State', 'import', 'update'], provider);
       }, 2000);
@@ -3009,10 +3013,14 @@ dale.do ([
       });
    }],
 
-   ['import', 'select', function (x, provider) {
+   ['import', 'select', function (x, provider, start) {
       B.do (x, 'post', 'import/select/' + provider, {}, {ids: dale.keys (B.get ('State', 'import', 'selection', provider))}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
-         B.do (x, 'import', 'list', provider);
+         if (! start) return B.do (x, 'import', 'list', provider);
+         B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
+            if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids.');
+            B.do (x, 'import', 'list', provider);
+         });
       });
    }],
 
@@ -4353,7 +4361,8 @@ E.upload = function () {
                      B.view (['Data', 'account'], {tag: 'ul', attrs: {class: 'recent-uploads__list'}}, function (x, account) {
                         var serverUploads = {}, rotations = {};
                         dale.do (account ? account.logs : [], function (log) {
-                           if (log.a !== 'upl') return;
+                           // If log.pro exists, it's an import, so we ignore it.
+                           if (log.a !== 'upl' || log.pro) return;
                            if (! serverUploads [log.uid]) serverUploads [log.uid] = {ok: [], tags: log.tags};
                            serverUploads [log.uid].ok.push (log.id);
                            if (log.deg) rotations [log.id] = log.deg;
@@ -4535,7 +4544,7 @@ E.import = function () {
          ]],
       ]];
 
-      if (type === 'importing') return ['div', {class: 'listing-in-process'}, [
+      if (type === 'uploading') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
                ['div', {class: 'dropbox-icon', opaque: true}]
@@ -4551,15 +4560,13 @@ E.import = function () {
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', {class: 'listing-progress'}, [
                      ['div', {class: 'files-found-so-far'}, [
-                        // TODO: dynamize
-                        ['span', 'XXXXX'],
+                        ['span', data.upload.done + (data.upload.repeated || 0)],
                         ['span', ' / '],
-                        ['span', data.fileCount],
+                        ['span', data.upload.total],
                         ['div', ' imported so far'],
                      ]],
                   ]],
-                  // TODO: implement cancel
-                  ['div', {class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, 'Cancel']
+                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'delete', provider]), 'Cancel']
                ]],
             ]],
          ]],
@@ -4617,6 +4624,7 @@ E.import = function () {
                                        if (noSpace) return ['div', attrs];
                                        if (providerData.redirect) return ['div', attrs, ['a', {href: providerData.redirect}, 'Go']];
                                        if (providerData.error) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
+                                       if (providerData.upload) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being uploaded, please wait.'])];
                                        // If no list, trigger listing.
                                        if (! providerData.start) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider, true])];
                                        // If currently listing, show snackbar.
@@ -4632,30 +4640,46 @@ E.import = function () {
                      dale.do (importData, function (data, provider) {
                         if (! data || ! data.start) return;
                         if (data.error)       return boxMaker ('error',     provider, data);
+                        if (data.upload)      return boxMaker ('uploading', provider, data);
                         if (! data.end)       return boxMaker ('listing',   provider, data);
-                        if (! data.importing) return boxMaker ('listReady', provider, data);
-                        return boxMaker ('importing', provider, data);
+                        return boxMaker ('listReady', provider, data);
                      })
                   ];
                })
             }),
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
-            // RECENT IMPORTS BOX
-           ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: 'google-drive-icon', opaque: true}]
-            ]],
-            ['div', {class: 'upload-box__main'}, [
-               ['div', {class: 'upload-box__section'}, [
-                  ['p', {class: 'upload-progress', opaque: true}, [
-                     ['span', {class: 'upload-progress__amount-uploaded'}, 'XXX'],
-                     ['LITERAL', '&nbsp'],
-                     ['span', {class: 'upload-progress__default-text'}, 'Pictures imported']
-                  ]],
-               ]],
-            ]],
-         ]],
+            B.view (['Data', 'account'], {tag: 'div'}, function (x, account) {
+               var imports = {}, rotations = {};
+               imports = dale.fil (account ? account.logs : [], undefined, function (log) {
+                  if (log.a !== 'imp' || log.s !== 'upload') return;
+                  // Show imports from the last 60 minutes only.
+                  if (log.t >= Date.now () - 1000 * 60 * 60) return log.upload;
+               });
+               return dale.do (imports, function (i) {
+                  // RECENT IMPORTS BOX
+                  return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
+                     ['div', {class: 'space-alert__image', opaque: true}, [
+                        ['div', {class: 'google-drive-icon', opaque: true}]
+                     ]],
+                     ['div', {class: 'upload-box__main'}, [
+                        ['div', {class: 'upload-box__section'}, [
+                           ['p', {class: 'upload-progress', opaque: true}, [
+                              ['span', {class: 'upload-progress__amount-uploaded'}, i.done],
+                              ['LITERAL', '&nbsp'],
+                              ['span', {class: 'upload-progress__default-text'}, 'pictures imported'],
+                              ! i.repeated ? [] : [
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + i.repeated],
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'repeated)']
+                              ],
+                           ]],
+                        ]],
+                     ]],
+                  ]];
+               });
+            }),
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
@@ -4817,7 +4841,11 @@ E.importList = function (importState, importData) {
                   ]],
                ]],
             ]],
-            ['div', B.ev ({class: 'start-import-button button'}, ['onclick', 'import', 'select', provider]), 'Start import'],
+            ['div', B.ev ({class: 'start-import-button button'}, [
+               ['onclick', 'import', 'select', provider, true],
+               ['onclick', 'rem', ['State', 'import'], 'list'],
+               ['onclick', 'rem', ['State', 'import'], 'current']
+            ]), 'Start import'],
          ]],
       ]]
    ]];
