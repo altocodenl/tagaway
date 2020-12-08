@@ -47,6 +47,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Import from GDrive.
    - List.
       - If no auth access, provide link to start auth flow.
+         - [BUG] Firefox returns '405 Method Not Allowed' for call to https://altocode.nl/picdev/google.com [https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/405]
       - Start listing or give existing list.
       - When listing, update listing progress.
       - Show full list of folders when done listing.
