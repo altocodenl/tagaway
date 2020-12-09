@@ -39,44 +39,28 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
+- Import
+   - Fix cancel in server.
+   - Sort recent imports properly.
+   - Fix icon in upload in progress box.
+   - Snackbars on success & error on listing, importing & cancelling/deleting
+      - ‘listing [PROVIDER] files is done, go to import and select your folders to bring to ac;pic’. (Text tentative, not thought about).
+      - ‘[PROVIDER] import process is finished, you can see your files in 'View Pictures’ view. (Text tentative, not thought about).
+   - Emails:
+      - Listing finished or errored.
+         - your [PROVIDER] files have been fully listed. Log in and select the folders you want to import to ac;pic'.
+      - Upload finished or errored.
+         - your [PROVIDER] files are now in ac;pic. Log in to view them'. (Text tentative, not thought about).
+   - Document frontend changes.
+
 - Formats.
    - Identify format; add format to metadata, add to stats, add to tests.
    - Reply to thumbnails with content-type & add to tests.
    - Add formats to DB retroactively.
    - Support for extra formats (including thumbnails & conversion .mov to .mp4): .heic, .mov and others.
-- Import from GDrive.
-   - List.
-      - If no auth access, provide link to start auth flow.
-         - [BUG] Firefox returns '405 Method Not Allowed' for call to https://altocode.nl/picdev/google.com [https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/405]
-      - Start listing or give existing list.
-      - When listing, update listing progress.
-      - Show full list of folders when done listing.
-      - Delete current list (change logic so that you know auth is ok but no list).
-      - Select folders to import in a persistent manner.
-
-   - Import.
-      - Show progress.
-      - Block new import from the same provider.
-      - Allow cancelling.
-      - Send back to main view when click on "start import".
-
-      - Fix cancel in server.
-      - Sort recent imports properly.
-      - Fix icon in upload in progress box.
-      - Document frontend changes.
-
-      - When 'listing' is finished:
-         - 1) User receives email of 'your [PROVIDER] files have been fully listed. Log in and select the folders you want to import to ac;pic'.
-         - 2) Snackbar: ‘listing [PROVIDER] files is done, go to import and select your folders to bring to ac;pic’. (Text tentative, not thought about).
-      - When 'import' is complete:
-         - 1) User receives email of 'your [PROVIDER] files are now in ac;pic. Log in to view them'. (Text tentative, not thought about).
-         - 2) Snackbar: ‘[PROVIDER] import process is finished, you can see your files in 'View Pictures’ view. (Text tentative, not thought about).
-      - If there's a problem with import process (such as source error, transfer error or insufficient storage) user gets notified by email and interface with type of error.
-         - Email sent and snackbar on interface of 'import interrupted' (as with 'upload cancelled'). 
-
 
 - Import from Dropbox.
-- [BUG] - This was tested in prod - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
+- [BUG] While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
 
 - Paid accounts
    - Set account space limit.
@@ -162,6 +146,27 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Store auth log.
    - Enable/disable geotagging.
    - Change password.
+
+- Import
+   - List
+      - If no auth access, provide link to start auth flow.
+      - Start listing or see existing list.
+      - When listing, update listing progress.
+      - Show snackbar when process is done or if the listing ends in error.
+      - Send email when process is done or if the listing ends in error.
+      - Show full list of folders when done listing.
+      - Allow cancelling ongoing listing process.
+      - Delete current list.
+      - Allow retrying in case of an error.
+      - Select folders to import in a persistent manner.
+      - Send back to main import view when click on "start import".
+   - Upload
+      - Block new import from the same provider.
+      - Allow cancelling ongoing upload process.
+      - If user is on the pics view, refresh query every n seconds to show new pictures.
+      - Show snackbar when process is done or if the listing ends in error.
+      - Send email when process is done or if the listing ends in error.
+      - Show recent imports.
 
 - Admin
    - Block further uploads if storage limits are exceeded.
