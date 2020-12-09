@@ -2534,11 +2534,11 @@ var routes = [
          console.log ('IMPORT LIST ERROR', error);
          notify (s, {priority: 'critical', type: 'import list error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}});
          redis.exists ('imp:g:' + rq.user.username, function (Error, exists) {
-            if (Error) return notify (s, {priority: 'critical', type: 'redis error', redisError: Error});
+            if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
             // If key was deleted, process was cancelled. The process stops.
             if (! exists) return;
             redis.hmset ('imp:g:' + rq.user.username, {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()}, function (error) {
-               if (error) return notify (s, {priority: 'critical', type: 'redis error', redisError: error});
+               if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
             });
          });
       });
@@ -2607,6 +2607,13 @@ var routes = [
 
             var importFile = function (s, index) {
 
+               var check = function (cb) {
+                  redis.hexists ('imp:g:' + rq.user.username, 'upload', function (error, exists) {
+                     if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
+                     if (exists) cb ();
+                  });
+               }
+
                redis.hget ('imp:g:' + rq.user.username, 'upload', function (error, upload) {
                   if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
                   if (! upload) return;
@@ -2622,9 +2629,11 @@ var routes = [
                         unsupported [extension]++;
                      });
 
-                     return redis.del ('imp:g:' + rq.user.username, function (error) {
-                        if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
-                        return H.log (s, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors}});
+                     return check (function () {
+                        redis.del ('imp:g:' + rq.user.username, function (error) {
+                           if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
+                           return H.log (s, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors}});
+                        });
                      });
                   }
 
@@ -2641,11 +2650,13 @@ var routes = [
                      console.log ('DEBUG response file', file.id, RS.code);
 
                      if (RS.code !== 200) {
-                        if (! upload.providerErrors) upload.providerErrors = [];
-                        upload.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
-                        return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                           if (error) return notify (a.creat (), {priority: 'important', type: 'import error', user: username, error: error});
-                           importFile (s, index + 1);
+                        check (function () {
+                           if (! upload.providerErrors) upload.providerErrors = [];
+                           upload.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
+                           return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                              if (error) return notify (a.creat (), {priority: 'important', type: 'import error', user: username, error: error});
+                              importFile (s, index + 1);
+                           });
                         });
                      }
 
@@ -2663,31 +2674,36 @@ var routes = [
                         ]}, code: '*', apres: function (S, RQ, RS, next) {
 
                            // Repeated file, increment repeated counter and continue
-                           if (RS.code === 409 && eq (RS.body, {error: 'repeated'})) {
+                           if (RS.code === 409 && eq (RS.body, {error: 'repeated'})) return check (function () {
                               if (! upload.repeated) upload.repeated = 0;
                               upload.repeated++;
-                              return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                              redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                  if (error) return notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: error});
                                  importFile (s, index + 1);
                               });
-                           }
+                           });
 
                            // No more space, save error in import key and stop the process
-                           if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) {
+                           if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return check (function () {
                               var error = {error: 'No more space in your ac;pic account.'};
-                              return redis.hset ('imp:g:' + username, 'error', error, function (error) {
+                              redis.hset ('imp:g:' + username, 'error', error, function (error) {
                                  if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: username, error: error});
                               });
-                           }
+                           });
 
-                           if (RS.code !== 200) return notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
+                           if (RS.code !== 200) return check (function () {
+                              notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
+                           });
+
                            fs.unlink (tempPath, function (error) {
                               if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
-                              if (! upload.done) upload.done = 0;
-                              upload.done++;
-                              redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                 if (error) return notify (s, {priority: 'critical', type: 'redis error', redisError: Error});
-                                 importFile (s, index + 1);
+                              check (function () {
+                                 if (! upload.done) upload.done = 0;
+                                 upload.done++;
+                                 redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                    if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                    importFile (s, index + 1);
+                                 });
                               });
                            });
                         }});
@@ -2702,12 +2718,12 @@ var routes = [
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          notify (s, {priority: 'critical', type: 'import upload error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}});
          redis.exists ('imp:g:' + rq.user.username, function (Error, exists) {
-            if (Error) return notify (s, {priority: 'critical', type: 'redis error', redisError: Error});
+            if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
             // If key was deleted, process was cancelled. The process stops.
             if (! exists) return;
             upload.end = end;
             redis.hset ('imp:g:' + rq.user.username, 'error', JSON.stringify (error), function (error) {
-               if (error) return notify (s, {priority: 'critical', type: 'redis error', redisError: error});
+               if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
             });
          });
       });
