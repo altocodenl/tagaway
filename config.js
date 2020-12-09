@@ -145,6 +145,70 @@ module.exports = {
             ]]);
          }
       },
+      importList: function (provider) {
+         return {
+            subject: 'Your files from ' + provider + ' are ready to be imported',
+            message: function (username) {
+               return TEMPLATE (['p', [
+                  GREETING (username),
+                  ['br'],
+                  'Your ' + provider + ' files are fully listed. You can now select the folders you want to import to ac;pic.'
+                  ['br'], ['br'],
+                  'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
+                  ['br'],
+                  ['span', {class: 'bold'}, 'The ac;pic team']
+               ]]);
+            }
+         }
+      },
+      importUpload: function (provider) {
+         return {
+            subject: 'Your files from ' + provider + ' were imported',
+            message: function (username) {
+               return TEMPLATE (['p', [
+                  GREETING (username),
+                  ['br'],
+                  'Your ' + provider + ' files are now in ac;pic! You can find them in "View Pictures".'
+                  ['br'], ['br'],
+                  'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
+                  ['br'],
+                  ['span', {class: 'bold'}, 'The ac;pic team']
+               ]]);
+            }
+         }
+      },
+      importError: function (provider) {
+         return {
+            subject: 'There was an error importing your files from ' + provider,
+            message: function (username) {
+               return TEMPLATE (['p', [
+                  GREETING (username),
+                  ['br'],
+                  'Unfortunately there was an error importing your files from ' + provider + '. Alas! Please check the "Import" view to try again.',
+                  ['br'], ['br'],
+                  'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
+                  ['br'],
+                  ['span', {class: 'bold'}, 'The ac;pic team']
+               ]]);
+            }
+         }
+      },
+      importUpload: function (provider) {
+         return {
+            subject: 'Your files from ' + provider + ' were imported',
+            message: function (username) {
+               return TEMPLATE (['p', [
+                  GREETING (username),
+                  ['br'],
+                  'Your ' + provider + ' files are now in ac;pic! You can find them in "View Pictures".'
+                  ['br'], ['br'],
+                  'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
+                  ['br'],
+                  ['span', {class: 'bold'}, 'The ac;pic team']
+               ]]);
+            }
+         }
+      }
    }
 }
 

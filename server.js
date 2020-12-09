@@ -2692,7 +2692,10 @@ var routes = [
                            });
 
                            if (RS.code !== 200) return check (function () {
-                              notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
+                              redis.hset ('imp:g:' + username, 'error', JSON.stringify ({error: RS.body, code: RS.code}), function (error) {
+                                 if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                 notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
+                              });
                            });
 
                            fs.unlink (tempPath, function (error) {

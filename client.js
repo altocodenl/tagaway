@@ -2974,6 +2974,20 @@ dale.do ([
       B.do (x, 'get', 'import/list/' + provider + (startList ? '?startList=1' : ''), {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
          if (rs.body.redirect) return B.do (x, 'set', ['Data', 'import', provider, 'redirect'], rs.body.redirect);
+         var oldData = B.get ('Data', 'import', provider) || {};
+
+         if (! oldData.error && rs.body.error) {
+            B.do (x, 'snackbar', 'red', 'There was an error listing/importing files from ' + provider);
+         }
+         else if (! rs.body.upload && oldData.upload) {
+            B.do (x, 'snackbar', 'green', 'Successfully imported files from ' + provider);
+            // We query account to update the recent imports.
+            B.do (x, 'query', 'account');
+         }
+         else if (! oldData.end && rs.body.end) {
+            B.do (x, 'snackbar', 'green', 'Successfully listed files from ' + provider);
+         }
+
          B.do (x, 'set', ['Data', 'import', provider], rs.body);
          B.do (x, 'set', ['State', 'import', 'selection', provider], dale.obj (rs.body.selection, function (v) {
             return [v, true];
@@ -4526,12 +4540,12 @@ E.import = function () {
       if (type === 'listReady') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: 'google-drive-icon', opaque: true}]
+               ['div', {class: className + '-icon', opaque: true}]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: 'google-drive-icon-small', opaque: true}],
+                     ['span', {class: className + '-icon-small', opaque: true}],
                      ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4547,12 +4561,12 @@ E.import = function () {
       if (type === 'uploading') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: 'dropbox-icon', opaque: true}]
+               ['div', {class: className + '-icon', opaque: true}]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: 'dropbox-icon-small', opaque: true}],
+                     ['span', {class: className + '-icon-small', opaque: true}],
                      ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4676,6 +4690,11 @@ E.import = function () {
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'repeated)']
                               ],
+                              ['LITERAL', '&nbsp'],
+                              ['span', {class: 'upload-progress__amount-uploaded'}, Math.round ((Date.now () - i.end) / (1000 * 60))],
+                              ['LITERAL', '&nbsp'],
+                              ['span', {class: 'upload-progress__default-text'}, 'minutes ago'],
+
                            ]],
                         ]],
                      ]],

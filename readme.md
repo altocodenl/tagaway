@@ -40,17 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Import
-   - Fix cancel in server.
-   - Sort recent imports properly.
-   - Fix icon in upload in progress box.
-   - Snackbars on success & error on listing, importing & cancelling/deleting
-      - ‘listing [PROVIDER] files is done, go to import and select your folders to bring to ac;pic’. (Text tentative, not thought about).
-      - ‘[PROVIDER] import process is finished, you can see your files in 'View Pictures’ view. (Text tentative, not thought about).
-   - Emails:
-      - Listing finished or errored.
-         - your [PROVIDER] files have been fully listed. Log in and select the folders you want to import to ac;pic'.
-      - Upload finished or errored.
-         - your [PROVIDER] files are now in ac;pic. Log in to view them'. (Text tentative, not thought about).
+   - Add error/success list/success import emails on server.
    - Document frontend changes.
 
 - Formats.
