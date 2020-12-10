@@ -2559,6 +2559,7 @@ var routes = [
             if (error.errorCode === 1) return reply (rs, 403, {error: error});
             reply (rs, error.code ? error.code : 500, error);
          }],
+         [a.set, 'hashes', [Redis, 'smembers', 'upic:' + rq.user.username + ':g']],
          [Redis, 'hgetall', 'imp:g:' + rq.user.username],
          function (s) {
             var data = s.last;
@@ -2566,6 +2567,13 @@ var routes = [
             if (! data.end || data.error || ! data.selection || data.import) return reply (rs, 409);
             s.data = s.last;
             var list = JSON.parse (data.list);
+
+            var hashes = dale.obj (s.hashes, function (hash) {
+               return [hash, true];
+            });
+            var modifiedTime = dale.obj (list.pics, function (v) {
+               return [v.id, v.modifiedTime];
+            });
 
             var filesToUpload = {};
 
@@ -2575,6 +2583,9 @@ var routes = [
                   // If child of folder is a folder, invoke recursively
                   if (list.folders [childId]) return recurseDown (childId);
                   // Else, it is a pic/vid.
+                  // We check whether we already have the file. If we do, we ignore it.
+                  console.log ('DEBUG hash', childId + ':' + modifiedTime [childId], hashes [H.hash (childId + ':' + modifiedTime [childId])]);
+                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return;
                   filesToUpload [childId] = [];
                   recurseUp (childId, folderId);
                });
@@ -2710,14 +2721,17 @@ var routes = [
                                     });
                                  });
 
-                                 fs.unlink (tempPath, function (error) {
-                                    if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
-                                    check (function () {
-                                       if (! upload.done) upload.done = 0;
-                                       upload.done++;
-                                       redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                          if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
-                                          importFile (s, index + 1);
+                                 redis.sadd ('upic:' + rq.user.username + ':g', H.hash (file.id + ':' + file.modifiedTime), function (error) {
+                                    if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                    fs.unlink (tempPath, function (error) {
+                                       if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
+                                       check (function () {
+                                          if (! upload.done) upload.done = 0;
+                                          upload.done++;
+                                          redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                             if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                             importFile (s, index + 1);
+                                          });
                                        });
                                     });
                                  });

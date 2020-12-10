@@ -40,7 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Import
-   - Fast detection of duplicates in uploads (store modification time & id).
+   - Fast detection of duplicates: include repeated in number.
    - Add error/success list/success import emails on server.
    - Document frontend changes.
 
@@ -585,9 +585,11 @@ All the routes below require an admin user to be logged in.
 
 - csrf:SESSION (string): key is session, value is associated CSRF token.
 
-- upic:USERID (set): contains hashes of the pictures uploaded by an user, to check for repetition.
+- upic:USERNAME (set): contains hashes of the pictures uploaded by an user, to check for repetition.
 
-- upicd:USERID (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files.
+- upic:USERNAME:PROVIDER (set): contains hashes of the pictures imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
+
+- upicd:USERNAME (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files.
 
 - thu:ID (string): id of the corresponding pic.
 
@@ -615,13 +617,13 @@ All the routes below require an admin user to be logged in.
 
 - pict:ID (set): list of all the tags belonging to a picture.
 
-- tag:USERID:TAG (set): pic ids.
+- tag:USERNAME:TAG (set): pic ids.
 
-- tags:USERID (set): list of all tags created by the user. Does not include tags shared with the user.
+- tags:USERNAME (set): list of all tags created by the user. Does not include tags shared with the user.
 
-- shm:USERID (set): USERA:TAG, USERB:TAG (shared with me)
+- shm:USERNAME (set): USERA:TAG, USERB:TAG (shared with me)
 
-- sho:USERID (set): USERA:TAG, USERB:TAG (shared with others)
+- sho:USERNAME (set): USERA:TAG, USERB:TAG (shared with others)
 
 - download:ID (string): stringified object of the shape `{username: ID, pics: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
@@ -655,10 +657,10 @@ All the routes below require an admin user to be logged in.
    - s3:proc (string): number of queue items being processed
    - s3:files (hash): each key is the name of the object in S3, each value is `true|INT` - if `true`, it means that the upload is ongoing; if INT, it shows the amount of bytes taken by the file in S3.
 
-- oa:g:acc:USERID (string): access token for google for USERID
-- oa:g:ref:USERID (string): refresh token for google for USERID
+- oa:g:acc:USERNAME (string): access token for google for USERNAME
+- oa:g:ref:USERNAME (string): refresh token for google for USERNAME
 
-- imp:g:USERID (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, list: {roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...]}, unsupported: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...], import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, repeated: UNDEFINED|INTEGER, errors: [...]}}`.
+- imp:g:USERNAME (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, list: {roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...]}, unsupported: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...], import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, repeated: UNDEFINED|INTEGER, errors: [...]}}`.
 
 Used by giz:
 
@@ -1050,7 +1052,7 @@ We push the username of the shared tag to the entry for that tag. We extract the
             });
 ```
 
-By now, `tags` will be an object with each key as a tag, and each value as an array of one or more usernames, with the first one being the username of the user itself: `{KEY1: [USERID1, ...], ...}`. This gives us a list of all the tag + username combination that are relevant to the query.
+By now, `tags` will be an object with each key as a tag, and each value as an array of one or more usernames, with the first one being the username of the user itself: `{KEY1: [USERNAME1, ...], ...}`. This gives us a list of all the tag + username combination that are relevant to the query.
 
 We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of picture ids in redis for the purposes of the query.
 
