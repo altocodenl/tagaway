@@ -2330,7 +2330,7 @@ var routes = [
          function (s) {
 
             // TODO: change PAGES to a large number after debugging client flows
-            var PAGESIZE = 10, PAGES = 1;
+            var PAGESIZE = 1000, PAGES = 2;
 
             var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -2339,156 +2339,165 @@ var routes = [
             }
 
             var getFilePage = function (s, nextPageToken) {
+               a.seq (s, [
+                  [H.getGoogleToken, rq.user.username],
+                  function (s) {
+                     var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
 
-               var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
+                     // https://developers.google.com/drive/api/v3/reference/files/list
+                     // https://developers.google.com/drive/api/v3/reference/files#resource
+                     var path = 'drive/v3/files?' + [
+                        // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
+                        'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
+                           return 'files/' + v;
+                        }).join (','),
+                        'corpora=user',
+                        'includeItemsFromAllDrives=true',
+                        'orderBy=modifiedTime',
+                        'pageSize=' + PAGESIZE,
+                        'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
+                        'supportsAllDrives=true',
+                        'spaces=drive,photos',
+                     ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-               // https://developers.google.com/drive/api/v3/reference/files/list
-               // https://developers.google.com/drive/api/v3/reference/files#resource
-               var path = 'drive/v3/files?' + [
-                  // https://stackoverflow.com/questions/38853938/google-drive-api-v3-invalid-field-selection#comment70761539_38865620
-                  'fields=' + ['nextPageToken'].join (',') + ',' + dale.go (fields, function (v) {
-                     return 'files/' + v;
-                  }).join (','),
-                  'corpora=user',
-                  'includeItemsFromAllDrives=true',
-                  'orderBy=modifiedTime',
-                  'pageSize=' + PAGESIZE,
-                  'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
-                  'supportsAllDrives=true',
-                  'spaces=drive,photos',
-               ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
+                     console.log ('DEBUG request image page', page++);
 
-               console.log ('DEBUG request image page', page++);
+                     setLimit ();
+                     hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
-               setLimit ();
-               hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
+                        if (RS.code !== 200) return s.next (null, RS.body);
 
-                  if (RS.code !== 200) return s.next (null, RS.body);
+                        redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
+                           if (error) return s.next (null, error);
+                           // If key was deleted, process was cancelled. The process stops.
+                           if (! exists) return;
+                           redis.hincrby ('imp:g:' + rq.user.username, 'fileCount', RS.body.files.length, function (error) {
+                              if (error) return s.next (null, error);
 
-                  redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
-                     if (error) return s.next (null, error);
-                     // If key was deleted, process was cancelled. The process stops.
-                     if (! exists) return;
-                     redis.hincrby ('imp:g:' + rq.user.username, 'fileCount', RS.body.files.length, function (error) {
-                        if (error) return s.next (null, error);
+                              var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
+                                 if (CONFIG.allowedFormats.indexOf (file.mimeType) === -1) {
+                                    unsupported.push (file);
+                                    return;
+                                 }
+                                 return file;
+                              });
 
-                        var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
-                           if (CONFIG.allowedFormats.indexOf (file.mimeType) === -1) {
-                              unsupported.push (file);
-                              return;
-                           }
-                           return file;
-                        });
+                              dale.go (allowedFiles, function (v) {
+                                 dale.go (v.parents, function (v2) {
+                                    if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
+                                    if (! children [v2]) children [v2] = [];
+                                    children [v2].push (v.id);
+                                 });
+                              });
 
-                        dale.go (allowedFiles, function (v) {
-                           dale.go (v.parents, function (v2) {
-                              if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
-                              if (! children [v2]) children [v2] = [];
-                              children [v2].push (v.id);
+                              pics = pics.concat (allowedFiles);
+
+                              // TODO: remove after debugging
+                              // Bring a maximum of PAGES pages.
+                              if (page > PAGES) return s.next ();
+
+                              if (RS.body.nextPageToken) getFilePage (s, RS.body.nextPageToken);
+                              else s.next ();
                            });
                         });
-
-                        pics = pics.concat (allowedFiles);
-
-                        // TODO: remove after debugging
-                        // Bring a maximum of PAGES pages.
-                        if (page > PAGES) return s.next ();
-
-                        if (RS.body.nextPageToken) getFilePage (s, RS.body.nextPageToken);
-                        else s.next ();
-                     });
-                  });
-               }});
+                     }});
+                  }
+               ]);
             }
 
             var getParentBatch = function (s, maxRequests) {
-               console.log ('GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
-               // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
-               // don't extrapolate over user limit: 10 requests/second.
-               var requestLimit = 10, timeWindow = 2;
+               a.seq (s, [
+                  [H.getGoogleToken, rq.user.username],
+                  function (s) {
+                     console.log ('GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
+                     // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
+                     // don't extrapolate over user limit: 10 requests/second.
+                     var requestLimit = 10, timeWindow = 2;
 
-               var boundary = Math.floor (Math.random () * Math.pow (10, 16));
-               var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
-               if (batch.length === 0) return s.next ();
+                     var boundary = Math.floor (Math.random () * Math.pow (10, 16));
+                     var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
+                     if (batch.length === 0) return s.next ();
 
-               var body = '--' + boundary + '\r\n';
-               // https://developers.google.com/drive/api/v3/batch
-               dale.go (batch, function (id) {
-                  var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
-                     'fields=id,name,parents'
-                  ].join ('&');
+                     var body = '--' + boundary + '\r\n';
+                     // https://developers.google.com/drive/api/v3/batch
+                     dale.go (batch, function (id) {
+                        var path = 'https://www.googleapis.com/drive/v3/files/' + id + '?' + [
+                           'fields=id,name,parents'
+                        ].join ('&');
 
-                  body += 'Content-Type: application/http' + '\r\n\r\n';
-                  // The double \r\n is critical for the request to return meaningful results.
-                  body += 'GET ' + path + '\r\n\r\n';
-                  body += '--' + boundary + '\r\n';
-               });
-               body += '--';
+                        body += 'Content-Type: application/http' + '\r\n\r\n';
+                        // The double \r\n is critical for the request to return meaningful results.
+                        body += 'GET ' + path + '\r\n\r\n';
+                        body += '--' + boundary + '\r\n';
+                     });
+                     body += '--';
 
-               console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
-               setLimit (batch.length);
-               hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
-                  if (RS.code !== 200) return s.next (null, RS.body);
+                     console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
+                     setLimit (batch.length);
+                     hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
+                        if (RS.code !== 200) return s.next (null, RS.body);
 
-                  redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
-                     if (error) return s.next (null, error);
-                     // If key was deleted, process was cancelled. The process stops.
-                     if (! exists) return;
-                     redis.hincrby ('imp:g:' + rq.user.username, 'folderCount', batch.length, function (error) {
-                        if (error) return s.next (null, error);
+                        redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
+                           if (error) return s.next (null, error);
+                           // If key was deleted, process was cancelled. The process stops.
+                           if (! exists) return;
+                           redis.hincrby ('imp:g:' + rq.user.username, 'folderCount', batch.length, function (error) {
+                              if (error) return s.next (null, error);
 
-                        if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
-                        var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
-                        var parts = RS.body.split (boundary);
-                        var error;
-                        dale.stopNot (parts.slice (1, -1), undefined, function (part) {
-                           var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
-                           if (json.error) return error = json.error;
+                              if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
+                              var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
+                              var parts = RS.body.split (boundary);
+                              var error;
+                              dale.stopNot (parts.slice (1, -1), undefined, function (part) {
+                                 var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+                                 if (json.error) return error = json.error;
 
-                           folders [json.id] = {name: json.name, parents: json.parents};
-                           if (! json.parents) roots [json.id] = true;
-                           dale.go (json.parents, function (id) {
-                              if (! children [id]) children [id] = [];
-                              if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
-                              // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
-                              if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                                 folders [json.id] = {name: json.name, parents: json.parents};
+                                 if (! json.parents) roots [json.id] = true;
+                                 dale.go (json.parents, function (id) {
+                                    if (! children [id]) children [id] = [];
+                                    if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
+                                    // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
+                                    if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                                 });
+                              });
+                              if (error) return s.next (null, error);
+
+                              if (parentsToRetrieve.length === 0) return s.next ();
+
+                              var d = Date.now ();
+                              d = d - d % 1000;
+                              var lastPeriodTotal = 0, lastPeriodRequest;
+                              dale.go (limits, function (limit) {
+                                 if (((d - limit [0]) / 1000) < timeWindow) {
+                                    lastPeriodTotal += limit [1];
+                                    lastPeriodRequest = limit;
+                                 }
+                              });
+
+                              var timeNow = new Date (d).toISOString ();
+
+                              // If absolutely no capacity, must wait.
+                              if (lastPeriodTotal >= requestLimit) {
+                                 console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
+                                 setTimeout (function () {
+                                    getParentBatch (s, lastPeriodRequest [1]);
+                                 }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
+                              }
+                              // If some capacity but not unrestricted, send a limited request immediately.
+                              else if (parentsToRetrieve.length > (requestLimit - lastPeriodTotal)) {
+                                 console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
+                                 getParentBatch (s, requestLimit - lastPeriodTotal);
+                              }
+                              else {
+                                 console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
+                                 getParentBatch (s);
+                              }
                            });
                         });
-                        if (error) return s.next (null, error);
-
-                        if (parentsToRetrieve.length === 0) return s.next ();
-
-                        var d = Date.now ();
-                        d = d - d % 1000;
-                        var lastPeriodTotal = 0, lastPeriodRequest;
-                        dale.go (limits, function (limit) {
-                           if (((d - limit [0]) / 1000) < timeWindow) {
-                              lastPeriodTotal += limit [1];
-                              lastPeriodRequest = limit;
-                           }
-                        });
-
-                        var timeNow = new Date (d).toISOString ();
-
-                        // If absolutely no capacity, must wait.
-                        if (lastPeriodTotal >= requestLimit) {
-                           console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
-                           setTimeout (function () {
-                              getParentBatch (s, lastPeriodRequest [1]);
-                           }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
-                        }
-                        // If some capacity but not unrestricted, send a limited request immediately.
-                        else if (parentsToRetrieve.length > (requestLimit - lastPeriodTotal)) {
-                           console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
-                           getParentBatch (s, requestLimit - lastPeriodTotal);
-                        }
-                        else {
-                           console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
-                           getParentBatch (s);
-                        }
-                     });
-                  });
-               }});
+                     }});
+                  }
+               ]);
             }
 
             a.stop (s, [
@@ -2607,112 +2616,117 @@ var routes = [
 
             var importFile = function (s, index) {
 
-               var check = function (cb) {
-                  redis.hexists ('imp:g:' + rq.user.username, 'upload', function (error, exists) {
-                     if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
-                     if (exists) cb ();
-                  });
-               }
-
-               redis.hget ('imp:g:' + rq.user.username, 'upload', function (error, upload) {
-                  if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
-                  if (! upload) return;
-                  upload = JSON.parse (upload);
-
-                  // If we reached the end of the list, we're done.
-                  if (index === s.list.length) {
-
-                     var unsupported = {};
-                     dale.go (JSON.parse (s.data.unsupported), function (file) {
-                        var extension = Path.extname (file.name).slice (1).toLowerCase ();
-                        if (! unsupported [extension]) unsupported [extension] = 0;
-                        unsupported [extension]++;
-                     });
-
-                     return check (function () {
-                        redis.del ('imp:g:' + rq.user.username, function (error) {
+               a.seq (s, [
+                  [H.getGoogleToken, rq.user.username],
+                  function (s) {
+                     var check = function (cb) {
+                        redis.hexists ('imp:g:' + rq.user.username, 'upload', function (error, exists) {
                            if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
-                           return H.log (s, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors}});
-                        });
-                     });
-                  }
-
-                  var file = s.list [index];
-                  // https://developers.google.com/drive/api/v3/reference/files/export
-                  var path = 'drive/v3/files/' + file.id + '?alt=media';
-                  var username = rq.user.username;
-
-                  console.log ('DEBUG request file', file.id);
-
-                  // TODO: modify hitit (or bypass it) to get the chunks from the file instead of buffering the entire file in memory.
-                  // This would be required if very large files are being buffered.
-                  hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', raw: true, apres: function (S, RQ, RS) {
-                     console.log ('DEBUG response file', file.id, RS.code);
-
-                     if (RS.code !== 200) {
-                        check (function () {
-                           if (! upload.providerErrors) upload.providerErrors = [];
-                           upload.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
-                           return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                              if (error) return notify (a.creat (), {priority: 'important', type: 'import error', user: username, error: error});
-                              importFile (s, index + 1);
-                           });
+                           if (exists) cb ();
                         });
                      }
 
-                     var tempPath = Path.join ((os.tmpdir || os.tmpDir) (), cicek.pseudorandom (24));
-                     fs.writeFile (tempPath, RS.body, function (error) {
-                        if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
-                        hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
-                           {type: 'file',  name: 'pic', path: tempPath, filename: file.name},
-                           {type: 'field', name: 'uid', value: upload.start},
-                           // Use oldest date, whether createdTime or updatedTime
-                           {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.createdTime).getTime ())},
-                           {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
-                           {type: 'field', name: 'provider', value: 'google'},
-                           {type: 'field', name: 'csrf', value: s.csrf}
-                        ]}, code: '*', apres: function (S, RQ, RS, next) {
+                     redis.hget ('imp:g:' + rq.user.username, 'upload', function (error, upload) {
+                        if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
+                        if (! upload) return;
+                        upload = JSON.parse (upload);
 
-                           // Repeated file, increment repeated counter and continue
-                           if (RS.code === 409 && eq (RS.body, {error: 'repeated'})) return check (function () {
-                              if (! upload.repeated) upload.repeated = 0;
-                              upload.repeated++;
-                              redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                 if (error) return notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: error});
-                                 importFile (s, index + 1);
-                              });
+                        // If we reached the end of the list, we're done.
+                        if (index === s.list.length) {
+
+                           var unsupported = {};
+                           dale.go (JSON.parse (s.data.unsupported), function (file) {
+                              var extension = Path.extname (file.name).slice (1).toLowerCase ();
+                              if (! unsupported [extension]) unsupported [extension] = 0;
+                              unsupported [extension]++;
                            });
 
-                           // No more space, save error in import key and stop the process
-                           if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return check (function () {
-                              var error = {error: 'No more space in your ac;pic account.'};
-                              redis.hset ('imp:g:' + username, 'error', error, function (error) {
-                                 if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: username, error: error});
+                           return check (function () {
+                              redis.del ('imp:g:' + rq.user.username, function (error) {
+                                 if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: rq.user.username, error: error});
+                                 return H.log (s, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors}});
                               });
                            });
+                        }
 
-                           if (RS.code !== 200) return check (function () {
-                              redis.hset ('imp:g:' + username, 'error', JSON.stringify ({error: RS.body, code: RS.code}), function (error) {
-                                 if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
-                                 notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
-                              });
-                           });
+                        var file = s.list [index];
+                        // https://developers.google.com/drive/api/v3/reference/files/export
+                        var path = 'drive/v3/files/' + file.id + '?alt=media';
+                        var username = rq.user.username;
 
-                           fs.unlink (tempPath, function (error) {
-                              if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
+                        console.log ('DEBUG request file', file.id);
+
+                        // TODO: modify hitit (or bypass it) to get the chunks from the file instead of buffering the entire file in memory.
+                        // This would be required if very large files are being buffered.
+                        hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', raw: true, apres: function (S, RQ, RS) {
+                           console.log ('DEBUG response file', file.id, RS.code);
+
+                           if (RS.code !== 200) {
                               check (function () {
-                                 if (! upload.done) upload.done = 0;
-                                 upload.done++;
-                                 redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                    if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                 if (! upload.providerErrors) upload.providerErrors = [];
+                                 upload.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
+                                 return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                    if (error) return notify (a.creat (), {priority: 'important', type: 'import error', user: username, error: error});
                                     importFile (s, index + 1);
                                  });
                               });
+                           }
+
+                           var tempPath = Path.join ((os.tmpdir || os.tmpDir) (), cicek.pseudorandom (24));
+                           fs.writeFile (tempPath, RS.body, function (error) {
+                              if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
+                              hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
+                                 {type: 'file',  name: 'pic', path: tempPath, filename: file.name},
+                                 {type: 'field', name: 'uid', value: upload.start},
+                                 // Use oldest date, whether createdTime or updatedTime
+                                 {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.createdTime).getTime ())},
+                                 {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
+                                 {type: 'field', name: 'provider', value: 'google'},
+                                 {type: 'field', name: 'csrf', value: s.csrf}
+                              ]}, code: '*', apres: function (S, RQ, RS, next) {
+
+                                 // Repeated file, increment repeated counter and continue
+                                 if (RS.code === 409 && eq (RS.body, {error: 'repeated'})) return check (function () {
+                                    if (! upload.repeated) upload.repeated = 0;
+                                    upload.repeated++;
+                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                       if (error) return notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: error});
+                                       importFile (s, index + 1);
+                                    });
+                                 });
+
+                                 // No more space, save error in import key and stop the process
+                                 if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return check (function () {
+                                    var error = {error: 'No more space in your ac;pic account.'};
+                                    redis.hset ('imp:g:' + username, 'error', error, function (error) {
+                                       if (error) return notify (a.creat (), {priority: 'important', type: 'redis error', user: username, error: error});
+                                    });
+                                 });
+
+                                 if (RS.code !== 200) return check (function () {
+                                    redis.hset ('imp:g:' + username, 'error', JSON.stringify ({error: RS.body, code: RS.code}), function (error) {
+                                       if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                       notify (a.creat (), {priority: 'important', type: 'import upload error', user: username, error: RS.body, code: RS.code});
+                                    });
+                                 });
+
+                                 fs.unlink (tempPath, function (error) {
+                                    if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
+                                    check (function () {
+                                       if (! upload.done) upload.done = 0;
+                                       upload.done++;
+                                       redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                          if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                          importFile (s, index + 1);
+                                       });
+                                    });
+                                 });
+                              }});
                            });
                         }});
                      });
-                  }});
-               });
+                  }
+               ]);
             }
             importFile (s, 0);
          }

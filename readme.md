@@ -40,6 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Import
+   - Fast detection of duplicates in uploads (store modification time & id).
    - Add error/success list/success import emails on server.
    - Document frontend changes.
 
