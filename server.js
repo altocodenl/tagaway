@@ -2590,7 +2590,7 @@ var routes = [
                return [v.id, v.modifiedTime];
             });
 
-            var filesToUpload = {};
+            var filesToUpload = {}, repeated = 0;
 
             var recurseDown = function (folderId) {
                var folder = list.folders [folderId];
@@ -2600,7 +2600,7 @@ var routes = [
                   // Else, it is a pic/vid.
                   // We check whether we already have the file. If we do, we ignore it.
                   console.log ('DEBUG hash', childId + ':' + modifiedTime [childId], hashes [H.hash (childId + ':' + modifiedTime [childId])]);
-                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return;
+                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return repeated++;
                   filesToUpload [childId] = [];
                   recurseUp (childId, folderId);
                });
@@ -2624,7 +2624,7 @@ var routes = [
             });
             s.start = Date.now ();
 
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length, done: 0}));
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length, done: 0 + repeated, repeated: repeated}));
          },
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
