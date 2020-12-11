@@ -544,6 +544,11 @@ H.deletePic = function (s, id, username) {
          if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
          multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
          multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
+         if (s.pic.phash) {
+            var phash = s.pic.phash.split (':');
+            multi.srem ('upic:'  + s.pic.owner + ':' + phash [0], phash [1]);
+            multi.sadd ('upicd:' + s.pic.owner + ':' + phash [0], phash [1]);
+         }
 
          dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
             multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
@@ -1360,7 +1365,7 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (! eq (dale.keys (rq.data.fields).sort (), ['uid', 'lastModified', 'tags', 'provider'].sort ())) return reply (rs, 400, {error: 'invalidField'});
+      if (! eq (dale.keys (rq.data.fields).sort (), ['uid', 'lastModified', 'tags', 'providerData'].sort ())) return reply (rs, 400, {error: 'invalidField'});
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
@@ -1374,9 +1379,12 @@ var routes = [
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
 
-      if (rq.data.fields.provider !== undefined) {
+      if (rq.data.fields.providerData !== undefined) {
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
-         if (['google', 'dropbox'].indexOf (rq.data.fields.provider) === -1) return reply (rs, 400, {error: 'provider'});
+         rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
+         if (type (rq.data.fields.providerData) !== 'array') return reply (rs, 400, {error: 'providerData type'});
+         if (rq.data.fields.providerData.length !== 3) return reply (rs, 400, {error: 'providerData length'});
+         if (['google', 'dropbox'].indexOf (rq.data.fields.providerData [0]) === -1) return reply (rs, 400, {error: 'providerData provider'});
       }
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
@@ -1543,6 +1551,13 @@ var routes = [
 
             multi.sadd ('upic:'  + rq.user.username, pic.hash);
             multi.srem ('upicd:' + rq.user.username, pic.hash);
+            if (rq.data.fields.providerData) {
+               var providerKey = {google: 'g', dropbox: 'd'} [rq.data.fields.providerData [0]];
+               var providerHash = H.hash (rq.data.fields.providerData [1] + ':' + rq.data.fields.providerData [2]);
+               multi.sadd ('upic:'  + rq.user.username + ':' + providerKey, providerHash);
+               multi.srem ('upicd:' + rq.user.username + ':' + providerKey, providerHash);
+               pic.phash = providerKey + ':' + providerHash;
+            }
             multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
 
             dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()).concat (s.geotags), function (tag) {
@@ -1557,7 +1572,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: rq.data.fields.provider});
+            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: rq.data.fields.providerData [0]});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2692,7 +2707,7 @@ var routes = [
                                  // Use oldest date, whether createdTime or updatedTime
                                  {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.createdTime).getTime ())},
                                  {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
-                                 {type: 'field', name: 'provider', value: 'google'},
+                                 {type: 'field', name: 'providerData', value: JSON.stringify (['google', file.id, file.modifiedTime])},
                                  {type: 'field', name: 'csrf', value: s.csrf}
                               ]}, code: '*', apres: function (S, RQ, RS, next) {
 
@@ -2721,17 +2736,14 @@ var routes = [
                                     });
                                  });
 
-                                 redis.sadd ('upic:' + rq.user.username + ':g', H.hash (file.id + ':' + file.modifiedTime), function (error) {
-                                    if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
-                                    fs.unlink (tempPath, function (error) {
-                                       if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
-                                       check (function () {
-                                          if (! upload.done) upload.done = 0;
-                                          upload.done++;
-                                          redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                             if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
-                                             importFile (s, index + 1);
-                                          });
+                                 fs.unlink (tempPath, function (error) {
+                                    if (error) return notify (a.creat (), {priority: 'important', type: 'import FS error', user: username, error: error});
+                                    check (function () {
+                                       if (! upload.done) upload.done = 0;
+                                       upload.done++;
+                                       redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                          if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
+                                          importFile (s, index + 1);
                                        });
                                     });
                                  });

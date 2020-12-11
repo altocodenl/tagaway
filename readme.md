@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Import
-   - Fast detection of duplicates: include repeated in number.
    - Add error/success list/success import emails on server.
    - Document frontend changes.
 
@@ -354,8 +353,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
    - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
-   - Can contain a field `provider` with value `'google'` or `'dropbox'`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
-   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `provider`; the last two are optional.
+   - Can contain a field `providerData` with value `['google'|'dropbox', FILE_ID, FILE_MODIFICATION_TIME]`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
@@ -602,6 +601,7 @@ All the routes below require an admin user to be logged in.
    dimh: INT (height in pixels)
    byfs: INT (size in bytes in FS)
    hash: STRING
+   phash: STRING (provider hash if picture was imported, with the shape `g|d:HASH`)
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
