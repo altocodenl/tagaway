@@ -2984,7 +2984,7 @@ dale.do ([
             // We query account to update the recent imports.
             B.do (x, 'query', 'account');
          }
-         else if (! oldData.end && rs.body.end) {
+         else if (! teishi.eq (oldData, {}) && ! oldData.end && rs.body.end) {
             B.do (x, 'snackbar', 'green', 'Successfully listed files from ' + provider);
          }
 
