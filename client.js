@@ -4637,7 +4637,7 @@ E.import = function () {
                                        var attrs = {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class};
                                        if (noSpace) return ['div', attrs];
                                        if (providerData.redirect) return ['div', attrs, ['a', {href: providerData.redirect}, [
-                                       	['span', {style: style({position:'absolute', width: 1, height: 1, top: 0, left: 0})}]],
+                                          ['span', {style: style({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}]],
                                        ]];
                                        if (providerData.error) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
                                        if (providerData.upload) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being uploaded, please wait.'])];
