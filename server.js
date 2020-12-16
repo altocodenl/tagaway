@@ -604,6 +604,16 @@ H.hasAccess = function (S, username, picId) {
    });
 }
 
+H.getMetadata = function (s, path, rs, isVid) {
+   a.stop (s, ! isVid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
+      // ffprobe always logs to stderr, so we need to put stderr onto s.last
+      if (error.code === 0) return s.last = s.next (error);
+
+      if (rs) reply (rs, 400, {error: 'Invalid ' + (isVid ? 'video' : 'image') + ': ' + error.stderr});
+      else    s.next (null,   {error: 'Invalid ' + (isVid ? 'video' : 'image') + ': ' + error.stderr});
+   });
+}
+
 // *** OAUTH HELPERS ***
 
 // https://developers.google.com/identity/protocols/oauth2/web-server
@@ -1375,7 +1385,7 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (! eq (dale.keys (rq.data.fields).sort (), ['uid', 'lastModified', 'tags', 'providerData'].sort ())) return reply (rs, 400, {error: 'invalidField'});
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
@@ -1432,11 +1442,7 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'capacity'],
-         [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
-            if (error.code !== 0) return reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr});
-            // ffprobe always logs to stderr, so we need to put stderr onto s.last
-            s.last = s.next (error);
-         }],
+         [H.getMetadata, path, rs, pic.vid],
          function (s) {
             s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
             var metadata = s.metadata.split ('\n');
@@ -1582,7 +1588,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: rq.data.fields.providerData [0]});
+            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || []) [0]});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2196,11 +2202,7 @@ var routes = [
                   var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic);
                   var vid = s.last [K];
                   a.stop ([
-                     [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
-                        // ffprobe always logs to stderr, so we need to put stderr onto s.last
-                        if (error.code !== 0) return s.next (null, {id: pic.id, call: s.last});
-                        s.next (error);
-                     }],
+                     [H.getMetadata, path, rs, vid],
                      function (s) {
                         var metadata = ! vid ? s.last.stdout : s.last.stderr;
                         H.getGeotags (s, metadata);
@@ -3328,11 +3330,7 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
       a.fork (s, pics, function (pic) {
          var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
          return [
-            [a.stop, ! pic.vid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
-               if (error.code !== 0) return s.next (null, {id: pic.id, call: s.last});
-               // ffprobe always logs to stderr, so we need to put stderr onto s.last
-               s.next (error);
-            }],
+            [H.getMetadata, path, null, pic.vid],
             function (s) {
                var metadata = (pic.vid ? s.last.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
                var format;
