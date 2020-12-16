@@ -39,6 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
+[BUG] Snackbar did not appear upon cancelling import process. 
+[BUG] After cancelling, snackbar did not how many pictures were uploaded for the given upload. It was 'your pictures were succesfully imported'
+
 - Formats.
    - Identify format function.
    - Apply format retroactively, including adding to stats.
