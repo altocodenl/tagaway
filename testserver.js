@@ -8,9 +8,11 @@ var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
 var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
 
+var userPrefix = 'user' + Math.random ();
+
 var U = [
-   {username: '   user  \t1', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
-   {username: 'user2',        password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
+   {username: '   ' + userPrefix + '  \t1', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
+   {username: userPrefix + '2',             password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
 ];
 
 var PICS = 'test/';
@@ -215,7 +217,7 @@ var intro = [
    ], true),
    ['recover pass with invalid username', 'post', 'auth/recover', {}, {username: 'foo'}, 403],
    ['recover pass', 'post', 'auth/recover', {}, {username: 'a@a.com\t'}, 200],
-   ['recover pass', 'post', 'auth/recover', {}, {username: 'user\t  1  '}, 200, function (s, rq, rs) {
+   ['recover pass', 'post', 'auth/recover', {}, {username: U [0].username + '\t  \t'}, 200, function (s, rq, rs) {
       s.rtoken = rs.body.token;
       U [0].password = 'foobar';
       return true;
@@ -239,7 +241,7 @@ var intro = [
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase (), password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0] || rs.headers ['set-cookie'] [0].length <= 5) return clog ('Invalid cookie.');
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       if (! rs.body || ! rs.body.csrf) return clog ('Invalid CSRF token');
@@ -259,7 +261,7 @@ var intro = [
    ['change password (invalid old password)', 'post', 'auth/changePassword', {}, {old: 'foo', 'new': '123456'}, 403],
    ['change password', 'post', 'auth/changePassword', {}, function (s) {return {old: U [0].password, 'new': '123456'}}, 200],
    ['change password again', 'post', 'auth/changePassword', {}, function (s) {return {old: '123456', 'new': U [0].password}}, 200],
-   ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: ' USER 1\t   ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+   ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase () + '\t\t', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return true;
@@ -319,7 +321,7 @@ var main = [
    ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
    ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
-      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
+      if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
@@ -1383,7 +1385,7 @@ var main = [
    ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
    ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
-      if (! eq ({username: 'user 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
+      if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 59 && rs.body.logs.length !== 60)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
