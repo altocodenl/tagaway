@@ -3346,37 +3346,43 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
    function (s) {
       var pics = s.last;
       delete s.last;
-      s.formats = {};
+      var formats = {};
       // For each picture/video
-      a.fork (s, pics, function (pic, k) {
-         var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
-         return [
-            [H.getMetadata, path, null, pic.vid],
-            function (s) {
-               var metadata = (pic.vid ? s.last.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
-               var format;
-               if (! pic.vid) {
-                  format = dale.stopNot (metadata, undefined, function (line) {
-                     if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
-                  });
-                  if (! format) return s.next (null, {id: pic.id, type: 'pic', error: 'no format', metadata: metadata});
-                  format = format.toLowerCase ();
-               }
-               else {
-                  format = dale.fil (metadata, undefined, function (line) {
-                     if (line.match (/^codec_name/)) return line.split ('=') [1];
-                  });
-                  if (format.length === 0) return s.next (null, {id: pic.id, type: 'vid', error: 'no format', metadata: metadata});
-                  format = format.sort ().join ('/').toLowerCase ();
-               }
+      a.seq (s, [
+         [a.fork, pics, function (pic, k) {
+            var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
+            return [
+               [H.getMetadata, path, null, pic.vid],
+               function (s) {
+                  var metadata = (pic.vid ? s.last.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
+                  var format;
+                  if (! pic.vid) {
+                     format = dale.stopNot (metadata, undefined, function (line) {
+                        if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
+                     });
+                     if (! format) return s.next (null, {id: pic.id, type: 'pic', error: 'no format', metadata: metadata});
+                     format = format.toLowerCase ();
+                  }
+                  else {
+                     format = dale.fil (metadata, undefined, function (line) {
+                        if (line.match (/^codec_name/)) return line.split ('=') [1];
+                     });
+                     if (format.length === 0) return s.next (null, {id: pic.id, type: 'vid', error: 'no format', metadata: metadata});
+                     format = format.sort ().join ('/').toLowerCase ();
+                  }
 
-               console.log ('format #' + (k + 1) + '/' + pics.length, pic.id, format);
-               if (! s.formats [format]) s.formats [format] = 0;
-               s.formats [format]++;
-               s.next ();
-            }
-         ];
-      }, {max: os.cpus ().length});
+                  console.log ('format #' + (k + 1) + '/' + pics.length, pic.id, format);
+                  if (! formats [format]) formats [format] = 0;
+                  formats [format]++;
+                  s.next ();
+               }
+            ];
+         }, {max: os.cpus ().length}],
+         function (s) {
+            s.formats = formats;
+            s.next ();
+         }
+      ]);
    },
    function (s) {
       notify (s, {priority: 'critical', type: 'Script to add format information.', ok: true, formats: s.formats});

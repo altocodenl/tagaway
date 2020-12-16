@@ -42,8 +42,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Formats.
    - Identify format function.
    - Apply format retroactively, including adding to stats.
-   - Reply to thumbnails with content-type.
    - Detect format in new uploads.
+   - Reply to thumbnails with content-type, check in tests.
    - Add thumbnails for non-browser-native formats.
    - Tests & update list of supported formats.
 
