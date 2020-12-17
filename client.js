@@ -2280,6 +2280,12 @@ H.stopPropagation = function (ev) {
    return [['onclick', 'stop', 'propagation', {rawArgs: 'event'}], ev];
 }
 
+H.upper = function (s) {
+   return dale.do (s.split (' '), function (v) {
+      return v [0].toUpperCase () + v.slice (1);
+   }).join (' ');
+}
+
 // *** VIEWS ***
 
 var E = {};
@@ -2970,22 +2976,25 @@ dale.do ([
       });
    }],
 
-   ['import', 'list', function (x, provider, startList) {
+   ['import', 'list', function (x, provider, startList, cancel) {
       B.do (x, 'get', 'import/list/' + provider + (startList ? '?startList=1' : ''), {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
          if (rs.body.redirect) return B.do (x, 'set', ['Data', 'import', provider, 'redirect'], rs.body.redirect);
          var oldData = B.get ('Data', 'import', provider) || {};
 
          if (! oldData.error && rs.body.error) {
-            B.do (x, 'snackbar', 'red', 'There was an error listing/importing files from ' + provider);
+            B.do (x, 'snackbar', 'red', 'There was an error listing/importing files from ' + H.upper (provider));
          }
          else if (! rs.body.upload && oldData.upload) {
-            B.do (x, 'snackbar', 'green', 'Successfully imported files from ' + provider);
-            // We query account to update the recent imports.
-            B.do (x, 'query', 'account');
+            if (cancel) B.do (x, 'snackbar', 'green', 'Successfully cancelled import process from ' + H.upper (provider));
+            else {
+               B.do (x, 'snackbar', 'green', 'Successfully imported files from ' + H.upper (provider));
+               // We query account to update the recent imports.
+               B.do (x, 'query', 'account');
+            }
          }
          else if (! teishi.eq (oldData, {}) && ! oldData.end && rs.body.end) {
-            B.do (x, 'snackbar', 'green', 'Successfully listed files from ' + provider);
+            B.do (x, 'snackbar', 'green', 'Successfully listed files from ' + H.upper (provider));
          }
 
          B.do (x, 'set', ['Data', 'import', provider], rs.body);
@@ -2998,7 +3007,7 @@ dale.do ([
    ['import', 'delete', function (x, provider) {
       B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
-         B.do (x, 'import', 'list', provider);
+         B.do (x, 'import', 'list', provider, false, true);
       });
    }],
 
@@ -3022,7 +3031,7 @@ dale.do ([
 
    ['import', 'retry', function (x, provider) {
       B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files from ' + H.upper (provider));
          B.do (x, 'import', 'list', provider, true);
       });
    }],
@@ -3032,7 +3041,7 @@ dale.do ([
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
          if (! start) return B.do (x, 'import', 'list', provider);
          B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
-            if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids.');
+            if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids from ' + H.upper (provider));
             B.do (x, 'import', 'list', provider);
          });
       });

@@ -39,9 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-[BUG] Snackbar did not appear upon cancelling import process. 
-[BUG] After cancelling, snackbar did not how many pictures were uploaded for the given upload. It was 'your pictures were succesfully imported'
-
 - Formats.
    - Identify format function.
    - Apply format retroactively, including adding to stats.
@@ -607,6 +604,7 @@ All the routes below require an admin user to be logged in.
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
+   format: STRING
    t200: STRING or absent
    by200: INT or absent (size of 200 thumbnail in FS)
    t900: STRING or absent
