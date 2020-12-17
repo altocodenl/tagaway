@@ -614,21 +614,21 @@ H.getMetadata = function (s, path, rs, isVid) {
    });
 }
 
-H.getFormat = function (s, isVid) {
-   var metadata = (pic.vid ? s.last.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
+H.detectFormat = function (s, metadata, isVid) {
+   metadata = (isVid ? metadata.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
    var format;
    if (! isVid) {
       format = dale.stopNot (metadata, undefined, function (line) {
          if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
       });
-      if (! format) return s.next (null, {id: pic.id, type: 'pic', error: 'no format', metadata: metadata});
+      if (! format) return s.next (null, {type: 'pic', error: 'no format detected', metadata: metadata});
       format = format.toLowerCase ();
    }
    else {
       format = dale.fil (metadata, undefined, function (line) {
          if (line.match (/^codec_name/)) return line.split ('=') [1];
       });
-      if (format.length === 0) return s.next (null, {id: pic.id, type: 'vid', error: 'no format', metadata: metadata});
+      if (format.length === 0) return s.next (null, {type: 'vid', error: 'no format', metadata: metadata});
       format = format.sort ().join ('/').toLowerCase ();
    }
    s.next (format);
@@ -1464,6 +1464,7 @@ var routes = [
          [perfTrack, 'capacity'],
          [H.getMetadata, path, rs, pic.vid],
          function (s) {
+            s.rawMetadata = s.last;
             s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
             var metadata = s.metadata.split ('\n');
             if (! pic.vid) {
@@ -1493,6 +1494,7 @@ var routes = [
                var rotation;
                dale.go (metadata, function (line) {
                   if (line.match (/\s+rotate\s+:/)) rotation = line.replace (/rotate\s+:/, '').trim ();
+                  // TODO: change this when adding further formats
                   if (! line.match (/h264/)) return;
                   var size = line.match (/\d{2,4}x\d{2,4}/);
                   if (! size) return s.size = false;
@@ -1507,6 +1509,9 @@ var routes = [
                });
             }
             s.next ();
+         },
+         function (s) {
+            a.set (s, 'format', [H.detectFormat, s.rawMetadata]);
          },
          [perfTrack, 'format'],
          pic.vid ? [a.stop, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
@@ -1555,6 +1560,7 @@ var routes = [
             pic.dimh = s.size.h;
             pic.byfs = s.byfs.size;
             pic.hash = s.hash;
+            pic.format = s.format;
 
             s.dates ['upload:date'] = lastModified;
             pic.dates = JSON.stringify (s.dates);
@@ -2377,7 +2383,7 @@ var routes = [
          function (s) {
 
             // TODO: change PAGES to a large number after debugging client flows
-            var PAGESIZE = 1000, PAGES = 2;
+            var PAGESIZE = 10, PAGES = 1;
 
             var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -3354,23 +3360,10 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
             return [
                [H.getMetadata, path, null, pic.vid],
                function (s) {
-                  var metadata = (pic.vid ? s.last.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
-                  var format;
-                  if (! pic.vid) {
-                     format = dale.stopNot (metadata, undefined, function (line) {
-                        if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
-                     });
-                     if (! format) return s.next (null, {id: pic.id, type: 'pic', error: 'no format', metadata: metadata});
-                     format = format.toLowerCase ();
-                  }
-                  else {
-                     format = dale.fil (metadata, undefined, function (line) {
-                        if (line.match (/^codec_name/)) return line.split ('=') [1];
-                     });
-                     if (format.length === 0) return s.next (null, {id: pic.id, type: 'vid', error: 'no format', metadata: metadata});
-                     format = format.sort ().join ('/').toLowerCase ();
-                  }
-
+                  H.detectFormat (s, s.last);
+               },
+               function (s) {
+                  var format = s.last;
                   console.log ('format #' + (k + 1) + '/' + pics.length, pic.id, format);
                   if (! formats [format]) formats [format] = 0;
                   formats [format]++;

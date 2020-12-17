@@ -40,10 +40,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Formats.
-   - Identify format function.
+   - Detect format in new uploads: add stats when uploading and deleting.
    - Apply format retroactively, including adding to stats.
-   - Detect format in new uploads.
-   - Reply to thumbnails with content-type, check in tests.
+   - Reply to thumbnails with content-type and original, check in tests.
    - Add thumbnails for non-browser-native formats.
    - Tests & update list of supported formats.
 
@@ -856,8 +855,8 @@ Used by giz:
 
 6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
-   2. `import list PROVIDER STARTLIST`: invokes `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy. It will also set `State.import.selection.PROVIDER`. It will also optionally invoke `snackbar` to report a successful listing/upload or an error, depending on the difference between the old and the new payload.
-   3. `import delete PROVIDER`: `post import/list/PROVIDER/delete`.
+   2. `import list PROVIDER STARTLIST CANCEL`: invokes `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy. It will also set `State.import.selection.PROVIDER`. It will also optionally invoke `snackbar` to report a successful listing/upload or an error, depending on the difference between the old and the new payload. If `CANCEL` is set, the snackbar printed will be different.
+   3. `import delete PROVIDER`: invokes `post import/delete/PROVIDER`; after the ajax call, it also invokes `import list PROVIDER false true`.
    4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) and there's no upload information, the responder does nothing. But if there's provider data and a listing or upload is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER` and `query pics`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
    5. `import retry PROVIDER`: invokes `post import/delete/PROVIDER` and then `import list PROVIDER true`.
    6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`. If `start` is `true`, the responder invokes `post import/start/PROVIDER` before invoking `import list PROVIDER`, to trigger the start of the import process.
