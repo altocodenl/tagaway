@@ -40,8 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Formats.
-   - Detect format in new uploads: add stats when uploading and deleting.
-   - Apply format retroactively, including adding to stats.
    - Reply to thumbnails with content-type and original, check in tests.
    - Add thumbnails for non-browser-native formats.
    - Tests & update list of supported formats.
@@ -505,6 +503,7 @@ All the routes below require an admin user to be logged in.
    - bys3-USERNAME: total bytes stored in S3 for USERNAME
    - pics:          total pics
    - vids:          total vids
+   - format-FORMAT: total pics/vids with the specified format
    - t200:          total thumbnails of size 200
    - t900:          total thumbnails of size 900
    - users:         total users

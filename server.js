@@ -571,6 +571,7 @@ H.deletePic = function (s, id, username) {
             ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
             ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
             ['stock', s.pic.vid ? 'vids' : 'pics', -1],
+            ['stock', 'format-' + s.pic.format, -1],
             s.pic.by200 ? ['stock', 't200', -1] : [],
             s.pic.by900 ? ['stock', 't900', -1] : [],
          ]);
@@ -604,20 +605,20 @@ H.hasAccess = function (S, username, picId) {
    });
 }
 
-H.getMetadata = function (s, path, rs, isVid) {
-   a.stop (s, ! isVid ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
+H.getMetadata = function (s, path, rs, vidFormat) {
+   a.stop (s, ! vidFormat ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
       // ffprobe always logs to stderr, so we need to put stderr onto s.last
       if (error.code === 0) return s.last = s.next (error);
 
-      if (rs) reply (rs, 400, {error: 'Invalid ' + (isVid ? 'video' : 'image') + ': ' + error.stderr});
-      else    s.next (null,   {error: 'Invalid ' + (isVid ? 'video' : 'image') + ': ' + error.stderr});
+      if (rs) reply (rs, 400, {error: 'Invalid ' + (vidFormat ? 'video' : 'image') + ': ' + error.stderr});
+      else    s.next (null,   {error: 'Invalid ' + (vidFormat ? 'video' : 'image') + ': ' + error.stderr});
    });
 }
 
-H.detectFormat = function (s, metadata, isVid) {
-   metadata = (isVid ? metadata.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
+H.detectFormat = function (s, metadata, vidFormat) {
+   metadata = (vidFormat ? metadata.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
    var format;
-   if (! isVid) {
+   if (! vidFormat) {
       format = dale.stopNot (metadata, undefined, function (line) {
          if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
       });
@@ -628,8 +629,8 @@ H.detectFormat = function (s, metadata, isVid) {
       format = dale.fil (metadata, undefined, function (line) {
          if (line.match (/^codec_name/)) return line.split ('=') [1];
       });
-      if (format.length === 0) return s.next (null, {type: 'vid', error: 'no format', metadata: metadata});
-      format = format.sort ().join ('/').toLowerCase ();
+      if (format.length === 0) return s.next (null, {type: 'vid', error: 'no format', container: vidFormat, metadata: metadata});
+      format = vidFormat + ':' + format.sort ().join ('/').toLowerCase ();
    }
    s.next (format);
 }
@@ -1441,7 +1442,10 @@ var routes = [
          dateup: Date.now (),
       };
 
-      if (mime.lookup (rq.data.files.pic) === 'video/mp4') pic.vid = 1;
+      if (mime.lookup (rq.data.files.pic) === 'video/mp4') {
+         pic.vid = 1;
+         var vidFormat = 'mp4';
+      }
 
       var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic.id);
 
@@ -1511,7 +1515,7 @@ var routes = [
             s.next ();
          },
          function (s) {
-            a.set (s, 'format', [H.detectFormat, s.rawMetadata]);
+            a.set (s, 'format', [H.detectFormat, s.rawMetadata, pic.vid ? vidFormat : false]);
          },
          [perfTrack, 'format'],
          pic.vid ? [a.stop, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
@@ -1622,6 +1626,7 @@ var routes = [
                ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
                ['stock', pic.vid ? 'vids' : 'pics', 1],
+               ['stock', 'format-' + pic.format, 1],
                pic.by200 ? ['stock', 't200', 1] : [],
                pic.by900 ? ['stock', 't900', 1] : [],
             ].concat (dale.fil (perf, undefined, function (item, k) {
@@ -2662,7 +2667,6 @@ var routes = [
                   if (list.folders [childId]) return recurseDown (childId);
                   // Else, it is a pic/vid.
                   // We check whether we already have the file. If we do, we ignore it.
-                  console.log ('DEBUG hash', childId + ':' + modifiedTime [childId], hashes [H.hash (childId + ':' + modifiedTime [childId])]);
                   if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return repeated++;
                   filesToUpload [childId] = [];
                   recurseUp (childId, folderId);
@@ -3352,6 +3356,9 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
    function (s) {
       var pics = s.last;
       delete s.last;
+      pics = dale.fil (pics, undefined, function (pic) {
+         if (! pic.format) return pic;
+      });
       var formats = {};
       // For each picture/video
       a.seq (s, [
@@ -3360,14 +3367,21 @@ if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
             return [
                [H.getMetadata, path, null, pic.vid],
                function (s) {
-                  H.detectFormat (s, s.last);
+                  H.detectFormat (s, s.last, pic.vid ? 'mp4' : false);
                },
                function (s) {
                   var format = s.last;
-                  console.log ('format #' + (k + 1) + '/' + pics.length, pic.id, format);
+                  console.log ('DEBUG adding format #' + (k + 1) + '/' + pics.length, pic.id, format);
                   if (! formats [format]) formats [format] = 0;
                   formats [format]++;
+                  s.format = format;
                   s.next ();
+               },
+               function (s) {
+                  H.stat.w (s, [['stock', 'format-' + s.format, 1]]);
+               },
+               function (s) {
+                  Redis (s, 'hset', 'pic:' + pic.id, 'format', s.format);
                }
             ];
          }, {max: os.cpus ().length}],
