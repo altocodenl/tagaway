@@ -1376,7 +1376,7 @@ var routes = [
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.name)};
+            var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.format.split (':') [0])};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
             cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
          }
@@ -1391,7 +1391,7 @@ var routes = [
          function (s) {
             var id = s.pic ['t' + rq.data.params.size] || s.pic.id;
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.name)};
+            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.format.split (':') [0])};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
             cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
          }

@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Formats.
-   - Reply to thumbnails with content-type and original, check in tests.
    - Add thumbnails for non-browser-native formats.
    - Tests & update list of supported formats.
 
