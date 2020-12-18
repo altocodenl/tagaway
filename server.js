@@ -294,12 +294,12 @@ H.mkdirif = function (s, path) {
    });
 }
 
-H.thumbPic = function (s, path, thumbSize, pic) {
+H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb) {
    a.stop (s, [
       [H.size, path],
       function (s) {
          var picMax = Math.max (s.size.w, s.size.h);
-         if (picMax <= thumbSize) {
+         if (! alwaysMakeThumb && picMax <= thumbSize) {
             if (! pic.deg) return s.next (true);
             // if picture has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
             // If picture is smaller than 200px and we're deciding whether to do the 900px thumb, we skip it since we don't need it.
@@ -308,7 +308,11 @@ H.thumbPic = function (s, path, thumbSize, pic) {
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         k (s, 'convert', path, '-quality', 75, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize]));
+         k (s, 'convert', path, '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + '.jpeg'));
+      },
+      function (s) {
+         if (s.last === true) return s.next (true);
+         a.make (fs.rename) (s, Path.join (Path.dirname (path), s ['t' + thumbSize] + '.jpeg'), Path.join (Path.dirname (path), s ['t' + thumbSize]));
       },
       function (s) {
          if (s.last === true) return s.next (true);
@@ -1541,10 +1545,14 @@ var routes = [
          // We store only the original pictures in S3, not the thumbnails
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
-         ! pic.vid ? [a.fork, [
-            [[H.thumbPic, newpath, 200, pic], [perfTrack, 'resize200']],
-            [[H.thumbPic, newpath, 900, pic], [perfTrack, 'resize900']],
-         ], function (v) {return v}] : [H.thumbVid, newpath],
+         function (s) {
+            if (pic.vid) return H.thumbVid (s, newpath);
+            var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
+            a.fork (s, [
+               [[H.thumbPic, newpath, 200, pic, alwaysMakeThumb], [perfTrack, 'resize200']],
+               [[H.thumbPic, newpath, 900, pic, alwaysMakeThumb], [perfTrack, 'resize900']]
+            ], function (v) {return v});
+         },
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
          function (s) {

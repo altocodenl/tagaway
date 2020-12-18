@@ -568,7 +568,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-      if (rs.body.usage.fsused !== 3370 + 22644 + 8694) return clog ('Invalid FS usage.');
+      if (rs.body.usage.fsused !== 3370 + 22644 + 13194) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used !== 0 && rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
       // Wait for S3
       setTimeout (next, 5000);
@@ -579,8 +579,8 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 409],
    ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (rs.body.usage.fsused !== 3370 + 22644 + 8694) return clog ('Invalid FS usage.');
-      if (rs.body.usage.s3used !== 3402 + 22676)        return clog ('Invalid S3 usage.');
+      if (rs.body.usage.fsused !== 3370 + 22644 + 13194) return clog ('Invalid FS usage.');
+      if (rs.body.usage.s3used !== 3402 + 22676)         return clog ('Invalid S3 usage.');
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -955,14 +955,14 @@ var main = [
             return 'thumb/200/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'medium.jpg': 8239, 'rotate.jpg': 4884, 'large.jpeg': 10257, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
+            if ({'medium.jpg': 12539, 'rotate.jpg': 7835, 'large.jpeg': 16533, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
             return true;
          }],
          ['get thumb 900 of pic #' + (k + 1), 'get', function (s) {
             return 'thumb/900/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
             if (! rs.headers ['content-type']) return clog ('No content type');
-            if ({'rotate.jpg': 50585, 'medium.jpg': 21450, 'large.jpeg': 123478, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
+            if ({'rotate.jpg': 94187, 'medium.jpg': 21450, 'large.jpeg': 212473, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
             return true;
          }],
       ];

@@ -40,8 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Formats.
-   - Add thumbnails for non-browser-native formats.
-   - Tests & update list of supported formats.
+   - Tests & update list of new image formats.
+   - Code, tests & update list of new video formats.
 
 - Import from Dropbox.
 
