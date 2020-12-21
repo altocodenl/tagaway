@@ -198,6 +198,7 @@ module.exports = {
    s3: {
       accessKeyId:     'KEY',
       secretAccessKey: 'SECRETKEY',
+      region: 'REGION',
       pic: {
          bucketName:      'BUCKETNAME',
       },

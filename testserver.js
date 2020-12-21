@@ -521,10 +521,15 @@ var main = [
       // Wait for S3 to delete the videos uploaded before and the image just uploaded
       setTimeout (next, 8000);
    }],
-   ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+   ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, cb) {
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
-      if (rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
-      return true;
+      if (rs.body.usage.s3used === 3402) return true;
+      setTimeout (function () {
+         clog ('s3', rs.body.usage.s3used);
+         if (rs.body.usage.s3used !== 3402) return cb ('Invalid S3 usage.');
+         cb ();
+      // Wait two seconds more in case S3 is slower than usual.
+      }, 2000);
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
@@ -947,21 +952,24 @@ var main = [
          ['get pic #' + (k + 1), 'get', function (s) {
             return 'pic/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            if (! rs.headers ['content-type']) return clog ('No content type');
+            var contentType = s.pics [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
+            if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
             if ({'medium.jpg': 21450, 'rotate.jpg': 826476, 'large.jpeg': 3302468, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
             return true;
          }],
          ['get thumb 200 of pic #' + (k + 1), 'get', function (s) {
             return 'thumb/200/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            if (! rs.headers ['content-type']) return clog ('No content type');
+            var contentType = s.pics [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
+            if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
             if ({'medium.jpg': 12539, 'rotate.jpg': 7835, 'large.jpeg': 16533, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
             return true;
          }],
          ['get thumb 900 of pic #' + (k + 1), 'get', function (s) {
             return 'thumb/900/' + s.pics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            if (! rs.headers ['content-type']) return clog ('No content type');
+            var contentType = s.pics [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
+            if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
             if ({'rotate.jpg': 94187, 'medium.jpg': 21450, 'large.jpeg': 212473, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
             return true;
          }],
@@ -1391,9 +1399,12 @@ var main = [
       // Wait for S3
       setTimeout (next, 3000);
    }],
-   ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
-      return true;
+   ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      if (eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return true;
+      setTimeout (function () {
+         if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return next ('Invalid usage field.');
+         next ();
+      }, 2000);
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');

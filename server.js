@@ -204,6 +204,7 @@ var s3 = new (require ('aws-sdk')).S3 ({
    sslEnabled:  true,
    credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
    params:      {Bucket: SECRET.s3.pic.bucketName},
+   region:      SECRET.s3.region
 });
 
 // *** HELPERS ***
@@ -295,6 +296,7 @@ H.mkdirif = function (s, path) {
 }
 
 H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb) {
+   var format = pic.format === 'png' ? '.png' : '.jpeg';
    a.stop (s, [
       [H.size, path],
       function (s) {
@@ -308,11 +310,11 @@ H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb) {
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         k (s, 'convert', path, '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + '.jpeg'));
+         k (s, 'convert', path, '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format));
       },
       function (s) {
          if (s.last === true) return s.next (true);
-         a.make (fs.rename) (s, Path.join (Path.dirname (path), s ['t' + thumbSize] + '.jpeg'), Path.join (Path.dirname (path), s ['t' + thumbSize]));
+         a.make (fs.rename) (s, Path.join (Path.dirname (path), s ['t' + thumbSize] + format), Path.join (Path.dirname (path), s ['t' + thumbSize]));
       },
       function (s) {
          if (s.last === true) return s.next (true);
@@ -1394,8 +1396,9 @@ var routes = [
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
          function (s) {
             var id = s.pic ['t' + rq.data.params.size] || s.pic.id;
+            var format = s.pic.format === 'png' ? 'png' : 'jpeg';
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.format.split (':') [0])};
+            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (format)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
             cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
          }
@@ -1546,6 +1549,7 @@ var routes = [
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
          function (s) {
+            pic.format = s.format;
             if (pic.vid) return H.thumbVid (s, newpath);
             var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
             a.fork (s, [
@@ -1572,7 +1576,6 @@ var routes = [
             pic.dimh = s.size.h;
             pic.byfs = s.byfs.size;
             pic.hash = s.hash;
-            pic.format = s.format;
 
             s.dates ['upload:date'] = lastModified;
             pic.dates = JSON.stringify (s.dates);
