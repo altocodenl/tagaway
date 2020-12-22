@@ -40,7 +40,9 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
       if (arg && type (arg.log) === 'object') return arg;
    });
    // TODO remove this when fixed in cicek
-   if (! rs.connection || ! rs.connection.writable) return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
+   if (! rs.connection || ! rs.connection.writable) {
+      return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
+   }
    cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
       if (k === 0 && v && v.path && v.last && v.vars) return;
       return v;
@@ -295,10 +297,10 @@ H.mkdirif = function (s, path) {
    });
 }
 
-H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb) {
+H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
    var format = pic.format === 'png' ? '.png' : '.jpeg';
    a.stop (s, [
-      [H.size, path],
+      [H.size, heic_path || path],
       function (s) {
          var picMax = Math.max (s.size.w, s.size.h);
          if (! alwaysMakeThumb && picMax <= thumbSize) {
@@ -310,7 +312,7 @@ H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb) {
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         k (s, 'convert', path, '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format));
+         k (s, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format));
       },
       function (s) {
          if (s.last === true) return s.next (true);
@@ -1382,7 +1384,7 @@ var routes = [
          [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.lookup (s.pic.format.split (':') [0])};
+            var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.getType (s.pic.format.split (':') [0])};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
             cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
          }
@@ -1397,8 +1399,9 @@ var routes = [
          function (s) {
             var id = s.pic ['t' + rq.data.params.size] || s.pic.id;
             var format = s.pic.format === 'png' ? 'png' : 'jpeg';
+            if (rq.data.params.size === '900' && s.pic.format === 'gif') format = 'gif';
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.lookup (format)};
+            var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.getType (format)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
             cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
          }
@@ -1437,7 +1440,7 @@ var routes = [
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
-      if (CONFIG.allowedFormats.indexOf (mime.lookup (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
+      if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
       var path = rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (path), Path.basename (path).replace (Path.extname (path), '') + 'hash' + Path.extname (path));
@@ -1449,7 +1452,7 @@ var routes = [
          dateup: Date.now (),
       };
 
-      if (mime.lookup (rq.data.files.pic) === 'video/mp4') {
+      if (mime.getType (rq.data.files.pic) === 'video/mp4') {
          pic.vid = 1;
          var vidFormat = 'mp4';
       }
@@ -1528,10 +1531,18 @@ var routes = [
          pic.vid ? [a.stop, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
             if (error.code !== 0) return reply (rs, 500, {error: error});
             s.next ();
-         }] : [
-            [a.make (fs.copyFile), path, hashpath],
-            [k, 'exiftool', '-all=', '-overwrite_original', hashpath],
-         ],
+         }] : function (s) {
+            // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
+            if (s.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
+            a.seq (s, [
+               [a.make (fs.copyFile), path, hashpath],
+               [a.stop, [k, 'exiftool', '-all=', '-overwrite_original', hashpath], function (s, error) {
+                  // Ignore warning on tiff when attempting to remove IFD0 field.
+                  if (s.format === 'tiff' && error.code === 0 && error.stderr.match ('IFD0')) return s.next ();
+                  else s.next (null, error);
+               }]
+            ]);
+         },
          [a.set, 'hash', function (s) {
             fs.readFile (hashpath, function (error, file) {
                if (error) return s.next (0, error);
@@ -1550,12 +1561,23 @@ var routes = [
          [perfTrack, 'fs'],
          function (s) {
             pic.format = s.format;
+            if (pic.format !== 'heic') return s.next ();
+            s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), pic.uuid + '.jpeg');
+            k (s, 'heif-convert', '-q', '100', newpath, s.heic_jpg);
+         },
+         function (s) {
             if (pic.vid) return H.thumbVid (s, newpath);
             var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
-            a.fork (s, [
-               [[H.thumbPic, newpath, 200, pic, alwaysMakeThumb], [perfTrack, 'resize200']],
-               [[H.thumbPic, newpath, 900, pic, alwaysMakeThumb], [perfTrack, 'resize900']]
+            // If gif, only make small thumbnail.
+            if (pic.format === 'gif') a.seq (s, [[H.thumbPic, newpath, 200, pic, true], [perfTrack, 'resize200']]);
+            else a.fork (s, [
+               [[H.thumbPic, newpath, 200, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize200']],
+               [[H.thumbPic, newpath, 900, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize900']]
             ], function (v) {return v});
+         },
+         function (s) {
+            if (pic.format !== 'heic') return s.next ();
+            a.make (fs.unlink) (s, s.heic_jpg);
          },
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],

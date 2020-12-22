@@ -314,6 +314,10 @@ var outro = [
 ];
 
 var main = [
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      s.pics = rs.body.pics;
+      return true;
+   }],
    ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ttester ('feedback', 'post', 'feedback', {}, [
       ['message', 'string'],
@@ -525,7 +529,6 @@ var main = [
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used === 3402) return true;
       setTimeout (function () {
-         clog ('s3', rs.body.usage.s3used);
          if (rs.body.usage.s3used !== 3402) return cb ('Invalid S3 usage.');
          cb ();
       // Wait two seconds more in case S3 is slower than usual.
@@ -583,9 +586,14 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 409],
-   ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+   ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, cb) {
       if (rs.body.usage.fsused !== 3370 + 22644 + 13194) return clog ('Invalid FS usage.');
-      if (rs.body.usage.s3used !== 3402 + 22676)         return clog ('Invalid S3 usage.');
+      if (rs.body.usage.s3used === 3402 + 22676)         return true;
+      setTimeout (function () {
+         if (rs.body.usage.s3used !== 3402 + 22676) return cb ('Invalid S3 usage.');
+         cb ();
+      // Wait two seconds more in case S3 is slower than usual.
+      }, 2000);
       return true;
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
@@ -807,7 +815,7 @@ var main = [
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 4, dunkerque: 1, 'g::FR': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
       // Wait for S3
-      setTimeout (next, 5000);
+      setTimeout (next, 6000);
    }],
    ['get nonexisting picture from S3', 'get', 'original/foobar', {}, '', 404],
    dale.go (dale.times (5, 0), function (k) {
@@ -972,9 +980,60 @@ var main = [
             if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
             if ({'rotate.jpg': 94187, 'medium.jpg': 21450, 'large.jpeg': 212473, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
             return true;
-         }],
+         }]
       ];
    }),
+   // *** ADDITIONAL PICTURE FORMATS ***
+   dale.go (['deer.bmp', 'sunrise.HEIC', 'tumbleweed.GIF', 'benin.tif'], function (v) {
+      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, {multipart: [
+         {type: 'file',  name: 'pic', path: PICS + v},
+         {type: 'field', name: 'uid', value: Date.now ()},
+         {type: 'field',  name: 'lastModified', value: Date.now ()}
+      ]}, 200];
+   }),
+   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
+      s.extrapics = rs.body.pics;
+      clog ('debug extra', s.extrapics);
+      return true;
+   }],
+   dale.go (dale.times (4, 0), function (k) {
+      return [
+         ['get additional pic #' + (k + 1), 'get', function (s) {
+            return 'pic/' + s.extrapics [k].id;
+         }, {}, '', 200, function (s, rq, rs) {
+            if ({'deer.bmp': 'image/bmp', 'sunrise.HEIC': 'image/heic', 'tumbleweed.GIF': 'image/gif', 'benin.tif': 'image/tiff'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for pic #' + (k + 1));
+            if ({'deer.bmp': 124534, 'sunrise.HEIC': 868012, 'tumbleweed.GIF': 385721, 'benin.tif': 2661656} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
+            return true;
+         }],
+         ['get thumb 200 of additional pic #' + (k + 1), 'get', function (s) {
+            return 'thumb/200/' + s.extrapics [k].id;
+         }, {}, '', 200, function (s, rq, rs) {
+            if ({'deer.bmp': 'image/jpeg', 'sunrise.HEIC': 'image/jpeg', 'tumbleweed.GIF': 'image/jpeg', 'benin.tif': 'image/jpeg'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for pic #' + (k + 1));
+            if ({'deer.bmp': 13880, 'sunrise.HEIC': 9939, 'tumbleweed.GIF': 10673, 'benin.tif': 5922} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
+            return true;
+         }],
+         ['get thumb 900 of additional pic #' + (k + 1), 'get', function (s) {
+            return 'thumb/900/' + s.extrapics [k].id;
+         }, {}, '', 200, function (s, rq, rs) {
+            if ({'deer.bmp': 'image/jpeg', 'sunrise.HEIC': 'image/jpeg', 'tumbleweed.GIF': 'image/gif', 'benin.tif': 'image/jpeg'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for pic #' + (k + 1));
+            if ({'deer.bmp': 17069, 'sunrise.HEIC': 141830, 'tumbleweed.GIF': 385721, 'benin.tif': 91539} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
+            return true;
+         }],
+         ['delete additional pic #' + (k + 1), 'post', 'delete', {}, function (s) {
+            return {ids: [s.extrapics [k].id]};
+         }, 200]
+      ];
+   }),
+   /*
+   TODO: add video formats & test
+   dale.go (['boat.3gp', 'circus.MOV', 'drumming.avi'], function (v) {
+      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, {multipart: [
+         {type: 'file',  name: 'pic', path: PICS + v},
+         {type: 'field', name: 'uid', value: Date.now ()},
+         {type: 'field',  name: 'lastModified', value: Date.now ()}
+      ]}, 200];
+   }),
+   */
    ['tag nonexisting #2', 'post', 'tag', {}, function (s) {
       return {tag: '\tfoo', ids: [s.pics [0].id, 'b']};
    }, 404],
@@ -1395,7 +1454,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 59 && rs.body.logs.length !== 60)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 67 && rs.body.logs.length !== 68)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, 3000);
    }],

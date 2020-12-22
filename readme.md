@@ -40,8 +40,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo before launch
 
 - Formats.
-   - Tests & update list of new image formats.
-   - Code, tests & update list of new video formats.
+   - New video formats.
+      - Convert videos from other formats into mp4. Add extra field (or vid field?).
+      - Delete mp4 videos when deleting file.
+      - Add query parameter to route so that mp4 can be asked (vs downloading original).
+      - Change client to ask for either original video or mp4 for viewing.
 
 - Import from Dropbox.
 
