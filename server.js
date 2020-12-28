@@ -2420,8 +2420,7 @@ var routes = [
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],
          function (s) {
 
-            // TODO: change PAGES to a large number after debugging client flows
-            var PAGESIZE = 10, PAGES = 1;
+            var PAGESIZE = 1000, PAGES = 10000;
 
             var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
