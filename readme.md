@@ -39,6 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
+- Add email domain validation in SES (email from address as well).
+
 - Formats.
    - New video formats.
       - Convert videos from other formats into mp4. Add extra field (or vid field?).
