@@ -216,14 +216,18 @@ module.exports = {
    },
    google: {
       api: {
-         key:    'KEY',
-         client: 'CLIENTID',
-         secret: 'SECRET'
+         key:    'KEY'
       },
       oauth: {
-         client: 'CLIENTID',
-         secret: 'SECRET'
-      },
+         dev: {
+            client: 'CLIENTID',
+            secret: 'SECRET'
+         },
+         prod: {
+            client: 'CLIENTID',
+            secret: 'SECRET'
+         }
+      } [process.argv [2] === 'local' ? 'dev' : process.argv [2]]
    },
    ping: {
       // Your ac;log credentials here. ac;log hasn't been published yet, so you can use an empty object instead.

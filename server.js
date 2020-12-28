@@ -2420,7 +2420,7 @@ var routes = [
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],
          function (s) {
 
-            var PAGESIZE = 1000, PAGES = 10000;
+            var PAGESIZE = process.argv [2] === 'dev' ? 100 : 1000, PAGES = process.argv [2] === 'dev' ? 3 : 10000;
 
             var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {

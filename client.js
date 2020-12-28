@@ -2969,7 +2969,7 @@ dale.do ([
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       dale.do (['google'], function (provider) {
          if (B.get ('Data', 'import', provider, 'authOK')) {
-            B.do (x, 'rem', ['Data', 'import', provider], authOK);
+            B.do (x, 'rem', ['Data', 'import', provider], 'authOK');
             return B.do (x, 'import', 'list', provider, true);
          }
          if (! B.get ('Data', 'import', provider)) B.do (x, 'import', 'list', provider);
