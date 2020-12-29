@@ -283,7 +283,7 @@ H.mkdirif = function (s, path) {
 
 H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
    var format = pic.format === 'png' ? '.png' : '.jpeg';
-   a.stop (s, [
+   a.seq (s, [
       [function (s) {
          var picMax = Math.max (s.size.w, s.size.h);
          if (! alwaysMakeThumb && picMax <= thumbSize) {
@@ -295,7 +295,11 @@ H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         k (s, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format));
+         a.stop (s, [k, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)], function (s, error) {
+            // We ignore imagemagick warnings if the process ends successfully
+            if (error.code === 0) s.next ();
+            else                  s.next (null, error);
+         });
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -2830,11 +2834,12 @@ var routes = [
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                        if (error) return s.next (null, error);
                                        importFile (s, index + 1);
+                                       notify (a.creat (), {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username});
                                     });
                                  });
 
                                  if (RS.code !== 200) return check (function () {
-                                    s.next (null, {error: RS.body, code: RS.code});
+                                    s.next (null, {error: RS.body, code: RS.code, file: file});
                                  });
 
                                  fs.unlink (tempPath, function (error) {
