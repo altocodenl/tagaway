@@ -644,7 +644,7 @@ All the routes below require an admin user to be logged in.
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
    - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
-   - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: INTEGER, providerErrors: UNDEFINED|[...]}}
+   - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: UNDEFINED|INTEGER, invalid: UNDEFINED|INTEGER, providerErrors: UNDEFINED|[...]}}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -925,7 +925,7 @@ Used by giz:
       error: STRING|UNDEFINED,
       list: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]},
       selection: UNDEFINED|[ID, ...],
-      import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER}
+      upload: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, invalid: INTEGER|UNDEFINED, repeated: INTEGER|UNDEFINED}
 }
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.

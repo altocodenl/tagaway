@@ -993,7 +993,6 @@ var main = [
    }),
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
       s.extrapics = rs.body.pics;
-      clog ('debug extra', s.extrapics);
       return true;
    }],
    dale.go (dale.times (4, 0), function (k) {

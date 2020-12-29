@@ -4583,7 +4583,7 @@ E.import = function () {
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', {class: 'listing-progress'}, [
                      ['div', {class: 'files-found-so-far'}, [
-                        ['span', data.upload.done + (data.upload.repeated || 0)],
+                        ['span', data.upload.done + (data.upload.repeated || 0) + (data.upload.invalid || 0)],
                         ['span', ' / '],
                         ['span', data.upload.total],
                         ['div', ' imported so far'],
@@ -4698,6 +4698,12 @@ E.import = function () {
                                  ['span', {class: 'upload-progress__amount-uploaded'}, '(' + i.repeated],
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'repeated)']
+                              ],
+                              ! i.invalid ? [] : [
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + i.invalid],
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'invalid)']
                               ],
                               ['LITERAL', '&nbsp'],
                               ['span', {class: 'upload-progress__amount-uploaded'}, Math.round ((Date.now () - i.end) / (1000 * 60))],

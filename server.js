@@ -224,22 +224,6 @@ H.log = function (s, username, ev) {
    Redis (s, 'lpush', 'ulog:' + username, teishi.str (ev));
 }
 
-H.size = function (s, path) {
-   if (s.size) return s.next ();
-   a.seq (s, [
-      [a.stop, [k, 'identify', path], function (s, error) {
-         s.next (0, 'Invalid image #1.');
-      }],
-      [a.set, 'size', function (s) {
-         var info = s.last.stdout.split (' ') [2];
-         if (! info)                                        return s.next (0, 'Invalid image #2.');
-         info = info.split ('x');
-         if (info.length !== 2)                             return s.next (0, 'Invalid image #3.');
-         s.next ({w: parseInt (info [0]), h: parseInt (info [1])});
-      }]
-   ]);
-}
-
 H.hash = function (string) {
    return hash (string) + '';
 }
@@ -300,8 +284,7 @@ H.mkdirif = function (s, path) {
 H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
    var format = pic.format === 'png' ? '.png' : '.jpeg';
    a.stop (s, [
-      [H.size, heic_path || path],
-      function (s) {
+      [function (s) {
          var picMax = Math.max (s.size.w, s.size.h);
          if (! alwaysMakeThumb && picMax <= thumbSize) {
             if (! pic.deg) return s.next (true);
@@ -313,7 +296,7 @@ H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
          k (s, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format));
-      },
+      }],
       function (s) {
          if (s.last === true) return s.next (true);
          a.make (fs.rename) (s, Path.join (Path.dirname (path), s ['t' + thumbSize] + format), Path.join (Path.dirname (path), s ['t' + thumbSize]));
@@ -1482,13 +1465,17 @@ var routes = [
             s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
             var metadata = s.metadata.split ('\n');
             if (! pic.vid) {
+               s.size = {};
                var error = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Warning/)) {
                      if (! line.match ('minor') && ! line.match ('Invalid EXIF text encoding')) return line.replace (/^Warning\s+:\s+/, '');
                   }
+                  if (line.match (/^Image Width/))  s.size.w = parseInt (line.split (':') [1].trim ());
+                  if (line.match (/^Image Height/)) s.size.h = parseInt (line.split (':') [1].trim ());
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
                if (error) return reply (rs, 400, {error: 'Invalid image: ' + error});
+               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid image size.'});
 
                var rotation = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Orientation/)) return line;
@@ -2506,7 +2493,8 @@ var routes = [
                      console.log ('GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
-                     var requestLimit = 10, timeWindow = 2;
+                     // We lower it to 8 requests every 2 seconds to avoid hitting rate limits.
+                     var requestLimit = 8, timeWindow = 2;
 
                      var boundary = Math.floor (Math.random () * Math.pow (10, 16));
                      var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
@@ -2836,6 +2824,15 @@ var routes = [
                                     return s.next (null, {error: 'No more space in your ac;pic account.'});
                                  });
 
+                                 if (RS.code === 400) return check (function () {
+                                    if (! upload.invalid) upload.invalid = 0;
+                                    upload.invalid++;
+                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                       if (error) return s.next (null, error);
+                                       importFile (s, index + 1);
+                                    });
+                                 });
+
                                  if (RS.code !== 200) return check (function () {
                                     s.next (null, {error: RS.body, code: RS.code});
                                  });
@@ -2879,7 +2876,6 @@ var routes = [
                   if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
                   // If key was deleted, process was cancelled. The process stops.
                   if (! exists) return;
-                  upload.end = end;
                   redis.hset ('imp:g:' + rq.user.username, 'error', JSON.stringify (error), function (error) {
                      if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
                   });
