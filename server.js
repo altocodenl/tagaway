@@ -177,8 +177,8 @@ var k = function (s) {
 
    var done = function () {
       if (--wait > 0) return;
-      if (! output.stderr && output.code === 0) s.next (output);
-      else                                      s.next (0, output);
+      if (output.code === 0) s.next (output);
+      else                   s.next (0, output);
    }
 
    dale.go (['stdout', 'stderr'], function (v) {
@@ -281,7 +281,7 @@ H.mkdirif = function (s, path) {
    });
 }
 
-H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
+H.thumbPic = function (s, stopFormat, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
    var format = pic.format === 'png' ? '.png' : '.jpeg';
    a.seq (s, [
       [function (s) {
@@ -295,11 +295,7 @@ H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         a.stop (s, [k, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)], function (s, error) {
-            // We ignore imagemagick warnings if the process ends successfully
-            if (error.code === 0) s.next ();
-            else                  s.next (null, error);
-         });
+         a.seq (s, stopFormat ([k, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -317,7 +313,7 @@ H.thumbPic = function (s, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
    ]);
 }
 
-H.thumbVid = function (s, path) {
+H.thumbVid = function (s, stopFormat, path) {
    var max = Math.max (s.size.h, s.size.w);
    s.t200 = uuid (), s.t900 = max > 200 ? uuid () : undefined;
    // small video: make t200 and t200 will be smaller or equal than 200
@@ -334,10 +330,7 @@ H.thumbVid = function (s, path) {
    }
    a.stop (s, [
       [
-         [a.stop, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim.w + 'x' + t200dim.h, Path.join (Path.dirname (path), s.t200 + '.png')], function (s, error) {
-            if (error.code === 0) s.next ();
-            else                  s.next (null, error);
-         }],
+         stopFormat ([k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim.w + 'x' + t200dim.h, Path.join (Path.dirname (path), s.t200 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
          function (s) {
@@ -346,10 +339,7 @@ H.thumbVid = function (s, path) {
          },
       ],
       ! s.t900 ? [] : [
-         [a.stop, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim.w + 'x' + t900dim.h, Path.join (Path.dirname (path), s.t900 + '.png')], function (s, error) {
-            if (error.code === 0) s.next ();
-            else                  s.next (null, error);
-         }],
+         stopFormat ([k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim.w + 'x' + t900dim.h, Path.join (Path.dirname (path), s.t900 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
          function (s) {
@@ -600,14 +590,8 @@ H.hasAccess = function (S, username, picId) {
    });
 }
 
-H.getMetadata = function (s, path, rs, vidFormat) {
-   a.stop (s, ! vidFormat ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams'], function (s, error) {
-      // ffprobe always logs to stderr, so we need to put stderr onto s.last
-      if (error.code === 0) return s.last = s.next (error);
-
-      if (rs) reply (rs, 400, {error: 'Invalid ' + (vidFormat ? 'video' : 'image') + ': ' + error.stderr});
-      else    s.next (null,   {error: 'Invalid ' + (vidFormat ? 'video' : 'image') + ': ' + error.stderr});
-   });
+H.getMetadata = function (s, path, vidFormat) {
+   a.seq (s, ! vidFormat ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams']);
 }
 
 H.detectFormat = function (s, metadata, vidFormat) {
@@ -1451,6 +1435,20 @@ var routes = [
          s.next (s.last);
       }
 
+      var stopFormat = function (command) {
+         return [a.stop, command, function (s, error) {
+            reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr + ' // ' + error.stdout + ' code ' + error.code});
+            var unlink = a.make (fs.unlink);
+            // We clean up the files from FS and S3, whether they're there or not. If they are not, the errors will be ignored.
+            a.seq ([
+               [unlink, newpath],
+               [H.s3del, [Path.join (H.hash (rq.user.username), pic.id)]],
+               ! s.t200 ? [] : [unlink, Path.join (Path.dirname (newpath), s.t200)],
+               ! s.t900 ? [] : [unlink, Path.join (Path.dirname (newpath), s.t900)],
+            ]);
+         }];
+      }
+
       astop (rs, [
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
@@ -1463,7 +1461,7 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'capacity'],
-         [H.getMetadata, path, rs, pic.vid],
+         stopFormat ([H.getMetadata, path, pic.vid]),
          function (s) {
             s.rawMetadata = s.last;
             s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
@@ -1519,19 +1517,12 @@ var routes = [
             a.set (s, 'format', [H.detectFormat, s.rawMetadata, pic.vid ? vidFormat : false]);
          },
          [perfTrack, 'format'],
-         pic.vid ? [a.stop, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
-            if (error.code !== 0) return reply (rs, 500, {error: error});
-            s.next ();
-         }] : function (s) {
+         pic.vid ? stopFormat ([k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath]) : function (s) {
             // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
             if (s.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
             a.seq (s, [
                [a.make (fs.copyFile), path, hashpath],
-               [a.stop, [k, 'exiftool', '-all=', '-overwrite_original', hashpath], function (s, error) {
-                  // Ignore warning on tiff when attempting to remove IFD0 field.
-                  if (s.format === 'tiff' && error.code === 0 && error.stderr.match ('IFD0')) return s.next ();
-                  else s.next (null, error);
-               }]
+               stopFormat ([k, 'exiftool', '-all=', '-overwrite_original', hashpath])
             ]);
          },
          [a.set, 'hash', function (s) {
@@ -1554,16 +1545,16 @@ var routes = [
             pic.format = s.format;
             if (pic.format !== 'heic') return s.next ();
             s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), pic.uuid + '.jpeg');
-            k (s, 'heif-convert', '-q', '100', newpath, s.heic_jpg);
+            a.seq (s, stopFormat ([k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]));
          },
          function (s) {
-            if (pic.vid) return H.thumbVid (s, newpath);
+            if (pic.vid) return H.thumbVid (s, stopFormat, newpath);
             var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
             // If gif, only make small thumbnail.
-            if (pic.format === 'gif') a.seq (s, [[H.thumbPic, newpath, 200, pic, true], [perfTrack, 'resize200']]);
+            if (pic.format === 'gif') a.seq (s, [[H.thumbPic, stopFormat, newpath, 200, pic, true], [perfTrack, 'resize200']]);
             else a.fork (s, [
-               [[H.thumbPic, newpath, 200, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize200']],
-               [[H.thumbPic, newpath, 900, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize900']]
+               [[H.thumbPic, stopFormat, newpath, 200, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize200']],
+               [[H.thumbPic, stopFormat, newpath, 900, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize900']]
             ], function (v) {return v});
          },
          function (s) {
@@ -2257,7 +2248,7 @@ var routes = [
                   var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic);
                   var vid = s.last [K];
                   a.stop ([
-                     [H.getMetadata, path, rs, vid],
+                     [H.getMetadata, path, vid],
                      function (s) {
                         var metadata = ! vid ? s.last.stdout : s.last.stderr;
                         H.getGeotags (s, metadata);
@@ -3373,60 +3364,3 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
       });
    }],
 ]);
-
-// *** TEMPORARY SCRIPT TO DETECT FORMAT OF PICTURES ***
-
-if (cicek.isMaster && process.argv [3] === 'addFormatInfo') a.stop ([
-   // Get all picture data from the DB
-   [redis.keyscan, 'pic:*'],
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (id) {
-         multi.hgetall (id);
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      var pics = s.last;
-      delete s.last;
-      pics = dale.fil (pics, undefined, function (pic) {
-         if (! pic.format) return pic;
-      });
-      var formats = {};
-      // For each picture/video
-      a.seq (s, [
-         [a.fork, pics, function (pic, k) {
-            var path = Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id);
-            return [
-               [H.getMetadata, path, null, pic.vid],
-               function (s) {
-                  H.detectFormat (s, s.last, pic.vid ? 'mp4' : false);
-               },
-               function (s) {
-                  var format = s.last;
-                  console.log ('DEBUG adding format #' + (k + 1) + '/' + pics.length, pic.id, format);
-                  if (! formats [format]) formats [format] = 0;
-                  formats [format]++;
-                  s.format = format;
-                  s.next ();
-               },
-               function (s) {
-                  H.stat.w (s, [['stock', 'format-' + s.format, 1]]);
-               },
-               function (s) {
-                  Redis (s, 'hset', 'pic:' + pic.id, 'format', s.format);
-               }
-            ];
-         }, {max: os.cpus ().length}],
-         function (s) {
-            s.formats = formats;
-            s.next ();
-         }
-      ]);
-   },
-   function (s) {
-      notify (s, {priority: 'critical', type: 'Script to add format information.', ok: true, formats: s.formats});
-   },
-], function (s, error) {
-   notify (s, {priority: 'critical', type: 'Script to add format information error.', error: error, formats: s.formats});
-});
