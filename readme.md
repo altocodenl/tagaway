@@ -39,6 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
+- Import: stream very large files, don't buffer them into memory
+
 - Add email domain validation in SES (email from address as well).
 
 - Formats.
