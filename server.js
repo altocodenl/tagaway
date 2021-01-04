@@ -1262,8 +1262,10 @@ var routes = [
                      multi.del ('tag:' + user.username + ':' + tag);
                   });
                   multi.del ('tags:'  + user.username);
-                  multi.del ('upic:'  + user.username);
-                  multi.del ('upicd:' + user.username);
+                  dale.go (['', ':g', ':d'], function (v) {
+                     multi.del ('upic:'  + user.username + v);
+                     multi.del ('upicd:' + user.username + v);
+                  });
                   multi.del ('shm:'   + user.username);
                   multi.del ('sho:'   + user.username);
                   multi.del ('ulog:'  + user.username);
