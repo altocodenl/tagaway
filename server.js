@@ -16,6 +16,7 @@ var crypto = require ('crypto');
 var fs     = require ('fs');
 var Path   = require ('path');
 var os     = require ('os');
+var https  = require ('https');
 Error.stackTraceLimit = Infinity;
 
 var dale   = require ('dale');
@@ -1389,7 +1390,7 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData', 'path'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
@@ -1403,6 +1404,7 @@ var routes = [
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
 
+      if (rq.data.fields.path !== undefined && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
       if (rq.data.fields.providerData !== undefined) {
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
@@ -1415,7 +1417,7 @@ var routes = [
 
       if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
-      var path = rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
+      var path = rq.data.fields.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (path), Path.basename (path).replace (Path.extname (path), '') + 'hash' + Path.extname (path));
 
       var pic = {
@@ -2755,7 +2757,7 @@ var routes = [
                               redis.del ('imp:g:' + rq.user.username, function (error) {
                                  if (error) return s.next (null, error);
                                  a.seq (s, [
-                                    [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors}}],
+                                    [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors, invalid: upload.invalid}}],
                                     function (s) {
                                        var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                                        sendmail (s, {
@@ -2772,32 +2774,60 @@ var routes = [
 
                         var file = s.list [index];
                         // https://developers.google.com/drive/api/v3/reference/files/export
-                        var path = 'drive/v3/files/' + file.id + '?alt=media';
+                        var path = '/drive/v3/files/' + file.id + '?alt=media';
                         var username = rq.user.username;
 
                         console.log ('DEBUG request file', file.id);
 
-                        // TODO: modify hitit (or bypass it) to get the chunks from the file instead of buffering the entire file in memory.
-                        // This would be required if very large files are being buffered.
-                        hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', raw: true, apres: function (S, RQ, RS) {
-                           console.log ('DEBUG response file', file.id, RS.code);
-
-                           if (RS.code !== 200) {
+                        // We use https directly to stream the response body directly into a file.
+                        https.request ({host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
+                           var Error;
+                           response.on ('error', function (error) {
+                              if (Error) return;
+                              Error = true;
                               check (function () {
                                  if (! upload.providerErrors) upload.providerErrors = [];
-                                 upload.providerErrors.push ({code: RS.code, error: RS.body.toString ()});
-                                 return redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                 upload.providerErrors.push ({code: 0, error: error.toString ()});
+                                 redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                     if (error) return s.next (null, error);
                                     importFile (s, index + 1);
                                  });
                               });
+                           });
+                           if (response.statusCode !== 200) {
+                              response.setEncoding ('utf8');
+                              response.body = '';
+                              response.on ('data', function (buffer) {
+                                 response.body += buffer.toString ();
+                              });
+                              response.on ('end', function () {
+                                 if (Error) return;
+                                 Error = true;
+                                 check (function () {
+                                    if (! upload.providerErrors) upload.providerErrors = [];
+                                    upload.providerErrors.push ({code: response.statusCode, error: response.body});
+                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                       if (error) return s.next (null, error);
+                                       importFile (s, index + 1);
+                                    });
+                                 });
+                              });
+                              return;
                            }
-
                            var tempPath = Path.join ((os.tmpdir || os.tmpDir) (), cicek.pseudorandom (24));
-                           fs.writeFile (tempPath, RS.body, function (error) {
-                              if (error) return s.next (null, error);
+                           var wstream = fs.createWriteStream (tempPath);
+                           wstream.on ('error', function (error) {
+                              Error = true;
+                              s.next (null, error);
+                           });
+                           response.pipe (wstream);
+                           wstream.on ('finish', function () {
+                              if (Error) return;
                               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
-                                 {type: 'file',  name: 'pic', path: tempPath, filename: file.name},
+                                 // We pass the path to the image as a field instead of a file
+                                 {type: 'field', name: 'path', value: tempPath},
+                                 // Placeholder
+                                 {type: 'file',  name: 'pic', value: 'foobar', filename: file.name},
                                  {type: 'field', name: 'uid', value: upload.start},
                                  // Use oldest date, whether createdTime or updatedTime
                                  {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.createdTime).getTime ())},
@@ -2835,20 +2865,19 @@ var routes = [
                                     s.next (null, {error: RS.body, code: RS.code, file: file});
                                  });
 
-                                 fs.unlink (tempPath, function (error) {
-                                    if (error) return s.next (null, error);
-                                    check (function () {
-                                       if (! upload.done) upload.done = 0;
-                                       upload.done++;
-                                       redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                          if (error) return s.next (null, error);
-                                          importFile (s, index + 1);
-                                       });
+                                 check (function () {
+                                    if (! upload.done) upload.done = 0;
+                                    upload.done++;
+                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                       if (error) return s.next (null, error);
+                                       importFile (s, index + 1);
                                     });
                                  });
                               }});
                            });
-                        }});
+                        }).on ('error', function (error) {
+                           s.next (null, error);
+                        }).end ();
                      });
                   }
                ]);

@@ -4705,6 +4705,12 @@ E.import = function () {
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'invalid)']
                               ],
+                              ! i.providerErrors ? [] : [
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + i.providerErrors.length],
+                                 ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved)']
+                              ],
                               ['LITERAL', '&nbsp'],
                               ['span', {class: 'upload-progress__amount-uploaded'}, Math.round ((Date.now () - i.end) / (1000 * 60))],
                               ['LITERAL', '&nbsp'],

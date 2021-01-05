@@ -39,7 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- Import: stream very large files, don't buffer them into memory
+- Import
+   - Stream very large files, don't buffer them into memory (test)
+   - Show invalid & providerErrors in summary
 
 - Add email domain validation in SES (email from address as well).
 
@@ -356,6 +358,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
    - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
    - Can contain a field `providerData` with value `['google'|'dropbox', FILE_ID, FILE_MODIFICATION_TIME]`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - Can contain a field `path` with the path to the image. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
