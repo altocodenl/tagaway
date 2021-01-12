@@ -39,6 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
+[BUG] Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3)
+[BUG] Safari, on double click, images fail to open in most cases
+[BUG] In Safari, when opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
+[BUG] [NOT CRITICAL] In Safari, photo slider makes Safari - Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
+
+
 - Import
    - Stream very large files, don't buffer them into memory (test)
    - Show invalid & providerErrors in summary
