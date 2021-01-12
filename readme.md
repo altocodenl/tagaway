@@ -39,11 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- Import
-   - Stream very large files, don't buffer them into memory (test)
-   - Show invalid & providerErrors in summary
-
-- Add email domain validation in SES (email from address as well).
+- Client improvements:
+   - Incremental query in client.
+   - Make event to increment nPics.
+   - If query changes, scroll-up and reset nPics
+   - Block tag selection if query is ongoing.
+   - Improve "fill screen with pictures" logic by calling it after query pictures.
 
 - Formats.
    - New video formats.
@@ -51,10 +52,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Delete mp4 videos when deleting file.
       - Add query parameter to route so that mp4 can be asked (vs downloading original).
       - Change client to ask for either original video or mp4 for viewing.
+- Dedicated PROD server.
+
+- Import: show invalid & providerErrors in summary (test).
+
+- Add email domain validation in SES (email from address as well).
+
+- Migrate to gotoB v2.
 
 - Import from Dropbox.
-
-- [BUG] While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
+- Long-standing bugs, see after migration to gotoB v2:
+   - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
+   - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
+   - Replicate & fix mysterious shift bug.
 
 - Paid accounts
    - Set account space limit.
@@ -63,6 +73,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Retrieve data on payment cycle.
    - Retrieve used space so far (stats).
    - Downgrade my account alert.
+   - Family plan.
 
 ### Alpha version (DONE)
 
@@ -92,6 +103,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
    - When untagging, if no pictures left with that tag, remove tag from query.
    - Fill pictures grid until screen is full or no pictures remain.
+   - Scroll to the top of the pictures grid when selecting a new combination of tags.
+   - Block selection of a tag if the UI is still processing a previous selection of a tag.
    - Download a single picture.
    - Download multiple pictures as one zip file.
    - Only show tags relevant to the current query.
@@ -901,6 +914,7 @@ Used by giz:
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
+   - `querying`: BOOLEAN|UNDEFINED, set if `query pics` is currently querying the server.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
@@ -935,6 +949,7 @@ Used by giz:
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
+   - `pictotal`': UNDEFINED|INTEGER, with the total number of pictures matched by the current query; comes from `body.total` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
