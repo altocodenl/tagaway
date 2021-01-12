@@ -3288,6 +3288,7 @@ E.login = function () {
             'border-radius': 100,
             'margin-top': CSS.typography.spaceVer (1),
             transition: CSS.vars.easeOutQuart,
+            cursor: 'pointer',
          }],
          media ('screen and (max-width: 767px)', ['.enter-form__button', {'font-size': CSS.typography.fontSize (2)}]),
          ['.enter-form__button-icon', {
@@ -3299,7 +3300,8 @@ E.login = function () {
          // Login form - Button 1
          ['.enter-form__button--1', {
             'background-color': CSS.vars ['color--one'],
-            color: CSS.vars ['highlight-100'],
+            //color: CSS.vars ['highlight-100'],
+            color: '#fff'
          }],
          media ('screen and (min-width: 1025px)', [
             ['.enter-form__button--1:hover',  {'background-color': CSS.vars ['color--one']}],
