@@ -46,11 +46,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Block tag selection if query is ongoing.
    - Improve "fill screen with pictures" logic by calling it after query pictures.
 
-- Client bugs
-   - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3)
-   - Safari, on double click, images fail to open in most cases
-   - In Safari, when opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
-   - [NOT CRITICAL] In Safari, photo slider makes Safari - Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
+- Add debug button for seeing metadata.
 
 - Formats.
    - New video formats.
@@ -58,9 +54,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Delete mp4 videos when deleting file.
       - Add query parameter to route so that mp4 can be asked (vs downloading original).
       - Change client to ask for either original video or mp4 for viewing.
+
 - Dedicated PROD server.
+--------------------
 
 - Import: show invalid & providerErrors in summary (test).
+
+- Safari bugs
+   - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
+   - On double click, images fail to open in most cases
+   - When opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
+   - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
 - Add email domain validation in SES (email from address as well).
 
