@@ -3032,6 +3032,23 @@ var routes = [
       ]);
    }],
 
+   ['get', 'admin/debug/:id', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'hgetall', 'pic:' + rq.data.params.id],
+         function (s) {
+            if (! s.last) return reply (rs, 200, {});
+            s.data = {db: s.last};
+            var path = Path.join (CONFIG.basepath, H.hash (s.last.owner), s.last.id);
+            H.getMetadata (s, path, s.last.vid);
+         },
+         function (s) {
+            s.data.metdata = dale.go ((s.last.stdout + s.last.stderr).split ('\n'), function (v) {
+               return v.replace (/\s+/g, ' ');
+            });
+            reply (rs, 200, s.data);
+         }
+      ]);
+   }],
 ];
 
 // *** SERVER CONFIGURATION ***

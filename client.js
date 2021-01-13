@@ -2609,9 +2609,18 @@ dale.do ([
    ['query', 'pics', function (x) {
       var query = B.get ('State', 'query');
       if (! query) return;
+      B.do (x, 'set', ['State', 'querying'], true);
 
-      B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: 10000, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      var t = Date.now ();
+
+      console.log ('DEBUG QUERY NPICS', B.get ('State', 'nPics'));
+
+      B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPics') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+         B.do (x, 'set', ['State', 'querying'], false);
+         console.log ('DEBUG QUERY DELAY', ((Date.now () - t) / 1000) + 's', JSON.stringify (rs.body).length + ' bytes');
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+
+         if (B.get ('State', 'nPics') === 20) window.scrollTo (0, 0);
 
          B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
          var selected = dale.obj (rs.body.pics, function (pic) {
@@ -2619,9 +2628,12 @@ dale.do ([
          });
          B.set (['State', 'selected'], selected);
 
+         B.do (x, 'set', ['Data', 'pictotal'], rs.body.total);
+
          if (B.get ('State', 'open') === undefined) {
             B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
             B.do (x, 'change', ['State', 'selected'], selected);
+            B.do (x, 'fill', 'screen');
             return;
          }
 
@@ -2648,6 +2660,7 @@ dale.do ([
    ['click', 'pic', function (x, id, k) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this picture and happened less than 500ms ago, we open the picture in fullscreen.
+      if (last.id) console.log ('DEBUG DOUBLE CLICK', last.id === id,  teishi.time () - B.get ('State', 'lastClick').time);
       if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 500) {
          B.do (x, 'rem', ['State', 'selected'], id);
          B.do (x, 'set', ['State', 'open'], k);
@@ -2674,12 +2687,21 @@ dale.do ([
       // We manually trigger the change event.
       B.do (x, 'change', ['State', 'selected']);
    }],
+   // TODO: remove after debugging
+   ['change', ['State', 'shift'], function (x) {
+      console.log ('DEBUG SHIFT CHANGED TO ' + B.get ('State', 'shift'));
+   }],
    ['key', /down|up/, function (x, keyCode) {
-      if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
+      if (keyCode === 16) {
+         // TODO: remove after debugging
+         console.log ('DEBUG SHIFT EVENT', x.path [0]);
+         B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
+      }
       if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.do (x, 'tag', 'pics', true);
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.do (x, 'upload', 'tag', true);
    }],
    ['toggle', 'tag', function (x, tag) {
+      if (B.get ('State', 'querying')) return;
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
       if (index > -1) {
          if (tag === 'untagged' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
@@ -2770,20 +2792,17 @@ dale.do ([
 
       if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
 
-      if ((B.get ('Data', 'pics') || []).length <= B.get ('State', 'nPics')) return;
-
-      B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
+      B.do (x, 'increment', 'nPics');
       B.do (x, 'change', ['State', 'selected']);
    }],
-   ['change', [], {priority: -10000}, function (x) {
+   ['fill', 'screen', function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
-      if (! teishi.eq (x.path, ['Data', 'pics']) && ! teishi.eq (x.path, ['State', 'nPics']) && ! teishi.eq (x.path, ['Data', 'tags'])) return;
       // We fill the screen with pictures.
       var lastPic = teishi.last (c ('.pictures-grid__item-picture'));
       if (! lastPic) return;
       if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
-      if ((B.get ('Data', 'pics') || []).length <= B.get ('State', 'nPics')) return;
-      B.do (x, 'set', ['State', 'nPics'], B.get ('State', 'nPics') + 20);
+      // If there are not enough images to fill the grid, increment the amount of images to show.
+      B.do (x, 'increment', 'nPics');
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -2804,6 +2823,14 @@ dale.do ([
    }],
    ['stop', 'propagation', function (x, ev) {
       ev.stopPropagation ();
+   }],
+   ['increment', 'nPics', function (x) {
+      if (B.get ('Data', 'pictotal') <= B.get ('State', 'nPics')) return;
+      B.do (x, 'set', ['State', 'nPics'], Math.min (B.get ('State', 'nPics') + 20, B.get ('Data', 'pictotal')));
+   }],
+   ['change', ['State', 'nPics'], function (x) {
+      if (B.get ('Data', 'pictotal') <= B.get ('State', 'nPics') + 100) return;
+      B.do (x, 'query', 'pics');
    }],
 
    // *** OPEN RESPONDERS ***
@@ -2841,8 +2868,12 @@ dale.do ([
    }],
    ['open', /prev|next/, function (x) {
       var open = B.get ('State', 'open');
-      if (x.path [0] === 'next') B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 0);
-      else                       B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open - 1) ? open - 1 : B.get ('Data', 'pics').length - 1);
+      if (x.path [0] === 'prev' && open === 0) return;
+      if (x.path [0] === 'next') {
+         if ((open + 1) >= B.get ('State', 'nPics')) B.do (x, 'increment', 'nPics');
+         B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 0);
+      }
+      else                       B.do (x, 'set', ['State', 'open'], open - 1);
    }],
    ['touch', 'start', function (x, ev) {
       if (B.get ('State', 'open') === undefined) return;
@@ -3120,6 +3151,20 @@ dale.do ([
       c ('#password-new-repeat').value  = '';
       B.do (x, 'rem', 'State', 'changePassword');
    }],
+
+   // *** DEBUG RESPONDERS ***
+
+   ['debug', 'info', function (x, id) {
+      B.do (x, 'get', 'admin/debug/' + id, {}, '', function (x, error, rs) {
+         var text;
+         if (error) text = error.responseText;
+         else text = JSON.stringify (rs.body, null, '   ');
+         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: absolute; top: 0; left: 0; z-index: 100000; background-color: white;'}, [
+            ['a', {href: '#', onclick: 'document.body.removeChild (c ("#debug-info"))'}, 'X'],
+            ['pre', {style: 'width: 900px; height: 900px'}, text]
+         ]]);
+      });
+   }]
 
 ], function (v) {
    B.listen.apply (null, v);
@@ -3941,7 +3986,9 @@ E.pics = function () {
                      B.view (['State', 'selected'], {attrs: {class: 'pictures-header'}}, function (x, selected) {
                         selected = dale.keys (selected).length;
                         return [
-                           ['h2', {class: 'pictures-header__title page-title'}, [pics.length + ' pictures', H.if (selected, [', ', selected, ' selected'])]],
+                           B.view (['Data', 'pictotal'], {tag: 'h2', attrs: {class: 'pictures-header__title page-title'}}, function (x, total) {
+                              return [total + ' pictures', H.if (selected, [', ', selected, ' selected'])];
+                           }),
                            ['div', {class: 'pictures-header__action-bar'}, [
                               ['div', {class: 'pictures-header__selected-tags'}, [
                                  B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list-horizontal'}}, function (x, tags) {
@@ -4145,12 +4192,13 @@ E.open = function () {
                   // TODO v2: add inline SVG
                   ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures', opaque: true}],
                   ['div', {class: 'fullscreen__action-text'}, 'Location'],
-               ]]
+               ]],
+               ['a', B.ev ({href: '#'}, ['onclick', 'debug', 'info', pic.id]), 'Info']
             ]],
             ['div', {class: 'fullscreen__count'}, [
                ['span', {class: 'fullscreen__count-current'}, open + 1],
                '/',
-               ['span', {class: 'fullscreen__count-total'}, pics.length],
+               ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pictotal')],
             ]],
             next ? ['img', {src: 'thumb/900/' + next.id, style: style ({display: 'none'})}] : [],
          ];

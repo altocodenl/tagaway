@@ -39,15 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- Client improvements:
-   - Incremental query in client.
-   - Make event to increment nPics.
-   - If query changes, scroll-up and reset nPics
-   - Block tag selection if query is ongoing.
-   - Improve "fill screen with pictures" logic by calling it after query pictures.
-
-- Add debug button for seeing metadata.
-
 - Formats.
    - New video formats.
       - Convert videos from other formats into mp4. Add extra field (or vid field?).
@@ -710,7 +701,7 @@ Used by giz:
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.tags`, `Data.pics`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
+   - Depends on: `Data.tags`, `Data.pics`, `Data.pictotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -779,7 +770,7 @@ Used by giz:
    - Events: `click -> click pic`.
 6. `E.open`
    - Contained by: `E.pics`.
-   - Depends on `State.open`.
+   - Depends on `State.open` and `Data.pictotal`.
    - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`, `goto location PIC`.
 7. `E.noSpace`
    - Contained by: `E.import`, `E.upload`.
@@ -843,27 +834,29 @@ Used by giz:
    3. `change State.query`: sets `State.npics` and invokes `query pics`, but only if the change is not to `State.query.recentlyTagged`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: invokes `post query`, using `State.query`. Updates `State.selected`, and sets `Data.pics` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`.
+   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. If `State.nPics` is set to 20, it scrolls the view back to the top. Updates `State.selected`, and sets `Data.pics` and `Data.pictotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
-   9. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
+   9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
    10. `select all`: sets `State.selected` to all the pictures in the current query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
    12. `tag pics`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
    14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
-   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible; 3) the number of pictures in `Data.pics` is larger than `State.nPics`. If it increases `State.nPics`, it will do so by 20.
-   17. `change Data.pics|State.nPics|Data.tags`: if `State.page` is `pics` and any of the three paths change, and the following conditions are met: 1) there are already pictures in `Data.pics`; 2) `State.nPics` is smaller than the amount of pics in `Data.pics`; and 3) all the pictures are visible; then, `State.nPics` will be increased by 20. This has the result of filling the screen with pictures, in increments of 20. The reason for including a change event for `Data.tags` is that `E.pics` also depends on `Data.tags`, so depending on the order of the redraws, there might be no pictures on the screen when the event is triggered by a change on `Data.pics`.
+   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible. If the conditions are met, it will invoke `increment nPics` and `change State.selected`.
+   17. `fill screen`: if `State.page` is `pics`, there are pictures present and the pictures do not fill the screen, then it will invoke `increment nPics`.
    18. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
    19. `stop propagation`: stops propagation of the `ev` passed as an argument.
+   20. `increment nPics`: if `Data.pictotal` is more than `State.nPics`, `State.nPics` will be incremented by 20; if `Data.pictotal` is more than `State.nPics` but less than `State.nPics + 20`, then `State.nPics` will be set to `Data.pictotal`.
+   21. `change State.nPics`: if `State.nPics + 100` is more than `Data.pictotal`, the responder will invoke `State.query`.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
    2. `enter fullscreen`: enter fullscreen using the native browser methods and set the `<body>` `overflow` to `hidden`.
    3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
    4. `change State.open`: remove or add `app-fullscreen` class from `#pics`, depending on whether `State.open` is defined. If `State.open` is defined, it invokes `enter fullscreen`.
-   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture.
+   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture. If `State.open` is equal to `State.nPics` and the `next` picture is requested, it invokes `increment nPics`.
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
    8. `goto location`: takes a `pic` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
