@@ -41,10 +41,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Formats.
    - New video formats.
-      - Convert videos from other formats into mp4. Add extra field (or vid field?).
+      - Convert videos from other formats into mp4. Use vid field.
       - Delete mp4 videos when deleting file.
+      - When getting mp4 version of videos, if pending, don't serve. Also exclude from query. If errored, don't remove from query, show them broken.
       - Add query parameter to route so that mp4 can be asked (vs downloading original).
       - Change client to ask for either original video or mp4 for viewing.
+
+- Reimplement select all after changes to client.
 
 - Dedicated PROD server.
 --------------------
@@ -56,8 +59,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - On double click, images fail to open in most cases
    - When opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
-
-- Add email domain validation in SES (email from address as well).
 
 - Migrate to gotoB v2.
 
