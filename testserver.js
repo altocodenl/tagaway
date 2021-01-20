@@ -314,10 +314,6 @@ var outro = [
 ];
 
 var main = [
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      s.pics = rs.body.pics;
-      return true;
-   }],
    ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ttester ('feedback', 'post', 'feedback', {}, [
       ['message', 'string'],
@@ -1449,11 +1445,66 @@ var main = [
       return true;
    }],
    ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
+   // *** NON-MP4 VIDEO FORMATS ***
+   dale.go (['circus.MOV', 'boat.3gp', 'drumming.avi'], function (vid, k) {
+      var format = require ('path').extname (vid).replace ('.', '');
+      return [
+         ['upload ' + format, 'post', 'upload', {}, {multipart: [
+            {type: 'file',  name: 'pic', path: PICS + vid},
+            {type: 'field', name: 'uid', value: Date.now ()},
+            {type: 'field',  name: 'lastModified', value: Date.now ()}
+         ]}, 200, function (s, rq, rs) {
+            if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
+            if (! s.nonmp4) s.nonmp4 = [];
+            s.nonmp4.push (rs.body);
+            return true;
+         }],
+         ['get ' + format, 'get', function (s) {
+            return 'pic/' + s.nonmp4 [k].id + '?original=1';
+         }, {}, '', 200, function (s, rq, rs) {
+            var contentType = ['video/quicktime', 'video/3gpp', 'video/x-msvideo'] [k];
+            if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type: ' + rs.headers ['content-type']);
+            return true;
+         }],
+         ['get mp4 for ' + format + ' while conversion is ongoing', 'get', function (s) {
+            return 'pic/' + s.nonmp4 [k].id;
+         }, {}, '', 404, function (s, rq, rs) {
+            if (rs.body !== 'pending') return clog ('Invalid body ' + rs.body);
+            return true;
+         }],
+         // Delete .mov and .avi, but not .3gp
+         k === 1 ? [] : ['delete ' + format, 'post', 'delete', {}, function (s) {
+            return {ids: [s.nonmp4 [k].id]};
+         }, 200, function (s, rq, rs, next) {
+            // For the last video, wait 4 seconds
+            if (k === 2) {
+               setTimeout (next, 4000);
+               return;
+            }
+            return true;
+         }]
+      ];
+   }),
+   ['get mp4 for 3gp after conversion is done', 'get', function (s) {
+      return 'pic/' + s.nonmp4 [1].id;
+   }, {}, '', 200, function (s, rq, rs) {
+      if (rs.headers ['content-type'] !== 'video/mp4') return clog ('Invalid content type: ' + rs.headers ['content-type']);
+      return true;
+   }],
+   ['get non-mp4 videos', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pics [0].name !== 'boat.3gp') return clog ('Invalid name field: ' + rs.body [0].name);
+      if (rs.body.pics [0].vid !== true) return clog ('Invalid vid field: ' + rs.body [0].vid);
+      return true;
+   }],
+   ['delete 3gp', 'post', 'delete', {}, function (s) {
+      return {ids: [s.nonmp4 [1].id]};
+   }, 200],
+   // *** CHECK CLEANUP BEFORE END ***
    ['get account at the end of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 67 && rs.body.logs.length !== 68)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 73 && rs.body.logs.length !== 74)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, 3000);
    }],

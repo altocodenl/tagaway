@@ -532,6 +532,10 @@ H.deletePic = function (s, id, username) {
       },
       [a.make (fs.unlink), Path.join (CONFIG.basepath, H.hash (username), id)],
       function (s) {
+         if (! s.pic.vid || s.pic.vid === '1' || s.pic.vid.match (/^pending/) || s.pic.vid.match (/^error/)) return s.next ();
+         a.make (fs.unlink) (s, Path.join (CONFIG.basepath, H.hash (username), s.pic.vid));
+      },
+      function (s) {
          var multi = redis.multi ();
 
          multi.del  ('pic:'  + s.pic.id);
@@ -554,8 +558,9 @@ H.deletePic = function (s, id, username) {
       },
       function (s) {
          H.stat.w (s, [
-            ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
-            ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0)],
+            // The minus sign coerces the strings into numbers.
+            ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0) - (s.pic.bymp4 || 0)],
+            ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0) - (s.pic.bymp4 || 0)],
             ['stock', s.pic.vid ? 'vids' : 'pics', -1],
             ['stock', 'format-' + s.pic.format, -1],
             s.pic.by200 ? ['stock', 't200', -1] : [],
@@ -1360,7 +1365,15 @@ var routes = [
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.getType (s.pic.format.split (':') [0])};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
+
+            // If the picture is not a video, or it is a mp4 video, or the original video is required, we serve the file.
+            if (! s.pic.vid || s.pic.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
+
+            if (s.pic.vid.match (/pending/)) return reply (rs, 404, 'pending');
+            if (s.pic.vid.match (/error/))   return reply (rs, 500, 'error');
+            // We serve the mp4 version of the video.
+            headers ['content-type'] = mime.getType ('mp4');
+            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.vid), [CONFIG.basepath], headers);
          }
       ]);
    }],
@@ -1427,9 +1440,17 @@ var routes = [
          dateup: Date.now (),
       };
 
-      if (mime.getType (rq.data.files.pic) === 'video/mp4') {
-         pic.vid = 1;
-         var vidFormat = 'mp4';
+      var vidFormats = {
+         'video/mp4' :      'mp4',
+         'video/quicktime': 'mov',
+         'video/3gpp':      '3gp',
+         'video/x-msvideo': 'avi'
+      }
+
+      if (vidFormats [mime.getType (rq.data.files.pic)]) {
+         var vidFormat = vidFormats [mime.getType (rq.data.files.pic)];
+         // If the format is mp4, we only put a truthy placeholder in pic.vid; otherwise, we create an id to point to the mp4 version of the video.
+         pic.vid = vidFormat === 'mp4' ? 1 : uuid ();
       }
 
       var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic.id);
@@ -1499,17 +1520,13 @@ var routes = [
             }
             else {
                var rotation;
-               dale.go (metadata, function (line) {
+               s.size = {};
+               dale.go ((s.rawMetadata.stdout + s.rawMetadata.stderr).split ('\n'), function (line) {
                   if (line.match (/\s+rotate\s+:/)) rotation = line.replace (/rotate\s+:/, '').trim ();
-                  // TODO: change this when adding further formats
-                  if (! line.match (/h264/)) return;
-                  var size = line.match (/\d{2,4}x\d{2,4}/);
-                  if (! size) return s.size = false;
-                  s.size = {w: parseInt (size [0].split ('x') [0]), h: parseInt (size [0].split ('x') [1])};
-                  if (type (s.size.h) !== 'integer' || type (s.size.w) !== 'integer') s.size = false;
-                  return true;
+                  if (line.match (/^width/i))  s.size.w = parseInt (line.split ('=') [1]);
+                  if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
                });
-               if (! s.size) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
+               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
                   if (line.match (/time/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
@@ -1545,6 +1562,51 @@ var routes = [
          // We store only the original pictures in S3, not the thumbnails
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
+         function (s) {
+            if (! pic.vid || vidFormat === 'mp4') return s.next ();
+            var id = pic.vid, start = Date.now ();
+            pic.vid = 'pending:' + id;
+            // Don't wait for conversion process, run it in new astack thread.
+            s.next ();
+
+            a.stop ([
+               [Redis, 'hset', 'proc:vid', pic.id, Date.now ()],
+               // TODO: add queuing to allow a maximum of N simultaneous conversions.
+               [k, 'ffmpeg', '-i', newpath, '-vcodec', 'h264', '-acodec', 'mp2', Path.join (Path.dirname (newpath), id + '.mp4')],
+               [a.make (fs.rename), Path.join (Path.dirname (newpath), id + '.mp4'), Path.join (Path.dirname (newpath), id)],
+               [a.set, 'bymp4', [a.make (fs.stat), Path.join (Path.dirname (newpath), id)]],
+               [Redis, 'exists', 'pic:' + pic.id],
+               function (s) {
+                  if (! s.last) return fs.unlink (Path.join (Path.dirname (newpath), id), function (error) {
+                     if (! error || error.code === 'ENOENT') return;
+                     notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, username: rq.user.username});
+                  });
+                  s.bymp4 = s.bymp4.size;
+                  var multi = redis.multi ();
+                  multi.hmset ('pic:' + pic.id, {vid: id, bymp4: s.bymp4});
+                  multi.hdel ('proc:vid', pic.id);
+                  mexec (s, multi);
+               },
+               function (s) {
+                  H.stat.w (s, [
+                     ['stock', 'byfs',                     s.bymp4],
+                     ['stock', 'byfs-' + rq.user.username, s.bymp4],
+                     ['flow', 'ms-video-convert', Date.now () - start],
+                     ['flow', 'ms-video-convert:' + vidFormat, Date.now () - start]
+                  ]);
+               }
+            ], function (s, error) {
+               redis.exists ('pic:' + pic.id, function (Error, exists) {
+                  if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
+                  // If the picture was deleted, ignore the error.
+                  if (! exists) return;
+                  redis.set ('pic:' + pic.id, 'vid', 'error:' + id, function (Error) {
+                     if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
+                     notify (s, {priority: 'critical', type: 'video conversion to mp4 error', error: error, username: rq.user.username});
+                  });
+               });
+            });
+         },
          function (s) {
             pic.format = s.format;
             if (pic.format !== 'heic') return s.next ();
@@ -1983,7 +2045,13 @@ var routes = [
          function (s) {
             s.output.tags = teishi.last (s.last).sort ();
             dale.go (s.output.pics, function (pic, k) {
-               s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: pic.vid ? true : undefined, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
+               var vid = undefined;
+               if (pic.vid) {
+                  if (pic.vid.match ('pending'))    vid = 'pending';
+                  else if (pic.vid.match ('error')) vid = 'error';
+                  else                              vid = true;
+               }
+               s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: vid, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
             });
             reply (rs, 200, s.output);
          },
@@ -3042,7 +3110,7 @@ var routes = [
             H.getMetadata (s, path, s.last.vid);
          },
          function (s) {
-            s.data.metdata = dale.go ((s.last.stdout + s.last.stderr).split ('\n'), function (v) {
+            s.data.metadata = dale.go ((s.last.stdout + s.last.stderr).split ('\n'), function (v) {
                return v.replace (/\s+/g, ' ');
             });
             reply (rs, 200, s.data);

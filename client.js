@@ -2809,8 +2809,8 @@ dale.do ([
       if (! ids.length) return;
       if (ids.length === 1) {
          var a = document.createElement ('a');
-         a.href     = 'pic/' + ids [0];
-         a.download = 'pic/' + ids [0];
+         // We add the `original` query parameter in case we're downloading a non-mp4 video. In all other cases, the parameter will be ignored.
+         a.href     = 'pic/' + ids [0] + '?original=1';
          document.body.appendChild (a);
          a.click ();
          document.body.removeChild (a);
@@ -2978,7 +2978,7 @@ dale.do ([
             }
 
             if (lastFromUpload) {
-               var cancelled = B.get ('State', 'upload', 'cancelled').indexOf (file.uid) > -1;
+               var cancelled = (B.get ('State', 'upload', 'cancelled') || []).indexOf (file.uid) > -1;
                if (cancelled) {
                   B.do (x, 'snackbar', 'green', 'Upload cancelled successfully. ' + (B.get ('State', 'upload', 'summary', file.uid, 'ok') || []).length + ' pictures were uploaded.');
                }
@@ -4181,9 +4181,13 @@ E.open = function () {
             ['style', media ('screen and (max-width: 767px)', [
                ['.fullscreen__image-container', {padding: 0}],
             ])],
-            ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, [
-               ! pic.vid ? ['img', {class: 'fullscreen__image', src: 'thumb/900/' + pic.id, alt: 'picture'}] : ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: 'thumb/900/' + pic.id, preload: 'auto'}],
-            ]],
+            ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
+               if (! pic.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/900/' + pic.id, alt: 'picture'}];
+               // TODO: add formatting
+               if (pic.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
+               if (pic.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
+               return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: 'thumb/900/' + pic.id, loop: true}];
+            }) ()],
             ['div', {class: 'fullscreen__actions'}, [
                H.if (! pic.vid, ['div', B.ev ({style: style ({'margin-right': 15}), class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
                   // TODO v2: add inline SVG

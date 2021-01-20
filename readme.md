@@ -39,13 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- Formats.
-   - New video formats.
-      - Convert videos from other formats into mp4. Use vid field.
-      - Delete mp4 videos when deleting file.
-      - When getting mp4 version of videos, if pending, don't serve. Also exclude from query. If errored, don't remove from query, show them broken.
-      - Add query parameter to route so that mp4 can be asked (vs downloading original).
-      - Change client to ask for either original video or mp4 for viewing.
+- New video formats, test:
+   - Upload.
+   - See pending status in previews when opening them.
+   - Reproduce video.
+   - Download original video.
 
 - Reimplement select all after changes to client.
 
@@ -61,7 +59,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
 - Migrate to gotoB v2.
-
+- Implement video streaming.
 - Import from Dropbox.
 - Long-standing bugs, see after migration to gotoB v2:
    - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
@@ -353,6 +351,9 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Pic must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
+   - If the file is a non-mp4 video:
+      - If the `original` query parameter is truthy, the original video is served.
+      - Otherwise, the mp4 version of the video is served. If the conversion is still ongoing, a 404 is returned with body `'pending'`. If the conversion ended up in an error, a 500 is returned with body `'error'`.
 
 - `GET /thumb/SIZE/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
@@ -419,7 +420,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of picture owned by the user, will be included as a result of the query, even if they are not untagged pictures.
    - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...]}`.
-      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: true|UNDEFINED}`.
+      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
       - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
 
@@ -581,6 +582,8 @@ All the routes below require an admin user to be logged in.
    - ms-upload-resize900: total ms for 900 resize operation in POST /upload
    - ms-upload-s3:        total ms for S3 upload in POST /upload (no longer in use after S3 uploads are done in the background)
    - ms-upload-db:        total ms for info storage & DB processing in POST /upload
+   - ms-video-convert:    total ms for non-mp4 to mp4 video conversion
+   - ms-video-convert:FORMAT:  total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
 
 ### Redis structure
 
@@ -631,7 +634,8 @@ All the routes below require an admin user to be logged in.
    by200: INT or absent (size of 200 thumbnail in FS)
    t900: STRING or absent
    by900: INT or absent (size of 900 thumbnail in FS)
-   vid: `1` or absent
+   vid: `1` if a mp4 video, absent if a picture, ID for a non-mp4 video (ID points to the mp4 version of the video), `pending:ID` for a pending mp4 conversion, `error:ID` for an errored conversion.
+   bymp4: if a non-mp4 video, size of mp4 version of the video.
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pics downloaded (also includes cached hits)
@@ -683,6 +687,8 @@ All the routes below require an admin user to be logged in.
 - oa:g:ref:USERNAME (string): refresh token for google for USERNAME
 
 - imp:g:USERNAME (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, list: {roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...]}, unsupported: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...], import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, repeated: UNDEFINED|INTEGER, errors: [...]}}`.
+
+- proc:vid (hash): list of ongoing non-mp4 to mp4 video conversions. key is the `id` of the video, value is the timestamp in milliseconds.
 
 Used by giz:
 
