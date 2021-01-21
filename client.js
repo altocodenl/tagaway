@@ -2817,6 +2817,7 @@ dale.do ([
       if (ids.length === 1) {
          var a = document.createElement ('a');
          // We add the `original` query parameter in case we're downloading a non-mp4 video. In all other cases, the parameter will be ignored.
+         a.download = 'pic/' + ids [0] + '?original=1';
          a.href     = 'pic/' + ids [0] + '?original=1';
          document.body.appendChild (a);
          a.click ();
