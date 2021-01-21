@@ -319,6 +319,11 @@ var main = [
       ['message', 'string'],
    ]),
    ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
+   ttester ('report unsupported formats', 'post', 'unsupportedFormats', {}, [
+      ['formats', 'object'],
+      [['formats', 'foo'], 'integer'],
+   ]),
+   ['report unsupported formats', 'post', 'unsupportedFormats', {}, {formats: {'application/octet-stream': 2}}, 200],
    ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');

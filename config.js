@@ -27,7 +27,7 @@ var GREETING = function (username) {
 module.exports = {
    domain: DOMAIN,
    cookiename: 'ac-v1',
-   allowedFormats: ['image/jpeg', 'image/png', 'image/bmp', 'image/heic', 'image/gif', 'image/tiff', 'video/mp4', 'video/quicktime', 'video/3gpp', 'video/x-msvideo'],
+   allowedFormats: ['image/jpeg', 'image/png', 'image/bmp', 'image/heic', 'image/gif', 'image/tiff', 'video/mp4', 'video/quicktime', 'video/3gpp', 'video/avi', 'video/x-msvideo'],
    port: 1427,
    basepath: ENV ? '/root/files' : '/tmp',
    redisdb: 15,

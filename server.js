@@ -1341,6 +1341,25 @@ var routes = [
       ]);
    }],
 
+   // *** REPORT UNSUPPORTED FORMATS ***
+
+   ['post', 'unsupportedFormats', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['formats'], 'eachOf', teishi.test.equal],
+         ['body.formats', b.formats, 'object'],
+         ['body.formats', b.formats, 'integer', 'each'],
+         ['body.formats', b.formats, {min: 1}, 'each', teishi.test.range]
+      ])) return;
+
+      astop (rs, [
+         [notify, {priority: 'important', type: 'unsupported formats', user: rq.user.username, formats: b.formats}],
+         [reply, rs, 200]
+      ]);
+   }],
+
    // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES) ***
 
    ['get', 'original/:id', function (rq, rs) {

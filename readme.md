@@ -39,13 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- New video formats, test:
-   - Upload.
-   - See pending status in previews when opening them.
-   - Reproduce video.
-   - Download original video.
-
 - Reimplement select all after changes to client.
+
+- Fix issue in consistency check to include mp4 files & bytes.
 
 - Dedicated PROD server.
 --------------------
@@ -345,6 +341,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 `POST /feedback`
    - Body must be an object of the form `{message: STRING}` (otherwise 400).
+   - If successful, returns a 200.
+
+`POST /unsupportedFormats`
+   - Body must be an object of the form `{formats: {FORMAT1: INTEGER, ...}}` (otherwise 400).
    - If successful, returns a 200.
 
 - `GET /pic/ID`
@@ -871,8 +871,8 @@ Used by giz:
 
 5. Upload
    1. `change State.page`: if `State.page` is `upload`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
-   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`.
-   3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
+   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. If there are files with unsupported formats, it invokes `report unsupportedFormats`.
+   3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If there are files with unsupported formats, it invokes `report unsupportedFormats`.
    4. `upload start`: adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and `change State.upload.queue`.
    5. `upload cancel`: has `uid` as its first argument; adds `uid` to `State.upload.cancelled`; finds all the files on `State.upload.queue` with `uid`, filters them out and updates `State.upload.queue`.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
@@ -884,6 +884,7 @@ Used by giz:
       - Adds an item to either `State.upload.summary.UID.ok`, `State.upload.summary.UID.error` or `State.upload.summary.UID.repeat`.
       - If query is successful, invokes `query account` and `query tags`.
       - If query is successful and `State.page` is `pics`, invokes `query pics`.
+   8. `report unsupportedFormats`: using `State.upload.new.format`, it invokes `post unsupportedFormats`.
 
 6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
@@ -932,7 +933,7 @@ Used by giz:
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
    - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
    - `upload`:
-      - `new`: {format: ['FILENAME', ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
+      - `new`: {format: [{name: 'FILENAME', format: 'FORMAT'}, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
       - `summary`: {

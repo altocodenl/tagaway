@@ -2571,10 +2571,11 @@ dale.do ([
       B.do (x, 'query', 'pics');
    }],
    ['change', ['State', 'selected'], function (x) {
+      var selected = B.get ('State', 'selected') || {};
       c ('.pictures-grid__item-picture', function (pic) {
-         pic.classList [B.get ('State', 'selected', pic.id) ? 'add' : 'remove'] ('selected');
+         pic.classList [selected [pic.id] ? 'add' : 'remove'] ('selected');
       });
-      var selectedPictures = dale.keys (B.get ('State', 'selected')).length > 0;
+      var selectedPictures = dale.keys (selected).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
          organise: ['app-organise', 'app-show-organise-bar', State.untag ? 'app-untag-tags' : 'app-attach-tags'],
@@ -2627,16 +2628,18 @@ dale.do ([
          }));
 
          B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
-         var selected = dale.obj (rs.body.pics, function (pic) {
-            if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
+
+         var selected = B.get ('State', 'selected') || {};
+         var updatedSelection = dale.obj (rs.body.pics, function (pic) {
+            if (selected [pic.id]) return [pic.id, true];
          });
-         B.set (['State', 'selected'], selected);
+         B.set (['State', 'selected'], updatedSelection);
 
          B.do (x, 'set', ['Data', 'pictotal'], rs.body.total);
 
          if (B.get ('State', 'open') === undefined) {
             B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
-            B.do (x, 'change', ['State', 'selected'], selected);
+            B.do (x, 'change', ['State', 'selected'], updatedSelection);
             B.do (x, 'fill', 'screen');
             return;
          }
@@ -2657,7 +2660,7 @@ dale.do ([
          B.set (['Data', 'pics'], rs.body.pics);
          B.do (x, 'change', ['State', 'open']);
          B.do (x, 'change', ['Data', 'pics']);
-         B.do (x, 'change', ['State', 'selected'], selected);
+         B.do (x, 'change', ['State', 'selected'], updatedSelection);
 
       });
    }],
@@ -2920,22 +2923,24 @@ dale.do ([
    ['drop', 'files', function (x, ev) {
       if (B.get ('State', 'page') !== 'upload') return;
       dale.do (ev.dataTransfer.files, function (file) {
-         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'format'], file.name);
+         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'format'], {name: file.name, format: file.type});
          else                                                  B.add (['State', 'upload', 'new', 'files'], file);
       });
       // TODO: why do we need this timeout?
       setTimeout (function () {
          B.do (x, 'change', ['State', 'upload', 'new']);
       }, 0);
+      if ((B.get ('State', 'upload', 'new', 'format') || []).length) B.do (x, 'report', 'unsupportedFormats');
    }],
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
       dale.do (input.files, function (file) {
-         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'format'], file.name);
+         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'format'], {name: file.name, format: file.type});
          else                                                  B.add (['State', 'upload', 'new', 'files'], file);
       });
       B.do (x, 'change', ['State', 'upload', 'new']);
       input.value = '';
+      if ((B.get ('State', 'upload', 'new', 'format') || []).length) B.do (x, 'report', 'unsupportedFormats');
    }],
    ['upload', 'start', function (x) {
       var uid = Date.now ();
@@ -3006,6 +3011,15 @@ dale.do ([
             if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
          });
       });
+   }],
+   ['report', 'unsupportedFormats', function (x) {
+      var body = {};
+      dale.do (B.get ('State', 'upload', 'new', 'format'), function (file) {
+         console.log ('debug guayando', file);
+         if (! body [file.format]) body [file.format] = 0;
+         body [file.format]++;
+      });
+      B.do (x, 'post', 'unsupportedFormats', {}, {formats: body});
    }],
 
    // *** IMPORT RESPONDERS ***
@@ -4289,7 +4303,7 @@ E.upload = function () {
                                              ['style', ['.no-svg svg', {display: 'none'}]],
                                              ['p', {class: 'upload-selection__text'}, [
                                                 [format.length, ' files have unsupported formats and will be ignored:'],
-                                                ['ul', dale.do (format, function (file) {return ['li', file]})]
+                                                ['ul', dale.do (format, function (file) {return ['li', file.name]})]
                                              ]]
                                           ]]),
                                        ];
