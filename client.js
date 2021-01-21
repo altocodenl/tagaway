@@ -2622,6 +2622,10 @@ dale.do ([
 
          if (B.get ('State', 'nPics') === 20) window.scrollTo (0, 0);
 
+         B.do (x, 'set', ['Data', 'pendingConversions'], dale.stop (rs.body.pics, true, function (pic) {
+            return pic.vid === 'pending';
+         }));
+
          B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
          var selected = dale.obj (rs.body.pics, function (pic) {
             if (B.get ('State', 'selected', pic.id)) return [pic.id, true];
@@ -2831,6 +2835,17 @@ dale.do ([
    ['change', ['State', 'nPics'], function (x) {
       if (B.get ('Data', 'pictotal') <= B.get ('State', 'nPics') + 100) return;
       B.do (x, 'query', 'pics');
+   }],
+   ['change', ['Data', 'pendingConversions'], function (x) {
+      var pending = B.get ('Data', 'pendingConversions'), interval = B.get ('State', 'pendingConversions');
+      if ((pending && interval) || (! pending && ! interval)) return;
+      if (! pending) {
+         B.do (x, 'rem', 'State', 'pendingConversions');
+         return clearInterval (interval);
+      }
+      B.do (x, 'set', ['State', 'pendingConversions'], setInterval (function () {
+         B.do (x, 'query', 'pics');
+      }, 2000));
    }],
 
    // *** OPEN RESPONDERS ***

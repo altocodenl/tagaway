@@ -841,7 +841,7 @@ Used by giz:
    3. `change State.query`: sets `State.npics` and invokes `query pics`, but only if the change is not to `State.query.recentlyTagged`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. If `State.nPics` is set to 20, it scrolls the view back to the top. Updates `State.selected`, and sets `Data.pics` and `Data.pictotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
+   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. Updates `State.selected`, and sets `Data.pics` and `Data.pictotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
@@ -857,6 +857,7 @@ Used by giz:
    19. `stop propagation`: stops propagation of the `ev` passed as an argument.
    20. `increment nPics`: if `Data.pictotal` is more than `State.nPics`, `State.nPics` will be incremented by 20; if `Data.pictotal` is more than `State.nPics` but less than `State.nPics + 20`, then `State.nPics` will be set to `Data.pictotal`.
    21. `change State.nPics`: if `State.nPics + 100` is more than `Data.pictotal`, the responder will invoke `State.query`.
+   22. `change Data.pendingConversions`: if `Data.pendingConversions` is `true` and `State.pendingConversions` already contains an interval, or if `Data.pendingConversions` is `false` and `State.pendingConversions` is `undefined`, the responder does nothing. If `Data.pendingConversions` is `true` and there's no interval yet, it sets an interval to invoke `query pics` every 2 seconds and stores it in `State.pendingConversions`. If `Data.pendingConversions` is `false` and there's still an interval, it removes it from the store and invokes `clearInterval` on it.
 
 4. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
@@ -922,6 +923,7 @@ Used by giz:
    - `nPics`: the number of pictures to show.
    - `open`: index of the picture to be shown in full-screen mode.
    - `page`: determines the current page.
+   - `pendingConversions`: if set, an interval that invokes `query pics`.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
    - `querying`: BOOLEAN|UNDEFINED, set if `query pics` is currently querying the server.
@@ -958,6 +960,7 @@ Used by giz:
 }
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
+   - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `pictotal`': UNDEFINED|INTEGER, with the total number of pictures matched by the current query; comes from `body.total` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
