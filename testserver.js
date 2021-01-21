@@ -321,7 +321,7 @@ var main = [
    ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
    ttester ('report unsupported formats', 'post', 'unsupportedFormats', {}, [
       ['formats', 'object'],
-      [['formats', 'foo'], 'integer'],
+      [['formats', 'foo'], ['integer', 'undefined']],
    ]),
    ['report unsupported formats', 'post', 'unsupportedFormats', {}, {formats: {'application/octet-stream': 2}}, 200],
    ['get account at the beginning of the test cycle', 'get', 'account', {}, '', 200, function (s, rq, rs) {
