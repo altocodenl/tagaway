@@ -41,8 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Reimplement select all after changes to client.
 
-- Fix issue in consistency check to include mp4 files & bytes.
-
 - Import:
    - Preserve original names in name field.
    - Check if dates are preserved.

@@ -3354,6 +3354,7 @@ if (cicek.isMaster) a.stop ([
          s.dbfiles [prefix + pic.id] = 'pic';
          if (pic.t200) s.dbfiles [prefix + pic.t200] = 'thumb';
          if (pic.t900) s.dbfiles [prefix + pic.t900] = 'thumb';
+         if (pic.vid && pic.vid !== '1') s.dbfiles [prefix + pic.vid] = 'thumb';
       });
       s.next ();
    },
@@ -3442,8 +3443,8 @@ if (cicek.isMaster) a.stop ([
       var actual = {TOTAL: {s3: 0, fs: 0}};
       dale.go (s.last, function (pic) {
          if (! actual [pic.owner]) actual [pic.owner] = {s3: 0, fs: 0};
-         actual [pic.owner].fs += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0);
-         actual.TOTAL.fs       += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0);
+         actual [pic.owner].fs += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0) + parseInt (pic.bymp4 || 0);
+         actual.TOTAL.fs       += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0) + parseInt (pic.bymp4 || 0);
          actual [pic.owner].s3 += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
          actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
       });
