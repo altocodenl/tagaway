@@ -1930,7 +1930,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -1944,6 +1944,7 @@ var routes = [
             ['body.recentlyTagged', b.recentlyTagged, 'array'],
             ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ],
+         ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
       ])) return;
 
       if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: 'all'});
@@ -2012,6 +2013,8 @@ var routes = [
                return s.last [s.pics.length + k];
             });
             s.pics = s.last.slice (0, s.pics.length).concat (recentlyTagged);
+
+            if (b.idsOnly) return reply (rs, 200, dale.go (s.pics, function (pic) {return pic.id}));
 
             if (s.pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
 

@@ -39,8 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo before launch
 
-- Reimplement select all after changes to client.
-
 - Import:
    - Preserve original names in name field.
    - Check if dates are preserved.
@@ -62,6 +60,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
    - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
    - Replicate & fix mysterious shift bug.
+   - Intermittent 403 from GET csrf when already being logged in.
 
 - Paid accounts
    - Set account space limit.
@@ -184,6 +183,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pics
    - Basic mobile design.
+      - See pics.
+      - Select tags & sort order to see pics.
+      - Upload folders.
 
 - Open
    - Show tags.
@@ -191,8 +193,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Retry on error.
    - Show estimated time remaining in ongoing uploads.
-   - Report automatically for file extensions that are not allowed, for future expansion of formats.
-   - Support 3gp, mov, heic, avi. Check for actual file type in server, not just extension.
    - Ignore deleted pictures flag.
    - New upload flow
       - Starting state: area from dropdown & button for files & button for folder upload.
@@ -200,10 +200,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 - Account & payment
-   - Account page.
    - Recover/reset password.
-   - Payment.
    - Change email, password & username.
+   - Payment.
    - Delete account.
    - Export/import all data.
    - Log me out of all sessions.
@@ -211,10 +210,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Payment late flow: freeze uploads, email, auto-delete by size.
 
 - Share & manage
-   - Delete tag.
    - Rename tag.
    - Share/unshare with email: signup, login, or go straight if there's a session.
-   - Mark tags shared.
+   - Mark tags shared with others.
    - Mark tags shared with me.
    - If two shared tags from different users have the same name, put "@username".
    - Authorization to see or ignore share.
@@ -224,23 +222,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - User management.
 
 - Other
-   - Set up proper lifecycle of pics bucket in S3.
-   - Frontend tests.
+   - Check lifecycle of pics bucket in S3.
    - Disable THP for redis.
    - Check graceful app shutdown on mg restart.
    - Downgrade read ECONNRESET errors priority?
-   - Reference users internaly by id, not username.
    - Test for maximum capacity.
-   - Report slow queries & slow redraws.
-   - Migrate to gotoB v2
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
+   - Frontend tests.
    - ac;tools integration.
    - Favicon & icons.
    - Status & stats public page.
    - Spanish support.
-
-- Bugs
-   - Intermittent 403 from GET csrf when already being logged in.
 
 ### Future
 
@@ -424,6 +416,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
       - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
+   - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned.
 
 `POST /share`
    - Body must be of the form `{tag: STRING, who: ID, del: BOOLEAN|UNDEFINED}`.
@@ -838,15 +831,15 @@ Used by giz:
 
 3. Pics
    1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
-   3. `change State.query`: sets `State.npics` and invokes `query pics`, but only if the change is not to `State.query.recentlyTagged`.
+   2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics true`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
+   3. `change State.query`: sets `State.npics` and invokes `query pics true`, but only if the change is not to `State.query.recentlyTagged`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. Updates `State.selected`, and sets `Data.pics` and `Data.pictotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
+   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pics` and `Data.pictotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
-   10. `select all`: sets `State.selected` to all the pictures in the current query.
+   10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
    12. `tag pics`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
    13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
@@ -1211,7 +1204,13 @@ We set `s.pics` to hold the info of the pictures queried, ignoring those coming 
             s.pics = s.last.slice (0, s.pics.length).concat (recentlyTagged);
 ```
 
-If there's no pictures, we return an object representing an empty query. The fields are `total`, `pics` and `tags`.
+If `b.idsOnly` is `true`, we only return an array with the ids of all the matching pictures. Notice that we ignore `b.sort`, `b.from` and `b.to`.
+
+```javascript
+            if (b.idsOnly) return dale.go (s.pics, function (pic) {return pic.id});
+```
+
+If there are no pictures, we return an object representing an empty query. The fields are `total`, `pics` and `tags`.
 
 ```javascript
             if (s.pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});

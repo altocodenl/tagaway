@@ -2562,13 +2562,13 @@ dale.do ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.do (x, 'query', 'pics');
+      else B.do (x, 'query', 'pics', true);
       B.do (x, 'query', 'tags');
       B.do (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], function (x) {
       if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.do (x, 'set', ['State', 'nPics'], 20);
-      B.do (x, 'query', 'pics');
+      B.do (x, 'query', 'pics', true);
    }],
    ['change', ['State', 'selected'], function (x) {
       var selected = B.get ('State', 'selected') || {};
@@ -2607,7 +2607,7 @@ dale.do ([
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
-   ['query', 'pics', function (x) {
+   ['query', 'pics', function (x, updateSelected) {
       var query = B.get ('State', 'query');
       if (! query) return;
       B.do (x, 'set', ['State', 'querying'], true);
@@ -2630,7 +2630,7 @@ dale.do ([
          B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
 
          var selected = B.get ('State', 'selected') || {};
-         var updatedSelection = dale.obj (rs.body.pics, function (pic) {
+         var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pics, function (pic) {
             if (selected [pic.id]) return [pic.id, true];
          });
          B.set (['State', 'selected'], updatedSelection);
@@ -2723,9 +2723,12 @@ dale.do ([
       }).concat (tag));
    }],
    ['select', 'all', function (x) {
-      B.do (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pics'), function (pic) {
-         return [pic.id, true];
-      }));
+      var query = B.get ('State', 'query');
+      // query.sort, query.from and query.to are irrelevant, we just send them for the request to be valid.
+      B.do (x, 'post', 'query', {}, {idsOnly: true, tags: query.tags, sort: query.sort, from: 1, to: 1000000000, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+         B.do (x, 'set', ['State', 'selected'], dale.obj (rs.body, function (id) {return [id, true]}));
+      });
    }],
    ['query', 'tags', function (x) {
       B.do (x, 'get', 'tags', {}, '', function (x, error, rs) {

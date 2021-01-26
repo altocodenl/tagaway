@@ -340,6 +340,7 @@ var main = [
       ['sort', 'string'],
       ['from', 'integer'],
       ['to', 'integer'],
+      ['idsOnly', ['undefined', 'boolean']],
    ]),
    {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
       if (! eq (rs.body, {error: 'csrf'})) return clog ('Invalid payload');
@@ -353,6 +354,10 @@ var main = [
    ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {total: 0, pics: [], tags: []})) return clog ('Invalid payload');
+      return true;
+   }],
+   ['get pics (ids only)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10, idsOnly: true}, 200, function (s, rq, rs) {
+      if (! eq (rs.body, [])) return clog ('Invalid body.');
       return true;
    }],
    ['upload invalid payload #1', 'post', 'upload', {}, '', 400],
@@ -648,6 +653,11 @@ var main = [
          dimw: 248,
          tags: ['2014']
       })) return clog ('Invalid pic fields.');
+      return true;
+   }],
+   ['get pics (ids only)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10, idsOnly: true}, 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'array') return clog ('Invalid body.');
+      if (rs.body.length !== 3 || type (rs.body [0]) !== 'string') return clog ('Invalid body length or type.');
       return true;
    }],
    ['upload lopsided picture', 'post', 'upload', {}, {multipart: [
