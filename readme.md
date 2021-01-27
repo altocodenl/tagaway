@@ -37,16 +37,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
-### Todo before launch
-
-- Import:
-   - Preserve original names in name field.
-   - Check if dates are preserved.
-   - Show invalid & providerErrors in summary (test).
+### Todo beta
 
 - Dedicated PROD server.
+   - Provision.
+   - Set up home & ac;pic.
+   - Move DNS.
 --------------------
-
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
    - On double click, images fail to open in most cases
@@ -54,15 +51,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
 - Migrate to gotoB v2.
-- Implement video streaming.
-- Import from Dropbox.
+
 - Long-standing bugs, see after migration to gotoB v2:
    - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
    - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
    - Replicate & fix mysterious shift bug.
    - Intermittent 403 from GET csrf when already being logged in.
 
-- Paid accounts
+- Implement video streaming.
+
+- Import from Dropbox.
+
+- Accounts
+   - Recover/reset password.
    - Set account space limit.
    - Delete my account with confirmation.
    - Show/hide paid space in account.
@@ -71,7 +72,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Downgrade my account alert.
    - Family plan.
 
-### Alpha version (DONE)
+### Already implemented
 
 - Pics
    - Show all pictures.
@@ -179,7 +180,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### v1
+### Todo post-beta
 
 - Pics
    - Basic mobile design.
@@ -200,10 +201,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
 
 - Account & payment
-   - Recover/reset password.
-   - Change email, password & username.
-   - Payment.
-   - Delete account.
+   - Change email.
    - Export/import all data.
    - Log me out of all sessions.
    - Freeze me out (includes log me out of all sessions).
@@ -234,7 +232,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Status & stats public page.
    - Spanish support.
 
-### Future
+### Todo future
 
 - Pics
    - Hidden tags.
@@ -251,7 +249,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Create group that groups people.
    - Create tag that groups tags (can also have pictures directly assigned).
 
-### Never
+### Todo never
 
 - Share
    - Comments.
@@ -368,6 +366,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
    - Can contain a field `providerData` with value `['google'|'dropbox', FILE_ID, FILE_MODIFICATION_TIME]`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Can contain a field `path` with the path to the image. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - Can contain a field `filename` with the original name of the image. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).

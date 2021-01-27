@@ -1422,7 +1422,7 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData', 'path'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData', 'path', 'filename'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
@@ -1436,13 +1436,15 @@ var routes = [
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
 
-      if (rq.data.fields.path !== undefined && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
+      if (rq.data.fields.path     !== undefined && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
+      if (rq.data.fields.filename !== undefined && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
       if (rq.data.fields.providerData !== undefined) {
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
          if (type (rq.data.fields.providerData) !== 'array') return reply (rs, 400, {error: 'providerData type'});
          if (rq.data.fields.providerData.length !== 3) return reply (rs, 400, {error: 'providerData length'});
          if (['google', 'dropbox'].indexOf (rq.data.fields.providerData [0]) === -1) return reply (rs, 400, {error: 'providerData provider'});
+         name = rq.data.fields.filename;
       }
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
@@ -1451,11 +1453,12 @@ var routes = [
 
       var path = rq.data.fields.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
+      var name = rq.data.fields.filename !== undefined ? rq.data.fields.filename : path.slice (path.indexOf ('_') + 1);
 
       var pic = {
          id:     uuid (),
          owner:  rq.user.username,
-         name:   path.slice (path.indexOf ('_') + 1),
+         name:   name,
          dateup: Date.now (),
       };
 
@@ -1500,7 +1503,7 @@ var routes = [
             var limit = CONFIG.storelimit [rq.user.type];
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 40 * 1000 * 1000 * 1000;
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 150 * 1000 * 1000 * 1000;
             if (used >= limit) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
@@ -2226,7 +2229,7 @@ var routes = [
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
             var limit = CONFIG.storelimit [rq.user.type];
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 40 * 1000 * 1000 * 1000;
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 150 * 1000 * 1000 * 1000;
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
@@ -2496,7 +2499,7 @@ var routes = [
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],
          function (s) {
 
-            var PAGESIZE = process.argv [2] === 'dev' ? 100 : 1000, PAGES = process.argv [2] === 'dev' ? 3 : 10000;
+            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 1 : 10000;
 
             var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -2526,7 +2529,7 @@ var routes = [
                         'spaces=drive,photos',
                      ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-                     console.log ('DEBUG request image page', page++);
+                     console.log ('DEBUG IMPORT - request image page', page++);
 
                      setLimit ();
                      hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
@@ -2579,7 +2582,7 @@ var routes = [
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
-                     console.log ('GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
+                     console.log ('DEBUG IMPORT - GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
                      // We lower it to 8 requests every 2 seconds to avoid hitting rate limits.
@@ -2603,7 +2606,7 @@ var routes = [
                      });
                      body += '--';
 
-                     console.log ('DEBUG request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
+                     console.log ('DEBUG IMPORT - request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
                      setLimit (batch.length);
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
                         if (RS.code !== 200) return s.next (null, RS.body);
@@ -2650,18 +2653,18 @@ var routes = [
 
                               // If absolutely no capacity, must wait.
                               if (lastPeriodTotal >= requestLimit) {
-                                 console.log (timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
+                                 console.log ('DEBUG IMPORT -', timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
                                  setTimeout (function () {
                                     getParentBatch (s, lastPeriodRequest [1]);
                                  }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
                               }
                               // If some capacity but not unrestricted, send a limited request immediately.
                               else if (parentsToRetrieve.length > (requestLimit - lastPeriodTotal)) {
-                                 console.log (timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
+                                 console.log ('DEBUG IMPORT -', timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
                                  getParentBatch (s, requestLimit - lastPeriodTotal);
                               }
                               else {
-                                 console.log (timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
+                                 console.log ('DEBUG IMPORT -', timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
                                  getParentBatch (s);
                               }
                            });
@@ -2675,7 +2678,7 @@ var routes = [
                [getFilePage],
                getParentBatch,
                function (s) {
-                  console.log ('DONE RETRIEVING DATA');
+                  console.log ('DEBUG IMPORT - DONE RETRIEVING DATA');
                   var porotoSum = function (id) {
                      if (! folders [id].count) folders [id].count = 0;
                      folders [id].count++;
@@ -2718,7 +2721,7 @@ var routes = [
             ]);
          }
       ], function (s, error) {
-         console.log ('IMPORT LIST ERROR', error);
+         console.log ('DEBUG IMPORT - IMPORT LIST ERROR', error);
 
          a.seq (s, [
             [notify, {priority: 'critical', type: 'import list error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}}],
@@ -2867,7 +2870,7 @@ var routes = [
                         var path = '/drive/v3/files/' + file.id + '?alt=media';
                         var username = rq.user.username;
 
-                        console.log ('DEBUG request file', file.id);
+                        console.log ('DEBUG IMPORT - request file', file.id);
 
                         // We use https directly to stream the response body directly into a file.
                         https.request ({host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
@@ -2916,11 +2919,13 @@ var routes = [
                               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
                                  // We pass the path to the image as a field instead of a file
                                  {type: 'field', name: 'path', value: tempPath},
-                                 // Placeholder
-                                 {type: 'file',  name: 'pic', value: 'foobar', filename: file.name},
+                                 // Same with the name of the image
+                                 {type: 'field', name: 'filename', value: file.name},
+                                 // Placeholder field
+                                 {type: 'file',  name: 'pic', value: 'foobar'},
                                  {type: 'field', name: 'uid', value: upload.start},
                                  // Use oldest date, whether createdTime or updatedTime
-                                 {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.createdTime).getTime ())},
+                                 {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
                                  {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
                                  {type: 'field', name: 'providerData', value: JSON.stringify (['google', file.id, file.modifiedTime])},
                                  {type: 'field', name: 'csrf', value: s.csrf}
@@ -2975,7 +2980,7 @@ var routes = [
             importFile (s, 0);
          }
       ], function (s, error) {
-         console.log ('IMPORT UPLOAD ERROR', error);
+         console.log ('DEBUG IMPORT - UPLOAD ERROR', error);
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
             [notify, {priority: 'critical', type: 'import upload error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}}],
