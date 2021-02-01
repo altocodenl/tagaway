@@ -2921,8 +2921,7 @@ var routes = [
                                  {type: 'field', name: 'path', value: tempPath},
                                  // Same with the name of the image
                                  {type: 'field', name: 'filename', value: file.name},
-                                 // Placeholder field
-                                 {type: 'file',  name: 'pic', value: 'foobar'},
+                                 {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.jpg'},
                                  {type: 'field', name: 'uid', value: upload.start},
                                  // Use oldest date, whether createdTime or updatedTime
                                  {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
