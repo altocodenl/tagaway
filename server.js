@@ -2585,8 +2585,9 @@ var routes = [
                      console.log ('DEBUG IMPORT - GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
-                     // We lower it to 8 requests every 2 seconds to avoid hitting rate limits.
-                     var requestLimit = 8, timeWindow = 2;
+                     // We lower it to 3.9 requests every seconds to avoid hitting rate limits.
+                     // Dashboard: https://console.developers.google.com/apis/dashboard
+                     var requestLimit = 3.9, timeWindow = 1;
 
                      var boundary = Math.floor (Math.random () * Math.pow (10, 16));
                      var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
@@ -2921,7 +2922,7 @@ var routes = [
                                  {type: 'field', name: 'path', value: tempPath},
                                  // Same with the name of the image
                                  {type: 'field', name: 'filename', value: file.name},
-                                 {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.jpg'},
+                                 {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                                  {type: 'field', name: 'uid', value: upload.start},
                                  // Use oldest date, whether createdTime or updatedTime
                                  {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
