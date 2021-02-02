@@ -41,6 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - (new tag) bug in upload.
 - when deleting tags, remove those ids from selected.
+- Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that. 
 
 - Dedicated PROD server.
    - Provision.
