@@ -39,6 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- (new tag) bug in upload.
+- when deleting tags, remove those ids from selected.
+
 - Dedicated PROD server.
    - Provision.
    - Set up home & ac;pic.
