@@ -2782,7 +2782,7 @@ dale.do ([
       if (! confirm ('Are you sure you want to delete the ' + pics.length + ' selected pictures?')) return;
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
-         B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'pics', true);
          B.do (x, 'query', 'tags');
       });
    }],
@@ -4337,7 +4337,7 @@ E.upload = function () {
                                                    ['div', {class: 'search-form__dropdown'}, [
                                                       // TAG LIST DROPDOWN
                                                       ['ul', {class: 'tag-list-dropdown'}, dale.do (Tags, function (tag) {
-                                                         return ['li', B.ev ({class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, ['onclick', 'upload', 'tag', tag]), [
+                                                         return ['li', B.ev ({class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, ['onclick', 'upload', 'tag', tag === filter + ' (new tag)' ? filter : tag]), [
                                                             // TODO v2: add inline SVG
                                                             ['div', {class: 'tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
                                                                ['span', {class: 'tag__title'}, tag]
