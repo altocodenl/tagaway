@@ -39,14 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- (new tag) bug in upload.
-- when deleting tags, remove those ids from selected.
+- "(new tag)" bug in upload.
 
-- Dedicated PROD server.
-   - Provision.
-   - Set up home & ac;pic.
-   - Move DNS.
---------------------
+- When deleting tags, remove those ids from selected.
+
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
    - On double click, images fail to open in most cases
@@ -187,9 +183,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pics
    - Basic mobile design.
+      - Upload files & folders.
       - See pics.
       - Select tags & sort order to see pics.
-      - Upload folders.
+      - Select sorting order.
 
 - Open
    - Show tags.
@@ -197,7 +194,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Retry on error.
    - Show estimated time remaining in ongoing uploads.
-   - Ignore deleted pictures flag.
+   - Ignore deleted pictures flag for both upload & import.
    - New upload flow
       - Starting state: area from dropdown & button for files & button for folder upload.
       - Uploading state: button for starting new upload and button for starting tagging state.
@@ -231,7 +228,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
    - Frontend tests.
    - ac;tools integration.
-   - Favicon & icons.
    - Status & stats public page.
    - Spanish support.
 
@@ -258,7 +254,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Comments.
    - Share to social platforms.
    - Share certain tags only on shared pictures.
-   - Public profile pages.
+   - Profile pages.
 
 ## Server
 
