@@ -3191,10 +3191,21 @@ dale.do ([
       B.do (x, 'get', 'admin/debug/' + id, {}, '', function (x, error, rs) {
          var text;
          if (error) text = error.responseText;
-         else text = JSON.stringify (rs.body, null, '   ');
-         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: absolute; top: 0; left: 0; z-index: 100000; background-color: white;'}, [
-            ['a', {href: '#', onclick: 'document.body.removeChild (c ("#debug-info"))'}, 'X'],
-            ['pre', {style: 'width: 900px; height: 900px'}, text]
+         else {
+            var readableDate = function (item) {
+               return new Date (parseInt (item)).toISOString ();
+            }
+            // Convert dates into readable dates
+            rs.body.db.date = readableDate (rs.body.db.date);
+            rs.body.db.dateup = readableDate (rs.body.db.dateup);
+            rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
+               return [k, readableDate (v)];
+            });
+            text = JSON.stringify (rs.body, null, '   ');
+         }
+         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: absolute; top: 0; left: 0; z-index: 100000; background-color: white; padding: 10px;'}, [
+            ['a', {href: '#', onclick: 'document.body.removeChild (c ("#debug-info"))', style: 'font-weight: bold; font-size: 28px'}, 'X'],
+            ['pre', {style: 'width: 600px; height: 600px; overflow-y: scroll;'}, text]
          ]]);
       });
    }]
