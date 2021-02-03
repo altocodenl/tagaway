@@ -3199,7 +3199,7 @@ dale.do ([
             rs.body.db.date = readableDate (rs.body.db.date);
             rs.body.db.dateup = readableDate (rs.body.db.dateup);
             rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
-               return [k, readableDate (v)];
+               return [k, readableDate (v) + ' (' + v + ')'];
             });
             text = JSON.stringify (rs.body, null, '   ');
          }
