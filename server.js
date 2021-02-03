@@ -2585,9 +2585,9 @@ var routes = [
                      console.log ('DEBUG IMPORT - GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
-                     // We lower it to 3.9 requests every seconds to avoid hitting rate limits.
+                     // We lower it to 4 requests every seconds to avoid hitting rate limits.
                      // Dashboard: https://console.developers.google.com/apis/dashboard
-                     var requestLimit = 3.9, timeWindow = 1;
+                     var requestLimit = 4, timeWindow = 1;
 
                      var boundary = Math.floor (Math.random () * Math.pow (10, 16));
                      var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
