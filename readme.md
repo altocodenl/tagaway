@@ -43,7 +43,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - When deleting tags, remove those ids from selected.
 
-- Safari bugs
+- Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+
+Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
    - On double click, images fail to open in most cases
    - When opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
