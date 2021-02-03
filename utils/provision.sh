@@ -24,7 +24,9 @@ ssh $HOST '(mkdir /tmp/mon && cd /tmp/mon && curl -L# https://github.com/tj/mon/
 ssh $HOST npm install -g mongroup
 ssh $HOST wget https://raw.githubusercontent.com/fpereiro/vimrc/master/vimrc -O .vimrc
 ssh $HOST apt-get install redis-server -y
+# The two commands immediately below are only for servers receiving outside traffic
 ssh $HOST apt-get install nginx -y
+ssh $HOST apt-get install -y certbot python3-certbot-nginx
 ssh $HOST apt-get install imagemagick -y
 ssh $HOST apt-get install libimage-exiftool-perl -y
 ssh $HOST apt-get install ffmpeg -y
