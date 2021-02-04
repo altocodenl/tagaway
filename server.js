@@ -1498,6 +1498,11 @@ var routes = [
       }
 
       astop (rs, [
+         [a.set, 'byfs', [a.make (fs.stat), path]],
+         function (s) {
+            if (s.byfs.size > 1000 * 1000 * 1000) return reply (rs, 400, {error: 'File is too large (> 1GB)'});
+            s.next ();
+         },
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
             var used = parseInt (s.last) || 0;
@@ -1580,7 +1585,6 @@ var routes = [
          [perfTrack, 'hash'],
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
-         [a.set, 'byfs', [a.make (fs.stat), newpath]],
          [a.make (fs.unlink), path],
          // We store only the original pictures in S3, not the thumbnails
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
@@ -2018,7 +2022,8 @@ var routes = [
                if (! s.last [s.pics.length + k] || s.last [s.pics.length + k].owner !== rq.user.username) return;
                return s.last [s.pics.length + k];
             });
-            s.pics = s.last.slice (0, s.pics.length).concat (recentlyTagged);
+
+            s.pics = dale.fil (s.last.slice (0, s.pics.length).concat (recentlyTagged), null, function (pic) {return pic});
 
             if (b.idsOnly) return reply (rs, 200, dale.go (s.pics, function (pic) {return pic.id}));
 

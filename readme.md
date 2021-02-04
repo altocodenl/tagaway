@@ -39,14 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- When having a 4|5xx error, report username if present.
+- [check] When having a 4|5xx error, report username if present.
 
 - Import server errors:
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
-   - Fix stats in prod 82588576 (s3) 165177152 (s3-fp), related to the above
    - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory.
-   - DSC_0525.MOV with "1001" tag, which is a folder:
+   - [check fixed] DSC_0525.MOV with "1001" tag, which is a folder:
       - negative date: -30578688000000
        9) "dates"
        10) "{\"[mov,mp4,m4a,3gp,3g2,mj2 @ 0x560d097d1f00] st\":\"1001.\",\"creation_time\":\"2013-03-08T11:14:32.000000Z\",\"upload:date\":1362759272000}
@@ -56,7 +55,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
 - In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
 - Check if we can put folders & subfolder names as tags on folder upload.
-
 - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
 
 Safari bugs
@@ -74,6 +72,8 @@ Safari bugs
    - Intermittent 403 from GET csrf when already being logged in.
 
 - Implement video streaming.
+
+- Implement support for large files (> 1GB).
 
 - Import from Dropbox.
 
@@ -1214,8 +1214,10 @@ If there's no such picture or the picture doesn't belong to the user, it cannot 
 
 We set `s.pics` to hold the info of the pictures queried, ignoring those coming from `b.recentlyTagged`; we concatenate to it the pictures in `recentlyTagged`, which have been filtered both by existence and ownership. This is the set of pictures that will match the query.
 
+Note that we filter out any `null` values, which can happen if some pictures returned by the query got deleted before getting their info but after the first part of the query was done.
+
 ```javascript
-            s.pics = s.last.slice (0, s.pics.length).concat (recentlyTagged);
+            s.pics = dale.fil (s.last.slice (0, s.pics.length).concat (recentlyTagged), null, function (pic) {return pic});
 ```
 
 If `b.idsOnly` is `true`, we only return an array with the ids of all the matching pictures. Notice that we ignore `b.sort`, `b.from` and `b.to`.
