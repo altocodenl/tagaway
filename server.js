@@ -1450,7 +1450,7 @@ var routes = [
 
       if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
-      console.log ('DEBUG IMPORT FIELDS', ra.data.fields);
+      console.log ('DEBUG IMPORT FIELDS', rq.data.fields);
 
       var path = rq.data.fields.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
@@ -1536,7 +1536,7 @@ var routes = [
                else if (rotation.match ('180')) pic.deg = 180;
 
                s.dates = dale.obj (metadata, function (line) {
-                  if (! line.match (/\bdate\b/i)) return;
+                  if (! line.match (/date/i)) return;
                   var key = line.split (':') [0].trim ();
                   return [key, line.replace (key, '').replace (':', '').trim ()];
                });
@@ -1552,7 +1552,7 @@ var routes = [
                if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata, filename: name});
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
-                  if (line.match (/\btime\b/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
+                  if (line.match (/time\b/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
                });
             }
             s.next ();
@@ -1691,6 +1691,8 @@ var routes = [
             });
 
             pic.date = pic.date [0];
+            // If date is earlier than 1990, report it but carry on.
+            if (pic.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in picture', user: rq.user.username, dates: s.dates, filename: name});
 
             if (s.t200) pic.t200  = s.t200;
             if (s.t900) pic.t900  = s.t900;
@@ -3168,7 +3170,7 @@ cicek.apres = function (rs) {
          if (['/assets/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
          return true;
       }
-      if (report ()) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, username: rq.user ? rq.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+      if (report ()) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, username: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
    }
    else {
       logs.push (['flow', 'rq-all', 1]);
