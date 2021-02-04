@@ -1444,12 +1444,13 @@ var routes = [
          if (type (rq.data.fields.providerData) !== 'array') return reply (rs, 400, {error: 'providerData type'});
          if (rq.data.fields.providerData.length !== 3) return reply (rs, 400, {error: 'providerData length'});
          if (['google', 'dropbox'].indexOf (rq.data.fields.providerData [0]) === -1) return reply (rs, 400, {error: 'providerData provider'});
-         name = rq.data.fields.filename;
       }
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
       if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
+
+      console.log ('DEBUG IMPORT FIELDS', ra.data.fields);
 
       var path = rq.data.fields.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
@@ -1484,7 +1485,7 @@ var routes = [
 
       var stopFormat = function (command) {
          return [a.stop, command, function (s, error) {
-            reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr + ' // ' + error.stdout + ' code ' + error.code});
+            reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr + ' // ' + error.stdout + ' code ' + error.code, filename: name});
             var unlink = a.make (fs.unlink);
             // We clean up the files from FS and S3, whether they're there or not. If they are not, the errors will be ignored.
             a.seq ([
@@ -1523,8 +1524,8 @@ var routes = [
                   if (line.match (/^Image Height/)) s.size.h = parseInt (line.split (':') [1].trim ());
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
-               if (error) return reply (rs, 400, {error: 'Invalid image: ' + error});
-               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid image size.'});
+               if (error) return reply (rs, 400, {error: 'Invalid image: ' + error, filename: name});
+               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid image size.', metadata: metadata, filename: name});
 
                var rotation = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Orientation/)) return line;
@@ -1535,7 +1536,7 @@ var routes = [
                else if (rotation.match ('180')) pic.deg = 180;
 
                s.dates = dale.obj (metadata, function (line) {
-                  if (! line.match (/date/i)) return;
+                  if (! line.match (/\bdate\b/i)) return;
                   var key = line.split (':') [0].trim ();
                   return [key, line.replace (key, '').replace (':', '').trim ()];
                });
@@ -1548,10 +1549,10 @@ var routes = [
                   if (line.match (/^width/i))  s.size.w = parseInt (line.split ('=') [1]);
                   if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
                });
-               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata});
+               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata, filename: name});
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
-                  if (line.match (/time/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
+                  if (line.match (/\btime\b/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
                });
             }
             s.next ();
@@ -3167,7 +3168,7 @@ cicek.apres = function (rs) {
          if (['/assets/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
          return true;
       }
-      if (report ()) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+      if (report ()) notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, username: rq.user ? rq.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
    }
    else {
       logs.push (['flow', 'rq-all', 1]);
