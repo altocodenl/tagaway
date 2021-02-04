@@ -51,6 +51,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
        10) "{\"[mov,mp4,m4a,3gp,3g2,mj2 @ 0x560d097d1f00] st\":\"1001.\",\"creation_time\":\"2013-03-08T11:14:32.000000Z\",\"upload:date\":1362759272000}
    - , doesn't have folder tag, but has extraneous tag "sony"
 
+- When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
 - Improve display of errors in upload & import.
 - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
 - In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
