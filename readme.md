@@ -39,6 +39,26 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- When having a 4|5xx error, report username if present.
+
+- Import server errors:
+   - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
+      - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
+   - Fix stats in prod 82588576 (s3) 165177152 (s3-fp), related to the above
+   - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory.
+   - DSC_0525.MOV with "1001" tag, which is a folder:
+      - negative date: -30578688000000
+       9) "dates"
+       10) "{\"[mov,mp4,m4a,3gp,3g2,mj2 @ 0x560d097d1f00] st\":\"1001.\",\"creation_time\":\"2013-03-08T11:14:32.000000Z\",\"upload:date\":1362759272000}
+   - , doesn't have folder tag, but has extraneous tag "sony"
+
+
+
+- Improve display of errors in upload & import.
+- When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
+- In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
+- Check if we can put folders & subfolder names as tags on folder upload.
+
 - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
 
 Safari bugs
