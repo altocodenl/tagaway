@@ -499,7 +499,7 @@ H.s3exec = function () {
          actions,
          [Redis, 'decr', 's3:proc'],
       ], function (s, error) {
-         if (error) return notify (s, {priority: 'critical', type: 'redis error s3exec', error: error});
+         if (error) return notify (s, {priority: 'critical', type: 'redis error s3exec', error: error, operation: next});
          H.s3exec ();
       });
    });
