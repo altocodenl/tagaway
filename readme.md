@@ -51,6 +51,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
 - In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
 - Check if we can put folders & subfolder names as tags on folder upload.
+- Tags are not updated on import refreshes.
 - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
 
 Safari bugs
