@@ -1500,7 +1500,7 @@ var routes = [
       astop (rs, [
          [a.set, 'byfs', [a.make (fs.stat), path]],
          function (s) {
-            if (s.byfs.size > 536870888) return reply (rs, 400, {error: 'File is too large (> 536870888 bytes)'});
+            if (s.byfs.size > 536870888) return reply (rs, 400, {error: 'size'});
             s.next ();
          },
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
@@ -2619,6 +2619,7 @@ var routes = [
                      setLimit (batch.length);
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
                         if (RS.code !== 200) return s.next (null, RS.body);
+                        console.log ('DEBUG IMPORT RAW PARENTS REQUEST', RS.body);
 
                         redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
                            if (error) return s.next (null, error);
@@ -2795,6 +2796,7 @@ var routes = [
             }
             var recurseUp = function (childId, folderId) {
                var folder = list.folders [folderId];
+               console.log ('DEBUG IMPORT PUSHING TAG', childId, folder);
                filesToUpload [childId].push (folder.name);
                if (folder.parent) recurseUp (childId, folder.parent);
             }
