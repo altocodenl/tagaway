@@ -3178,7 +3178,7 @@ cicek.apres = function (rs) {
          return true;
       }
       if (report ()) {
-         if (rs.log.code === 400) console.log ('DEBUG 400 user', rq.user);
+         if (rs.log.code === 400) console.log ('DEBUG 400 user', rs.request.user);
          notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, username: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       }
    }
