@@ -1500,7 +1500,7 @@ var routes = [
       astop (rs, [
          [a.set, 'byfs', [a.make (fs.stat), path]],
          function (s) {
-            if (s.byfs.size > 1000 * 1000 * 1000) return reply (rs, 400, {error: 'File is too large (> 1GB)'});
+            if (s.byfs.size > 536870888) return reply (rs, 400, {error: 'File is too large (> 536870888 bytes)'});
             s.next ();
          },
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],

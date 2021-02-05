@@ -40,11 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - [check] When having a 4|5xx error, report username if present.
+- sony tag
 
 - Import server errors:
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
-   - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory.
+   - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory. limit: 536870888
    - [check fixed] DSC_0525.MOV with "1001" tag, which is a folder:
       - negative date: -30578688000000
        9) "dates"
@@ -378,7 +379,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /upload`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
-   - Must contain one file (otherwise, 400 with body `{error: 'file'}`).
+   - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
+   - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'size'}`).
    - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
    - Can contain a field `providerData` with value `['google'|'dropbox', FILE_ID, FILE_MODIFICATION_TIME]`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Can contain a field `path` with the path to the image. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
