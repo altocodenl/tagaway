@@ -39,18 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- [check] When having a 4|5xx error, report username if present.
-- sony tag
-
 - Import server errors:
+   - [check] When having a 4|5xx error, report username if present.
+   - sony tag, doesn't have folder tag, but has extraneous tag "sony"
+   - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory. limit: 536870888
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
-   - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory. limit: 536870888
-   - [check fixed] DSC_0525.MOV with "1001" tag, which is a folder:
-      - negative date: -30578688000000
-       9) "dates"
-       10) "{\"[mov,mp4,m4a,3gp,3g2,mj2 @ 0x560d097d1f00] st\":\"1001.\",\"creation_time\":\"2013-03-08T11:14:32.000000Z\",\"upload:date\":1362759272000}
-   - , doesn't have folder tag, but has extraneous tag "sony"
 
 - When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
 - Improve display of errors in upload & import.
