@@ -41,6 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import server errors:
    - [check] When having a 4|5xx error, report username if present.
+   - Files missplacement of tags. Several photos have a tag applied that does not correlate to folders in which they are contained in G Drive. (ie: IMG_0111.jpg - which is IMG_0111.HEIC in Tom's G Drive).
    - sony tag, doesn't have folder tag, but has extraneous tag "sony"
    - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory. limit: 536870888
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
