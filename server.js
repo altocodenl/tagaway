@@ -432,7 +432,7 @@ H.s3list = function (s, prefix) {
 
 H.s3queue = function (s, op, username, key, path) {
    a.seq (s, [
-      [Redis, 'rpush', 's3:queue', JSON.stringify ({op: op, username: username, key: key, path: path})],
+      [Redis, 'rpush', 's3:queue', JSON.stringify ({op: op, username: username, key: key, path: path, t: Date.now ()})],
       function (s) {
          if (s.error) return notify (s, {priority: 'critical', type: 'redis error s3queue', error: s.error});
          // We call the next function.
@@ -1422,7 +1422,7 @@ var routes = [
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData', 'path', 'filename'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
@@ -1436,14 +1436,9 @@ var routes = [
       });
       if (error) return reply (rs, 400, {error: 'tag: ' + error});
 
-      if (rq.data.fields.path     !== undefined && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
-      if (rq.data.fields.filename !== undefined && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
       if (rq.data.fields.providerData !== undefined) {
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
-         if (type (rq.data.fields.providerData) !== 'array') return reply (rs, 400, {error: 'providerData type'});
-         if (rq.data.fields.providerData.length !== 3) return reply (rs, 400, {error: 'providerData length'});
-         if (['google', 'dropbox'].indexOf (rq.data.fields.providerData [0]) === -1) return reply (rs, 400, {error: 'providerData provider'});
       }
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
@@ -1452,9 +1447,9 @@ var routes = [
 
       console.log ('DEBUG IMPORT FIELDS', rq.data.fields);
 
-      var path = rq.data.fields.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
+      var path = rq.data.fields.providerData.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
-      var name = rq.data.fields.filename !== undefined ? rq.data.fields.filename : path.slice (path.indexOf ('_') + 1);
+      var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 
       var pic = {
          id:     uuid (),
@@ -1589,6 +1584,7 @@ var routes = [
          // We store only the original pictures in S3, not the thumbnails
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
+         // This function converts non-mp4 videos to mp4.
          function (s) {
             if (! pic.vid || vidFormat === 'mp4') return s.next ();
             var id = pic.vid, start = Date.now ();
@@ -1708,8 +1704,8 @@ var routes = [
             multi.sadd ('upic:'  + rq.user.username, pic.hash);
             multi.srem ('upicd:' + rq.user.username, pic.hash);
             if (rq.data.fields.providerData) {
-               var providerKey = {google: 'g', dropbox: 'd'} [rq.data.fields.providerData [0]];
-               var providerHash = H.hash (rq.data.fields.providerData [1] + ':' + rq.data.fields.providerData [2]);
+               var providerKey = {google: 'g', dropbox: 'd'} [rq.data.fields.providerData.provider];
+               var providerHash = H.hash (rq.data.fields.providerData.id + ':' + rq.data.fields.providerData.modifiedTime);
                multi.sadd ('upic:'  + rq.user.username + ':' + providerKey, providerHash);
                multi.srem ('upicd:' + rq.user.username + ':' + providerKey, providerHash);
                pic.phash = providerKey + ':' + providerHash;
@@ -1728,7 +1724,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || []) [0]});
+            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2928,16 +2924,18 @@ var routes = [
                            wstream.on ('finish', function () {
                               if (Error) return;
                               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
-                                 // We pass the path to the image as a field instead of a file
-                                 {type: 'field', name: 'path', value: tempPath},
-                                 // Same with the name of the image
-                                 {type: 'field', name: 'filename', value: file.name},
                                  {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                                  {type: 'field', name: 'uid', value: upload.start},
                                  // Use oldest date, whether createdTime or updatedTime
                                  {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
                                  {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
-                                 {type: 'field', name: 'providerData', value: JSON.stringify (['google', file.id, file.modifiedTime])},
+                                 {type: 'field', name: 'providerData', value: JSON.stringify ({
+                                    provider: 'google',
+                                    id: file.id,
+                                    name: file.name,
+                                    modifiedTime: file.modifiedTime,
+                                    path: tempPath
+                                 })},
                                  {type: 'field', name: 'csrf', value: s.csrf}
                               ]}, code: '*', apres: function (S, RQ, RS, next) {
 
