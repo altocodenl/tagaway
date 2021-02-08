@@ -46,6 +46,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
 
+- Backup logs to S3.
+
 - When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
 - Improve display of errors in upload & import.
 - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
