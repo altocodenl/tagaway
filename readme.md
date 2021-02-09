@@ -39,23 +39,37 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Import server errors:
-   - [check] When having a 4|5xx error, report username if present.
-   - Files missplacement of tags. Several photos have a tag applied that does not correlate to folders in which they are contained in G Drive. (ie: IMG_0111.jpg - which is IMG_0111.HEIC in Tom's G Drive).
-   - sony tag, doesn't have folder tag, but has extraneous tag "sony"
-   - Buffer size error: Error: Cannot create a string longer than 0x1fffffe8 characters, server.js:1574. Make the hash without bringing the file to memory. limit: 536870888
+- Import/upoad server errors:
+   - Geotagging 500 issue
+   - File consistency issue
+      - null bys3 entries
+      - three extraneous files in fs
+      - 52 extraneous files in S3
+
+   - [check] original names (with extension) of imported files are preserved.
+   - [check] When having a 4|5xx error in upload, report username if present.
+   - Extraneous tags
+      - Files missplacement of tags. Several photos have a tag applied that does not correlate to folders in which they are contained in G Drive. (ie: IMG_0111.jpg - which is IMG_0111.HEIC in Tom's G Drive).
+      - sony tag, doesn't have folder tag, but has extraneous tag "sony"
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
 
 - Backup logs to S3.
 
-- When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
-- Improve display of errors in upload & import.
-- When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
-- In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
-- Check if we can put folders & subfolder names as tags on folder upload.
-- Tags are not updated on import refreshes.
-- Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+- Upload/import
+   - Improve display of errors in upload & import:
+      - Show list of invalid pics/files.
+      - If there's a provider error, give a "try again" option with the same list.
+      - If there's another type of error, mark "ac;pic/server error".
+   - Endpoint to query latest uploads and imports (by date and by id).
+   - Show up to two latest uploads/imports and add a "show more" button to show more items.
+   - In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
+   - When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
+   - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
+   - Check if we can put folders & subfolder names as tags on folder upload.
+   - Tags are not updated on import refreshes.
+   - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+   - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
 
 Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
@@ -70,8 +84,10 @@ Safari bugs
    - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
    - Replicate & fix mysterious shift bug.
    - Intermittent 403 from GET csrf when already being logged in.
+   - When performance is slow in the browser, double click to open picture when picture is already selected doesn't open the picture.
 
-- Implement video streaming.
+- Pics
+   - Implement video streaming.
 
 - Implement support for large files (> 1GB).
 
@@ -380,9 +396,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
    - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'size'}`).
    - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
-   - Can contain a field `providerData` with value `['google'|'dropbox', FILE_ID, FILE_MODIFICATION_TIME]`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
-   - Can contain a field `path` with the path to the image. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
-   - Can contain a field `filename` with the original name of the image. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).

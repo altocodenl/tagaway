@@ -258,6 +258,11 @@ H.getGeotags = function (s, metadata) {
       var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
       lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
       lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
+      // TODO: uncomment validations
+      // We filter out invalid latitudes and latitudes over 85 degrees.
+      // if (type (lat) !== 'float' || type (lat) !== 'integer' || Math.abs (lat) > 85) return;
+      // We filter out invalid longitudes.
+      // if (type (lon) !== 'float' || type (lon) !== 'integer') return;
       return [lat, lon];
    });
    if (! position) return s.next ([]);
@@ -443,13 +448,17 @@ H.s3queue = function (s, op, username, key, path) {
    ]);
 }
 
-// Up to 3500 simultaneous operations (actually, per second, but simultaneous will do, since it's more conservative and easier to measure). But it's conservative only if the greatest share of operations are over one second in length.
+// Up to 3600 simultaneous operations (actually, per second, but simultaneous will do, since it's more conservative and easier to measure). But it's conservative only if the greatest share of operations are over one second in length.
+// We only do 50 simultaneous operations for the sake of the network card of the server.
 // https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
 // Queue items are processed in order with regards to the *start* of it, not the whole thing (otherwise, we would wait for each to be done - for implementing this, we can set LIMIT to 1).
 H.s3exec = function () {
+   redis.llen ('s3:queue', function (error, length) {
+      console.log ('DEBUG S3 QUEUE LENGTH', length, new Date ().toISOString ());
+   });
    // If there's no items on the queue, or if we're over the maximum: do nothing.
    // Otherwise, increment s3:proc and LPOP the first element of the queue
-   redis.eval ('if redis.call ("llen", "s3:queue") == 0 then return nil end if (tonumber (redis.call ("get", "s3:proc")) or 0) >= 3500 then return nil end redis.call ("incr", "s3:proc"); return redis.call ("lpop", "s3:queue")', 0, function (error, next) {
+   redis.eval ('if redis.call ("llen", "s3:queue") == 0 then return nil end if (tonumber (redis.call ("get", "s3:proc")) or 0) >= 50 then return nil end redis.call ("incr", "s3:proc"); return redis.call ("lpop", "s3:queue")', 0, function (error, next) {
       if (error) return notify (a.creat (), {priority: 'critical', type: 'redis error s3exec', error: error});
       if (! next) return;
       next = JSON.parse (next);
@@ -460,7 +469,8 @@ H.s3exec = function () {
          - put ready -> delete: delete is in charge of deleting the file.
       */
 
-      var actions = next.op === 'put' ? [
+      var actions;
+      if (next.op === 'put') actions = [
          [Redis, 'hset', 's3:files', next.key, 'true'],
          [a.set, 'upload', [H.s3put, next.key, next.path]],
          [Redis, 'hexists', 's3:files', next.key],
@@ -474,10 +484,12 @@ H.s3exec = function () {
                [H.stat.w, [
                   ['stock', 'bys3',                  bys3],
                   ['stock', 'bys3-' + next.username, bys3],
-               ]],
+               ]]
             ]);
          }
-      ] : [
+      ];
+
+      if (next.op === 'del') actions = [
          [Redis, 'hget', 's3:files', next.key],
          function (s) {
             // File is being uploaded, just remove entry.
@@ -498,9 +510,13 @@ H.s3exec = function () {
       a.stop ([
          actions,
          [Redis, 'decr', 's3:proc'],
+         H.s3exec
       ], function (s, error) {
-         if (error) return notify (s, {priority: 'critical', type: 'redis error s3exec', error: error, operation: next});
-         H.s3exec ();
+         if (error) notify (s, {priority: 'critical', type: 's3exec error', error: error, operation: next});
+         redis.decr ('s3:proc', function (error) {
+            if (error) return notify (a.creat (), {priority: 'critical', type: 'redis error s3exec', error: error});
+            H.s3exec ();
+         });
       });
    });
 }
@@ -2565,7 +2581,6 @@ var routes = [
 
                               pics = pics.concat (allowedFiles);
 
-                              // TODO: remove after debugging
                               // Bring a maximum of PAGES pages.
                               if (page > PAGES) return s.next ();
 
@@ -3399,10 +3414,11 @@ if (cicek.isMaster) a.stop ([
          if (! s.dbfiles [fsfile]) s.fsextra.push (fsfile);
       });
 
-      if (s.s3extra.length)   notify (a.creat (), {priority: 'important', type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra});
-      if (s.fsextra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra});
-      if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing});
-      if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing});
+      // We only show the first 100 items to avoid making the email too big.
+      if (s.s3extra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra.slice (0, 100)});
+      if (s.fsextra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra.slice (0, 100)});
+      if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing.slice (0, 100)});
+      if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
 
       if (process.argv [3] !== 'makeConsistent') return;
       if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
@@ -3488,6 +3504,17 @@ if (cicek.isMaster) a.stop ([
    [notify, {priority: 'critical', type: 'Stored sizes consistency check success.'}]
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
+});
+
+// *** CHECK S3 QUEUE ON STARTUP ***
+
+if (cicek.isMaster) a.stop ([
+   [Redis, 'llen', 's3:queue'],
+   function (s) {
+      if (s.last) notify (s, {priority: 'critical', type: 'Non-empty S3 queue on startup.', n: s.last});
+   }
+], function (error) {
+   notify (s, {priority: 'critical', type: 'Non-empty S3 queue DB error.', error: error});
 });
 
 // *** LOAD GEODATA ***
