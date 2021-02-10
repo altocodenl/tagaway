@@ -3530,7 +3530,7 @@ if (cicek.isMaster) a.stop ([
    [a.set, 'proc', [Redis, 'get', 's3:proc']],
    [Redis, 'llen', 's3:queue'],
    function (s) {
-      if (s.proc) notify (a.creat (), {priority: 'critical', type: 'Non-empty S3 process counter on startup.', n: s.proc});
+      if (s.proc && s.proc !== '0') notify (a.creat (), {priority: 'critical', type: 'Non-empty S3 process counter on startup.', n: s.proc});
       if (s.last) notify (s, {priority: 'critical', type: 'Non-empty S3 queue on startup.', n: s.last});
    }
 ], function (error) {
