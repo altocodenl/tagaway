@@ -259,6 +259,7 @@ H.getGeotags = function (s, metadata) {
       lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
       lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
       // TODO: uncomment validations
+      // TODO: add notifications
       // We filter out invalid latitudes and latitudes over 85 degrees.
       // if (type (lat) !== 'float' || type (lat) !== 'integer' || Math.abs (lat) > 85) return;
       // We filter out invalid longitudes.
@@ -492,7 +493,7 @@ H.s3exec = function () {
       if (next.op === 'del') actions = [
          [Redis, 'hget', 's3:files', next.key],
          function (s) {
-            // File is being uploaded, just remove entry.
+            // File is being uploaded or shouldn't be uploaded because it's invalid, just remove entry.
             if (s.last === 'true') return Redis (s, 'hdel', 's3:files', next.key);
             // File has already been uploaded.
             var bys3 = parseInt (s.last);
@@ -1597,8 +1598,6 @@ var routes = [
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
          [a.make (fs.unlink), path],
-         // We store only the original pictures in S3, not the thumbnails
-         [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          [perfTrack, 'fs'],
          // This function converts non-mp4 videos to mp4.
          function (s) {
@@ -1666,6 +1665,8 @@ var routes = [
             if (pic.format !== 'heic') return s.next ();
             a.make (fs.unlink) (s, s.heic_jpg);
          },
+         // We store only the original pictures in S3, not the thumbnails. We do this only after the picture/video has been considered valid.
+         [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
          function (s) {
@@ -3509,8 +3510,10 @@ if (cicek.isMaster) a.stop ([
 // *** CHECK S3 QUEUE ON STARTUP ***
 
 if (cicek.isMaster) a.stop ([
+   [a.set, 'proc', [Redis, 'get', 's3:proc']],
    [Redis, 'llen', 's3:queue'],
    function (s) {
+      if (s.proc) notify (a.creat (), {priority: 'critical', type: 'Non-empty S3 process counter on startup.', n: s.proc});
       if (s.last) notify (s, {priority: 'critical', type: 'Non-empty S3 queue on startup.', n: s.last});
    }
 ], function (error) {

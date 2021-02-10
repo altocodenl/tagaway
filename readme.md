@@ -41,11 +41,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upoad server errors:
    - Geotagging 500 issue
-   - File consistency issue
-      - null bys3 entries
-      - three extraneous files in fs
-      - 52 extraneous files in S3
-
+   - [check] no S3 uploads that failed because file was deleted in the meantime because it was invalid
+   - [check] queuing logic for S3 working after 500
    - [check] original names (with extension) of imported files are preserved.
    - [check] When having a 4|5xx error in upload, report username if present.
    - Extraneous tags
@@ -254,7 +251,7 @@ Safari bugs
 - Other
    - Check lifecycle of pics bucket in S3.
    - Disable THP for redis.
-   - Check graceful app shutdown on mg restart.
+   - Check graceful app shutdown on mg restart: wait for S3 uploads and ongoing uploads
    - Downgrade read ECONNRESET errors priority?
    - Test for maximum capacity.
    - Security: figure out workaround for package-lock with nested dependencies that are not pegged.
