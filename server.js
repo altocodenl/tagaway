@@ -1521,7 +1521,7 @@ var routes = [
             var limit = CONFIG.storelimit [rq.user.type];
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 150 * 1000 * 1000 * 1000;
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 300 * 1000 * 1000 * 1000;
             if (used >= limit) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
@@ -2250,7 +2250,7 @@ var routes = [
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
             var limit = CONFIG.storelimit [rq.user.type];
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 150 * 1000 * 1000 * 1000;
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 300 * 1000 * 1000 * 1000;
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
@@ -3477,12 +3477,20 @@ if (cicek.isMaster) a.stop ([
    },
    function (s) {
       var actual = {TOTAL: {s3: 0, fs: 0}};
+      var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {};
       dale.go (s.last, function (pic) {
          if (! actual [pic.owner]) actual [pic.owner] = {s3: 0, fs: 0};
          actual [pic.owner].fs += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0) + parseInt (pic.bymp4 || 0);
          actual.TOTAL.fs       += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0) + parseInt (pic.bymp4 || 0);
-         actual [pic.owner].s3 += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
-         actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
+         var key = H.hash (pic.owner) + '/' + pic.id;
+         var s3entry = s ['s3:files'] [key];
+         delete extraneousS3 [key];
+         if (type (parseInt (s3entry)) === 'integer') {
+            actual [pic.owner].s3 += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
+            actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
+         }
+         else if (s3entry === undefined) missingS3 = s3entry;
+         else invalidS3 [key] = s3entry;
       });
       var mismatch = [];
       dale.go (actual, function (v, k) {
@@ -3492,15 +3500,24 @@ if (cicek.isMaster) a.stop ([
          if (v.s3 !== stats.s3) mismatch.push (['bys3' + (k === 'TOTAL' ? '' : '-' + k), v.s3 - stats.s3]);
       });
 
-      if (mismatch.length === 0) return;
+      if (dale.keys (missingS3).length)    notify (a.creat (), {priority: 'critical', type: 'Missing s3:files entries',    missingS3: missingS3});
+      if (dale.keys (extraneousS3).length) notify (a.creat (), {priority: 'critical', type: 'Extraneous s3:files entries', extraneousS3: extraneousS3});
+      if (dale.keys (invalidS3).length)    notify (a.creat (), {priority: 'critical', type: 'Invalid s3:files entries',    invalidS3: invalidS3});
 
-      notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
+      if (mismatch.length !== 0)           notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
 
       if (process.argv [3] !== 'makeConsistent') return;
 
-      H.stat.w (s, dale.go (mismatch, function (v) {
-         return ['stock', v [0], v [1]];
-      }));
+      a.seq (s, [
+         [H.stat.w, dale.go (mismatch, function (v) {
+            return ['stock', v [0], v [1]];
+         })],
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (extraneousS3, function (v, k) {multi.hdel ('s3:files', k)});
+            mexec (s, multi);
+         }
+      ]);
    },
    [notify, {priority: 'critical', type: 'Stored sizes consistency check success.'}]
 ], function (s, error) {
