@@ -39,12 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Import/upoad server errors:
-   - Geotagging 500 issue
+- Import/upload server errors:
+   - [check] Geotagging 500 issue
    - [check] no S3 uploads that failed because file was deleted in the meantime because it was invalid
-   - [check] queuing logic for S3 working after 500
    - [check] original names (with extension) of imported files are preserved.
    - [check] When having a 4|5xx error in upload, report username if present.
+   - When importing a repeated file, add those tags to the file
+   - Check if we can get original extensions from google (heic is being replaced by jpg)
    - Extraneous tags
       - Files missplacement of tags. Several photos have a tag applied that does not correlate to folders in which they are contained in G Drive. (ie: IMG_0111.jpg - which is IMG_0111.HEIC in Tom's G Drive).
       - sony tag, doesn't have folder tag, but has extraneous tag "sony"

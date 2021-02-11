@@ -2562,6 +2562,7 @@ var routes = [
                      hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
                         if (RS.code !== 200) return s.next (null, RS.body);
+                        console.log ('DEBUG IMPORT LIST OF FILES', JSON.stringify (RS.body.files));
 
                         redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
                            if (error) return s.next (null, error);
