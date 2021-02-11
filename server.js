@@ -252,18 +252,24 @@ H.getGeotags = function (s, metadata) {
 
    var position = dale.stopNot (metadata.split ('\n'), undefined, function (line) {
       if (! line.match (/gps position/i)) return;
+      var originalLine = line;
       line = line.split (':') [1];
       line = line.split (',');
       var lat = line [0].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
       var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
       lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
       lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
-      // TODO: uncomment validations
-      // TODO: add notifications
+
       // We filter out invalid latitudes and latitudes over 85 degrees.
-      // if (type (lat) !== 'float' || type (lat) !== 'integer' || Math.abs (lat) > 85) return;
+      if (['float', 'integer'].indexOf (type (lat)) === -1 || Math.abs (lat) > 85) {
+         notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
+         return;
+      }
       // We filter out invalid longitudes.
-      // if (type (lon) !== 'float' || type (lon) !== 'integer') return;
+      if (['float', 'integer'].indexOf (type (lat)) === -1) {
+         notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
+         return;
+      }
       return [lat, lon];
    });
    if (! position) return s.next ([]);
@@ -2948,7 +2954,7 @@ var routes = [
                                  {type: 'field', name: 'providerData', value: JSON.stringify ({
                                     provider: 'google',
                                     id: file.id,
-                                    name: file.name,
+                                    name: file.originalFilename,
                                     modifiedTime: file.modifiedTime,
                                     path: tempPath
                                  })},
