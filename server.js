@@ -2937,7 +2937,7 @@ var routes = [
                                  Error = true;
                                  check (function () {
                                     if (! upload.providerErrors) upload.providerErrors = [];
-                                    upload.providerErrors.push ({code: response.statusCode, error: response.body});
+                                    upload.providerErrors.push ({code: response.statusCode, error: response.body}, file: file);
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                        if (error) return s.next (null, error);
                                        importFile (s, index + 1);
