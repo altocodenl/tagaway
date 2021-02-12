@@ -2538,7 +2538,7 @@ var routes = [
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
-                     var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename'];
+                     var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename', 'trashed'];
 
                      // https://developers.google.com/drive/api/v3/reference/files/list
                      // https://developers.google.com/drive/api/v3/reference/files#resource
@@ -2572,6 +2572,8 @@ var routes = [
                               if (error) return s.next (null, error);
 
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
+                                 // Ignore trashed files!
+                                 if (file.trashed) return;
                                  if (CONFIG.allowedFormats.indexOf (file.mimeType) === -1) {
                                     unsupported.push (file);
                                     return;
@@ -2910,7 +2912,7 @@ var routes = [
                               Error = true;
                               check (function () {
                                  if (! upload.providerErrors) upload.providerErrors = [];
-                                 upload.providerErrors.push ({code: 0, error: error.toString ()});
+                                 upload.providerErrors.push ({code: 0, error: error.toString (), file: file});
                                  redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                     if (error) return s.next (null, error);
                                     importFile (s, index + 1);
