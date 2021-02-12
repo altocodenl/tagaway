@@ -41,16 +41,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload server errors:
    - [check] original names (with extension) of imported files are preserved.
-   - New formats: webm, wmv, m4v, heic
-   - [check] When having a 4|5xx error in upload, report username if present.
-   - When importing a repeated file, add those tags to the file
+   - [check] New formats: webm, wmv, m4v, heic
    - Extraneous tags
       - [check] Files missplacement of tags. Several photos have a tag applied that does not correlate to folders in which they are contained in G Drive. (ie: IMG_0111.jpg - which is IMG_0111.HEIC in Tom's G Drive).
       - [check] sony tag, doesn't have folder tag, but has extraneous tag "sony"
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
    - [check] review all invalid pics/vids
+   - [check] When having a 4|5xx error in upload, report username if present.
+   - When importing a repeated file, add those tags to the file
 
+- Remove temporary files from import?
 - Backup logs to S3.
 
 - Upload/import
@@ -399,7 +400,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
-   - If the same file exists for that user, a 409 is returned with body `{error: 'repeated'}`.
+   - If the same file exists for that user, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the picture just uploaded and `deg` is the rotation automatically applied to the picture based on its metadata.
 
@@ -630,6 +631,8 @@ All the routes below require an admin user to be logged in.
 
 - upic:USERNAME (set): contains hashes of the pictures uploaded by an user, to check for repetition.
 
+- upic:rev:USERNAME (hash): key is hashes, value is the id of the corresponding pic/vid.
+
 - upic:USERNAME:PROVIDER (set): contains hashes of the pictures imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
 
 - upicd:USERNAME (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files.
@@ -645,7 +648,7 @@ All the routes below require an admin user to be logged in.
    dimh: INT (height in pixels)
    byfs: INT (size in bytes in FS)
    hash: STRING
-   phash: STRING (provider hash if picture was imported, with the shape `g|d:HASH`)
+   phash: STRING (provider hash if picture was imported, with the shape `g|HASH`)
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)

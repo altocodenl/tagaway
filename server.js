@@ -565,8 +565,9 @@ H.deletePic = function (s, id, username) {
          multi.del  ('pict:' + s.pic.id);
          if (s.pic.t200) multi.del ('thu:' + s.pic.t200);
          if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
-         multi.srem ('upic:'  + s.pic.owner, s.pic.hash);
-         multi.sadd ('upicd:' + s.pic.owner, s.pic.hash);
+         multi.srem ('upic:'     + s.pic.owner, s.pic.hash);
+         multi.hdel ('upic:rev:' + s.pic.owner, s.pic.hash);
+         multi.sadd ('upicd:'    + s.pic.owner, s.pic.hash);
          if (s.pic.phash) {
             var phash = s.pic.phash.split (':');
             multi.srem ('upic:'  + s.pic.owner + ':' + phash [0], phash [1]);
@@ -1599,7 +1600,12 @@ var routes = [
             });
          }],
          [a.make (fs.unlink), hashpath],
-         [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [reply, rs, 409, {error: 'repeated'}]}],
+         [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [
+            [a.get, Redis, 'hget', 'upic:rev:' + rq.user.username],
+            function (s) {
+               reply (rs, 409, {error: 'repeated', id: s.last});
+            }
+         ]}],
          [perfTrack, 'hash'],
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
@@ -1692,6 +1698,7 @@ var routes = [
             pic.dimh = s.size.h;
             pic.byfs = s.byfs.size;
             pic.hash = s.hash;
+            multi.hset ('upic:rev:' + rq.user.username, s.hash, pic.id);
 
             s.dates ['upload:date'] = lastModified;
             pic.dates = JSON.stringify (s.dates);
@@ -3575,3 +3582,29 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
       });
    }],
 ]);
+
+// *** TEMPORARY SCRIPT TO ADD REVERSE HASHES ***
+
+if (cicek.isMaster) a.stop ([
+   // Get list of pics and thumbs
+   [redis.keyscan, 'pic:*'],
+   function (s) {
+      s.pics = s.last;
+      var multi = redis.multi ();
+      dale.go (s.pics, function (id) {
+         multi.hget (id, ['hash', 'owner']);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      var multi = redis.multi ();
+      dale.go (s.last, function (data, k) {
+         var id = s.pics [k].replace ('pic:', '');
+         console.log ('upic:rev:' + data.owner, data.hash, id);
+         //multi.hset ('upic:rev:' + data.owner, data.hash, id);
+      });
+      mexec (s, multi);
+   },
+], function (error) {
+   notify (s, {priority: 'critical', type: 'Script to add reverse hashes error.', error: error});
+});
