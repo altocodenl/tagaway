@@ -3592,7 +3592,7 @@ if (cicek.isMaster) a.stop ([
       s.pics = s.last;
       var multi = redis.multi ();
       dale.go (s.pics, function (id) {
-         multi.hget (id, ['hash', 'owner']);
+         multi.hgetall (id);
       });
       mexec (s, multi);
    },
@@ -3600,8 +3600,9 @@ if (cicek.isMaster) a.stop ([
       var multi = redis.multi ();
       dale.go (s.last, function (data, k) {
          var id = s.pics [k].replace ('pic:', '');
-         console.log ('upic:rev:' + data.owner, data.hash, id);
-         //multi.hset ('upic:rev:' + data.owner, data.hash, id);
+         // TODO: remove log
+         // console.log ('upic:rev:' + data.owner, data.hash, id);
+         multi.hset ('upic:rev:' + data.owner, data.hash, id);
       });
       mexec (s, multi);
    },
