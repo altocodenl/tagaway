@@ -3605,6 +3605,6 @@ if (cicek.isMaster) a.stop ([
       });
       mexec (s, multi);
    },
-], function (error) {
+], function (s, error) {
    notify (s, {priority: 'critical', type: 'Script to add reverse hashes error.', error: error});
 });
