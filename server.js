@@ -2972,7 +2972,7 @@ var routes = [
                               ]}, code: '*', apres: function (S, RQ, RS, next) {
 
                                  // Repeated file, increment repeated counter and continue
-                                 if (RS.code === 409 && eq (RS.body, {error: 'repeated'})) return check (function () {
+                                 if (RS.code === 409 && RS.body.error === 'repeated') return check (function () {
                                     if (! upload.repeated) upload.repeated = 0;
                                     upload.repeated++;
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
