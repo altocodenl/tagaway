@@ -3493,6 +3493,7 @@ if (cicek.isMaster) a.stop ([
    },
    function (s) {
       var actual = {TOTAL: {s3: 0, fs: 0}};
+      if (! s ['s3:files']) s ['s3:files'] = {};
       var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {};
       dale.go (s.last, function (pic) {
          if (! actual [pic.owner]) actual [pic.owner] = {s3: 0, fs: 0};
