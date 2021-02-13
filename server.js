@@ -1471,7 +1471,7 @@ var routes = [
 
       console.log ('DEBUG IMPORT FIELDS', rq.data.fields);
 
-      var path = rq.data.fields.providerData.path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
+      var path = (rq.data.fields.providerData || {}).path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 
@@ -1601,7 +1601,7 @@ var routes = [
          }],
          [a.make (fs.unlink), hashpath],
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [
-            [a.get, Redis, 'hget', 'upic:rev:' + rq.user.username],
+            [a.get, Redis, 'hget', 'upic:rev:' + rq.user.username, '@hash'],
             function (s) {
                reply (rs, 409, {error: 'repeated', id: s.last});
             }
