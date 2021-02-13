@@ -40,18 +40,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Import/upload server errors:
-   - [check] original names (with extension) of imported files are preserved.
-   - [check] New formats: webm, wmv, m4v, heic
-   - Extraneous tags
-      - [check] Files missplacement of tags. Several photos have a tag applied that does not correlate to folders in which they are contained in G Drive. (ie: IMG_0111.jpg - which is IMG_0111.HEIC in Tom's G Drive).
-      - [check] sony tag, doesn't have folder tag, but has extraneous tag "sony"
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
    - [check] review all invalid pics/vids
    - [check] When having a 4|5xx error in upload, report username if present.
    - When importing a repeated file, add those tags to the file
+   - Remove temporary files from import?
+   - Test simultaneous imports for rate limiting.
 
-- Remove temporary files from import?
 - Backup logs to S3.
 
 - Upload/import
