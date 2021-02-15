@@ -66,7 +66,7 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
 // *** GIZ ***
 
 giz.redis          = redis;
-giz.config.expires = 24 * 60 * 60;
+giz.config.expires = 7 * 24 * 60 * 60;
 
 // *** REDIS EXTENSIONS ***
 
@@ -136,6 +136,7 @@ SECRET.ping.send = function (payload, CB) {
 
 var notify = function (s, message) {
    if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
+   console.log ('DEBUG NOTIFY', JSON.stringify (message));
    if (! ENV) {
       clog (new Date ().toUTCString (), message);
       return s.next ();

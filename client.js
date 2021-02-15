@@ -3019,7 +3019,6 @@ dale.do ([
    ['report', 'unsupportedFormats', function (x) {
       var body = {};
       dale.do (B.get ('State', 'upload', 'new', 'format'), function (file) {
-         console.log ('debug guayando', file);
          if (! body [file.format]) body [file.format] = 0;
          body [file.format]++;
       });
@@ -4317,8 +4316,7 @@ E.upload = function () {
                                           H.if (format.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
                                              ['style', ['.no-svg svg', {display: 'none'}]],
                                              ['p', {class: 'upload-selection__text'}, [
-                                                [format.length, ' files have unsupported formats and will be ignored:'],
-                                                ['ul', dale.do (format, function (file) {return ['li', file.name]})]
+                                                [format.length, ' files have unsupported formats and will be ignored.']
                                              ]]
                                           ]]),
                                        ];
