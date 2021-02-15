@@ -39,31 +39,40 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Import/upload server errors:
+- Import/upload:
+   - Check accounting of space from scratch.
+   - [check] When having a 4|5xx error in upload, report username if present.
+   - Check rate limiting if two users are listing at the same time.
+   - Add extra format.
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
-   - [check] review all invalid pics/vids
-   - [check] When having a 4|5xx error in upload, report username if present.
-   - When importing a repeated file, add those tags to the file
-   - Remove temporary files from import?
-   - Test simultaneous imports for rate limiting.
+   - When importing a repeated file, add those tags to the file. Also add id check in 409 repeated test.
+   - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
+   - Account logs refactor
+      - Add a log on invalid upload.
+      - Add a log on repeated upload.
+      - Queryable logs by type and date.
+      - Refactor client to use queried logs in upload.
+      - Refactor client to use queried logs in import.
+      - Show two latest imports or uploads instead of using a date cutoff.
+      - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
+      - Review all invalid pics/vids.
 
-- Backup logs to S3.
+- Backend improvements:
+   - Backup logs to S3.
+   - Check if we're leaving behind temporary files from import.
+   - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
 
-- Upload/import
+- Upload/import, for later:
+   - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Improve display of errors in upload & import:
-      - Show list of invalid pics/files.
+      - Show foldable list of invalid pics/files.
+      - When adding many files to upload, put a "loading, please wait" snackbar.
       - If there's a provider error, give a "try again" option with the same list.
       - If there's another type of error, mark "ac;pic/server error".
-   - Endpoint to query latest uploads and imports (by date and by id).
-   - Show up to two latest uploads/imports and add a "show more" button to show more items.
-   - In recent uploads/imports, use date of latest item, not earliest. If not there, put it in the logs.
-   - When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
-   - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
-   - Check if we can put folders & subfolder names as tags on folder upload.
-   - Tags are not updated on import refreshes.
-   - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
-   - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
+   - Add flag to see if there are ongoing uploads to refresh list of pictures on a separate device/tab.
+
+- Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
 
 Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
@@ -889,7 +898,7 @@ Used by giz:
    8. `goto location`: takes a `pic` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
 5. Upload
-   1. `change State.page`: if `State.page` is `upload`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
+   1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. If there are files with unsupported formats, it invokes `report unsupportedFormats`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If there are files with unsupported formats, it invokes `report unsupportedFormats`.
    4. `upload start`: adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and `change State.upload.queue`.
@@ -902,7 +911,7 @@ Used by giz:
       - Conditionally invokes `snackbar` on error; also on success of entire upload, also depending on `State.upload.cancelled` to ascertain if the upload concluded or was cancelled.
       - Adds an item to either `State.upload.summary.UID.ok`, `State.upload.summary.UID.error` or `State.upload.summary.UID.repeat`.
       - If query is successful, invokes `query account` and `query tags`.
-      - If query is successful and `State.page` is `pics`, invokes `query pics`.
+      - If query is successful and `State.page` is `pics`, invokes `query pics` and `query tags`.
    8. `report unsupportedFormats`: using `State.upload.new.format`, it invokes `post unsupportedFormats`.
 
 6. Import

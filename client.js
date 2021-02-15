@@ -2386,7 +2386,9 @@ dale.do ([
       }
       // TODO v2: uncomment
       //if (signup/login/recover/reset/changepassword) teishi.last (B.r.log).args [1] = 'OMITTED';
+      var tdebug = Date.now ();
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
+         console.log ('DEBUG AJAX', Date.now () - tdebug, x.verb, x.path [0]);
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
             B.do (x, 'reset', 'store', true);
             return B.do (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
@@ -2614,11 +2616,8 @@ dale.do ([
 
       var t = Date.now ();
 
-      console.log ('DEBUG QUERY NPICS', B.get ('State', 'nPics'));
-
       B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPics') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          B.do (x, 'set', ['State', 'querying'], false);
-         console.log ('DEBUG QUERY DELAY', ((Date.now () - t) / 1000) + 's', JSON.stringify (rs.body).length + ' bytes');
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
          if (B.get ('State', 'nPics') === 20) window.scrollTo (0, 0);
@@ -2667,7 +2666,7 @@ dale.do ([
    ['click', 'pic', function (x, id, k) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this picture and happened less than 500ms ago, we open the picture in fullscreen.
-      if (last.id) console.log ('DEBUG DOUBLE CLICK', last.id === id,  teishi.time () - B.get ('State', 'lastClick').time);
+      if (last.id) console.log ('DEBUG DOUBLE CLICK', last.id === id, teishi.time () - B.get ('State', 'lastClick').time);
       if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 500) {
          B.do (x, 'rem', ['State', 'selected'], id);
          B.do (x, 'set', ['State', 'open'], k);
@@ -3028,7 +3027,8 @@ dale.do ([
    // *** IMPORT RESPONDERS ***
 
    ['change', ['State', 'page'], function (x) {
-      if (B.get ('State', 'page') !== 'import') return;
+      var page = B.get ('State', 'page');
+      if (page !== 'import' && page !== 'pics') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       dale.do (['google'], function (provider) {
          if (B.get ('Data', 'import', provider, 'authOK')) {
@@ -3083,7 +3083,10 @@ dale.do ([
          // If list exists and is still ongoing, refresh the list and let the interval keep on going.
          if (data.start && ! data.error && (! data.end || data.upload)) {
             // If we're back in the pics page and there's an upload process ongoing, refresh the query after each successful refresh.
-            if (data.upload && B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
+            if (data.upload && B.get ('State', 'page') === 'pics') {
+               B.do (x, 'query', 'pics');
+               B.do (x, 'query', 'tags');
+            }
             return B.do (x, 'import', 'list', provider);
          }
          clearInterval (interval);
