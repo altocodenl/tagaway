@@ -2559,7 +2559,9 @@ var routes = [
                         'spaces=drive,photos',
                      ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
+                     page++;
                      setLimit ();
+
                      hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
                         if (RS.code !== 200) return s.next (null, RS.body);
