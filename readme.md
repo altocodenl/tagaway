@@ -43,7 +43,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Check rate limiting if two users are listing at the same time.
    - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
       - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
-
    - When importing a repeated file, add those tags to the file. Also add id check in 409 repeated test.
    - Account logs refactor
       - Add a log on invalid upload.
@@ -53,10 +52,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Refactor client to use queried logs in import.
       - Show two latest imports or uploads instead of using a date cutoff.
       - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
-      - Review all invalid pics/vids.
    - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Check support for writing webp.
-
+   - Finish uploading all pictures/videos.
+   - Review all invalid pics/vids.
+------------------------------------------
 - Backend improvements:
    - Backup logs to S3.
    - Check if we're leaving behind temporary files from import.
