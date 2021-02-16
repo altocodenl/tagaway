@@ -136,7 +136,6 @@ SECRET.ping.send = function (payload, CB) {
 
 var notify = function (s, message) {
    if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
-   console.log ('DEBUG NOTIFY', JSON.stringify (message));
    if (! ENV) {
       clog (new Date ().toUTCString (), message);
       return s.next ();
@@ -461,9 +460,6 @@ H.s3queue = function (s, op, username, key, path) {
 // https://docs.aws.amazon.com/AmazonS3/latest/dev/optimizing-performance.html
 // Queue items are processed in order with regards to the *start* of it, not the whole thing (otherwise, we would wait for each to be done - for implementing this, we can set LIMIT to 1).
 H.s3exec = function () {
-   redis.llen ('s3:queue', function (error, length) {
-      console.log ('DEBUG S3 QUEUE LENGTH', length, new Date ().toISOString ());
-   });
    // If there's no items on the queue, or if we're over the maximum: do nothing.
    // Otherwise, increment s3:proc and LPOP the first element of the queue
    redis.eval ('if redis.call ("llen", "s3:queue") == 0 then return nil end if (tonumber (redis.call ("get", "s3:proc")) or 0) >= 50 then return nil end redis.call ("incr", "s3:proc"); return redis.call ("lpop", "s3:queue")', 0, function (error, next) {
@@ -1469,8 +1465,6 @@ var routes = [
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
       if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
-
-      console.log ('DEBUG IMPORT FIELDS', rq.data.fields);
 
       var path = (rq.data.fields.providerData || {}).path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
@@ -2564,13 +2558,10 @@ var routes = [
                         'spaces=drive,photos',
                      ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
 
-                     console.log ('DEBUG IMPORT - request image page', page++);
-
                      setLimit ();
                      hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
                         if (RS.code !== 200) return s.next (null, RS.body);
-                        console.log ('DEBUG IMPORT LIST OF FILES', JSON.stringify (RS.body.files));
 
                         redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
                            if (error) return s.next (null, error);
@@ -2619,7 +2610,6 @@ var routes = [
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
-                     console.log ('DEBUG IMPORT - GET PARENT BATCH, MAXREQUESTS:', maxRequests, parentsToRetrieve.length);
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
                      // We lower it to 4 requests every seconds to avoid hitting rate limits.
@@ -2644,11 +2634,9 @@ var routes = [
                      });
                      body += '--';
 
-                     console.log ('DEBUG IMPORT - request parents', batch.length, 'remaining afterwards', parentsToRetrieve.length);
                      setLimit (batch.length);
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
                         if (RS.code !== 200) return s.next (null, RS.body);
-                        console.log ('DEBUG IMPORT RAW PARENTS REQUEST', RS.body);
 
                         redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
                            if (error) return s.next (null, error);
@@ -2692,18 +2680,15 @@ var routes = [
 
                               // If absolutely no capacity, must wait.
                               if (lastPeriodTotal >= requestLimit) {
-                                 console.log ('DEBUG IMPORT -', timeNow, 'no capacity at all, waiting', timeWindow * 1000 - (d - lastPeriodRequest [0]), 'ms to make', lastPeriodRequest [1], 'requests');
                                  setTimeout (function () {
                                     getParentBatch (s, lastPeriodRequest [1]);
                                  }, timeWindow * 1000 - (d - lastPeriodRequest [0]));
                               }
                               // If some capacity but not unrestricted, send a limited request immediately.
                               else if (parentsToRetrieve.length > (requestLimit - lastPeriodTotal)) {
-                                 console.log ('DEBUG IMPORT -', timeNow, 'limited capacity', 'make only', requestLimit - lastPeriodTotal, 'requests');
                                  getParentBatch (s, requestLimit - lastPeriodTotal);
                               }
                               else {
-                                 console.log ('DEBUG IMPORT -', timeNow, 'give it mantec', 'second offset', Date.now () - Date.now () % 60000);
                                  getParentBatch (s);
                               }
                            });
@@ -2717,7 +2702,6 @@ var routes = [
                [getFilePage],
                getParentBatch,
                function (s) {
-                  console.log ('DEBUG IMPORT - DONE RETRIEVING DATA');
                   var porotoSum = function (id) {
                      if (! folders [id].count) folders [id].count = 0;
                      folders [id].count++;
@@ -2760,8 +2744,6 @@ var routes = [
             ]);
          }
       ], function (s, error) {
-         console.log ('DEBUG IMPORT - IMPORT LIST ERROR', error);
-
          a.seq (s, [
             [notify, {priority: 'critical', type: 'import list error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}}],
             function (s) {
@@ -2825,7 +2807,6 @@ var routes = [
             }
             var recurseUp = function (childId, folderId) {
                var folder = list.folders [folderId];
-               console.log ('DEBUG IMPORT PUSHING TAG', childId, folder);
                filesToUpload [childId].push (folder.name);
                if (folder.parent) recurseUp (childId, folder.parent);
             }
@@ -2909,8 +2890,6 @@ var routes = [
                         // https://developers.google.com/drive/api/v3/reference/files/export
                         var path = '/drive/v3/files/' + file.id + '?alt=media';
                         var username = rq.user.username;
-
-                        console.log ('DEBUG IMPORT - request file', file.id);
 
                         // We use https directly to stream the response body directly into a file.
                         https.request ({host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
@@ -3021,7 +3000,6 @@ var routes = [
             importFile (s, 0);
          }
       ], function (s, error) {
-         console.log ('DEBUG IMPORT - UPLOAD ERROR', error);
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
             [notify, {priority: 'critical', type: 'import upload error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}}],
@@ -3209,7 +3187,6 @@ cicek.apres = function (rs) {
          return true;
       }
       if (report ()) {
-         if (rs.log.code === 400) console.log ('DEBUG 400 user', rs.request.user);
          notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, username: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       }
    }
