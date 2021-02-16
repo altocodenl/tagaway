@@ -1537,7 +1537,8 @@ var routes = [
                s.size = {};
                var error = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Warning/)) {
-                     if (! line.match ('minor') && ! line.match ('Invalid EXIF text encoding')) return line.replace (/^Warning\s+:\s+/, '');
+                     if (line.match ('minor') || line.match ('Invalid EXIF text encoding') || line.match ('Bad IFD1 directory')) return;
+                     return line.replace (/^Warning\s+:\s+/, '');
                   }
                   if (line.match (/^Image Width/))  s.size.w = parseInt (line.split (':') [1].trim ());
                   if (line.match (/^Image Height/)) s.size.h = parseInt (line.split (':') [1].trim ());
