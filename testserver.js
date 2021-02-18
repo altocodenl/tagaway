@@ -387,7 +387,11 @@ var main = [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 409],
+   ]}, 409, function (s, rq, rs, next) {
+      if (rs.body.error !== 'repeated') return clog ('Invalid error', rs.body);
+      if (rs.body.id    !== s.uploadIds [1]) return clog ('Invalid id', rs.body);
+      return true;
+   }],
    ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');

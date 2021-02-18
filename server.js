@@ -214,7 +214,7 @@ var s3 = new (require ('aws-sdk')).S3 ({
 
 var H = {};
 
-H.email = /^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+H.email = /^(([_\da-zA-Z\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
 
 H.trim = function (string) {
    return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
@@ -296,6 +296,7 @@ H.mkdirif = function (s, path) {
 
 H.thumbPic = function (s, stopFormat, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
    var format = pic.format === 'png' ? '.png' : '.jpeg';
+   var multiframeFormat = ['gif', 'tiff'].indexOf (pic.format) !== -1;
    a.seq (s, [
       [function (s) {
          var picMax = Math.max (s.size.w, s.size.h);
@@ -308,7 +309,7 @@ H.thumbPic = function (s, stopFormat, path, thumbSize, pic, alwaysMakeThumb, hei
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         a.seq (s, stopFormat ([k, 'convert', (heic_path || path) + (pic.format === 'gif' ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
+         a.seq (s, stopFormat ([k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -1867,13 +1868,16 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['ids', 'tag', 'del'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['ids', 'tag', 'del', 'fromImport'], 'eachOf', teishi.test.equal],
          ['body.tag', b.tag, 'string'],
          ['body.ids', b.ids, 'array'],
          ['body.ids', b.ids, 'string', 'each'],
          function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
          ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
+         ['body.fromImport', b.fromImport, [undefined, true], 'oneOf', teishi.test.equal],
       ])) return;
+
+      if (b.fromImport && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
 
       b.tag = H.trim (b.tag);
       if (['all', 'untagged'].indexOf (b.tag.toLowerCase ()) !== -1) return reply (rs, 400, {error: 'tag'});
@@ -1924,7 +1928,7 @@ var routes = [
 
             mexec (s, multi);
          },
-         [H.log, rq.user.username, {a: 'tag', tag: b.tag, d: b.del ? true : undefined, ids: b.ids}],
+         [H.log, rq.user.username, {a: 'tag', tag: b.tag, d: b.del ? true : undefined, ids: b.ids, fromImport: b.fromImport}],
          [reply, rs, 200],
       ]);
    }],
@@ -2819,7 +2823,20 @@ var routes = [
 
             var ids = dale.keys (filesToUpload);
 
-            if (ids.length === 0) return;
+            s.unsupported = {};
+            dale.go (JSON.parse (s.data.unsupported), function (file) {
+               var extension = Path.extname (file.name).slice (1).toLowerCase ();
+               if (! s.unsupported [extension]) s.unsupported [extension] = 0;
+               s.unsupported [extension]++;
+            });
+
+            if (ids.length === 0) return a.seq (s, [
+               [Redis, 'del', 'imp:g:' + rq.user.username],
+               [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: 0, repeated: repeated}}],
+               function () {
+                  reply (rs, 200);
+               }
+            ]);
 
             s.filesToUpload = filesToUpload;
             s.list = dale.fil (list.pics, undefined, function (file) {
@@ -2863,18 +2880,11 @@ var routes = [
                         // If we reached the end of the list, we're done.
                         if (index === s.list.length) {
 
-                           var unsupported = {};
-                           dale.go (JSON.parse (s.data.unsupported), function (file) {
-                              var extension = Path.extname (file.name).slice (1).toLowerCase ();
-                              if (! unsupported [extension]) unsupported [extension] = 0;
-                              unsupported [extension]++;
-                           });
-
                            return check (function () {
                               redis.del ('imp:g:' + rq.user.username, function (error) {
                                  if (error) return s.next (null, error);
                                  a.seq (s, [
-                                    [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors, invalid: upload.invalid}}],
+                                    [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors, invalid: upload.invalid}}],
                                     function (s) {
                                        var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                                        sendmail (s, {
@@ -2956,6 +2966,7 @@ var routes = [
 
                                  // Repeated file, increment repeated counter and continue
                                  if (RS.code === 409 && RS.body.error === 'repeated') return check (function () {
+                                    // TODO: add tagging
                                     if (! upload.repeated) upload.repeated = 0;
                                     upload.repeated++;
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
@@ -3005,7 +3016,7 @@ var routes = [
       ], function (s, error) {
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
-            [notify, {priority: 'critical', type: 'import upload error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}}],
+            [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google'}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
@@ -3174,6 +3185,7 @@ cicek.options.cookieSecret = SECRET.cookieSecret;
 cicek.options.log.console  = false;
 
 cicek.apres = function (rs) {
+
    var t = Date.now ();
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
@@ -3190,7 +3202,7 @@ cicek.apres = function (rs) {
          return true;
       }
       if (report ()) {
-         notify (a.creat (), {priority: 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, user: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+         notify (a.creat (), {priority: rs.log.code >= 500 ? 'critical' : 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, ua: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, user: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       }
    }
    else {

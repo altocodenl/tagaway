@@ -37,13 +37,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
-### Todo beta
+### Todo alpha
 
 - Import/upload:
-   - Check rate limiting if two users are listing at the same time.
-   - FB-fLogo-Blue-printpackaging.tif files not found, error that breaks the upload
-      - extraneous fs: "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-0.jpeg", "1923083612/5176e6a4-958a-4dda-b574-a1c9861ee06b-1.jpeg", "1923083612/7699f3e7-2ff8-4560-ae41-4067df52308d", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-0.jpeg", "1923083612/d3e0aed2-6619-41a6-9d9a-c549ddb012e8-1.jpeg"
-   - When importing a repeated file, add those tags to the file. Also add id check in 409 repeated test.
+   - When importing a repeated file, add those tags to the file.
    - Account logs refactor
       - Add a log on invalid upload.
       - Add a log on repeated upload.
@@ -56,13 +53,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Check support for writing webp.
    - Finish uploading all pictures/videos.
    - Review all invalid pics/vids.
-------------------------------------------
+   - Add env dependent admin fs usage override.
+   - New dev server.
+   - Reset all servers and start from scratch.
+   - Move ac;log to prod server & backup logs to S3 every 15 minutes, with a lifecycle of 30 minutes.
+
+### Todo beta
+
 - Backend improvements:
-   - Backup logs to S3.
    - Check if we're leaving behind temporary files from import.
    - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
 
-- Upload/import, for later:
+- Upload/import:
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Improve display of errors in upload & import:
       - Show foldable list of invalid pics/files.
@@ -690,7 +692,7 @@ All the routes below require an admin user to be logged in.
    - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
-   - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag)}
+   - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: true|undefined (if true the tagging operation comes from an import of a repeated picture)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
