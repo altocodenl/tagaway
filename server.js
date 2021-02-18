@@ -3431,6 +3431,8 @@ if (cicek.isMaster) a.stop ([
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
 
       if (process.argv [3] !== 'makeConsistent') return;
+      // We delete the list of pics from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
+      s.last = undefined;
       if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
    },
    // Extraneous S3 files: delete. Don't update the statistics.
@@ -3438,10 +3440,12 @@ if (cicek.isMaster) a.stop ([
    function (s) {
       H.s3del (s, s.s3extra);
    },
-   // Extraneous FS files: delete. Don't update the statistics.
-   [a.get, a.fork, '@fsextra', function (v) {
-      return [a.make (fs.unlink), Path.join (CONFIG.basepath, v)];
-   }, {max: os.cpus ().length}],
+   function (s) {
+      // Extraneous FS files: delete. Don't update the statistics.
+      a.fork (s, s.fsextra, function (v) {
+         return [a.make (fs.unlink), Path.join (CONFIG.basepath, v)];
+      }, {max: os.cpus ().length});
+   },
    // Missing FS files: nothing to do but report.
    function (s) {
       var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: 'File consistency check success.'}, function (k) {
