@@ -43,7 +43,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Account logs refactor
       - Add a log on invalid upload.
       - Add a log on repeated upload.
-      - Queryable logs by type and date.
+      - Add a log on a pic/vid that is too large.
+
+      - Queryable logs by type/date:
+         - geo logs (to see if enable geotagging suggestion was dismissed or not)
+         - upl logs - aggregate by uid, send a limit of n
+         - imp logs, subtype upload
       - Refactor client to use queried logs in upload.
       - Refactor client to use queried logs in import.
       - Show two latest imports or uploads instead of using a date cutoff.
@@ -689,7 +694,7 @@ All the routes below require an admin user to be logged in.
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
-   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING}
+   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING, error: UNDEFINED|{type: 'invalid|repeated|size', name: STRING}}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: undefined|google|dropbox (if not undefined, the tagging operation comes from an import of a repeated picture)}

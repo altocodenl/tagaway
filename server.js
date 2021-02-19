@@ -1500,12 +1500,12 @@ var routes = [
 
       var stopFormat = function (command) {
          return [a.stop, command, function (s, error) {
-            reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image') + ': ' + error.stderr + ' // ' + error.stdout + ' code ' + error.code, filename: name});
+            reply (rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image'), data: error, filename: name});
             var unlink = a.make (fs.unlink);
-            // We clean up the files from FS and S3, whether they're there or not. If they are not, the errors will be ignored.
+            // We clean up the files from the FS, whether they're there or not. If they are not, the errors will be ignored.
             a.seq ([
+               [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}}],
                [unlink, newpath],
-               [H.s3del, [Path.join (H.hash (rq.user.username), pic.id)]],
                ! s.t200 ? [] : [unlink, Path.join (Path.dirname (newpath), s.t200)],
                ! s.t900 ? [] : [unlink, Path.join (Path.dirname (newpath), s.t900)],
             ]);
@@ -1515,7 +1515,10 @@ var routes = [
       astop (rs, [
          [a.set, 'byfs', [a.make (fs.stat), path]],
          function (s) {
-            if (s.byfs.size > 536870888) return reply (rs, 400, {error: 'size'});
+            if (s.byfs.size > 536870888) {
+               H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'size', name: name}});
+               return reply (rs, 400, {error: 'size', filename: name});
+            }
             s.next ();
          },
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
@@ -1545,8 +1548,14 @@ var routes = [
                   if (line.match (/^Image Height/)) s.size.h = parseInt (line.split (':') [1].trim ());
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
-               if (error) return reply (rs, 400, {error: 'Invalid image: ' + error, filename: name});
-               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid image size.', metadata: metadata, filename: name});
+               if (error) {
+                  H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
+                  return reply (rs, 400, {error: 'Invalid image', data: error, filename: name});
+               }
+               if (! s.size.w || ! s.size.h) {
+                  H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
+                  return reply (rs, 400, {error: 'Invalid image size', metadata: metadata, filename: name});
+               }
 
                var rotation = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Orientation/)) return line;
@@ -1570,7 +1579,10 @@ var routes = [
                   if (line.match (/^width/i))  s.size.w = parseInt (line.split ('=') [1]);
                   if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
                });
-               if (! s.size.w || ! s.size.h) return reply (rs, 400, {error: 'Invalid video size.', metadata: metadata, filename: name});
+               if (! s.size.w || ! s.size.h) {
+                  H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
+                  return reply (rs, 400, {error: 'Invalid video size', metadata: metadata, filename: name});
+               }
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
                   if (line.match (/time\b/i)) return [line.split (':') [0].trim (), line.replace (/.*: /, '')];
@@ -1600,6 +1612,7 @@ var routes = [
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [
             [a.get, Redis, 'hget', 'upic:rev:' + rq.user.username, '@hash'],
             function (s) {
+               H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'repeated', name: name}});
                reply (rs, 409, {error: 'repeated', id: s.last});
             }
          ]}],

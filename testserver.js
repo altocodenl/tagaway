@@ -392,6 +392,12 @@ var main = [
       if (rs.body.id    !== s.uploadIds [1]) return clog ('Invalid id', rs.body);
       return true;
    }],
+   ['get account to see upload repeated log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      if (! rs.body.logs [0]) return clog ('No log.');
+      if (! rs.body.logs [0].error) return clog ('No error in log.', rs.body.logs [0]);
+      if (rs.body.logs [0].error.type !== 'repeated' || rs.body.logs [0].error.name !== 'bach.mp4') return clog ('Invalid info in log.', rs.body.logs [0]);
+      return true;
+   }],
    ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
@@ -457,7 +463,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400, function (s, rq, rs) {
       if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
-      if (! rs.body.error.match (/^Invalid video:/)) return clog ('Invalid error message.');
+      if (! rs.body.error.match (/^Invalid video/)) return clog ('Invalid error message.');
       return true;
    }],
    ['delete videos', 'post', 'delete', {}, function (s) {
@@ -474,8 +480,16 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400, function (s, rq, rs) {
       if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
-      if (! rs.body.error.match (/^Invalid image:/)) return clog ('Invalid error message.');
+      if (! rs.body.error.match (/^Invalid image/)) return clog ('Invalid error message.');
       return true;
+   }],
+   ['get account to see upload invalid logs', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      return dale.stopNot ([[0, 'invalid.jpg'], [1, 'empty.jpg'], [3, 'invalid.mp4']], true, function (v) {
+         if (! rs.body.logs [v [0]]) return clog ('No log.');
+         if (! rs.body.logs [v [0]].error) return clog ('No error in log.', rs.body.logs [v [0]]);
+         if (rs.body.logs [v [0]].error.type !== 'invalid' || rs.body.logs [v [0]].error.name !== v [1]) return clog ('Invalid info in log.', rs.body.logs [v [0]]);
+         return true;
+      });
    }],
    ['upload picture without uid', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
@@ -572,6 +586,12 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 409],
+   ['get account to see upload repeated log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      if (! rs.body.logs [0]) return clog ('No log.');
+      if (! rs.body.logs [0].error) return clog ('No error in log.', rs.body.logs [0]);
+      if (rs.body.logs [0].error.type !== 'repeated' || rs.body.logs [0].error.name !== 'smalldup.png') return clog ('Invalid info in log.', rs.body.logs [0]);
+      return true;
+   }],
    ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
       return {ids: [s.smallpic.id]};
    }, 200],
@@ -596,6 +616,12 @@ var main = [
       {type: 'field', name: 'uid', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 409],
+   ['get account to see upload repeated log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+      if (! rs.body.logs [0]) return clog ('No log.');
+      if (! rs.body.logs [0].error) return clog ('No error in log.', rs.body.logs [0]);
+      if (rs.body.logs [0].error.type !== 'repeated' || rs.body.logs [0].error.name !== 'medium-nometa.jpg') return clog ('Invalid info in log.', rs.body.logs [0]);
+      return true;
+   }],
    ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, cb) {
       if (rs.body.usage.fsused !== 3370 + 22644 + 13194) return clog ('Invalid FS usage.');
       if (rs.body.usage.s3used === 3402 + 22676)         return true;
@@ -1523,7 +1549,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 73 && rs.body.logs.length !== 74)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 79 && rs.body.logs.length !== 80)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, 3000);
    }],
