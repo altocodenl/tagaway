@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - When importing a repeated file, add those tags to the file.
    - Account logs refactor
       - Add a log on invalid upload.
       - Add a log on repeated upload.
@@ -49,14 +48,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Refactor client to use queried logs in import.
       - Show two latest imports or uploads instead of using a date cutoff.
       - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
-   - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Check support for writing webp.
    - Finish uploading all pictures/videos.
    - Review all invalid pics/vids.
-   - Add env dependent admin fs usage override.
-   - New dev server.
-   - Reset all servers and start from scratch.
-   - Move ac;log to prod server & backup logs to S3 every 15 minutes, with a lifecycle of 30 minutes.
+   - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
+
+- Add env dependent admin fs usage override.
+- New dev server.
+- Reset all servers and start from scratch.
+- Move ac;log to prod server & backup logs to S3 every 15 minutes, with a lifecycle of 30 minutes.
 
 ### Todo beta
 
@@ -692,7 +692,7 @@ All the routes below require an admin user to be logged in.
    - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
-   - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: true|undefined (if true the tagging operation comes from an import of a repeated picture)}
+   - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: undefined|google|dropbox (if not undefined, the tagging operation comes from an import of a repeated picture)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
@@ -727,6 +727,8 @@ Used by giz:
 
 - users:USERNAME (hash): covered above, giz only cares about `pass`.
 ```
+
+Command to copy a key `x` to a destination `y` (it will delete the key at `y`), from the console: `eval 'redis.call ("DEL", KEYS [2]); redis.call ("RESTORE", KEYS [2], 0, redis.call ("DUMP", KEYS [1]));' 2 x y`
 
 ## Client
 

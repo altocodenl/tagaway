@@ -1524,7 +1524,7 @@ var routes = [
             var limit = CONFIG.storelimit [rq.user.type];
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 300 * 1000 * 1000 * 1000;
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
             if (used >= limit) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
@@ -1874,7 +1874,7 @@ var routes = [
          ['body.ids', b.ids, 'string', 'each'],
          function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
          ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
-         ['body.fromImport', b.fromImport, [undefined, true], 'oneOf', teishi.test.equal],
+         ['body.fromImport', b.fromImport, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
       ])) return;
 
       if (b.fromImport && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
@@ -2263,7 +2263,7 @@ var routes = [
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
             var limit = CONFIG.storelimit [rq.user.type];
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 300 * 1000 * 1000 * 1000;
+            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
@@ -2966,13 +2966,24 @@ var routes = [
 
                                  // Repeated file, increment repeated counter and continue
                                  if (RS.code === 409 && RS.body.error === 'repeated') return check (function () {
-                                    // TODO: add tagging
-                                    if (! upload.repeated) upload.repeated = 0;
-                                    upload.repeated++;
-                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                       if (error) return s.next (null, error);
-                                       importFile (s, index + 1);
-                                    });
+                                    a.seq (s, [
+                                       [a.fork, s.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
+                                          return function (s) {
+                                             hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: s.cookie}, body: {csrf: s.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
+                                                if (RS.code === 200) return s.next ();
+                                                s.next (null, {error: {code: RS.code, body: RS.body}});
+                                             }});
+                                          }
+                                       }],
+                                       function (s) {
+                                          if (! upload.repeated) upload.repeated = 0;
+                                          upload.repeated++;
+                                          redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
+                                             if (error) return s.next (null, error);
+                                             importFile (s, index + 1);
+                                          });
+                                       }
+                                    ]);
                                  });
 
                                  // No more space, save error in import key and stop the process
