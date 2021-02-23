@@ -4743,6 +4743,7 @@ E.import = function () {
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
             B.view (['Data', 'account'], {tag: 'div'}, function (x, account) {
+               account = account || {};
                return dale.do (account.imports, function (i) {
                   // RECENT IMPORTS BOX
                   return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
