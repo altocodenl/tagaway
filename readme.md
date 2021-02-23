@@ -40,11 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Account logs refactor
-      - Mark geotaggingSuggestion as user field in db.
-      - Store list of names of repeated|invalid|tooLarge files on both import & upload logs.
-      - Make uid in POST /upload into number.
-      - GET /account: add suggestGeotagging field; don't return list of logs; return aggregated list of imports & uploads, limited to maximum 10 each.
    - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
    - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Check support for writing webp.
