@@ -17,6 +17,8 @@ var U = [
 
 var PICS = 'test/';
 
+var uid = Date.now ();
+
 var H = {};
 
 H.trim = function (s) {
@@ -368,7 +370,7 @@ var main = [
    // upload invalid video
    ['upload video #1', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
@@ -377,7 +379,7 @@ var main = [
    }],
    ['upload video #2', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200, function (s, rq, rs) {
       s.uploadIds [1] = rs.body.id;
@@ -385,7 +387,7 @@ var main = [
    }],
    ['upload repeated video', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 409, function (s, rq, rs, next) {
       if (rs.body.error !== 'repeated') return clog ('Invalid error', rs.body);
@@ -459,7 +461,7 @@ var main = [
    }),
    ['upload invalid video', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'invalid.mp4'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400, function (s, rq, rs) {
       if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
@@ -471,12 +473,12 @@ var main = [
    }, 200],
    ['upload empty picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field', name: 'lastModified', value: Date.now ()},
    ]}, 400],
    ['upload invalid picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 400, function (s, rq, rs) {
       if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
@@ -493,7 +495,14 @@ var main = [
    }],
    ['upload picture without uid', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
-      {type: 'field',  name: 'lastModified', value: Date.now ()}
+   ]}, 400],
+   ['upload picture with non-numeric uid', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now () + 'a'},
+   ]}, 400],
+   ['upload picture with futuristic uid', 'post', 'upload', {}, {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'field', name: 'uid', value: Date.now () + 10000000},
    ]}, 400],
    ['upload picture without lastModified', 'post', 'upload', {}, {multipart: [
       {type: 'field', name: 'uid', value: Date.now ()},
@@ -543,7 +552,7 @@ var main = [
    ]}, 400],
    ['upload small picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200, function (s, rq, rs, next) {
       // Wait for S3 to delete the videos uploaded before and the image just uploaded
@@ -583,7 +592,7 @@ var main = [
    }],
    ['upload duplicated picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'smalldup.png'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 409],
    ['get account to see upload repeated log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
@@ -597,12 +606,12 @@ var main = [
    }, 200],
    ['upload small picture again', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'small.png'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['upload medium picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'medium.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 200],
    ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
@@ -613,7 +622,7 @@ var main = [
    }],
    ['upload medium picture with no metadata', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'medium-nometa.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}, 409],
    ['get account to see upload repeated log', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
@@ -657,7 +666,7 @@ var main = [
    }],
    ['upload large picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'large.jpeg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -692,7 +701,7 @@ var main = [
    }],
    ['upload lopsided picture', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 1},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}, 200, function (s, rq, rs) {
       if (rs.body.deg !== 90) return clog ('Invalid body.deg');
@@ -814,7 +823,7 @@ var main = [
    }],
    ['upload picture with different date format and geodata', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
    ]}, 200],
@@ -940,13 +949,13 @@ var main = [
    }],
    ['upload medium picture with rotation data', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotatemedium.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
    ]}, 200],
    ['upload small picture with rotation data', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotatesmall.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'uid', value: uid + 3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
    ]}, 200],
@@ -1028,7 +1037,7 @@ var main = [
    dale.go (['deer.bmp', 'sunrise.HEIC', 'tumbleweed.GIF', 'benin.tif'], function (v) {
       return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, {multipart: [
          {type: 'file',  name: 'pic', path: PICS + v},
-         {type: 'field', name: 'uid', value: Date.now ()},
+         {type: 'field', name: 'uid', value: uid + 4},
          {type: 'field',  name: 'lastModified', value: Date.now ()}
       ]}, 200];
    }),
@@ -1064,16 +1073,6 @@ var main = [
          }, 200]
       ];
    }),
-   /*
-   TODO: add video formats & test
-   dale.go (['boat.3gp', 'circus.MOV', 'drumming.avi'], function (v) {
-      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, {multipart: [
-         {type: 'file',  name: 'pic', path: PICS + v},
-         {type: 'field', name: 'uid', value: Date.now ()},
-         {type: 'field',  name: 'lastModified', value: Date.now ()}
-      ]}, 200];
-   }),
-   */
    ['tag nonexisting #2', 'post', 'tag', {}, function (s) {
       return {tag: '\tfoo', ids: [s.pics [0].id, 'b']};
    }, 404],
@@ -1496,7 +1495,7 @@ var main = [
       return [
          ['upload ' + format, 'post', 'upload', {}, {multipart: [
             {type: 'file',  name: 'pic', path: PICS + vid},
-            {type: 'field', name: 'uid', value: Date.now ()},
+            {type: 'field', name: 'uid', value: uid + 5},
             {type: 'field',  name: 'lastModified', value: Date.now ()}
          ]}, 200, function (s, rq, rs) {
             if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
@@ -1521,9 +1520,9 @@ var main = [
          k === 1 ? [] : ['delete ' + format, 'post', 'delete', {}, function (s) {
             return {ids: [s.nonmp4 [k].id]};
          }, 200, function (s, rq, rs, next) {
-            // For the last video, wait 4 seconds
+            // For the last video, wait 5 seconds
             if (k === 2) {
-               setTimeout (next, 4000);
+               setTimeout (next, 5000);
                return;
             }
             return true;
@@ -1550,6 +1549,28 @@ var main = [
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 79 && rs.body.logs.length !== 80)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      // Checking uploads object
+      if (type (rs.body.uploads) !== 'array') return clog ('Invalid uploads.');
+
+      var references = [
+         {uid: uid + 5, done: 3, lastPic: {id: teishi.last (s.nonmp4).id}},
+         {uid: uid + 4, done: 4, lastPic: {id: s.extrapics [0].id}},
+         {uid: uid + 3, tags: ['rotatethumb'], done: 2, lastPic: {id: s.thumbpics [0].id, deg: 90}},
+         {uid: uid + 2, tags: ['dunkerque', 'beach'], done: 1, lastPic: {id: s.dunkerque}},
+         {uid: uid + 1, done: 5, lastPic: {id: s.rotatepic.id, deg: 90}, repeated: ['medium-nometa.jpg', 'smalldup.png'], invalid: ['invalid.jpg', 'empty.jpg', 'invalid.mp4']},
+         {uid: uid, repeated: ['bach.mp4'], done: 2, lastPic: {id: s.uploadIds [1]}}
+      ];
+
+      if (rs.body.uploads.length !== 6) return clog ('Invalid uploads length', rs.body.uploads.length);
+
+      var error = dale.stopNot (rs.body.uploads, undefined, function (v, k) {
+         if (type (v.uid) !== 'integer' || type (v.start) !== 'integer' || type (v.end) !== 'integer') return [0, v];
+         delete v.start;
+         delete v.end;
+         if (! eq (v, references [k])) return [1, v, references [k]];
+      });
+
+      if (error) return clog (['Invalid uid, start or end', 'Invalid upload data'] [error [0]], error [1], error [2] || '');
       // Wait for S3
       setTimeout (next, 3000);
    }],

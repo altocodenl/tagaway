@@ -41,66 +41,58 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Account logs refactor
-      - Add a log on invalid upload.
-      - Add a log on repeated upload.
-      - Add a log on a pic/vid that is too large.
-
-      - Queryable logs by type/date:
-         - geo logs (to see if enable geotagging suggestion was dismissed or not)
-         - upl logs - aggregate by uid, send a limit of n
-         - imp logs, subtype upload
-      - Refactor client to use queried logs in upload.
-      - Refactor client to use queried logs in import.
-      - Show two latest imports or uploads instead of using a date cutoff.
-      - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
+      - Mark geotaggingSuggestion as user field in db.
+      - Store list of names of repeated|invalid|tooLarge files on both import & upload logs.
+      - Make uid in POST /upload into number.
+      - GET /account: add suggestGeotagging field; don't return list of logs; return aggregated list of imports & uploads, limited to maximum 10 each.
+   - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
+   - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Check support for writing webp.
-   - Finish uploading all pictures/videos.
+   - Uploading & import all pics/vids.
    - Review all invalid pics/vids.
-   - When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
-
-- Add env dependent admin fs usage override.
-- New dev server.
-- Reset all servers and start from scratch.
-- Move ac;log to prod server & backup logs to S3 every 15 minutes, with a lifecycle of 30 minutes.
+- Reset dev & prod servers and start from scratch.
+- ac;log
+   - Backup old ac;log, reset it.
+   - Upload ac;log file to S3 every 15 minutes, with a lifecycle of 30 minutes, copying the file to /tmp first.
 
 ### Todo beta
 
 - Backend improvements:
    - Check if we're leaving behind temporary files from import.
    - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
+   - New dev server.
 
 - Upload/import:
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Improve display of errors in upload & import:
-      - Show foldable list of invalid pics/files.
+      - Show foldable list of repeated|invalid|too large pics/vids.
       - When adding many files to upload, put a "loading, please wait" snackbar.
-      - If there's a provider error, give a "try again" option with the same list.
+      - Show provider errors in import.
+      - If there's a provider error, give a "try again" option with the same list?
       - If there's another type of error, mark "ac;pic/server error".
-   - Add flag to see if there are ongoing uploads to refresh list of pictures on a separate device/tab.
+   - Add "currently uploading" endpoint with ttl and query it to see if interface should be refreshed. This allows for refresh if there are uploads going on on a separate device/tab.
+   - If opening interface, load up import data to see if an import is ongoing so that query can be updated.
+   - Implement support for large files (> 500MB).
+   - Import from Dropbox.
 
-- Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+- Pics
+   - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+   - Implement video streaming.
 
-Safari bugs
+- Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
    - On double click, images fail to open in most cases
    - When opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
-- Migrate to gotoB v2.
-
-- Long-standing bugs, see after migration to gotoB v2:
-   - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
-   - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
-   - Replicate & fix mysterious shift bug.
-   - Intermittent 403 from GET csrf when already being logged in.
-   - When performance is slow in the browser, double click to open picture when picture is already selected doesn't open the picture.
-
-- Pics
-   - Implement video streaming.
-
-- Implement support for large files (> 500MB).
-
-- Import from Dropbox.
+- gotoB v2
+   - Migrate to gotoB v2.
+   - Long-standing bugs, see after migration to gotoB v2:
+      - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
+      - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
+      - Replicate & fix mysterious shift bug.
+      - Intermittent 403 from GET csrf when already being logged in.
+      - When performance is slow in the browser, double click to open picture when picture is already selected doesn't open the picture.
 
 - Accounts
    - Recover/reset password.
@@ -111,6 +103,10 @@ Safari bugs
    - Retrieve used space so far (stats).
    - Downgrade my account alert.
    - Family plan.
+
+- Mobile
+   - Login & signup.
+   - Upload files & folders.
 
 ### Already implemented
 
@@ -220,14 +216,7 @@ Safari bugs
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo post-beta
-
-- Pics
-   - Basic mobile design.
-      - Upload files & folders.
-      - See pics.
-      - Select tags & sort order to see pics.
-      - Select sorting order.
+### Todo post-launch
 
 - Open
    - Show tags.
@@ -259,6 +248,11 @@ Safari bugs
 - Admin
    - Retrieve stats & test endpoint.
    - User management.
+
+- Mobile
+   - See pics.
+   - Select tags & sort order to see pics.
+   - Select sorting order.
 
 - Other
    - Check lifecycle of pics bucket in S3.
@@ -403,8 +397,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
-   - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'size'}`).
-   - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes.
+   - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
+   - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes. The `uid` should be a timestamp in milliseconds and should not be in the future.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
@@ -479,12 +473,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 `POST /geo`
    - Enables or disables geotagging.
-   - Body must be of the form `{operation: 'enable|disable|dismissSuggestion'}`.
+   - Body must be of the form `{operation: 'enable|disable|dismiss'}`.
    - If an operation is ongoing while the request is being made, the server will reply with a 409 code. Otherwise it will reply with a 200 code.
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, logs: [...], geo: true|undefined, geoInProgress: true|undefined}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, uploads: [{uid: INTEGER, tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}, ...], imports: [{pro: google|dropbox, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [{code: INTEGER, error: OBJECT, file: OBJECT}]|UNDEFINED}, ...]}`.
+   - The number of `uploads` and `imports` objects are restricted to 10.
 
 `GET /import/list/PROVIDER[?startList=1]`
    - Lists available folders with pictures in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if authorization is not present or expired.
@@ -627,6 +622,7 @@ All the routes below require an admin user to be logged in.
    type: STRING (one of tier1|tier2)
    created: INT
    geo: 1|undefined
+   suggestGeotagging: 1|undefined
 
 - geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
@@ -694,7 +690,7 @@ All the routes below require an admin user to be logged in.
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
-   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: STRING (id of upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING, error: UNDEFINED|{type: 'invalid|repeated|size', name: STRING}}
+   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: INTEGER (functions as id of upload and also marks the beginning time of the upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING, error: UNDEFINED|{type: 'invalid|repeated|tooLarge', name: STRING}}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: undefined|google|dropbox (if not undefined, the tagging operation comes from an import of a repeated picture)}
@@ -702,7 +698,7 @@ All the routes below require an admin user to be logged in.
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
    - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
-   - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: UNDEFINED|INTEGER, invalid: UNDEFINED|INTEGER, providerErrors: UNDEFINED|[...]}}
+   - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [...]|UNDEFINED}}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -916,10 +912,12 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Sets `State.upload.summary.UID.tags`.
       - Invokes `post upload`.
       - Removes an element from `State.upload.queue`.
+      - Performs a file upload.
       - Conditionally invokes `snackbar` on error; also on success of entire upload, also depending on `State.upload.cancelled` to ascertain if the upload concluded or was cancelled.
-      - Adds an item to either `State.upload.summary.UID.ok`, `State.upload.summary.UID.error` or `State.upload.summary.UID.repeat`.
-      - If query is successful, invokes `query account` and `query tags`.
-      - If query is successful and `State.page` is `pics`, invokes `query pics` and `query tags`.
+      - If the file upload returns an error stating there's no further capacity, clears up `State.upload.queue` completely.
+      - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
+      - Invokes `query account` and `query tags`.
+      - If `State.page` is `pics`, invokes `query pics` and `query tags`.
    8. `report unsupportedFormats`: using `State.upload.new.format`, it invokes `post unsupportedFormats`.
 
 6. Import
@@ -973,7 +971,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
       - `summary`: {
-         UID: {ok: [{id: ID, deg: 90|-90|180|undefined}, ...]|UNDEFINED, error: {name: STRING, error: STRING}|UNDEFINED, repeat: [FILENAME, ...]|UNDEFINED},
+         UID: {tags: [STRING, ...]|UNDEFINED, errors: [{code: INTEGER, name: STRING, error: OBJECT}, ...]|UNDEFINED}
          ...
       }
       - `cancelled`: [ID, ...]|undefined, to list the ids of the uploads that were cancelled by an user.

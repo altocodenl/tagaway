@@ -1027,6 +1027,7 @@ var routes = [
                email:               b.email,
                type:                'tier1',
                created:             Date.now (),
+               suggestGeotagging:   1
             });
             if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
             s.invite.accepted = Date.now ();
@@ -1443,8 +1444,15 @@ var routes = [
       if (! rq.data.fields)      return reply (rs, 400, {error: 'field'});
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
       if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
+      if (! rq.data.fields.uid.match (/^\d+$/)) return reply (rs, 400, {error: 'uid'});
+      rq.data.fields.uid = parseInt (rq.data.fields.uid);
+      if (rq.data.fields.uid > Date.now ()) return reply (rs, 400, {error: 'uid'});
+
+      if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
+
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
       if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), error;
@@ -1462,8 +1470,6 @@ var routes = [
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
       }
-
-      if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
       if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat'});
 
@@ -1516,8 +1522,8 @@ var routes = [
          [a.set, 'byfs', [a.make (fs.stat), path]],
          function (s) {
             if (s.byfs.size > 536870888) {
-               H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'size', name: name}});
-               return reply (rs, 400, {error: 'size', filename: name});
+               H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'tooLarge', name: name}});
+               return reply (rs, 400, {error: 'tooLarge', filename: name});
             }
             s.next ();
          },
@@ -2277,20 +2283,73 @@ var routes = [
             // Temporarily override limit for admins until we roll out paid accounts.
             var limit = CONFIG.storelimit [rq.user.type];
             if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
+
+            var uploads = {}, imports = {}, nupl = 0, nimp = 0, oldestUpl = Infinity, listLimit = 10;
+            dale.stop (s.last [0], true, function (log) {
+               log = JSON.parse (log);
+               if (log.a === 'upl' && ! log.pro && nupl < listLimit) {
+                  if (! uploads [log.uid]) {
+                     // We convert uid to an integer since it's a timestamp.
+                     nupl++;
+                     uploads [log.uid] = {uid: log.uid, tags: log.tags};
+                     if (log.uid < oldestUpl) oldestUpl = log.uid;
+                  }
+                  var u = uploads [log.uid];
+                  if (log.t < (u.start || Infinity)) u.start = log.t;
+                  if (log.t > (u.end || 0))          u.end   = log.t;
+                  if (! log.error) {
+                     if (! u.done) u.done = 0;
+                     u.done++;
+                     if (! u.lastPic) u.lastPic = {id: log.id, deg: log.deg};
+                  }
+                  else {
+                     var errorType = u [log.error.type];
+                     if (! u [log.error.type]) u [log.error.type] = [];
+                     u [log.error.type].push (log.error.name);
+                  }
+               }
+               if (log.a === 'imp' && log.s === 'upload' && nimp < listLimit) {
+                  nimp++;
+                  log.upload = log.upload || {};
+                  imports [log.t] = {
+                     pro:      log.pro,
+                     start:    log.upload.start,
+                     end:      log.upload.end,
+                     done:     log.upload.done,
+                     repeated: log.upload.repeated,
+                     invalid:  log.upload.invalid,
+                     tooLarge: log.upload.tooLarge,
+                     providerErrors: log.upload.providerErrors
+                  }
+               }
+               // If we have all the uploads and imports we need and the entry is oldest than the oldest upload, we're done iterating.
+               if (nupl === listLimit && nimp === listLimit && log.t < oldestUpl) return true;
+            });
+            uploads = dale.go (uploads, function (v) {return v}).sort (function (a, b) {
+               return b.end - a.end;
+            });
+            imports = dale.go (imports, function (v) {return v}).sort (function (a, b) {
+               return b.end - a.end;
+            });
+
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
                type:     rq.user.type === 'tier1' ? 'free' : 'paid',
                created:  parseInt (rq.user.created),
                usage:    {
+                  // TODO: remove
                   //limit:  CONFIG.storelimit [rq.user.type],
                   limit:  limit,
                   fsused: parseInt (s.last [1]) || 0,
-                  s3used: parseInt (s.last [2]) || 0
+                  s3used: parseInt (s.last [2]) || 0,
                },
-               logs:          dale.go (s.last [0], JSON.parse),
+               logs:          ENV ? undefined : dale.go (s.last [0], JSON.parse),
                geo:           rq.user.geo ? true : undefined,
                geoInProgress: s.last [3]  ? true : undefined,
+               suggestGeotagging: rq.user.suggestGeotagging ? true : undefined,
+               uploads: uploads,
+               imports: imports
             });
          }
       ]);
@@ -2308,6 +2367,7 @@ var routes = [
       ])) return;
 
       if (b.operation === 'dismiss') return astop (rs, [
+         [Redis, 'hdel', 'users:' + rq.user.username, 'suggestGeotagging'],
          [H.log, rq.user.username, {a: 'geo', op: b.operation}],
          [reply, rs, 200]
       ]);
@@ -2924,8 +2984,9 @@ var routes = [
                               if (Error) return;
                               Error = true;
                               check (function () {
+                                 // PROVIDER ERROR 1
                                  if (! upload.providerErrors) upload.providerErrors = [];
-                                 upload.providerErrors.push ({code: 0, error: error.toString (), file: file});
+                                 upload.providerErrors.push ({code: 0, error: error, file: file});
                                  redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                     if (error) return s.next (null, error);
                                     importFile (s, index + 1);
@@ -2942,6 +3003,7 @@ var routes = [
                                  if (Error) return;
                                  Error = true;
                                  check (function () {
+                                    // PROVIDER ERROR 2
                                     if (! upload.providerErrors) upload.providerErrors = [];
                                     upload.providerErrors.push ({code: response.statusCode, error: response.body, file: file});
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
@@ -2989,8 +3051,9 @@ var routes = [
                                           }
                                        }],
                                        function (s) {
-                                          if (! upload.repeated) upload.repeated = 0;
-                                          upload.repeated++;
+                                          // REPEATED FILE
+                                          if (! upload.repeated) upload.repeated = [];
+                                          upload.repeated.push (file.originalFilename);
                                           redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                              if (error) return s.next (null, error);
                                              importFile (s, index + 1);
@@ -3004,20 +3067,24 @@ var routes = [
                                     return s.next (null, {error: 'No more space in your ac;pic account.'});
                                  });
 
+                                 // INVALID OR TOO LARGE FILE
                                  if (RS.code === 400) return check (function () {
-                                    if (! upload.invalid) upload.invalid = 0;
-                                    upload.invalid++;
+                                    var key = RS.body.error === 'tooLarge' ? 'tooLarge' : 'invalid';
+                                    if (! upload [key]) upload [key] = [];
+                                    upload [key].push (file.originalFilename);
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                        if (error) return s.next (null, error);
                                        importFile (s, index + 1);
-                                       notify (a.creat (), {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username});
+                                       notify (a.creat (), {priority: 'important', type: 'import upload ' + key + ' file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username});
                                     });
                                  });
 
+                                 // UNEXPECTED ERROR
                                  if (RS.code !== 200) return check (function () {
                                     s.next (null, {error: RS.body, code: RS.code, file: file});
                                  });
 
+                                 // SUCCESSFUL UPLOAD
                                  check (function () {
                                     if (! upload.done) upload.done = 0;
                                     upload.done++;
