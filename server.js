@@ -2871,7 +2871,7 @@ var routes = [
                return [v.id, v.modifiedTime];
             });
 
-            var filesToUpload = {}, repeated = 0;
+            var filesToUpload = {}, repeatedIds = [];
 
             var recurseDown = function (folderId) {
                var folder = list.folders [folderId];
@@ -2880,7 +2880,7 @@ var routes = [
                   if (list.folders [childId]) return recurseDown (childId);
                   // Else, it is a pic/vid.
                   // We check whether we already have the file. If we do, we ignore it.
-                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return repeated++;
+                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return repeatedIds.push (childId);
                   filesToUpload [childId] = [];
                   recurseUp (childId, folderId);
                });
@@ -2903,6 +2903,16 @@ var routes = [
                s.unsupported [extension]++;
             });
 
+            s.filesToUpload = filesToUpload;
+
+            var repeated = [];
+            s.list = dale.fil (list.pics, undefined, function (file) {
+               if (repeatedIds.indexOf (file.id) !== -1) repeated.push (file.originalFilename);
+               if (s.filesToUpload [file.id]) return file;
+            });
+
+            s.start = Date.now ();
+
             if (ids.length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
                [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: 0, repeated: repeated}}],
@@ -2911,13 +2921,8 @@ var routes = [
                }
             ]);
 
-            s.filesToUpload = filesToUpload;
-            s.list = dale.fil (list.pics, undefined, function (file) {
-               if (s.filesToUpload [file.id]) return file;
-            });
-            s.start = Date.now ();
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length + repeated.length, done: 0, repeated: repeated}));
 
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length + repeated, done: 0, repeated: repeated}));
          },
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
