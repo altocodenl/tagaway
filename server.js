@@ -2905,6 +2905,11 @@ var routes = [
 
             s.filesToUpload = filesToUpload;
 
+            s.list = dale.fil (list.pics, undefined, function (file) {
+               if (repeatedIds.indexOf (file.id) !== -1) repeated.push (file.originalFilename);
+               if (s.filesToUpload [file.id]) return file;
+            });
+
             s.start = Date.now ();
 
             if (ids.length === 0) return a.seq (s, [
