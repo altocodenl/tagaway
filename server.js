@@ -3528,7 +3528,7 @@ if (cicek.isMaster) a.stop ([
       if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing.slice (0, 100)});
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
 
-      if (process.argv [3] !== 'makeConsistent') return;
+      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'important', type: 'File consistency check done.'});
       // We delete the list of pics from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
       if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
@@ -3618,7 +3618,7 @@ if (cicek.isMaster) a.stop ([
 
       if (mismatch.length !== 0)           notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
 
-      if (process.argv [3] !== 'makeConsistent') return;
+      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'important', type: 'Stored sizes consistency check done.'});
 
       a.seq (s, [
          [H.stat.w, dale.go (mismatch, function (v) {
