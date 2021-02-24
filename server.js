@@ -3047,13 +3047,22 @@ var routes = [
                                  // Repeated file, increment repeated counter and continue
                                  if (RS.code === 409 && RS.body.error === 'repeated') return check (function () {
                                     a.seq (s, [
-                                       [a.fork, s.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
-                                          return function (s) {
-                                             hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: s.cookie}, body: {csrf: s.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
-                                                if (RS.code === 200) return s.next ();
-                                                s.next (null, {error: {code: RS.code, body: RS.body}});
-                                             }});
-                                          }
+                                       // TODO: use same stack once a.fork doesn't copy the stack anymore
+                                       [function (S) {
+                                          a.seq ([
+                                             [a.fork, S.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
+                                                return function (s) {
+                                                   hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: s.cookie}, body: {csrf: s.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
+                                                      if (RS.code === 200) return s.next ();
+                                                      s.next (null, {error: {code: RS.code, body: RS.body}});
+                                                   }});
+                                                }
+                                             }],
+                                             function (s) {
+                                                if (s.error) S.next (null, s.error);
+                                                else         S.next ();
+                                             }
+                                          ]);
                                        }],
                                        function (s) {
                                           // REPEATED FILE
