@@ -2871,7 +2871,7 @@ var routes = [
                return [v.id, v.modifiedTime];
             });
 
-            var filesToUpload = {};
+            var filesToUpload = {}, repeated = [];
 
             var recurseDown = function (folderId) {
                var folder = list.folders [folderId];
@@ -2880,7 +2880,7 @@ var routes = [
                   if (list.folders [childId]) return recurseDown (childId);
                   // Else, it is a pic/vid.
                   // We check whether we already have the file. If we do, we ignore it and not have into account at all, not even on the total count.
-                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return;
+                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return repeated.push (childId);
                   filesToUpload [childId] = [];
                   recurseUp (childId, folderId);
                });
@@ -2906,8 +2906,7 @@ var routes = [
             s.filesToUpload = filesToUpload;
 
             s.list = dale.fil (list.pics, undefined, function (file) {
-               if (repeatedIds.indexOf (file.id) !== -1) repeated.push (file.originalFilename);
-               if (s.filesToUpload [file.id]) return file;
+               if (s.filesToUpload [file.id] && repeated.indexOf (file.id) === -1) return file;
             });
 
             s.start = Date.now ();
@@ -3050,7 +3049,7 @@ var routes = [
                                           a.seq ([
                                              [a.fork, S.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
                                                 return function (s) {
-                                                   hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: s.cookie}, body: {csrf: s.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
+                                                   hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: S.cookie}, body: {csrf: S.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
                                                       if (RS.code === 200) return s.next ();
                                                       s.next (null, {error: {code: RS.code, body: RS.body}});
                                                    }});
