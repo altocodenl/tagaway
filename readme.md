@@ -40,10 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - [check solved after refactor] When starting import, for a couple of seconds the box still shows "your files are ready to be imported".
+   - fix performance issues in client: happens on click pic when state.selected changes, but it is not the change event!
+   - query server takes 4s with 27k pictures
+
    - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Check support for writing webp.
-   - Uploading & import all pics/vids.
+   - Uploading all pics/vids.
    - Review all invalid pics/vids.
 - Reset dev & prod servers and start from scratch.
 - ac;log
@@ -921,7 +923,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    3. `import delete PROVIDER`: invokes `post import/delete/PROVIDER`; after the ajax call, it also invokes `import list PROVIDER false true`.
    4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) and there's no upload information, the responder does nothing. But if there's provider data and a listing or upload is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER` and `query pics`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
    5. `import retry PROVIDER`: invokes `post import/delete/PROVIDER` and then `import list PROVIDER true`.
-   6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`. If `start` is `true`, the responder invokes `post import/start/PROVIDER` before invoking `import list PROVIDER`, to trigger the start of the import process.
+   6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`. If `start` is `true`, the responder sets `Data.import.PROVIDER` with a placeholder object and invokes `post import/start/PROVIDER` before invoking `import list PROVIDER`, to trigger the start of the import process.
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
@@ -986,7 +988,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       error: STRING|UNDEFINED,
       list: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]},
       selection: UNDEFINED|[ID, ...],
-      upload: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, invalid: INTEGER|UNDEFINED, repeated: INTEGER|UNDEFINED}
+      upload: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, invalid: INTEGER|UNDEFINED, repeated: INTEGER|UNDEFINED},
+      waitingForServer: UNDEFINED|true, serves to indicate when a current version of the data is a placeholder until the response comes back from the server after starting the import
 }
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.

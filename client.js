@@ -3057,7 +3057,7 @@ dale.do ([
                B.do (x, 'query', 'account');
             }
          }
-         else if (! teishi.eq (oldData, {}) && ! oldData.end && rs.body.end) {
+         else if (! teishi.eq (oldData, {}) && ! oldData.end && rs.body.end && ! oldData.waitingForServer) {
             B.do (x, 'snackbar', 'green', 'Successfully listed files from ' + H.upper (provider));
          }
 
@@ -3107,6 +3107,8 @@ dale.do ([
       B.do (x, 'post', 'import/select/' + provider, {}, {ids: dale.keys (B.get ('State', 'import', 'selection', provider))}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
          if (! start) return B.do (x, 'import', 'list', provider);
+         // We create a placeholder data object to immediately put a box to show import progress without waiting for the server's reply.
+         B.do ('set', ['Data', 'import', 'google'], {start: Date.now (), upload: {total: 0, done: 0}, waitingForServer: true});
          B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
             if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids from ' + H.upper (provider));
             B.do (x, 'import', 'list', provider);
@@ -4776,7 +4778,7 @@ E.import = function () {
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + i.tooLarge.length],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, 'invalid)']
+                                 ['span', {class: 'upload-progress__default-text'}, ' are too big)']
                               ],
                               ! i.providerErrors ? [] : [
                                  ['LITERAL', '&nbsp'],
