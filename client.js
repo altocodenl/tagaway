@@ -2681,6 +2681,10 @@ dale.do ([
 
       // Single select/unselect
       if (! B.get ('State', 'shift') || lastIndex === undefined) {
+         // TODO DEBUG: why is this so expensive now??
+         //if (! B.get ('State', 'selected', id)) return B.set (['State', 'selected', id], true);
+         //else                                   return B.rem (['State', 'selected'], id);
+         // return;
          if (! B.get ('State', 'selected', id)) return B.do (x, 'set', ['State', 'selected', id], true);
          else                                   return B.do (x, 'rem', ['State', 'selected'], id);
       }
@@ -4522,7 +4526,7 @@ E.upload = function () {
                                        ]],
                                        */
                                        // TAG LIST HORIZONTAL
-                                       ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags || serverUpload.tags, function (tag) {
+                                       ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
                                           // TODO v2: add inline SVG
                                           return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
                                              ['span', {class: 'tag__title'}, tag],
