@@ -1526,6 +1526,10 @@ CSS.litc = [
    ['.listing-progress', {
       display: 'inline-block',
    }],
+   // DOUBLE CLICK ALERT
+   ['.click-double-click-alert', {
+   	'margin-left, margin-right': 'auto',
+   }],
    // ACCOUNT
    ['.account-box', {
       display: 'flex',
@@ -4100,6 +4104,35 @@ E.pics = function () {
                            ]],
                         ];
                      }),
+                     // CLICK AND DOUBLE CLICK ALERT NOTICE
+                     ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
+                              ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+                                 ['div', {class: 'space-alert__image', opaque: true}, [
+                                    // ['div', {class: 'space-alert-icon', opaque: true}]
+                                    ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
+                                 ]],
+                                 ['div', {class: 'boxed-alert__main'}, [
+                                    ['div', {class: 'upload-box__section'}, [
+                                       ['p', {class: 'boxed-alert-message'}, [
+                                          // ['span', {class: className + '-icon-small', opaque: true}],
+                                          ['span', {class: 'upload-progress__default-text'}, 'How to select and view pictures in ac;pic?']
+                                       ]],
+                                       ['div', {class: 'progress-bar'}],
+                                    ]],
+                                    ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                                       ['div', {class: 'listing-progress'}, [
+                                          ['div', {class: 'files-found-so-far'}, [
+                                             ['div', 'Single click on thumbnail to select pics and videos.'],
+                                          ]],
+                                          ['div', {class: 'folders-found-so-far'}, [
+                                             ['div', 'Double click on thumbnail to view pics and videos.'],
+                                          ]],
+                                       ]],
+                                       ['div', B.ev ({class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['onclick', 'State', 'delete']), 'Got it']
+                                    ]],
+                                 ]],
+                              ]],
+                           ]],
                      // PICTURES GRID
                      ['div', {class: 'pictures-grid'}, E.grid ()],
                   ]],
