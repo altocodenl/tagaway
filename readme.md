@@ -40,18 +40,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Fix performance issues in client related to a large amount of tags:
-      - Happens in two places:
-         - State.filter with class sidebar__tags
-         - ul with class: tag-list--attach
-      - js filtering performance improved by 50-90%. Still, three redraws take 6-4-4 seconds respectively.
-      - With the svg responder commented, these redraws take 4-3-3 seconds respectively. svg responder adds 25-50% more time but is not the driver.
-
-
    - Modal to let user know that one click selects picture and two clicks open picture.
    - Use provider metadata to reject too large files
    - Check support for writing webp.
    - Download photos with original filenames.
+   - Check and perhaps simplify redundant logs in import uploads.
 
    - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Upload all pics/vids.
