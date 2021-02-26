@@ -40,10 +40,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Modal to let user know that one click selects picture and two clicks open picture.
-   - Check support for writing webp.
-   - Download photos with original filenames.
+   - Set mtime of file so it's preserved on download.
+   - Modal to let user know that one click selects picture and two clicks open picture: dynamize client/server.
    - Check and perhaps simplify redundant logs in import uploads.
+      - Add startList and endList logs
+      - Move 'request' log to the top (current position is the one for startList)
+      - Use upload tracking in server, but keep the upload object to keep the lists. Have startImport object. What else goes there? tooLarge, date of start, invalidFormats. Perhaps cancelled too. What goes in normal upload logs? Done, invalid, repeated.
+      - Uploads proper: have a "cancelled" log? Maybe even a "successful" log! In that way, we already know if there are pending uploads! Need an endpoint for marking them as done too. But stalled clients? Maybe it's too much for uploads.
+      - Refactor uploads so that current uploads show server info and recent uploads doesn't duplicate the upload.
 
    - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
    - Upload all pics/vids.
