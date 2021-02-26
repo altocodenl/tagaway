@@ -3761,8 +3761,6 @@ E.pics = function () {
                         // *** QUERY LIST ***
                         // TODO v2: merge two elements into one
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
-                           // TODO: NEED TO IMPROVE PERFORMANCE 1
-                           // return;
                            filter = (filter || '').trim ();
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
                               var geotagSelected = dale.stop (selected, true, function (tag) {
@@ -3866,19 +3864,23 @@ E.pics = function () {
                                           ]],
                                        ];
                                     }
-                                    return [
-                                       makeTag ('all'),
-                                       makeTag ('untagged'),
-                                       dale.do (yearlist, makeTag),
-                                       H.if (account.suggestGeotagging, [
-                                          ['p', {class: 'suggest-geotagging'}, [
-                                             ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Turn on geotagging'],
-                                             ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Maybe later'],
-                                          ]],
-                                          ['br'],
-                                       ]),
-                                       dale.do (taglist, makeTag)
-                                    ];
+                                    return B.view (['State', 'showNTags'], function (x, showNTags) {
+                                       showNTags = showNTags || 75;
+                                       return [
+                                          makeTag ('all'),
+                                          makeTag ('untagged'),
+                                          dale.do (yearlist, makeTag),
+                                          H.if (account.suggestGeotagging, [
+                                             ['p', {class: 'suggest-geotagging'}, [
+                                                ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Turn on geotagging'],
+                                                ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Maybe later'],
+                                             ]],
+                                             ['br'],
+                                          ]),
+                                          dale.do (taglist.slice (0, showNTags), makeTag),
+                                          H.if (showNTags < taglist.length, ['p', B.ev (['onclick', 'set', ['State', 'showNTags'], showNTags + 20]), 'Show more tags'])
+                                       ];
+                                    });
                                  });
                               });
                            });
@@ -3938,8 +3940,6 @@ E.pics = function () {
                                  ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                                  // *** TAG/UNTAG LIST ***
                                  B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
-                                    // TODO: NEED TO IMPROVE PERFORMANCE 2
-                                    // return;
                                     var selectedTags = {}, filterRegex = H.makeRegex (filter);
                                     if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
                                        if (! selected [pic.id]) return;
@@ -3960,26 +3960,32 @@ E.pics = function () {
                                        return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                                     });
 
-                                    return dale.do (editTags, function (tag) {
-                                       var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
-                                       // TODO v2: add inline SVG
-                                       return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, H.stopPropagation (['onclick', 'goto', 'tag', tag])), [
-                                          ['span', {class: 'tag__title'}, tag],
-                                          ['div', B.ev ({class: 'tag__actions'}, H.stopPropagation (['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}])), [
-                                             ['div', {class: 'tag-actions'}, [
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
-                                                // TODO v2: add inline SVG
-                                                ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
-                                             ]],
-                                          ]],
-                                       ]];
+                                    return B.view (['State', 'showNSelectedTags'], function (x, showNSelectedTags) {
+                                       showNSelectedTags = showNSelectedTags || 75;
+                                       return [
+                                          dale.do (editTags.slice (0, showNSelectedTags), function (tag) {
+                                             var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
+                                             // TODO v2: add inline SVG
+                                             return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, H.stopPropagation (['onclick', 'goto', 'tag', tag])), [
+                                                ['span', {class: 'tag__title'}, tag],
+                                                ['div', B.ev ({class: 'tag__actions'}, H.stopPropagation (['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}])), [
+                                                   ['div', {class: 'tag-actions'}, [
+                                                      // TODO v2: add inline SVG
+                                                      ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
+                                                      // TODO v2: add inline SVG
+                                                      ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
+                                                      // TODO v2: add inline SVG
+                                                      ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
+                                                      // TODO v2: add inline SVG
+                                                      ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
+                                                      // TODO v2: add inline SVG
+                                                      ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                                   ]],
+                                                ]],
+                                             ]];
+                                          }),
+                                          H.if (showNSelectedTags < editTags.length, ['p', B.ev (H.stopPropagation (['onclick', 'set', ['State', 'showNSelectedTags'], showNSelectedTags + 20])), 'Show more tags'])
+                                       ];
                                     });
                                  }),
                               ];
@@ -3993,7 +3999,7 @@ E.pics = function () {
                      var tags = query ? query.tags : [];
                      return [
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar-search', opaque: true}}, function (x, filter) {
-                           return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, ['oninput', 'set', ['State', 'filter']])];
+                           return ['input', B.ev ({class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag'}, [['oninput', 'rem', 'State', 'showNTags'], ['oninput', 'rem', 'State', 'showNSelectedTags'], ['oninput', 'set', ['State', 'filter']]])];
                         }),
                         // DONE TAGGING BUTTON
                         B.view (['State', 'selected'], function (x, selected) {

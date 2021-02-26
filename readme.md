@@ -40,8 +40,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Fix performance issues in client related to a large amount of tags
+   - Fix performance issues in client related to a large amount of tags:
+      - Happens in two places:
+         - State.filter with class sidebar__tags
+         - ul with class: tag-list--attach
+      - js filtering performance improved by 50-90%. Still, three redraws take 6-4-4 seconds respectively.
+      - With the svg responder commented, these redraws take 4-3-3 seconds respectively. svg responder adds 25-50% more time but is not the driver.
 
+
+   - Modal to let user know that one click selects picture and two clicks open picture.
    - Use provider metadata to reject too large files
    - Check support for writing webp.
    - Download photos with original filenames.
@@ -76,6 +83,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pics
    - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+   - Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
    - Implement video streaming.
 
 - Safari bugs
@@ -739,7 +747,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.tags`, `Data.pics`, `Data.pictotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`.
+   - Depends on: `Data.tags`, `Data.pics`, `Data.pictotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -751,7 +759,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `click -> untag TAG`
       - `click -> rotate pics`
       - `click -> delete pics`
+      - `click -> set State.showNTags`
+      - `click -> set State.showNSelectedTags`
       - `input -> set State.newTag`
+      - `input -> rem State.showNTags`
+      - `input -> rem State.showNSelectedTags`
       - `input -> set State.filter`
       - `click -> goto tag`
 2. `E.upload`
@@ -962,6 +974,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
    - `querying`: BOOLEAN|UNDEFINED, set if `query pics` is currently querying the server.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
+   - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pictures are selected.
+   - `showNSelectedTags`: UNDEFINED|INTEGER, determines the amount of tags seen when at least one picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
    - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
