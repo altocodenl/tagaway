@@ -3012,11 +3012,11 @@ dale.do ([
                if (v.uid === file.uid) return v;
             });
 
-            if (error.status === 409 && error.responseText.match ('capacity')) {
+            if (error && error.status === 409 && error.responseText.match ('capacity')) {
                B.do (x, 'set', ['State', 'upload', 'queue'], []);
                B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
             }
-            else if (error.status !== 409 && error.status !== 400) {
+            else if (error && error.status !== 409 && error.status !== 400) {
                B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'errors'], {code: error.status, name: file.file.name, error: error.responseText});
                B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
@@ -4539,9 +4539,10 @@ E.upload = function () {
                   return [
                      ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
                      B.view (['Data', 'account'], {tag: 'ul', attrs: {class: 'recent-uploads__list'}}, function (x, account) {
+                        if (! account) return;
                         var serverUploads = dale.do (account.uploads, function (u) {return u.uid});
                         // local uploads are uploads just started where the first picture/video hasn't been uploaded yet
-                        var onlyLocal = dale.do (localUploads, function (upload, key) {
+                        var onlyLocal = dale.fil (localUploads, undefined, function (upload, key) {
                            if (serverUploads.indexOf (key) === -1) return {uid: parseInt (key), tags: upload.tags};
                         });
                         var allUploads = onlyLocal.concat (account.uploads);
@@ -4565,11 +4566,11 @@ E.upload = function () {
                                           ['LITERAL', '&nbsp'],
                                           ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
                                           ['LITERAL', '&nbsp'],
-                                          H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + upload.repeated + ' repeated) ']),
+                                          H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
                                           ['LITERAL', '&nbsp'],
-                                          H.if (upload.invalid, ['span', {class: 'upload-progress__default-text'}, ' (' + upload.invalid + ' invalid) ']),
+                                          H.if (upload.invalid, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid || []).length + ' invalid) ']),
                                           ['LITERAL', '&nbsp'],
-                                          H.if (upload.size, ['span', {class: 'upload-progress__default-text'}, ' (' + upload.size + ' too large) ']),
+                                          H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).invalid + ' too large) ']),
                                           ['LITERAL', '&nbsp'],
                                           ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - upload.uid) / 60000) + ' minutes ago)'],
                                           ['br'],
