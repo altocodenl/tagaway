@@ -1296,12 +1296,12 @@ var main = [
       a.stop ([
          [k, 'unzip', 'download.zip'],
          function (S) {
-            var file1 = fs.readFileSync (s.shared [0].id + '.jpeg');
-            var file2 = fs.readFileSync (s.shared [1].id + '.jpg');
+            var file1 = fs.readFileSync (s.shared [0].name);
+            var file2 = fs.readFileSync (s.shared [1].name);
             if (Buffer.compare (fs.readFileSync ('test/large.jpeg'), file1) !== 0) return clog ('Mismatch between expected and actual download #1.');
             if (Buffer.compare (fs.readFileSync ('test/medium.jpg'), file2) !== 0) return clog ('Mismatch between expected and actual download #2.');
-            fs.unlinkSync (s.shared [0].id + '.jpeg');
-            fs.unlinkSync (s.shared [1].id + '.jpg');
+            fs.unlinkSync (s.shared [0].name);
+            fs.unlinkSync (s.shared [1].name);
             fs.unlinkSync ('download.zip');
             next ();
          }
@@ -1336,12 +1336,12 @@ var main = [
       a.stop ([
          [k, 'unzip', 'download.zip'],
          function (S) {
-            var file1 = fs.readFileSync (s.shared [0].id + '.jpeg');
-            var file2 = fs.readFileSync (s.shared [1].id + '.jpg');
+            var file1 = fs.readFileSync (s.shared [0].name);
+            var file2 = fs.readFileSync (s.shared [1].name);
             if (Buffer.compare (fs.readFileSync ('test/large.jpeg'), file1) !== 0) return clog ('Mismatch between expected and actual download #1.');
             if (Buffer.compare (fs.readFileSync ('test/medium.jpg'), file2) !== 0) return clog ('Mismatch between expected and actual download #2.');
-            fs.unlinkSync (s.shared [0].id + '.jpeg');
-            fs.unlinkSync (s.shared [1].id + '.jpg');
+            fs.unlinkSync (s.shared [0].name);
+            fs.unlinkSync (s.shared [1].name);
             fs.unlinkSync ('download.zip');
             setTimeout (next, 5000);
          }
