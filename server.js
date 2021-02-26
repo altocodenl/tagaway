@@ -1408,6 +1408,8 @@ var routes = [
             var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.getType (s.pic.format.split (':') [0])};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
 
+            // https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
+            if (rq.data.query && rq.data.query.original) headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.pic.name);
             // If the picture is not a video, or it is a mp4 video, or the original video is required, we serve the file.
             if (! s.pic.vid || s.pic.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
 
@@ -2203,8 +2205,19 @@ var routes = [
          archive.on ('error', function (error) {
             reply (rs, 500, {error: error})
          });
+
+         var names = {};
+
+         var unrepeatName = function (name) {
+            if (! names [name]) {
+               names [name] = true;
+               return name;
+            }
+            return unrepeatName (name + ' (copy)');
+         }
+
          dale.go (download.pics, function (pic) {
-            archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: pic.id + Path.extname (pic.name)});
+            archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: unrepeatName (pic.name)});
          });
 
          archive.pipe (rs);
