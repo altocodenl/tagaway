@@ -31,6 +31,7 @@ ssh $HOST apt-get install imagemagick -y
 ssh $HOST apt-get install libimage-exiftool-perl -y
 ssh $HOST apt-get install ffmpeg -y
 ssh $HOST apt-get install -y libheif-examples
+ssh $HOST apt-get install -y exiv2
 ssh $HOST apt-get autoremove -y
 ssh $HOST apt-get clean
 ssh $HOST mkdir /root/files

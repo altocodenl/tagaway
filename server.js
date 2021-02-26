@@ -1605,7 +1605,8 @@ var routes = [
             if (s.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
             a.seq (s, [
                [a.make (fs.copyFile), path, hashpath],
-               stopFormat ([k, 'exiftool', '-all=', '-overwrite_original', hashpath])
+               // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
+               stopFormat (s.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath])
             ]);
          },
          [a.set, 'hash', function (s) {
