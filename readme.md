@@ -40,12 +40,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - fix performance issues in client: happens on click pic when state.selected changes, but it is not the change event!
-   - query server takes 4s with 27k pictures
+   - Fix performance issues in client related to a large amount of tags
+
+   - Use provider metadata to reject too large files
+   - Check support for writing webp.
+   - Download photos with original filenames.
 
    - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
-   - Check support for writing webp.
-   - Uploading all pics/vids.
+   - Upload all pics/vids.
    - Review all invalid pics/vids.
 - Reset dev & prod servers and start from scratch.
 - ac;log

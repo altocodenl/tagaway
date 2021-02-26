@@ -2,6 +2,7 @@
 // TODO v2: remove
 
 B.forget ('eventlog');
+B.perflogs = true;
 
 var T = teishi.time ();
 B.listen ('*', [], {priority: 1000000}, function (x) {
@@ -3760,6 +3761,8 @@ E.pics = function () {
                         // *** QUERY LIST ***
                         // TODO v2: merge two elements into one
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
+                           // TODO: NEED TO IMPROVE PERFORMANCE 1
+                           // return;
                            filter = (filter || '').trim ();
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
                               var geotagSelected = dale.stop (selected, true, function (tag) {
@@ -3769,32 +3772,38 @@ E.pics = function () {
                               return B.view (['Data', 'queryTags'], function (x, tags) {
                                  return B.view (['Data', 'account'], function (x, account) {
                                     if (! account) return;
-                                    var firstGeo = true;
+
+                                    var firstGeo = true, filterRegex = H.makeRegex (filter);
+
                                     var yearlist = dale.fil (tags, undefined, function (tag) {
                                        if (! H.isYear (tag)) return;
-                                       if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
+                                       if (selected.indexOf (tag) > -1) return tag;
                                        if (! filter) return tag;
-                                       if (tag.match (H.makeRegex (filter))) return tag;
+                                       if (tag.match (filterRegex)) return tag;
                                     }).sort (function (a, b) {return a - b});
 
                                     var taglist = dale.fil (tags, undefined, function (tag) {
                                        if (H.isYear (tag)) return;
-                                       if (B.get ('State', 'query', 'tags').indexOf (tag) > -1) return tag;
+                                       if (selected.indexOf (tag) > -1) return tag;
                                        if (! filter) return tag;
-                                       if (tag.match (H.makeRegex (filter))) return tag;
+                                       if (tag.match (filterRegex)) return tag;
                                     }).sort (function (a, b) {
-                                       if (H.isCountry (a) && H.isCountry (b)) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
-                                       if (H.isCountry (a) && ! H.isCountry (b)) return -1;
-                                       if (! H.isCountry (a) && H.isCountry (b)) return 1;
-                                       if (H.isGeo (a) && H.isGeo (b)) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
-                                       if (H.isGeo (a) && ! H.isGeo (b)) return -1;
-                                       if (! H.isGeo (a) && H.isGeo (b)) return 1;
+                                       var ac = H.isCountry (a), bc = H.isCountry (b);
+                                       if (ac && bc) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                       if (ac && ! bc) return -1;
+                                       if (! ac && bc) return 1;
 
-                                       var aSelected = B.get ('State', 'query', 'tags').indexOf (a) > -1;
-                                       var bSelected = B.get ('State', 'query', 'tags').indexOf (b) > -1;
+                                       var ag = H.isGeo (a), bg = H.isGeo (b);
+                                       if (ag && bg) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                                       if (ag && ! bg) return -1;
+                                       if (! ag && bg) return 1;
+
+                                       var aSelected = selected.indexOf (a) > -1;
+                                       var bSelected = selected.indexOf (b) > -1;
                                        if (aSelected !== bSelected) return aSelected ? -1 : 1;
                                        return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                                     });
+
                                     var all      = teishi.eq (selected, []);
                                     var untagged = selected.indexOf ('untagged') > -1;
                                     var makeTag  = function (which) {
@@ -3929,7 +3938,9 @@ E.pics = function () {
                                  ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                                  // *** TAG/UNTAG LIST ***
                                  B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
-                                    var selectedTags = {};
+                                    // TODO: NEED TO IMPROVE PERFORMANCE 2
+                                    // return;
+                                    var selectedTags = {}, filterRegex = H.makeRegex (filter);
                                     if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
                                        if (! selected [pic.id]) return;
                                        dale.do (pic.tags, function (tag) {
@@ -3940,7 +3951,7 @@ E.pics = function () {
                                     var editTags = dale.fil (tags, undefined, function (number, tag) {
                                        if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
                                        if (filter) {
-                                          if (! tag.match (H.makeRegex (filter))) return;
+                                          if (! tag.match (filterRegex)) return;
                                        }
                                        if (! selectedTags [tag]) selectedTags [tag] = 0;
                                        return tag;
