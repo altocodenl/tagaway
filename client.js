@@ -3895,6 +3895,7 @@ E.pics = function () {
                                              ['br'],
                                           ]),
                                           dale.do (taglist.slice (0, showNTags), makeTag),
+                                          ['br'],
                                           H.if (showNTags < taglist.length, ['div', B.ev ({class: 'show-more-tags button'},['onclick', 'set', ['State', 'showNTags'], showNTags + 20]), 'Show more tags'])
                                        ];
                                     });
@@ -4001,7 +4002,8 @@ E.pics = function () {
                                                 ]],
                                              ]];
                                           }),
-                                          H.if (showNSelectedTags < editTags.length, ['p', B.ev (H.stopPropagation (['onclick', 'set', ['State', 'showNSelectedTags'], showNSelectedTags + 20])), 'Show more tags'])
+                                          ['br'],
+                                          H.if (showNSelectedTags < editTags.length, ['div', B.ev ({class: 'show-more-tags button'}, H.stopPropagation (['onclick', 'set', ['State', 'showNSelectedTags'], showNSelectedTags + 20])), 'Show more tags'])
                                        ];
                                     });
                                  }),
