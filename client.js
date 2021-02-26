@@ -468,6 +468,19 @@ CSS.litc = [
       color: CSS.vars ['color--attach'],
       'background-color': '#fff'
    }],
+   // Sidebar Show More Tags Button
+   ['.show-more-tags', {
+      display: 'block',
+      float: 'left',
+      'cursor': 'pointer',
+      border: '1px solid #5b6eff',
+      color: '#fff',
+      'background-color': CSS.vars ['color--one'],
+   }],
+   ['.show-more-tags:hover', {
+      color: CSS.vars ['color--one'],
+      'background-color': '#fff'
+   }],
    // *** sidebar-search.scss
    ['.sidebar-search', {
       position: 'relative',
@@ -3878,7 +3891,7 @@ E.pics = function () {
                                              ['br'],
                                           ]),
                                           dale.do (taglist.slice (0, showNTags), makeTag),
-                                          H.if (showNTags < taglist.length, ['p', B.ev (['onclick', 'set', ['State', 'showNTags'], showNTags + 20]), 'Show more tags'])
+                                          H.if (showNTags < taglist.length, ['div', B.ev ({class: 'show-more-tags button'},['onclick', 'set', ['State', 'showNTags'], showNTags + 20]), 'Show more tags'])
                                        ];
                                     });
                                  });
