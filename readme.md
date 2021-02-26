@@ -41,7 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Modal to let user know that one click selects picture and two clicks open picture.
-   - Use provider metadata to reject too large files
    - Check support for writing webp.
    - Download photos with original filenames.
    - Check and perhaps simplify redundant logs in import uploads.

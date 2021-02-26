@@ -2618,7 +2618,7 @@ var routes = [
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
-                     var fields = ['id', 'name', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename', 'trashed'];
+                     var fields = ['id', 'name', 'size', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename', 'trashed'];
 
                      // https://developers.google.com/drive/api/v3/reference/files/list
                      // https://developers.google.com/drive/api/v3/reference/files#resource
@@ -2651,6 +2651,7 @@ var routes = [
                               if (error) return s.next (null, error);
 
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
+                                 file.size = parseInt (file.size);
                                  // Ignore trashed files!
                                  if (file.trashed) return;
                                  if (CONFIG.allowedFormats.indexOf (file.mimeType) === -1) {
@@ -2897,6 +2898,7 @@ var routes = [
             var ids = dale.keys (filesToUpload);
 
             s.unsupported = {};
+            var tooLarge  = [];
             dale.go (JSON.parse (s.data.unsupported), function (file) {
                var extension = Path.extname (file.name).slice (1).toLowerCase ();
                if (! s.unsupported [extension]) s.unsupported [extension] = 0;
@@ -2906,20 +2908,24 @@ var routes = [
             s.filesToUpload = filesToUpload;
 
             s.list = dale.fil (list.pics, undefined, function (file) {
+               if (file.size > 536870888) {
+                  tooLarge.push (file.originalFilename);
+                  return;
+               }
                if (s.filesToUpload [file.id] && repeated.indexOf (file.id) === -1) return file;
             });
 
             s.start = Date.now ();
 
-            if (ids.length === 0) return a.seq (s, [
+            if (s.list.length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
-               [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), total: 0, done: 0}}],
+               [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), total: 0, done: 0, tooLarge: tooLarge.length ? tooLarge : undefined}}],
                function () {
                   reply (rs, 200);
                }
             ]);
 
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length, done: 0}));
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length, done: 0, tooLarge: tooLarge.length ? tooLarge : undefined}));
          },
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
@@ -3078,15 +3084,14 @@ var routes = [
                                     return s.next (null, {error: 'No more space in your ac;pic account.'});
                                  });
 
-                                 // INVALID OR TOO LARGE FILE
+                                 // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
                                  if (RS.code === 400) return check (function () {
-                                    var key = RS.body.error === 'tooLarge' ? 'tooLarge' : 'invalid';
-                                    if (! upload [key]) upload [key] = [];
-                                    upload [key].push (file.originalFilename);
+                                    if (! upload.invalid) upload.invalid = [];
+                                    upload.invalid.push (file.originalFilename);
                                     redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
                                        if (error) return s.next (null, error);
                                        importFile (s, index + 1);
-                                       notify (a.creat (), {priority: 'important', type: 'import upload ' + key + ' file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username});
+                                       notify (a.creat (), {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username});
                                     });
                                  });
 
