@@ -4117,17 +4117,17 @@ E.pics = function () {
                                     ['div', {class: 'upload-box__section'}, [
                                        ['p', {class: 'boxed-alert-message'}, [
                                           // ['span', {class: className + '-icon-small', opaque: true}],
-                                          ['span', {class: 'upload-progress__default-text'}, 'How to select and view pictures in ac;pic?']
+                                          ['span', {class: 'upload-progress__default-text'}, 'How to select and open pictures?']
                                        ]],
                                        ['div', {class: 'progress-bar'}],
                                     ]],
                                     ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                                        ['div', {class: 'listing-progress'}, [
                                           ['div', {class: 'files-found-so-far'}, [
-                                             ['div', 'Single click on thumbnail to select pics and videos.'],
+                                             ['div', 'Single click to select.'],
                                           ]],
                                           ['div', {class: 'folders-found-so-far'}, [
-                                             ['div', 'Double click on thumbnail to view pics and videos.'],
+                                             ['div', 'Double click to open.'],
                                           ]],
                                        ]],
                                        ['div', B.ev ({class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['onclick', 'State', 'delete']), 'Got it']
