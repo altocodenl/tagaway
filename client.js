@@ -4114,9 +4114,8 @@ E.pics = function () {
                                     ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
                                  ]],
                                  ['div', {class: 'boxed-alert__main'}, [
-                                    ['div', {class: 'upload-box__section'}, [
-                                       ['p', {class: 'boxed-alert-message'}, [
-                                          // ['span', {class: className + '-icon-small', opaque: true}],
+                                    ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
+                                       ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
                                           ['span', {class: 'upload-progress__default-text'}, 'How to select and open pictures?']
                                        ]],
                                        ['div', {class: 'progress-bar'}],
@@ -4124,10 +4123,10 @@ E.pics = function () {
                                     ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                                        ['div', {class: 'listing-progress'}, [
                                           ['div', {class: 'files-found-so-far'}, [
-                                             ['div', 'Single click to select.'],
+                                             ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Single click to select.'],
                                           ]],
                                           ['div', {class: 'folders-found-so-far'}, [
-                                             ['div', 'Double click to open.'],
+                                             ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Double click to open.'],
                                           ]],
                                        ]],
                                        ['div', B.ev ({class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['onclick', 'State', 'delete']), 'Got it']
