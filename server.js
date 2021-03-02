@@ -1409,7 +1409,10 @@ var routes = [
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
 
             // https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
-            if (rq.data.query && rq.data.query.original) headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.pic.name);
+            if (rq.data.query && rq.data.query.original) {
+               headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.pic.name);
+               headers ['last-modified'] = new Date (JSON.parse (s.pic.dates) ['upload:date']).toUTCString ();
+            }
             // If the picture is not a video, or it is a mp4 video, or the original video is required, we serve the file.
             if (! s.pic.vid || s.pic.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
 
@@ -2216,16 +2219,27 @@ var routes = [
             return unrepeatName (name + ' (copy)');
          }
 
-         dale.go (download.pics, function (pic) {
-            archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: unrepeatName (pic.name)});
-         });
+         a.seq ([
+            [a.fork, download.pics, function (pic) {
+               return [a.make (fs.stat), Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)];
+            }, {max: os.cpus ().length}],
+            function (s) {
+               if (s.error) return reply (rs, 500, {error: error});
+               dale.go (download.pics, function (pic, k) {
+                  var stat = s.last [k];
+                  stat.mtime = new Date (pic.mtime);
+                  // https://www.archiverjs.com/docs/archiver#entry-data
+                  archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: unrepeatName (pic.name), stats: stat});
+               });
 
-         archive.pipe (rs);
-         archive.finalize ();
-         archive.on ('finish', function () {
-            cicek.apres (rs);
-         });
-       });
+               archive.pipe (rs);
+               archive.finalize ();
+               archive.on ('finish', function () {
+                  cicek.apres (rs);
+               });
+            }
+         ]);
+      });
    }],
 
    ['post', 'download', function (rq, rs) {
@@ -2270,7 +2284,7 @@ var routes = [
             var downloadId = uuid ();
             redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pics: dale.go (b.ids, function (id, k) {
                var pic = s.last [k];
-               return {owner: pic.owner, id: pic.id, name: pic.name};
+               return {owner: pic.owner, id: pic.id, name: pic.name, mtime: JSON.parse (pic.dates) ['upload:date']};
             })}), function (error) {
                if (error) return reply (rs, 500, {error: error});
                reply (rs, 200, {id: downloadId});

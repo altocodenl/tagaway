@@ -371,7 +371,7 @@ var main = [
    ['upload video #1', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
       {type: 'field', name: 'uid', value: uid},
-      {type: 'field',  name: 'lastModified', value: Date.now ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
    ]}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
       s.uploadIds = [rs.body.id];
@@ -380,7 +380,7 @@ var main = [
    ['upload video #2', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
       {type: 'field', name: 'uid', value: uid},
-      {type: 'field',  name: 'lastModified', value: Date.now ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'bach.mp4').mtime.getTime ()}
    ]}, 200, function (s, rq, rs) {
       s.uploadIds [1] = rs.body.id;
       return true;
@@ -452,10 +452,16 @@ var main = [
       return true;
    }],
    dale.go (dale.times (2, 0), function (k) {
-      return {tag: 'get videos', method: 'get', path: function (s) {return 'pic/' + s.vids [k]}, code: 200, raw: true, apres: function (s, rq, rs) {
+      return {tag: 'get videos', method: 'get', path: function (s) {return 'pic/' + s.vids [k] + '?original=1'}, code: 200, raw: true, apres: function (s, rq, rs) {
+         var name = ['tram.mp4', 'bach.mp4'] [k];
          var up       = Buffer.from (rs.body, 'binary');
-         var original = require ('fs').readFileSync ([PICS + 'tram.mp4', PICS + 'bach.mp4'] [k]);
+         var saved    = fs.writeFileSync (name, rs.body, {encoding: 'binary'});
+         var original = fs.readFileSync (PICS + name);
          if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded video!');
+         var mtime = fs.statSync (PICS + name).mtime;
+         // We compare that the difference is less than 1s because the date format of the return header doesn't have millisecond precision.
+         if (Math.abs (mtime.getTime () - new Date (rs.headers ['last-modified']).getTime ()) >= 1000) return clog ('Invalid last-modified header: ', rs.headers ['last-modified']);
+         fs.unlinkSync (name);
          return true;
       }};
    }),
@@ -871,7 +877,7 @@ var main = [
    dale.go (dale.times (5, 0), function (k) {
       return {tag: 'get original pic from S3', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
-         var original = require ('fs').readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
+         var original = fs.readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
          if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded picture!');
          return true;
       }};
@@ -1300,9 +1306,13 @@ var main = [
             var file2 = fs.readFileSync (s.shared [1].name);
             if (Buffer.compare (fs.readFileSync ('test/large.jpeg'), file1) !== 0) return clog ('Mismatch between expected and actual download #1.');
             if (Buffer.compare (fs.readFileSync ('test/medium.jpg'), file2) !== 0) return clog ('Mismatch between expected and actual download #2.');
+            var mtime = fs.statSync (s.shared [1].name).mtime.getTime ();
             fs.unlinkSync (s.shared [0].name);
             fs.unlinkSync (s.shared [1].name);
             fs.unlinkSync ('download.zip');
+            // Note: this will only work if the *server* is running in UTC; it seems that the mtime includes the timezone offset of the server, despite the fact that it is an UTC date! In case the server is being run in non-UTC, we adjust for this. I don't understand why the offset has to be multiplied by two.
+            mtime = mtime - new Date ().getTimezoneOffset () * 60 * 1000 * 2;
+            if (mtime !== new Date ('2018-06-03T00:00:00.000Z').getTime ()) return clog ('Invalid mtime on zip file', mtime, new Date ('2018-06-03T00:00:00.000Z').getTime ());
             next ();
          }
       ], clog);
