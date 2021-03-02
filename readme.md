@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Set mtime of file so it's preserved on download.
    - Modal to let user know that one click selects picture and two clicks open picture: dynamize client/server.
 
    - Check and perhaps simplify redundant logs in import uploads.
