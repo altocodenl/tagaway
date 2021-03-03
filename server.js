@@ -1027,7 +1027,8 @@ var routes = [
                email:               b.email,
                type:                'tier1',
                created:             Date.now (),
-               suggestGeotagging:   1
+               suggestGeotagging:   1,
+               suggestSelection:    1
             });
             if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
             s.invite.accepted = Date.now ();
@@ -2376,10 +2377,33 @@ var routes = [
                geo:           rq.user.geo ? true : undefined,
                geoInProgress: s.last [3]  ? true : undefined,
                suggestGeotagging: rq.user.suggestGeotagging ? true : undefined,
+               suggestSelection:  rq.user.suggestSelection  ? true : undefined,
                uploads: uploads,
                imports: imports
             });
          }
+      ]);
+   }],
+
+   // *** DISMISS SUGGESTIONS ***
+
+   ['post', 'dismiss', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['operation'], 'eachOf', teishi.test.equal],
+         ['operation', b.operation, ['geotagging', 'selection'], 'oneOf', teishi.test.equal]
+      ])) return;
+
+      var suggest = 'suggest' + b.operation.charAt (0).toUpperCase () + b.operation.slice (1);
+
+      if (b.operation === 'geotagging' && ! rq.user [suggest]) return reply (rs, 200);
+
+      return astop (rs, [
+         [Redis, 'hdel', 'users:' + rq.user.username, suggest],
+         [H.log, rq.user.username, {a: 'dis', op: b.operation}],
+         [reply, rs, 200]
       ]);
    }],
 
@@ -2391,14 +2415,8 @@ var routes = [
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['operation'], 'eachOf', teishi.test.equal],
-         ['operation', b.operation, ['enable', 'disable', 'dismiss'], 'oneOf', teishi.test.equal]
+         ['operation', b.operation, ['enable', 'disable'], 'oneOf', teishi.test.equal]
       ])) return;
-
-      if (b.operation === 'dismiss') return astop (rs, [
-         [Redis, 'hdel', 'users:' + rq.user.username, 'suggestGeotagging'],
-         [H.log, rq.user.username, {a: 'geo', op: b.operation}],
-         [reply, rs, 200]
-      ]);
 
       astop (rs, [
          [Redis, 'get', 'geo:' + rq.user.username],

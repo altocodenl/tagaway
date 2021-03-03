@@ -804,18 +804,19 @@ var main = [
    ]),
    ['turn on geotagging (invalid)', 'post', 'geo', {}, {operation: 'foo'}, 400],
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
-   ['dismiss geotagging suggestion', 'post', 'geo', {}, {operation: 'dismiss'}, 200],
    ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geo !== undefined)           return clog ('Geo should be turned off');
       if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
       var lastLog = rs.body.logs [0];
-      if (lastLog.a !== 'geo' || lastLog.op !== 'dismiss') return clog ('Geo suggestion dismissal not registered.');
+      if (lastLog.a !== 'rot') return clog ('Geotagging redundant disabling registered.');
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geo !== true)           return clog ('Geo should be turned on');
       if (rs.body.geoInProgress !== true) return clog ('Geo progress should be turned on');
+      var lastLog = rs.body.logs [0];
+      if (lastLog.a !== 'geo' || lastLog.op !== 'enable') return clog ('Geotagging enabling not registered.');
       return true;
    }],
    ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
@@ -827,6 +828,30 @@ var main = [
       if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
       return true;
    }],
+   ttester ('dismiss', 'post', 'dismiss', {}, [
+      ['operation', 'string'],
+   ]),
+   ['get account before dismissing anything', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.suggestGeotagging !== true) return clog ('suggestGeotagging should be true');
+      if (rs.body.suggestSelection  !== true) return clog ('suggestSelection should be true');
+      return true;
+   }],
+   ['dismiss geotagging suggestion', 'post', 'dismiss', {}, {operation: 'geotagging'}, 200],
+   ['get account after dismissing geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.suggestGeotagging !== undefined) return clog ('suggestGeotagging should be undefined');
+      var lastLog = rs.body.logs [0];
+      if (lastLog.a !== 'dis' || lastLog.op !== 'geotagging') return clog ('Geotagging suggestion dismissal not registered.');
+      return true;
+   }],
+   ['dismiss geotagging suggestion (again)', 'post', 'dismiss', {}, {operation: 'geotagging'}, 200],
+   ['dismiss selection suggestion', 'post', 'dismiss', {}, {operation: 'selection'}, 200],
+   ['get account after dismissing selection', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      if (rs.body.suggestSelection !== undefined) return clog ('suggestSelection should be undefined');
+      var lastLog = rs.body.logs [0];
+      if (lastLog.a !== 'dis' || lastLog.op !== 'selection') return clog ('Selection suggestion dismissal not registered.');
+      return true;
+   }],
+   ['dismiss selection suggestion (again)', 'post', 'dismiss', {}, {operation: 'selection'}, 200],
    ['upload picture with different date format and geodata', 'post', 'upload', {}, {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
       {type: 'field', name: 'uid', value: uid + 2},
@@ -844,6 +869,8 @@ var main = [
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
    ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geo !== undefined) return clog ('Geo should be turned off');
+      var lastLog = rs.body.logs [0];
+      if (lastLog.a !== 'geo' || lastLog.op !== 'disable') return clog ('Geotagging disabling not registered.');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
@@ -1558,7 +1585,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 79 && rs.body.logs.length !== 80)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 80 && rs.body.logs.length !== 81)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Checking uploads object
       if (type (rs.body.uploads) !== 'array') return clog ('Invalid uploads.');
 

@@ -40,14 +40,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Modal to let user know that one click selects picture and two clicks open picture: dynamize client/server.
-
    - Check and perhaps simplify redundant logs in import uploads.
       - Add startList and endList logs
       - Move 'request' log to the top (current position is the one for startList)
       - Use upload tracking in server, but keep the upload object to keep the lists. Have startImport object. What else goes there? tooLarge, date of start, invalidFormats. Perhaps cancelled too. What goes in normal upload logs? Done, invalid, repeated.
       - Uploads proper: have a "cancelled" log? Maybe even a "successful" log! In that way, we already know if there are pending uploads! Need an endpoint for marking them as done too. But stalled clients? Maybe it's too much for uploads.
       - Refactor uploads so that current uploads show server info and recent uploads doesn't duplicate the upload.
+      - Document in store Data.account
 
    - When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
    - When having a lot of tags, don't show them all in the tag suggestion dropdowns.
@@ -120,6 +119,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Already implemented
 
 - Pics
+   - Show dialog that indicates that a click selects a picture and that a double click opens it. The dialog should be permanently dismissable.
    - Show all pictures.
    - Load more pictures on scroll.
    - Sort by newest, oldest & upload date.
@@ -148,7 +148,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Scroll to the top of the pictures grid when selecting a new combination of tags.
    - Block selection of a tag if the UI is still processing a previous selection of a tag.
    - Download a single picture.
-   - Download multiple pictures as one zip file.
+   - Download multiple pictures as one zip file. The original modification times of each file should be respected.
    - Only show tags relevant to the current query.
    - When just enabling geotagging, update tags every 3 seconds.
    - Suggest geotagging when having a few pictures uploaded, but only once; either enable it or dismiss the message, and don't show it again.
@@ -480,14 +480,18 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `ID` is an id returned by `POST /download`.
    - If successful, the user will receive a zip file with the specified pictures.
 
+`POST /dismiss`
+   - Disables suggestions shown to new users.
+   - Body must be of the form `{operation: 'geotagging|selection'}`.
+
 `POST /geo`
    - Enables or disables geotagging.
-   - Body must be of the form `{operation: 'enable|disable|dismiss'}`.
+   - Body must be of the form `{operation: 'enable|disable'}`.
    - If an operation is ongoing while the request is being made, the server will reply with a 409 code. Otherwise it will reply with a 200 code.
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, uploads: [{uid: INTEGER, tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}, ...], imports: [{pro: google|dropbox, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [{code: INTEGER, error: OBJECT, file: OBJECT}]|UNDEFINED}, ...]}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED, uploads: [{uid: INTEGER, tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}, ...], imports: [{pro: google|dropbox, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [{code: INTEGER, error: OBJECT, file: OBJECT}]|UNDEFINED}, ...]}`.
    - The number of `uploads` and `imports` objects are restricted to 10.
 
 `GET /import/list/PROVIDER[?startList=1]`
@@ -632,6 +636,7 @@ All the routes below require an admin user to be logged in.
    created: INT
    geo: 1|undefined
    suggestGeotagging: 1|undefined
+   suggestSelection: 1|undefined
 
 - geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
@@ -704,7 +709,8 @@ All the routes below require an admin user to be logged in.
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: undefined|google|dropbox (if not undefined, the tagging operation comes from an import of a repeated picture)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
-   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable|dismiss'}
+   - For dismiss:         {t: INT, a: 'dis', op: 'geotagging|selection'}
+   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
    - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
    - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
    - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [...]|UNDEFINED}}
@@ -943,7 +949,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 7. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
-   2. `dismiss geo`: `post geo`; invokes `snackbar`. If successful, invokes `query account`.
+   2. `dismiss geotagging|selection`: `post dismiss`; if path is `geotagging`, invokes `snackbar`. If successful, invokes `query account`.
    3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
    4. `clear updateGeotags`: if `State.updateGeotags` is defined, it invokes `clearInterval` on `State.updateGeotags` and then `rem State.updateGeotags`
    5. `submit changePassword`: invokes `post auth/changePassword`, invokes `snackbar`; if successful, invokes `clear changePassword`.
@@ -992,7 +998,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `cancelled`: [ID, ...]|undefined, to list the ids of the uploads that were cancelled by an user.
 
 - `Data`:
-   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, logs: [...]}`.
+   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, uploads: [...], imports: [...], suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, it has the shape:
 ```

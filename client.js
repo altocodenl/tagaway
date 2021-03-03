@@ -3149,11 +3149,11 @@ dale.do ([
       });
    }],
 
-   ['dismiss', 'geo', function (x) {
-      B.do (x, 'post', 'geo', {}, {operation: 'dismiss'}, function (x, error, rs) {
+   ['dismiss', /geotagging|selection/, function (x) {
+      B.do (x, 'post', 'dismiss', {}, {operation: x.path [0]}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error communicating with the server.');
          B.do (x, 'query', 'account');
-         B.do (x, 'snackbar', 'green', 'Understood! You can always turn on geotagging from Account.');
+         if (x.path [0] === 'geotagging') B.do (x, 'snackbar', 'green', 'Understood! You can always turn on geotagging from Account.');
       });
    }],
 
@@ -3890,7 +3890,7 @@ E.pics = function () {
                                           H.if (account.suggestGeotagging, [
                                              ['p', {class: 'suggest-geotagging'}, [
                                                 ['a', B.ev ({class: 'suggest-geotagging-enable'}, ['onclick', 'toggle', 'geo', true]), 'Turn on geotagging'],
-                                                ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geo']), 'Maybe later'],
+                                                ['a', B.ev ({class: 'suggest-geotagging-dismiss'}, ['onclick', 'dismiss', 'geotagging']), 'Maybe later'],
                                              ]],
                                              ['br'],
                                           ]),
@@ -4104,13 +4104,11 @@ E.pics = function () {
                                  }),
                               ]],
                            ]],
-                        ];
-                     }),
-                     // CLICK AND DOUBLE CLICK ALERT NOTICE
-                     ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
-                              ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+                           // CLICK AND DOUBLE CLICK NOTICE
+                           B.view (['Data', 'account'], {attrs: {class: 'click-double-click-alert main-centered__inner max-width--m'}}, function (x, account) {
+                              if (! account || ! account.suggestSelection) return;
+                              return ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
                                  ['div', {class: 'space-alert__image', opaque: true}, [
-                                    // ['div', {class: 'space-alert-icon', opaque: true}]
                                     ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
                                  ]],
                                  ['div', {class: 'boxed-alert__main'}, [
@@ -4129,11 +4127,13 @@ E.pics = function () {
                                              ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Double click to open.'],
                                           ]],
                                        ]],
-                                       ['div', B.ev ({class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['onclick', 'State', 'delete']), 'Got it']
+                                       ['div', B.ev ({class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['onclick', 'dismiss', 'selection']), 'Got it']
                                     ]],
                                  ]],
-                              ]],
-                           ]],
+                              ]];
+                           }),
+                        ];
+                     }),
                      // PICTURES GRID
                      ['div', {class: 'pictures-grid'}, E.grid ()],
                   ]],
