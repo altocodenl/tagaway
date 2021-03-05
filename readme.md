@@ -41,14 +41,48 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Check and perhaps simplify redundant logs in import uploads.
-      - Add startList and endList logs
+      - import
+         - object: UNDEFINED|{status: listing|ready|uploading, t: UID/INT, fileCount: INTEGER, folderCount: INTEGER}, or return it at the top?
+         - oauth stuff
+         - list
+            - start
+            - file page (fileCount)
+            - folder page (folderCount)
+            - end (contains both date and list of files & folders)
+            - cancel (like delete but during, functions as end)
+            - delete (like cancel but after, functions as end)
+            - error (functions as end)
+         - upload
+            - selection [ID, ...]
+            - providerError
+            - start (contains date, alreadyImported INTEGER, tooLarge [FILENAME, ...], unsupported: [FILENAME], total), maybe from upload
+            - ok (increases done), from upload
+            - invalid, from upload
+            - repeated, from upload
+            - error (functions as end), if space runs out or server error, from upload
+            - cancel (no delete because if imported, it's there in your history), from upload
+            - end, from upload
+            - heartbeat (after n seconds on long upload, with timeout)
+
+      - upload
+         - start (implement), time, tooLarge & unsupported
+         - end (implement)
+         - cancel (implement)
+         - ok
+         - invalid
+         - repeated
+         - error: if space runs out or server error
+
+      - refactor check function so that it returns data itself
+
       - Move 'request' log to the top (current position is the one for startList)
-      - Use upload tracking in server, but keep the upload object to keep the lists. Have startImport object. What else goes there? tooLarge, date of start, invalidFormats. Perhaps cancelled too. What goes in normal upload logs? Done, invalid, repeated.
-      - Uploads proper: have a "cancelled" log? Maybe even a "successful" log! In that way, we already know if there are pending uploads! Need an endpoint for marking them as done too. But stalled clients? Maybe it's too much for uploads.
-      - Refactor uploads so that current uploads show server info and recent uploads doesn't duplicate the upload.
+      - Refactor imports with new logs.
+      - Refactor uploads with new logs so that current uploads show server info and recent uploads doesn't duplicate the upload.
       - Document in store Data.account
 
+   - Block too large files in client when uploading and let the server know instead.
    - When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
+
    - When having a lot of tags, don't show them all in the tag suggestion dropdowns.
    - When uploading lots of files, upload tab crashes after a few hours.
    - When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
