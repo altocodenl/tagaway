@@ -2198,7 +2198,7 @@ var routes = [
 
    ['get', 'download/(*)', function (rq, rs) {
 
-      redis.get ('download:' + rq.data.params [0], function (error, download) {
+      redis.get ('download:' + rq.data.params [0].replace ('.zip', ''), function (error, download) {
          if (error) return reply (rs, 500, {error: error});
          if (! download) return reply (rs, 404);
          download = JSON.parse (download);
@@ -2288,7 +2288,7 @@ var routes = [
                return {owner: pic.owner, id: pic.id, name: pic.name, mtime: JSON.parse (pic.dates) ['upload:date']};
             })}), function (error) {
                if (error) return reply (rs, 500, {error: error});
-               reply (rs, 200, {id: downloadId});
+               reply (rs, 200, {id: downloadId + '.zip'});
             });
 
          },
