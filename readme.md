@@ -40,54 +40,34 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Check and perhaps simplify redundant logs in import uploads.
-      - import
-         - object: UNDEFINED|{status: listing|ready|uploading, t: UID/INT, fileCount: INTEGER, folderCount: INTEGER}, or return it at the top?
-         - oauth stuff
-         - list
-            - start
-            - file page (fileCount)
-            - folder page (folderCount)
-            - end (contains both date and list of files & folders)
-            - cancel (like delete but during, functions as end)
-            - delete (like cancel but after, functions as end)
-            - error (functions as end)
-         - upload
-            - selection [ID, ...]
-            - providerError
-            - start (contains date, alreadyImported INTEGER, tooLarge [FILENAME, ...], unsupported: [FILENAME], total), maybe from upload
-            - ok (increases done), from upload
-            - invalid, from upload
-            - repeated, from upload
-            - error (functions as end), if space runs out or server error, from upload
-            - cancel (no delete because if imported, it's there in your history), from upload
-            - end, from upload
-            - heartbeat (after n seconds on long upload, with timeout)
+   - Refactor for upload & import
+      - Finish refactor in upload import.
+         - Refactor check function so that it returns data itself.
+      - Change GET to POST import/list/PROVIDER.
+      - Add & document endpoint for upload metadata.
+      - Refactor upload with new logs.
+      - Refactor account endpoint to aggregate data for uploads and imports, adding also the status flag (inferred statuses: `ongoing` or `stalled`)
+      - Server tests for upload: start, cancel, end, etc.
+      - Refactor imports in client
+         - Use new data format.
+         - Add option to cancel import if it yields an error besides "try again".
+      - Refactor uploads in client:
+         - Block too large files in client.
+         - Use metadata events (start, cancel, end).
 
-      - upload
-         - start (implement), time, tooLarge & unsupported
-         - end (implement)
-         - cancel (implement)
-         - ok
-         - invalid
-         - repeated
-         - error: if space runs out or server error
+   - [check bug fixed] When uploading, current upload is not duplicated also in recent uploads.
+   - [check bug fixed] When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
+   - [check bug fixed] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
 
-      - refactor check function so that it returns data itself
-
-      - Move 'request' log to the top (current position is the one for startList)
-      - Refactor imports with new logs.
-      - Refactor uploads with new logs so that current uploads show server info and recent uploads doesn't duplicate the upload.
-      - Document in store Data.account
-
-   - Block too large files in client when uploading and let the server know instead.
-   - When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
-
-   - When having a lot of tags, don't show them all in the tag suggestion dropdowns.
-   - When uploading lots of files, upload tab crashes after a few hours.
+   - Separate endpoints for upload & import, away from account.
+   - Heartbeat:
+      - Modify upload metadata endpoint, add tests.
+      - Use special key with expiry to mark this directly.
+      - When querying, return if key is set.
+      - Refactor client to refresh query only when this flag is present, stop calling query from import/upload.
+   - Upload: when having a lot of tags, don't show them all in the tag suggestion dropdowns.
    - When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
-   - [check solved after refactor] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
-
+   - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
    - Upload all pics/vids.
    - Review all invalid pics/vids.
 
@@ -544,7 +524,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the request for an access token is not successful, the route responds with a 403 and with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If the request for an access token is successful, the route responds with a 200.
 
-`POST /import/delete/PROVIDER`
+`POST /import/cancel/PROVIDER`
    - Deletes list of files/folders available in the PROVIDER's cloud.
    - If no listing was done, the route succeeds anyway.
    - If successful, the route returns no body.
@@ -738,15 +718,33 @@ All the routes below require an admin user to be logged in.
    - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
    - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
    - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
-   - For uploads:         {t: INT, a: 'upl', id: STRING, uid: INTEGER (functions as id of upload and also marks the beginning time of the upload), tags: ARRAY|UNDEFINED, deg:90|-90|180|UNDEFINED, pro: UNDEFINED|STRING, error: UNDEFINED|{type: 'invalid|repeated|tooLarge', name: STRING}}
    - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
    - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: undefined|google|dropbox (if not undefined, the tagging operation comes from an import of a repeated picture)}
    - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
    - For dismiss:         {t: INT, a: 'dis', op: 'geotagging|selection'}
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
-   - For oauth request:   {t: INT, a: 'imp', s: 'request', pro: PROVIDER}
-   - For oauth grant:     {t: INT, a: 'imp', s: 'grant', pro: PROVIDER}
+   - Import:
+      - For oauth request:     {t: INT, a: 'imp', s: 'request',    pro: PROVIDER}
+      - For oauth grant:       {t: INT, a: 'imp', s: 'grant',      pro: PROVIDER}
+      - For start listing:     {t: INT, a: 'imp', s: 'listStart',  pro: PROVIDER, id: INTEGER}
+      - For file page:         {t: INT, a: 'imp', s: 'filePage',   pro: PROVIDER, id: INTEGER, n: INTEGER}
+      - For folder page:       {t: INT, a: 'imp', s: 'folderPage', pro: PROVIDER, id: INTEGER, n: INTEGER}
+      - For listing ended:     {t: INT, a: 'imp', s: 'listEnd',    pro: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
+      - For cancel:            {t: INT, a: 'imp', s: 'cancel',     pro: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
+      - For listing errored:   {t: INT, a: 'imp', s: 'error',      pro: PROVIDER, id: INTEGER, op: 'list', error: STRING|OBJECT}
+      - For folders selection: {t: INT, a: 'imp', s: 'selection',  pro: PROVIDER, id: INTEGER, folders: [ID, ...]}
+      - For
+   - For upload:
+      - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
+      - For start:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|0}
+      - For repeated: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'ok',      fileId: STRING, tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For invalid:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, error: STRING|OBJECT}
+      - For end:      {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
+      - For cancel:   {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
+      - For error:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'error', error: STRING|OBJECT} - Note: this only happens during a 500 error.
+      - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER, s: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import
+
    - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [...]|UNDEFINED}}
 
 - stat:...: statistics
@@ -765,7 +763,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERNAME (string): access token for google for USERNAME
 - oa:g:ref:USERNAME (string): refresh token for google for USERNAME
 
-- imp:g:USERNAME (hash): information of current import operation from google. Has the shape `{start: INT, end: INT|UNDEFINED, fileCount: INT, folderCount: INT, list: {roots: [ID, ...], folders: [{name: STRING, count: INTEGER, parent: ID|UNDEFINED, children: [ID, ...]}, ...], pics: [...]}, unsupported: [...], error: UNDEFINED|STRING|OBJECT, selection: UNDEFINED|[ID, ...], import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, repeated: UNDEFINED|INTEGER, errors: [...]}}`.
+- imp:PROVIDER:username (hash) information of current import operation from provider (`g` for google, `d` for dropbox). Has the shape {status: listing|ready|uploading|error, t: UID/INT, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: {ID: {...}, ...}, files: {ID: {...}, ...}}, unsupported: UNDEFINED|[STRING, ...]}
 
 - proc:vid (hash): list of ongoing non-mp4 to mp4 video conversions. key is the `id` of the video, value is the timestamp in milliseconds.
 
@@ -823,7 +821,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 5. `E.import`
    - Depends on: `Data.import`, `State.import` and `Data.account`.
    - Events:
-      - `onclick -> import delete`
+      - `onclick -> import cancel`
       - `onclick -> set State.import.list`
       - `onclick -> import retry`
       - `onclick -> snackbar red/yellow`
@@ -976,9 +974,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
    2. `import list PROVIDER STARTLIST CANCEL`: invokes `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy. It will also set `State.import.selection.PROVIDER`. It will also optionally invoke `snackbar` to report a successful listing/upload or an error, depending on the difference between the old and the new payload. If `CANCEL` is set, the snackbar printed will be different.
-   3. `import delete PROVIDER`: invokes `post import/delete/PROVIDER`; after the ajax call, it also invokes `import list PROVIDER false true`.
+   3. `import cancel PROVIDER`: invokes `post import/cancel/PROVIDER`; after the ajax call, it also invokes `import list PROVIDER false true`.
    4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) and there's no upload information, the responder does nothing. But if there's provider data and a listing or upload is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER` and `query pics`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
-   5. `import retry PROVIDER`: invokes `post import/delete/PROVIDER` and then `import list PROVIDER true`.
+   5. `import retry PROVIDER`: invokes `post import/cancel/PROVIDER` and then `import list PROVIDER true`.
    6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`. If `start` is `true`, the responder sets `Data.import.PROVIDER` with a placeholder object and invokes `post import/start/PROVIDER` before invoking `import list PROVIDER`, to trigger the start of the import process.
 
 7. Account

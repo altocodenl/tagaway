@@ -2367,8 +2367,6 @@ var routes = [
                type:     rq.user.type === 'tier1' ? 'free' : 'paid',
                created:  parseInt (rq.user.created),
                usage:    {
-                  // TODO: remove
-                  //limit:  CONFIG.storelimit [rq.user.type],
                   limit:  limit,
                   fsused: parseInt (s.last [1]) || 0,
                   s3used: parseInt (s.last [2]) || 0,
@@ -2555,11 +2553,17 @@ var routes = [
       }});
    }],
 
-   ['post', 'import/delete/google', function (rq, rs) {
+   ['post', 'import/cancel/google', function (rq, rs) {
       astop (rs, [
-         [Redis, 'del', 'imp:g:' + rq.user.username],
+         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
          function (s) {
-            reply (rs, 200);
+            if (! s.last) return reply (rs, 200);
+            a.seq (s, [
+               s.last.status === 'uploading' ?
+                  [H.log, rq.user.username, {a: 'upl', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}] :
+                  [H.log, rq.user.username, {a: 'imp', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}],
+               [Redis, 'del', 'imp:g:' + rq.user.username]
+            ]);
          }
       ]);
    }],
@@ -2578,45 +2582,53 @@ var routes = [
       astop (rs, [
          [Redis, 'hgetall', 'imp:g:' + rq.user.username],
          function (s) {
-            var data = s.last;
-            if (! data) return reply (rs, 404);
-            if (! data.end || data.error || data.importing) return reply (rs, 409);
-            var list = JSON.parse (data.list);
-            var folderIds = dale.obj (list.folders, function (folder, id) {
+            if (! s.last) return reply (rs, 404);
+            if (s.last.status !== 'ready') return reply (rs, 409);
+            var data = JSON.parse (s.last.data);
+            var folderIds = dale.obj (data.folders, function (folder, id) {
                return [id, true];
             });
 
             var invalidId = dale.stopNot (b.ids, undefined, function (id) {
                if (! folderIds [id]) return id;
             });
-            if (invalidId) return reply (rs, 400, {error: 'No such id: ' + invalidId});
+            if (invalidId) return reply (rs, 400, {error: 'No folder with id: ' + invalidId});
 
             Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
          },
+         [H.log, rq.user.username, {a: 'imp', s: 'selection', pro: 'google', id: parseInt (s.last.id), folders: b.ids}],
          function (s) {
             reply (rs, 200);
          }
       ]);
    }],
 
+   // TODO REFACTOR CHANGE TO POST
    ['get', 'import/list/google', function (rq, rs) {
 
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-            if (error.errorCode === 1) return reply (rs, 200, {error: error, redirect: [
-               'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
-               'prompt=consent',
-               'response_type=code',
-               'client_id=' + SECRET.google.oauth.client,
-               '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
-               'access_type=offline',
-               'state=' + rq.csrf
-            ].join ('&')});
+            if (error.errorCode === 1) return a.seq (s, [
+               [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
+               function (s) {
+                  reply (rs, 200, {error: error, redirect: [
+                     'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+                     'prompt=consent',
+                     'response_type=code',
+                     'client_id=' + SECRET.google.oauth.client,
+                     '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+                     'access_type=offline',
+                     'state=' + rq.csrf
+                  ].join ('&')});
+               }
+            ]);
 
             reply (rs, error.code ? error.code : 500, error);
          }],
          [Redis, 'hgetall', 'imp:g:' + rq.user.username],
          function (s) {
+            // TODO: ELIMINATE THIS BRANCH
+            // If there's a list, we serve it.
             if (s.last) {
                if (s.last.list) {
                   s.last.list = JSON.parse (s.last.list);
@@ -2641,15 +2653,21 @@ var routes = [
                });
                return reply (rs, 200, output);
             }
-            // If no process ongoing, we start the process only if the query parameter `startList` is present
-            if (rq.data.query && rq.data.query.startList) {
-               reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
-               s.next ();
-            }
+            s.id = Date.now ();
+            // TODO: remove flag, do it directly if there is no list yet
+            // If there's no list yet, we start the listing process only if the query parameter `startList` is present
+            if (rq.data.query && rq.data.query.startList) a.seq (s, [
+               [H.log, rq.user.username, {a: 'imp', s: 'listStart', pro: 'google', id: s.id}],
+               function (s) {
+                  reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
+                  s.next ();
+               }
+            ]);
             else reply (rs, 200, {});
          },
-         [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
-         [Redis, 'hset', 'imp:g:' + rq.user.username, 'start', Date.now ()],
+         function (s) {
+            Redis (s, 'hmset', 'imp:g:' + rq.user.username, {id: s.id, status: 'listing'});
+         },
          function (s) {
 
             var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 1 : 10000;
@@ -2689,19 +2707,21 @@ var routes = [
 
                         if (RS.code !== 200) return s.next (null, RS.body);
 
-                        redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
-                           if (error) return s.next (null, error);
-                           // If key was deleted, process was cancelled. The process stops.
-                           if (! exists) return;
-                           redis.hincrby ('imp:g:' + rq.user.username, 'fileCount', RS.body.files.length, function (error) {
-                              if (error) return s.next (null, error);
-
+                        a.seq (s, [
+                           [Redis, 'exists', 'imp:g:' + rq.user.username],
+                           function (s) {
+                              // If key was deleted, process was cancelled. The process stops.
+                              if (! s.last) return;
+                              Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'fileCount', RS.body.files.length);
+                           },
+                           [H.log, rq.user.username, {a: 'imp', s: 'filePage', pro: 'google', id: s.id, n: RS.body.files.length}],
+                           function (s) {
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
                                  file.size = parseInt (file.size);
                                  // Ignore trashed files!
                                  if (file.trashed) return;
                                  if (CONFIG.allowedFormats.indexOf (file.mimeType) === -1) {
-                                    unsupported.push (file);
+                                    unsupported.push (file.originalFilename);
                                     return;
                                  }
                                  return file;
@@ -2726,8 +2746,8 @@ var routes = [
                                  H.shuffleArray (parentsToRetrieve);
                                  s.next ();
                               }
-                           });
-                        });
+                           }
+                        ]);
                      }});
                   }
                ]);
@@ -2765,32 +2785,34 @@ var routes = [
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
                         if (RS.code !== 200) return s.next (null, RS.body);
 
-                        redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
-                           if (error) return s.next (null, error);
-                           // If key was deleted, process was cancelled. The process stops.
-                           if (! exists) return;
-                           redis.hincrby ('imp:g:' + rq.user.username, 'folderCount', batch.length, function (error) {
-                              if (error) return s.next (null, error);
+                        if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
+                        var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
+                        var parts = RS.body.split (boundary);
+                        var error;
+                        dale.stopNot (parts.slice (1, -1), undefined, function (part) {
+                           var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
+                           if (json.error) return error = json.error;
 
-                              if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
-                              var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
-                              var parts = RS.body.split (boundary);
-                              var error;
-                              dale.stopNot (parts.slice (1, -1), undefined, function (part) {
-                                 var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
-                                 if (json.error) return error = json.error;
+                           folders [json.id] = {name: json.name, parents: json.parents};
+                           if (! json.parents) roots [json.id] = true;
+                           dale.go (json.parents, function (id) {
+                              if (! children [id]) children [id] = [];
+                              if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
+                              // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
+                              if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                           });
+                        });
+                        if (error) return s.next (null, error);
 
-                                 folders [json.id] = {name: json.name, parents: json.parents};
-                                 if (! json.parents) roots [json.id] = true;
-                                 dale.go (json.parents, function (id) {
-                                    if (! children [id]) children [id] = [];
-                                    if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
-                                    // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
-                                    if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
-                                 });
-                              });
-                              if (error) return s.next (null, error);
-
+                        a.seq (s, [
+                           [Redis, 'exists', 'imp:g:' + rq.user.username],
+                           function (s) {
+                              // If key was deleted, process was cancelled. The process stops.
+                              if (! s.last) return;
+                              Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'folderCount', batch.length);
+                           },
+                           [H.log, rq.user.username, {a: 'imp', s: 'folderPage', pro: 'google', id: s.id, n: batch.length}],
+                           function (s) {
                               if (parentsToRetrieve.length === 0) return s.next ();
 
                               var d = Date.now ();
@@ -2818,46 +2840,55 @@ var routes = [
                               else {
                                  getParentBatch (s);
                               }
-                           });
-                        });
+                           }
+                        ]);
                      }});
                   }
                ]);
             }
 
-            a.stop (s, [
+            a.seq (s, [
                [getFilePage],
                getParentBatch,
                function (s) {
+                  // Count how many pics/vids per folder there are.
                   var porotoSum = function (id) {
                      if (! folders [id].count) folders [id].count = 0;
                      folders [id].count++;
                      dale.go (folders [id].parents, porotoSum);
                   }
 
-                  dale.go (pics, function (pic) {
+                  // Convert pics into an object with their ids as keys
+                  pics = dale.obj (pics, function (pic) {
+                     // Increment count for all parent folders
                      dale.go (pic.parents, porotoSum);
+                     return [pic.id, pic];
                   });
 
-                  var output = {roots: dale.keys (roots), folders: {}, pics: pics};
+                  var data = {roots: dale.keys (roots), folders: {}, pics: pics};
 
                   dale.go (folders, function (folder, id) {
-                     output.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
+                     data.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
                   });
 
                   /* FINAL OBJECT IS OF THE FORM:
-                  {roots: [...], folders: [
-                     {id: '...', name: '...', count: ..., parent: ..., children: [...]},
+                  {roots: [ID, ...], folders: {
+                     ID: {id: ID, name: '...', count: ..., parent: ..., children: [...]},
                      ...
-                  ], pics: [...]}
+                  }, pics: {
+                     ID: {id: ID, ...}
+                  }}
                   */
 
-                  redis.exists ('imp:g:' + rq.user.username, function (error, exists) {
-                     if (error) return s.next (null, error);
-                     // If key was deleted, process was cancelled. The process stops.
-                     if (! exists) return;
-                     redis.hmset ('imp:g:' + rq.user.username, {list: JSON.stringify (output), end: Date.now (), unsupported: JSON.stringify (unsupported)}, function (error) {
-                        if (error) return s.next (null, error);
+                  a.seq (s, [
+                     [Redis, 'exists', 'imp:g:' + rq.user.username],
+                     function (s) {
+                        // If key was deleted, process was cancelled. The process stops.
+                        if (! s.last) return;
+                        Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', unsupported: JSON.stringify (unsupported), data: JSON.stringify (data)});
+                     },
+                     [H.log, rq.user.username, {a: 'imp', s: 'listEnd', pro: 'google', id: s.id, data: data}]
+                     function (s) {
                         var email = CONFIG.etemplates.importList ('Google', rq.user.username);
                         sendmail (s, {
                            to1:     rq.user.username,
@@ -2865,14 +2896,15 @@ var routes = [
                            subject: email.subject,
                            message: email.message
                         });
-                     });
-                  });
+                     }
+                  ]);
                }
             ]);
          }
       ], function (s, error) {
-         a.seq (s, [
-            [notify, {priority: 'critical', type: 'import list error', data: {error: teishi.complex (error) ? JSON.stringify (error) : error, user: rq.user.username, provider: 'google'}}],
+         a.stop (s, [
+            [H.log, rq.user.username, {a: 'imp', s: 'error', pro: 'google', id: s.id, op: 'list', error: error}],
+            [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
@@ -2882,17 +2914,15 @@ var routes = [
                   message: email.message
                });
             },
+            [Redis, 'exists', 'imp:g:' + rq.user.username],
             function (s) {
-               redis.exists ('imp:g:' + rq.user.username, function (Error, exists) {
-                  if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
-                  // If key was deleted, process was cancelled. The process stops.
-                  if (! exists) return;
-                  redis.hmset ('imp:g:' + rq.user.username, {error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()}, function (error) {
-                     if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
-                  });
-               });
+               // If key was deleted, process was cancelled. The process stops.
+               if (! s.last) return;
+               Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error});
             }
-         ]);
+         ], function (s, error) {
+            notify (a.creat (), {priority: 'critical', type: 'import list error reporting error', provider: 'google', user: rq.user.username, error: error});
+         });
       });
    }],
 
@@ -2903,69 +2933,50 @@ var routes = [
             reply (rs, error.code ? error.code : 500, error);
          }],
          [a.set, 'hashes', [Redis, 'smembers', 'upic:' + rq.user.username + ':g']],
-         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
+         [a.set, 'import',   [Redis, 'hgetall', 'imp:g:' + rq.user.username]],
          function (s) {
-            var data = s.last;
-            if (! data) return reply (rs, 404);
-            if (! data.end || data.error || ! data.selection || data.import) return reply (rs, 409);
-            s.data = s.last;
-            var list = JSON.parse (data.list);
+            if (! s.import) return reply (rs, 404);
+            if (s.import.status !== 'ready') return reply (rs, 409);
+
+            var data = JSON.parse (s.import.data);
 
             var hashes = dale.obj (s.hashes, function (hash) {
                return [hash, true];
             });
-            var modifiedTime = dale.obj (list.pics, function (v) {
-               return [v.id, v.modifiedTime];
-            });
 
-            var filesToUpload = {}, repeated = [];
+            // filesToUpload: keys are file ids, values are an array with folder names (direct parent and parent of parents all the way to the root).
+            // alreadyImported is a counter of already imported files.
+            var filesToUpload = {}, alreadyImported = 0, tooLarge = [];
+
+            var recurseUp = function (childId, folderId) {
+               var folder = data.folders [folderId];
+               filesToUpload [childId].push (folder.name);
+               if (folder.parent) recurseUp (childId, folder.parent);
+            }
 
             var recurseDown = function (folderId) {
-               var folder = list.folders [folderId];
+               var folder = data.folders [folderId];
                dale.go (folder.children, function (childId) {
                   // If child of folder is a folder, invoke recursively
-                  if (list.folders [childId]) return recurseDown (childId);
+                  if (data.folders [childId]) return recurseDown (childId);
                   // Else, it is a pic/vid.
                   // We check whether we already have the file. If we do, we ignore it and not have into account at all, not even on the total count.
-                  if (hashes [H.hash (childId + ':' + modifiedTime [childId])]) return repeated.push (childId);
+                  var file = data.files [childId];
+                  if (hashes [H.hash (childId + ':' + file.modifiedTime)]) return alreadyImported++;
+                  if (file.size > 536870888)                               return tooLarge.push (file.originaFilename);
                   filesToUpload [childId] = [];
                   recurseUp (childId, folderId);
                });
             }
-            var recurseUp = function (childId, folderId) {
-               var folder = list.folders [folderId];
-               filesToUpload [childId].push (folder.name);
-               if (folder.parent) recurseUp (childId, folder.parent);
-            }
-            dale.go (JSON.parse (data.selection), function (id) {
-               return recurseDown (id);
-            });
 
-            var ids = dale.keys (filesToUpload);
-
-            s.unsupported = {};
-            var tooLarge  = [];
-            dale.go (JSON.parse (s.data.unsupported), function (file) {
-               var extension = Path.extname (file.name).slice (1).toLowerCase ();
-               if (! s.unsupported [extension]) s.unsupported [extension] = 0;
-               s.unsupported [extension]++;
-            });
-
-            s.filesToUpload = filesToUpload;
-
-            s.list = dale.fil (list.pics, undefined, function (file) {
-               if (file.size > 536870888) {
-                  tooLarge.push (file.originalFilename);
-                  return;
-               }
-               if (s.filesToUpload [file.id] && repeated.indexOf (file.id) === -1) return file;
-            });
+            dale.go (JSON.parse (data.selection), recurseDown);
 
             s.start = Date.now ();
+            // TODO: continue refactoring
 
-            if (s.list.length === 0) return a.seq (s, [
+            if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
-               [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), total: 0, done: 0, tooLarge: tooLarge.length ? tooLarge : undefined}}],
+               [H.log, rq.user.username, {a: 'upl', id: s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), total: 0, done: 0, tooLarge: tooLarge.length ? tooLarge : undefined}}],
                function () {
                   reply (rs, 200);
                }
@@ -3733,30 +3744,3 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
       });
    }],
 ]);
-
-// *** TEMPORARY SCRIPT TO ADD REVERSE HASHES ***
-
-if (cicek.isMaster) a.stop ([
-   // Get list of pics and thumbs
-   [redis.keyscan, 'pic:*'],
-   function (s) {
-      s.pics = s.last;
-      var multi = redis.multi ();
-      dale.go (s.pics, function (id) {
-         multi.hgetall (id);
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (data, k) {
-         var id = s.pics [k].replace ('pic:', '');
-         // TODO: remove log
-         // console.log ('upic:rev:' + data.owner, data.hash, id);
-         multi.hset ('upic:rev:' + data.owner, data.hash, id);
-      });
-      mexec (s, multi);
-   },
-], function (s, error) {
-   notify (s, {priority: 'critical', type: 'Script to add reverse hashes error.', error: error});
-});

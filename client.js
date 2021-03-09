@@ -3086,8 +3086,8 @@ dale.do ([
       });
    }],
 
-   ['import', 'delete', function (x, provider) {
-      B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
+   ['import', 'cancel', function (x, provider) {
+      B.do (x, 'post', 'import/cancel/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
          B.do (x, 'import', 'list', provider, false, true);
       });
@@ -3115,7 +3115,7 @@ dale.do ([
    }],
 
    ['import', 'retry', function (x, provider) {
-      B.do (x, 'post', 'import/delete/' + provider, {}, {}, function (x, error, rs) {
+      B.do (x, 'post', 'import/cancel/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files from ' + H.upper (provider));
          B.do (x, 'import', 'list', provider, true);
       });
@@ -4679,7 +4679,7 @@ E.import = function () {
                         ['div', ' folders found so far'],
                      ]],
                   ]],
-                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'delete', provider]), 'Cancel']
+                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'cancel', provider]), 'Cancel']
                ]],
             ]],
          ]],
@@ -4699,7 +4699,7 @@ E.import = function () {
                   ['div', {class: 'progress-bar'}],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', B.ev ({class: 'boxed-alert-button-left button'}, ['onclick', 'import', 'delete', provider]), 'Delete list'],
+                  ['div', B.ev ({class: 'boxed-alert-button-left button'}, ['onclick', 'import', 'cancel', provider]), 'Delete list'],
                   ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'import', 'list'], provider]), 'Select folders'],
                ]],
             ]],
@@ -4728,7 +4728,7 @@ E.import = function () {
                         ['div', ' imported so far'],
                      ]],
                   ]],
-                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'delete', provider]), 'Cancel']
+                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'cancel', provider]), 'Cancel']
                ]],
             ]],
          ]],
