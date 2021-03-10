@@ -673,7 +673,7 @@ H.getGoogleToken = function (S, username) {
                [Redis, 'del', 'oa:g:ref:' + username],
                function (s) {
                   // Report an error
-                  s.next (null, {errorCode: 2, code: rs.code, error: 'Refresh token failed', body: rs.body});
+                  s.next (null, {errorCode: 2, error: 'Refresh token failed', code: rs.code, body: rs.body});
                }
             ]);
             // Refresh token was successful
@@ -2553,65 +2553,14 @@ var routes = [
       }});
    }],
 
-   ['post', 'import/cancel/google', function (rq, rs) {
-      astop (rs, [
-         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
-         function (s) {
-            if (! s.last) return reply (rs, 200);
-            a.seq (s, [
-               s.last.status === 'uploading' ?
-                  [H.log, rq.user.username, {a: 'upl', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}] :
-                  [H.log, rq.user.username, {a: 'imp', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}],
-               [Redis, 'del', 'imp:g:' + rq.user.username]
-            ]);
-         }
-      ]);
-   }],
-
-   ['post', 'import/select/google', function (rq, rs) {
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
-         ['body.ids', b.ids, 'array'],
-         ['body.ids', b.ids, 'string', 'each'],
-      ])) return;
-
-      b.ids = b.ids.sort ();
-
-      astop (rs, [
-         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
-         function (s) {
-            if (! s.last) return reply (rs, 404);
-            if (s.last.status !== 'ready') return reply (rs, 409);
-            var data = JSON.parse (s.last.data);
-            var folderIds = dale.obj (data.folders, function (folder, id) {
-               return [id, true];
-            });
-
-            var invalidId = dale.stopNot (b.ids, undefined, function (id) {
-               if (! folderIds [id]) return id;
-            });
-            if (invalidId) return reply (rs, 400, {error: 'No folder with id: ' + invalidId});
-
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
-         },
-         [H.log, rq.user.username, {a: 'imp', s: 'selection', pro: 'google', id: parseInt (s.last.id), folders: b.ids}],
-         function (s) {
-            reply (rs, 200);
-         }
-      ]);
-   }],
-
-   // TODO REFACTOR CHANGE TO POST
-   ['get', 'import/list/google', function (rq, rs) {
+   ['post', 'import/list/google', function (rq, rs) {
 
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
             if (error.errorCode === 1) return a.seq (s, [
                [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
                function (s) {
-                  reply (rs, 200, {error: error, redirect: [
+                  reply (rs, 200, {redirect: [
                      'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
                      'prompt=consent',
                      'response_type=code',
@@ -2623,50 +2572,20 @@ var routes = [
                }
             ]);
 
-            reply (rs, error.code ? error.code : 500, error);
+            reply (rs, 403, {code: error.code || 500, error: error.body || error});
          }],
-         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
+         // If there's already an import process ongoing for this provider, we return a 409.
+         [a.cond, [Redis, 'imp:g:' + rq.user.username], {'1': [reply, rs, 409]}],
          function (s) {
-            // TODO: ELIMINATE THIS BRANCH
-            // If there's a list, we serve it.
-            if (s.last) {
-               if (s.last.list) {
-                  s.last.list = JSON.parse (s.last.list);
-                  // We don't return the full list of pictures to the client.
-                  delete s.last.list.pics;
-               }
-               var output = {
-                  start: parseInt (s.last.start),
-                  end: parseInt (s.last.end || 0),
-                  fileCount: parseInt (s.last.fileCount) || 0,
-                  folderCount: parseInt (s.last.folderCount) || 0,
-                  error: s.last.error,
-                  upload: s.last.upload ? JSON.parse (s.last.upload) : undefined,
-                  list: s.last.list || {},
-                  selection: s.last.selection ? JSON.parse (s.last.selection) : undefined
-               };
-               dale.go (output.list.folders, function (folder, id) {
-                  output.list.folders [id].children = dale.fil (folder.children, undefined, function (child) {
-                     // Filter out pictures (those ids that have no entry in list.folders)
-                     if (output.list.folders [child]) return child;
-                  });
-               });
-               return reply (rs, 200, output);
-            }
             s.id = Date.now ();
-            // TODO: remove flag, do it directly if there is no list yet
-            // If there's no list yet, we start the listing process only if the query parameter `startList` is present
-            if (rq.data.query && rq.data.query.startList) a.seq (s, [
-               [H.log, rq.user.username, {a: 'imp', s: 'listStart', pro: 'google', id: s.id}],
+            a.seq (s, [
+               [Redis, 'hmset', 'imp:g:' + rq.user.username, {id: id, status: 'listing'}],
+               [H.log, rq.user.username, {a: 'imp', s: 'listStart', pro: 'google', id: id}],
                function (s) {
-                  reply (rs, 200, {start: Date.now (), fileCount: 0, folderCount: 0});
+                  reply (rs, 200);
                   s.next ();
                }
             ]);
-            else reply (rs, 200, {});
-         },
-         function (s) {
-            Redis (s, 'hmset', 'imp:g:' + rq.user.username, {id: s.id, status: 'listing'});
          },
          function (s) {
 
@@ -2926,14 +2845,61 @@ var routes = [
       });
    }],
 
+   ['post', 'import/cancel/google', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
+         function (s) {
+            if (! s.last) return reply (rs, 200);
+            a.seq (s, [
+               s.last.status === 'uploading' ?
+                  [H.log, rq.user.username, {a: 'upl', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}] :
+                  [H.log, rq.user.username, {a: 'imp', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}],
+               [Redis, 'del', 'imp:g:' + rq.user.username]
+            ]);
+         }
+      ]);
+   }],
+
+   ['post', 'import/select/google', function (rq, rs) {
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+      ])) return;
+
+      b.ids = b.ids.sort ();
+
+      astop (rs, [
+         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
+         function (s) {
+            if (! s.last) return reply (rs, 404);
+            if (s.last.status !== 'ready') return reply (rs, 409);
+
+            var data = JSON.parse (s.last.data);
+
+            var invalidId = dale.stopNot (b.ids, undefined, function (id) {
+               if (! data.folders [id]) return id;
+            });
+            if (invalidId) return reply (rs, 400, {error: 'No folder with id: ' + invalidId});
+
+            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
+         },
+         [H.log, rq.user.username, {a: 'imp', s: 'selection', pro: 'google', id: parseInt (s.last.id), folders: b.ids}],
+         function (s) {
+            reply (rs, 200);
+         }
+      ]);
+   }],
+
    ['post', 'import/upload/google', function (rq, rs) {
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-            if (error.errorCode === 1) return reply (rs, 403, {error: error});
-            reply (rs, error.code ? error.code : 500, error);
+            reply (rs, 403, {code: error.code || 500, error: error.body || error});
          }],
-         [a.set, 'hashes', [Redis, 'smembers', 'upic:' + rq.user.username + ':g']],
-         [a.set, 'import',   [Redis, 'hgetall', 'imp:g:' + rq.user.username]],
+         [a.set, 'hashes', [Redis, 'smembers', 'upic:'  + rq.user.username + ':g']],
+         [a.set, 'import', [Redis, 'hgetall',  'imp:g:' + rq.user.username]],
          function (s) {
             if (! s.import) return reply (rs, 404);
             if (s.import.status !== 'ready') return reply (rs, 409);
@@ -2945,8 +2911,8 @@ var routes = [
             });
 
             // filesToUpload: keys are file ids, values are an array with folder names (direct parent and parent of parents all the way to the root).
-            // alreadyImported is a counter of already imported files.
-            var filesToUpload = {}, alreadyImported = 0, tooLarge = [];
+            // alreadyImported is a counter of already imported files. There's no need to store their names, just how many of them there are.
+            var filesToUpload = {}, alreadyImported = 0, tooLarge = [], unsupported = JSON.parse (s.import.unsupported);
 
             var recurseUp = function (childId, folderId) {
                var folder = data.folders [folderId];
@@ -2971,19 +2937,21 @@ var routes = [
 
             dale.go (JSON.parse (data.selection), recurseDown);
 
-            s.start = Date.now ();
-            // TODO: continue refactoring
-
+            // If there are no files to import, we delete the import key and set the user logs.
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
-               [H.log, rq.user.username, {a: 'upl', id: s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: Date.now (), end: Date.now (), selection: JSON.parse (s.data.selection).sort (), total: 0, done: 0, tooLarge: tooLarge.length ? tooLarge : undefined}}],
-               function () {
-                  reply (rs, 200);
-               }
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge || undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}]
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'end'}]
+               [reply, rs, 200]
             ]);
 
-            Redis (s, 'hset', 'imp:g:' + rq.user.username, 'upload', JSON.stringify ({start: s.start, total: ids.length, done: 0, tooLarge: tooLarge.length ? tooLarge : undefined}));
+            s.filesToUpload = filesToUpload;
+            s.ids = dale.keys (s.filesToUpload);
+
+            // If we're here, there are files to be imported.
+            H.log (s, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge || undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
          },
+         [Redis, 'hset', 'imp:g:' + rq.user.username, 'status', 'uploading'],
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
          function (s) {
@@ -2998,188 +2966,143 @@ var routes = [
             // We return a 200 since the rest of the process will be done asynchronously.
             reply (rs, 200);
 
-            var importFile = function (s, index) {
+            var check = function (cb) {
+               redis.hexists ('imp:g:' + rq.user.username, 'upload', function (error, exists) {
+                  if (error) return s.next (null, error);
+                  if (exists) cb ();
+               });
+            }
 
+            var importFile = function (s, index) {
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
-                     var check = function (cb) {
-                        redis.hexists ('imp:g:' + rq.user.username, 'upload', function (error, exists) {
-                           if (error) return s.next (null, error);
-                           if (exists) cb ();
-                        });
+                     // If we reached the end of the list, we're done.
+                     if (index === s.list.length) return check (function () {
+                        a.seq (s, [
+                           [Redis, 'del', 'imp:g:' + rq.user.username],
+                           [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'end'}]
+                           function (s) {
+                              var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
+                              sendmail (s, {
+                                 to1:     rq.user.username,
+                                 to2:     rq.user.email,
+                                 subject: email.subject,
+                                 message: email.message
+                              });
+                           }
+                        ]);
+                     });
+
+                     var file = s.list [index], Error, errorCb = function (code, error) {
+                        if (Error) return;
+                        Error = true;
+                        a.seq (s, [
+                           [H.log, {a: 'upl', id: parseInt (s.upload.id), pro: 'google', s: 'providerError', error: {code: code, error: error}}],
+                           [importFile, index + 1]
+                        ]);
                      }
 
-                     redis.hget ('imp:g:' + rq.user.username, 'upload', function (error, upload) {
-                        if (error) return s.next (null, error);
-                        if (! upload) return;
-                        upload = JSON.parse (upload);
-
-                        // If we reached the end of the list, we're done.
-                        if (index === s.list.length) {
-
-                           return check (function () {
-                              redis.del ('imp:g:' + rq.user.username, function (error) {
-                                 if (error) return s.next (null, error);
-                                 a.seq (s, [
-                                    [H.log, rq.user.username, {a: 'imp', s: 'upload', pro: 'google', list: {start: s.data.start, end: s.data.end, fileCount: s.data.fileCount, folderCount: s.data.folderCount, unsupported: s.unsupported}, upload: {start: upload.start, end: Date.now (), selection: JSON.parse (s.data.selection).sort (), done: upload.done, repeated: upload.repeated, providerErrors: upload.providerErrors, invalid: upload.invalid, tooLarge: upload.tooLarge}}],
-                                    function (s) {
-                                       var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
-                                       sendmail (s, {
-                                          to1:     rq.user.username,
-                                          to2:     rq.user.email,
-                                          subject: email.subject,
-                                          message: email.message
-                                       });
-                                    }
-                                 ]);
-                              });
+                     // We use https directly to stream the response body directly into a file.
+                     // https://developers.google.com/drive/api/v3/reference/files/export
+                     https.request ({host: 'www.googleapis.com', path: '/drive/v3/files/' + file.id + '?alt=media', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
+                        response.on ('error', function (error) {
+                           errorCb (0, error);
+                        });
+                        if (response.statusCode !== 200) {
+                           response.setEncoding ('utf8');
+                           response.body = '';
+                           response.on ('data', function (buffer) {
+                              response.body += buffer.toString ();
                            });
+                           response.on ('end', function () {
+                              errorCb (response.statusCode, response.body);
+                           });
+                           return;
                         }
 
-                        var file = s.list [index];
-                        // https://developers.google.com/drive/api/v3/reference/files/export
-                        var path = '/drive/v3/files/' + file.id + '?alt=media';
-                        var username = rq.user.username;
-
-                        // We use https directly to stream the response body directly into a file.
-                        https.request ({host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
-                           var Error;
-                           response.on ('error', function (error) {
-                              if (Error) return;
-                              Error = true;
-                              check (function () {
-                                 // PROVIDER ERROR 1
-                                 if (! upload.providerErrors) upload.providerErrors = [];
-                                 upload.providerErrors.push ({code: 0, error: error, file: file});
-                                 redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                    if (error) return s.next (null, error);
-                                    importFile (s, index + 1);
-                                 });
-                              });
-                           });
-                           if (response.statusCode !== 200) {
-                              response.setEncoding ('utf8');
-                              response.body = '';
-                              response.on ('data', function (buffer) {
-                                 response.body += buffer.toString ();
-                              });
-                              response.on ('end', function () {
-                                 if (Error) return;
-                                 Error = true;
-                                 check (function () {
-                                    // PROVIDER ERROR 2
-                                    if (! upload.providerErrors) upload.providerErrors = [];
-                                    upload.providerErrors.push ({code: response.statusCode, error: response.body, file: file});
-                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                       if (error) return s.next (null, error);
-                                       importFile (s, index + 1);
-                                    });
-                                 });
-                              });
-                              return;
-                           }
-                           var tempPath = Path.join ((os.tmpdir || os.tmpDir) (), cicek.pseudorandom (24));
-                           var wstream = fs.createWriteStream (tempPath);
-                           wstream.on ('error', function (error) {
-                              Error = true;
-                              s.next (null, error);
-                           });
-                           response.pipe (wstream);
-                           wstream.on ('finish', function () {
-                              if (Error) return;
+                        var tempPath = Path.join ((os.tmpdir || os.tmpDir) (), cicek.pseudorandom (24));
+                        var wstream = fs.createWriteStream (tempPath);
+                        wstream.on ('error', function (error) {
+                           Error = true;
+                           s.next (null, error);
+                        });
+                        response.pipe (wstream);
+                        wstream.on ('finish', function () {
+                           if (Error) return;
+                           // We proceed with the upload only if the import hasn't been cancelled.
+                           check (function () {
                               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
                                  {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
-                                 {type: 'field', name: 'uid', value: upload.start},
+                                 {type: 'field', name: 'uid', value: parseInt (s.import.id)},
                                  // Use oldest date, whether createdTime or updatedTime
                                  {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
                                  {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
                                  {type: 'field', name: 'providerData', value: JSON.stringify ({
-                                    provider: 'google',
-                                    id: file.id,
-                                    name: file.originalFilename,
+                                    provider:     'google',
+                                    id:           file.id,
+                                    name:         file.originalFilename,
                                     modifiedTime: file.modifiedTime,
-                                    path: tempPath
+                                    path:         tempPath
                                  })},
                                  {type: 'field', name: 'csrf', value: s.csrf}
                               ]}, code: '*', apres: function (S, RQ, RS, next) {
 
-                                 // Repeated file, increment repeated counter and continue
-                                 if (RS.code === 409 && RS.body.error === 'repeated') return check (function () {
-                                    a.seq (s, [
-                                       // TODO: use same stack once a.fork doesn't copy the stack anymore
-                                       [function (S) {
-                                          a.seq ([
-                                             [a.fork, S.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
-                                                return function (s) {
-                                                   hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: S.cookie}, body: {csrf: S.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
-                                                      if (RS.code === 200) return s.next ();
-                                                      s.next (null, {error: {code: RS.code, body: RS.body}});
-                                                   }});
-                                                }
-                                             }],
-                                             function (s) {
-                                                if (s.error) S.next (null, s.error);
-                                                else         S.next ();
-                                             }
-                                          ]);
-                                       }],
-                                       function (s) {
-                                          // REPEATED FILE
-                                          if (! upload.repeated) upload.repeated = [];
-                                          upload.repeated.push (file.originalFilename);
-                                          redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                             if (error) return s.next (null, error);
-                                             importFile (s, index + 1);
-                                          });
-                                       }
-                                    ]);
-                                 });
-
-                                 // No more space, save error in import key and stop the process
-                                 if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return check (function () {
-                                    return s.next (null, {error: 'No more space in your ac;pic account.'});
-                                 });
-
-                                 // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
-                                 if (RS.code === 400) return check (function () {
-                                    if (! upload.invalid) upload.invalid = [];
-                                    upload.invalid.push (file.originalFilename);
-                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                       if (error) return s.next (null, error);
-                                       importFile (s, index + 1);
-                                       notify (a.creat (), {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username});
-                                    });
-                                 });
+                                 // TODO: check whether to invoke check, then error handlers
 
                                  // UNEXPECTED ERROR
-                                 if (RS.code !== 200) return check (function () {
-                                    s.next (null, {error: RS.body, code: RS.code, file: file});
-                                 });
+                                 if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
+
+                                 // REPEATED FILE
+                                 // We don't invoke `check` because if the file was uploaded we want to tag it anyway.
+                                 if (RS.code === 409 && RS.body.error === 'repeated') return a.seq (s, [
+                                    // TODO: use same stack once a.fork doesn't copy the stack anymore
+                                    [function (S) {
+                                       a.seq ([
+                                          [a.fork, S.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
+                                             return function (s) {
+                                                hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: S.cookie}, body: {csrf: S.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
+                                                   if (RS.code === 200) return s.next ();
+                                                   s.next (null, {error: {code: RS.code, body: RS.body}});
+                                                }});
+                                             }
+                                          }],
+                                          function (s) {
+                                             if (s.error) S.next (null, s.error);
+                                             else         S.next ();
+                                          }
+                                       ]);
+                                    }],
+                                    [importFile, index + 1]
+                                 ]);
+
+                                 // No more space, save error in import key and stop the process
+                                 if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
+
+                                 // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
+                                 if (RS.code === 400) return a.seq (s, [
+                                    [notify, s, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],
+                                    [importFile, index + 1]
+                                 ]);
 
                                  // SUCCESSFUL UPLOAD
-                                 check (function () {
-                                    if (! upload.done) upload.done = 0;
-                                    upload.done++;
-                                    redis.hset ('imp:g:' + username, 'upload', JSON.stringify (upload), function (error) {
-                                       if (error) return s.next (null, error);
-                                       importFile (s, index + 1);
-                                    });
-                                 });
+                                 importFile (s, index + 1);
                               }});
-                           });
-                        }).on ('error', function (error) {
-                           s.next (null, error);
-                        }).end ();
-                     });
+                           }
+                        });
+                     }).on ('error', function (error) {
+                        s.next (null, error);
+                     }).end ();
                   }
                ]);
             }
             importFile (s, 0);
          }
       ], function (s, error) {
+         // If error happens before replying to the request, send it directly to the response.
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
+         // TODO: if 409 space, don't make it critical?
             [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google'}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
@@ -3201,7 +3124,7 @@ var routes = [
                });
             }
          ]);
-      })
+      });
    }],
 
    // *** ADMIN AREA ***

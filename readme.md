@@ -41,16 +41,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Refactor for upload & import
-      - Finish refactor in upload import.
-         - Refactor check function so that it returns data itself.
-      - Change GET to POST import/list/PROVIDER.
       - Add & document endpoint for upload metadata.
-      - Refactor upload with new logs.
+      - Refactor upload endpoint with new logs.
       - Refactor account endpoint to aggregate data for uploads and imports, adding also the status flag (inferred statuses: `ongoing` or `stalled`)
       - Server tests for upload: start, cancel, end, etc.
       - Refactor imports in client
          - Use new data format.
          - Add option to cancel import if it yields an error besides "try again".
+         - Note when a listing or upload has been cancelled with a snackbar.
       - Refactor uploads in client:
          - Block too large files in client.
          - Use metadata events (start, cancel, end).
@@ -508,21 +506,19 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED, uploads: [{uid: INTEGER, tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}, ...], imports: [{pro: google|dropbox, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [{code: INTEGER, error: OBJECT, file: OBJECT}]|UNDEFINED}, ...]}`.
    - The number of `uploads` and `imports` objects are restricted to 10.
 
-`GET /import/list/PROVIDER[?startList=1]`
-   - Lists available folders with pictures in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if authorization is not present or expired.
-   - If there's a list process ongoing or the list process is ready, the endpoint will serve that list. If there's no list yet, the query parameter `startList` must be present with a value of `1` to trigger the listing process. If there's no list and no `startList` parameter is provided, the responde will be an empty object.
-   - `PROVIDER` can be either `google` or `dropbox`.
-   - If there's no access or refresh tokens, returns a 302 with a `Location` header to where the browser should go to perform the oauth flow to grant ac;pic access to the PROVIDER's API.
-   - If there's an auth error when accessing the PROVIDER's API, the route will return the same error code that was returned by the PROVIDER's API.
-   - If there's access or refresh tokens, a process is started to query the PROVIDER's API and 200 is returned to the client.
-   - The return body is of the shape `{start: INTEGER, end: INTEGER|UNDEFINED, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, import: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER}, list: UNDEFINED|{roots: [ID, ...], parents: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}, selection: UNDEFINED|[ID, ...]}`. If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process. If there's auth access but no list and `startList` wasn't passed, the return body will be an empty object.
-
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
    - If no query parameters are received, the route responds with a 400.
    - If no authorization code is received, the route responds with a 403.
    - If the request for an access token is not successful, the route responds with a 403 and with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If the request for an access token is successful, the route responds with a 200.
+
+`POST /import/list/PROVIDER`
+   - Creates a list of available folders with pictures/videos in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if the authorization credentials for that provider haven't been requested yet.
+   - If the credentials have not been requested yet, the endpoint returns a body with the shape `{redirect: URL}`. `URL` is the URL to start the OAuth authorization process for that provider.
+   - If the credentials are already granted but authentication against the provider fails, the endpoint returns a 403 with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
+   - If there's already a list ready or the import is in the process of uploading, a 409 is returned to the client.
+   - If there's access or refresh tokens and no import process ongoing, a process is started to query the PROVIDER's API and 200 is returned to the client. The listing will be performed asynchronously after replying the 200 to the request.
 
 `POST /import/cancel/PROVIDER`
    - Deletes list of files/folders available in the PROVIDER's cloud.
@@ -532,15 +528,15 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 `POST /import/select/PROVIDER`
    - Updates the list of selected folders for import from `PROVIDER`.
    - Requires a list of files to be present; otherwise a 404 is returned.
-   - If the list of files finished is not finished, or has an error, or is currently importing files, a 409 is returned.
+   - If the import is listing, uploading or experienced an error, a 409 is returned.
    - The body must be of the shape `{ids: [ID, ...]}`.
    - If any of the ids doesn't belong to a folder id on the `PROVIDER`'s list, a 400 is returned.
    - If there previously was an array of selected folder ids on the list, it will be overwritten.
 
 `POST /import/upload/PROVIDER`
-   - If there's no access or refresh tokens for `PROVIDER`, returns a 403.
-   - If there's no import list present, returns a 404.
-   - If there's an import list present but 1) the listing process is ongoing; or 2) there was an error; or 3) there are no folders selected yet; or 4) the import process already started; the endpoint returns a 409.
+   - If no credentials are present or the credentials are already granted but authentication against the provider fails, the endpoint returns a 403 with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
+   - If there's no import process present, returns a 404.
+   - If there's an import process present but 1) the listing process is ongoing; or 2) there was an error; or 3) there are no folders selected yet; or 4) the import process already started; the endpoint returns a 409.
    - If all initial checks pass, the endpoint will return 200 and perform its operations asynchronously.
    - The endpoint will upload one by one the files from supported formats that are in the selection of folders. The import key will be updated so that the user can query for updates by retrieving the list.
    - Depending on whether the process ends with an error or with success, the endpoint will update either the import entry (in case of error) or delete it and add an user log entry (in case of success).
@@ -737,12 +733,12 @@ All the routes below require an admin user to be logged in.
       - For
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|0}
+      - For start:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|0 (this field is only present in the case of uploads from an import)}
       - For repeated: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'ok',      fileId: STRING, tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
       - For invalid:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, error: STRING|OBJECT}
       - For end:      {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
       - For cancel:   {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
-      - For error:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'error', error: STRING|OBJECT} - Note: this only happens during a 500 error.
+      - For error:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'error', error: STRING|OBJECT}
       - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER, s: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import
 
    - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [...]|UNDEFINED}}
