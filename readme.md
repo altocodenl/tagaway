@@ -41,10 +41,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Refactor for upload & import
-      - Add & document endpoint for upload metadata.
-      - Refactor upload endpoint with new logs.
+      - Method to retrieve imports & uploads; ongoing/done, n (0 for all)
+      - Add & document endpoint for upload metadata. Validate that id exists and belongs to relevant.
+      - Remove unsupported formats endpoint.
+      - Refactor upload endpoint with new logs and with tag of repeated.
       - Refactor account endpoint to aggregate data for uploads and imports, adding also the status flag (inferred statuses: `ongoing` or `stalled`)
-      - Server tests for upload: start, cancel, end, etc.
+      - Server tests for upload
+         - If repeated picture with a different tag, use that tag on upload.
+         - start, cancel, end, etc.
       - Refactor imports in client
          - Use new data format.
          - Add option to cancel import if it yields an error besides "try again".
@@ -52,6 +56,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Refactor uploads in client:
          - Block too large files in client.
          - Use metadata events (start, cancel, end).
+      - Refactor docs & code with unified terminology for pic/vid: mfile?
 
    - [check bug fixed] When uploading, current upload is not duplicated also in recent uploads.
    - [check bug fixed] When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
@@ -183,11 +188,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Warn of leaving page if upload is ongoing.
 
 - Upload
-   - Allow only jpeg, png & video.
+   - Allow only valid images and videos of certain formats.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pictures in S3 and pictures + thumbnails locally.
-   - Ignore images that already were uploaded (by hash check, ignoring metadata).
+   - Ignore images that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
    - Upload files from folder selection, files selection & drop.
    - See progress when uploading files, using a progress bar.
    - Add one or more tags to the upcoming upload batch.
@@ -728,18 +733,18 @@ All the routes below require an admin user to be logged in.
       - For folder page:       {t: INT, a: 'imp', s: 'folderPage', pro: PROVIDER, id: INTEGER, n: INTEGER}
       - For listing ended:     {t: INT, a: 'imp', s: 'listEnd',    pro: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
       - For cancel:            {t: INT, a: 'imp', s: 'cancel',     pro: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
-      - For listing errored:   {t: INT, a: 'imp', s: 'error',      pro: PROVIDER, id: INTEGER, op: 'list', error: STRING|OBJECT}
+      - For listing errored:   {t: INT, a: 'imp', s: 'listError',  pro: PROVIDER, id: INTEGER, error: STRING|OBJECT}
       - For folders selection: {t: INT, a: 'imp', s: 'selection',  pro: PROVIDER, id: INTEGER, folders: [ID, ...]}
-      - For
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|0 (this field is only present in the case of uploads from an import)}
-      - For repeated: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'ok',      fileId: STRING, tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For invalid:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, error: STRING|OBJECT}
-      - For end:      {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
-      - For cancel:   {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
-      - For error:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'error', error: STRING|OBJECT}
-      - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER, s: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import
+      - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
+      - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
+      - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
+      - For ok:             {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], name: STRING}
+      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, error: STRING|OBJECT}
+      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, size: INTEGER} - This should be prevented by the client or the import process but we create an entry in case the API is used directly.
+      - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           s: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
 
    - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [...]|UNDEFINED}}
 

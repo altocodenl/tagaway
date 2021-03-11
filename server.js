@@ -642,6 +642,41 @@ H.detectFormat = function (s, metadata, vidFormat) {
    s.next (format);
 }
 
+H.getUploads = function (s, username, Status, n) {
+   a.seq (s, [
+      [Redis, 'lrange', 'ulog:' + username, 0, -1],
+      function (s) {
+         var uploads = {};
+         dale.go (s.last, function (log) {
+            if (log.a !== 'upl') return;
+            if (! uploads [log.id]) uploads [log.id] = {id: log.id};
+            var upload = uploads [log.id];
+            if (log.s === 'end') {
+               upload.status = 'done';
+               upload.end = log.t;
+            }
+            else if (log.s === 'cancel') {
+               upload.status = 'cancelled';
+               upload.end = log.t;
+            }
+            else if (log.s === 'start') {
+               // If current upload has had no activity in over five minutes, we consider it stalled.
+               if (Date.now () > 1000 * 60 * 5 + log.id) upload.status = 'stalled';
+               ['total', 'tooLarge', 'unsupported', 'alreadyImported'].map (function (key) {
+                  if (log [key] !== undefined) upload [key] = log [key];
+               });
+            }
+            else if (log.s === 'ok') {
+               if (! upload.done) upload.done = 0;
+               upload.done++;
+            }
+            else if (log.s === 'repeated') {
+
+         // return format: list: [...], keys: {}
+
+
+}
+
 // *** OAUTH HELPERS ***
 
 // https://developers.google.com/identity/protocols/oauth2/web-server
@@ -1444,6 +1479,28 @@ var routes = [
    }],
 
    // *** UPLOAD PICTURES ***
+
+   ['post', 'metaupload', function (rq, rs) {
+      // start/end/cancel
+      // {op: 'start|end|cancel', id: INTEGER, pro: UNDEFINED|PROVIDER,
+      //- For start:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|0 (this field is only present in the case of uploads from an import)}
+      //- For end:      {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
+      //- For cancel:   {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['formats'], 'eachOf', teishi.test.equal],
+         ['body.formats', b.formats, 'object'],
+         ['body.formats', b.formats, 'integer', 'each'],
+         ['body.formats', b.formats, {min: 1}, 'each', teishi.test.range]
+      ])) return;
+
+      astop (rs, [
+         [notify, {priority: 'important', type: 'unsupported formats', user: rq.user.username, formats: b.formats}],
+         [reply, rs, 200]
+      ]);
+   }],
 
    ['post', 'upload', function (rq, rs) {
 
@@ -2575,7 +2632,7 @@ var routes = [
             reply (rs, 403, {code: error.code || 500, error: error.body || error});
          }],
          // If there's already an import process ongoing for this provider, we return a 409.
-         [a.cond, [Redis, 'imp:g:' + rq.user.username], {'1': [reply, rs, 409]}],
+         [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'1': [reply, rs, 409]}],
          function (s) {
             s.id = Date.now ();
             a.seq (s, [
@@ -2822,7 +2879,7 @@ var routes = [
          }
       ], function (s, error) {
          a.stop (s, [
-            [H.log, rq.user.username, {a: 'imp', s: 'error', pro: 'google', id: s.id, op: 'list', error: error}],
+            [H.log, rq.user.username, {a: 'imp', s: 'listError', pro: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
@@ -2976,25 +3033,25 @@ var routes = [
             var importFile = function (s, index) {
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
+                  // If the import was cancelled, we interrupt the async chain to stop the process.
+                  [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'0': function () {}}],
                   function (s) {
                      // If we reached the end of the list, we're done.
-                     if (index === s.list.length) return check (function () {
-                        a.seq (s, [
-                           [Redis, 'del', 'imp:g:' + rq.user.username],
-                           [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'end'}]
-                           function (s) {
-                              var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
-                              sendmail (s, {
-                                 to1:     rq.user.username,
-                                 to2:     rq.user.email,
-                                 subject: email.subject,
-                                 message: email.message
-                              });
-                           }
-                        ]);
-                     });
+                     if (index === s.list.length) return a.seq (s, [
+                        [Redis, 'del', 'imp:g:' + rq.user.username],
+                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'end'}]
+                        function (s) {
+                           var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
+                           sendmail (s, {
+                              to1:     rq.user.username,
+                              to2:     rq.user.email,
+                              subject: email.subject,
+                              message: email.message
+                           });
+                        }
+                     ]);
 
-                     var file = s.list [index], Error, errorCb = function (code, error) {
+                     var file = s.list [index], Error, providerError = function (code, error) {
                         if (Error) return;
                         Error = true;
                         a.seq (s, [
@@ -3003,11 +3060,11 @@ var routes = [
                         ]);
                      }
 
-                     // We use https directly to stream the response body directly into a file.
+                     // We stream the response body directly into a file.
                      // https://developers.google.com/drive/api/v3/reference/files/export
                      https.request ({host: 'www.googleapis.com', path: '/drive/v3/files/' + file.id + '?alt=media', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
                         response.on ('error', function (error) {
-                           errorCb (0, error);
+                           providerError (0, error);
                         });
                         if (response.statusCode !== 200) {
                            response.setEncoding ('utf8');
@@ -3016,7 +3073,7 @@ var routes = [
                               response.body += buffer.toString ();
                            });
                            response.on ('end', function () {
-                              errorCb (response.statusCode, response.body);
+                              providerError (response.statusCode, response.body);
                            });
                            return;
                         }
@@ -3030,65 +3087,40 @@ var routes = [
                         response.pipe (wstream);
                         wstream.on ('finish', function () {
                            if (Error) return;
-                           // We proceed with the upload only if the import hasn't been cancelled.
-                           check (function () {
-                              hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
-                                 {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
-                                 {type: 'field', name: 'uid', value: parseInt (s.import.id)},
-                                 // Use oldest date, whether createdTime or updatedTime
-                                 {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
-                                 {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
-                                 {type: 'field', name: 'providerData', value: JSON.stringify ({
-                                    provider:     'google',
-                                    id:           file.id,
-                                    name:         file.originalFilename,
-                                    modifiedTime: file.modifiedTime,
-                                    path:         tempPath
-                                 })},
-                                 {type: 'field', name: 'csrf', value: s.csrf}
-                              ]}, code: '*', apres: function (S, RQ, RS, next) {
+                           // UPLOAD THE FILE
+                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
+                              {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
+                              {type: 'field', name: 'uid', value: parseInt (s.import.id)},
+                              // Use oldest date, whether createdTime or updatedTime
+                              {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
+                              {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
+                              {type: 'field', name: 'providerData', value: JSON.stringify ({
+                                 provider:     'google',
+                                 id:           file.id,
+                                 name:         file.originalFilename,
+                                 modifiedTime: file.modifiedTime,
+                                 path:         tempPath
+                              })},
+                              {type: 'field', name: 'csrf', value: s.csrf}
+                           ]}, code: '*', apres: function (S, RQ, RS, next) {
 
-                                 // TODO: check whether to invoke check, then error handlers
+                              // UNEXPECTED ERROR
+                              if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
 
-                                 // UNEXPECTED ERROR
-                                 if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
+                              // No more space, save error in import key and stop the process
+                              if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
 
-                                 // REPEATED FILE
-                                 // We don't invoke `check` because if the file was uploaded we want to tag it anyway.
-                                 if (RS.code === 409 && RS.body.error === 'repeated') return a.seq (s, [
-                                    // TODO: use same stack once a.fork doesn't copy the stack anymore
-                                    [function (S) {
-                                       a.seq ([
-                                          [a.fork, S.filesToUpload [file.id].concat ('Google Drive'), function (tag) {
-                                             return function (s) {
-                                                hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'tag', headers: {cookie: S.cookie}, body: {csrf: S.csrf, ids: [RS.body.id], tag: tag, fromImport: 'google'}, code: '*', apres: function (S, RQ, RS, next) {
-                                                   if (RS.code === 200) return s.next ();
-                                                   s.next (null, {error: {code: RS.code, body: RS.body}});
-                                                }});
-                                             }
-                                          }],
-                                          function (s) {
-                                             if (s.error) S.next (null, s.error);
-                                             else         S.next ();
-                                          }
-                                       ]);
-                                    }],
-                                    [importFile, index + 1]
-                                 ]);
+                              // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
+                              if (RS.code === 400) return a.seq (s, [
+                                 // Notify and keep on going
+                                 [notify, s, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],
+                                 [importFile, index + 1]
+                              ]);
 
-                                 // No more space, save error in import key and stop the process
-                                 if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
-
-                                 // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
-                                 if (RS.code === 400) return a.seq (s, [
-                                    [notify, s, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],
-                                    [importFile, index + 1]
-                                 ]);
-
-                                 // SUCCESSFUL UPLOAD
-                                 importFile (s, index + 1);
-                              }});
-                           }
+                              // SUCCESSFUL UPLOAD OR REPEATED IMAGE, KEEP ON GOING
+                              importFile (s, index + 1);
+                           }});
+                        }
                         });
                      }).on ('error', function (error) {
                         s.next (null, error);
@@ -3102,7 +3134,7 @@ var routes = [
          // If error happens before replying to the request, send it directly to the response.
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
-         // TODO: if 409 space, don't make it critical?
+            // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
             [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google'}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
@@ -3113,16 +3145,9 @@ var routes = [
                   message: email.message
                });
             },
-            function (s) {
-               redis.exists ('imp:g:' + rq.user.username, function (Error, exists) {
-                  if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
-                  // If key was deleted, process was cancelled. The process stops.
-                  if (! exists) return;
-                  redis.hset ('imp:g:' + rq.user.username, 'error', JSON.stringify (error), function (error) {
-                     if (error) return notify (s, {priority: 'critical', type: 'redis error', error: error});
-                  });
-               });
-            }
+            [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'1': function () {
+               redis.hset ('imp:g:' + rq.user.username, 'error', JSON.stringify (error));
+            }}]
          ]);
       });
    }],
