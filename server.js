@@ -642,39 +642,94 @@ H.detectFormat = function (s, metadata, vidFormat) {
    s.next (format);
 }
 
-H.getUploads = function (s, username, Status, n) {
+        //{id: INTEGER (also functions as start time), tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}
+        // return format: list: [...], keys: {}
+H.getUploads = function (s, username, filters, maxResults) {
    a.seq (s, [
       [Redis, 'lrange', 'ulog:' + username, 0, -1],
       function (s) {
-         var uploads = {};
-         dale.go (s.last, function (log) {
+         var uploads = {}, filters = filters || {}, completed = 0;
+         dale.stop (s.last, true, function (log) {
             if (log.a !== 'upl') return;
-            if (! uploads [log.id]) uploads [log.id] = {id: log.id};
-            var upload = uploads [log.id];
-            if (log.s === 'end') {
-               upload.status = 'done';
-               upload.end = log.t;
+
+            // We can filter out uploads by id or provider.
+            if (filters.id  && log.id  !== filters.id)  return;
+            if (filters.pro && log.pro !== filters.pro) return;
+
+            if (! uploads [log.id]) {
+               // If there are already enough results, don't add further results.
+               if (maxResults && dale.keys (uploads).length === maxResults) return;
+               uploads [log.id] = {id: log.id};
             }
-            else if (log.s === 'cancel') {
-               upload.status = 'cancelled';
+            var upload = uploads [log.id];
+            if (log.pro && ! upload.pro) upload.pro = log.pro;
+            if (log.s === 'end' || log.s === 'cancel') {
                upload.end = log.t;
+               upload.status = log.s === 'end' ? 'complete' : 'cancelled';
             }
             else if (log.s === 'start') {
                // If current upload has had no activity in over five minutes, we consider it stalled.
                if (Date.now () > 1000 * 60 * 5 + log.id) upload.status = 'stalled';
-               ['total', 'tooLarge', 'unsupported', 'alreadyImported'].map (function (key) {
+               // We only put the tags added on the `start` event, instead of using those on the `done` or `repeated` events.
+               ['total', 'tooLarge', 'unsupported', 'alreadyImported', 'tags'].map (function (key) {
                   if (log [key] !== undefined) upload [key] = log [key];
                });
+               completed++;
+               // If we completed enough uploads as required, stop the process.
+               if (maxResults && completed === maxResults) return true;
             }
             else if (log.s === 'ok') {
-               if (! upload.done) upload.done = 0;
-               upload.done++;
+               if (! upload.ok) upload.ok = 0;
+               upload.ok++;
+               if (! upload.lastPic) upload.lastPic = {id: log.id, deg: log.deg};
             }
-            else if (log.s === 'repeated') {
+            else if (log.s === 'repeated' || log.s === 'invalid' || log.s === 'tooLarge') {
+               if (! upload [log.s]) upload [log.s] = [];
+               upload [log.s].push (log.name);
+            }
+         });
+         s.next ({list: dale.go (uploads, function (v) {return v}), keys: dale.keys (uploads)});
+      }
+   ]);
+}
 
-         // return format: list: [...], keys: {}
+H.getImports = function (s, username, provider, maxResults) {
+   a.seq (s, [
+      [a.set, 'current', [Redis, 'hgetall', 'imp:' + {google: 'g', dropbox: 'd'} [provider] + ':' + username]],
+      [a.set, 'uploads', [H.getUploads, username, {pro: provider}, maxResults]],
+      function (s) {
+         if (! s.current) return s.next (s.uploads);
 
+         s.current = {
+            id:          parseInt (s.current.id),
+            status:      s.current.status,
+            fileCount:   parseInt (s.current.fileCount) || undefined,
+            folderCount: parseInt (s.current.fileCount) || undefined,
+            // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
+            error:       teishi.p (s.current.error) || s.current.error,
+            selection:   s.current.selection ? JSON.parse (selection) : undefined,
+            data:        s.current.data ? JSON.parse (data) : undefined
+         }
+         // Delete file data from import since it's not necessary in the client.
+         if (s.current.data) delete s.current.data.files;
 
+         var currentUpload = dale.stopNot (s.uploads.list, undefined, function (upload) {
+            if (upload.id === s.current.id) return upload;
+         });
+         // If current import has no upload, add it to the list.
+         if (! currentUpload) {
+            s.uploads.keys.unshift (s.current.id + '');
+            s.uploads.list.unshift (currentUpload);
+         }
+         // Otherwise, add some fields from the current upload to the first upload of the list (which is the most recent, therefore the current one)
+         else {
+            ['error', 'selection', 'data'].map (function (field) {
+               if (s.current [field] !== undefined) s.uploads.list [0].field = s.current.field;
+            });
+         }
+         s.next (s.uploads);
+      }
+   ]);
 }
 
 // *** OAUTH HELPERS ***
@@ -3006,7 +3061,7 @@ var routes = [
             s.ids = dale.keys (s.filesToUpload);
 
             // If we're here, there are files to be imported.
-            H.log (s, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge || undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
+            H.log (s, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
          },
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'status', 'uploading'],
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],

@@ -41,22 +41,26 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Refactor for upload & import
-      - Method to retrieve imports & uploads; ongoing/done, n (0 for all)
-      - Add & document endpoint for upload metadata. Validate that id exists and belongs to relevant.
-      - Remove unsupported formats endpoint.
-      - Refactor upload endpoint with new logs and with tag of repeated.
-      - Refactor account endpoint to aggregate data for uploads and imports, adding also the status flag (inferred statuses: `ongoing` or `stalled`)
-      - Server tests for upload
-         - If repeated picture with a different tag, use that tag on upload.
-         - start, cancel, end, etc.
-      - Refactor imports in client
-         - Use new data format.
-         - Add option to cancel import if it yields an error besides "try again".
-         - Note when a listing or upload has been cancelled with a snackbar.
-      - Refactor uploads in client:
-         - Block too large files in client.
-         - Use metadata events (start, cancel, end).
-      - Refactor docs & code with unified terminology for pic/vid: mfile?
+      - Server
+         - Add & document endpoint for upload metadata. Validate that id exists and belongs to relevant.
+         - Remove unsupported formats endpoint.
+         - Refactor upload endpoint with new logs and with tag of repeated.
+         - Refactor account endpoint to aggregate data for uploads and imports and document.
+         - Tests for upload
+            - If repeated picture with a different tag, use that tag on upload.
+            - start, cancel, end, etc.
+            - retrieve uploads
+      - Client
+         - Refactor imports
+            - Use new data format.
+            - Add option to cancel import if it yields an error besides "try again".
+            - Note when a listing or upload has been cancelled with a snackbar.
+         - Refactor uploads
+            - start is id; done is ok
+            - Block too large files in client.
+            - Use metadata events (start, cancel, end).
+
+   - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
 
    - [check bug fixed] When uploading, current upload is not duplicated also in recent uploads.
    - [check bug fixed] When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
@@ -737,16 +741,14 @@ All the routes below require an admin user to be logged in.
       - For folders selection: {t: INT, a: 'imp', s: 'selection',  pro: PROVIDER, id: INTEGER, folders: [ID, ...]}
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
+      - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
       - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
       - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
-      - For ok:             {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], name: STRING}
-      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, error: STRING|OBJECT}
-      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid', name: STRING, size: INTEGER} - This should be prevented by the client or the import process but we create an entry in case the API is used directly.
+      - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'upload',   fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], name: STRING (name of file being uploaded)}
+      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid',  name: STRING, error: STRING|OBJECT}
+      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'tooLarge', name: STRING, size: INTEGER} - This should be prevented by the client or the import process but we create an entry in case the API is used directly.
       - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           s: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
-
-   - For import:          {t: INT, a: 'imp', s: 'upload', pro: PROVIDER, list: {start: INTEGER, end: INTEGER, fileCount: INTEGER, folderCount: INTEGER, unsupported: {FORMAT: INTEGER, ...}}, upload: {start: INTEGER, end: INTEGER, selection: [ID, ...], done: INTEGER, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [...]|UNDEFINED}}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -764,7 +766,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERNAME (string): access token for google for USERNAME
 - oa:g:ref:USERNAME (string): refresh token for google for USERNAME
 
-- imp:PROVIDER:username (hash) information of current import operation from provider (`g` for google, `d` for dropbox). Has the shape {status: listing|ready|uploading|error, t: UID/INT, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: {ID: {...}, ...}, files: {ID: {...}, ...}}, unsupported: UNDEFINED|[STRING, ...]}
+- imp:PROVIDER:username (hash) information of current import operation from provider (`g` for google, `d` for dropbox). Has the shape {id: INTEGER, status: listing|ready|uploading|error, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: {ID: {...}, ...}, files: {ID: {...}, ...}}, unsupported: UNDEFINED|[STRING, ...]}
 
 - proc:vid (hash): list of ongoing non-mp4 to mp4 video conversions. key is the `id` of the video, value is the timestamp in milliseconds.
 
