@@ -649,6 +649,7 @@ H.getUploads = function (s, username, filters, maxResults) {
       [Redis, 'lrange', 'ulog:' + username, 0, -1],
       function (s) {
          var uploads = {}, filters = filters || {}, completed = 0;
+         if (filters.id) maxResults = 1;
          dale.stop (s.last, true, function (log) {
             if (log.a !== 'upl') return;
 
@@ -664,12 +665,13 @@ H.getUploads = function (s, username, filters, maxResults) {
             var upload = uploads [log.id];
             if (log.pro && ! upload.pro) upload.pro = log.pro;
             if (log.s === 'end' || log.s === 'cancel') {
+               delete upload.lastActivity;
                upload.end = log.t;
                upload.status = log.s === 'end' ? 'complete' : 'cancelled';
             }
             else if (log.s === 'start') {
-               // If current upload has had no activity in over five minutes, we consider it stalled.
-               if (Date.now () > 1000 * 60 * 5 + log.id) upload.status = 'stalled';
+               // If current upload has had no activity in over ten minutes, we consider it stalled.
+               if (! upload.status && Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) upload.status = 'stalled';
                // We only put the tags added on the `start` event, instead of using those on the `done` or `repeated` events.
                ['total', 'tooLarge', 'unsupported', 'alreadyImported', 'tags'].map (function (key) {
                   if (log [key] !== undefined) upload [key] = log [key];
@@ -679,11 +681,13 @@ H.getUploads = function (s, username, filters, maxResults) {
                if (maxResults && completed === maxResults) return true;
             }
             else if (log.s === 'ok') {
+               upload.lastActivity = log.t;
                if (! upload.ok) upload.ok = 0;
                upload.ok++;
                if (! upload.lastPic) upload.lastPic = {id: log.id, deg: log.deg};
             }
             else if (log.s === 'repeated' || log.s === 'invalid' || log.s === 'tooLarge') {
+               upload.lastActivity = log.t;
                if (! upload [log.s]) upload [log.s] = [];
                upload [log.s].push (log.name);
             }
@@ -1455,25 +1459,6 @@ var routes = [
       ]);
    }],
 
-   // *** REPORT UNSUPPORTED FORMATS ***
-
-   ['post', 'unsupportedFormats', function (rq, rs) {
-
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['keys of body', dale.keys (b), ['formats'], 'eachOf', teishi.test.equal],
-         ['body.formats', b.formats, 'object'],
-         ['body.formats', b.formats, 'integer', 'each'],
-         ['body.formats', b.formats, {min: 1}, 'each', teishi.test.range]
-      ])) return;
-
-      astop (rs, [
-         [notify, {priority: 'important', type: 'unsupported formats', user: rq.user.username, formats: b.formats}],
-         [reply, rs, 200]
-      ]);
-   }],
-
    // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES) ***
 
    ['get', 'original/:id', function (rq, rs) {
@@ -1536,24 +1521,53 @@ var routes = [
    // *** UPLOAD PICTURES ***
 
    ['post', 'metaupload', function (rq, rs) {
-      // start/end/cancel
-      // {op: 'start|end|cancel', id: INTEGER, pro: UNDEFINED|PROVIDER,
-      //- For start:    {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start',   total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|0 (this field is only present in the case of uploads from an import)}
-      //- For end:      {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
-      //- For cancel:   {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
 
-      var b = rq.body;
+      var b = rq.body, t = Date.now ();
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['formats'], 'eachOf', teishi.test.equal],
-         ['body.formats', b.formats, 'object'],
-         ['body.formats', b.formats, 'integer', 'each'],
-         ['body.formats', b.formats, {min: 1}, 'each', teishi.test.range]
+         ['keys of body', dale.keys (b), ['op', 'pro'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
+         ['body.op',  b.op,  ['start', 'end', 'cancel'],       'oneOf', teishi.test.equal],
+         ['body.pro', b.pro, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
+         b.op !== 'start' ? [] : [
+            ['tags', 'tooLarge', 'unsupported'].map (function (key) {
+               return [
+                  ['body.' + key, b [key], ['undefined', 'array'], 'oneOf'],
+                  ['body.' + key, b [key], 'string', 'each'],
+               ];
+            }),
+            ['body.total', b.total, 'integer'],
+            ['body.total', b.total, {min: 0}, teishi.test.range],
+            ['body.alreadyImported', b.alreadyImported, ['integer', 'undefined'], 'oneOf'],
+            b.alreadyImported === undefined ? [] : ['body.alreadyImported', b.alreadyImported, {min: 1}, teishi.test.range],
+         ],
       ])) return;
 
+      if (b.pro && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
+
+      var invalidTag = dale.go (b.tags, function (tag) {
+         tag = H.trim (tag);
+         if (['all', 'untagged'].indexOf (tag.toLowerCase ()) !== -1) return tag;
+         if (H.isYear (tag) || H.isGeo (tag)) return tag;
+      });
+      if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
+
+      if (b.op === 'start') b.id = t;
+
       astop (rs, [
-         [notify, {priority: 'important', type: 'unsupported formats', user: rq.user.username, formats: b.formats}],
-         [reply, rs, 200]
+         [H.getUploads, rq.user.username, {id: b.id}],
+         function (s) {
+            if (b.op === 'start' && s.last) return reply (rs, 409);
+            if (b.op !== 'start') {
+               if (! s.last) return reply (rs, 404);
+               if (s.last.status) return reply (rs, 409);
+            }
+            if (b.op === 'start') b.id = t;
+            b.a = 'upl';
+            H.log (s, b);
+         },
+         function (s) {
+            reply (rs, 200, {id: b.id});
+         }
       ]);
    }],
 
@@ -1561,15 +1575,14 @@ var routes = [
 
       if (! rq.data.fields)      return reply (rs, 400, {error: 'field'});
       if (! rq.data.files)       return reply (rs, 400, {error: 'file'});
-      if (! rq.data.fields.uid)  return reply (rs, 400, {error: 'uid'});
-      if (! rq.data.fields.uid.match (/^\d+$/)) return reply (rs, 400, {error: 'uid'});
-      rq.data.fields.uid = parseInt (rq.data.fields.uid);
-      if (rq.data.fields.uid > Date.now ()) return reply (rs, 400, {error: 'uid'});
+      if (! rq.data.fields.id)   return reply (rs, 400, {error: 'id'});
+      if (! rq.data.fields.id.match (/^\d+$/)) return reply (rs, 400, {error: 'id'});
+      rq.data.fields.id = parseInt (rq.data.fields.id);
 
       if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
 
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['uid', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
 
       if (! eq (dale.keys (rq.data.files),  ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
 
@@ -1582,7 +1595,7 @@ var routes = [
          if (H.isYear (tag) || H.isGeo (tag)) error = tag;
          return tag;
       });
-      if (error) return reply (rs, 400, {error: 'tag: ' + error});
+      if (error) return reply (rs, 400, {error: 'invalid tag: ' + error});
 
       if (rq.data.fields.providerData !== undefined) {
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
@@ -1602,12 +1615,7 @@ var routes = [
          dateup: Date.now (),
       };
 
-      var vidFormats = {
-         'video/mp4' :      'mp4',
-         'video/quicktime': 'mov',
-         'video/3gpp':      '3gp',
-         'video/x-msvideo': 'avi'
-      }
+      var vidFormats = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/x-msvideo': 'avi'};
 
       if (vidFormats [mime.getType (rq.data.files.pic)]) {
          var vidFormat = vidFormats [mime.getType (rq.data.files.pic)];
@@ -1628,7 +1636,7 @@ var routes = [
             var unlink = a.make (fs.unlink);
             // We clean up the files from the FS, whether they're there or not. If they are not, the errors will be ignored.
             a.seq ([
-               [H.log, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}}],
+               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}}],
                [unlink, newpath],
                ! s.t200 ? [] : [unlink, Path.join (Path.dirname (newpath), s.t200)],
                ! s.t900 ? [] : [unlink, Path.join (Path.dirname (newpath), s.t900)],
@@ -1637,10 +1645,16 @@ var routes = [
       }
 
       astop (rs, [
+         [H.getUploads, rq.user.username, {id: rq.data.fields.id}],
+         function (s) {
+            if (! s.last)      return reply (rs, 404);
+            if (s.last.status) return reply (rs, 409);
+            s.next ();
+         },
          [a.set, 'byfs', [a.make (fs.stat), path]],
          function (s) {
             if (s.byfs.size > 536870888) {
-               H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'tooLarge', name: name}});
+               H.log (a.creat (), rq.user.username, {a: 'upl', id: rq.data.fields.id, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'tooLarge', name: name}});
                return reply (rs, 400, {error: 'tooLarge', filename: name});
             }
             s.next ();
@@ -1655,7 +1669,7 @@ var routes = [
             if (used >= limit) return reply (rs, 409, {error: 'capacity'});
             s.next ();
          },
-         [perfTrack, 'capacity'],
+         [perfTrack, 'initial'],
          stopFormat ([H.getMetadata, path, pic.vid]),
          function (s) {
             s.rawMetadata = s.last;
@@ -1673,11 +1687,11 @@ var routes = [
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
                if (error) {
-                  H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
+                  H.log (a.creat (), rq.user.username, {a: 'upl', id: rq.data.fields.id, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
                   return reply (rs, 400, {error: 'Invalid image', data: error, filename: name});
                }
                if (! s.size.w || ! s.size.h) {
-                  H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
+                  H.log (a.creat (), rq.user.username, {a: 'upl', id: rq.data.fields.id, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
                   return reply (rs, 400, {error: 'Invalid image size', metadata: metadata, filename: name});
                }
 
@@ -1704,7 +1718,7 @@ var routes = [
                   if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
                });
                if (! s.size.w || ! s.size.h) {
-                  H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
+                  H.log (a.creat (), rq.user.username, {a: 'upl', id: rq.data.fields.id, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'invalid', name: name}});
                   return reply (rs, 400, {error: 'Invalid video size', metadata: metadata, filename: name});
                }
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
@@ -1737,7 +1751,10 @@ var routes = [
          [a.cond, [a.get, Redis, 'sismember', 'upic:' + rq.user.username, '@hash'], {'1': [
             [a.get, Redis, 'hget', 'upic:rev:' + rq.user.username, '@hash'],
             function (s) {
-               H.log (a.creat (), rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider, error: {type: 'repeated', name: name}});
+               s.id = s.last;
+               H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, op: 'repeated', fileId: s.id, tags: tags.length ? tags : undefined, pro: (rq.data.fields.providerData || {}).provider, name: name});
+            },
+            function (s) {
                reply (rs, 409, {error: 'repeated', id: s.last});
             }
          ]}],
@@ -1889,7 +1906,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', uid: rq.data.fields.uid, id: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg, pro: (rq.data.fields.providerData || {}).provider});
+            H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'upload', fileId: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2660,7 +2677,7 @@ var routes = [
          multi.exec (function (error) {
             if (error) return reply (rs, 500, {error: error});
             reply (rs, 302, {}, {location: CONFIG.domain + '#/import/success/google'});
-            H.log (a.creat (), rq.user.username, {a: 'imp', s: 'grant', pro: 'google'});
+            H.log (a.creat (), rq.user.username, {a: 'imp', op: 'grant', pro: 'google'});
          });
       }});
    }],
@@ -2670,7 +2687,7 @@ var routes = [
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
             if (error.errorCode === 1) return a.seq (s, [
-               [H.log, rq.user.username, {a: 'imp', s: 'request', pro: 'google'}],
+               [H.log, rq.user.username, {a: 'imp', op: 'request', pro: 'google'}],
                function (s) {
                   reply (rs, 200, {redirect: [
                      'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
@@ -2692,7 +2709,7 @@ var routes = [
             s.id = Date.now ();
             a.seq (s, [
                [Redis, 'hmset', 'imp:g:' + rq.user.username, {id: id, status: 'listing'}],
-               [H.log, rq.user.username, {a: 'imp', s: 'listStart', pro: 'google', id: id}],
+               [H.log, rq.user.username, {a: 'imp', op: 'listStart', pro: 'google', id: id}],
                function (s) {
                   reply (rs, 200);
                   s.next ();
@@ -2745,7 +2762,7 @@ var routes = [
                               if (! s.last) return;
                               Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'fileCount', RS.body.files.length);
                            },
-                           [H.log, rq.user.username, {a: 'imp', s: 'filePage', pro: 'google', id: s.id, n: RS.body.files.length}],
+                           [H.log, rq.user.username, {a: 'imp', op: 'filePage', pro: 'google', id: s.id, n: RS.body.files.length}],
                            function (s) {
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
                                  file.size = parseInt (file.size);
@@ -2842,7 +2859,7 @@ var routes = [
                               if (! s.last) return;
                               Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'folderCount', batch.length);
                            },
-                           [H.log, rq.user.username, {a: 'imp', s: 'folderPage', pro: 'google', id: s.id, n: batch.length}],
+                           [H.log, rq.user.username, {a: 'imp', op: 'folderPage', pro: 'google', id: s.id, n: batch.length}],
                            function (s) {
                               if (parentsToRetrieve.length === 0) return s.next ();
 
@@ -2918,7 +2935,7 @@ var routes = [
                         if (! s.last) return;
                         Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', unsupported: JSON.stringify (unsupported), data: JSON.stringify (data)});
                      },
-                     [H.log, rq.user.username, {a: 'imp', s: 'listEnd', pro: 'google', id: s.id, data: data}]
+                     [H.log, rq.user.username, {a: 'imp', op: 'listEnd', pro: 'google', id: s.id, data: data}]
                      function (s) {
                         var email = CONFIG.etemplates.importList ('Google', rq.user.username);
                         sendmail (s, {
@@ -2934,7 +2951,7 @@ var routes = [
          }
       ], function (s, error) {
          a.stop (s, [
-            [H.log, rq.user.username, {a: 'imp', s: 'listError', pro: 'google', id: s.id, error: error}],
+            [H.log, rq.user.username, {a: 'imp', op: 'listError', pro: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
@@ -2964,8 +2981,8 @@ var routes = [
             if (! s.last) return reply (rs, 200);
             a.seq (s, [
                s.last.status === 'uploading' ?
-                  [H.log, rq.user.username, {a: 'upl', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}] :
-                  [H.log, rq.user.username, {a: 'imp', s: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}],
+                  [H.log, rq.user.username, {a: 'upl', op: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}] :
+                  [H.log, rq.user.username, {a: 'imp', op: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}],
                [Redis, 'del', 'imp:g:' + rq.user.username]
             ]);
          }
@@ -2998,7 +3015,7 @@ var routes = [
 
             Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
          },
-         [H.log, rq.user.username, {a: 'imp', s: 'selection', pro: 'google', id: parseInt (s.last.id), folders: b.ids}],
+         [H.log, rq.user.username, {a: 'imp', op: 'selection', pro: 'google', id: parseInt (s.last.id), folders: b.ids}],
          function (s) {
             reply (rs, 200);
          }
@@ -3052,8 +3069,8 @@ var routes = [
             // If there are no files to import, we delete the import key and set the user logs.
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
-               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge || undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}]
-               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'end'}]
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge || undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}]
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'end'}]
                [reply, rs, 200]
             ]);
 
@@ -3061,7 +3078,7 @@ var routes = [
             s.ids = dale.keys (s.filesToUpload);
 
             // If we're here, there are files to be imported.
-            H.log (s, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
+            H.log (s, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
          },
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'status', 'uploading'],
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
@@ -3094,7 +3111,7 @@ var routes = [
                      // If we reached the end of the list, we're done.
                      if (index === s.list.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
-                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', s: 'end'}]
+                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'end'}]
                         function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
@@ -3110,7 +3127,7 @@ var routes = [
                         if (Error) return;
                         Error = true;
                         a.seq (s, [
-                           [H.log, {a: 'upl', id: parseInt (s.upload.id), pro: 'google', s: 'providerError', error: {code: code, error: error}}],
+                           [H.log, {a: 'upl', id: parseInt (s.upload.id), pro: 'google', op: 'providerError', error: {code: code, error: error}}],
                            [importFile, index + 1]
                         ]);
                      }

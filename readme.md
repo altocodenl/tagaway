@@ -42,13 +42,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Import/upload:
    - Refactor for upload & import
       - Server
-         - Add & document endpoint for upload metadata. Validate that id exists and belongs to relevant.
-         - Remove unsupported formats endpoint.
          - Refactor upload endpoint with new logs and with tag of repeated.
          - Refactor account endpoint to aggregate data for uploads and imports and document.
-         - Tests for upload
-            - If repeated picture with a different tag, use that tag on upload.
-            - start, cancel, end, etc.
+         - Tests
+            - metadata upload
+            - upload modifications
+               - uid -> id
+               - if repeated picture with a different tag, use that tag on upload.
             - retrieve uploads
       - Client
          - Refactor imports
@@ -56,6 +56,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
             - Add option to cancel import if it yields an error besides "try again".
             - Note when a listing or upload has been cancelled with a snackbar.
          - Refactor uploads
+            - Remove unsupported formats.
             - start is id; done is ok
             - Block too large files in client.
             - Use metadata events (start, cancel, end).
@@ -398,10 +399,6 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be an object of the form `{message: STRING}` (otherwise 400).
    - If successful, returns a 200.
 
-`POST /unsupportedFormats`
-   - Body must be an object of the form `{formats: {FORMAT1: INTEGER, ...}}` (otherwise 400).
-   - If successful, returns a 200.
-
 - `GET /pic/ID`
    - Pic must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
@@ -423,17 +420,28 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
+- `POST /metaupload`
+   - Body can have one of three forms:
+      - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
+      - `{op: 'end',    id: INTEGER}`
+      - `{op: 'cancel', id: INTEGER}`
+   - The body can contain a field `pro` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - If an `id` is provided in the case of `end` or `cancel`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
+   - In the case of `end` or `cancel`, if the existing upload already has a status, the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
+   - If successful, the endpoint returns a body of the form `{id: INTEGER}`. In the case of a `start` operation, this id should be used for an ulterior `end` or `cancel`.
+
 - `POST /upload`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
    - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
-   - Must contain a field `uid` with an upload id (otherwise, 400 with body `{error: 'uid'}`. The `uid` groups different uploaded files into an upload unit, for UI purposes. The `uid` should be a timestamp in milliseconds and should not be in the future.
+   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should not be ended, cancelled or stalled; if it is, a 409 is returned.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
-   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'tag: TAGNAME'}`).
+   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
    - If the same file exists for that user, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
@@ -633,13 +641,12 @@ All the routes below require an admin user to be logged in.
    - ms-query:  total ms for successful requests for POST /query
    - ms-share:  total ms for successful requests for POST /share
    - ms-geo:    total ms for successful requests for POST /geo
-   - ms-upload-hash:      total ms for hash check in POST /upload
-   - ms-upload-capacity:  total ms for capacity check in POST /upload
+   - ms-upload-initial:  total ms for initial checks in POST /upload
    - ms-upload-format:    total ms for format check in POST /upload
+   - ms-upload-hash:      total ms for hash check in POST /upload
    - ms-upload-fs:        total ms for FS operations in POST /upload
    - ms-upload-resize200: total ms for 200 resize operation in POST /upload
    - ms-upload-resize900: total ms for 900 resize operation in POST /upload
-   - ms-upload-s3:        total ms for S3 upload in POST /upload (no longer in use after S3 uploads are done in the background)
    - ms-upload-db:        total ms for info storage & DB processing in POST /upload
    - ms-video-convert:    total ms for non-mp4 to mp4 video conversion
    - ms-video-convert:FORMAT:  total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
@@ -730,25 +737,25 @@ All the routes below require an admin user to be logged in.
    - For dismiss:         {t: INT, a: 'dis', op: 'geotagging|selection'}
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
    - Import:
-      - For oauth request:     {t: INT, a: 'imp', s: 'request',    pro: PROVIDER}
-      - For oauth grant:       {t: INT, a: 'imp', s: 'grant',      pro: PROVIDER}
-      - For start listing:     {t: INT, a: 'imp', s: 'listStart',  pro: PROVIDER, id: INTEGER}
-      - For file page:         {t: INT, a: 'imp', s: 'filePage',   pro: PROVIDER, id: INTEGER, n: INTEGER}
-      - For folder page:       {t: INT, a: 'imp', s: 'folderPage', pro: PROVIDER, id: INTEGER, n: INTEGER}
-      - For listing ended:     {t: INT, a: 'imp', s: 'listEnd',    pro: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
-      - For cancel:            {t: INT, a: 'imp', s: 'cancel',     pro: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
-      - For listing errored:   {t: INT, a: 'imp', s: 'listError',  pro: PROVIDER, id: INTEGER, error: STRING|OBJECT}
-      - For folders selection: {t: INT, a: 'imp', s: 'selection',  pro: PROVIDER, id: INTEGER, folders: [ID, ...]}
+      - For oauth request:     {t: INT, a: 'imp', op: 'request',    pro: PROVIDER}
+      - For oauth grant:       {t: INT, a: 'imp', op: 'grant',      pro: PROVIDER}
+      - For start listing:     {t: INT, a: 'imp', op: 'listStart',  pro: PROVIDER, id: INTEGER}
+      - For file page:         {t: INT, a: 'imp', op: 'filePage',   pro: PROVIDER, id: INTEGER, n: INTEGER}
+      - For folder page:       {t: INT, a: 'imp', op: 'folderPage', pro: PROVIDER, id: INTEGER, n: INTEGER}
+      - For listing ended:     {t: INT, a: 'imp', op: 'listEnd',    pro: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
+      - For cancel:            {t: INT, a: 'imp', op: 'cancel',     pro: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
+      - For listing errored:   {t: INT, a: 'imp', op: 'listError',  pro: PROVIDER, id: INTEGER, error: STRING|OBJECT}
+      - For folders selection: {t: INT, a: 'imp', op: 'selection',  pro: PROVIDER, id: INTEGER, folders: [ID, ...]}
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
-      - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'end'}
-      - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'cancel'}
-      - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'upload',   fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], name: STRING (name of file being uploaded)}
-      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'invalid',  name: STRING, error: STRING|OBJECT}
-      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, s: 'tooLarge', name: STRING, size: INTEGER} - This should be prevented by the client or the import process but we create an entry in case the API is used directly.
-      - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           s: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
+      - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
+      - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'end'}
+      - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'cancel'}
+      - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'upload',   fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], name: STRING (name of file being uploaded)}
+      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'invalid',  name: STRING, error: STRING|OBJECT}
+      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'tooLarge', name: STRING, size: INTEGER} - This should be prevented by the client or the import process but we create an entry in case the API is used directly.
+      - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           op: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
