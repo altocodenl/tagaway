@@ -42,14 +42,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Import/upload:
    - Refactor for upload & import
       - Server
-         - Refactor upload endpoint with new logs and with tag of repeated.
-         - Refactor account endpoint to aggregate data for uploads and imports and document.
+         - Separate endpoints for upload & import, away from account, document (also change in account).
          - Tests
             - metadata upload
             - upload modifications
                - uid -> id
                - if repeated picture with a different tag, use that tag on upload.
-            - retrieve uploads
+            - retrieve uploads from separate endpoint
       - Client
          - Refactor imports
             - Use new data format.
@@ -67,7 +66,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - [check bug fixed] When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
    - [check bug fixed] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
 
-   - Separate endpoints for upload & import, away from account.
    - Heartbeat:
       - Modify upload metadata endpoint, add tests.
       - Use special key with expiry to mark this directly.
@@ -752,9 +750,9 @@ All the routes below require an admin user to be logged in.
       - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'end'}
       - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'cancel'}
       - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'upload',   fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], name: STRING (name of file being uploaded)}
-      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'invalid',  name: STRING, error: STRING|OBJECT}
-      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'tooLarge', name: STRING, size: INTEGER} - This should be prevented by the client or the import process but we create an entry in case the API is used directly.
+      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
+      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'invalid',  filename: STRING, error: STRING|OBJECT}
+      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'tooLarge', filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
       - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           op: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
 
 - stat:...: statistics
