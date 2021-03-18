@@ -1,5 +1,3 @@
-if (process.argv [2]) return console.log ('Tests cannot only be run locally.');
-
 var CONFIG = require ('./config.js');
 var dale   = require ('dale');
 var teishi = require ('teishi');
@@ -7,6 +5,10 @@ var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
 var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
+
+var skipS3 = dale.stopNot (process.argv, true, function (arg) {
+   return arg === 'skipS3';
+}) || false;
 
 var userPrefix = 'user' + Math.random ();
 
@@ -17,6 +19,7 @@ var U = [
 
 var PICS = 'test/';
 
+// TODO: remove
 var uid = Date.now ();
 
 var H = {};
@@ -310,7 +313,8 @@ var outro = [
    }],
    ['login with deleted credentials', 'post', 'auth/login', {}, U [0], 403],
    ['get public stats at the end', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
+      if (skipS3 && ! eq (rs.body, {byfs: 0, bys3: rs.body.bys3, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
+      else if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})) return clog ('Invalid public stats.');
       return true;
    }],
 ];
@@ -362,29 +366,34 @@ var main = [
    ['upload invalid payload #3', 'post', 'upload', {}, [], 400],
    ['upload invalid payload #4', 'post', 'upload', {}, {}, 400],
    ['upload invalid payload #5', 'post', 'upload', {}, {file: {}}, 400],
-   // upload invalid video
-   ['upload video #1', 'post', 'upload', {}, {multipart: [
+   ['start upload', 'post', 'metaupload', {}, {op: 'start', tags: ['video'], total: 3}, 200, function (s, rq, rs) {
+      if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
+      if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
+      s.uid1 = rs.body.id;
+      return true;
+   }],
+   ['upload video #1', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
-      {type: 'field', name: 'uid', value: uid},
+      {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
-   ]}, 200, function (s, rq, rs) {
+   ]}}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
       s.uploadIds = [rs.body.id];
       return true;
    }],
-   ['upload video #2', 'post', 'upload', {}, {multipart: [
+   ['upload video #2', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
-      {type: 'field', name: 'uid', value: uid},
+      {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'bach.mp4').mtime.getTime ()}
-   ]}, 200, function (s, rq, rs) {
+   ]}}, 200, function (s, rq, rs) {
       s.uploadIds [1] = rs.body.id;
       return true;
    }],
-   ['upload repeated video', 'post', 'upload', {}, {multipart: [
+   ['upload repeated video', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
-      {type: 'field', name: 'uid', value: uid},
+      {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
-   ]}, 409, function (s, rq, rs, next) {
+   ]}}, 409, function (s, rq, rs, next) {
       if (rs.body.error !== 'repeated') return clog ('Invalid error', rs.body);
       if (rs.body.id    !== s.uploadIds [1]) return clog ('Invalid id', rs.body);
       return true;
@@ -557,10 +566,11 @@ var main = [
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}, 200, function (s, rq, rs, next) {
       // Wait for S3 to delete the videos uploaded before and the image just uploaded
-      setTimeout (next, 8000);
+      setTimeout (next, skipS3 ? 0 : 8000);
    }],
    ['check usage after uploading small picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, cb) {
       if (rs.body.usage.fsused !== 3370) return clog ('Invalid FS usage.');
+      if (skipS3) return true;
       if (rs.body.usage.s3used === 3402) return true;
       setTimeout (function () {
          if (rs.body.usage.s3used !== 3402) return cb ('Invalid S3 usage.');
@@ -617,6 +627,7 @@ var main = [
    ]}, 200],
    ['check usage after uploading medium picture', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       if (rs.body.usage.fsused !== 3370 + 22644 + 13194) return clog ('Invalid FS usage.');
+      if (skipS3) return true;
       if (rs.body.usage.s3used !== 0 && rs.body.usage.s3used !== 3402) return clog ('Invalid S3 usage.');
       // Wait for S3
       setTimeout (next, 5000);
@@ -634,6 +645,7 @@ var main = [
    }],
    ['check usage after uploading medium picture (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, cb) {
       if (rs.body.usage.fsused !== 3370 + 22644 + 13194) return clog ('Invalid FS usage.');
+      if (skipS3) return true;
       if (rs.body.usage.s3used === 3402 + 22676)         return true;
       setTimeout (function () {
          if (rs.body.usage.s3used !== 3402 + 22676) return cb ('Invalid S3 usage.');
@@ -893,10 +905,11 @@ var main = [
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 4, dunkerque: 1, 'g::FR': 1, beach: 1, 'g::Dunkerque': 1})) return clog ('Invalid tags after geotagging enabled.');
       // Wait for S3
-      setTimeout (next, 6000);
+      setTimeout (next, skipS3 ? 0 : 6000);
    }],
    ['get nonexisting picture from S3', 'get', 'original/foobar', {}, '', 404],
    dale.go (dale.times (5, 0), function (k) {
+      if (skipS3) return [];
       return {tag: 'get original pic from S3', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
          var original = fs.readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
@@ -1604,17 +1617,20 @@ var main = [
 
       if (error) return clog (['Invalid uid, start or end', 'Invalid upload data'] [error [0]], error [1], error [2] || '');
       // Wait for S3
-      setTimeout (next, 3000);
+      setTimeout (next, skipS3 ? 0 : 3000);
    }],
    ['get account at the end of the test cycle (wait for S3)', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-      if (eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return true;
+      if (skipS3 && ! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: rs.body.s3used})) return true;
+      else if (eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return true;
+      if (skipS3) return true;
       setTimeout (function () {
          if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return next ('Invalid usage field.');
          next ();
       }, 2000);
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
+      if (skipS3 && ! eq (rs.body, {byfs: 0, bys3: rs.body.bys3, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
+      else if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
       return true;
    }],
    // TODO: add admin/stats test

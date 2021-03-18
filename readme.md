@@ -42,23 +42,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Import/upload:
    - Refactor for upload & import
       - Server
-         - Separate endpoints for upload & import, away from account, document (also change in account).
          - Tests
             - metadata upload
             - upload modifications
                - uid -> id
                - if repeated picture with a different tag, use that tag on upload.
             - retrieve uploads from separate endpoint
+            - different logs in userlog
       - Client
-         - Refactor imports
-            - Use new data format.
-            - Add option to cancel import if it yields an error besides "try again".
-            - Note when a listing or upload has been cancelled with a snackbar.
          - Refactor uploads
             - Remove unsupported formats.
             - start is id; done is ok
             - Block too large files in client.
             - Use metadata events (start, cancel, end).
+         - Refactor imports
+            - Use new data format.
+            - Add option to cancel import if it yields an error besides "try again".
+            - Note when a listing or upload has been cancelled with a snackbar.
 
    - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
 
@@ -517,9 +517,14 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If an operation is ongoing while the request is being made, the server will reply with a 409 code. Otherwise it will reply with a 200 code.
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
+`GET /uploads`
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}`.
+
+`GET /imports/PROVIDER`
+   - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDFEINED, selection: UNDEFINED|[ID, ...], data: ...}`.
+
 `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED, uploads: [{uid: INTEGER, tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}, ...], imports: [{pro: google|dropbox, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, providerErrors: [{code: INTEGER, error: OBJECT, file: OBJECT}]|UNDEFINED}, ...]}`.
-   - The number of `uploads` and `imports` objects are restricted to 10.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
 
 `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -749,11 +754,12 @@ All the routes below require an admin user to be logged in.
       - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
       - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'end'}
       - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'cancel'}
-      - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'upload',   fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
       - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
       - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'invalid',  filename: STRING, error: STRING|OBJECT}
       - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'tooLarge', filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
       - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           op: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
+      - For error:          {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           op: 'error',         error: STRING|OBJECT} - Note: this should only happen if there's no further space in the user account.
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow

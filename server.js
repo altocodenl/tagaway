@@ -663,6 +663,7 @@ H.getUploads = function (s, username, filters, maxResults) {
          var uploads = {}, filters = filters || {}, completed = 0;
          if (filters.id) maxResults = 1;
          dale.stop (s.last, true, function (log) {
+            log = JSON.parse (log);
             if (log.a !== 'upl') return;
 
             // We can filter out uploads by id or provider.
@@ -677,14 +678,18 @@ H.getUploads = function (s, username, filters, maxResults) {
             }
             var upload = uploads [log.id];
             if (log.pro && ! upload.pro) upload.pro = log.pro;
-            if (log.s === 'end' || log.s === 'cancel') {
+            if (log.s === 'end' || log.s === 'cancel' || log.s === 'error') {
                delete upload.lastActivity;
                upload.end = log.t;
-               upload.status = log.s === 'end' ? 'complete' : 'cancelled';
+               upload.status = {end: 'complete', cancel: 'cancelled', error: 'errored'} [log.s];
             }
             else if (log.s === 'start') {
                // If current upload has had no activity in over ten minutes, we consider it stalled.
-               if (! upload.status && Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) upload.status = 'stalled';
+               if (! upload.status) {
+                  if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) upload.status = 'stalled';
+                  else                                                                upload.status = 'ongoing';
+               }
+
                // We only put the tags added on the `start` event, instead of using those on the `done` or `repeated` events.
                ['total', 'tooLarge', 'unsupported', 'alreadyImported', 'tags'].map (function (key) {
                   if (log [key] !== undefined) upload [key] = log [key];
@@ -705,10 +710,10 @@ H.getUploads = function (s, username, filters, maxResults) {
                upload [log.s].push (log.filename);
             }
          });
-         s.next ({list: dale.go (uploads, function (v) {return v}).sort (function (a, b) {
+         s.next (dale.go (uploads, function (v) {return v}).sort (function (a, b) {
             // We sort uploads by their end date. If they don't have an end date, they go to the top of the list.
             return (b.end || Infinity) - (a.end || Infinity);
-         }), keys: dale.keys (uploads)});
+         }));
       }
    ]);
 }
@@ -738,10 +743,7 @@ H.getImports = function (s, username, provider, maxResults) {
             if (upload.id === s.current.id) return upload;
          });
          // If current import has no upload, add it to the list in the first position.
-         if (! currentUpload) {
-            s.uploads.keys.unshift (s.current.id + '');
-            s.uploads.list.unshift (s.current);
-         }
+         if (! currentUpload) s.uploads.unshift (s.current);
          // Otherwise, add the error field if it exists (no other fields are relevant if the upload is already ongoing)
          else {
             if (s.current.error) currentUpload.error = s.current.error;
@@ -1559,7 +1561,7 @@ var routes = [
 
       if (b.pro && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
 
-      var invalidTag = dale.go (b.tags, function (tag) {
+      var invalidTag = dale.stopNot (b.tags, undefined, function (tag) {
          tag = H.trim (tag);
          if (['all', 'untagged'].indexOf (tag.toLowerCase ()) !== -1) return tag;
          if (H.isYear (tag) || H.isGeo (tag)) return tag;
@@ -1571,14 +1573,14 @@ var routes = [
       astop (rs, [
          [H.getUploads, rq.user.username, {id: b.id}],
          function (s) {
-            if (b.op === 'start' && s.last) return reply (rs, 409);
+            if (b.op === 'start' && s.last.length) return reply (rs, 409);
             if (b.op !== 'start') {
-               if (! s.last) return reply (rs, 404);
-               if (s.last.status) return reply (rs, 409);
+               if (! s.last.length)   return reply (rs, 404);
+               if (s.last [0].status) return reply (rs, 409);
             }
             if (b.op === 'start') b.id = t;
             b.a = 'upl';
-            H.log (s, b);
+            H.log (s, rq.user.username, b);
          },
          function (s) {
             reply (rs, 200, {id: b.id});
@@ -1646,7 +1648,7 @@ var routes = [
       }
 
       // input can be either an async sequence (array) or an error per se (object)
-      var invalidHandler = function (s, input) {
+      var invalidHandler = function (input) {
          var cbError = function (error) {
             astop (rs, [
                [H.unlink, newpath, true],
@@ -1657,7 +1659,7 @@ var routes = [
             ]);
          }
          // If input is an async sequence, we return another async sequence
-         if (type (commandOrError) === 'array') return [a.stop, command, function (s, error) {
+         if (type (input) === 'array') return [a.stop, input, function (s, error) {
             cbError (error);
          }];
          // Otherwise, we invoke cbError with the error directly
@@ -1667,8 +1669,8 @@ var routes = [
       astop (rs, [
          [H.getUploads, rq.user.username, {id: rq.data.fields.id}],
          function (s) {
-            if (! s.last)      return reply (rs, 404);
-            if (s.last.status) return reply (rs, 409);
+            if (! s.last.length)   return reply (rs, 404);
+            if (s.last [0].status) return reply (rs, 409);
             s.next ();
          },
          [a.set, 'byfs', [a.make (fs.stat), path]],
@@ -1686,7 +1688,10 @@ var routes = [
             // TODO: remove
             // Temporarily override limit for admins until we roll out paid accounts.
             if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
-            if (used >= limit) return reply (rs, 409, {error: 'capacity'});
+            if (used >= limit) return a.seq (s, [
+               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'error', error: 'No more space in your account.'}],
+               [reply, rs, 409, {error: 'capacity'}]
+            ]);
             s.next ();
          },
          [perfTrack, 'initial'],
@@ -1929,7 +1934,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'upload', fileId: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
+            H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'ok', fileId: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2486,13 +2491,23 @@ var routes = [
       ]);
    }],
 
-   //{id: INTEGER (also functions as start time), tags: [...]|UNDEFINED, start: INTEGER, end: INTEGER, done: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}
-   // return format: list: [...], keys: {}
    ['get', 'uploads', function (rq, rs) {
+      astop (rs, [
+         [H.getUploads, rq.user.username, {pro: null}, 20],
+         function (s) {
+            reply (rs, 200, s.last);
+         }
+      ]);
    }],
 
-   //upload or {id: INTEGER (also functions as start time), status: STRING, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: ..., data: ...}
-   ['get', 'imports', function (rq, rs) {
+   ['get', 'imports/:provider', function (rq, rs) {
+      if (['google', 'dropbox'].indexOf (rq.data.params.provider) === -1) return reply (rs, 400);
+      astop (rs, [
+         [H.getImports, rq.user.username, rq.data.params.provider, 20],
+         function (s) {
+            reply (rs, 200, s.last);
+         }
+      ]);
    }],
 
    // *** DISMISS SUGGESTIONS ***
