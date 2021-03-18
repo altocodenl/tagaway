@@ -323,7 +323,7 @@ H.thumbPic = function (s, invalidHandler, path, thumbSize, pic, alwaysMakeThumb,
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         a.seq (s, invalidHandler ([k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
+         a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -358,7 +358,7 @@ H.thumbVid = function (s, invalidHandler, path) {
    }
    a.stop (s, [
       [
-         invalidHandler ([k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim.w + 'x' + t200dim.h, Path.join (Path.dirname (path), s.t200 + '.png')]),
+         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim.w + 'x' + t200dim.h, Path.join (Path.dirname (path), s.t200 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
          function (s) {
@@ -367,7 +367,7 @@ H.thumbVid = function (s, invalidHandler, path) {
          },
       ],
       ! s.t900 ? [] : [
-         invalidHandler ([k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim.w + 'x' + t900dim.h, Path.join (Path.dirname (path), s.t900 + '.png')]),
+         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim.w + 'x' + t900dim.h, Path.join (Path.dirname (path), s.t900 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
          function (s) {
@@ -678,12 +678,11 @@ H.getUploads = function (s, username, filters, maxResults) {
             }
             var upload = uploads [log.id];
             if (log.pro && ! upload.pro) upload.pro = log.pro;
-            if (log.s === 'end' || log.s === 'cancel' || log.s === 'error') {
-               delete upload.lastActivity;
+            if (log.op === 'finish' || log.op === 'cancel' || log.op === 'error') {
                upload.end = log.t;
-               upload.status = {end: 'complete', cancel: 'cancelled', error: 'errored'} [log.s];
+               upload.status = {finish: 'finished', cancel: 'cancelled', error: 'errored'} [log.op];
             }
-            else if (log.s === 'start') {
+            else if (log.op === 'start') {
                // If current upload has had no activity in over ten minutes, we consider it stalled.
                if (! upload.status) {
                   if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) upload.status = 'stalled';
@@ -698,19 +697,19 @@ H.getUploads = function (s, username, filters, maxResults) {
                // If we completed enough uploads as required, stop the process.
                if (maxResults && completed === maxResults) return true;
             }
-            else if (log.s === 'ok') {
+            else if (log.op === 'ok') {
                upload.lastActivity = log.t;
                if (! upload.ok) upload.ok = 0;
                upload.ok++;
-               if (! upload.lastPic) upload.lastPic = {id: log.id, deg: log.deg};
+               if (! upload.lastPic) upload.lastPic = {id: log.fileId, deg: log.deg};
             }
-            else if (log.s === 'repeated' || log.s === 'invalid' || log.s === 'tooLarge') {
+            else if (log.op === 'repeated' || log.op === 'invalid' || log.op === 'tooLarge') {
                upload.lastActivity = log.t;
-               if (! upload [log.s]) upload [log.s] = [];
-               upload [log.s].push (log.filename);
+               if (! upload [log.op]) upload [log.op] = [];
+               upload [log.op].push (log.filename);
             }
          });
-         s.next (dale.go (uploads, function (v) {return v}).sort (function (a, b) {
+         s.next (dale.go (uploads, function (v) {delete v.lastActivity; return v}).sort (function (a, b) {
             // We sort uploads by their end date. If they don't have an end date, they go to the top of the list.
             return (b.end || Infinity) - (a.end || Infinity);
          }));
@@ -1543,7 +1542,7 @@ var routes = [
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['op', 'pro'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
-         ['body.op',  b.op,  ['start', 'end', 'cancel'],       'oneOf', teishi.test.equal],
+         ['body.op',  b.op,  ['start', 'finish', 'cancel'],    'oneOf', teishi.test.equal],
          ['body.pro', b.pro, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
          b.op !== 'start' ? [] : [
             ['tags', 'tooLarge', 'unsupported'].map (function (key) {
@@ -1575,8 +1574,8 @@ var routes = [
          function (s) {
             if (b.op === 'start' && s.last.length) return reply (rs, 409);
             if (b.op !== 'start') {
-               if (! s.last.length)   return reply (rs, 404);
-               if (s.last [0].status) return reply (rs, 409);
+               if (! s.last.length)                 return reply (rs, 404);
+               if (s.last [0].status !== 'ongoing') return reply (rs, 409);
             }
             if (b.op === 'start') b.id = t;
             b.a = 'upl';
@@ -1648,7 +1647,7 @@ var routes = [
       }
 
       // input can be either an async sequence (array) or an error per se (object)
-      var invalidHandler = function (input) {
+      var invalidHandler = function (s, input) {
          var cbError = function (error) {
             astop (rs, [
                [H.unlink, newpath, true],
@@ -1669,8 +1668,8 @@ var routes = [
       astop (rs, [
          [H.getUploads, rq.user.username, {id: rq.data.fields.id}],
          function (s) {
-            if (! s.last.length)   return reply (rs, 404);
-            if (s.last [0].status) return reply (rs, 409);
+            if (! s.last.length)                 return reply (rs, 404);
+            if (s.last [0].status !== 'ongoing') return reply (rs, 409, {error: 'status'});
             s.next ();
          },
          [a.set, 'byfs', [a.make (fs.stat), path]],
@@ -1695,7 +1694,9 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'initial'],
-         invalidHandler ([H.getMetadata, path, pic.vid]),
+         function (s) {
+            a.seq (s, invalidHandler (s, [H.getMetadata, path, pic.vid]));
+         },
          function (s) {
             s.rawMetadata = s.last;
             s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
@@ -1712,9 +1713,9 @@ var routes = [
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
 
-               if (error) return invalidHandler ({error: 'Exiftool error', data: error});
+               if (error) return invalidHandler (s, {error: 'Exiftool error', data: error});
 
-               if (! s.size.w || ! s.size.h) return invalidHandler ({error: 'Invalid size', metadata: metadata});
+               if (! s.size.w || ! s.size.h) return invalidHandler (s, {error: 'Invalid size', metadata: metadata});
 
                var rotation = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Orientation/)) return line;
@@ -1738,7 +1739,7 @@ var routes = [
                   if (line.match (/^width/i))  s.size.w = parseInt (line.split ('=') [1]);
                   if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
                });
-               if (! s.size.w || ! s.size.h) return invalidHandler ({error: 'Invalid size', metadata: metadata});
+               if (! s.size.w || ! s.size.h) return invalidHandler (s, {error: 'Invalid size', metadata: metadata});
 
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
@@ -1751,13 +1752,15 @@ var routes = [
             a.set (s, 'format', [H.detectFormat, s.rawMetadata, pic.vid ? vidFormat : false]);
          },
          [perfTrack, 'format'],
-         pic.vid ? invalidHandler ([k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath]) : function (s) {
+         pic.vid ? function (s) {
+            a.seq (s, invalidHandler (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath]));
+         } : function (s) {
             // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
             if (s.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
             a.seq (s, [
                [a.make (fs.copyFile), path, hashpath],
                // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
-               invalidHandler (s.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath])
+               invalidHandler (s, s.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath])
             ]);
          },
          [a.set, 'hash', function (s) {
@@ -1841,7 +1844,7 @@ var routes = [
             pic.format = s.format;
             if (pic.format !== 'heic') return s.next ();
             s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), pic.uuid + '.jpeg');
-            a.seq (s, invalidHandler ([k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]));
+            a.seq (s, invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]));
          },
          function (s) {
             if (pic.vid) return H.thumbVid (s, invalidHandler, newpath);
@@ -3068,7 +3071,7 @@ var routes = [
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
                [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}],
-               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'end'}],
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'finish'}],
                [reply, rs, 200]
             ]);
 
@@ -3109,7 +3112,7 @@ var routes = [
                      // If we reached the end of the list, we're done.
                      if (index === s.list.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
-                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'end'}],
+                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'finish'}],
                         function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {

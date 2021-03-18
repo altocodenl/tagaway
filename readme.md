@@ -434,7 +434,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
    - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
-   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should not be ended, cancelled or stalled; if it is, a 409 is returned.
+   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a status of `ongoing`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
@@ -518,7 +518,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /uploads`
-   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}`.
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|finished|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}`.
 
 `GET /imports/PROVIDER`
    - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDFEINED, selection: UNDEFINED|[ID, ...], data: ...}`.
@@ -752,7 +752,7 @@ All the routes below require an admin user to be logged in.
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
       - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
-      - For end:            {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'end'}
+      - For finish:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'finish'}
       - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'cancel'}
       - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
       - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
