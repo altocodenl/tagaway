@@ -657,10 +657,11 @@ H.detectFormat = function (s, metadata, vidFormat) {
 }
 
 H.getUploads = function (s, username, filters, maxResults) {
+   filters = filters || {};
    a.seq (s, [
       [Redis, 'lrange', 'ulog:' + username, 0, -1],
       function (s) {
-         var uploads = {}, filters = filters || {}, completed = 0;
+         var uploads = {}, completed = 0;
          if (filters.id) maxResults = 1;
          dale.stop (s.last, true, function (log) {
             log = JSON.parse (log);
