@@ -1778,10 +1778,13 @@ var routes = [
 
                // We add the tags of this picture to those of the identical picture already existing
                var multi = redis.multi ();
+
                dale.go (tags, function (tag) {
+                  multi.sadd ('pict:' + s.id,                         tag);
                   multi.sadd ('tags:' + rq.user.username,             tag);;
                   multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.id);
                });
+               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.id);
                mexec (s, multi);
             },
             function (s) {

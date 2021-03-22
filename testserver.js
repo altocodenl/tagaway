@@ -17,9 +17,6 @@ var U = [
 
 var PICS = 'test/';
 
-// TODO: remove
-var uid = Date.now ();
-
 var H = {};
 
 H.trim = function (s) {
@@ -533,10 +530,10 @@ var main = [
    }],
    ['get pics (videos), untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
-      if (rs.body.total !== 2) return clog ('Invalid total count.');
+      if (rs.body.total !== 1) return clog ('Invalid total count.');
       if (! eq (rs.body.tags, ['2018'])) return clog ('Invalid tags.');
       if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      if (rs.body.pics.length !== 2) return clog ('Invalid amount of pictures.');
+      if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures.');
       return true;
    }],
    dale.go (dale.times (2, 0), function (k) {
@@ -903,7 +900,7 @@ var main = [
    ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
    ['turn on geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409, function (s, rq, rs, next) {
       // Wait for pictures to be tagged
-      setTimeout (next, 1000);
+      setTimeout (next, 2000);
    }],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
@@ -933,12 +930,18 @@ var main = [
       return true;
    }],
    ['dismiss selection suggestion (again)', 'post', 'dismiss', {}, {operation: 'selection'}, 200],
-   ['upload picture with different date format and geodata', 'post', 'upload', {}, {multipart: [
+   ['start upload #3', 'post', 'metaupload', {}, {op: 'start', total: 3}, 200, function (s, rq, rs) {
+      if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
+      if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
+      s.uid3 = rs.body.id;
+      return true;
+   }],
+   ['upload picture with different date format and geodata', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
-      {type: 'field', name: 'uid', value: uid + 2},
+      {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
-   ]}, 200],
+   ]}}, 200],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       var pic = rs.body.pics [0];
       if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::FR'])) return clog ('Invalid tags: ', pic.tags.sort ());
@@ -967,7 +970,7 @@ var main = [
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200, function (s, rq, rs, next) {
       // Wait for pictures to be tagged
-      setTimeout (next, 1500);
+      setTimeout (next, 2000);
    }],
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
@@ -1062,18 +1065,18 @@ var main = [
       }))) return clog ('Invalid pic date sorting');
       return true;
    }],
-   ['upload medium picture with rotation data', 'post', 'upload', {}, {multipart: [
+   ['upload medium picture with rotation data', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotatemedium.jpg'},
-      {type: 'field', name: 'uid', value: uid + 3},
+      {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
-   ]}, 200],
-   ['upload small picture with rotation data', 'post', 'upload', {}, {multipart: [
+   ]}}, 200],
+   ['upload small picture with rotation data', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotatesmall.jpg'},
-      {type: 'field', name: 'uid', value: uid + 3},
+      {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
-   ]}, 200],
+   ]}}, 200],
    ['get non-large pictures with rotation data and check they have thumbnails', 'post', 'query', {}, {from: 1, to: 2, tags: ['rotatethumb'], sort: 'upload'}, 200, function (s, rq, rs) {
       s.thumbpics = rs.body.pics;
       if (s.thumbpics.length !== 2) return clog ('Expected two pictures.');
@@ -1150,11 +1153,11 @@ var main = [
    }),
    // *** ADDITIONAL PICTURE FORMATS ***
    dale.go (['deer.bmp', 'sunrise.HEIC', 'tumbleweed.GIF', 'benin.tif'], function (v) {
-      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, {multipart: [
+      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'pic', path: PICS + v},
-         {type: 'field', name: 'uid', value: uid + 4},
+         {type: 'field', name: 'id', value: s.uid3},
          {type: 'field',  name: 'lastModified', value: Date.now ()}
-      ]}, 200];
+      ]}}, 200];
    }),
    ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
       s.extrapics = rs.body.pics;
@@ -1503,35 +1506,41 @@ var main = [
          }, {}, '', 200],
       ];
    }),
-   ['upload lopsided picture as user2 with invalid tags #1', 'post', 'upload', {}, {multipart: [
+   ['start upload as user 2', 'post', 'metaupload', {}, {op: 'start', total: 3}, 200, function (s, rq, rs) {
+      if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
+      if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
+      s.uid4 = rs.body.id;
+      return true;
+   }],
+   ['upload lopsided picture as user2 with invalid tags #1', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '{}'}
-   ]}, 400],
-   ['upload lopsided picture as user2 with invalid tags #2', 'post', 'upload', {}, {multipart: [
+   ]}}, 400],
+   ['upload lopsided picture as user2 with invalid tags #2', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '2'}
-   ]}, 400],
-   ['upload lopsided picture as user2 with invalid tags #3', 'post', 'upload', {}, {multipart: [
+   ]}}, 400],
+   ['upload lopsided picture as user2 with invalid tags #3', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", 1]'}
-   ]}, 400],
-   ['upload lopsided picture as user2 with invalid tags #4', 'post', 'upload', {}, {multipart: [
+   ]}}, 400],
+   ['upload lopsided picture as user2 with invalid tags #4', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", "all"]'}
-   ]}, 400],
-   ['upload lopsided picture as user2', 'post', 'upload', {}, {multipart: [
+   ]}}, 400],
+   ['upload lopsided picture as user2', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
-      {type: 'field', name: 'uid', value: Date.now ()},
+      {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotate"]'}
-   ]}, 200],
+   ]}}, 200],
    ['get all pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 3) return clog ('user2 should have three pics.');
       if (rs.body.total !== 3) return clog ('total not computed properly with repeated pics.');
@@ -1612,11 +1621,11 @@ var main = [
    dale.go (['circus.MOV', 'boat.3gp', 'drumming.avi'], function (vid, k) {
       var format = require ('path').extname (vid).replace ('.', '');
       return [
-         ['upload ' + format, 'post', 'upload', {}, {multipart: [
+         ['upload ' + format, 'post', 'upload', {}, function (s) {return {multipart: [
             {type: 'file',  name: 'pic', path: PICS + vid},
-            {type: 'field', name: 'uid', value: uid + 5},
+            {type: 'field', name: 'id', value: s.uid3},
             {type: 'field',  name: 'lastModified', value: Date.now ()}
-         ]}, 200, function (s, rq, rs) {
+         ]}}, 200, function (s, rq, rs) {
             if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
             if (! s.nonmp4) s.nonmp4 = [];
             s.nonmp4.push (rs.body);
@@ -1667,10 +1676,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 80 && rs.body.logs.length !== 81)) return clog ('Invalid logs, length ' + rs.body.logs.length);
-      // Checking uploads object
-      if (type (rs.body.uploads) !== 'array') return clog ('Invalid uploads.');
-      if (rs.body.uploads.length !== 6) return clog ('Invalid uploads length', rs.body.uploads.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 85 && rs.body.logs.length !== 86)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, skipS3 ? 0 : 3000);
    }],
@@ -1685,7 +1691,9 @@ var main = [
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
       if (skipS3 && ! eq (rs.body, {byfs: 0, bys3: rs.body.bys3, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
-      else if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
+      else {
+         if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
+      }
       return true;
    }],
    // TODO: add admin/stats test
