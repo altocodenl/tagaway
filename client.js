@@ -2944,6 +2944,7 @@ dale.do ([
       if (B.get ('State', 'page') !== 'upload') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('Data', 'tags'))    B.do (x, 'query', 'tags');
+      if (! B.get ('Data', 'uploads')) B.do (x, 'query', 'uploads');
    }],
    ['drop', 'files', function (x, ev) {
       if (B.get ('State', 'page') !== 'upload') return;
@@ -2966,15 +2967,17 @@ dale.do ([
       input.value = '';
    }],
    ['upload', 'start', function (x) {
-      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: B.get ('State', 'upload', 'new', 'files'), unsupported: B.get ('State', 'upload', 'new', 'format')}, function (x, error, rs) {
+      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: B.get ('State', 'upload', 'new', 'files').length, unsupported: B.get ('State', 'upload', 'new', 'format')}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the upload.');
-         B.do (x, 'upload', 'retrieve');
+         B.do (x, 'query', 'uploads');
 
          dale.do (B.get ('State', 'upload', 'new', 'files'), function (file) {
             B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: B.get ('State', 'upload', 'new', 'tags')});
          });
          B.do (x, 'rem', ['State', 'upload'], 'new');
+         console.log ('DEBUG change 1');
          B.do (x, 'change', ['State', 'upload', 'queue']);
+         console.log ('DEBUG change 2');
       });
    }],
    ['upload', /cancel|finish/, function (x, id) {
@@ -2983,7 +2986,7 @@ dale.do ([
          B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
             if (file.id !== id) return file;
          }));
-         B.do (x, 'upload', 'retrieve');
+         B.do (x, 'query', 'uploads');
          if (x.path [0] === 'cancel') B.do (x, 'snackbar', 'green', 'Upload cancelled successfully.');
          else                         B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
       });
@@ -2995,13 +2998,14 @@ dale.do ([
       B.do (x, 'add', ['State', 'upload', 'new', 'tags'], tag);
       B.do (x, 'rem', ['State', 'upload'], 'tag');
    }],
-   ['upload', 'retrieve', function (x) {
+   ['query', 'uploads', function (x) {
       B.do (x, 'get', 'uploads', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving your uploads.');
          B.do (x, 'set', ['Data', 'uploads'], rs.body);
       });
    }],
    ['change', ['State', 'upload', 'queue'], function (x) {
+      console.log ('DEBUG change 3');
       var queue = B.get ('State', 'upload', 'queue');
       var MAXSIMULT = 2, uploading = 0;
       dale.stop (queue, false, function (file) {
@@ -3016,6 +3020,7 @@ dale.do ([
          f.append ('pic', file.file);
          if (file.tags) f.append ('tags', JSON.stringify (file.tags));
          B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
+            console.log ('DEBUG UPLOAD', error, rs);
             dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                if (v === file) {
                   B.do (x, 'rem', ['State', 'upload', 'queue'], i);
@@ -4493,12 +4498,12 @@ E.upload = function () {
                                        ['style', ['.no-svg svg', {display: 'none'}]],
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                           'Error:',
-                                          ['ul', ['li', [(teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error).slice (0, 100)]]]
+                                          ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
                                        ]])
                                     ]],
                                     // UPLOAD BAR
                                     ['div', {class: 'progress-bar'}, [
-                                       ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * done / total) + '%'})}],
+                                       ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * done / upload.total) + '%'})}],
                                     ]],
                                  ]],
                                  ['div', {class: 'upload-box__section'}, [
@@ -4561,7 +4566,7 @@ E.upload = function () {
                                     ['style', ['.no-svg svg', {display: 'none'}]],
                                     H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                        'Error:',
-                                       ['ul', ['li', [(teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error).slice (0, 100)]]]
+                                       ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
                                     ]])
                                  ]]
                               ]],

@@ -43,6 +43,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Refactor for upload & import
       - Client
          - Refactor uploads
+            - make it upload (change event).
+            - fix snackbar cancel.
             - Block too large files in client.
             - document responder changes & dependency changes.
          - Refactor imports
