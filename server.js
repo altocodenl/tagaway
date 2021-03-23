@@ -682,6 +682,11 @@ H.getUploads = function (s, username, filters, maxResults) {
             if (log.op === 'finish' || log.op === 'cancel' || log.op === 'error') {
                upload.end = log.t;
                upload.status = {finish: 'finished', cancel: 'cancelled', error: 'errored'} [log.op];
+               if (log.op === 'error') upload.error = log.error;
+            }
+            else if (log.op === 'providerError') {
+               if (! upload.providerErrors) upload.providerErrors = [];
+               upload.providerErrors.push (log.error);
             }
             else if (log.op === 'start') {
                // If current upload has had no activity in over ten minutes, we consider it stalled.

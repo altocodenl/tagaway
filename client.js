@@ -2652,7 +2652,7 @@ dale.do ([
          });
          B.set (['State', 'selected'], updatedSelection);
 
-         B.do (x, 'set', ['Data', 'pictotal'], rs.body.total);
+         B.do (x, 'set', ['Data', 'picTotal'], rs.body.total);
 
          if (B.get ('State', 'open') === undefined) {
             B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
@@ -2857,11 +2857,11 @@ dale.do ([
       ev.stopPropagation ();
    }],
    ['increment', 'nPics', function (x) {
-      if (B.get ('Data', 'pictotal') <= B.get ('State', 'nPics')) return;
-      B.do (x, 'set', ['State', 'nPics'], Math.min (B.get ('State', 'nPics') + 20, B.get ('Data', 'pictotal')));
+      if (B.get ('Data', 'picTotal') <= B.get ('State', 'nPics')) return;
+      B.do (x, 'set', ['State', 'nPics'], Math.min (B.get ('State', 'nPics') + 20, B.get ('Data', 'picTotal')));
    }],
    ['change', ['State', 'nPics'], function (x) {
-      if (B.get ('Data', 'pictotal') <= B.get ('State', 'nPics') + 100) return;
+      if (B.get ('Data', 'picTotal') <= B.get ('State', 'nPics') + 100) return;
       B.do (x, 'query', 'pics');
    }],
    ['change', ['Data', 'pendingConversions'], function (x) {
@@ -2955,7 +2955,6 @@ dale.do ([
       setTimeout (function () {
          B.do (x, 'change', ['State', 'upload', 'new']);
       }, 0);
-      if ((B.get ('State', 'upload', 'new', 'format') || []).length) B.do (x, 'report', 'unsupportedFormats');
    }],
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
@@ -2965,21 +2964,29 @@ dale.do ([
       });
       B.do (x, 'change', ['State', 'upload', 'new']);
       input.value = '';
-      if ((B.get ('State', 'upload', 'new', 'format') || []).length) B.do (x, 'report', 'unsupportedFormats');
    }],
    ['upload', 'start', function (x) {
-      var uid = Date.now ();
-      dale.do (B.get ('State', 'upload', 'new', 'files'), function (file) {
-         B.add (['State', 'upload', 'queue'], {uid: uid, file: file, tags: B.get ('State', 'upload', 'new', 'tags')});
+      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: B.get ('State', 'upload', 'new', 'files'), unsupported: B.get ('State', 'upload', 'new', 'format')}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the upload.');
+         B.do (x, 'upload', 'retrieve');
+
+         dale.do (B.get ('State', 'upload', 'new', 'files'), function (file) {
+            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: B.get ('State', 'upload', 'new', 'tags')});
+         });
+         B.do (x, 'rem', ['State', 'upload'], 'new');
+         B.do (x, 'change', ['State', 'upload', 'queue']);
       });
-      B.do (x, 'rem', ['State', 'upload'], 'new');
-      B.do (x, 'change', ['State', 'upload', 'queue']);
    }],
-   ['upload', 'cancel', function (x, uid) {
-      B.do (x, 'add', ['State', 'upload', 'cancelled'], uid);
-      B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
-         if (file.uid !== uid) return file;
-      }));
+   ['upload', /cancel|finish/, function (x, id) {
+      B.do (x, 'post', 'metaupload', {}, {op: x.path [0], id: id}, function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'finish' ? 'finishing' : 'cancelling') + ' the upload.');
+         B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
+            if (file.id !== id) return file;
+         }));
+         B.do (x, 'upload', 'retrieve');
+         if (x.path [0] === 'cancel') B.do (x, 'snackbar', 'green', 'Upload cancelled successfully.');
+         else                         B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
+      });
    }],
    ['upload', 'tag', function (x, tag) {
       if (tag === true) tag = c ('#uploadTag').value;
@@ -2987,6 +2994,12 @@ dale.do ([
       if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
       B.do (x, 'add', ['State', 'upload', 'new', 'tags'], tag);
       B.do (x, 'rem', ['State', 'upload'], 'tag');
+   }],
+   ['upload', 'retrieve', function (x) {
+      B.do (x, 'get', 'uploads', {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving your uploads.');
+         B.do (x, 'set', ['Data', 'uploads'], rs.body);
+      });
    }],
    ['change', ['State', 'upload', 'queue'], function (x) {
       var queue = B.get ('State', 'upload', 'queue');
@@ -2999,17 +3012,19 @@ dale.do ([
 
          var f = new FormData ();
          f.append ('lastModified', file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ());
-         f.append ('uid', file.uid);
+         f.append ('id', file.id);
          f.append ('pic', file.file);
          if (file.tags) f.append ('tags', JSON.stringify (file.tags));
-         B.do (x, 'set', ['State', 'upload', 'summary', file.uid, 'tags'], file.tags || []);
          B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
-            dale.do (B.get ('State', 'upload', 'queue'), function (v, i) {
-               if (v === file) B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+            dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
+               if (v === file) {
+                  B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                  return true;
+               }
             });
 
-            var lastFromUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
-               if (v.uid === file.uid) return v;
+            var lastFileFromUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
+               if (v.id === file.id) return v;
             });
 
             if (error && error.status === 409 && error.responseText.match ('capacity')) {
@@ -3017,31 +3032,20 @@ dale.do ([
                B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
             }
             else if (error && error.status !== 409 && error.status !== 400) {
-               B.do (x, 'add', ['State', 'upload', 'summary', file.uid, 'errors'], {code: error.status, name: file.file.name, error: error.responseText});
                B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
 
-            else if (lastFromUpload) {
-               var cancelled = (B.get ('State', 'upload', 'cancelled') || []).indexOf (file.uid) > -1;
-               if (cancelled) B.do (x, 'snackbar', 'green', 'Upload cancelled successfully.');
-               else           B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
+            else if (lastFileFromUpload) {
+               B.do (x, 'upload', 'finish', file.id);
             }
 
-            B.do (x, 'query', 'account');
+            B.do (x, 'query', 'uploads');
             B.do (x, 'query', 'tags');
             // If we're back in the pics page, refresh the query after each upload.
             if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
          });
       });
-   }],
-   ['report', 'unsupportedFormats', function (x) {
-      var body = {};
-      dale.do (B.get ('State', 'upload', 'new', 'format'), function (file) {
-         if (! body [file.format]) body [file.format] = 0;
-         body [file.format]++;
-      });
-      B.do (x, 'post', 'unsupportedFormats', {}, {formats: body});
-   }],
+   }]
 
    // *** IMPORT RESPONDERS ***
 
@@ -4066,7 +4070,7 @@ E.pics = function () {
                      B.view (['State', 'selected'], {attrs: {class: 'pictures-header'}}, function (x, selected) {
                         selected = dale.keys (selected).length;
                         return [
-                           B.view (['Data', 'pictotal'], {tag: 'h2', attrs: {class: 'pictures-header__title page-title'}}, function (x, total) {
+                           B.view (['Data', 'picTotal'], {tag: 'h2', attrs: {class: 'pictures-header__title page-title'}}, function (x, total) {
                               return [total + ' pictures', H.if (selected, [', ', selected, ' selected'])];
                            }),
                            ['div', {class: 'pictures-header__action-bar'}, [
@@ -4310,7 +4314,7 @@ E.open = function () {
             ['div', {class: 'fullscreen__count'}, [
                ['span', {class: 'fullscreen__count-current'}, open + 1],
                '/',
-               ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pictotal')],
+               ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'picTotal')],
             ]],
             next ? ['img', {src: 'thumb/900/' + next.id, style: style ({display: 'none'})}] : [],
          ];
@@ -4334,7 +4338,7 @@ E.upload = function () {
             ]],
             ['div', {class: 'page-section'}, [
                // UPLOAD BOX
-               B.view (['State', 'upload', 'summary'], {tag: 'ul', attrs: {class: 'upload-box-list'}}, function (x, summary) {
+               B.view (['Data', 'uploads'], {tag: 'ul', attrs: {class: 'upload-box-list'}}, function (x, uploads) {
                   return [
                      ['li', {class: 'upload-box-list__item'}, [
                         // UPLOAD BOX
@@ -4457,156 +4461,124 @@ E.upload = function () {
                         ]],
                      ]],
                      // PENDING UPLOADS
-                     dale.do (summary, function (upload, id) {
-                        return B.view (['State', 'upload', 'queue'], function (x, queue) {
-                           var pending = {};
-                           dale.do (queue, function (file) {
-                              if (! pending [file.uid]) pending [file.uid] = 0;
-                              pending [file.uid]++;
-                           });
-                           // If no pending files for this upload, ignore.
-                           if (! pending [id]) return;
-                           var total = pending [id] + (upload.done || 0);
-                           return ['li', {class: 'upload-box-list__item'}, [
-                              // UPLOAD BOX
-                              ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                                 // TODO v2: add inline SVG
-                                 ! upload.lastPic ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                    'background-image': 'url(thumb/200/' + upload.lastPic.id + ')',
-                                    'background-position': 'center',
-                                    'background-repeat': 'no-repeat',
-                                    'background-size': 'cover',
-                                    transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPic.deg],
-                                 })}],
-                                 ['div', {class: 'upload-box__main'}, [
-                                    ['div', {class: 'upload-box__section'}, [
-                                       // TODO v2: add inline SVG
-                                       ['p', {class: 'upload-progress', opaque: true}, [
-                                          ['span', {class: 'upload-progress__amount-uploaded'}, upload.done || 0],
-                                          '/',
-                                          ['span', {class: 'upload-progress__amount'}, total],
-                                          ['LITERAL', '&nbsp'],
-                                          ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
-                                          H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
-                                          H.if (upload.invalid, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid || []).length + ' invalid) ']),
-                                          H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).length + ' too large) ']),
-                                       ]],
-                                       ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
-                                          ['style', ['.no-svg svg', {display: 'none'}]],
-                                          H.if (upload.errors, ['span', {class: 'upload-progress__default-text'}, [
-                                             'Errors:',
-                                             ['ul', dale.do (upload.errors, function (e) {
-                                                return ['li', [e.name, ': ', e.error.slice (0, 50), e.error.length > 50 ? '...' : '']];
-                                             })],
-                                          ]]),
-                                       ]],
-                                       // UPLOAD BAR
-                                       ['div', {class: 'progress-bar'}, [
-                                          ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * (upload.ok || 0) / (total + pending [id])) + '%'})}],
-                                       ]],
+                     dale.do (uploads, function (upload) {
+                        if (upload.status !== 'ongoing') return;
+                        // Files that are too large should be detected before uploading and shouldn't be counted towards the total.
+                        var done = (upload.ok || 0) + (upload.repeated || []).length + (upload.invalid || []).length;
+                        return ['li', {class: 'upload-box-list__item'}, [
+                           // UPLOAD BOX
+                           ['div', {class: 'upload-box upload-box--recent-uploads'}, [
+                              // TODO v2: add inline SVG
+                              ! upload.lastPic ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                                 'background-image': 'url(thumb/200/' + upload.lastPic.id + ')',
+                                 'background-position': 'center',
+                                 'background-repeat': 'no-repeat',
+                                 'background-size': 'cover',
+                                 transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPic.deg],
+                              })}],
+                              ['div', {class: 'upload-box__main'}, [
+                                 ['div', {class: 'upload-box__section'}, [
+                                    // TODO v2: add inline SVG
+                                    ['p', {class: 'upload-progress', opaque: true}, [
+                                       ['span', {class: 'upload-progress__amount-uploaded'}, done],
+                                       '/',
+                                       ['span', {class: 'upload-progress__amount'}, upload.total],
+                                       ['LITERAL', '&nbsp'],
+                                       ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
+                                       H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
+                                       H.if (upload.invalid,  ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid  || []).length + ' invalid) ']),
+                                       H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).length + ' too large) ']),
                                     ]],
-                                    ['div', {class: 'upload-box__section'}, [
-                                       // TAG LIST HORIZONTAL
-                                       ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
-                                          // TODO v2: add inline SVG
-                                          return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
-                                             ['span', {class: 'tag__title'}, tag],
-                                          ]];
-                                       })],
+                                    ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
+                                       ['style', ['.no-svg svg', {display: 'none'}]],
+                                       H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
+                                          'Error:',
+                                          ['ul', ['li', [(teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error).slice (0, 100)]]]
+                                       ]])
                                     ]],
-                                    ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
-                                       ['a', B.ev ({class: 'upload-box__upload-button button button--two'}, ['onclick', 'upload', 'cancel', parseInt (id)]), 'Cancel'],
+                                    // UPLOAD BAR
+                                    ['div', {class: 'progress-bar'}, [
+                                       ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * done / total) + '%'})}],
                                     ]],
                                  ]],
-                              ]]
-                           ]];
-                        });
+                                 ['div', {class: 'upload-box__section'}, [
+                                    // TAG LIST HORIZONTAL
+                                    ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
+                                       // TODO v2: add inline SVG
+                                       return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          ['span', {class: 'tag__title'}, tag],
+                                       ]];
+                                    })],
+                                 ]],
+                                 ['div', {class: 'upload-box__section upload-box__section--buttons'}, [
+                                    ['a', B.ev ({class: 'upload-box__upload-button button button--two'}, ['onclick', 'upload', 'cancel', upload.id]), 'Cancel'],
+                                 ]],
+                              ]],
+                           ]]
+                        ]];
                      }),
                   ];
                })
             ]],
             // RECENT UPLOADS
             // TODO v2: merge three elements into one
-            B.view (['State', 'upload', 'queue'], {attrs: {class: 'page-section'}}, function (x, queue) {
-               var pending = {};
-               dale.do (queue, function (file) {
-                  if (! pending [file.uid]) pending [file.uid] = 0;
-                  pending [file.uid]++;
-               });
-               return B.view (['State', 'upload', 'summary'], {attrs: {class: 'recent-uploads'}}, function (x, localUploads) {
-                  localUploads = localUploads || {};
-                  return [
-                     ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
-                     B.view (['Data', 'account'], {tag: 'ul', attrs: {class: 'recent-uploads__list'}}, function (x, account) {
-                        if (! account) return;
-                        var serverUploads = dale.do (account.uploads, function (u) {return u.uid});
-                        // local uploads are uploads just started where the first picture/video hasn't been uploaded yet
-                        var onlyLocal = dale.fil (localUploads, undefined, function (upload, key) {
-                           if (serverUploads.indexOf (key) === -1) return {uid: parseInt (key), tags: upload.tags};
-                        });
-                        var allUploads = onlyLocal.concat (account.uploads);
-                        return dale.do (allUploads, function (upload) {
-                           return ['li', {class: 'recent-uploads__list-item'}, [
-                              // UPLOAD BOX
-                              ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                                 ! upload.lastPic ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                    'background-image': 'url(thumb/200/' + upload.lastPic.id + ')',
-                                    'background-position': 'center',
-                                    'background-repeat': 'no-repeat',
-                                    'background-size': 'cover',
-                                    transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPic.deg],
-                                 })}],
-                                 ['div', {class: 'upload-box__main'}, [
-                                    // UPLOAD BOX SECTION
-                                    ['div', {class: 'upload-box__section'}, [
-                                       // TODO v2: add inline SVG
-                                       ['p', {class: 'upload-progress', opaque: true}, [
-                                          ['span', {class: 'upload-progress__amount-uploaded'}, upload.done || 0],
-                                          ['LITERAL', '&nbsp'],
-                                          ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
-                                          ['LITERAL', '&nbsp'],
-                                          H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
-                                          ['LITERAL', '&nbsp'],
-                                          H.if (upload.invalid, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid || []).length + ' invalid) ']),
-                                          ['LITERAL', '&nbsp'],
-                                          H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).invalid + ' too large) ']),
-                                          ['LITERAL', '&nbsp'],
-                                          ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - upload.uid) / 60000) + ' minutes ago)'],
-                                          ['br'],
-                                       ]],
-                                       ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
-                                          ['style', ['.no-svg svg', {display: 'none'}]],
-                                          // Errors that are not 400 or 409 are only stored locally.
-                                          localUploads [upload.uid] && localUploads [upload.uid].errors ? ['span', {class: 'upload-progress__default-text'}, [
-                                             'Errors:',
-                                             ['ul', dale.do (localUploads [upload.uid].errors, function (e) {
-                                                return ['li', [e.name, ': ', e.error.slice (0, 100), e.error.length > 100 ? '...' : '']];
-                                             })],
-                                          ]] : [],
-                                       ]],
-                                    ]],
-                                    ['div', {class: 'upload-box__section'}, [
-                                       /*
-                                       ['h3', {class: 'upload-box__section-title'}, [
-                                          'Tags ',
-                                          ['span', {class: 'upload-box__section-title-note'}, '(You can always manage tags later)'],
-                                       ]],
-                                       */
-                                       // TAG LIST HORIZONTAL
-                                       ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
-                                          // TODO v2: add inline SVG
-                                          return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
-                                             ['span', {class: 'tag__title'}, tag],
-                                          ]];
-                                       })],
-                                    ]]
+            B.view (['Data', 'uploads'], {attrs: {class: 'page-section'}}, function (x, uploads) {
+               return ['div', {class: 'recent-uploads'}, [
+                  ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
+                  dale.do (uploads, function (upload) {
+                     if (upload.status === 'ongoing') return;
+                     // Files that are too large should be detected before uploading and shouldn't be counted towards the total.
+                     var done = (upload.ok || 0) + (upload.repeated || []).length + (upload.invalid || []).length;
+                     return ['li', {class: 'recent-uploads__list-item'}, [
+                        // UPLOAD BOX
+                        ['div', {class: 'upload-box upload-box--recent-uploads'}, [
+                           ! upload.lastPic ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                              'background-image': 'url(thumb/200/' + upload.lastPic.id + ')',
+                              'background-position': 'center',
+                              'background-repeat': 'no-repeat',
+                              'background-size': 'cover',
+                              transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPic.deg],
+                           })}],
+                           ['div', {class: 'upload-box__main'}, [
+                              // UPLOAD BOX SECTION
+                              ['div', {class: 'upload-box__section'}, [
+                                 // TODO v2: add inline SVG
+                                 ['p', {class: 'upload-progress', opaque: true}, [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, done],
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
+                                    ['LITERAL', '&nbsp'],
+                                    H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
+                                    ['LITERAL', '&nbsp'],
+                                    H.if (upload.invalid,  ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid  || []).length + ' invalid) ']),
+                                    ['LITERAL', '&nbsp'],
+                                    H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).invalid + ' too large) ']),
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - upload.end) / 60000) + ' minutes ago)'],
+                                    ['br'],
+                                 ]],
+                                 ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
+                                    ['style', ['.no-svg svg', {display: 'none'}]],
+                                    H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
+                                       'Error:',
+                                       ['ul', ['li', [(teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error).slice (0, 100)]]]
+                                    ]])
                                  ]]
+                              ]],
+                              ['div', {class: 'upload-box__section'}, [
+                                 // TAG LIST HORIZONTAL
+                                 ['ul', {class: 'tag-list-horizontal'}, dale.do (upload.tags, function (tag) {
+                                    // TODO v2: add inline SVG
+                                    return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                       ['span', {class: 'tag__title'}, tag],
+                                    ]];
+                                 })],
                               ]]
-                           ]];
-                        });
-                     })
-                  ];
-               });
+                           ]]
+                        ]]
+                     ]];
+                  })
+               ]];
             }),
             ['div', {class: 'page-section'}, [
                // BACK LINK

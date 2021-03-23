@@ -41,21 +41,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import/upload:
    - Refactor for upload & import
-      - Server
-         - Tests
-            - metadata upload
-            - upload modifications
-               - uid -> id
-               - if repeated picture with a different tag, use that tag on upload.
-            - retrieve uploads from separate endpoint
-            - different logs in userlog
       - Client
          - Refactor uploads
-            - Remove unsupported formats.
-            - start is id; done is ok
             - Block too large files in client.
-            - Use metadata events (start, cancel, end).
+            - document responder changes & dependency changes.
          - Refactor imports
+            - check authOK, redirect and waitingForServer
             - Use new data format.
             - Add option to cancel import if it yields an error besides "try again".
             - Note when a listing or upload has been cancelled with a snackbar.
@@ -421,7 +412,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /metaupload`
    - Body can have one of three forms:
       - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
-      - `{op: 'end',    id: INTEGER}`
+      - `{op: 'finish', id: INTEGER}`
       - `{op: 'cancel', id: INTEGER}`
    - The body can contain a field `pro` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
@@ -518,10 +509,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /uploads`
-   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|finished|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}}`.
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|finished|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
 
 `GET /imports/PROVIDER`
-   - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDFEINED, selection: UNDEFINED|[ID, ...], data: ...}`.
+   - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDFEINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`.
 
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
@@ -801,7 +792,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `E.pics`
-   - Depends on: `Data.tags`, `Data.pics`, `Data.pictotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
+   - Depends on: `Data.tags`, `Data.pics`, `Data.picTotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -874,7 +865,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Events: `click -> click pic`.
 6. `E.open`
    - Contained by: `E.pics`.
-   - Depends on `State.open` and `Data.pictotal`.
+   - Depends on `State.open` and `Data.picTotal`.
    - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`, `goto location PIC`.
 7. `E.noSpace`
    - Contained by: `E.import`, `E.upload`.
@@ -938,7 +929,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    3. `change State.query`: sets `State.npics` and invokes `query pics true`, but only if the change is not to `State.query.recentlyTagged`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pics` and `Data.pictotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
+   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pics` and `Data.picTotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
@@ -952,8 +943,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    17. `fill screen`: if `State.page` is `pics`, there are pictures present and the pictures do not fill the screen, then it will invoke `increment nPics`.
    18. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
    19. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   20. `increment nPics`: if `Data.pictotal` is more than `State.nPics`, `State.nPics` will be incremented by 20; if `Data.pictotal` is more than `State.nPics` but less than `State.nPics + 20`, then `State.nPics` will be set to `Data.pictotal`.
-   21. `change State.nPics`: if `State.nPics + 100` is more than `Data.pictotal`, the responder will invoke `State.query`.
+   20. `increment nPics`: if `Data.picTotal` is more than `State.nPics`, `State.nPics` will be incremented by 20; if `Data.picTotal` is more than `State.nPics` but less than `State.nPics + 20`, then `State.nPics` will be set to `Data.picTotal`.
+   21. `change State.nPics`: if `State.nPics + 100` is more than `Data.picTotal`, the responder will invoke `State.query`.
    22. `change Data.pendingConversions`: if `Data.pendingConversions` is `true` and `State.pendingConversions` already contains an interval, or if `Data.pendingConversions` is `false` and `State.pendingConversions` is `undefined`, the responder does nothing. If `Data.pendingConversions` is `true` and there's no interval yet, it sets an interval to invoke `query pics` every 2 seconds and stores it in `State.pendingConversions`. If `Data.pendingConversions` is `false` and there's still an interval, it removes it from the store and invokes `clearInterval` on it.
 
 4. Open
@@ -968,8 +959,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 5. Upload
    1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
-   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. If there are files with unsupported formats, it invokes `report unsupportedFormats`.
-   3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If there are files with unsupported formats, it invokes `report unsupportedFormats`.
+   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`.
+   3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
    4. `upload start`: adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and `change State.upload.queue`.
    5. `upload cancel`: has `uid` as its first argument; adds `uid` to `State.upload.cancelled`; finds all the files on `State.upload.queue` with `uid`, filters them out and updates `State.upload.queue`.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
@@ -983,7 +974,6 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
       - Invokes `query account` and `query tags`.
       - If `State.page` is `pics`, invokes `query pics` and `query tags`.
-   8. `report unsupportedFormats`: using `State.upload.new.format`, it invokes `post unsupportedFormats`.
 
 6. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
@@ -1037,11 +1027,6 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `new`: {format: [{name: 'FILENAME', format: 'FORMAT'}, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
-      - `summary`: {
-         UID: {tags: [STRING, ...]|UNDEFINED, errors: [{code: INTEGER, name: STRING, error: OBJECT}, ...]|UNDEFINED}
-         ...
-      }
-      - `cancelled`: [ID, ...]|undefined, to list the ids of the uploads that were cancelled by an user.
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, uploads: [...], imports: [...], suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
@@ -1051,24 +1036,25 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 {
       authOK: true|UNDEFINED (present when server redirects back to app after a successful auth flow)
       redirect: STRING|UNDEFINED,
-      start: INTEGER|UNDEFINED,
-      end: INTEGER|UNDEFINED,
+
+      id: INTEGER|UNDEFINED,
+      status: listing|ready|error,
       fileCount: INTEGER|UNDEFINED,
       folderCount: INTEGER|UNDEFINED,
-      error: STRING|UNDEFINED,
-      list: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]},
+      error: OBJECT|STRING|UNDEFINED,
       selection: UNDEFINED|[ID, ...],
-      upload: UNDEFINED|{start: INTEGER, total: INTEGER, done: INTEGER, invalid: INTEGER|UNDEFINED, repeated: INTEGER|UNDEFINED},
+      data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]},
       waitingForServer: UNDEFINED|true, serves to indicate when a current version of the data is a placeholder until the response comes back from the server after starting the import
 }
 ```
    If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
-   - `pictotal`': UNDEFINED|INTEGER, with the total number of pictures matched by the current query; comes from `body.total` from `query pics`.
+   - `picTotal`': UNDEFINED|INTEGER, with the total number of pictures matched by the current query; comes from `body.total` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
+   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|finished|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin
 
