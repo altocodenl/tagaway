@@ -2304,6 +2304,12 @@ H.upper = function (s) {
    }).join (' ');
 }
 
+H.ago = function (ms) {
+   if (ms < 1000 * 60 * 60)      return Math.floor (ms / (1000 * 60)) + ' minutes';
+   if (ms < 1000 * 60 * 60 * 24) return Math.floor (ms / (1000 * 60 * 60)) + ' hours';
+   return Math.floor (ms / (1000 * 60 * 60 * 24)) + ' days';
+}
+
 // *** VIEWS ***
 
 var E = {};
@@ -2949,7 +2955,7 @@ dale.do ([
    ['drop', 'files', function (x, ev) {
       if (B.get ('State', 'page') !== 'upload') return;
       dale.do (ev.dataTransfer.files, function (file) {
-         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'format'], {name: file.name, format: file.type});
+         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
          else                                                  B.add (['State', 'upload', 'new', 'files'], file);
       });
       // TODO: why do we need this timeout?
@@ -2960,14 +2966,15 @@ dale.do ([
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
       dale.do (input.files, function (file) {
-         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'format'], {name: file.name, format: file.type});
-         else                                                  B.add (['State', 'upload', 'new', 'files'], file);
+         if (file.size && file.size > 536870.888)                    B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         else if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
+         else                                                       B.add (['State', 'upload', 'new', 'files'], file);
       });
       B.do (x, 'change', ['State', 'upload', 'new']);
       input.value = '';
    }],
    ['upload', 'start', function (x) {
-      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: B.get ('State', 'upload', 'new', 'files').length, unsupported: B.get ('State', 'upload', 'new', 'format')}, function (x, error, rs) {
+      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: B.get ('State', 'upload', 'new', 'files').length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the upload.');
          B.do (x, 'query', 'uploads');
 
@@ -2975,9 +2982,7 @@ dale.do ([
             B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: B.get ('State', 'upload', 'new', 'tags')});
          });
          B.do (x, 'rem', ['State', 'upload'], 'new');
-         console.log ('DEBUG change 1');
          B.do (x, 'change', ['State', 'upload', 'queue']);
-         console.log ('DEBUG change 2');
       });
    }],
    ['upload', /cancel|finish/, function (x, id) {
@@ -3005,7 +3010,6 @@ dale.do ([
       });
    }],
    ['change', ['State', 'upload', 'queue'], function (x) {
-      console.log ('DEBUG change 3');
       var queue = B.get ('State', 'upload', 'queue');
       var MAXSIMULT = 2, uploading = 0;
       dale.stop (queue, false, function (file) {
@@ -3020,7 +3024,6 @@ dale.do ([
          f.append ('pic', file.file);
          if (file.tags) f.append ('tags', JSON.stringify (file.tags));
          B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
-            console.log ('DEBUG UPLOAD', error, rs);
             dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                if (v === file) {
                   B.do (x, 'rem', ['State', 'upload', 'queue'], i);
@@ -3050,7 +3053,7 @@ dale.do ([
             if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
          });
       });
-   }]
+   }],
 
    // *** IMPORT RESPONDERS ***
 
@@ -4373,7 +4376,8 @@ E.upload = function () {
                                     // UPLOAD SELECTION
                                     B.view (['State', 'upload', 'new'], {attrs: {class: 'upload-box__selection'}}, function (x, newUpload) {
                                        var selected = B.get ('State', 'upload', 'new', 'files')  || [];
-                                       var format   = B.get ('State', 'upload', 'new', 'format') || [];
+                                       var unsupported = B.get ('State', 'upload', 'new', 'unsupported') || [];
+                                       var tooLarge    = B.get ('State', 'upload', 'new', 'tooLarge')    || [];
                                        return [
                                           // TODO v2: add inline SVG
                                           ['div', {class: 'upload-selection', opaque: true}, [
@@ -4385,10 +4389,16 @@ E.upload = function () {
                                              ]]),
                                           ]],
                                           // TODO v2: add inline SVG
-                                          H.if (format.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
+                                          H.if (unsupported.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
                                              ['style', ['.no-svg svg', {display: 'none'}]],
                                              ['p', {class: 'upload-selection__text'}, [
-                                                [format.length, ' files have unsupported formats and will be ignored.']
+                                                [unsupported.length, ' file(s) have unsupported formats and will be ignored.']
+                                             ]]
+                                          ]]),
+                                          H.if (tooLarge.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
+                                             ['style', ['.no-svg svg', {display: 'none'}]],
+                                             ['p', {class: 'upload-selection__text'}, [
+                                                [tooLarge.length, ' file(s) are too large and will be ignored.']
                                              ]]
                                           ]]),
                                        ];
@@ -4485,14 +4495,13 @@ E.upload = function () {
                                  ['div', {class: 'upload-box__section'}, [
                                     // TODO v2: add inline SVG
                                     ['p', {class: 'upload-progress', opaque: true}, [
-                                       ['span', {class: 'upload-progress__amount-uploaded'}, done],
-                                       '/',
-                                       ['span', {class: 'upload-progress__amount'}, upload.total],
-                                       ['LITERAL', '&nbsp'],
-                                       ['span', {class: 'upload-progress__default-text'}, 'uploading...'],
-                                       H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
-                                       H.if (upload.invalid,  ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid  || []).length + ' invalid) ']),
-                                       H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).length + ' too large) ']),
+                                       ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
+                                          var texts = [done + '/' + upload.total + ' uploading...'];
+                                          if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
+                                          if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
+                                          if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
+                                          return texts.join (', ');
+                                       }) ()],
                                     ]],
                                     ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
                                        ['style', ['.no-svg svg', {display: 'none'}]],
@@ -4549,17 +4558,15 @@ E.upload = function () {
                               ['div', {class: 'upload-box__section'}, [
                                  // TODO v2: add inline SVG
                                  ['p', {class: 'upload-progress', opaque: true}, [
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, done],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
+                                       var texts = [done + ' pictures uploaded'];
+                                       if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
+                                       if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
+                                       if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
+                                       return texts.join (', ');
+                                    }) ()],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'pictures uploaded'],
-                                    ['LITERAL', '&nbsp'],
-                                    H.if (upload.repeated, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.repeated || []).length + ' repeated) ']),
-                                    ['LITERAL', '&nbsp'],
-                                    H.if (upload.invalid,  ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.invalid  || []).length + ' invalid) ']),
-                                    ['LITERAL', '&nbsp'],
-                                    H.if (upload.tooLarge, ['span', {class: 'upload-progress__default-text'}, ' (' + (upload.tooLarge || []).invalid + ' too large) ']),
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, ' (' + Math.round ((Date.now () - upload.end) / 60000) + ' minutes ago)'],
+                                    ['span', {class: 'upload-progress__default-text'}, '(' + H.ago (Date.now () - upload.end) + ' ago)'],
                                     ['br'],
                                  ]],
                                  ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [

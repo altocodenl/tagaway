@@ -691,7 +691,10 @@ H.getUploads = function (s, username, filters, maxResults) {
             else if (log.op === 'start') {
                // If current upload has had no activity in over ten minutes, we consider it stalled.
                if (! upload.status) {
-                  if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) upload.status = 'stalled';
+                  if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) {
+                     upload.status = 'stalled';
+                     upload.end    = (upload.lastActivity || log.id) + 1000 * 60 * 10;
+                  }
                   else                                                                upload.status = 'ongoing';
                }
 

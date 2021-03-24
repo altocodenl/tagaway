@@ -43,7 +43,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Refactor for upload & import
       - Client
          - Refactor uploads
-            - make it upload (change event).
             - fix snackbar cancel.
             - Block too large files in client.
             - document responder changes & dependency changes.
@@ -1026,7 +1025,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
    - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
    - `upload`:
-      - `new`: {format: [{name: 'FILENAME', format: 'FORMAT'}, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
+      - `new`: {unsupported: [STRING, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
 
