@@ -2966,7 +2966,7 @@ dale.do ([
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
       dale.do (input.files, function (file) {
-         if (file.size && file.size > 536870.888)                    B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         if (file.size && file.size > 536870888)                    B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
          else if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
          else                                                       B.add (['State', 'upload', 'new', 'files'], file);
       });
@@ -2985,15 +2985,19 @@ dale.do ([
          B.do (x, 'change', ['State', 'upload', 'queue']);
       });
    }],
-   ['upload', /cancel|finish/, function (x, id) {
-      B.do (x, 'post', 'metaupload', {}, {op: x.path [0], id: id}, function (x, error, rs) {
+   ['upload', /cancel|finish/, function (x, id, noSnackbar) {
+      var op = x.path [0];
+      B.do (x, 'post', 'metaupload', {}, {op: op, id: id}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'finish' ? 'finishing' : 'cancelling') + ' the upload.');
-         B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
+         // If we cancel the upload, we clear files belonging to the upload from the queue.
+         if (op === 'cancel') B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
             if (file.id !== id) return file;
          }));
+
          B.do (x, 'query', 'uploads');
-         if (x.path [0] === 'cancel') B.do (x, 'snackbar', 'green', 'Upload cancelled successfully.');
-         else                         B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
+         if (noSnackbar) return;
+         if (op === 'cancel') B.do (x, 'snackbar', 'green', 'Upload cancelled successfully.');
+         else                 B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
       });
    }],
    ['upload', 'tag', function (x, tag) {
@@ -3031,19 +3035,19 @@ dale.do ([
                }
             });
 
-            var lastFileFromUpload = ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {
-               if (v.id === file.id) return v;
-            });
+            var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {if (upload.id === file.id) return upload});
 
             if (error && error.status === 409 && error.responseText.match ('capacity')) {
-               B.do (x, 'set', ['State', 'upload', 'queue'], []);
+               dale.do (B.get ('Data', 'uploads'), function (upload) {
+                  if (upload.status === 'ongoing') B.do (x, 'upload', 'cancel', upload.id, true);
+               });
                B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
             }
-            else if (error && error.status !== 409 && error.status !== 400) {
+            else if (error && error.status !== 409 && error.status !== 400 && upload.status !== 'ongoing') {
                B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
 
-            else if (lastFileFromUpload) {
+            else if (upload.status === 'ongoing' && ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {if (v.id === file.id) return v})) {
                B.do (x, 'upload', 'finish', file.id);
             }
 
@@ -4412,14 +4416,17 @@ E.upload = function () {
                                           B.view (['Data', 'tags'], {attrs: {class: 'upload-box__search'}}, function (x, tags) {
                                              // SEARCH FORM
                                              return B.view (['State', 'upload', 'tag'], {attrs: {class: 'search-form'}}, function (x, filter) {
-                                                var Tags = dale.fil (tags, undefined, function (v, tag) {
+                                                var maxTags = 10, showTags = [];
+                                                dale.stop (tags, true, function (v, tag) {
                                                    if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
                                                    if ((B.get ('State', 'upload', 'new', 'tags') || []).indexOf (tag) > -1) return;
-                                                   if (filter === undefined || filter.length === 0) return tag;
-                                                   if (tag.match (H.makeRegex (filter))) return tag;
+                                                   if (filter === undefined || filter.length === 0 || tag.match (H.makeRegex (filter))) {
+                                                      showTags.push (tag);
+                                                      if (showTags.length === maxTags) return true;
+                                                   }
                                                 });
                                                 if (filter && dale.keys (tags).indexOf (filter) === -1) {
-                                                   if (! H.isYear (filter) && ! H.isGeo (filter) && filter !== 'all' && filter !== 'untagged') Tags.unshift (filter + ' (new tag)');
+                                                   if (! H.isYear (filter) && ! H.isGeo (filter) && filter !== 'all' && filter !== 'untagged') showTags.unshift (filter + ' (new tag)');
                                                 }
                                                 return [
                                                    ['input', B.ev ({autocomplete: 'off', value: filter, id: 'uploadTag', class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags'}, ['oninput', 'set', ['State', 'upload', 'tag']])],
@@ -4427,7 +4434,7 @@ E.upload = function () {
                                                    ['span', {class: 'search-form-svg', opaque: true}],
                                                    ['div', {class: 'search-form__dropdown'}, [
                                                       // TAG LIST DROPDOWN
-                                                      ['ul', {class: 'tag-list-dropdown'}, dale.do (Tags, function (tag) {
+                                                      ['ul', {class: 'tag-list-dropdown'}, dale.do (showTags, function (tag) {
                                                          return ['li', B.ev ({class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'})}, ['onclick', 'upload', 'tag', tag === filter + ' (new tag)' ? filter : tag]), [
                                                             // TODO v2: add inline SVG
                                                             ['div', {class: 'tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
@@ -4496,7 +4503,7 @@ E.upload = function () {
                                     // TODO v2: add inline SVG
                                     ['p', {class: 'upload-progress', opaque: true}, [
                                        ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
-                                          var texts = [done + '/' + upload.total + ' uploading...'];
+                                          var texts = [done + '/' + upload.total + ' uploading'];
                                           if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
                                           if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
                                           if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
@@ -4542,7 +4549,7 @@ E.upload = function () {
                   dale.do (uploads, function (upload) {
                      if (upload.status === 'ongoing') return;
                      // Files that are too large should be detected before uploading and shouldn't be counted towards the total.
-                     var done = (upload.ok || 0) + (upload.repeated || []).length + (upload.invalid || []).length;
+                     var done = upload.ok || 0;
                      return ['li', {class: 'recent-uploads__list-item'}, [
                         // UPLOAD BOX
                         ['div', {class: 'upload-box upload-box--recent-uploads'}, [
@@ -4566,7 +4573,7 @@ E.upload = function () {
                                        return texts.join (', ');
                                     }) ()],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, '(' + H.ago (Date.now () - upload.end) + ' ago)'],
+                                    ['span', {class: 'upload-progress__default-text'}, '(' + upload.status + ', ' + H.ago (Date.now () - upload.end) + ' ago)'],
                                     ['br'],
                                  ]],
                                  ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [

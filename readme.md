@@ -39,34 +39,26 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
+- When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
+
 - Import/upload:
    - Refactor for upload & import
       - Client
-         - Refactor uploads
-            - fix snackbar cancel.
-            - Block too large files in client.
-            - document responder changes & dependency changes.
          - Refactor imports
             - check authOK, redirect and waitingForServer
             - Use new data format.
             - Add option to cancel import if it yields an error besides "try again".
             - Note when a listing or upload has been cancelled with a snackbar.
 
-   - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
-
-   - [check bug fixed] When uploading, current upload is not duplicated also in recent uploads.
-   - [check bug fixed] When uploading a new batch while one is going on, it doesn't show up in ongoing uploads!
-   - [check bug fixed] When error is shown in upload, it carries over to import. When coming back to upload, a blue icon looks huge.
-
    - Heartbeat:
       - Modify upload metadata endpoint, add tests.
       - Use special key with expiry to mark this directly.
       - When querying, return if key is set.
       - Refactor client to refresh query only when this flag is present, stop calling query from import/upload.
-   - Upload: when having a lot of tags, don't show them all in the tag suggestion dropdowns.
-   - When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
-   - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
+   - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
    - Upload all pics/vids.
+      - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
+      - [reproduce & fix bug] Upload becomes stalled despite no loss of connectivity
    - Review all invalid pics/vids.
 
 - Reset dev & prod servers and start from scratch.
@@ -813,7 +805,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> set State.filter`
       - `click -> goto tag`
 2. `E.upload`
-   - Depends on: `State.upload.summary`, `State.upload.new`, `Data.tags`, `State.upload.tag`, `State.upload.queue`, `Data.account`
+   - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
       - `onchange -> upload files|folder`
       - `onclick -> rem State.upload.new`
@@ -959,21 +951,21 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    8. `goto location`: takes a `pic` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
 5. Upload
-   1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`.
-   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`.
-   3. `upload files|folder`: `add` (without event) items to `State.upload.new.format` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
-   4. `upload start`: adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and `change State.upload.queue`.
-   5. `upload cancel`: has `uid` as its first argument; adds `uid` to `State.upload.cancelled`; finds all the files on `State.upload.queue` with `uid`, filters them out and updates `State.upload.queue`.
+   1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
+   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
+   3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
+   4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
+   5. `upload cancel|finish`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument; invokes `post metaupload`; if it receives an error, invokes `snackbar`; otherwise, if it's the `cancel` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both operations, if `noSnackbar` is absent, it then invokes `query uploads` and `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
-   7. `change State.upload.queue`:
-      - Sets `State.upload.summary.UID.tags`.
-      - Invokes `post upload`.
-      - Removes an element from `State.upload.queue`.
-      - Performs a file upload.
-      - Conditionally invokes `snackbar` on error; also on success of entire upload, also depending on `State.upload.cancelled` to ascertain if the upload concluded or was cancelled.
-      - If the file upload returns an error stating there's no further capacity, clears up `State.upload.queue` completely.
+   7. `query uploads`: invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads`.
+   8. `change State.upload.queue`:
+      - Invokes `post upload` to upload the file.
+      - Removes the file just uploaded from `State.upload.queue`.
+      - Conditionally invokes `snackbar` on error if space runs out or there was an unexpected error.
+      - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
+      - Conditionally invokes `upload finish` if this is the last file of an upload that still has status `ongoing` (as per `Data.uploads`).
       - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
-      - Invokes `query account` and `query tags`.
+      - Invokes `query uploads` and `query tags`.
       - If `State.page` is `pics`, invokes `query pics` and `query tags`.
 
 6. Import
@@ -1030,7 +1022,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `tag`: content of input to filter tag or add a new one.
 
 - `Data`:
-   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, uploads: [...], imports: [...], suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
+   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, it has the shape:
 ```
