@@ -385,7 +385,7 @@ var main = [
       {op: 'start', tags: ['a'], total: 1, alreadyImported: true},
       {op: 'start', tags: ['all'], total: 1},
       {op: 'start', tags: ['ok', 'untagged'], total: 1},
-      {op: 'finish', tags: ['ok'], total: 1},
+      {op: 'complete', tags: ['ok'], total: 1},
    ], function (v, k) {
       return ['invalid start upload #' + (k + 1), 'post', 'metaupload', {}, v, 400];
    }),
@@ -457,14 +457,14 @@ var main = [
       if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'ongoing', total: 3, tags: ['video']})) return clog ('Invalid upload data.');
       return true;
    }],
-   ['finish upload', 'post', 'metaupload', {}, function (s) {return {op: 'finish', id: s.uid1}}, 200],
-   ['finish upload again', 'post', 'metaupload', {}, function (s) {return {op: 'finish', id: s.uid1}}, 409],
-   ['cancel finished upload', 'post', 'metaupload', {}, function (s) {return {op: 'cancel', id: s.uid1}}, 409],
-   ['check user logs after finish upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+   ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
+   ['complete upload again', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 409],
+   ['cancel complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'cancel', id: s.uid1}}, 409],
+   ['check user logs after complete upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       var uploadLogs = rs.body.logs.slice (0, 2), id;
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
          if (v.a !== 'upl') return 'Invalid action';
-         if (v.op !== ['finish', 'repeated'] [k]) return 'Invalid op: ' + v.op + ' (' + (k + 1) + ')';
+         if (v.op !== ['complete', 'repeated'] [k]) return 'Invalid op: ' + v.op + ' (' + (k + 1) + ')';
 
          if (type (v.id) !== 'integer') return 'Invalid id type: ' + v.id;
          if (k === 0) id = v.id;
@@ -473,8 +473,8 @@ var main = [
       if (error) return (error);
       return true;
    }],
-   ['get uploads after finished upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'finished', total: 3, tags: ['video'], end: rs.body [0].end})) return clog ('Invalid upload data.');
+   ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'complete', total: 3, tags: ['video'], end: rs.body [0].end})) return clog ('Invalid upload data.');
       return true;
    }],
    ['upload video after upload end', 'post', 'upload', {}, function (s) {return {multipart: [
@@ -821,7 +821,7 @@ var main = [
       if (error) return (error);
       return true;
    }],
-   ['get uploads after finished upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
+   ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
       if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPic: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smalldup.png'], invalid: ['invalid.jpg', 'empty.jpg'], status: 'ongoing', total: 100})) return clog ('Invalid upload data.');
       return true;
    }],

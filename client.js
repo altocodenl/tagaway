@@ -2985,10 +2985,10 @@ dale.do ([
          B.do (x, 'change', ['State', 'upload', 'queue']);
       });
    }],
-   ['upload', /cancel|finish/, function (x, id, noSnackbar) {
+   ['upload', /cancel|complete/, function (x, id, noSnackbar) {
       var op = x.path [0];
       B.do (x, 'post', 'metaupload', {}, {op: op, id: id}, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'finish' ? 'finishing' : 'cancelling') + ' the upload.');
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'complete' ? 'completing' : 'cancelling') + ' the upload.');
          // If we cancel the upload, we clear files belonging to the upload from the queue.
          if (op === 'cancel') B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
             if (file.id !== id) return file;
@@ -3048,7 +3048,7 @@ dale.do ([
             }
 
             else if (upload.status === 'ongoing' && ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {if (v.id === file.id) return v})) {
-               B.do (x, 'upload', 'finish', file.id);
+               B.do (x, 'upload', 'complete', file.id);
             }
 
             B.do (x, 'query', 'uploads');

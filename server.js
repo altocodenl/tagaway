@@ -679,9 +679,9 @@ H.getUploads = function (s, username, filters, maxResults) {
             }
             var upload = uploads [log.id];
             if (log.pro && ! upload.pro) upload.pro = log.pro;
-            if (log.op === 'finish' || log.op === 'cancel' || log.op === 'error') {
+            if (log.op === 'complete' || log.op === 'cancel' || log.op === 'error') {
                upload.end = log.t;
-               upload.status = {finish: 'finished', cancel: 'cancelled', error: 'errored'} [log.op];
+               upload.status = {complete: 'complete', cancel: 'cancelled', error: 'errored'} [log.op];
                if (log.op === 'error') upload.error = log.error;
             }
             else if (log.op === 'providerError') {
@@ -695,7 +695,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                      upload.status = 'stalled';
                      upload.end    = (upload.lastActivity || log.id) + 1000 * 60 * 10;
                   }
-                  else                                                                upload.status = 'ongoing';
+                  else upload.status = 'ongoing';
                }
 
                // We only put the tags added on the `start` event, instead of using those on the `done` or `repeated` events.
@@ -1551,7 +1551,7 @@ var routes = [
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['op', 'pro'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
-         ['body.op',  b.op,  ['start', 'finish', 'cancel'],    'oneOf', teishi.test.equal],
+         ['body.op',  b.op,  ['start', 'complete', 'cancel'],    'oneOf', teishi.test.equal],
          ['body.pro', b.pro, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
          b.op !== 'start' ? [] : [
             ['tags', 'tooLarge', 'unsupported'].map (function (key) {
@@ -3083,7 +3083,7 @@ var routes = [
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
                [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}],
-               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'finish'}],
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'complete'}],
                [reply, rs, 200]
             ]);
 
@@ -3124,7 +3124,7 @@ var routes = [
                      // If we reached the end of the list, we're done.
                      if (index === s.list.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
-                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'finish'}],
+                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'complete'}],
                         function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
