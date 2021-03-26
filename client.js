@@ -2275,6 +2275,12 @@ H.isCountry = function (tag) {
    return !! tag.match (/^g::[A-Z]{2}$/);
 }
 
+H.isUserTag = function (tag) {
+   tag = tag.toLowerCase ();
+   if (tag === 'all' || tag === 'untagged') return false;
+   return ! H.isYear (tag) && ! H.isGeo (tag);
+}
+
 H.makeRegex = function (filter) {
    return new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
 }
@@ -2774,8 +2780,7 @@ dale.do ([
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
-      if (['all', 'untagged'].indexOf (tag.toLowerCase ()) > -1) return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
-      if (H.isYear (tag) || H.isGeo (tag)) return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+      if (! H.isUserTag (tag)) return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
 
       var ids = dale.keys (B.get ('State', 'selected'));
       if (ids.length === 0) return;
@@ -2979,7 +2984,9 @@ dale.do ([
          B.do (x, 'query', 'uploads');
 
          dale.do (B.get ('State', 'upload', 'new', 'files'), function (file) {
-            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: B.get ('State', 'upload', 'new', 'tags')});
+            var tags = B.get ('State', 'upload', 'new', 'tags') || [];
+            if (file.webkitRelativePath) tags = tags.concat (file.webkitRelativePath.split ('/').slice (0, -1));
+            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags});
          });
          B.do (x, 'rem', ['State', 'upload'], 'new');
          B.do (x, 'change', ['State', 'upload', 'queue']);
@@ -3003,7 +3010,7 @@ dale.do ([
    ['upload', 'tag', function (x, tag) {
       if (tag === true) tag = c ('#uploadTag').value;
       if (type (tag) !== 'string' || tag === '') return;
-      if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+      if (! H.isUserTag (tag)) return B.do (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
       B.do (x, 'add', ['State', 'upload', 'new', 'tags'], tag);
       B.do (x, 'rem', ['State', 'upload'], 'tag');
    }],

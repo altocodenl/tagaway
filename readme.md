@@ -55,6 +55,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Use special key with expiry to mark this directly.
       - When querying, return if key is set.
       - Refactor client to refresh query only when this flag is present, stop calling query from import/upload.
+      - Same for upload: if in new tab/device you go to uploads, said device will refresh the upload list.
    - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
    - Upload all pics/vids.
       - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
@@ -181,6 +182,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Store original pictures in S3 and pictures + thumbnails locally.
    - Ignore images that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
    - Upload files from folder selection, files selection & drop.
+   - If uploading from folder, use folder name (and optional subfolders) as tags for the images contained in them.
    - See progress when uploading files, using a progress bar.
    - Add one or more tags to the upcoming upload batch.
    - See previous uploads.
