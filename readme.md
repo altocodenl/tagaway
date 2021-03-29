@@ -60,6 +60,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Upload all pics/vids.
       - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
       - [reproduce & fix bug] Upload becomes stalled despite no loss of connectivity
+   - Re-import all pics/vids.
    - Review all invalid pics/vids.
 
 - Reset dev & prod servers and start from scratch.
@@ -809,6 +810,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 2. `E.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
+      - `onclick -> snackbar yellow MESSAGE true`
       - `onchange -> upload files|folder`
       - `onclick -> rem State.upload.new`
       - `oninput -> set State.upload.tag`
@@ -895,7 +897,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
    2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current page should be `login`).
    3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
-   4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument.
+   4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument. As second argument it takes a flag `noSnackbar` that doesn't set a timeout to clear the snackbar.
    5. `get` & `post`: wrapper for ajax functions.
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
@@ -955,7 +957,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 5. Upload
    1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
-   3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`.
+   3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
    4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
    5. `upload cancel|complete`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument; invokes `post metaupload`; if it receives an error, invokes `snackbar`; otherwise, if it's the `cancel` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both operations, if `noSnackbar` is absent, it then invokes `query uploads` and `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.

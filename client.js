@@ -2396,12 +2396,13 @@ dale.do ([
    ['clear', 'snackbar', function (x) {
       var existing = B.get ('State', 'snackbar');
       if (! existing) return;
-      clearTimeout (existing.timeout);
+      if (existing.timeout) clearTimeout (existing.timeout);
       B.do (x, 'rem', 'State', 'snackbar');
    }],
-   ['snackbar', [], function (x, snackbar) {
+   ['snackbar', [], function (x, snackbar, noTimeout) {
       B.do (x, 'clear', 'snackbar');
       var colors = {green: '#04E762', red: '#D33E43', yellow: '#ffff00'};
+      if (noTimeout) return B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar});
       var timeout = setTimeout (function () {
          B.do (x, 'rem', 'State', 'snackbar');
       }, 4000);
@@ -2975,6 +2976,7 @@ dale.do ([
          else if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
          else                                                       B.add (['State', 'upload', 'new', 'files'], file);
       });
+      if (x.path [0] === 'folder') B.do (x, 'clear', 'snackbar');
       B.do (x, 'change', ['State', 'upload', 'new']);
       input.value = '';
    }],
@@ -4363,7 +4365,7 @@ E.upload = function () {
                         // UPLOAD BOX
                         ['div', {class: 'upload-box'}, [
                            ['input', B.ev ({id: 'files-upload',  type: 'file', multiple:  true, style: style ({display: 'none'})}, ['onchange', 'upload', 'files'])],
-                           ['input', B.ev ({id: 'folder-upload', type: 'file', directory: true, webkitdirectory: true, mozdirectory: true, style: style ({display: 'none'})}, ['onchange', 'upload', 'folder'])],
+                           ['input', B.ev ({id: 'folder-upload', type: 'file', directory: true, webkitdirectory: true, mozdirectory: true, style: style ({display: 'none'})}, [['onclick', 'snackbar', 'yellow', 'For a folder with many files, listing the files may take a few minutes. Please wait...', true], ['onchange', 'upload', 'folder']])],
                            // TODO v2: add inline SVG
                            ['div', {class: 'upload-box__image', opaque: true}],
                            ['div', {class: 'upload-box__main'}, [
