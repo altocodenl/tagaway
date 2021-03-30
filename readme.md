@@ -45,11 +45,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Refactor for upload & import
       - Client
          - Refactor imports
-            - check authOK, redirect and waitingForServer
-            - Use new data format.
-            - Add option to cancel import if it yields an error besides "try again".
             - Note when a listing or upload has been cancelled with a snackbar.
-
+            - Refactor views.
+            - Update docs: views, responders.
+            - Add option to cancel import if it yields an error besides "try again".
    - Heartbeat:
       - Modify upload metadata endpoint, add tests.
       - Use special key with expiry to mark this directly.
@@ -410,7 +409,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
       - `{op: 'complete', id: INTEGER}`
       - `{op: 'cancel', id: INTEGER}`
-   - The body can contain a field `pro` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - The body can contain a field `provider` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - If an `id` is provided in the case of `end` or `cancel`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
    - In the case of `end` or `cancel`, if the existing upload already has a status, the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
@@ -505,10 +504,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /uploads`
-   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
 
 `GET /imports/PROVIDER`
-   - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDFEINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`.
+   - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, provider: PROVIDER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`. If oauth access hasn't been provided yet, the reply will be of the form `[{redirect: URL, provider: PROVIDER}]`, where `URL` is the URL to start the OAuth authorization process for that provider.
 
 `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
@@ -727,26 +726,26 @@ All the routes below require an admin user to be logged in.
    - For dismiss:         {t: INT, a: 'dis', op: 'geotagging|selection'}
    - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
    - Import:
-      - For oauth request:     {t: INT, a: 'imp', op: 'request',    pro: PROVIDER}
-      - For oauth grant:       {t: INT, a: 'imp', op: 'grant',      pro: PROVIDER}
-      - For start listing:     {t: INT, a: 'imp', op: 'listStart',  pro: PROVIDER, id: INTEGER}
-      - For file page:         {t: INT, a: 'imp', op: 'filePage',   pro: PROVIDER, id: INTEGER, n: INTEGER}
-      - For folder page:       {t: INT, a: 'imp', op: 'folderPage', pro: PROVIDER, id: INTEGER, n: INTEGER}
-      - For listing ended:     {t: INT, a: 'imp', op: 'listEnd',    pro: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
-      - For cancel:            {t: INT, a: 'imp', op: 'cancel',     pro: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
-      - For listing errored:   {t: INT, a: 'imp', op: 'listError',  pro: PROVIDER, id: INTEGER, error: STRING|OBJECT}
-      - For folders selection: {t: INT, a: 'imp', op: 'selection',  pro: PROVIDER, id: INTEGER, folders: [ID, ...]}
+      - For oauth request:     {t: INT, a: 'imp', op: 'request',    provider: PROVIDER}
+      - For oauth grant:       {t: INT, a: 'imp', op: 'grant',      provider: PROVIDER}
+      - For start listing:     {t: INT, a: 'imp', op: 'listStart',  provider: PROVIDER, id: INTEGER}
+      - For file page:         {t: INT, a: 'imp', op: 'filePage',   provider: PROVIDER, id: INTEGER, n: INTEGER}
+      - For folder page:       {t: INT, a: 'imp', op: 'folderPage', provider: PROVIDER, id: INTEGER, n: INTEGER}
+      - For listing ended:     {t: INT, a: 'imp', op: 'listEnd',    provider: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
+      - For cancel:            {t: INT, a: 'imp', op: 'cancel',     provider: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
+      - For listing error:     {t: INT, a: 'imp', op: 'listError',  provider: PROVIDER, id: INTEGER, error: STRING|OBJECT}
+      - For folders selection: {t: INT, a: 'imp', op: 'selection',  provider: PROVIDER, id: INTEGER, folders: [ID, ...]}
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:          {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
-      - For complete:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'complete'}
-      - For cancel:         {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'cancel'}
-      - For single upload:  {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated:       {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
-      - For invalid:        {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'invalid',  filename: STRING, error: STRING|OBJECT}
-      - For too large file: {t: INT, a: 'upl', id: INTEGER, pro: UNDEFINED|PROVIDER, op: 'tooLarge', filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
-      - For provider error: {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           op: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
-      - For error:          {t: INT, a: 'upl', id: INTEGER, pro: PROVIDER,           op: 'error',         error: STRING|OBJECT} - Note: this should only happen if there's no further space in the user account.
+      - For start:          {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
+      - For complete:       {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'complete'}
+      - For cancel:         {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'cancel'}
+      - For single upload:  {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated:       {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
+      - For invalid:        {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'invalid',  filename: STRING, error: STRING|OBJECT}
+      - For too large file: {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'tooLarge', filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For provider error: {t: INT, a: 'upl', id: INTEGER, provider: PROVIDER,           op: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
+      - For error:          {t: INT, a: 'upl', id: INTEGER, provider: PROVIDER,           op: 'error',         error: STRING|OBJECT} - Note: this should only happen if there's no further space in the user account.
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -908,7 +907,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7. `read hash`:
       - Places the first part of `window.location.hash` into (`State.page`).
       - If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
-      - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `Data.import.PROVIDER.authOK` to `true`.
+      - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `State.import.PROVIDER.authOK` to `true`.
    8. `change State.page`: validates whether a certain page can be shown, based on 1) whether the page exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.page` and overwrites `window.location.hash`.
    9. `test`: loads test suite.
 
@@ -973,7 +972,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.page` is `pics`, invokes `query pics` and `query tags`.
 
 6. Import
-   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `Data.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
+   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
    2. `import list PROVIDER STARTLIST CANCEL`: invokes `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy. It will also set `State.import.selection.PROVIDER`. It will also optionally invoke `snackbar` to report a successful listing/upload or an error, depending on the difference between the old and the new payload. If `CANCEL` is set, the snackbar printed will be different.
    3. `import cancel PROVIDER`: invokes `post import/cancel/PROVIDER`; after the ajax call, it also invokes `import list PROVIDER false true`.
    4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) and there's no upload information, the responder does nothing. But if there's provider data and a listing or upload is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER` and `query pics`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
@@ -993,13 +992,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
-   - `import`: if defined, it is an object of the form:
+   - `importList`: UNDEFINED|google|dropbox (indicates the list of folders of which provider is being shown)
+   - `imports`: if defined, it is an object with one key per provider and as value an object of the form:
 ```
 {
+   authOK: UNDEFINED|true, (if present we just confirmed an OAuth flow and we want to start an import process)
+   currentFolder: UNDEFINED|STRING,
    list: UNDEFINED|google|dropbox,
-   current: UNDEFINED|STRING,
-   selection: UNDEFINED|{PROVIDER: UNDEFINED|{ID1: true, ...}, ...},
-   update: UNDEFINED|{PROVIDER: UNDEFINED|INTERVAL, ...},
+   selection: UNDEFINED|{ID1: true, ...},
+   timeout: UNDEFINED|timeout, (if present, a timeout that makes `query imports PROVIDER` invoke itself)
 }
 ```
   `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selected` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
@@ -1028,30 +1029,27 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
-   - `import`: if defined, an object with one optional key per provider (`google` or `dropbox`). If provider key is defined, it has the shape:
+   - `imports`: an object where each key is a provider. If defined, each key has as value an array with one or more imports. Imports that are in the process of being uploaded or have already been uploaded have the same shape as those in `Data.uploads`. However, there may be up to one import per provider representing an import in a listing or ready state. Also there might be just an object with the keys `redirect` and `provider`, if the OAuth flow has not been done yet.
 ```
-{
-      authOK: true|UNDEFINED (present when server redirects back to app after a successful auth flow)
+   {
       redirect: STRING|UNDEFINED,
-
       id: INTEGER|UNDEFINED,
-      status: listing|ready|error,
+      provider: PROVIDER,
+      status:   listing|ready|error|pending|stalled|complete (pending/stalled is for imports that are being uploaded)
       fileCount: INTEGER|UNDEFINED,
       folderCount: INTEGER|UNDEFINED,
-      error: OBJECT|STRING|UNDEFINED,
+      error: STRING|OBJECT|UNDEFINED,
       selection: UNDEFINED|[ID, ...],
-      data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]},
-      waitingForServer: UNDEFINED|true, serves to indicate when a current version of the data is a placeholder until the response comes back from the server after starting the import
-}
+      data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: STRING, count: INTEGER, parent: ID, children: [ID, ...]}]},
+   }
 ```
-   If `list` is not present, the query to the PROVIDER's service is still ongoing. `fileCount` and `folderCount` serve only as measures of progress of the listing process.
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pics`: `[...]`; comes from `body.pics` from `query pics`.
    - `picTotal`': UNDEFINED|INTEGER, with the total number of pictures matched by the current query; comes from `body.total` from `query pics`.
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
-   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|errored, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
+   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin
 

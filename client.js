@@ -2441,7 +2441,7 @@ dale.do ([
       }
       if (hash [0] === 'import') {
          if (hash [1] === 'success' && hash [2]) {
-            B.do (x, 'set', ['Data', 'import', hash [2], 'authOK'], true);
+            B.do (x, 'set', ['State', 'imports', hash [2], 'authOK'], true);
             window.location.hash = '#/import';
          }
       }
@@ -3072,89 +3072,65 @@ dale.do ([
 
    ['change', ['State', 'page'], function (x) {
       var page = B.get ('State', 'page');
-      if (page !== 'import' && page !== 'pics') return;
+      if (page !== 'import') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       dale.do (['google'], function (provider) {
-         if (B.get ('Data', 'import', provider, 'authOK')) {
-            B.do (x, 'rem', ['Data', 'import', provider], 'authOK');
-            return B.do (x, 'import', 'list', provider, true);
+         if (B.get ('State', 'imports', provider, 'authOK')) {
+            B.do (x, 'rem', ['State', 'imports', provider], 'authOK');
+            return B.do (x, 'import', 'list', provider);
          }
-         if (! B.get ('Data', 'import', provider)) B.do (x, 'import', 'list', provider);
+         if (! B.get ('Data', 'imports', provider)) B.do (x, 'query', 'imports', provider);
       });
    }],
 
-   ['import', 'list', function (x, provider, startList, cancel) {
-      B.do (x, 'get', 'import/list/' + provider + (startList ? '?startList=1' : ''), {}, '', function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving the list of files.');
-         if (rs.body.redirect) return B.do (x, 'set', ['Data', 'import', provider, 'redirect'], rs.body.redirect);
-         var oldData = B.get ('Data', 'import', provider) || {};
+   ['query', 'imports', function (x, provider) {
+      var timeout = B.get ('State', 'imports', provider, 'timeout');
+      if (timeout) {
+         B.do (x, 'rem', ['State', 'imports', provider, 'timeout']);
+         clearTimeout (timeout);
+      }
+      B.do (x, 'get', 'imports/' + provider, {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving your imports.');
+         B.do (x, 'set', ['Data', 'imports', provider], rs.body);
+         var needTimeout = dale.stop (rs.body, true, function (v) {
+            if ([undefined, 'error', 'complete'].indexOf (v.status) === -1) return true;
+         });
+         if (needTimeout) B.do (x, 'set', ['State', 'imports', provider, 'timeout'], setTimeout (function () {
+            B.do (x, 'query', 'imports', provider);
+         }, 1500));
+      });
+   }],
 
-         if (! oldData.error && rs.body.error) {
-            B.do (x, 'snackbar', 'red', 'There was an error listing/importing files from ' + H.upper (provider));
-         }
-         else if (! rs.body.upload && oldData.upload) {
-            if (cancel) B.do (x, 'snackbar', 'green', 'Successfully cancelled import process from ' + H.upper (provider));
-            else {
-               B.do (x, 'snackbar', 'green', 'Successfully imported files from ' + H.upper (provider));
-               // We query account to update the recent imports.
-               B.do (x, 'query', 'account');
-            }
-         }
-         else if (! teishi.eq (oldData, {}) && ! oldData.end && rs.body.end && ! oldData.waitingForServer) {
-            B.do (x, 'snackbar', 'green', 'Successfully listed files from ' + H.upper (provider));
-         }
-
-         B.do (x, 'set', ['Data', 'import', provider], rs.body);
-         B.do (x, 'set', ['State', 'import', 'selection', provider], dale.obj (rs.body.selection, function (v) {
-            return [v, true];
-         }));
+   ['import', 'list', function (x, provider, startList) {
+      B.do (x, 'post', 'import/list/' + provider, {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error listing the files to be imported.');
+         B.do (x, 'query', 'imports', provider);
       });
    }],
 
    ['import', 'cancel', function (x, provider) {
       B.do (x, 'post', 'import/cancel/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
-         B.do (x, 'import', 'list', provider, false, true);
+         B.do (x, 'query', 'imports', provider);
       });
-   }],
-
-   ['change', ['Data', 'import', '*'], function (x) {
-      var provider = x.path [2], data = B.get ('Data', 'import', provider) || {};
-      if (! data.start || (data.end && ! data.upload)) return;
-      if (B.get ('State', 'import', 'update', provider)) return;
-      var interval = setInterval (function () {
-         var data = B.get ('Data', 'import', provider) || {};
-         // If list exists and is still ongoing, refresh the list and let the interval keep on going.
-         if (data.start && ! data.error && (! data.end || data.upload)) {
-            // If we're back in the pics page and there's an upload process ongoing, refresh the query after each successful refresh.
-            if (data.upload && B.get ('State', 'page') === 'pics') {
-               B.do (x, 'query', 'pics');
-               B.do (x, 'query', 'tags');
-            }
-            return B.do (x, 'import', 'list', provider);
-         }
-         clearInterval (interval);
-         B.do (x, 'rem', ['State', 'import', 'update'], provider);
-      }, 2000);
-      B.do (x, 'set', ['State', 'import', 'update', provider], interval);
    }],
 
    ['import', 'retry', function (x, provider) {
       B.do (x, 'post', 'import/cancel/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files from ' + H.upper (provider));
-         B.do (x, 'import', 'list', provider, true);
+         B.do (x, 'import', 'list', provider);
       });
    }],
 
    ['import', 'select', function (x, provider, start) {
-      B.do (x, 'post', 'import/select/' + provider, {}, {ids: dale.keys (B.get ('State', 'import', 'selection', provider))}, function (x, error, rs) {
+      B.do (x, 'post', 'import/select/' + provider, {}, {ids: dale.keys (B.get ('State', 'imports', provider, 'selection'))}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
-         if (! start) return B.do (x, 'import', 'list', provider);
+         if (! start) return B.do (x, 'query', 'imports', provider);
          // We create a placeholder data object to immediately put a box to show import progress without waiting for the server's reply.
-         B.do ('set', ['Data', 'import', 'google'], {start: Date.now (), upload: {total: 0, done: 0}, waitingForServer: true});
+         B.do ('set', ['Data', 'imports', 'google'], [{id: Date.now (), ok: 0, total: 0}]);
          B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
             if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids from ' + H.upper (provider));
-            B.do (x, 'import', 'list', provider);
+            B.do (x, 'query', 'imports');
          });
       });
    }],

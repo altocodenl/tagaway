@@ -669,8 +669,8 @@ H.getUploads = function (s, username, filters, maxResults) {
 
             // We can filter out uploads by id or provider.
             if (filters.id  && log.id  !== filters.id)  return;
-            if (filters.pro && log.pro !== filters.pro) return;
-            if (filters.pro === null && log.pro !== undefined) return;
+            if (filters.provider && log.provider !== filters.provider) return;
+            if (filters.provider === null && log.provider !== undefined) return;
 
             if (! uploads [log.id]) {
                // If there are already enough results, don't add further results.
@@ -678,10 +678,10 @@ H.getUploads = function (s, username, filters, maxResults) {
                uploads [log.id] = {id: log.id};
             }
             var upload = uploads [log.id];
-            if (log.pro && ! upload.pro) upload.pro = log.pro;
+            if (log.provider && ! upload.provider) upload.provier = log.provider;
             if (log.op === 'complete' || log.op === 'cancel' || log.op === 'error') {
                upload.end = log.t;
-               upload.status = {complete: 'complete', cancel: 'cancelled', error: 'errored'} [log.op];
+               upload.status = {complete: 'complete', cancel: 'cancelled', error: 'error'} [log.op];
                if (log.op === 'error') upload.error = log.error;
             }
             else if (log.op === 'providerError') {
@@ -728,33 +728,55 @@ H.getUploads = function (s, username, filters, maxResults) {
 
 H.getImports = function (s, username, provider, maxResults) {
    a.seq (s, [
+      [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
+         if (error.errorCode === 1) return a.seq (s, [
+            [H.log, rq.user.username, {a: 'imp', op: 'request', provider: 'google'}],
+            [reply, rs, 200, [{
+               redirect: [
+                  'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+                  'prompt=consent',
+                  'response_type=code',
+                  'client_id=' + SECRET.google.oauth.client,
+                  '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+                  'access_type=offline',
+                  'state=' + rq.csrf
+               ].join ('&'),
+               provider: 'google'
+            }]],
+         ]);
+
+         reply (rs, 403, {code: error.code || 500, error: error.body || error});
+      }],
       [a.set, 'current', [Redis, 'hgetall', 'imp:' + {google: 'g', dropbox: 'd'} [provider] + ':' + username]],
-      [a.set, 'uploads', [H.getUploads, username, {pro: provider}, maxResults]],
+      [a.set, 'uploads', [H.getUploads, username, {provider: provider}, maxResults]],
       function (s) {
          // The only previous imports that are registered in the history are those that had an upload, otherwise they are not considered.
          if (! s.current) return s.next (s.uploads);
-
-         s.current = {
-            id:          parseInt (s.current.id),
-            status:      s.current.status,
-            fileCount:   parseInt (s.current.fileCount) || undefined,
-            folderCount: parseInt (s.current.fileCount) || undefined,
-            // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
-            error:       teishi.p (s.current.error) || s.current.error,
-            selection:   s.current.selection ? JSON.parse (selection) : undefined,
-            data:        s.current.data ? JSON.parse (data) : undefined
-         }
-         // Delete file data from import since it's not necessary in the client.
-         if (s.current.data) delete s.current.data.files;
-
+         var id = parseInt (s.current.id);
          var currentUpload = dale.stopNot (s.uploads.list, undefined, function (upload) {
             if (upload.id === s.current.id) return upload;
          });
-         // If current import has no upload, add it to the list in the first position.
-         if (! currentUpload) s.uploads.unshift (s.current);
-         // Otherwise, add the error field if it exists (no other fields are relevant if the upload is already ongoing)
+
+         // If current import has an upload, use it.
+         if (currentUpload) {
+            // Add the error field if it exists (no other fields are relevant if the upload is already ongoing)
+            if (s.current.error) currentUpload.error = teishi.p (s.current.error) || s.current.error;
+         }
          else {
-            if (s.current.error) currentUpload.error = s.current.error;
+            // Otherwise, create an entry for it.
+            s.uploads.unshift ({
+               id:          parseInt (s.current.id),
+               provider:    provider,
+               status:      s.current.status,
+               fileCount:   parseInt (s.current.fileCount) || undefined,
+               folderCount: parseInt (s.current.fileCount) || undefined,
+               // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
+               error:       teishi.p (s.current.error) || s.current.error,
+               selection:   s.current.selection ? JSON.parse (selection) : undefined,
+               data:        s.current.data ? JSON.parse (data) : undefined
+            });
+            // Delete file data from import since it's not necessary in the client.
+            if (s.uploads [0].data) delete s.uploads [0].data.files;
          }
          s.next (s.uploads);
       }
@@ -1550,9 +1572,9 @@ var routes = [
       var b = rq.body, t = Date.now ();
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['op', 'pro'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['op', 'provider'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
          ['body.op',  b.op,  ['start', 'complete', 'cancel'],    'oneOf', teishi.test.equal],
-         ['body.pro', b.pro, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
+         ['body.provider', b.provider, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
          b.op !== 'start' ? [] : [
             ['tags', 'tooLarge', 'unsupported'].map (function (key) {
                return [
@@ -1567,7 +1589,7 @@ var routes = [
          ],
       ])) return;
 
-      if (b.pro && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
+      if (b.provider && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
 
       var invalidTag = dale.stopNot (b.tags, undefined, function (tag) {
          tag = H.trim (tag);
@@ -1662,7 +1684,7 @@ var routes = [
                [H.unlink, newpath, true],
                ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
                ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
-               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'invalid', filename: name, error: error}],
+               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, op: 'invalid', filename: name, error: error}],
                [reply, rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image'), data: error, filename: name}]
             ]);
          }
@@ -1685,7 +1707,7 @@ var routes = [
          function (s) {
             if (s.byfs.size <= 536870888) return s.next ();
             a.seq (s, [
-               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'tooLarge', filename: name, size: s.byfs.size}],
+               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, op: 'tooLarge', filename: name, size: s.byfs.size}],
                [reply, rs, 400, {error: 'tooLarge', filename: name}]
             ]);
          },
@@ -1697,7 +1719,7 @@ var routes = [
             // Temporarily override limit for admins until we roll out paid accounts.
             if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
             if (used >= limit) return a.seq (s, [
-               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'error', error: 'No more space in your account.'}],
+               [H.log, rq.user.username, {a: 'upl', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, op: 'error', error: 'No more space in your account.'}],
                [reply, rs, 409, {error: 'capacity'}]
             ]);
             s.next ();
@@ -1796,7 +1818,7 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'repeated', fileId: s.id, tags: tags.length ? tags : undefined, filename: name});
+               H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, op: 'repeated', fileId: s.id, tags: tags.length ? tags : undefined, filename: name});
             },
             function (s) {
                reply (rs, 409, {error: 'repeated', id: s.id});
@@ -1949,7 +1971,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, pro: (rq.data.fields.providerData || {}).provider, op: 'ok', fileId: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
+            H.log (s, rq.user.username, {a: 'upl', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, op: 'ok', fileId: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2508,7 +2530,7 @@ var routes = [
 
    ['get', 'uploads', function (rq, rs) {
       astop (rs, [
-         [H.getUploads, rq.user.username, {pro: null}, 20],
+         [H.getUploads, rq.user.username, {provider: null}, 20],
          function (s) {
             reply (rs, 200, s.last);
          }
@@ -2668,7 +2690,7 @@ var routes = [
       ]);
    }],
 
-   // *** INTEGRATION WITH OTHER APIS ***
+   // *** IMPORT ROUTES ***
 
    // This route is executed after the OAuth flow, the provider redirects here.
    ['get', 'import/oauth/google', function (rq, rs) {
@@ -2690,7 +2712,7 @@ var routes = [
          multi.exec (function (error) {
             if (error) return reply (rs, 500, {error: error});
             reply (rs, 302, {}, {location: CONFIG.domain + '#/import/success/google'});
-            H.log (a.creat (), rq.user.username, {a: 'imp', op: 'grant', pro: 'google'});
+            H.log (a.creat (), rq.user.username, {a: 'imp', op: 'grant', provider: 'google'});
          });
       }});
    }],
@@ -2699,21 +2721,6 @@ var routes = [
 
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-            if (error.errorCode === 1) return a.seq (s, [
-               [H.log, rq.user.username, {a: 'imp', op: 'request', pro: 'google'}],
-               function (s) {
-                  reply (rs, 200, {redirect: [
-                     'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
-                     'prompt=consent',
-                     'response_type=code',
-                     'client_id=' + SECRET.google.oauth.client,
-                     '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
-                     'access_type=offline',
-                     'state=' + rq.csrf
-                  ].join ('&')});
-               }
-            ]);
-
             reply (rs, 403, {code: error.code || 500, error: error.body || error});
          }],
          // If there's already an import process ongoing for this provider, we return a 409.
@@ -2722,7 +2729,7 @@ var routes = [
             s.id = Date.now ();
             a.seq (s, [
                [Redis, 'hmset', 'imp:g:' + rq.user.username, {id: id, status: 'listing'}],
-               [H.log, rq.user.username, {a: 'imp', op: 'listStart', pro: 'google', id: id}],
+               [H.log, rq.user.username, {a: 'imp', op: 'listStart', provider: 'google', id: id}],
                function (s) {
                   reply (rs, 200);
                   s.next ();
@@ -2775,7 +2782,7 @@ var routes = [
                               if (! s.last) return;
                               Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'fileCount', RS.body.files.length);
                            },
-                           [H.log, rq.user.username, {a: 'imp', op: 'filePage', pro: 'google', id: s.id, n: RS.body.files.length}],
+                           [H.log, rq.user.username, {a: 'imp', op: 'filePage', provider: 'google', id: s.id, n: RS.body.files.length}],
                            function (s) {
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
                                  file.size = parseInt (file.size);
@@ -2872,7 +2879,7 @@ var routes = [
                               if (! s.last) return;
                               Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'folderCount', batch.length);
                            },
-                           [H.log, rq.user.username, {a: 'imp', op: 'folderPage', pro: 'google', id: s.id, n: batch.length}],
+                           [H.log, rq.user.username, {a: 'imp', op: 'folderPage', provider: 'google', id: s.id, n: batch.length}],
                            function (s) {
                               if (parentsToRetrieve.length === 0) return s.next ();
 
@@ -2948,7 +2955,7 @@ var routes = [
                         if (! s.last) return;
                         Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', unsupported: JSON.stringify (unsupported), data: JSON.stringify (data)});
                      },
-                     [H.log, rq.user.username, {a: 'imp', op: 'listEnd', pro: 'google', id: s.id, data: data}],
+                     [H.log, rq.user.username, {a: 'imp', op: 'listEnd', provider: 'google', id: s.id, data: data}],
                      function (s) {
                         var email = CONFIG.etemplates.importList ('Google', rq.user.username);
                         sendmail (s, {
@@ -2964,7 +2971,7 @@ var routes = [
          }
       ], function (s, error) {
          a.stop (s, [
-            [H.log, rq.user.username, {a: 'imp', op: 'listError', pro: 'google', id: s.id, error: error}],
+            [H.log, rq.user.username, {a: 'imp', op: 'listError', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
@@ -2994,8 +3001,8 @@ var routes = [
             if (! s.last) return reply (rs, 200);
             a.seq (s, [
                s.last.status === 'uploading' ?
-                  [H.log, rq.user.username, {a: 'upl', op: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}] :
-                  [H.log, rq.user.username, {a: 'imp', op: 'cancel', pro: 'google', id: parseInt (s.last.id), status: s.last.status}],
+                  [H.log, rq.user.username, {a: 'upl', op: 'cancel', provider: 'google', id: parseInt (s.last.id), status: s.last.status}] :
+                  [H.log, rq.user.username, {a: 'imp', op: 'cancel', provider: 'google', id: parseInt (s.last.id), status: s.last.status}],
                [Redis, 'del', 'imp:g:' + rq.user.username]
             ]);
          }
@@ -3028,7 +3035,7 @@ var routes = [
 
             Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
          },
-         [H.log, rq.user.username, {a: 'imp', op: 'selection', pro: 'google', id: parseInt (s.last.id), folders: b.ids}],
+         [H.log, rq.user.username, {a: 'imp', op: 'selection', provider: 'google', id: parseInt (s.last.id), folders: b.ids}],
          function (s) {
             reply (rs, 200);
          }
@@ -3082,8 +3089,8 @@ var routes = [
             // If there are no files to import, we delete the import key and set the user logs.
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
-               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}],
-               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'complete'}],
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'start', total: 0, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}],
+               [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'complete'}],
                [reply, rs, 200]
             ]);
 
@@ -3091,7 +3098,7 @@ var routes = [
             s.ids = dale.keys (s.filesToUpload);
 
             // If we're here, there are files to be imported.
-            H.log (s, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
+            H.log (s, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
          },
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'status', 'uploading'],
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
@@ -3124,7 +3131,7 @@ var routes = [
                      // If we reached the end of the list, we're done.
                      if (index === s.list.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
-                        [H.log, {a: 'upl', id: parseInt (s.import.id), pro: 'google', op: 'complete'}],
+                        [H.log, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'complete'}],
                         function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
@@ -3140,7 +3147,7 @@ var routes = [
                         if (Error) return;
                         Error = true;
                         a.seq (s, [
-                           [H.log, {a: 'upl', id: parseInt (s.upload.id), pro: 'google', op: 'providerError', error: {code: code, error: error}}],
+                           [H.log, {a: 'upl', id: parseInt (s.upload.id), provider: 'google', op: 'providerError', error: {code: code, error: error}}],
                            [importFile, index + 1]
                         ]);
                      }
