@@ -2422,7 +2422,7 @@ var routes = [
                if (s.error) return reply (rs, 500, {error: error});
                dale.go (download.pics, function (pic, k) {
                   var stat = s.last [k];
-                  stat.mtime = new Date (pic.mtime);
+                  stat.mtime = new Date (pic.mtime - new Date ().getTimezoneOffset () * 60 * 1000);
                   // https://www.archiverjs.com/docs/archiver#entry-data
                   archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: unrepeatName (pic.name), stats: stat});
                });

@@ -1422,8 +1422,6 @@ var main = [
             fs.unlinkSync (s.shared [0].name);
             fs.unlinkSync (s.shared [1].name);
             fs.unlinkSync ('download.zip');
-            // Note: this will only work if the *server* is running in UTC; it seems that the mtime includes the timezone offset of the server, despite the fact that it is an UTC date! In case the server is being run in non-UTC, we adjust for this. I don't understand why the offset has to be multiplied by two.
-            mtime = mtime - new Date ().getTimezoneOffset () * 60 * 1000 * 2;
             if (mtime !== new Date ('2018-06-03T00:00:00.000Z').getTime ()) return clog ('Invalid mtime on zip file', mtime, new Date ('2018-06-03T00:00:00.000Z').getTime ());
             next ();
          }
