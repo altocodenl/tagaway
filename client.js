@@ -3092,8 +3092,12 @@ dale.do ([
       B.do (x, 'get', 'imports/' + provider, {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving your imports.');
          B.do (x, 'set', ['Data', 'imports', provider], rs.body);
+         // If there's a selection already in the import data, we put it in the state as well.
+         if (rs.body [0] && rs.body [0].selection) B.do (x, 'set', ['State', 'imports', provider, 'selection'], dale.obj (rs.body [0].selection, function (v) {
+            return [v, true];
+         }));
          var needTimeout = dale.stop (rs.body, true, function (v) {
-            if ([undefined, 'error', 'complete'].indexOf (v.status) === -1) return true;
+            if ([undefined, 'error', 'complete', 'ready'].indexOf (v.status) === -1) return true;
          });
          if (needTimeout) B.do (x, 'set', ['State', 'imports', provider, 'timeout'], setTimeout (function () {
             B.do (x, 'query', 'imports', provider);
@@ -3101,8 +3105,8 @@ dale.do ([
       });
    }],
 
-   ['import', 'list', function (x, provider, startList) {
-      B.do (x, 'post', 'import/list/' + provider, {}, '', function (x, error, rs) {
+   ['import', 'list', function (x, provider) {
+      B.do (x, 'post', 'import/list/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error listing the files to be imported.');
          B.do (x, 'query', 'imports', provider);
       });
@@ -3111,6 +3115,7 @@ dale.do ([
    ['import', 'cancel', function (x, provider) {
       B.do (x, 'post', 'import/cancel/' + provider, {}, {}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the list of files.');
+         B.do (x, 'snackbar', 'green', 'Your import has been cancelled successfully.');
          B.do (x, 'query', 'imports', provider);
       });
    }],
@@ -4628,10 +4633,10 @@ E.noSpace = function () {
 
 E.import = function () {
 
-   var boxMaker = function (type, provider, data) {
+   var boxMaker = function (status, provider, data) {
       var className = provider === 'google' ? 'google-drive' : provider;
 
-      if (type === 'listing') return ['div', {class: 'listing-in-process'}, [
+      if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
                ['div', {class: className + '-icon', opaque: true}]
@@ -4661,8 +4666,8 @@ E.import = function () {
          ]],
       ]];
 
-      if (type === 'listReady') return ['div', {class: 'listing-in-process'}, [
-         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+      if (status === 'ready') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
                ['div', {class: className + '-icon', opaque: true}]
             ]],
@@ -4676,41 +4681,13 @@ E.import = function () {
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', B.ev ({class: 'boxed-alert-button-left button'}, ['onclick', 'import', 'cancel', provider]), 'Delete list'],
-                  ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'import', 'list'], provider]), 'Select folders'],
+                  ['div', B.ev ({class: 'boxed-alert-button-right button'}, ['onclick', 'set', ['State', 'imports', provider, 'showFolders'], true]), 'Select folders'],
                ]],
             ]],
          ]],
       ]];
 
-      if (type === 'uploading') return ['div', {class: 'listing-in-process'}, [
-         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: className + '-icon', opaque: true}]
-            ]],
-            ['div', {class: 'boxed-alert__main'}, [
-               ['div', {class: 'upload-box__section'}, [
-                  ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: className + '-icon-small', opaque: true}],
-                     ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
-                  ]],
-                  ['div', {class: 'progress-bar'}],
-               ]],
-               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', {class: 'listing-progress'}, [
-                     ['div', {class: 'files-found-so-far'}, [
-                        ['span', data.upload.done + (data.upload.repeated || []).length + (data.upload.invalid || []).length + (data.upload.tooLarge || []).length],
-                        ['span', ' / '],
-                        ['span', data.upload.total],
-                        ['div', ' imported so far'],
-                     ]],
-                  ]],
-                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'cancel', provider]), 'Cancel']
-               ]],
-            ]],
-         ]],
-      ]];
-
-      if (type === 'error') return ['div', {class: 'listing-in-process'}, [
+      if (status === 'error') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
                ['div', {class: 'space-alert-icon', opaque: true}]
@@ -4729,6 +4706,35 @@ E.import = function () {
             ]],
          ]]
       ]];
+
+      if (status === 'uploading') return ['div', {class: 'listing-in-process'}, [
+         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+            ['div', {class: 'space-alert__image', opaque: true}, [
+               ['div', {class: className + '-icon', opaque: true}]
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section'}, [
+                  ['p', {class: 'boxed-alert-message'}, [
+                     ['span', {class: className + '-icon-small', opaque: true}],
+                     ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', {class: 'listing-progress'}, [
+                     ['div', {class: 'files-found-so-far'}, [
+                        ['span', (data.ok || 0) + (data.alreadyImported || 0) + (data.repeated || []).length + (data.invalid || []).length + (data.tooLarge || []).length],
+                        ['span', ' / '],
+                        ['span', data.total],
+                        ['div', ' imported so far'],
+                     ]],
+                  ]],
+                  ['div', B.ev ({class: 'boxed-alert-button-left button', style: style ({float: 'right'})}, ['onclick', 'import', 'cancel', provider]), 'Cancel']
+               ]],
+            ]],
+         ]],
+      ]];
+
    }
 
    return ['div', [
@@ -4741,10 +4747,13 @@ E.import = function () {
                ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
                ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
             ]],
-            B.view (['Data', 'import'], {attrs: {class: 'page-section'}}, function (x, importData) {
+            B.view (['Data', 'imports'], {attrs: {class: 'page-section'}}, function (x, importData) {
                if (! importData) return;
-               return B.view (['State', 'import'], function (x, importState) {
-                  if (importState && importState.list) return E.importList (importState, importData [importState.list]);
+               return B.view (['State', 'imports'], function (x, importState) {
+                  var showFolders = dale.stopNot (importState, undefined, function (v, provider) {
+                     if (v.showFolders) return provider;
+                  });
+                  if (showFolders) return E.importFolders (importState [showFolders], importData [showFolders]);
                   return [
                      // IMPORT BOX SECTION
                      ['div', {class: 'upload-box'}, [
@@ -4756,21 +4765,33 @@ E.import = function () {
                                  ['h3', {class: 'upload-box__section-title'}, 'Import files'],
                                  ['div', {class: 'drag-and-drop-import', opaque: true}, [
                                     ['div', dale.do ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo'}], function (provider) {
-                                       var providerData = importData [provider.provider];
+
+                                       // We consider only the first import entry for the provider.
+                                       var providerData = (importData [provider.provider] || []) [0];
                                        if (! providerData) return;
+
                                        var attrs = {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class};
+                                       // No space left, just show the bare div.
                                        if (noSpace) return ['div', attrs];
+
+                                       // If the OAuth flow hasn't been started yet, offer a link to start it.
                                        if (providerData.redirect) return ['div', attrs, ['a', {href: providerData.redirect}, [
-                                          ['span', {style: style({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}]],
+                                          ['span', {style: style ({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}]],
                                        ]];
-                                       if (providerData.error) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
-                                       if (providerData.upload) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being uploaded, please wait.'])];
-                                       // If no list, trigger listing.
-                                       if (! providerData.start) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider, true])];
-                                       // If currently listing, show snackbar.
-                                       if (! providerData.end) return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being listed, please wait.'])];
+
+                                       // If there's an error, print an error on click.
+                                       if (providerData.status === 'error')     return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
+
+                                       // If there's an import upload in process, print a warning on click.
+                                       if (providerData.status === 'uploading') return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being uploaded, please wait.'])];
+                                       // If there no list, trigger listing.
+                                       if (! providerData.status) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider])];
+
+                                       // If we are currently listing, print a warning on click.
+                                       if (providerData.status === 'listing') return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being listed, please wait.'])];
+
                                        // There's already a completed list, show it.
-                                       return ['div', B.ev (attrs, ['onclick', 'set', ['State', 'import', 'list'], provider.provider])];
+                                       if (providerData.status === 'ready') return ['div', B.ev (attrs, ['onclick', 'set', ['State', 'imports', provider.provider, 'showFolder'], true])];
                                     })]
                                  ]],
                               ];
@@ -4778,63 +4799,59 @@ E.import = function () {
                         ]],
                      ]],
                      dale.do (importData, function (data, provider) {
-                        if (! data || ! data.start) return;
-                        if (data.error)       return boxMaker ('error',     provider, data);
-                        if (data.upload)      return boxMaker ('uploading', provider, data);
-                        if (! data.end)       return boxMaker ('listing',   provider, data);
-                        return boxMaker ('listReady', provider, data);
+                        data = (data || []) [0];
+                        if (data && data.status) return boxMaker (data.status, provider, data);
                      })
                   ];
                })
             }),
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
-            B.view (['Data', 'account'], {tag: 'div'}, function (x, account) {
-               account = account || {};
-               return dale.do (account.imports, function (i) {
-                  // RECENT IMPORTS BOX
-                  return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
-                     ['div', {class: 'space-alert__image', opaque: true}, [
-                        ['div', {class: 'google-drive-icon', opaque: true}]
-                     ]],
-                     ['div', {class: 'upload-box__main'}, [
-                        ['div', {class: 'upload-box__section'}, [
-                           ['p', {class: 'upload-progress', opaque: true}, [
-                              ['span', {class: 'upload-progress__amount-uploaded'}, i.done],
-                              ['LITERAL', '&nbsp'],
-                              ['span', {class: 'upload-progress__default-text'}, 'pictures imported'],
-                              ! i.repeated ? [] : [
+            B.view (['Data', 'imports'], function (x, providers) {
+               return dale.do (providers, function (v, provider) {
+                  return dale.do (v, function (v2) {
+                     if (['complete', 'error'].indexOf (v2.status) === -1) return;
+                     return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
+                        ['div', {class: 'space-alert__image', opaque: true}, [
+                           ['div', {class: 'google-drive-icon', opaque: true}]
+                        ]],
+                        ['div', {class: 'upload-box__main'}, [
+                           ['div', {class: 'upload-box__section'}, [
+                              ['p', {class: 'upload-progress', opaque: true}, [
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, v2.done || 0],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + i.repeated.length],
+                                 ['span', {class: 'upload-progress__default-text'}, 'pictures imported'],
+                                 ! v2.repeated ? [] : [
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.repeated.length],
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, 'repeated)']
+                                 ],
+                                 ! v2.invalid ? [] : [
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + v2.invalid.length],
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, 'invalid)']
+                                 ],
+                                 ! v2.tooLarge ? [] : [
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + v2.tooLarge.length],
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, ' are too big)']
+                                 ],
+                                 ! v2.providerErrors ? [] : [
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + v2.providerErrors.length],
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved)']
+                                 ],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, 'repeated)']
-                              ],
-                              ! i.invalid ? [] : [
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + i.invalid.length],
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, 'invalid)']
-                              ],
-                              ! i.tooLarge ? [] : [
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + i.tooLarge.length],
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, ' are too big)']
-                              ],
-                              ! i.providerErrors ? [] : [
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + i.providerErrors.length],
-                                 ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved)']
-                              ],
-                              ['LITERAL', '&nbsp'],
-                              ['span', {class: 'upload-progress__amount-uploaded'}, Math.round ((Date.now () - i.end) / (1000 * 60))],
-                              ['LITERAL', '&nbsp'],
-                              ['span', {class: 'upload-progress__default-text'}, 'minutes ago']
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, H.ago (Date.now () - v2.end)],
+                              ]],
                            ]],
                         ]],
-                     ]],
-                  ]];
+                     ]];
+                  });
                });
             }),
             // BACK LINK
@@ -4850,22 +4867,22 @@ E.import = function () {
    ]];
 }
 
-E.importList = function (importState, importData) {
-   var folderList = ! importState.current ? importData.list.roots : importData.list.folders [importState.current].children;
+E.importFolders = function (importState, importData) {
+   console.log ('debug', importState, importData);
+   var folderList = ! importState.currentFolder ? importData.data.roots : importData.data.folders [importState.currentFolder].children;
    folderList.sort (function (a, b) {
-      var roots = ['Мой диск', 'My Drive'];
-      var nameA = importData.list.folders [a].name;
-      var nameB = importData.list.folders [b].name;
-      if (roots.indexOf (nameA) !== -1) return -1;
-      if (roots.indexOf (nameB) !== -1) return 1;
+      if (importData.data.roots.indexOf (a) !== -1) return -1;
+      if (importData.data.roots.indexOf (b) !== -1) return 1;
+      var nameA = importData.data.folders [a].name;
+      var nameB = importData.data.folders [b].name;
       return nameA.toLowerCase () > nameB.toLowerCase () ? 1 : -1;
    });
    var breadcrumb = [], addParent = function (id) {
       breadcrumb.unshift (id);
-      if (importData.list.folders [id].parent) addParent (importData.list.folders [id].parent);
+      if (importData.data.folders [id].parent) addParent (importData.data.folders [id].parent);
    }
-   if (importState.current) addParent (importState.current);
-   breadcrumb.unshift (importState.list === 'google' ? 'Google Drive' : 'Dropbox');
+   if (importState.currentFolder) addParent (importState.currentFolder);
+   breadcrumb.unshift (importData.provider === 'google' ? 'Google Drive' : 'Dropbox');
    (function () {
       // first title is uncompressible
       // last title must always be there but can be compressed (what's the maximum width?)
@@ -4889,7 +4906,7 @@ E.importList = function (importState, importData) {
       }
       var widths = {};
       dale.do (breadcrumb, function (item, k) {
-         widths [k] = calculateWidth (k === 0 ? item : ' > ' + importData.list.folders [item].name);
+         widths [k] = calculateWidth (k === 0 ? item : ' > ' + importData.data.folders [item].name);
       });
       widths.dots   = calculateWidth ('...');
       widths.gmdots = calculateWidth ('...');
@@ -4898,7 +4915,7 @@ E.importList = function (importState, importData) {
       var shortenedBreadcrumb = [breadcrumb [0]];
 
       dale.stop (dale.times (breadcrumb.length - 1, breadcrumb.length - 1, -1), true, function (index) {
-         var name = importData.list.folders [breadcrumb [index]].name;
+         var name = importData.data.folders [breadcrumb [index]].name;
 
          // if not the last element to add (the second one in breadcrumb) leave space for "> ..."
          if ((widthUsed + widths [index] + (index === 1 ? 0 : widths.gmdots)) <= availableWidth) {
@@ -4930,8 +4947,7 @@ E.importList = function (importState, importData) {
       breadcrumb = shortenedBreadcrumb;
    }) ();
 
-   var provider  = importState.list;
-   var selection = importState.selection [provider] || {};
+   var selection = importState.selection || {};
 
    return ['div', {class: 'import-file-list'}, [
       ['div', {class: 'upload-box'}, [
@@ -4941,10 +4957,10 @@ E.importList = function (importState, importData) {
                   ['div', {class: 'google-drive-icon-small'}]
                ]],
                ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (item, k) {
-                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'current']), item];
+                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'currentFolder']), item];
                   // This case is the "> ..." to omit certain items
                   if (! item.id) return ['span', item.name];
-                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'import', 'current'], item.id]), ' > ' + item.name];
+                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'import', 'currentFolder'], item.id]), ' > ' + item.name];
                })],
             ]],
             ['div', {class: 'import-process-box'}, [
@@ -4956,25 +4972,23 @@ E.importList = function (importState, importData) {
                ['div', B.ev ({class: 'import-process-box-back pointer'}, [
                   ['onclick', 'import', 'select', provider],
                   ['onclick', 'rem', ['State', 'import'], 'list'],
-                  ['onclick', 'rem', ['State', 'import'], 'current']
+                  ['onclick', 'rem', ['State', 'import'], 'currentFolder']
                ]), [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
                   // TODO: when upgrading gotoB v2, remove decoy div and check that recycle doesn't trigger onclick twice
-                  ['div', B.ev ({style: importState.current ? '' : 'display: none', class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'import', 'current'], importState.current ? importData.list.folders [importState.current].parent : '']), [
+                  ['div', B.ev ({style: importState.currentFolder ? '' : 'display: none', class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'import', importData.provider, 'currentFolder'], importState.currentFolder ? importData.data.folders [importState.currentFolder].parent : '']), [
                      ['div', {class: 'up-icon', opaque: true}],
                      ['span', 'Up']
                   ]],
-                  ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.current ? 210 : 163})}, dale.do (folderList, function (id) {
-                     var folder = importData.list.folders [id];
-                     var selected = !! selection [id];
+                  ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.do (folderList, function (id) {
                      if (! folder) return;
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
                            ['label', {class: 'checkbox-container'}, [
-                              ['input', B.ev ({type: 'checkbox', checked: selected}, selected ? ['onchange', 'rem', ['State', 'import', 'selection', provider], id] : ['onchange', 'set', ['State', 'import', 'selection', provider, id], true])],
+                              ['input', B.ev ({type: 'checkbox', checked: selected}, selection [importData.data.folders [id]] ? ['onchange', 'rem', ['State', 'import', importData.provider, 'selection'], id] : ['onchange', 'set', ['State', 'import', importData.provider, 'selection', id], true])],
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
@@ -4988,11 +5002,11 @@ E.importList = function (importState, importData) {
                   ['div', {class: 'import-process-box-selected-title'}, 'Selected Folders'],
                   ['div', {class: 'import-process-box-selected-row-container'}, [
                      dale.do (selection, function (selected, id) {
-                        var name = importData.list.folders [id].name;
+                        var name = importData.data.folders [id].name;
                         return ['div', {class: 'import-process-box-selected-row'}, [
                            ['div', {class: 'folder-icon'}],
                            ['div', {title: name, class: 'selected-folder-name'}, name],
-                           ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'import', 'selection', provider], id])]
+                           ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'import', importData.provider, 'selection'], id])]
                         ]];
                      })
                   ]],
@@ -5000,8 +5014,8 @@ E.importList = function (importState, importData) {
             ]],
             ['div', B.ev ({class: 'start-import-button button'}, [
                ['onclick', 'import', 'select', provider, true],
-               ['onclick', 'rem', ['State', 'import'], 'list'],
-               ['onclick', 'rem', ['State', 'import'], 'current']
+               ['onclick', 'rem', ['State', 'import', importData.provider], 'showFolders'],
+               ['onclick', 'rem', ['State', 'import', importData.provider], 'currentFolder']
             ]), 'Start import'],
          ]],
       ]]

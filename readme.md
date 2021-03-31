@@ -45,8 +45,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Refactor for upload & import
       - Client
          - Refactor imports
-            - Note when a listing or upload has been cancelled with a snackbar.
-            - Refactor views.
             - Update docs: views, responders.
             - Add option to cancel import if it yields an error besides "try again".
    - Heartbeat:
@@ -866,7 +864,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 7. `E.noSpace`
    - Contained by: `E.import`, `E.upload`.
    - Depends on `Data.account`.
-8. `E.importList`
+8. `E.importFolders`
    - Contained by: `E.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
@@ -992,13 +990,12 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.
-   - `importList`: UNDEFINED|google|dropbox (indicates the list of folders of which provider is being shown)
    - `imports`: if defined, it is an object with one key per provider and as value an object of the form:
 ```
 {
    authOK: UNDEFINED|true, (if present we just confirmed an OAuth flow and we want to start an import process)
    currentFolder: UNDEFINED|STRING,
-   list: UNDEFINED|google|dropbox,
+   showFolders: UNDEFINED|true, (if present, we show the folder list for this provider)
    selection: UNDEFINED|{ID1: true, ...},
    timeout: UNDEFINED|timeout, (if present, a timeout that makes `query imports PROVIDER` invoke itself)
 }
@@ -1035,7 +1032,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       redirect: STRING|UNDEFINED,
       id: INTEGER|UNDEFINED,
       provider: PROVIDER,
-      status:   listing|ready|error|pending|stalled|complete (pending/stalled is for imports that are being uploaded)
+      status:   listing|ready|error|uploading|stalled|complete (uploading/stalled is for imports that are being uploaded)
       fileCount: INTEGER|UNDEFINED,
       folderCount: INTEGER|UNDEFINED,
       error: STRING|OBJECT|UNDEFINED,

@@ -726,7 +726,7 @@ H.getUploads = function (s, username, filters, maxResults) {
    ]);
 }
 
-H.getImports = function (s, username, provider, maxResults) {
+H.getImports = function (s, rq, rs, provider, maxResults) {
    a.seq (s, [
       [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
          if (error.errorCode === 1) return a.seq (s, [
@@ -747,8 +747,8 @@ H.getImports = function (s, username, provider, maxResults) {
 
          reply (rs, 403, {code: error.code || 500, error: error.body || error});
       }],
-      [a.set, 'current', [Redis, 'hgetall', 'imp:' + {google: 'g', dropbox: 'd'} [provider] + ':' + username]],
-      [a.set, 'uploads', [H.getUploads, username, {provider: provider}, maxResults]],
+      [a.set, 'current', [Redis, 'hgetall', 'imp:' + {google: 'g', dropbox: 'd'} [provider] + ':' + rq.user.username]],
+      [a.set, 'uploads', [H.getUploads, rq.user.username, {provider: provider}, maxResults]],
       function (s) {
          // The only previous imports that are registered in the history are those that had an upload, otherwise they are not considered.
          if (! s.current) return s.next (s.uploads);
@@ -771,9 +771,9 @@ H.getImports = function (s, username, provider, maxResults) {
                fileCount:   parseInt (s.current.fileCount) || undefined,
                folderCount: parseInt (s.current.fileCount) || undefined,
                // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
-               error:       teishi.p (s.current.error) || s.current.error,
+               error:       teishi.parse (s.current.error) || s.current.error,
                selection:   s.current.selection ? JSON.parse (selection) : undefined,
-               data:        s.current.data ? JSON.parse (data) : undefined
+               data:        s.current.data ? JSON.parse (s.current.data) : undefined
             });
             // Delete file data from import since it's not necessary in the client.
             if (s.uploads [0].data) delete s.uploads [0].data.files;
@@ -2540,7 +2540,7 @@ var routes = [
    ['get', 'imports/:provider', function (rq, rs) {
       if (['google', 'dropbox'].indexOf (rq.data.params.provider) === -1) return reply (rs, 400);
       astop (rs, [
-         [H.getImports, rq.user.username, rq.data.params.provider, 20],
+         [H.getImports, rq, rs, rq.data.params.provider, 20],
          function (s) {
             reply (rs, 200, s.last);
          }
@@ -2728,8 +2728,8 @@ var routes = [
          function (s) {
             s.id = Date.now ();
             a.seq (s, [
-               [Redis, 'hmset', 'imp:g:' + rq.user.username, {id: id, status: 'listing'}],
-               [H.log, rq.user.username, {a: 'imp', op: 'listStart', provider: 'google', id: id}],
+               [Redis, 'hmset', 'imp:g:' + rq.user.username, {id: s.id, status: 'listing'}],
+               [H.log, rq.user.username, {a: 'imp', op: 'listStart', provider: 'google', id: s.id}],
                function (s) {
                   reply (rs, 200);
                   s.next ();
