@@ -45,6 +45,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Refactor for upload & import
       - Client
          - Refactor imports
+            - bugs: total count not returning during process, double delete button
             - Update docs: views, responders.
             - Add option to cancel import if it yields an error besides "try again".
    - Heartbeat:

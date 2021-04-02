@@ -698,7 +698,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                   else upload.status = 'ongoing';
                }
 
-               // We only put the tags added on the `start` event, instead of using those on the `done` or `repeated` events.
+               // We only put the tags added on the `start` event, instead of using those on the `ok` or `repeated` events.
                ['total', 'tooLarge', 'unsupported', 'alreadyImported', 'tags'].map (function (key) {
                   if (log [key] !== undefined) upload [key] = log [key];
                });
@@ -768,11 +768,11 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
                id:          parseInt (s.current.id),
                provider:    provider,
                status:      s.current.status,
-               fileCount:   parseInt (s.current.fileCount) || undefined,
-               folderCount: parseInt (s.current.fileCount) || undefined,
+               fileCount:   parseInt (s.current.fileCount)   || 0,
+               folderCount: parseInt (s.current.folderCount) || 0,
                // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
                error:       teishi.parse (s.current.error) || s.current.error,
-               selection:   s.current.selection ? JSON.parse (selection) : undefined,
+               selection:   s.current.selection ? JSON.parse (s.current.selection) : undefined,
                data:        s.current.data ? JSON.parse (s.current.data) : undefined
             });
             // Delete file data from import since it's not necessary in the client.
@@ -2738,9 +2738,9 @@ var routes = [
          },
          function (s) {
 
-            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 1 : 10000;
+            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 10 : 10000;
 
-            var pics = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
+            var files = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
                var d = Date.now ();
                limits.unshift ([d - d % 1000, n || 1]);
@@ -2803,7 +2803,7 @@ var routes = [
                                  });
                               });
 
-                              pics = pics.concat (allowedFiles);
+                              files = files.concat (allowedFiles);
 
                               // Bring a maximum of PAGES pages.
                               if (page > PAGES) return s.next ();
@@ -2926,14 +2926,14 @@ var routes = [
                      dale.go (folders [id].parents, porotoSum);
                   }
 
-                  // Convert pics into an object with their ids as keys
-                  pics = dale.obj (pics, function (pic) {
+                  // Convert files into an object with their ids as keys
+                  files = dale.obj (files, function (file) {
                      // Increment count for all parent folders
-                     dale.go (pic.parents, porotoSum);
-                     return [pic.id, pic];
+                     dale.go (file.parents, porotoSum);
+                     return [file.id, file];
                   });
 
-                  var data = {roots: dale.keys (roots), folders: {}, pics: pics};
+                  var data = {roots: dale.keys (roots), folders: {}, files: files};
 
                   dale.go (folders, function (folder, id) {
                      data.folders [id] = {name: folder.name, count: folder.count, parent: (folders [id].parents || []) [0], children: children [id]};
@@ -2943,7 +2943,7 @@ var routes = [
                   {roots: [ID, ...], folders: {
                      ID: {id: ID, name: '...', count: ..., parent: ..., children: [...]},
                      ...
-                  }, pics: {
+                  }, files: {
                      ID: {id: ID, ...}
                   }}
                   */
@@ -3033,12 +3033,13 @@ var routes = [
             });
             if (invalidId) return reply (rs, 400, {error: 'No folder with id: ' + invalidId});
 
+            s.id = parseInt (s.last.id);
             Redis (s, 'hset', 'imp:g:' + rq.user.username, 'selection', JSON.stringify (b.ids));
          },
-         [H.log, rq.user.username, {a: 'imp', op: 'selection', provider: 'google', id: parseInt (s.last.id), folders: b.ids}],
          function (s) {
-            reply (rs, 200);
-         }
+            H.log (s, rq.user.username, {a: 'imp', op: 'selection', provider: 'google', id: s.id, folders: b.ids});
+         },
+         [reply, rs, 200]
       ]);
    }],
 
@@ -3059,13 +3060,13 @@ var routes = [
                return [hash, true];
             });
 
-            // filesToUpload: keys are file ids, values are an array with folder names (direct parent and parent of parents all the way to the root).
+            // filesToUpload: keys are file ids, values is the file plus a list of folder names to be used as tags (direct parent and parent of parents all the way to the root).
             // alreadyImported is a counter of already imported files. There's no need to store their names, just how many of them there are.
             var filesToUpload = {}, alreadyImported = 0, tooLarge = [], unsupported = JSON.parse (s.import.unsupported);
 
             var recurseUp = function (childId, folderId) {
                var folder = data.folders [folderId];
-               filesToUpload [childId].push (folder.name);
+               filesToUpload [childId].tags.push (folder.name);
                if (folder.parent) recurseUp (childId, folder.parent);
             }
 
@@ -3079,12 +3080,13 @@ var routes = [
                   var file = data.files [childId];
                   if (hashes [H.hash (childId + ':' + file.modifiedTime)]) return alreadyImported++;
                   if (file.size > 536870888)                               return tooLarge.push (file.originaFilename);
-                  filesToUpload [childId] = [];
+                  file.tags = [];
+                  filesToUpload [childId] = file;
                   recurseUp (childId, folderId);
                });
             }
 
-            dale.go (JSON.parse (data.selection), recurseDown);
+            dale.go (s.import.selection ? JSON.parse (s.import.selection) : [], recurseDown);
 
             // If there are no files to import, we delete the import key and set the user logs.
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
@@ -3098,13 +3100,14 @@ var routes = [
             s.ids = dale.keys (s.filesToUpload);
 
             // If we're here, there are files to be imported.
-            H.log (s, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
+            H.log (s, rq.user.username, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'start', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
          },
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'status', 'uploading'],
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
          function (s) {
-            s.cookie = cicek.cookie.write (CONFIG.cookiename, s.session);
+            // We use s.Cookie instead of s.cookie to avoid it being overwritten by the call to the notify function
+            s.Cookie = cicek.cookie.write (CONFIG.cookiename, s.session);
             Redis (s, 'setex', 'session:' + s.session, giz.config.expires, rq.user.username);
          },
          function (s) {
@@ -3129,9 +3132,9 @@ var routes = [
                   [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'0': function () {}}],
                   function (s) {
                      // If we reached the end of the list, we're done.
-                     if (index === s.list.length) return a.seq (s, [
+                     if (index === s.ids.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
-                        [H.log, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'complete'}],
+                        [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'complete'}],
                         function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
@@ -3143,11 +3146,11 @@ var routes = [
                         }
                      ]);
 
-                     var file = s.list [index], Error, providerError = function (code, error) {
+                     var file = s.filesToUpload [s.ids [index]], Error, providerError = function (code, error) {
                         if (Error) return;
                         Error = true;
                         a.seq (s, [
-                           [H.log, {a: 'upl', id: parseInt (s.upload.id), provider: 'google', op: 'providerError', error: {code: code, error: error}}],
+                           [H.log, rq.user.username, {a: 'upl', id: parseInt (s.import.id), provider: 'google', op: 'providerError', error: {code: code, error: error}}],
                            [importFile, index + 1]
                         ]);
                      }
@@ -3180,12 +3183,12 @@ var routes = [
                         wstream.on ('finish', function () {
                            if (Error) return;
                            // UPLOAD THE FILE
-                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.cookie}, body: {multipart: [
+                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {multipart: [
                               {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
-                              {type: 'field', name: 'uid', value: parseInt (s.import.id)},
+                              {type: 'field', name: 'id', value: parseInt (s.import.id)},
                               // Use oldest date, whether createdTime or updatedTime
                               {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
-                              {type: 'field', name: 'tags', value: JSON.stringify (s.filesToUpload [file.id].concat ('Google Drive'))},
+                              {type: 'field', name: 'tags', value: JSON.stringify (file.tags.concat ('Google Drive'))},
                               {type: 'field', name: 'providerData', value: JSON.stringify ({
                                  provider:     'google',
                                  id:           file.id,

@@ -3097,7 +3097,7 @@ dale.do ([
             return [v, true];
          }));
          var needTimeout = dale.stop (rs.body, true, function (v) {
-            if ([undefined, 'error', 'complete', 'ready'].indexOf (v.status) === -1) return true;
+            if ([undefined, 'error', 'complete', 'ready', 'cancelled'].indexOf (v.status) === -1) return true;
          });
          if (needTimeout) B.do (x, 'set', ['State', 'imports', provider, 'timeout'], setTimeout (function () {
             B.do (x, 'query', 'imports', provider);
@@ -3135,7 +3135,7 @@ dale.do ([
          B.do ('set', ['Data', 'imports', 'google'], [{id: Date.now (), ok: 0, total: 0}]);
          B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
             if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids from ' + H.upper (provider));
-            B.do (x, 'query', 'imports');
+            B.do (x, 'query', 'imports', provider);
          });
       });
    }],
@@ -4767,8 +4767,7 @@ E.import = function () {
                                     ['div', dale.do ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo'}], function (provider) {
 
                                        // We consider only the first import entry for the provider.
-                                       var providerData = (importData [provider.provider] || []) [0];
-                                       if (! providerData) return;
+                                       var providerData = (importData [provider.provider] || []) [0] || {};
 
                                        var attrs = {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class};
                                        // No space left, just show the bare div.
@@ -4784,14 +4783,15 @@ E.import = function () {
 
                                        // If there's an import upload in process, print a warning on click.
                                        if (providerData.status === 'uploading') return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being uploaded, please wait.'])];
-                                       // If there no list, trigger listing.
-                                       if (! providerData.status) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider])];
+
+                                       // If there no list or the last import is finished, trigger listing.
+                                       if ([undefined, 'cancelled', 'complete'].indexOf (providerData.status) !== -1) return ['div', B.ev (attrs, ['onclick', 'import', 'list', provider.provider])];
 
                                        // If we are currently listing, print a warning on click.
                                        if (providerData.status === 'listing') return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being listed, please wait.'])];
 
                                        // There's already a completed list, show it.
-                                       if (providerData.status === 'ready') return ['div', B.ev (attrs, ['onclick', 'set', ['State', 'imports', provider.provider, 'showFolder'], true])];
+                                       if (providerData.status === 'ready') return ['div', B.ev (attrs, ['onclick', 'set', ['State', 'imports', provider.provider, 'showFolders'], true])];
                                     })]
                                  ]],
                               ];
@@ -4811,6 +4811,7 @@ E.import = function () {
                return dale.do (providers, function (v, provider) {
                   return dale.do (v, function (v2) {
                      if (['complete', 'error'].indexOf (v2.status) === -1) return;
+                     var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
                         ['div', {class: 'space-alert__image', opaque: true}, [
                            ['div', {class: 'google-drive-icon', opaque: true}]
@@ -4818,12 +4819,12 @@ E.import = function () {
                         ['div', {class: 'upload-box__main'}, [
                            ['div', {class: 'upload-box__section'}, [
                               ['p', {class: 'upload-progress', opaque: true}, [
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, v2.done || 0],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'pictures imported'],
-                                 ! v2.repeated ? [] : [
+                                 ! repeated ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.repeated.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + repeated],
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'repeated)']
                                  ],
@@ -4846,7 +4847,7 @@ E.import = function () {
                                     ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved)']
                                  ],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, H.ago (Date.now () - v2.end)],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + H.ago (Date.now () - v2.end) + ' ago)'],
                               ]],
                            ]],
                         ]],
@@ -4868,7 +4869,7 @@ E.import = function () {
 }
 
 E.importFolders = function (importState, importData) {
-   console.log ('debug', importState, importData);
+   importData = importData [0];
    var folderList = ! importState.currentFolder ? importData.data.roots : importData.data.folders [importState.currentFolder].children;
    folderList.sort (function (a, b) {
       if (importData.data.roots.indexOf (a) !== -1) return -1;
@@ -4957,10 +4958,10 @@ E.importFolders = function (importState, importData) {
                   ['div', {class: 'google-drive-icon-small'}]
                ]],
                ['div', {class: 'import-breadcrumb'}, dale.do (breadcrumb, function (item, k) {
-                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'import'], 'currentFolder']), item];
+                  if (k === 0) return ['span', B.ev ({class: 'pointer'}, ['onclick', 'rem', ['State', 'imports', importData.provider], 'currentFolder']), item];
                   // This case is the "> ..." to omit certain items
                   if (! item.id) return ['span', item.name];
-                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'import', 'currentFolder'], item.id]), ' > ' + item.name];
+                  return ['span', B.ev ({class: 'pointer'}, ['onclick', 'set', ['State', 'imports', importData.provider, 'currentFolder'], item.id]), ' > ' + item.name];
                })],
             ]],
             ['div', {class: 'import-process-box'}, [
@@ -4970,30 +4971,32 @@ E.importFolders = function (importState, importData) {
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', B.ev ({class: 'import-process-box-back pointer'}, [
-                  ['onclick', 'import', 'select', provider],
-                  ['onclick', 'rem', ['State', 'import'], 'list'],
-                  ['onclick', 'rem', ['State', 'import'], 'currentFolder']
+                  ['onclick', 'import', 'select', importData.provider],
+                  ['onclick', 'rem', ['State', 'imports', importData.provider], 'showFolders'],
+                  ['onclick', 'rem', ['State', 'imports', importData.provider], 'currentFolder']
                ]), [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
                   // TODO: when upgrading gotoB v2, remove decoy div and check that recycle doesn't trigger onclick twice
-                  ['div', B.ev ({style: importState.currentFolder ? '' : 'display: none', class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'import', importData.provider, 'currentFolder'], importState.currentFolder ? importData.data.folders [importState.currentFolder].parent : '']), [
+                  ['div', B.ev ({style: importState.currentFolder ? '' : 'display: none', class: 'import-process-box-list-up pointer'}, ['onclick', 'set', ['State', 'imports', importData.provider, 'currentFolder'], importState.currentFolder ? importData.data.folders [importState.currentFolder].parent : '']), [
                      ['div', {class: 'up-icon', opaque: true}],
                      ['span', 'Up']
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.do (folderList, function (id) {
+                     var folder = importData.data.folders [id];
+                     var selected = !! selection [id];
                      if (! folder) return;
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
                            ['label', {class: 'checkbox-container'}, [
-                              ['input', B.ev ({type: 'checkbox', checked: selected}, selection [importData.data.folders [id]] ? ['onchange', 'rem', ['State', 'import', importData.provider, 'selection'], id] : ['onchange', 'set', ['State', 'import', importData.provider, 'selection', id], true])],
+                              ['input', B.ev ({type: 'checkbox', checked: selected}, selected ? ['onchange', 'rem', ['State', 'imports', importData.provider, 'selection'], id] : ['onchange', 'set', ['State', 'imports', importData.provider, 'selection', id], true])],
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
                         ['div', {class: 'folder-icon', opaque: true}],
-                        ['div', ! folder.children ? {title: folder.name, class: 'import-folder-name pointer'} : B.ev ({title: folder.name, class: 'import-folder-name pointer'}, ['onclick', 'set', ['State', 'import', 'current'], id]), folder.name],
+                        ['div', ! folder.children ? {title: folder.name, class: 'import-folder-name pointer'} : B.ev ({title: folder.name, class: 'import-folder-name pointer'}, ['onclick', 'set', ['State', 'imports', importData.provider, 'currentFolder'], id]), folder.name],
                         ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                      ]];
                   })],
@@ -5006,16 +5009,16 @@ E.importFolders = function (importState, importData) {
                         return ['div', {class: 'import-process-box-selected-row'}, [
                            ['div', {class: 'folder-icon'}],
                            ['div', {title: name, class: 'selected-folder-name'}, name],
-                           ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'import', importData.provider, 'selection'], id])]
+                           ['div', B.ev ({class: 'selected-folder-deselect tag-actions__item', opaque: true}, ['onclick', 'rem', ['State', 'imports', importData.provider, 'selection'], id])]
                         ]];
                      })
                   ]],
                ]],
             ]],
             ['div', B.ev ({class: 'start-import-button button'}, [
-               ['onclick', 'import', 'select', provider, true],
-               ['onclick', 'rem', ['State', 'import', importData.provider], 'showFolders'],
-               ['onclick', 'rem', ['State', 'import', importData.provider], 'currentFolder']
+               ['onclick', 'import', 'select', importData.provider, true],
+               ['onclick', 'rem', ['State', 'imports', importData.provider], 'showFolders'],
+               ['onclick', 'rem', ['State', 'imports', importData.provider], 'currentFolder']
             ]), 'Start import'],
          ]],
       ]]
