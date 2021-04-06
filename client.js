@@ -2,7 +2,7 @@
 // TODO v2: remove
 
 B.forget ('eventlog');
-B.perflogs = true;
+//B.perflogs = true;
 
 var T = teishi.time ();
 B.listen ('*', [], {priority: 1000000}, function (x) {
@@ -2419,7 +2419,6 @@ dale.do ([
       //if (signup/login/recover/reset/changepassword) teishi.last (B.r.log).args [1] = 'OMITTED';
       var tdebug = Date.now ();
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
-         console.log ('DEBUG AJAX', Date.now () - tdebug, x.verb, x.path [0]);
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
             B.do (x, 'reset', 'store', true);
             return B.do (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
@@ -3048,15 +3047,15 @@ dale.do ([
 
             if (error && error.status === 409 && error.responseText.match ('capacity')) {
                dale.do (B.get ('Data', 'uploads'), function (upload) {
-                  if (upload.status === 'ongoing') B.do (x, 'upload', 'cancel', upload.id, true);
+                  if (upload.status === 'uploading') B.do (x, 'upload', 'cancel', upload.id, true);
                });
                B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
             }
-            else if (error && error.status !== 409 && error.status !== 400 && upload.status !== 'ongoing') {
+            else if (error && error.status !== 409 && error.status !== 400 && upload.status !== 'uploading') {
                B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
 
-            else if (upload.status === 'ongoing' && ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {if (v.id === file.id) return v})) {
+            else if (upload.status === 'uploading' && ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {if (v.id === file.id) return v})) {
                B.do (x, 'upload', 'complete', file.id);
             }
 
@@ -3093,11 +3092,11 @@ dale.do ([
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving your imports.');
          B.do (x, 'set', ['Data', 'imports', provider], rs.body);
          // If there's a selection already in the import data, we put it in the state as well.
-         if (rs.body [0] && rs.body [0].selection) B.do (x, 'set', ['State', 'imports', provider, 'selection'], dale.obj (rs.body [0].selection, function (v) {
+         if (rs.body [0] && rs.body [0].status === 'ready') B.do (x, 'set', ['State', 'imports', provider, 'selection'], dale.obj (rs.body [0].selection, function (v) {
             return [v, true];
          }));
          var needTimeout = dale.stop (rs.body, true, function (v) {
-            if ([undefined, 'error', 'complete', 'ready', 'cancelled'].indexOf (v.status) === -1) return true;
+            if (v.status === 'listing' || v.status === 'uploading') return true;
          });
          if (needTimeout) B.do (x, 'set', ['State', 'imports', provider, 'timeout'], setTimeout (function () {
             B.do (x, 'query', 'imports', provider);
@@ -3132,7 +3131,7 @@ dale.do ([
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
          if (! start) return B.do (x, 'query', 'imports', provider);
          // We create a placeholder data object to immediately put a box to show import progress without waiting for the server's reply.
-         B.do ('set', ['Data', 'imports', 'google'], [{id: Date.now (), ok: 0, total: 0}]);
+         B.do ('set', ['Data', 'imports', provider], [{id: Date.now (), ok: 0, total: 0}]);
          B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
             if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids from ' + H.upper (provider));
             B.do (x, 'query', 'imports', provider);
@@ -4474,7 +4473,7 @@ E.upload = function () {
                      ]],
                      // PENDING UPLOADS
                      dale.do (uploads, function (upload) {
-                        if (upload.status !== 'ongoing') return;
+                        if (upload.status !== 'uploading') return;
                         // Files that are too large should be detected before uploading and shouldn't be counted towards the total.
                         var done = (upload.ok || 0) + (upload.repeated || []).length + (upload.invalid || []).length;
                         return ['li', {class: 'upload-box-list__item'}, [
@@ -4537,7 +4536,7 @@ E.upload = function () {
                return ['div', {class: 'recent-uploads'}, [
                   ['h2', {class: 'recent-uploads__title'}, 'Recent uploads'],
                   dale.do (uploads, function (upload) {
-                     if (upload.status === 'ongoing') return;
+                     if (upload.status === 'uploading') return;
                      // Files that are too large should be detected before uploading and shouldn't be counted towards the total.
                      var done = upload.ok || 0;
                      return ['li', {class: 'recent-uploads__list-item'}, [
@@ -4725,7 +4724,7 @@ E.import = function () {
                      ['div', {class: 'files-found-so-far'}, [
                         ['span', (data.ok || 0) + (data.alreadyImported || 0) + (data.repeated || []).length + (data.invalid || []).length + (data.tooLarge || []).length],
                         ['span', ' / '],
-                        ['span', data.total],
+                        ['span', data.total + (data.alreadyImported || 0)],
                         ['div', ' imported so far'],
                      ]],
                   ]],

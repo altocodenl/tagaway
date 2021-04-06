@@ -695,7 +695,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                      upload.status = 'stalled';
                      upload.end    = (upload.lastActivity || log.id) + 1000 * 60 * 10;
                   }
-                  else upload.status = 'ongoing';
+                  else upload.status = 'uploading';
                }
 
                // We only put the tags added on the `start` event, instead of using those on the `ok` or `repeated` events.
@@ -753,19 +753,19 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
          // The only previous imports that are registered in the history are those that had an upload, otherwise they are not considered.
          if (! s.current) return s.next (s.uploads);
          var id = parseInt (s.current.id);
-         var currentUpload = dale.stopNot (s.uploads.list, undefined, function (upload) {
-            if (upload.id === s.current.id) return upload;
+         var currentUpload = dale.stopNot (s.uploads, undefined, function (upload) {
+            if (upload.id === id) return upload;
          });
 
          // If current import has an upload, use it.
          if (currentUpload) {
-            // Add the error field if it exists (no other fields are relevant if the upload is already ongoing)
+            // Add the error field if it exists (no other fields are relevant if the upload is already uploading)
             if (s.current.error) currentUpload.error = teishi.p (s.current.error) || s.current.error;
          }
          else {
             // Otherwise, create an entry for it.
             s.uploads.unshift ({
-               id:          parseInt (s.current.id),
+               id:          id,
                provider:    provider,
                status:      s.current.status,
                fileCount:   parseInt (s.current.fileCount)   || 0,
@@ -1605,8 +1605,8 @@ var routes = [
          function (s) {
             if (b.op === 'start' && s.last.length) return reply (rs, 409);
             if (b.op !== 'start') {
-               if (! s.last.length)                 return reply (rs, 404);
-               if (s.last [0].status !== 'ongoing') return reply (rs, 409);
+               if (! s.last.length)                   return reply (rs, 404);
+               if (s.last [0].status !== 'uploading') return reply (rs, 409);
             }
             if (b.op === 'start') b.id = t;
             b.a = 'upl';
@@ -1699,8 +1699,8 @@ var routes = [
       astop (rs, [
          [H.getUploads, rq.user.username, {id: rq.data.fields.id}],
          function (s) {
-            if (! s.last.length)                 return reply (rs, 404);
-            if (s.last [0].status !== 'ongoing') return reply (rs, 409, {error: 'status'});
+            if (! s.last.length)                   return reply (rs, 404);
+            if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
             s.next ();
          },
          [a.set, 'byfs', [a.make (fs.stat), path]],
@@ -2738,7 +2738,7 @@ var routes = [
          },
          function (s) {
 
-            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 10 : 10000;
+            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 1 : 10000;
 
             var files = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -3003,7 +3003,8 @@ var routes = [
                s.last.status === 'uploading' ?
                   [H.log, rq.user.username, {a: 'upl', op: 'cancel', provider: 'google', id: parseInt (s.last.id), status: s.last.status}] :
                   [H.log, rq.user.username, {a: 'imp', op: 'cancel', provider: 'google', id: parseInt (s.last.id), status: s.last.status}],
-               [Redis, 'del', 'imp:g:' + rq.user.username]
+               [Redis, 'del', 'imp:g:' + rq.user.username],
+               [reply, rs, 200]
             ]);
          }
       ]);

@@ -42,12 +42,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
 
 - Import/upload:
-   - Refactor for upload & import
-      - Client
-         - Refactor imports
-            - bugs: total count not returning during process, double delete button
-            - Update docs: views, responders.
-            - Add option to cancel import if it yields an error besides "try again".
    - Heartbeat:
       - Modify upload metadata endpoint, add tests.
       - Use special key with expiry to mark this directly.
@@ -419,7 +413,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
    - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
-   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a status of `ongoing`; if it is not, a 409 is returned with body `{error: 'status'}`.
+   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
@@ -503,7 +497,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /uploads`
-   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
 
 `GET /imports/PROVIDER`
    - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, provider: PROVIDER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`. If oauth access hasn't been provided yet, the reply will be of the form `[{redirect: URL, provider: PROVIDER}]`, where `URL` is the URL to start the OAuth authorization process for that provider.
@@ -819,14 +813,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 3. `E.share`
 4. `E.tags`
 5. `E.import`
-   - Depends on: `Data.import`, `State.import` and `Data.account`.
+   - Depends on: `Data.imports`, `State.imports` and `Data.account`.
    - Events:
       - `onclick -> import cancel`
-      - `onclick -> set State.import.list`
       - `onclick -> import retry`
-      - `onclick -> snackbar red/yellow`
       - `onclick -> import list`
-      - `onclick -> set State.import.list`
+      - `onclick -> snackbar red/yellow`
+      - `onclick -> set/rem State.imports.PROVIDER.showFolders`
+      - `onclick -> set/rem State.imports.PROVIDER.currentFolder`
+      - `onclick -> set/rem State.imports.PROVIDER.selection`
 6. `E.account`
    - Depends on: `Data.account`.
    - Events:
@@ -891,7 +886,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    10. `touchstart` -> `touch start`
    11. `touchend` -> `touch end`
 
-1. General
+2. General
    1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
    2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current page should be `login`).
    3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
@@ -910,7 +905,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    8. `change State.page`: validates whether a certain page can be shown, based on 1) whether the page exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.page` and overwrites `window.location.hash`.
    9. `test`: loads test suite.
 
-2. Auth
+3. Auth
    1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.page` so that the responder that handles page changes gets fired.
    2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
    3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
@@ -918,7 +913,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
    6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
-3. Pics
+4. Pics
    1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics true`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
    3. `change State.query`: sets `State.npics` and invokes `query pics true`, but only if the change is not to `State.query.recentlyTagged`.
@@ -942,7 +937,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    21. `change State.nPics`: if `State.nPics + 100` is more than `Data.picTotal`, the responder will invoke `State.query`.
    22. `change Data.pendingConversions`: if `Data.pendingConversions` is `true` and `State.pendingConversions` already contains an interval, or if `Data.pendingConversions` is `false` and `State.pendingConversions` is `undefined`, the responder does nothing. If `Data.pendingConversions` is `true` and there's no interval yet, it sets an interval to invoke `query pics` every 2 seconds and stores it in `State.pendingConversions`. If `Data.pendingConversions` is `false` and there's still an interval, it removes it from the store and invokes `clearInterval` on it.
 
-4. Open
+5. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
    2. `enter fullscreen`: enter fullscreen using the native browser methods and set the `<body>` `overflow` to `hidden`.
    3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
@@ -952,7 +947,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
    8. `goto location`: takes a `pic` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
-5. Upload
+6. Upload
    1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
@@ -965,20 +960,20 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Removes the file just uploaded from `State.upload.queue`.
       - Conditionally invokes `snackbar` on error if space runs out or there was an unexpected error.
       - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
-      - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `ongoing` (as per `Data.uploads`).
+      - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
       - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
       - Invokes `query uploads` and `query tags`.
       - If `State.page` is `pics`, invokes `query pics` and `query tags`.
 
-6. Import
-   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invoke `import list PROVIDER`.
-   2. `import list PROVIDER STARTLIST CANCEL`: invokes `get import/list/PROVIDER?startList=STARTLIST`. It stores the result in `Data.import.PROVIDER`. The query parameter STARTLIST will only be sent if the second argument passed to the responder is truthy. It will also set `State.import.selection.PROVIDER`. It will also optionally invoke `snackbar` to report a successful listing/upload or an error, depending on the difference between the old and the new payload. If `CANCEL` is set, the snackbar printed will be different.
-   3. `import cancel PROVIDER`: invokes `post import/cancel/PROVIDER`; after the ajax call, it also invokes `import list PROVIDER false true`.
-   4. `change Data.import.PROVIDER`: if there's no provider import information, or there is provider import information with an `end` field (which means that the listing process is done) and there's no upload information, the responder does nothing. But if there's provider data and a listing or upload is in process, then the responder checks whether `State.import.update.PROVIDER` has an interval function; if there is, it does nothing. If there's not, it sets an interval on `State.import.update.PROVIDER` that runs every 2 seconds that invokes `import list PROVIDER` and `query pics`. The interval also checks whether there's an error (`Data.import.PROVIDER.error` or whether the listing process is done `Data.import.PROVIDER.end`. If so, it clears itself and removes itself from the `State` (`rem State.import.update.PROVIDER`).
-   5. `import retry PROVIDER`: invokes `post import/cancel/PROVIDER` and then `import list PROVIDER true`.
-   6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.selection.PROVIDER`; if successful, invokes `import list PROVIDER`. If `start` is `true`, the responder sets `Data.import.PROVIDER` with a placeholder object and invokes `post import/start/PROVIDER` before invoking `import list PROVIDER`, to trigger the start of the import process.
+7. Import
+   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
+   2. `query imports PROVIDER`: if `State.imports.PROVIDER.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get imports/PROVIDER`; if the request is unsuccessful, invokes `snackbar red`, otherwise sets `set Data.imports.PROVIDER` to the result of the query; it conditionally sets `State.imports.PROVIDER.selection` and `State.imports.PROVIDER.timeout`. If a timeout is set, the timeout will invoke `query imports` again after 1500ms.
+   3. `import list PROVIDER`: invokes `post import/list/PROVIDER`; if unsuccessful, invokes `snackbar`, otherwise invokes `query imports PROVIDER`.
+   4. `import cancel PROVIDER`: invokes `post import/cancel/PROVIDER`; invokes `snackbar` and then `query imports PROVIDER`.
+   5. `import retry PROVIDER`: invokes `post import/cancel/PROVIDER`; if unsuccessful, invokes `snackbar`, otherwise invokes `import list PROVIDER`.
+   6. `import select PROVIDER start`: invokes `post import/select/PROVIDER` passing `State.import.PROVIDER.selection`; if there is an error, invokes `snackbar`. Otherwise, if `start` is not passed it only invokes `query imports PROVIDER`. If the query is successful and `start` is passed, it sets `Data.imports.PROVIDER` and invokes `post import/upload/PROVIDER`; if that invocation is not successful, it invokes `snackbar`, otherwise it invokes `query imports PROVIDER`.
 
-7. Account
+8. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
    2. `dismiss geotagging|selection`: `post dismiss`; if path is `geotagging`, invokes `snackbar`. If successful, invokes `query account`.
    3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
@@ -1047,7 +1042,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
-   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: ongoing|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
+   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin
 

@@ -454,7 +454,7 @@ var main = [
       return true;
    }],
    ['get uploads after first upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'ongoing', total: 3, tags: ['video']})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'uploading', total: 3, tags: ['video']})) return clog ('Invalid upload data.');
       return true;
    }],
    ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
@@ -822,7 +822,7 @@ var main = [
       return true;
    }],
    ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPic: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smalldup.png'], invalid: ['invalid.jpg', 'empty.jpg'], status: 'ongoing', total: 100})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPic: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smalldup.png'], invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
       return true;
    }],
    ttester ('rotate pic', 'post', 'rotate', {}, [
