@@ -42,6 +42,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
 
 - Import/upload:
+   - Add timeout to upload to query uploads, remove it from the change responder.
    - Heartbeat:
       - Modify upload metadata endpoint, add tests.
       - Use special key with expiry to mark this directly.
@@ -962,8 +963,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
       - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
       - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
-      - Invokes `query uploads` and `query tags`.
-      - If `State.page` is `pics`, invokes `query pics` and `query tags`.
+      - Invokes `query uploads`.
 
 7. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
@@ -1016,7 +1016,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
    - `upload`:
       - `new`: {unsupported: [STRING, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
-      - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
+      - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED, lastInUpload: true|false}, ...]
       - `tag`: content of input to filter tag or add a new one.
 
 - `Data`:

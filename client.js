@@ -2980,14 +2980,15 @@ dale.do ([
       input.value = '';
    }],
    ['upload', 'start', function (x) {
-      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: B.get ('State', 'upload', 'new', 'files').length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
+      var files = B.get ('State', 'upload', 'new', 'files');
+      B.do (x, 'post', 'metaupload', {}, {op: 'start', total: files.length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the upload.');
          B.do (x, 'query', 'uploads');
 
-         dale.do (B.get ('State', 'upload', 'new', 'files'), function (file) {
+         dale.do (files, function (file, k) {
             var tags = B.get ('State', 'upload', 'new', 'tags') || [];
             if (file.webkitRelativePath) tags = tags.concat (file.webkitRelativePath.split ('/').slice (0, -1));
-            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags});
+            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags, lastInUpload: k + 1 === files.length});
          });
          B.do (x, 'rem', ['State', 'upload'], 'new');
          B.do (x, 'change', ['State', 'upload', 'queue']);
@@ -3055,14 +3056,9 @@ dale.do ([
                B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
             }
 
-            else if (upload.status === 'uploading' && ! dale.stopNot (B.get ('State', 'upload', 'queue'), undefined, function (v) {if (v.id === file.id) return v})) {
-               B.do (x, 'upload', 'complete', file.id);
-            }
+            else if (upload.status === 'uploading' && file.lastInUpload) B.do (x, 'upload', 'complete', file.id);
 
             B.do (x, 'query', 'uploads');
-            B.do (x, 'query', 'tags');
-            // If we're back in the pics page, refresh the query after each upload.
-            if (B.get ('State', 'page') === 'pics') B.do (x, 'query', 'pics');
          });
       });
    }],
