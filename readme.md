@@ -42,7 +42,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
 
 - Import/upload:
-   - Add timeout to upload to query uploads, remove it from the change responder.
    - Heartbeat:
       - Modify upload metadata endpoint, add tests.
       - Use special key with expiry to mark this directly.
@@ -955,7 +954,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
    5. `upload cancel|complete`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument; invokes `post metaupload`; if it receives an error, invokes `snackbar`; otherwise, if it's the `cancel` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both operations, if `noSnackbar` is absent, it then invokes `query uploads` and `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
-   7. `query uploads`: invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads`.
+   7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
    8. `change State.upload.queue`:
       - Invokes `post upload` to upload the file.
       - Removes the file just uploaded from `State.upload.queue`.
@@ -963,7 +962,6 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
       - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
       - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
-      - Invokes `query uploads`.
 
 7. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
@@ -1018,6 +1016,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `new`: {unsupported: [STRING, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED, lastInUpload: true|false}, ...]
       - `tag`: content of input to filter tag or add a new one.
+      - `timeout`: if present, a timeout that invokes `query uploads`.
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.

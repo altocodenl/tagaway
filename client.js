@@ -3017,9 +3017,20 @@ dale.do ([
       B.do (x, 'rem', ['State', 'upload'], 'tag');
    }],
    ['query', 'uploads', function (x) {
+      var timeout = B.get ('State', 'upload', 'timeout');
+      if (timeout) {
+         B.do (x, 'rem', ['State', 'upload'], 'timeout');
+         clearTimeout (timeout);
+      }
       B.do (x, 'get', 'uploads', {}, '', function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving your uploads.');
          B.do (x, 'set', ['Data', 'uploads'], rs.body);
+         var needRefresh = dale.stop (rs.body, true, function (v) {
+            if (v.status === 'uploading') return true;
+         });
+         if (needRefresh) B.do (x, 'set', ['State', 'upload', 'timeout'], setTimeout (function () {
+            B.do (x, 'query', 'uploads');
+         }, 1500));
       });
    }],
    ['change', ['State', 'upload', 'queue'], function (x) {
@@ -3057,8 +3068,6 @@ dale.do ([
             }
 
             else if (upload.status === 'uploading' && file.lastInUpload) B.do (x, 'upload', 'complete', file.id);
-
-            B.do (x, 'query', 'uploads');
          });
       });
    }],
@@ -3081,7 +3090,7 @@ dale.do ([
    ['query', 'imports', function (x, provider) {
       var timeout = B.get ('State', 'imports', provider, 'timeout');
       if (timeout) {
-         B.do (x, 'rem', ['State', 'imports', provider, 'timeout']);
+         B.do (x, 'rem', ['State', 'imports', provider], 'timeout');
          clearTimeout (timeout);
       }
       B.do (x, 'get', 'imports/' + provider, {}, '', function (x, error, rs) {
@@ -3091,10 +3100,10 @@ dale.do ([
          if (rs.body [0] && rs.body [0].status === 'ready') B.do (x, 'set', ['State', 'imports', provider, 'selection'], dale.obj (rs.body [0].selection, function (v) {
             return [v, true];
          }));
-         var needTimeout = dale.stop (rs.body, true, function (v) {
+         var needRefresh = dale.stop (rs.body, true, function (v) {
             if (v.status === 'listing' || v.status === 'uploading') return true;
          });
-         if (needTimeout) B.do (x, 'set', ['State', 'imports', provider, 'timeout'], setTimeout (function () {
+         if (needRefresh) B.do (x, 'set', ['State', 'imports', provider, 'timeout'], setTimeout (function () {
             B.do (x, 'query', 'imports', provider);
          }, 1500));
       });
