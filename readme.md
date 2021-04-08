@@ -40,13 +40,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
+   - Renaming refactor of logs: a -> ev, op -> type, general auth ev with type, ua -> useragent, tz -> timezone, untag/unshare/geotagging to have type; add logout log; nfiles & nfolders
+   - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
    - Upload all pics/vids.
       - [reproduce & fix bug] Upload becomes stalled despite no loss of connectivity
       - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
    - Re-import all pics/vids.
    - Review all invalid pics/vids.
-
 - Reset dev & prod servers and start from scratch.
 - ac;log
    - Backup old ac;log, reset it.
