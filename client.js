@@ -2644,7 +2644,11 @@ dale.do ([
       if (! query) return;
       B.do (x, 'set', ['State', 'querying'], true);
 
-      var t = Date.now ();
+      var timeout = B.get ('State', 'queryRefresh');
+      if (timeout) {
+         B.do (x, 'rem', 'State', 'queryRefresh');
+         clearTimeout (timeout);
+      }
 
       B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPics') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          B.do (x, 'set', ['State', 'querying'], false);
@@ -2665,6 +2669,12 @@ dale.do ([
          B.set (['State', 'selected'], updatedSelection);
 
          B.do (x, 'set', ['Data', 'picTotal'], rs.body.total);
+
+         // Set timeout for refreshing query
+         if (rs.body.refreshQuery) B.do (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
+            B.do (x, 'query', 'pics');
+            B.do (x, 'query', 'tags');
+         }, 1500));
 
          if (B.get ('State', 'open') === undefined) {
             B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
@@ -3177,27 +3187,11 @@ dale.do ([
             }
             return B.do (x, 'snackbar', 'red', 'There was an error ' + operation + 'd geotagging.');
          }
-         if (operation === 'disable') {
-            B.do (x, 'clear', 'updateGeotags');
-            B.do (x, 'query', 'pics');
-         }
-         if (operation === 'enable') {
-            B.do (x, 'set', ['State', 'updateGeotags'], setInterval (function () {
-               B.do (x, 'query', 'account', function () {
-                  B.do (x, 'query', 'pics');
-                  if (! B.get ('Data', 'account', 'geoInProgress')) return B.do (x, 'clear', 'updateGeotags');
-               });
-            }, 3000));
-         }
-         B.do (x, 'query', 'account');
+
+         B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'tags');
          B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully. You can always change this from Account.');
       });
-   }],
-
-   ['clear', 'updateGeotags', function (x) {
-      if (! B.get ('State', 'updateGeotags')) return;
-      clearInterval (B.get ('State', 'updateGeotags'));
-      B.do (x, 'rem', 'State', 'updateGeotags');
    }],
 
    ['submit', 'changePassword', function (x) {

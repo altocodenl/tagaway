@@ -2319,10 +2319,29 @@ var routes = [
                return 'pict:' + pic.id;
             }));
             s.output = output;
+            multi.get ('geo:' + rq.user.username);
             mexec (s, multi);
          },
          function (s) {
-            s.output.tags = teishi.last (s.last).sort ();
+            // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads
+            if (teishi.last (s.last)) {
+               s.refreshQuery = true;
+               return s.next (s.last);
+            }
+            var tags = s.last;
+            a.seq (s, [
+               // We assume that any ongoing uploads must be found in the first 20
+               [H.getUploads, rq.user.username, {}, 20],
+               function (s) {
+                  s.refreshQuery = dale.stop (s.last, true, function (v) {
+                     return v.status === 'uploading';
+                  });
+                  s.next (tags);
+               }
+            ]);
+         },
+         function (s) {
+            s.output.tags = teishi.last (s.last, 2).sort ();
             dale.go (s.output.pics, function (pic, k) {
                var vid = undefined;
                if (pic.vid) {
@@ -2332,6 +2351,7 @@ var routes = [
                }
                s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: vid, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
             });
+            if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);
          },
       ]);

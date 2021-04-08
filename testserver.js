@@ -457,7 +457,15 @@ var main = [
       if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'uploading', total: 3, tags: ['video']})) return clog ('Invalid upload data.');
       return true;
    }],
+   ['get pics and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
+      return true;
+   }],
    ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
+   ['get pics and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
+      return true;
+   }],
    ['complete upload again', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 409],
    ['cancel complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'cancel', id: s.uid1}}, 409],
    ['check user logs after complete upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
@@ -890,6 +898,10 @@ var main = [
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
+   ['get pics and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
+      return true;
+   }],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geo !== true)           return clog ('Geo should be turned on');
       if (rs.body.geoInProgress !== true) return clog ('Geo progress should be turned on');
@@ -904,6 +916,15 @@ var main = [
    }],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
+      return true;
+   }],
+   ['get pics and check refreshQuery is still on because of upload', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
+      return true;
+   }],
+   ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid2}}, 200],
+   ['get pics and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
       return true;
    }],
    ttester ('dismiss', 'post', 'dismiss', {}, [
@@ -1674,7 +1695,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 85 && rs.body.logs.length !== 86)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 86 && rs.body.logs.length !== 87)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, skipS3 ? 0 : 3000);
    }],
@@ -1688,10 +1709,7 @@ var main = [
       }, 2000);
    }],
    ['get public stats before deleting user', 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-      if (skipS3 && ! eq (rs.body, {byfs: 0, bys3: rs.body.bys3, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
-      else {
-         if (! eq (rs.body, {byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
-      }
+      if (! eq (rs.body, {byfs: 0, bys3: skipS3 ? rs.body.bys3 : 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 1})) return clog ('Invalid public stats.');
       return true;
    }],
    // TODO: add admin/stats test

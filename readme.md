@@ -39,19 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- When uploading a folder, use the folder name (and subfolders) as tags. Distinguish those tags from the ones added by the user in the UI of recent uploads, also for logging purposes.
-
 - Import/upload:
-   - Heartbeat:
-      - Modify upload metadata endpoint, add tests.
-      - Use special key with expiry to mark this directly.
-      - When querying, return if key is set.
-      - Refactor client to refresh query only when this flag is present, stop calling query from import/upload.
-      - Same for upload: if in new tab/device you go to uploads, said device will refresh the upload list.
    - Refactor docs & code with unified terminology for pic/vid: mfile? Also UI word?
    - Upload all pics/vids.
-      - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
       - [reproduce & fix bug] Upload becomes stalled despite no loss of connectivity
+      - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
    - Re-import all pics/vids.
    - Review all invalid pics/vids.
 
@@ -459,11 +451,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of picture owned by the user, will be included as a result of the query, even if they are not untagged pictures.
-   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...]}`.
+   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...], refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
       - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
-   - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned.
+      - `body.refreshQuery`, if set, indicates that there's either at least an upload ongoing or a geotagging process ongoing, in which case it makes sense to repeat the query after a short amount of time to update the results.
+   - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
 `POST /share`
    - Body must be of the form `{tag: STRING, who: ID, del: BOOLEAN|UNDEFINED}`.
@@ -919,7 +912,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    3. `change State.query`: sets `State.npics` and invokes `query pics true`, but only if the change is not to `State.query.recentlyTagged`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`: sets `State.querying` to `true`; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pics` and `Data.picTotal` (and optionally `State.open` if it's already present) after invoking `post query`. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
+   6. `query pics`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pics` and `Data.picTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pics` and `query tags` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
@@ -974,10 +967,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 8. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
    2. `dismiss geotagging|selection`: `post dismiss`; if path is `geotagging`, invokes `snackbar`. If successful, invokes `query account`.
-   3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is `enable`, sets an interval function in `State.updateGeotags`, which invokes `query account` and eventually calls `clear updateGeotags`.
-   4. `clear updateGeotags`: if `State.updateGeotags` is defined, it invokes `clearInterval` on `State.updateGeotags` and then `rem State.updateGeotags`
-   5. `submit changePassword`: invokes `post auth/changePassword`, invokes `snackbar`; if successful, invokes `clear changePassword`.
-   6. `clear changePassword`: clears inputs of the change password fields and removes `State.changePassword`.
+   3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is successful, invokes `query pics` and `query tags`.
+   4. `submit changePassword`: invokes `post auth/changePassword`, invokes `snackbar`; if successful, invokes `clear changePassword`.
+   5. `clear changePassword`: clears inputs of the change password fields and removes `State.changePassword`.
 
 ### Store
 
@@ -1005,13 +997,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `pendingConversions`: if set, an interval that invokes `query pics`.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
+   - `queryRefresh`: if set, a timeout that invokes `query pics` after 1500ms.
    - `querying`: BOOLEAN|UNDEFINED, set if `query pics` is currently querying the server.
    - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
    - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pictures are selected.
    - `showNSelectedTags`: UNDEFINED|INTEGER, determines the amount of tags seen when at least one picture is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pictures instead of tagging them.
-   - `updateGeotags`: if defined, an interval that periodically queries the server for new tags until the enabling of geotags is completed.
    - `upload`:
       - `new`: {unsupported: [STRING, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED, lastInUpload: true|false}, ...]
