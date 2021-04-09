@@ -2822,8 +2822,15 @@ dale.do ([
       var pics = dale.keys (B.get ('State', 'selected'));
       if (pics.length === 0) return;
       if (! confirm ('Are you sure you want to delete the ' + pics.length + ' selected pictures?')) return;
+      var operationComplete, timeoutFired, timeout = setTimeout (function () {
+         if (operationComplete) return;
+         timeoutFired = true;
+         B.do (x, 'snackbar', 'yellow', 'This process may take a few more seconds, please wait...', true);
+      }, 1000);
       B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
+         operationComplete = true;
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
+         if (timeoutFired) B.do (x, 'clear', 'snackbar');
          B.do (x, 'query', 'pics', true);
          B.do (x, 'query', 'tags');
       });
@@ -4685,7 +4692,7 @@ E.import = function () {
          ]],
       ]];
 
-      if (status === 'error') return ['div', {class: 'listing-in-process'}, [
+      if (status === 'error' || status === 'stalled') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image', opaque: true}, [
                ['div', {class: 'space-alert-icon', opaque: true}]
@@ -4694,7 +4701,7 @@ E.import = function () {
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
                      ['span', {class: 'space-alert-icon-small', opaque: true}],
-                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + data.error]]
+                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : data.error)]]
                   ]],
                   ['div', {class: 'progress-bar'}],
                ]],
@@ -4777,7 +4784,7 @@ E.import = function () {
                                        ]];
 
                                        // If there's an error, print an error on click.
-                                       if (providerData.status === 'error')     return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
+                                       if (providerData.status === 'error' || providerData.status === 'stalled') return ['div', B.ev (attrs, ['onclick', 'snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
 
                                        // If there's an import upload in process, print a warning on click.
                                        if (providerData.status === 'uploading') return ['div', B.ev (attrs, ['onclick', 'snackbar', 'yellow', 'Files being uploaded, please wait.'])];
@@ -4870,8 +4877,8 @@ E.importFolders = function (importState, importData) {
    importData = importData [0];
    var folderList = ! importState.currentFolder ? importData.data.roots : importData.data.folders [importState.currentFolder].children;
    folderList.sort (function (a, b) {
-      if (importData.data.roots.indexOf (a) !== -1) return -1;
-      if (importData.data.roots.indexOf (b) !== -1) return 1;
+      // If child is a file, ignore.
+      if (! importData.data.folders [a]) return 0;
       var nameA = importData.data.folders [a].name;
       var nameB = importData.data.folders [b].name;
       return nameA.toLowerCase () > nameB.toLowerCase () ? 1 : -1;

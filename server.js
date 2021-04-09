@@ -691,9 +691,10 @@ H.getUploads = function (s, username, filters, maxResults) {
             else if (log.op === 'start') {
                // If current upload has had no activity in over ten minutes, we consider it stalled.
                if (! upload.status) {
-                  if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.id)) {
+                  // We use log.t instead of log.id in case this is an import, because the id of the import might be quite older than the start of its upload process.
+                  if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.t)) {
                      upload.status = 'stalled';
-                     upload.end    = (upload.lastActivity || log.id) + 1000 * 60 * 10;
+                     upload.end    = (upload.lastActivity || log.t) + 1000 * 60 * 10;
                   }
                   else upload.status = 'uploading';
                }
@@ -760,7 +761,7 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
          // If current import has an upload, use it.
          if (currentUpload) {
             // Add the error field if it exists (no other fields are relevant if the upload is already uploading)
-            if (s.current.error) currentUpload.error = teishi.p (s.current.error) || s.current.error;
+            if (s.current.error) currentUpload.error = teishi.parse (s.current.error) || s.current.error;
          }
          else {
             // Otherwise, create an entry for it.
