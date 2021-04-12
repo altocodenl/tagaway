@@ -220,6 +220,9 @@ CSS.litc = [
       cursor: 'pointer',
       'font-weight': 'bold',
    }],
+   ['th', {
+      'font-weight': 'bold',
+   }],
 ];
 
 // *** VIEWS ***
@@ -303,7 +306,7 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['dashboard', 'invites', 'users', 'deploy'] : ['login'];
+      var allowed = logged ? ['dashboard', 'invites', 'users', 'logs', 'deploy'] : ['login'];
 
       if (allowed.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
@@ -330,7 +333,7 @@ dale.do ([
       B.do (x, 'post', 'auth/login', {}, {
          username: c ('#auth-username').value,
          password: c ('#auth-password').value,
-         tz:       new Date ().getTimezoneOffset ()
+         timezone: new Date ().getTimezoneOffset ()
       }, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
@@ -374,6 +377,9 @@ dale.do ([
       if (B.get ('State', 'page') === 'users') {
          if (! B.get ('Data', 'users')) B.do (x, 'retrieve', 'users');
       }
+      if (B.get ('State', 'page') === 'logs') {
+         if (! B.get ('Data', 'logs')) B.do (x, 'retrieve', 'logs');
+      }
    }],
 
    // *** USERS RESPONDERS ***
@@ -393,6 +399,16 @@ dale.do ([
          B.do (x, 'set', ['Data', 'users'], rs.body);
       });
    }],
+
+   // *** LOGS RESPONDERS ***
+
+   ['retrieve', 'logs', function (x, username) {
+      B.do (x, 'get', 'admin/logs', {}, '', function (x, error, rs) {
+         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving logs.');
+         B.do (x, 'set', ['Data', 'logs'], rs.body);
+      });
+   }],
+
 
    // *** DEPLOY RESPONDERS ***
 
@@ -688,6 +704,8 @@ E.dashboard = function (x) {
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/users'}, 'Users']],
       ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/logs'}, 'Logs']],
+      ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/deploy'}, 'Deploy client']],
    ]];
 }
@@ -745,6 +763,35 @@ E.users = function () {
                   if (k === 'actions') return ['td', ['span', B.ev ({class: 'action'}, ['onclick', 'delete', 'user', user.username]), 'Delete user']];
                   if (k === 'created') return ['td', new Date (parseInt (user [k])).toUTCString ()];
                   return ['td', user [k]];
+               })];
+            }),
+         ]],
+      ]];
+   });
+}
+
+// *** LOGS VIEW ***
+
+E.logs = function () {
+   return B.view (['Data', 'logs'], function (x, logs) {
+      var columns = ['t', 'username', 'ev', 'type'];
+      dale.do (logs, function (log) {
+         dale.do (log, function (v, k) {
+            if (columns.indexOf (k) === -1) columns.push (k);
+         });
+      });
+      return ['div', {style: style ({padding: 60})}, [
+         ['h3', 'Logs'],
+         ['table', {class: 'pure-table pure-table-striped'}, [
+            ['tr', dale.do (columns, function (v) {return ['th', v]})],
+            dale.do (Data.logs, function (log) {
+               return ['tr', dale.do (columns, function (k) {
+                  if (k === 't') return ['td', new Date (parseInt (log.t)).toUTCString ()];
+                  var value = log [k];
+                  if (value === undefined) return ['td'];
+                  if (teishi.complex (value)) value = JSON.stringify (value);
+                  if (value.length > 300) value = value.slice (0, 300) + '...';
+                  return ['td', value];
                })];
             }),
          ]],

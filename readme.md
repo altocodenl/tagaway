@@ -557,6 +557,18 @@ All the routes below require an admin user to be logged in.
 `POST /admin/invites/delete`
    - Body must be `{email: STRING}`.
 
+`GET /admin/users`
+   - Returns an array of users.
+
+`GET /admin/stats`
+   - Returns an object with stats.
+
+`GET /admin/debug/ID`
+   - Returns an object with all the pic/vid information.
+
+`GET /admin/logs`
+   - Returns an array of logs.
+
 ### Statistics
 
 1. uniques:
@@ -1051,7 +1063,13 @@ Only things that differ from client are noted.
       - `click -> delete invite`
       - `change -> set State.newInvite.ID`
       - `click -> del State.newInvite`
-3. `E.deploy`
+3. `E.users`
+   - Depends on: `Data.users`
+   - Events:
+      - `click -> delete user USERNAME`
+4. `E.logs`
+   - Depends on: `Data.logs`
+5. `E.deploy`
    - Events:
       - `click -> deploy client`
 
@@ -1067,6 +1085,10 @@ Only things that differ from client are noted.
    1. `retrieve users`: invokes `get admin/users`.
    2. `delete user`: invokes `post auth/delete`; if successful, invokes `retrieve users`. It also invokes `snackbar`.
    3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
+
+3. Users
+   1. `retrieve logs`: invokes `get admin/logs`.
+   3. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve users`.
 
 3. Deploy
    1. `deploy client`: invokes `post admin/deploy` and `snackbar`.

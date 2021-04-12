@@ -2760,7 +2760,7 @@ var routes = [
          },
          function (s) {
 
-            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 1 : 10000;
+            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 100 : 10000;
 
             var files = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -3389,6 +3389,8 @@ var routes = [
       ]);
    }],
 
+   // *** ADMIN: DEBUG PIC ***
+
    ['get', 'admin/debug/:id', function (rq, rs) {
       astop (rs, [
          [Redis, 'hgetall', 'pic:' + rq.data.params.id],
@@ -3403,6 +3405,39 @@ var routes = [
                return v.replace (/\s+/g, ' ');
             });
             reply (rs, 200, s.data);
+         }
+      ]);
+   }],
+
+   // *** ADMIN: USER LOGS ***
+
+   ['get', 'admin/logs', function (rq, rs) {
+
+      astop (rs, [
+         [Redis, 'hgetall', 'emails'],
+         function (s) {
+            var multi = redis.multi ();
+            s.users = [];
+            dale.go (s.last, function (username) {
+               s.users.push (username);
+               multi.lrange ('ulog:' + username, 0, -1);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            var output = [];
+            dale.go (s.last, function (logs, k) {
+               dale.go (logs, function (log) {
+                  log = JSON.parse (log);
+                  log.username = s.users [k];
+                  if (ENV === 'prod') {
+                     if (log.tag) delete log.tag;
+                     if (log.tags) log.tags = log.tags.length;
+                  }
+                  output.push (log);
+               });
+            });
+            reply (rs, 200, output);
          }
       ]);
    }],
