@@ -708,13 +708,13 @@ H.getUploads = function (s, username, filters, maxResults) {
                if (maxResults && completed === maxResults) return true;
             }
             else if (log.type === 'ok') {
-               upload.lastActivity = log.t;
+               if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.ok) upload.ok = 0;
                upload.ok++;
                if (! upload.lastPic) upload.lastPic = {id: log.fileId, deg: log.deg};
             }
             else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge') {
-               upload.lastActivity = log.t;
+               if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload [log.type]) upload [log.type] = [];
                upload [log.type].push (log.filename);
             }
