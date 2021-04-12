@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Import/upload:
-   - Renaming refactor of logs: a -> ev, op -> type, general auth ev with type, ua -> useragent, tz -> timezone, untag/unshare/geotagging to have type; add logout log; nfiles & nfolders
    - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
    - Upload all pics/vids.
       - [reproduce & fix bug] Upload becomes stalled despite no loss of connectivity
@@ -318,11 +317,11 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /auth/login`.
    - Does not require the user to be logged in.
-   - Body must be `{username: STRING, password: STRING, tz: INTEGER}`. If not, a 400 code will be returned with body `{error: ...}`.
+   - Body must be `{username: STRING, password: STRING, timezone: INTEGER}`. If not, a 400 code will be returned with body `{error: ...}`.
    - `username` is lowercased and any leading & trailing space is removed from it (and intermediate spaces or space-like characters are reduced to a single space). `username` can be either the `username` or the `email` associated to a `username`.
    - If the username/password combination is not valid, a 403 code will be returned with body: `{error: 'auth'}`.
    - If the username/password combination is valid but the email hasn't been verified yet, a 403 code will be returned with body `{error: 'verify'}`.
-   - `tz` must be the output of `Date.getTimezoneOffset ()`, an integer expressing the number of minutes behind (or ahead) of UTC in the local time.
+   - `timezone` must be the output of `Date.getTimezoneOffset ()`, an integer expressing the number of minutes behind (or ahead) of UTC in the local time.
 
 - `POST /auth/signup`.
    - Does not require the user to be logged in.
@@ -459,8 +458,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
 `POST /share`
-   - Body must be of the form `{tag: STRING, who: ID, del: BOOLEAN|UNDEFINED}`.
-   - The target user (`body.who`) must exist, otherwise a 404 is returned.
+   - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`.
+   - The target user (`body.whom`) must exist, otherwise a 404 is returned.
    - If the tag being shared is `all` or `untagged`, a 400 is returned with body `{error: 'tag'}`.
    - If try to share with yourself, a 400 is returned with body `{error: 'self'}`.
    - If successful, returns a 200.
@@ -699,39 +698,40 @@ All the routes below require an admin user to be logged in.
 - download:ID (string): stringified object of the shape `{username: ID, pics: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
 - ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
-   - For login:           {t: INT, a: 'log', ip: STRING, ua: STRING, tz: INTEGER}
-   - For signup:          {t: INT, a: 'sig', ip: STRING, ua: STRING}
-   - For recover:         {t: INT, a: 'rec', ip: STRING, ua: STRING, token: STRING}
-   - For reset:           {t: INT, a: 'res', ip: STRING, ua: STRING, token: STRING}
-   - For password change: {t: INT, a: 'chp', ip: STRING, ua: STRING, token: STRING}
-   - For destroy:         {t: INT, a: 'des', ip: STRING, ua: STRING, admin: true|UNDEFINED}
-   - For deletes:         {t: INT, a: 'del', ids: [STRING, ...]}
-   - For rotates:         {t: INT, a: 'rot', ids: [STRING, ...], deg: 90|180|-90}
-   - For (un)tags:        {t: INT, a: 'tag', ids: [STRING, ...], tag: STRING, d: true|undefined (if true it means untag), fromImport: undefined|google|dropbox (if not undefined, the tagging operation comes from an import of a repeated picture)}
-   - For (un)shares:      {t: INT, a: 'sha', u: STRING, tag: STRING, d: true|undefined (if true it means unshare)}
-   - For dismiss:         {t: INT, a: 'dis', op: 'geotagging|selection'}
-   - For geotagging:      {t: INT, a: 'geo', op: 'enable|disable'}
+   - For login:           {t: INT, ev: 'auth', type: 'login',          ip: STRING, userAgent: STRING, timezone: INTEGER}
+   - For logout:          {t: INT, ev: 'auth', type: 'logout',         ip: STRING, userAgent: STRING}
+   - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING}
+   - For recover:         {t: INT, ev: 'auth', type: 'recover',        ip: STRING, userAgent: STRING}
+   - For reset:           {t: INT, ev: 'auth', type: 'reset',          ip: STRING, userAgent: STRING}
+   - For destroy:         {t: INT, ev: 'auth', type: 'destroy',        ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
+   - For password change: {t: INT, ev: 'auth', type: 'passwordChange', ip: STRING, userAgent: STRING}
+   - For deletes:         {t: INT, ev: 'delete', ids: [STRING, ...]}
+   - For rotates:         {t: INT, ev: 'rotate', ids: [STRING, ...], deg: 90|180|-90}
+   - For (un)tags:        {t: INT, ev: 'tag',        type: tag|untag, ids: [STRING, ...], tag: STRING}
+   - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID}
+   - For dismiss:         {t: INT, ev: 'dismiss',    type: 'geotagging|selection'}
+   - For geotagging:      {t: INT, ev: 'geotagging', type: 'enable|disable'}
    - Import:
-      - For oauth request:     {t: INT, a: 'imp', op: 'request',    provider: PROVIDER}
-      - For oauth grant:       {t: INT, a: 'imp', op: 'grant',      provider: PROVIDER}
-      - For start listing:     {t: INT, a: 'imp', op: 'listStart',  provider: PROVIDER, id: INTEGER}
-      - For file page:         {t: INT, a: 'imp', op: 'filePage',   provider: PROVIDER, id: INTEGER, n: INTEGER}
-      - For folder page:       {t: INT, a: 'imp', op: 'folderPage', provider: PROVIDER, id: INTEGER, n: INTEGER}
-      - For listing ended:     {t: INT, a: 'imp', op: 'listEnd',    provider: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
-      - For cancel:            {t: INT, a: 'imp', op: 'cancel',     provider: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
-      - For listing error:     {t: INT, a: 'imp', op: 'listError',  provider: PROVIDER, id: INTEGER, error: STRING|OBJECT}
-      - For folders selection: {t: INT, a: 'imp', op: 'selection',  provider: PROVIDER, id: INTEGER, folders: [ID, ...]}
+      - For oauth request:     {t: INT, ev: 'import', type: 'request',    provider: PROVIDER}
+      - For oauth grant:       {t: INT, ev: 'import', type: 'grant',      provider: PROVIDER}
+      - For start listing:     {t: INT, ev: 'import', type: 'listStart',  provider: PROVIDER, id: INTEGER}
+      - For file page:         {t: INT, ev: 'import', type: 'filePage',   provider: PROVIDER, id: INTEGER, nFiles:   INTEGER}
+      - For folder page:       {t: INT, ev: 'import', type: 'folderPage', provider: PROVIDER, id: INTEGER, nFolders: INTEGER}
+      - For listing ended:     {t: INT, ev: 'import', type: 'listEnd',    provider: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
+      - For cancel:            {t: INT, ev: 'import', type: 'cancel',     provider: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
+      - For listing error:     {t: INT, ev: 'import', type: 'listError', provider: PROVIDER, id: INTEGER, error: STRING|OBJECT}
+      - For folder selection:  {t: INT, ev: 'import', type: 'selection', provider: PROVIDER, id: INTEGER, folders: [ID, ...]}
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:          {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
-      - For complete:       {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'complete'}
-      - For cancel:         {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'cancel'}
-      - For single upload:  {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'ok',       fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated:       {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'repeated', fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
-      - For invalid:        {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'invalid',  filename: STRING, error: STRING|OBJECT}
-      - For too large file: {t: INT, a: 'upl', id: INTEGER, provider: UNDEFINED|PROVIDER, op: 'tooLarge', filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
-      - For provider error: {t: INT, a: 'upl', id: INTEGER, provider: PROVIDER,           op: 'providerError', error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
-      - For error:          {t: INT, a: 'upl', id: INTEGER, provider: PROVIDER,           op: 'error',         error: STRING|OBJECT} - Note: this should only happen if there's no further space in the user account.
+      - For start:          {t: INT, ev: 'upload', type: 'start',    id: INTEGER, provider: UNDEFINED|PROVIDER, tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
+      - For complete:       {t: INT, ev: 'upload', type: 'complete', id: INTEGER, provider: UNDEFINED|PROVIDER}
+      - For cancel:         {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
+      - For uploaded file:  {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated file:  {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
+      - For invalid file:   {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
+      - For too large file: {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For provider error: {t: INT, ev: 'upload', type: 'providerError', id: INTEGER, provider: PROVIDER, error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
+      - For no more space:  {t: INT, ev: 'upload', type: 'noCapacity', id: INTEGER, provider: UNDEFINED|PROVIDER, error: STRING|OBJECT} - Note: this should only happen if there's no further space in the user account.
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow

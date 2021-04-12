@@ -11,8 +11,8 @@ var skipS3 = process.argv [2] === 'skipS3';
 var userPrefix = 'user' + Math.random ();
 
 var U = [
-   {username: '   ' + userPrefix + '  \t1', password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
-   {username: userPrefix + '2',             password: Math.random () + '@', tz: new Date ().getTimezoneOffset ()},
+   {username: '   ' + userPrefix + '  \t1', password: Math.random () + '@', timezone: new Date ().getTimezoneOffset ()},
+   {username: userPrefix + '2',             password: Math.random () + '@', timezone: new Date ().getTimezoneOffset ()},
 ];
 
 var PICS = 'test/';
@@ -147,7 +147,7 @@ var intro = [
    ttester ('login', 'post', 'auth/login', {}, [
       ['username', 'string'],
       ['password', 'string'],
-      ['tz',       'integer'],
+      ['timezone',       'integer'],
    ]),
    ttester ('reset', 'post', 'auth/reset', {}, [
       ['username', 'string'],
@@ -187,15 +187,15 @@ var intro = [
       s.vtoken1 = rs.body.token;
       return true;
    }],
-   ['login with invalid credentials #1', 'post', 'auth/login', {}, {username: U [0].username, password: 'foo', tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
+   ['login with invalid credentials #1', 'post', 'auth/login', {}, {username: U [0].username, password: 'foo', timezone: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'auth'})) return clog ('Invalid payload sent, expecting {error: "auth"}');
       return true;
    }],
-   ['login with invalid credentials #2', 'post', 'auth/login', {}, {username: 'bar', password: 'foo', tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
+   ['login with invalid credentials #2', 'post', 'auth/login', {}, {username: 'bar', password: 'foo', timezone: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'auth'})) return clog ('Invalid payload sent, expecting {error: "auth"}');
       return true;
    }],
-   ['login with valid credentials before verification', 'post', 'auth/login', {}, {username: U [0].username, password: U [0].password, tz: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
+   ['login with valid credentials before verification', 'post', 'auth/login', {}, {username: U [0].username, password: U [0].password, timezone: new Date ().getTimezoneOffset ()}, 403, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'verify'})) return clog ('Invalid payload sent, expecting {error: "verify"}');
       return true;
    }],
@@ -239,12 +239,18 @@ var intro = [
    }],
    ['get CSRF token without being logged in', 'get', 'csrf', {}, '', 403],
    ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, U [0], 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200],
-   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase (), password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: ' \t  a@a.com', password: U [0].password, timezone: new Date ().getTimezoneOffset ()}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: 'A@A.com  ', password: U [0].password, timezone: new Date ().getTimezoneOffset ()}}, 200],
+   ['login with valid credentials after verification (with email)', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase (), password: U [0].password, timezone: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0] || rs.headers ['set-cookie'] [0].length <= 5) return clog ('Invalid cookie.');
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       if (! rs.body || ! rs.body.csrf) return clog ('Invalid CSRF token');
+      s.csrf = rs.body.csrf;
+      return s.headers.cookie !== undefined && rs.headers ['set-cookie'] [0].match ('HttpOnly');
+   }],
+   ['logout', 'post', 'auth/logout', {}, {}, 200],
+   ['login again', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase (), password: U [0].password, timezone: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+      s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined && rs.headers ['set-cookie'] [0].match ('HttpOnly');
    }],
@@ -261,7 +267,7 @@ var intro = [
    ['change password (invalid old password)', 'post', 'auth/changePassword', {}, {old: 'foo', 'new': '123456'}, 403],
    ['change password', 'post', 'auth/changePassword', {}, function (s) {return {old: U [0].password, 'new': '123456'}}, 200],
    ['change password again', 'post', 'auth/changePassword', {}, function (s) {return {old: '123456', 'new': U [0].password}}, 200],
-   ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase () + '\t\t', password: U [0].password, tz: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
+   ['login with valid credentials after second password change', 'post', 'auth/login', {}, function () {return {username: U [0].username.toUpperCase () + '\t\t', password: U [0].password, timezone: new Date ().getTimezoneOffset ()}}, 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return true;
@@ -325,7 +331,7 @@ var main = [
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
       if (! eq (rs.body.usage, {limit: CONFIG.storelimit.tier1, fsused: 0, s3used: 0})) return clog ('Invalid usage field.');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 9 && rs.body.logs.length !== 10)) return clog ('Invalid logs.');
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 11 && rs.body.logs.length !== 12)) return clog ('Invalid logs.');
       return true;
    }],
    ttester ('query pics', 'post', 'query', {}, [
@@ -393,6 +399,14 @@ var main = [
       if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
       if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
       s.uid1 = rs.body.id;
+      return true;
+   }],
+   ['upload invalid format', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4', filename: 'tram.mp5'},
+      {type: 'field', name: 'id', value: s.uid1},
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
+   ]}}, 400, function (s, rq, rs) {
+      if (! eq (rs.body, {error: 'fileFormat', filename: 'tram.mp5'})) return clog ('Invalid body returned.');
       return true;
    }],
    ['upload video #1', 'post', 'upload', {}, function (s) {return {multipart: [
@@ -894,7 +908,7 @@ var main = [
       if (rs.body.geo !== undefined)           return clog ('Geo should be turned off');
       if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
       var lastLog = rs.body.logs [0];
-      if (lastLog.a !== 'rot') return clog ('Geotagging redundant disabling registered.');
+      if (lastLog.ev !== 'rotate') return clog ('Geotagging redundant disabling registered.');
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
@@ -906,7 +920,7 @@ var main = [
       if (rs.body.geo !== true)           return clog ('Geo should be turned on');
       if (rs.body.geoInProgress !== true) return clog ('Geo progress should be turned on');
       var lastLog = rs.body.logs [0];
-      if (lastLog.a !== 'geo' || lastLog.op !== 'enable') return clog ('Geotagging enabling not registered.');
+      if (lastLog.ev !== 'geotagging' || lastLog.type !== 'enable') return clog ('Geotagging enabling not registered.');
       return true;
    }],
    ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
@@ -939,7 +953,7 @@ var main = [
    ['get account after dismissing geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.suggestGeotagging !== undefined) return clog ('suggestGeotagging should be undefined');
       var lastLog = rs.body.logs [0];
-      if (lastLog.a !== 'dis' || lastLog.op !== 'geotagging') return clog ('Geotagging suggestion dismissal not registered.');
+      if (lastLog.ev !== 'dismiss' || lastLog.type !== 'geotagging') return clog ('Geotagging suggestion dismissal not registered.');
       return true;
    }],
    ['dismiss geotagging suggestion (again)', 'post', 'dismiss', {}, {operation: 'geotagging'}, 200],
@@ -947,7 +961,7 @@ var main = [
    ['get account after dismissing selection', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.suggestSelection !== undefined) return clog ('suggestSelection should be undefined');
       var lastLog = rs.body.logs [0];
-      if (lastLog.a !== 'dis' || lastLog.op !== 'selection') return clog ('Selection suggestion dismissal not registered.');
+      if (lastLog.ev !== 'dismiss' || lastLog.type !== 'selection') return clog ('Selection suggestion dismissal not registered.');
       return true;
    }],
    ['dismiss selection suggestion (again)', 'post', 'dismiss', {}, {operation: 'selection'}, 200],
@@ -975,7 +989,7 @@ var main = [
    ['get account after disabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geo !== undefined) return clog ('Geo should be turned off');
       var lastLog = rs.body.logs [0];
-      if (lastLog.a !== 'geo' || lastLog.op !== 'disable') return clog ('Geotagging disabling not registered.');
+      if (lastLog.ev !== 'geotagging' || lastLog.type !== 'disable') return clog ('Geotagging disabling not registered.');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs, next) {
@@ -1350,24 +1364,24 @@ var main = [
       return true;
    }],
    ttester ('share pic', 'post', 'share', {}, [
-      ['tag', 'string'],
-      ['who', 'string'],
+      ['tag',  'string'],
+      ['whom', 'string'],
       ['del', ['boolean', 'undefined']],
    ]),
-   ['share invalid tag', 'post', 'share', {}, {tag: 'all\n\n', who: U [1].username}, 400],
-   ['share invalid tag', 'post', 'share', {}, {tag: 'untagged', who: U [1].username}, 400],
-   ['share with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],
-   ['share a tag with no such user', 'post', 'share', {}, {tag: 'bla', who: U [1].username + 'a'}, 404],
+   ['share invalid tag', 'post', 'share', {}, {tag: 'all\n\n', whom: U [1].username}, 400],
+   ['share invalid tag', 'post', 'share', {}, {tag: 'untagged', whom: U [1].username}, 400],
+   ['share with no such user', 'post', 'share', {}, {tag: 'bla', whom: U [1].username + 'a'}, 404],
+   ['share a tag with no such user', 'post', 'share', {}, {tag: 'bla', whom: U [1].username + 'a'}, 404],
    ['get shared tags before sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {sho: [], shm: []})) return clog ('Invalid body', rs.body);
       return true;
    }],
-   ['share a tag with yourself', 'post', 'share', {}, {tag: '\n bla \t ', who: H.trim (U [0].username)}, 400, function (s, rq, rs) {
+   ['share a tag with yourself', 'post', 'share', {}, {tag: '\n bla \t ', whom: H.trim (U [0].username)}, 400, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'self'})) return clog ('Invalid body', rs.body);
       return true;
    }],
-   ['share a tag with a user', 'post', 'share', {}, {tag: '\n bla \t ', who: U [1].username}, 200],
-   ['share another tag with a user', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username}, 200],
+   ['share a tag with a user', 'post', 'share', {}, {tag: '\n bla \t ', whom: U [1].username}, 200],
+   ['share another tag with a user', 'post', 'share', {}, {tag: 'foo:bar', whom: U [1].username}, 200],
    ['get shared tags after', 'get', 'share', {}, '', 200, function (s, rq, rs) {
       rs.body.sho.sort (function (a, b) {
          return a [1] > b [1] ? 1 : -1;
@@ -1375,7 +1389,7 @@ var main = [
       if (! eq (rs.body, {sho: [[U [1].username, 'bla'], [U [1].username, 'foo:bar']], shm: []})) return clog ('Invalid body', rs.body);
       return true;
    }],
-   ['unshare tag', 'post', 'share', {}, {tag: 'foo:bar', who: U [1].username, del: true}, 200],
+   ['unshare tag', 'post', 'share', {}, {tag: 'foo:bar', whom: U [1].username, del: true}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
@@ -1497,7 +1511,7 @@ var main = [
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       return true;
    }],
-   ['share rotate tag with a user', 'post', 'share', {}, {tag: 'rotate', who: U [1].username}, 200],
+   ['share rotate tag with a user', 'post', 'share', {}, {tag: 'rotate', whom: U [1].username}, 200],
    ['login with valid credentials as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
@@ -1574,7 +1588,7 @@ var main = [
       s.repeated = rs.body.pics [0].id;
       return true;
    }],
-   ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', '')}, 200],
+   ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', whom: U [0].username.replace (/^\s+/, '').replace (' \t', '')}, 200],
    ['get `rotate` pics as user2 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
       if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
@@ -1599,7 +1613,7 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['unshare user1', 'post', 'share', {}, {tag: 'rotate', who: U [0].username.replace (/^\s+/, '').replace (' \t', ''), del: true}, 200],
+   ['unshare user1', 'post', 'share', {}, {tag: 'rotate', whom: U [0].username.replace (/^\s+/, '').replace (' \t', ''), del: true}, 200],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
@@ -1635,7 +1649,7 @@ var main = [
       if (! eq (rs.body, {all: 0})) return clog (rs.body);
       return true;
    }],
-   ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', who: U [1].username, del: true}, 404],
+   ['unshare as user1 after user2 was deleted', 'post', 'share', {}, {tag: 'bla', whom: U [1].username, del: true}, 404],
    // *** NON-MP4 VIDEO FORMATS ***
    dale.go (['circus.MOV', 'boat.3gp', 'drumming.avi'], function (vid, k) {
       var format = require ('path').extname (vid).replace ('.', '');
@@ -1695,7 +1709,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 86 && rs.body.logs.length !== 87)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 88 && rs.body.logs.length !== 89)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, skipS3 ? 0 : 3000);
    }],

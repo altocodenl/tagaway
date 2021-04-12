@@ -2489,7 +2489,7 @@ dale.do ([
       B.do (x, 'post', 'auth/login', {}, {
          username: c ('#auth-username').value,
          password: c ('#auth-password').value,
-         tz:       new Date ().getTimezoneOffset ()
+         timezone: new Date ().getTimezoneOffset ()
       }, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
