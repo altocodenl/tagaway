@@ -3082,6 +3082,7 @@ dale.do ([
             }
             else if (error && error.status !== 409 && error.status !== 400 && upload.status !== 'uploading') {
                B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
+               B.do (x, 'upload', 'cancel', upload.id, true);
             }
 
             else if (upload.status === 'uploading' && file.lastInUpload) B.do (x, 'upload', 'complete', file.id);

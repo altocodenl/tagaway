@@ -39,8 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
+- Wait event.
+- Catch error in upload?
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
+- Review fonts not loading in incognito FF
+- Super wide image generating error.
 
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
 - Reset dev & prod servers and start from scratch.
@@ -960,10 +964,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    8. `change State.upload.queue`:
       - Invokes `post upload` to upload the file.
       - Removes the file just uploaded from `State.upload.queue`.
-      - Conditionally invokes `snackbar` on error if space runs out or there was an unexpected error.
-      - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
+      - If space runs out or there is an unexpected error, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
       - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
-      - If the file upload returns an error that's neither 400 or 409, adds an item to `State.upload.summary.UID.errors`.
 
 7. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
