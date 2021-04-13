@@ -55,6 +55,8 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
    }, true);
 }, astop = function (rs, path) {
    a.stop (path, function (s, error) {
+      // TODO: remove log
+      console.log ('DEBUG ASTOP ERROR', s);
       reply (rs, 500, {error: error});
    });
 }, mexec = function (s, multi) {
@@ -1934,6 +1936,8 @@ var routes = [
                if (k.match (/gps/i)) return;
                // Ignore profile date stamp
                if (k.match (/profile/i)) return;
+               // Ignore manufacture date stamp
+               if (k.match (/manufacture date/i)) return;
                var d = new Date (v);
                if (d.getTime ()) return d.getTime ();
                d = new Date (v.replace (':', '-').replace (':', '-'));
@@ -3252,7 +3256,7 @@ var routes = [
          if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
             // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
-            [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google'}],
+            [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
@@ -3466,7 +3470,7 @@ cicek.apres = function (rs) {
          return true;
       }
       if (report ()) {
-         notify (a.creat (), {priority: rs.log.code >= 500 ? 'critical' : 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, userAgent: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, user: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
+         notify (a.creat (), {priority: rs.log.code >= 500 ? 'critical' : 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, userAgent: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, data: rs.log.data, user: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
       }
    }
    else {
