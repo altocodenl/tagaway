@@ -39,13 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Import/upload:
-   - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
-   - Upload all pics/vids.
-      - [reproduce & fix bug] Upload becomes stalled despite no loss of connectivity
-      - [check bug fixed] When uploading lots of files, upload tab crashes after a few hours.
-   - Re-import all pics/vids.
-   - Review all invalid pics/vids.
+- Upload & import all pics/vids.
+- Review all invalid pics/vids.
+
+- Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
 - Reset dev & prod servers and start from scratch.
 - ac;log
    - Backup old ac;log, reset it.

@@ -55,8 +55,6 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
    }, true);
 }, astop = function (rs, path) {
    a.stop (path, function (s, error) {
-      // TODO: remove log
-      console.log ('DEBUG ASTOP ERROR', s);
       reply (rs, 500, {error: error});
    });
 }, mexec = function (s, multi) {
@@ -138,7 +136,8 @@ SECRET.ping.send = function (payload, CB) {
 }
 
 var notify = function (s, message) {
-   if (type (message) !== 'object') return clog ('NOTIFY: message must be an object but instead is', message, s);
+   if (type (message) !== 'object') return s.next (undefined, 'Notify error - Message must be an object but instead is ' + message);
+   if (JSON.stringify (message).length > 50000) return s.next (undefined, 'Notify error - Message is too big: ' + JSON.stringify (message).slice (0, 50000));
    if (! ENV) {
       clog (new Date ().toUTCString (), message);
       return s.next ();
@@ -670,8 +669,8 @@ H.getUploads = function (s, username, filters, maxResults) {
             if (log.ev !== 'upload') return;
 
             // We can filter out uploads by id or provider.
-            if (filters.id  && log.id  !== filters.id)  return;
-            if (filters.provider && log.provider !== filters.provider) return;
+            if (filters.id       && log.id        !== filters.id)       return;
+            if (filters.provider && log.provider  !== filters.provider) return;
             if (filters.provider === null && log.provider !== undefined) return;
 
             if (! uploads [log.id]) {
@@ -681,10 +680,10 @@ H.getUploads = function (s, username, filters, maxResults) {
             }
             var upload = uploads [log.id];
             if (log.provider && ! upload.provider) upload.provier = log.provider;
-            if (log.type === 'complete' || log.type === 'cancel' || log.type === 'error') {
+            if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity') {
                upload.end = log.t;
-               upload.status = {complete: 'complete', cancel: 'cancelled', error: 'error'} [log.type];
-               if (log.type === 'error') upload.error = log.error;
+               upload.status = {complete: 'complete', cancel: 'cancelled', noCapacity: 'error'} [log.type];
+               if (log.type === 'noCapacity') upload.error = 'You have run out of space!';
             }
             else if (log.type === 'providerError') {
                if (! upload.providerErrors) upload.providerErrors = [];
@@ -770,7 +769,7 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
             s.uploads.unshift ({
                id:          id,
                provider:    provider,
-               status:      s.current.status,
+               status:      s.current.error ? 'error' : s.current.status,
                fileCount:   parseInt (s.current.fileCount)   || 0,
                folderCount: parseInt (s.current.folderCount) || 0,
                // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
@@ -3106,7 +3105,7 @@ var routes = [
                   // We check whether we already have the file. If we do, we ignore it and not have into account at all, not even on the total count.
                   var file = data.files [childId];
                   if (hashes [H.hash (childId + ':' + file.modifiedTime)]) return alreadyImported++;
-                  if (file.size > 536870888)                               return tooLarge.push (file.originaFilename);
+                  if (file.size > 536870888)                               return tooLarge.push (file.originalFilename);
                   file.tags = [];
                   filesToUpload [childId] = file;
                   recurseUp (childId, folderId);
@@ -3229,13 +3228,13 @@ var routes = [
                               // UNEXPECTED ERROR
                               if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
 
-                              // No more space, save error in import key and stop the process
+                              // NO MORE SPACE
                               if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
 
                               // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
                               if (RS.code === 400) return a.seq (s, [
                                  // Notify and keep on going
-                                 [notify, s, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],
+                                 [notify, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],
                                  [importFile, index + 1]
                               ]);
 
