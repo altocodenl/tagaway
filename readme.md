@@ -41,10 +41,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Wait event.
 - Catch error in upload?
+- Error: noun_6896.png
+- Error: super wide image.
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
 - Review fonts not loading in incognito FF
-- Super wide image generating error.
 
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
 - Reset dev & prod servers and start from scratch.
