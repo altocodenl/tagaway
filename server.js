@@ -336,7 +336,7 @@ H.thumbPic = function (s, invalidHandler, path, thumbSize, pic, alwaysMakeThumb,
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format), {env: {MAGICK_WIDTH_LIMIT: '16MP', MAGICK_HEIGHT_LIMIT: '16MP'}}]));
+         a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -3540,7 +3540,7 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
-cicek.listen ({port: CONFIG.port}, routes);
+var server = cicek.listen ({port: CONFIG.port}, routes);
 
 if (cicek.isMaster) a.seq ([
    [k, 'git', 'rev-parse', 'HEAD'],

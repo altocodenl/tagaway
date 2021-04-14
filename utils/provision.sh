@@ -41,4 +41,8 @@ ssh $HOST shutdown -r now
 # /etc/sysctl.conf -> vm.overcommit_memory = 1
 # disable THP echo never > /sys/kernel/mm/transparent_hugepage/enabled
 
+# change limits in /etc/ImageMagick-6/policy.xml:
+  #<policy domain="resource" name="width" value="100KP"/>
+  #<policy domain="resource" name="height" value="100KP"/>
+
 # place refresh.sh and start.sh
