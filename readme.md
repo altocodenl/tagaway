@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Change imagemagick policy to allow wide images.
 - Wait event.
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
