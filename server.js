@@ -53,8 +53,8 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () 
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    }, true);
-}, astop = function (rs, path) {
-   a.stop (path, function (s, error) {
+}, astop = function (rs, path, fun) {
+   a.stop (path, fun || function (s, error) {
       reply (rs, 500, {error: error});
    });
 }, mexec = function (s, multi) {
@@ -174,7 +174,13 @@ var k = function (s) {
 
    var output = {stdout: '', stderr: '', command: command};
 
-   var proc = require ('child_process').spawn (command [0], command.slice (1));
+   var options = {};
+   var commands = dale.fil (command.slice (1), undefined, function (command) {
+      if (type (command) !== 'object' || ! command.env) return command;
+      options.env = command.env;
+   });
+
+   var proc = require ('child_process').spawn (command [0], commands, options);
 
    var wait = 3;
 
@@ -301,10 +307,16 @@ H.mkdirif = function (s, path) {
 H.unlink = function (s, path, checkExistence) {
    if (! checkExistence) return a.seq (s, [a.make (fs.unlink), path]);
    a.seq (s, [
-      [a.make (fs.exists), path],
+      [function (s) {
+         fs.stat (path, function (error) {
+            if (! error) return s.next (true);
+            if (error.code === 'ENOENT') return s.next (false);
+            s.next (undefined, error);
+         });
+      }],
       function (s) {
-         if (! s.last) return s.next ();
-         a.make (fs.unlink) (s, path);
+         if (s.last === true) a.make (fs.unlink) (s, path);
+         else                 s.next ();
       }
    ]);
 }
@@ -324,7 +336,7 @@ H.thumbPic = function (s, invalidHandler, path, thumbSize, pic, alwaysMakeThumb,
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
-         a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
+         a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format), {env: {MAGICK_WIDTH_LIMIT: '16MP', MAGICK_HEIGHT_LIMIT: '16MP'}}]));
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -680,10 +692,12 @@ H.getUploads = function (s, username, filters, maxResults) {
             }
             var upload = uploads [log.id];
             if (log.provider && ! upload.provider) upload.provier = log.provider;
-            if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity') {
+            if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity' || log.type === 'error') {
                upload.end = log.t;
-               upload.status = {complete: 'complete', cancel: 'cancelled', noCapacity: 'error'} [log.type];
+               // For complete and error, type of log equals upload.status
+               upload.status = {cancel: 'cancelled', noCapacity: 'error'} [log.type] || log.type;
                if (log.type === 'noCapacity') upload.error = 'You have run out of space!';
+               if (log.type === 'error')      upload.error = log.error;
             }
             else if (log.type === 'providerError') {
                if (! upload.providerErrors) upload.providerErrors = [];
@@ -759,17 +773,12 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
             if (upload.id === id) return upload;
          });
 
-         // If current import has an upload, use it.
-         if (currentUpload) {
-            // Add the error field if it exists (no other fields are relevant if the upload is already uploading)
-            if (s.current.error) currentUpload.error = teishi.parse (s.current.error) || s.current.error;
-         }
-         else {
-            // Otherwise, create an entry for it.
+         // If current import has no upload entry, create an entry for it.
+         if (! currentUpload) {
             s.uploads.unshift ({
                id:          id,
                provider:    provider,
-               status:      s.current.error ? 'error' : s.current.status,
+               status:      s.current.status,
                fileCount:   parseInt (s.current.fileCount)   || 0,
                folderCount: parseInt (s.current.folderCount) || 0,
                // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
@@ -1690,7 +1699,7 @@ var routes = [
                ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
                ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
                [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, error: error}],
-               [reply, rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image'), data: error, filename: name}]
+               [reply, rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image'), data: error, filename: name}],
             ]);
          }
          // If input is an async sequence, we return another async sequence
@@ -1891,10 +1900,12 @@ var routes = [
             var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
             // If gif, only make small thumbnail.
             if (pic.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, pic, true], [perfTrack, 'resize200']]);
-            else a.fork (s, [
-               [[H.thumbPic, invalidHandler, newpath, 200, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize200']],
-               [[H.thumbPic, invalidHandler, newpath, 900, pic, alwaysMakeThumb, s.heic_jpg], [perfTrack, 'resize900']]
-            ], function (v) {return v});
+            else a.seq (s, [
+               [H.thumbPic, invalidHandler, newpath, 200, pic, alwaysMakeThumb, s.heic_jpg],
+               [perfTrack, 'resize200'],
+               [H.thumbPic, invalidHandler, newpath, 900, pic, alwaysMakeThumb, s.heic_jpg],
+               [perfTrack, 'resize900']
+            ]);
          },
          function (s) {
             if (pic.format !== 'heic') return s.next ();
@@ -2359,7 +2370,10 @@ var routes = [
             if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);
          },
-      ]);
+      ], function (s, error) {
+         H.log (s, rq.user.username, {ev: 'upload', type: 'error', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, error: error});
+         reply (rs, 500, {error: error});
+      });
    }],
 
    // *** SHARING ***
@@ -3210,6 +3224,7 @@ var routes = [
                            if (Error) return;
                            // UPLOAD THE FILE
                            hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {multipart: [
+                              // This `file` field is a dummy one to pass validation, but the actual file informastion goes inside providerData
                               {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                               {type: 'field', name: 'id', value: parseInt (s.import.id)},
                               // Use oldest date, whether createdTime or updatedTime
