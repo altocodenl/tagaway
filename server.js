@@ -1590,7 +1590,7 @@ var routes = [
          ['keys of body', dale.keys (b), ['op', 'provider'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
          ['body.op',  b.op,  ['start', 'complete', 'cancel', 'wait'],    'oneOf', teishi.test.equal],
          ['body.provider', b.provider, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
-         b.op !== 'start' ? [] : [
+         b.op !== 'start' ? ['id', b.id, 'integer'] : [
             ['tags', 'tooLarge', 'unsupported'].map (function (key) {
                return [
                   ['body.' + key, b [key], ['undefined', 'array'], 'oneOf'],

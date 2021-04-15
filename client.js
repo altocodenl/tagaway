@@ -3006,7 +3006,7 @@ dale.do ([
             interval: setInterval (function () {
                // We put the check condition at 9 minutes (instead of the 10 of the stalled condition) to have some extra time to set the wait event.
                if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 * 9 < Date.now ()) {
-                  B.do (x, 'upload', 'wait');
+                  B.do (x, 'upload', 'wait', rs.body.id);
                }
             }, 1000 * 15)
          });
