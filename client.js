@@ -3246,13 +3246,18 @@ dale.do ([
          if (error) text = error.responseText;
          else {
             var readableDate = function (item) {
-               return new Date (parseInt (item)).toISOString ();
+               try {
+                  return new Date (parseInt (item)).toISOString ();
+               }
+               catch (error) {
+                  return 'Invalid date';
+               }
             }
             // Convert dates into readable dates
             rs.body.db.date = readableDate (rs.body.db.date);
             rs.body.db.dateup = readableDate (rs.body.db.dateup);
             rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
-               return [k, readableDate (v) + ' (' + v + ')'];
+               return [k, readableDate (v) + ' (original date stamp ' + v + ')'];
             });
             text = JSON.stringify (rs.body, null, '   ');
          }

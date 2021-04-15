@@ -40,6 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Wait event in import?
+- Dates review: extension create, extension modify, date time stamp // old date in picture
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
 - Review fonts not loading in incognito FF
