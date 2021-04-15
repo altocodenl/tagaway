@@ -3000,6 +3000,17 @@ dale.do ([
       var files = B.get ('State', 'upload', 'new', 'files');
       B.do (x, 'post', 'metaupload', {}, {op: 'start', total: files.length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the upload.');
+
+         B.do (x, 'set', ['State', 'upload', 'wait', rs.body.id + ''], {
+            lastActivity: Date.now (),
+            interval: setInterval (function () {
+               // We put the check condition at 9 minutes (instead of the 10 of the stalled condition) to have some extra time to set the wait event.
+               if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 * 9 < Date.now ()) {
+                  B.do (x, 'upload', 'wait');
+               }
+            }, 1000 * 15)
+         });
+
          B.do (x, 'query', 'uploads');
 
          dale.do (files, function (file, k) {
@@ -3011,14 +3022,18 @@ dale.do ([
          B.do (x, 'change', ['State', 'upload', 'queue']);
       });
    }],
-   ['upload', /cancel|complete/, function (x, id, noSnackbar) {
+   ['upload', /cancel|complete|wait/, function (x, id, noSnackbar) {
       var op = x.path [0];
       B.do (x, 'post', 'metaupload', {}, {op: op, id: id}, function (x, error, rs) {
+         if (op === 'wait') return B.do (x, 'set', ['State', 'upload', 'wait', id + '', 'lastActivity'], Date.now ());
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'complete' ? 'completing' : 'cancelling') + ' the upload.');
          // If we cancel the upload, we clear files belonging to the upload from the queue.
          if (op === 'cancel') B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
             if (file.id !== id) return file;
          }));
+
+         clearInterval (B.get ('State', 'upload', 'wait', id + '', 'interval'));
+         B.do (x, 'rem', ['State', 'upload', 'wait'], id + '');
 
          B.do (x, 'query', 'uploads');
          if (noSnackbar) return;
@@ -3065,6 +3080,9 @@ dale.do ([
          f.append ('pic', file.file);
          if (file.tags) f.append ('tags', JSON.stringify (file.tags));
          B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
+
+            B.do (x, 'set', ['State', 'upload', 'wait', file.id + '', 'lastActivity'], Date.now ());
+
             dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                if (v === file) {
                   B.do (x, 'rem', ['State', 'upload', 'queue'], i);

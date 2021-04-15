@@ -39,7 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Wait event.
+- Wait event in import?
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
 - Review fonts not loading in incognito FF
@@ -388,14 +388,15 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the file is not found, a 404 is returned.
 
 - `POST /metaupload`
-   - Body can have one of three forms:
+   - Body can have one of four forms:
       - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
       - `{op: 'complete', id: INTEGER}`
-      - `{op: 'cancel', id: INTEGER}`
+      - `{op: 'cancel',   id: INTEGER}`
+      - `{op: 'wait',     id: INTEGER}`
    - The body can contain a field `provider` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
-   - If an `id` is provided in the case of `end` or `cancel`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
-   - In the case of `end` or `cancel`, if the existing upload already has a status, the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
+   - If an `id` is provided in the case of `complete`, `cancel` or `wait`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
+   - In the case of `complete`, `cancel` or `wait`, the existing upload must have a status of `uploading`, otherwise the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
    - If successful, the endpoint returns a body of the form `{id: INTEGER}`. In the case of a `start` operation, this id should be used for an ulterior `end` or `cancel`.
 
 - `POST /upload`
@@ -734,9 +735,10 @@ All the routes below require an admin user to be logged in.
       - For folder selection:  {t: INT, ev: 'import', type: 'selection', provider: PROVIDER, id: INTEGER, folders: [ID, ...]}
    - For upload:
       - [Note on ids: they function as the id of the upload and also mark the beginning time of the upload; in the case of an import upload they are the same as the id of the import itself]
-      - For start:            {t: INT, ev: 'upload', type: 'start',    id: INTEGER, provider: UNDEFINED|PROVIDER, tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
-      - For complete:         {t: INT, ev: 'upload', type: 'complete', id: INTEGER, provider: UNDEFINED|PROVIDER}
-      - For cancel:           {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
+      - For start:              {t: INT, ev: 'upload', type: 'start',    id: INTEGER, provider: UNDEFINED|PROVIDER, tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|[STRING, ...], unsupported: UNDEFINED|[STRING, ...], alreadyImported: UNDEFINED|INTEGER (this field is only present in the case of uploads from an import)}
+      - For complete:           {t: INT, ev: 'upload', type: 'complete', id: INTEGER, provider: UNDEFINED|PROVIDER}
+      - For cancel:             {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
+      - For wait for long file: {t: INT, ev: 'upload', type: 'wait',     id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For uploaded file:    {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
       - For repeated file:    {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
       - For invalid file:     {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
@@ -956,12 +958,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
-   4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
-   5. `upload cancel|complete`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument; invokes `post metaupload`; if it receives an error, invokes `snackbar`; otherwise, if it's the `cancel` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both operations, if `noSnackbar` is absent, it then invokes `query uploads` and `snackbar` to report success.
+   4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
+   5. `upload cancel|complete|wait`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument; invokes `post metaupload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post metaupload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
    8. `change State.upload.queue`:
       - Invokes `post upload` to upload the file.
+      - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
       - If space runs out or there is an unexpected error, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
       - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
@@ -1019,6 +1022,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED, lastInUpload: true|false}, ...]
       - `tag`: content of input to filter tag or add a new one.
       - `timeout`: if present, a timeout that invokes `query uploads`.
+      - `wait`: if present, an object where every key is an upload id and the value is an array of the form `{lastActivity: INTEGER, interval: SETINTERVAL FUNCTION}`. These are used to determine when a `wait` event should be sent.
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.

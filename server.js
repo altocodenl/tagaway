@@ -703,6 +703,9 @@ H.getUploads = function (s, username, filters, maxResults) {
                if (! upload.providerErrors) upload.providerErrors = [];
                upload.providerErrors.push (log.error);
             }
+            else if (log.type === 'wait') {
+               if (! upload.lastActivity) upload.lastActivity = log.t;
+            }
             else if (log.type === 'start') {
                // If current upload has had no activity in over ten minutes, we consider it stalled.
                if (! upload.status) {
@@ -1585,7 +1588,7 @@ var routes = [
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['op', 'provider'].concat (b.op === 'start' ? ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'] : ['id']), 'eachOf', teishi.test.equal],
-         ['body.op',  b.op,  ['start', 'complete', 'cancel'],    'oneOf', teishi.test.equal],
+         ['body.op',  b.op,  ['start', 'complete', 'cancel', 'wait'],    'oneOf', teishi.test.equal],
          ['body.provider', b.provider, [undefined, 'google', 'dropbox'], 'oneOf', teishi.test.equal],
          b.op !== 'start' ? [] : [
             ['tags', 'tooLarge', 'unsupported'].map (function (key) {
