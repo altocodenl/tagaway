@@ -4585,14 +4585,14 @@ E.upload = function () {
                                  // TODO v2: add inline SVG
                                  ['p', {class: 'upload-progress', opaque: true}, [
                                     ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
-                                       var texts = [done + ' pictures uploaded'];
-                                       if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
-                                       if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
-                                       if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
+                                       var texts = [done + ' pics uploaded'];
+                                       if (upload.repeated) texts.push (upload.repeated.length + ' repeated,');
+                                       if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid,');
+                                       if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large,');
                                        return texts.join (', ');
                                     }) ()],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, '(' + upload.status + ', ' + H.ago (Date.now () - upload.end) + ' ago)'],
+                                    ['span', {class: 'upload-progress__default-text'}, '(' + upload.status + '. ' + H.ago (Date.now () - upload.end) + ' ago)'],
                                     ['br'],
                                  ]],
                                  ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
@@ -4850,33 +4850,33 @@ E.import = function () {
                               ['p', {class: 'upload-progress', opaque: true}, [
                                  ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__default-text'}, 'pictures imported'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'pics imported. '],
                                  ! repeated ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + repeated],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, repeated],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'repeated)']
+                                    ['span', {class: 'upload-progress__default-text'}, 'repeated,']
                                  ],
                                  ! v2.invalid ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + v2.invalid.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.invalid.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'invalid)']
+                                    ['span', {class: 'upload-progress__default-text'}, 'invalid,']
                                  ],
                                  ! v2.tooLarge ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + v2.tooLarge.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.tooLarge.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, ' are too big)']
+                                    ['span', {class: 'upload-progress__default-text'}, ' too big,']
                                  ],
                                  ! v2.providerErrors ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' (' + v2.providerErrors.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.providerErrors.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved)']
+                                    ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
                                  ],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + H.ago (Date.now () - v2.end) + ' ago)'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + H.ago (Date.now () - v2.end) + ' ago.'],
                               ]],
                            ]],
                         ]],
