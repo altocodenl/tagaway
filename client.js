@@ -2275,8 +2275,13 @@ H.isCountry = function (tag) {
    return !! tag.match (/^g::[A-Z]{2}$/);
 }
 
+H.trim = function (string) {
+   return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
+}
+
 H.isUserTag = function (tag) {
-   tag = tag.toLowerCase ();
+   tag = H.trim (tag.toLowerCase ());
+   if (tag.length === 0) return false;
    if (tag === 'all' || tag === 'untagged') return false;
    return ! H.isYear (tag) && ! H.isGeo (tag);
 }
@@ -2296,10 +2301,6 @@ H.if = function (condition, then, Else) {
 
 H.email = /^(([_\da-zA-Z\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
 
-H.trim = function (string) {
-   return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
-}
-
 H.stopPropagation = function (ev) {
    return [['onclick', 'stop', 'propagation', {rawArgs: 'event'}], ev];
 }
@@ -2314,6 +2315,15 @@ H.ago = function (ms) {
    if (ms < 1000 * 60 * 60)      return Math.floor (ms / (1000 * 60)) + ' minutes';
    if (ms < 1000 * 60 * 60 * 24) return Math.floor (ms / (1000 * 60 * 60)) + ' hours';
    return Math.floor (ms / (1000 * 60 * 60 * 24)) + ' days';
+}
+
+H.hash = function (file, cb) {
+   var freader = new FileReader (), hash = false;
+   freader.readAsArrayBuffer (file);
+   freader.onerror = function () {cb (true)}
+   freader.onload = function () {
+      cb (null, murmur.v3 (new Uint8Array (freader.result)));
+   }
 }
 
 // *** VIEWS ***
@@ -2988,7 +2998,7 @@ dale.do ([
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
       dale.do (input.files, function (file) {
-         if (file.size && file.size > 536870888)                    B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         if (file.size && file.size > window.maxFileSize)           B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
          else if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
          else                                                       B.add (['State', 'upload', 'new', 'files'], file);
       });
@@ -3004,7 +3014,7 @@ dale.do ([
          B.do (x, 'set', ['State', 'upload', 'wait', rs.body.id + ''], {
             lastActivity: Date.now (),
             interval: setInterval (function () {
-               // We put the check condition at 9 minutes (instead of the 10 of the stalled condition) to have some extra time to set the wait event.
+               // We put the check condition at 9 minutes (instead of the 10 of the stalled condition) to have some extra time to send the wait event.
                if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 * 9 < Date.now ()) {
                   B.do (x, 'upload', 'wait', rs.body.id);
                }
@@ -3015,20 +3025,23 @@ dale.do ([
 
          dale.do (files, function (file, k) {
             var tags = B.get ('State', 'upload', 'new', 'tags') || [];
-            if (file.webkitRelativePath) tags = tags.concat (file.webkitRelativePath.split ('/').slice (0, -1));
+            if (file.webkitRelativePath) {
+               var tagFromFolder = file.webkitRelativePath.split ('/').slice (0, -1);
+               if (H.isUserTag (tagFromFolder)) tags = tags.concat (tagFromFolder);
+            }
             B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags, lastInUpload: k + 1 === files.length});
          });
          B.do (x, 'rem', ['State', 'upload'], 'new');
          B.do (x, 'change', ['State', 'upload', 'queue']);
       });
    }],
-   ['upload', /cancel|complete|wait/, function (x, id, noSnackbar) {
+   ['upload', /cancel|complete|wait|error/, function (x, id, noSnackbar, error) {
       var op = x.path [0];
-      B.do (x, 'post', 'metaupload', {}, {op: op, id: id}, function (x, error, rs) {
+      B.do (x, 'post', 'metaupload', {}, {op: op, id: id, error: error}, function (x, error, rs) {
          if (op === 'wait') return B.do (x, 'set', ['State', 'upload', 'wait', id + '', 'lastActivity'], Date.now ());
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'complete' ? 'completing' : 'cancelling') + ' the upload.');
-         // If we cancel the upload, we clear files belonging to the upload from the queue.
-         if (op === 'cancel') B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
+         // If we cancel or error the upload, we clear files belonging to the upload from the queue.
+         if (op === 'cancel' || op === 'error') B.do (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
             if (file.id !== id) return file;
          }));
 
@@ -3036,6 +3049,7 @@ dale.do ([
          B.do (x, 'rem', ['State', 'upload', 'wait'], id + '');
 
          B.do (x, 'query', 'uploads');
+         if (op === 'error') return B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
          if (noSnackbar) return;
          if (op === 'cancel') B.do (x, 'snackbar', 'green', 'Upload cancelled successfully.');
          else                 B.do (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
@@ -3074,36 +3088,64 @@ dale.do ([
          file.uploading = true;
          uploading++;
 
-         var f = new FormData ();
-         f.append ('lastModified', file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ());
-         f.append ('id', file.id);
-         f.append ('pic', file.file);
-         if (file.tags) f.append ('tags', JSON.stringify (file.tags));
-         B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
+         var uploadFile = function () {
+            var f = new FormData ();
+            f.append ('lastModified', file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ());
+            f.append ('id', file.id);
+            f.append ('pic', file.file);
+            if (file.tags) f.append ('tags', JSON.stringify (file.tags));
+            B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
 
-            B.do (x, 'set', ['State', 'upload', 'wait', file.id + '', 'lastActivity'], Date.now ());
+               B.do (x, 'set', ['State', 'upload', 'wait', file.id + '', 'lastActivity'], Date.now ());
 
-            dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
-               if (v === file) {
-                  B.do (x, 'rem', ['State', 'upload', 'queue'], i);
-                  return true;
-               }
-            });
-
-            var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {if (upload.id === file.id) return upload});
-
-            if (error && error.status === 409 && error.responseText.match ('capacity')) {
-               dale.do (B.get ('Data', 'uploads'), function (upload) {
-                  if (upload.status === 'uploading') B.do (x, 'upload', 'cancel', upload.id, true);
+               // Remove file from queue.
+               dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
+                  if (v === file) {
+                     B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                     return true;
+                  }
                });
-               B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
-            }
-            else if (error && error.status !== 409 && error.status !== 400 && upload.status !== 'uploading') {
-               B.do (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
-               B.do (x, 'upload', 'cancel', upload.id, true);
-            }
 
-            else if (upload.status === 'uploading' && file.lastInUpload) B.do (x, 'upload', 'complete', file.id);
+               // Space has run out, cancel the upload if it hasn't been cancelled already.
+               if (error && error.status === 409 && error.responseText.match ('capacity')) {
+                  dale.do (B.get ('Data', 'uploads'), function (upload) {
+                     if (upload.id === file.id && upload.status === 'uploading') B.do (x, 'upload', 'cancel', upload.id, true);
+                  });
+                  B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
+               }
+
+               // If file is invalid, repeatead or already uploaded, do nothing.
+               else if (error && error.status === 400 || (error.status === 409 && error.responseText.match (/alreadyUploaded|repeated/))) {
+                  // Do nothing.
+               }
+
+               // Report unexpected error.
+               else if (error) B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Upload error', error: error.responseText});
+
+               // If upload went well and it is the last one of the upload, complete the upload.
+               else if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
+                  return upload.id === file.id && upload.status === 'uploading';
+               })) B.do (x, 'upload', 'complete', file.id);
+            });
+         }
+
+         H.hash (file.file, function (error, hash) {
+            if (error) return B.do (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
+            B.do (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size}, function (x, error, rs) {
+               if (error) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
+
+               if (! rs.body.repeated) return uploadFile ();
+               // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete it.
+               dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
+                  if (v === file) {
+                     B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                     if (! file.lastInUpload) return true;
+                     dale.do (B.get ('Data', 'uploads'), function (upload) {
+                        if (upload.id === file.id && upload.status === 'uploading') B.do (x, 'upload', 'complete', upload.id, true);
+                     });
+                  }
+               });
+            });
          });
       });
    }],
@@ -3257,7 +3299,7 @@ dale.do ([
             rs.body.db.date = readableDate (rs.body.db.date);
             rs.body.db.dateup = readableDate (rs.body.db.dateup);
             rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
-               return [k, readableDate (v) + ' (original date stamp ' + v + ')'];
+               return [k, readableDate (v) + ' // ' + v];
             });
             text = JSON.stringify (rs.body, null, '   ');
          }
@@ -3813,7 +3855,7 @@ E.pics = function () {
                         // *** QUERY LIST ***
                         // TODO v2: merge two elements into one
                         B.view (['State', 'filter'], {attrs: {class: 'sidebar__tags'}}, function (x, filter) {
-                           filter = (filter || '').trim ();
+                           filter = H.trim (filter || '');
                            return B.view (['State', 'query', 'tags'], {tag: 'ul', attrs: {class: 'tag-list tag-list--sidebar tag-list--view'}}, function (x, selected) {
                               var geotagSelected = dale.stop (selected, true, function (tag) {
                                  return H.isGeo (tag);
@@ -3988,7 +4030,7 @@ E.pics = function () {
                         // TODO v2: merge two elements into one
                         B.view (['State', 'untag'], {attrs: {class: 'sidebar__tags'}}, function (x, untag) {
                            return B.view (['State', 'filter'], function (x, filter) {
-                              filter = (filter || '').trim ();
+                              filter = H.trim (filter || '');
                               return [
                                  ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                                  // *** TAG/UNTAG LIST ***
@@ -4505,7 +4547,7 @@ E.upload = function () {
                      dale.do (uploads, function (upload) {
                         if (upload.status !== 'uploading') return;
                         // Files that are too large should be detected before uploading and shouldn't be counted towards the total.
-                        var done = (upload.ok || 0) + (upload.repeated || []).length + (upload.invalid || []).length;
+                        var done = (upload.ok || 0) + (upload.alreadyUploaded || 0) + (upload.repeated || []).length + (upload.invalid || []).length;
                         return ['li', {class: 'upload-box-list__item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
@@ -4523,6 +4565,7 @@ E.upload = function () {
                                     ['p', {class: 'upload-progress', opaque: true}, [
                                        ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
                                           var texts = [done + '/' + upload.total + ' uploading'];
+                                          if (upload.alreadyUploaded) texts.push (upload.alreadyUploaded + ' already uploaded');
                                           if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
                                           if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
                                           if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
@@ -4586,6 +4629,7 @@ E.upload = function () {
                                  ['p', {class: 'upload-progress', opaque: true}, [
                                     ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
                                        var texts = [done + ' pictures uploaded'];
+                                       if (upload.alreadyUploaded) texts.push (upload.alreadyUploaded + ' already uploaded');
                                        if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
                                        if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
                                        if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
@@ -4752,7 +4796,7 @@ E.import = function () {
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', {class: 'listing-progress'}, [
                      ['div', {class: 'files-found-so-far'}, [
-                        ['span', (data.ok || 0) + (data.alreadyImported || 0) + (data.repeated || []).length + (data.invalid || []).length + (data.tooLarge || []).length],
+                        ['span', (data.ok || 0) + (data.alreadyUploaded || 0) + (data.alreadyImported || 0) + (data.repeated || []).length + (data.invalid || []).length + (data.tooLarge || []).length],
                         ['span', ' / '],
                         ['span', data.total + (data.alreadyImported || 0)],
                         ['div', ' imported so far'],
@@ -4851,6 +4895,12 @@ E.import = function () {
                                  ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'pictures imported'],
+                                 ! v2.alreadyUploaded ? [] : [
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.alreadyUploaded],
+                                    ['LITERAL', '&nbsp'],
+                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded)']
+                                 ],
                                  ! repeated ? [] : [
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__amount-uploaded'}, '(' + repeated],

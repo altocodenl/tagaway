@@ -31,6 +31,7 @@ module.exports = {
    port: 1427,
    basepath: ENV ? '/root/files' : '/tmp',
    redisdb: 15,
+   maxFileSize: 2 * 1000 * 1000 * 1000,
    crypto: {
       algorithm: 'aes-256-gcm',
       nonceLength: 16,

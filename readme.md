@@ -39,8 +39,34 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Wait event in import?
-- Dates review: extension create, extension modify, date time stamp // old date in picture
+- client-side hash & alreadyUploaded
+   - rename hash keys
+   - get rid of hash sets since we already have reverse hashes
+   - add hashorig & hashorigdel
+   - change maxfilesize and add it as configuration variable
+   - trim tags everywhere and validate tags with single function
+   - uploadCheck endpoint
+   - upload: check for original hash
+   - when logging repeated file, store length too
+   - update getUploads to show alreadyUploaded and repeatedSize
+   - client display of uploads/imports
+   - allow client to send error event to upload
+   - update client docs
+   - Ignore folder tags (import & upload) that are invalid
+
+   - tests
+      - uploadCheck endpoint
+      - upload repeated with same and different name
+      - forbid empty tags (before & after trimming)
+      - check trimmed tags in start & end events of upload
+      - error event in upload
+      - repeated event: send fileSize, check it's there in uploads
+
+- implement wait event in import if there's a long or slow upload.
+
+- Dates review: extension create, extension modify, date time stamp (only match before colon) // old date in picture
+- if repeated picture has older date, add them to dates and use one of them as date?
+
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
 - Review fonts not loading in incognito FF
@@ -66,12 +92,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Show provider errors in import.
       - If there's a provider error, give a "try again" option with the same list?
       - If there's another type of error, mark "ac;pic/server error".
-   - Add "currently uploading" endpoint with ttl and query it to see if interface should be refreshed. This allows for refresh if there are uploads going on on a separate device/tab.
-   - If opening interface, load up import data to see if an import is ongoing so that query can be updated.
    - Implement support for large files (> 500MB).
    - Import from Dropbox.
+   - When hashing, chunk large files into smaller segments, both in client and in server.
 
 - Pics
+   - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
    - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
    - Implement video streaming.
@@ -389,30 +415,40 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the file is not found, a 404 is returned.
 
 - `POST /metaupload`
-   - Body can have one of four forms:
+   - Body can have one of five forms:
       - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
       - `{op: 'complete', id: INTEGER}`
       - `{op: 'cancel',   id: INTEGER}`
       - `{op: 'wait',     id: INTEGER}`
+      - `{op: 'error',    id: INTEGER, error: OBJECT}`
    - The body can contain a field `provider` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
-   - If an `id` is provided in the case of `complete`, `cancel` or `wait`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
+   - If an `id` is provided in the case of `complete`, `cancel`, `wait` or `error`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
    - In the case of `complete`, `cancel` or `wait`, the existing upload must have a status of `uploading`, otherwise the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
    - If successful, the endpoint returns a body of the form `{id: INTEGER}`. In the case of a `start` operation, this id should be used for an ulterior `end` or `cancel`.
+
+- `POST /uploadCheck`
+   - This route is used to see if a picture has already been uploaded.
+   - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, filename: STRING, tags: UNDEFINED|[STRING, ...]}`.
+   - If `tags` are included, after being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - `body.fileSize` must be the size in bytes of the file being checked.
+   - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
+   - If there's already a picture with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
 
 - `POST /upload`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
-   - The file must be at most 536870888 bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
+   - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
    - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
-   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). None of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
-   - If the same file exists for that user, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
+   - If a file exists for that user that is both identical to an existing one and aso having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
+   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the picture just uploaded and `deg` is the rotation automatically applied to the picture based on its metadata.
 
@@ -490,7 +526,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /uploads`
-   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
 
 `GET /imports/PROVIDER`
    - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, provider: PROVIDER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`. If oauth access hasn't been provided yet, the reply will be of the form `[{redirect: URL, provider: PROVIDER}]`, where `URL` is the URL to start the OAuth authorization process for that provider.
@@ -663,13 +699,17 @@ All the routes below require an admin user to be logged in.
 
 - csrf:SESSION (string): key is session, value is associated CSRF token.
 
-- upic:USERNAME (set): contains hashes of the pictures uploaded by an user, to check for repetition.
+- hash:USERNAME (hash): key is hash of picture uploaded (with metadata stripped), value is id of corresponding pic/vid. Used to check for repeated picture.
 
-- upic:rev:USERNAME (hash): key is hashes, value is the id of the corresponding pic/vid.
+- hashorig:USERNAME (hash): key is hash of picture uploaded (without metadata stripped), value is id of corresponding pic/vid. Used to check for already uploaded picture.
 
-- upic:USERNAME:PROVIDER (set): contains hashes of the pictures imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
+- hash:USERNAME:PROVIDER (set): contains hashes of the pictures imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
 
-- upicd:USERNAME (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files.
+- hashdel:USERNAME (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files that were deleted. This field is not in use yet.
+
+- hashorigdel:USERNAME (set): contains hashes of the pictures deleted by an user (without metadata stripped), to check for repetition when re-uploading files that were deleted. This field is not in use yet.
+
+- hashdel:USERNAME:PROVIDER (set): contains hashes of the pictures deleted by an user, to check for repetition when re-importing files that were deleted. The hashed quantity is `ID:MODIFIED_TIME`. This field is not in use yet.
 
 - thu:ID (string): id of the corresponding pic.
 
@@ -682,7 +722,8 @@ All the routes below require an admin user to be logged in.
    dimh: INT (height in pixels)
    byfs: INT (size in bytes in FS)
    hash: STRING
-   phash: STRING (provider hash if picture was imported, with the shape `g|HASH`)
+   originalHash: STRING
+   providerHash: STRING (provider hash if picture was imported, which comes from combining `FILE_ID:MODIFIED_TIME`; has the shape PROVIDER:HASH)
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
@@ -710,7 +751,7 @@ All the routes below require an admin user to be logged in.
 
 - download:ID (string): stringified object of the shape `{username: ID, pics: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
-- ulog:USER (list): stringified log objects with user activity. Leftmost is most recent.
+- ulog:USERNAME (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:           {t: INT, ev: 'auth', type: 'login',          ip: STRING, userAgent: STRING, timezone: INTEGER}
    - For logout:          {t: INT, ev: 'auth', type: 'logout',         ip: STRING, userAgent: STRING}
    - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING}
@@ -740,13 +781,14 @@ All the routes below require an admin user to be logged in.
       - For complete:           {t: INT, ev: 'upload', type: 'complete', id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For cancel:             {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For wait for long file: {t: INT, ev: 'upload', type: 'wait',     id: INTEGER, provider: UNDEFINED|PROVIDER}
-      - For uploaded file:    {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: STRING (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated file:    {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: STRING (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded)}
-      - For invalid file:     {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
-      - For too large file:   {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
-      - For provider error:   {t: INT, ev: 'upload', type: 'providerError', id: INTEGER, provider: PROVIDER, error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
-      - For no more space:    {t: INT, ev: 'upload', type: 'noCapacity', id: INTEGER, provider: UNDEFINED|PROVIDER, error: STRING|OBJECT}
-      - For unexpected error: {t: INT, ev: 'upload', type: 'error', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
+      - For uploaded file:         {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded), fileSize: INTEGER (size of file being uploaded)}
+      - For already uploaded file: {t: INT, ev: 'upload', type: 'alreadyUploaded', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...]}
+      - For invalid file:          {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
+      - For too large file:         {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For provider error:         {t: INT, ev: 'upload', type: 'providerError', id: INTEGER, provider: PROVIDER, error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
+      - For no more space:          {t: INT, ev: 'upload', type: 'noCapacity', id: INTEGER, provider: UNDEFINED|PROVIDER, error: STRING|OBJECT}
+      - For unexpected error:       {t: INT, ev: 'upload', type: 'error', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT, fromClient: true|UNDEFINED (if error is reported by the client)}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -960,14 +1002,18 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
    4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
-   5. `upload cancel|complete|wait`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument; invokes `post metaupload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post metaupload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
+   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post metaupload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post metaupload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
    8. `change State.upload.queue`:
+      - Hashes the file; if there is an error, invokes `upload error` and returns.
+      - Invokes `post uploadCheck` to check if an identical file already exists; if there is an error, invokes `upload error` and returns.
+      - If a file with the same hash already exists, the responder removes it from `State.upload.queue` and conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`). It then returns.
       - Invokes `post upload` to upload the file.
       - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
-      - If space runs out or there is an unexpected error, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
+      - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
+      - If there's an unexpected error (not a 400 or not a 409 of type `alreadyUploaded` or `imported`) it invokes `upload error`.
       - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
 
 7. Import
@@ -1048,7 +1094,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
-   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
+   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin
 
