@@ -703,7 +703,8 @@ H.getUploads = function (s, username, filters, maxResults) {
             if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity' || log.type === 'error') {
                upload.end = log.t;
                // For complete and error, type of log equals upload.status
-               upload.status = {cancel: 'cancelled', noCapacity: 'error'} [log.type] || log.type;
+               // We check if status is already set in case an error comes after either a cancel or a completed
+               if (! upload.status) upload.status = {cancel: 'cancelled', noCapacity: 'error'} [log.type] || log.type;
                if (log.type === 'noCapacity') upload.error = 'You have run out of space!';
                if (log.type === 'error')      upload.error = log.error;
             }
@@ -1627,7 +1628,7 @@ var routes = [
       if (b.provider && rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
 
       var invalidTag;
-      b.tags = dale.go (b.tags, function (tag) {
+      if (b.tags && b.tags.length) b.tags = dale.go (b.tags, function (tag) {
          if (! H.isUserTag (tag)) return invalidTag = tag;
          return H.trim (tag);
       });
@@ -1640,7 +1641,7 @@ var routes = [
          [H.getUploads, rq.user.username, {id: b.id}],
          function (s) {
             if (b.op === 'start' && s.last.length) return reply (rs, 409);
-            if (b.op !== 'start' || b.op !== 'error') {
+            if (b.op !== 'start' && b.op !== 'error') {
                if (! s.last.length)                   return reply (rs, 404);
                if (s.last [0].status !== 'uploading') return reply (rs, 409);
             }
@@ -1672,6 +1673,8 @@ var routes = [
          ['body.tags', b.tags, 'string', 'each'],
       ])) return;
 
+      var invalidTag;
+
       b.tags = dale.go (b.tags, function (tag) {
          if (! H.isUserTag (tag)) invalidTag = tag;
          return H.trim (tag);
@@ -1689,10 +1692,10 @@ var routes = [
          [a.cond, [Redis, 'hget', 'hashorig:' + rq.user.username, b.hash], {
             'null': [reply, rs, 200, {repeated: false}],
             'else': [
-               function (s) {
-                  Redis (s, 'hgetall', 'pic:' + s.last);
-               },
                [function (s) {
+                  Redis (s, 'hgetall', 'pic:' + s.last);
+               }],
+               function (s) {
                   s.pic = s.last;
 
                   // We add the tags of this picture to those of the identical picture already existing
@@ -1703,11 +1706,11 @@ var routes = [
                      multi.sadd ('tags:' + rq.user.username,             tag);;
                      multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.pic.id);
                   });
-                  if (b.tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.picid);
+                  if (b.tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.pic.id);
                   mexec (s, multi);
-               }],
+               },
                function (s) {
-                  H.log (s, rq.user.username, {ev: 'upload', type: b.filename === s.pic.name ? 'alreadyUploaded' : 'repeated', id: b.id, fileId: s.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename === s.pic.name ? undefined : b.filename, fileSize: b.filename === s.pic.name ? b.fileSize : undefined});
+                  H.log (s, rq.user.username, {ev: 'upload', type: b.filename === s.pic.name ? 'alreadyUploaded' : 'repeated', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename === s.pic.name ? undefined : b.filename, fileSize: b.filename !== s.pic.name ? b.fileSize : undefined});
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -1733,7 +1736,10 @@ var routes = [
       var tags = teishi.parse (rq.data.fields.tags), invalidTag;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
       tags = dale.go (tags, function (tag) {
-         if (type (tag) !== 'string' || ! H.isUserTag (tag)) invalidTag = tag;
+         if (type (tag) !== 'string' || ! H.isUserTag (tag)) {
+            invalidTag = tag;
+            return;
+         }
          return H.trim (tag);
       });
       if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
@@ -1886,8 +1892,8 @@ var routes = [
                file = null;
             });
          }],
-         [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hashorig'], {'1': [
-            [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hashorig'],
+         [a.cond, [a.get, Redis, 'hexists', 'hashorig:' + rq.user.username, '@hashorig'], {'1': [
+            [a.get, Redis, 'hget', 'hashorig:' + rq.user.username, '@hashorig'],
             function (s) {
                Redis (s, 'hgetall', 'pic:' + s.last);
             },
@@ -2044,11 +2050,11 @@ var routes = [
 
             var multi = redis.multi ();
 
-            pic.dimw = s.size.w;
-            pic.dimh = s.size.h;
-            pic.byfs = s.byfs.size;
-            pic.hash = s.hash;
-            multi.hset ('hash:' + rq.user.username, s.hash, pic.id);
+            pic.dimw         = s.size.w;
+            pic.dimh         = s.size.h;
+            pic.byfs         = s.byfs.size;
+            pic.hash         = s.hash;
+            pic.originalHash = s.hashorig;
 
             s.dates ['upload:date'] = lastModified;
             pic.dates = JSON.stringify (s.dates);
@@ -2083,8 +2089,11 @@ var routes = [
             if (s.t200) multi.set ('thu:' + pic.t200, pic.id);
             if (s.t900) multi.set ('thu:' + pic.t900, pic.id);
 
-            multi.hset ('hash:'    + rq.user.username, pic.hash, pic.id);
-            multi.srem ('hashdel:' + rq.user.username, pic.hash);
+            multi.hset ('hash:'     + rq.user.username, pic.hash,         pic.id);
+            multi.hset ('hashorig:' + rq.user.username, pic.originalHash, pic.id);
+            multi.srem ('hashdel:'     + rq.user.username, pic.hash);
+            multi.srem ('hashdelorig:' + rq.user.username, pic.originalHash);
+
             if (rq.data.fields.providerData) {
                var providerKey = {google: 'g', dropbox: 'd'} [rq.data.fields.providerData.provider];
                var providerHash = H.hash (rq.data.fields.providerData.id + ':' + rq.data.fields.providerData.modifiedTime);
@@ -2235,7 +2244,7 @@ var routes = [
       ])) return;
 
       b.tag = H.trim (b.tag);
-      if (! isUserTag (tag)) return reply (rs, 400, {error: 'tag'});
+      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       var multi = redis.multi (), seen = {};
       dale.go (b.ids, function (id) {

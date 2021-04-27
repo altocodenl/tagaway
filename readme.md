@@ -39,33 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- client-side hash & alreadyUploaded
-   - rename hash keys
-   - get rid of hash sets since we already have reverse hashes
-   - add hashorig & hashorigdel
-   - change maxfilesize and add it as configuration variable
-   - trim tags everywhere and validate tags with single function
-   - uploadCheck endpoint
-   - upload: check for original hash
-   - when logging repeated file, store length too
-   - update getUploads to show alreadyUploaded and repeatedSize
-   - client display of uploads/imports
-   - allow client to send error event to upload
-   - update client docs
-   - Ignore folder tags (import & upload) that are invalid
-
-   - tests
-      - uploadCheck endpoint
-      - upload repeated with same and different name
-      - forbid empty tags (before & after trimming)
-      - check trimmed tags in start & end events of upload
-      - error event in upload
-      - repeated event: send fileSize, check it's there in uploads
-
 - implement wait event in import if there's a long or slow upload.
-
-- Dates review: extension create, extension modify, date time stamp (only match before colon) // old date in picture
-- if repeated picture has older date, add them to dates and use one of them as date?
+- dates
+   - ignore extension create, extension modify, date time stamp (only match before colon) // old date in picture
+   - if repeated picture has older date, add them to dates and use one of them as date?
 
 - Upload & import all pics/vids.
 - Review all invalid pics/vids.
