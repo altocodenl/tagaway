@@ -3025,11 +3025,13 @@ dale.do ([
 
          dale.do (files, function (file, k) {
             var tags = B.get ('State', 'upload', 'new', 'tags') || [];
+            var fileTags = teishi.c (tags);
             if (file.webkitRelativePath) {
-               var tagFromFolder = file.webkitRelativePath.split ('/').slice (0, -1);
-               if (H.isUserTag (tagFromFolder)) tags = tags.concat (tagFromFolder);
+               dale.do (file.webkitRelativePath.split ('/').slice (0, -1), function (folder) {
+                  if (H.isUserTag (folder)) fileTags = fileTags.concat (folder);
+               });
             }
-            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags, lastInUpload: k + 1 === files.length});
+            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags.concat (fileTags), lastInUpload: k + 1 === files.length});
          });
          B.do (x, 'rem', ['State', 'upload'], 'new');
          B.do (x, 'change', ['State', 'upload', 'queue']);
@@ -3115,7 +3117,7 @@ dale.do ([
                }
 
                // If file is invalid, repeatead or already uploaded, do nothing.
-               else if (error && error.status === 400 || (error.status === 409 && error.responseText.match (/alreadyUploaded|repeated/))) {
+               else if (error && (error.status === 400 || (error.status === 409 && error.responseText.match (/alreadyUploaded|repeated/)))) {
                   // Do nothing.
                }
 
@@ -3124,7 +3126,7 @@ dale.do ([
 
                // If upload went well and it is the last one of the upload, complete the upload.
                else if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
-                  return upload.id === file.id && upload.status === 'uploading';
+                  return v.id === file.id && v.status === 'uploading';
                })) B.do (x, 'upload', 'complete', file.id);
             });
          }
