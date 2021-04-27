@@ -3291,6 +3291,20 @@ var routes = [
             }
 
             var importFile = function (s, index) {
+               var Error, lastActivity = Date.now ();
+               var waitInterval = setInterval (function () {
+                  // If the last activity (either the beginning of the process or the last wait event) was 9 minutes ago or more, send a wait event to avoid the upload being stalled.
+                  if (Date.now () - lastActivity > 1000 * 60 * 9) {
+                     hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id)}, code: '*', apres: function (S, RQ, RS, next) {
+                        if (RS.code !== 200) {
+                           Error = true;
+                           clearInterval (waitInterval);
+                           return s.next (null, {code: RS.code, error: RS.body});
+                        }
+                        lastActivity = Date.now ();
+                     }});
+                  }
+               }, 1000 * 15);
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   // If the import was cancelled, we interrupt the async chain to stop the process.
@@ -3311,9 +3325,10 @@ var routes = [
                         }
                      ]);
 
-                     var file = s.filesToUpload [s.ids [index]], Error, providerError = function (code, error) {
+                     var file = s.filesToUpload [s.ids [index]], providerError = function (code, error) {
                         if (Error) return;
                         Error = true;
+                        clearInterval (waitInterval);
                         a.seq (s, [
                            [H.log, rq.user.username, {ev: 'upload', type: 'providerError', id: parseInt (s.import.id), provider: 'google', error: {code: code, error: error}}],
                            [importFile, index + 1]
@@ -3342,6 +3357,7 @@ var routes = [
                         var wstream = fs.createWriteStream (tempPath);
                         wstream.on ('error', function (error) {
                            Error = true;
+                           clearInterval (waitInterval);
                            s.next (null, error);
                         });
                         response.pipe (wstream);
@@ -3364,6 +3380,7 @@ var routes = [
                               })},
                               {type: 'field', name: 'csrf', value: s.csrf}
                            ]}, code: '*', apres: function (S, RQ, RS, next) {
+                              clearInterval (waitInterval);
 
                               // UNEXPECTED ERROR
                               if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
@@ -3383,6 +3400,7 @@ var routes = [
                            }});
                         });
                      }).on ('error', function (error) {
+                        clearInterval (waitInterval);
                         s.next (null, error);
                      }).end ();
                   }
