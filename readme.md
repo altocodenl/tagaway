@@ -39,11 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- dates
-   - ignore extension create, extension modify, date time stamp (only match before colon) // old date in picture
-   - if repeated picture has older date, add them to dates and use one of them as date?
-
 - Upload & import all pics/vids.
+   - Check all dates.
+   - if repeated picture has older date, add them to dates and use one of them as date?
 - Review all invalid pics/vids.
 - Review fonts not loading in incognito FF
 
