@@ -1643,7 +1643,7 @@ var routes = [
             if (b.op === 'start' && s.last.length) return reply (rs, 409);
             if (b.op !== 'start' && b.op !== 'error') {
                if (! s.last.length)                   return reply (rs, 404);
-               if (s.last [0].status !== 'uploading') return reply (rs, 409);
+               if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
             }
             if (b.op === 'start') b.id = t;
             if (b.op === 'error') b.fromClient = true;
