@@ -1860,10 +1860,8 @@ var routes = [
                s.dates = dale.obj (metadata, function (line) {
                   var key = line.split (':') [0].trim ();
                   if (! key.match (/\bdate\b/i)) return;
-                  if (key.match (/extension|manufacture/i)) return;
-                  // If value is already a valid date, don't replace anything in it.
-                  if (line.split (':').slice (1).join (':').match (/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d/)) return [key, line.split (':').slice (1),join (':')];
-                  return [key, line.split (':').slice (1).join (':').replace (':', '-').replace (':', '-').trim ()];
+                  if (key.match (/gps|profile|manufacture|extension/i)) return;
+                  return [key, line.split (':').slice (1).join (':')];
                });
             }
             else {
@@ -2069,16 +2067,10 @@ var routes = [
             // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the picture in the filesystem when it is uploaded.
             pic.date = dale.fil (s.dates, undefined, function (v, k) {
                if (! v) return;
-               // Ignore GPS date stamp
-               if (k.match (/gps/i)) return;
-               // Ignore profile date stamp
-               if (k.match (/profile/i)) return;
-               // Ignore manufacture date stamp
-               if (k.match (/manufacture date/i)) return;
                var d = new Date (v);
-               if (d.getTime ()) return d.getTime ();
+               if (d.getTime () && d.getTime () >= 0) return d.getTime ();
                d = new Date (v.replace (':', '-').replace (':', '-'));
-               if (d.getTime ()) return d.getTime ();
+               if (d.getTime () && d.getTime () >= 0) return d.getTime ();
             }).sort (function (a, b) {
                return a - b;
             });
