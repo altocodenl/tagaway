@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- implement wait event in import if there's a long or slow upload.
 - dates
    - ignore extension create, extension modify, date time stamp (only match before colon) // old date in picture
    - if repeated picture has older date, add them to dates and use one of them as date?

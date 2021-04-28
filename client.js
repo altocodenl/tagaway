@@ -3102,10 +3102,9 @@ dale.do ([
 
                // Remove file from queue.
                dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
-                  if (v === file) {
-                     B.do (x, 'rem', ['State', 'upload', 'queue'], i);
-                     return true;
-                  }
+                  if (v !== file) return;
+                  B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                  return true;
                });
 
                // Space has run out, cancel the upload if it hasn't been cancelled already.
@@ -3116,8 +3115,8 @@ dale.do ([
                   B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
                }
 
-               // If file is invalid, repeatead or already uploaded, do nothing.
-               else if (error && (error.status === 400 || (error.status === 409 && error.responseText.match (/alreadyUploaded|repeated/)))) {
+               // If file is invalid, repeated or already uploaded, or if the upload was cancelled, do nothing.
+               else if (error && (error.status === 400 || (error.status === 409 && error.responseText.match (/alreadyUploaded|repeated|status/)))) {
                   // Do nothing.
                }
 
@@ -3134,18 +3133,27 @@ dale.do ([
          H.hash (file.file, function (error, hash) {
             if (error) return B.do (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
             B.do (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size}, function (x, error, rs) {
-               if (error) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
+               if (error && error.status !== 409 && ! teishi.eq (error.responseText, JSON.stringify ({error: 'status'}))) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
 
                if (! rs.body.repeated) return uploadFile ();
-               // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete it.
+               // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.
                dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
-                  if (v === file) {
-                     B.do (x, 'rem', ['State', 'upload', 'queue'], i);
-                     if (! file.lastInUpload) return true;
-                     dale.do (B.get ('Data', 'uploads'), function (upload) {
-                        if (upload.id === file.id && upload.status === 'uploading') B.do (x, 'upload', 'complete', upload.id, true);
+                  if (v !== file) return;
+                  B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                  if (! file.lastInUpload) return true;
+
+                  var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
+                     if (upload.id === file.id) return upload;
+                  });
+                  // Depending on the timing of the interval that retrieves upload data, if the last file is an alreadyUploaded one and the whole upload takes very little time, we might not still have an upload entry. In that case, we wait a couple seconds until we do, to complete the upload.
+                  if (! upload) setTimeout (function () {
+                     var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
+                        if (upload.id === file.id) return upload;
                      });
-                  }
+                     if (upload.status === 'uploading') B.do (x, 'upload', 'complete', upload.id, true);
+                  }, 2000);
+                  else if (upload.status === 'uploading') B.do (x, 'upload', 'complete', upload.id, true);
+                  return true;
                });
             });
          });
