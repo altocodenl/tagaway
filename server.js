@@ -1858,10 +1858,11 @@ var routes = [
                else if (rotation.match ('180')) pic.deg = 180;
 
                s.dates = dale.obj (metadata, function (line) {
-                  var key = line.split (':') [0].trim ();
+                  var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
                   if (! key.match (/\bdate\b/i)) return;
                   if (key.match (/gps|profile|manufacture|extension/i)) return;
-                  return [key, line.split (':').slice (1).join (':')];
+                  if (! value.match (/^\d/)) return;
+                  return [key, value];
                });
             }
             else {
@@ -1876,9 +1877,10 @@ var routes = [
 
                if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
                s.dates = dale.obj (metadata, function (line) {
-                  var key = line.split (':') [0].trim ();
+                  var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
                   if (! key.match (/_time\b/i)) return;
-                  return [key, line.split (':').slice (1).join (':').trim ()];
+                  if (! value.match (/^\d/)) return;
+                  return [key, value];
                });
             }
             s.next ();
