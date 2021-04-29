@@ -39,13 +39,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Upload & import all pics/vids.
-   - Check all dates.
-   - if repeated picture has older date, add them to dates and use one of them as date?
+- Re-run full import and make sure it's working well.
+- Fix memory leak in upload and complete upload.
+- Dates
+   - Script to export CSV to check all dates.
+   - If repeated picture has older date, add them to dates and use one of them as date?
+- See if there's a way to detect whatsapp videos that look the same but are slightly different.
 - Review all invalid pics/vids.
+- Improve performance with click & double click when having a large amount of pictures.
 - Review fonts not loading in incognito FF
-
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
+
 - Reset dev & prod servers and start from scratch.
 - ac;log
    - Backup old ac;log, reset it.
@@ -579,6 +583,9 @@ All the routes below require an admin user to be logged in.
 
 `GET /admin/logs`
    - Returns an array of logs.
+
+`GET /admin/dates`
+   - Returns a CSV file with the date information of pictures.
 
 ### Statistics
 

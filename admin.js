@@ -707,6 +707,8 @@ E.dashboard = function (x) {
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/logs'}, 'Logs']],
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/deploy'}, 'Deploy client']],
+      ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '/pic/app/admin/dates'}, 'See dates from pics']],
    ]];
 }
 

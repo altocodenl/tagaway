@@ -1048,7 +1048,7 @@ var routes = [
             })
          ]],
          ['body', [
-            ['script', {src: 'assets/gotoB.min.js'}]
+            ['script', {src: 'assets/gotoB.min.js'}],
             ['script', {src: 'admin.js'}]
          ]]
       ]]
@@ -3598,6 +3598,38 @@ var routes = [
                });
             });
             reply (rs, 200, output);
+         }
+      ]);
+   }],
+
+   // *** ADMIN: PICTURE DATES ***
+
+   ['get', 'admin/dates', function (rq, rs) {
+
+      astop (rs, [
+         // Get list of pics and thumbs
+         [redis.keyscan, 'pic:*'],
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (s.last, function (id) {
+               multi.hgetall (id);
+            });
+            dale.go (s.last, function (id) {
+               multi.sinter (id.replace ('pic', 'pict'));
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            var output = [];
+            // id, owner, name, tags, date effective (sorted by, earliest at the top), s.dates
+            dale.go (s.last, function (pic, k) {
+               if (k >= s.last.length / 2) return;
+               output.push ([pic.id, pic.owner, pic.name, s.last [s.last.length / 2 + k].join (' // '), parseInt (pic.date), new Date (parseInt (pic.date)).toISOString ()].concat (dale.go (JSON.parse (pic.dates), function (v2, k2) {return k2 + ': ' + v2})));
+            });
+            output.sort (function (a, b) {
+               return a [4] - b [4];
+            });
+            reply (rs, 200, dale.go (output, function (v) {return v.join ('\t')}).join ('\n'), {'content-disposition': 'attachment; filename=dates-' + Date.now () + '.csv'});
          }
       ]);
    }],

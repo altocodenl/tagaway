@@ -3133,7 +3133,9 @@ dale.do ([
          H.hash (file.file, function (error, hash) {
             if (error) return B.do (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
             B.do (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size}, function (x, error, rs) {
-               if (error && error.status !== 409 && ! teishi.eq (error.responseText, JSON.stringify ({error: 'status'}))) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
+               // If the upload was just cancelled or errored by another file, don't do anything.
+               if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
+               if (error) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
 
                if (! rs.body.repeated) return uploadFile ();
                // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.
@@ -4903,7 +4905,7 @@ E.import = function () {
                            ['div', {class: 'upload-box__section'}, [
                               ['p', {class: 'upload-progress', opaque: true}, [
                                  ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
-                                 ['span', {class: 'upload-progress__default-text'}, 'pics imported. '],
+                                 ['span', {class: 'upload-progress__default-text'}, ' pics imported.'],
                                  ['LITERAL', '&nbsp'],
                                  ! v2.alreadyUploaded ? [] : [
                                     ['LITERAL', '&nbsp'],
