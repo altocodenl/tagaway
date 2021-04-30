@@ -699,7 +699,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                uploads [log.id] = {id: log.id};
             }
             var upload = uploads [log.id];
-            if (log.provider && ! upload.provider) upload.provier = log.provider;
+            if (log.provider && ! upload.provider) upload.provider = log.provider;
             if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity' || log.type === 'error') {
                upload.end = log.t;
                // For complete and error, type of log equals upload.status
@@ -3291,10 +3291,11 @@ var routes = [
 
             var importFile = function (s, index) {
                var Error, lastActivity = Date.now ();
-               var waitInterval = setInterval (function () {
+               // We only set the interval if there are files still left to upload.
+               if (index < s.ids.length) var waitInterval = setInterval (function () {
                   // If the last activity (either the beginning of the process or the last wait event) was 9 minutes ago or more, send a wait event to avoid the upload being stalled.
                   if (Date.now () - lastActivity > 1000 * 60 * 9) {
-                     hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id)}, code: '*', apres: function (S, RQ, RS, next) {
+                     hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
                         if (RS.code !== 200) {
                            Error = true;
                            clearInterval (waitInterval);
@@ -3408,9 +3409,13 @@ var routes = [
             importFile (s, 0);
          }
       ], function (s, error) {
-         // If error happens before replying to the request, send it directly to the response.
-         if (! rs.writableEnded) reply (rs, 500, {error: error});
          a.seq (s, [
+            [function (s) {
+               // If error happens before replying to the request, send it directly to the response.
+               if (! rs.writableEnded) reply (rs, 500, {error: error});
+               s.next ();
+            }],
+            [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
             // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
             [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
             function (s) {
