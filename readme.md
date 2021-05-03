@@ -39,14 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Re-run full import and make sure it's working well.
+- Improve date parsing for pictures with bad metadata: date/time original, fromName: -20......-, add field to mark which date we're using.
+- Improve performance with click & double click when having a large amount of pictures.
 - Fix memory leak in upload and complete upload.
-- Dates
-   - Script to export CSV to check all dates.
-   - If repeated picture has older date, add them to dates and use one of them as date?
+
 - See if there's a way to detect whatsapp videos that look the same but are slightly different.
 - Review all invalid pics/vids.
-- Improve performance with click & double click when having a large amount of pictures.
+- If repeated picture has older date, add them to dates and use one of them as date?
 - Review fonts not loading in incognito FF
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
 
@@ -763,13 +762,14 @@ All the routes below require an admin user to be logged in.
       - For cancel:             {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For wait for long file: {t: INT, ev: 'upload', type: 'wait',     id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For uploaded file:         {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded), fileSize: INTEGER (size of file being uploaded)}
+      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded), fileSize: INTEGER (size of file being uploaded), identical: true|false (if true, the file was an exact duplicate; if not, its detection was after comparing a version stripped from metadata)}
       - For already uploaded file: {t: INT, ev: 'upload', type: 'alreadyUploaded', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...]}
       - For invalid file:          {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
-      - For too large file:         {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For too large file:        {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For unsupported file:      {t: INT, ev: 'upload', type: 'unsupported', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
       - For provider error:         {t: INT, ev: 'upload', type: 'providerError', id: INTEGER, provider: PROVIDER, error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
       - For no more space:          {t: INT, ev: 'upload', type: 'noCapacity', id: INTEGER, provider: UNDEFINED|PROVIDER, error: STRING|OBJECT}
-      - For unexpected error:       {t: INT, ev: 'upload', type: 'error', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT, fromClient: true|UNDEFINED (if error is reported by the client)}
+      - For unexpected error:       {t: INT, ev: 'upload', type: 'error', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING|UNDEFINED (will be UNDEFINED if it happens on the upload of an import within the import logic), error: STRING|OBJECT, fromClient: true|UNDEFINED (if error is reported by the client)}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow

@@ -728,7 +728,9 @@ H.getUploads = function (s, username, filters, maxResults) {
 
                // We only put the tags added on the `start` event, instead of using those on the `ok` or `repeated` events.
                ['total', 'tooLarge', 'unsupported', 'alreadyImported', 'tags'].map (function (key) {
-                  if (log [key] !== undefined) upload [key] = log [key];
+                  // If there are unsupported files that were attempted to be uploaded (and not detected by the client), we concatenate instead of overwriting what's already there.
+                  if (key === 'unsupported' && upload.unsupported) upload.unsupported = upload.unsupported.concat (log.unsupported);
+                  else if (log [key] !== undefined) upload [key] = log [key];
                });
                completed++;
                // If we completed enough uploads as required, stop the process.
@@ -745,7 +747,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                if (! upload.alreadyUploaded) upload.alreadyUploaded = 0;
                upload.alreadyUploaded++;
             }
-            else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge') {
+            else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge' || log.type === 'unsupported') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload [log.type]) upload [log.type] = [];
                upload [log.type].push (log.filename);
@@ -1710,7 +1712,7 @@ var routes = [
                   mexec (s, multi);
                },
                function (s) {
-                  H.log (s, rq.user.username, {ev: 'upload', type: b.filename === s.pic.name ? 'alreadyUploaded' : 'repeated', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename === s.pic.name ? undefined : b.filename, fileSize: b.filename !== s.pic.name ? b.fileSize : undefined});
+                  H.log (s, rq.user.username, {ev: 'upload', type: b.filename === s.pic.name ? 'alreadyUploaded' : 'repeated', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename === s.pic.name ? undefined : b.filename, fileSize: b.filename !== s.pic.name ? b.fileSize : undefined, identical: b.filename === s.pic.name ? true : undefined});
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -1753,7 +1755,12 @@ var routes = [
       var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 
-      if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) return reply (rs, 400, {error: 'fileFormat', filename: name});
+      if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) {
+         return astop (rs, [
+            [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name}],
+            [reply, rs, 400, {error: 'fileFormat', filename: name}]
+         ]);
+      }
 
       var pic = {
          id:     uuid (),
@@ -1917,10 +1924,11 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: name === s.pic.name ? 'alreadyUploaded' : 'repeated', id: rq.data.fields.id, fileId: s.pic.id, tags: tags.length ? tags : undefined, filename: name === s.pic.name ? undefined : name, fileSize: name === s.pic.name ? undefined : s.byfs.size});
+               if (rq.data.fields.providerData || name !== s.pic.name) H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size, identical: true});
+               else H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, fileId: s.pic.id, tags: tags.length ? tags : undefined});
             },
             function (s) {
-               reply (rs, 409, {error: name === s.pic.name ? 'alreadyUploaded' : 'repeated', id: s.pic.id});
+               reply (rs, 409, {error: (rq.data.fields.providerData || name !== s.pic.name) ? 'repeated' : 'alreadyUploaded', id: s.pic.id});
             }
          ]}],
          pic.vid ? function (s) {
@@ -1960,7 +1968,7 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size});
+               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size, identical: false});
             },
             function (s) {
                reply (rs, 409, {error: 'repeated', id: s.id});
@@ -2950,7 +2958,7 @@ var routes = [
                                  file.size = parseInt (file.size);
                                  // Ignore trashed files!
                                  if (file.trashed) return;
-                                 if (CONFIG.allowedFormats.indexOf (file.mimeType) === -1) {
+                                 if (CONFIG.allowedFormats.indexOf (mime.getType (file.originalFilename)) === -1) {
                                     unsupported.push (file.originalFilename);
                                     return;
                                  }
@@ -3388,7 +3396,7 @@ var routes = [
                               // NO MORE SPACE
                               if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
 
-                              // INVALID FILE (CANNOT BE TOO LARGE BECAUSE WE PREFILTER THEM ABOVE)
+                              // INVALID FILE (CANNOT BE TOO LARGE OR INVALID FORMAT BECAUSE WE PREFILTER THEM ABOVE)
                               if (RS.code === 400) return a.seq (s, [
                                  // Notify and keep on going
                                  [notify, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],

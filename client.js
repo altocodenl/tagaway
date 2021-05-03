@@ -2463,11 +2463,11 @@ dale.do ([
          B.do (x, 'rem', 'State', 'redirect');
       }
 
-      var allowed = logged ? ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'] : ['login', 'signup', 'recover', 'reset'];
+      var allowedPages = logged ? ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'] : ['login', 'signup', 'recover', 'reset'];
 
-      if (allowed.indexOf (page) === -1) {
+      if (allowedPages.indexOf (page) === -1) {
          if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
-         return B.do (x, 'set', ['State', 'page'], allowed [0]);
+         return B.do (x, 'set', ['State', 'page'], allowedPages [0]);
       }
 
       document.title = ['ac;pic', page].join (' - ');
@@ -3112,7 +3112,7 @@ dale.do ([
                   dale.do (B.get ('Data', 'uploads'), function (upload) {
                      if (upload.id === file.id && upload.status === 'uploading') B.do (x, 'upload', 'cancel', upload.id, true);
                   });
-                  B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
+                  return B.do (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
                }
 
                // If file is invalid, repeated or already uploaded, or if the upload was cancelled, do nothing.
@@ -3121,10 +3121,10 @@ dale.do ([
                }
 
                // Report unexpected error.
-               else if (error) B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Upload error', error: error.responseText});
+               else if (error) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Upload error', error: error.responseText});
 
-               // If upload went well and it is the last one of the upload, complete the upload.
-               else if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
+               // If file is the last in the upload, complete the upload.
+               if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
                   return v.id === file.id && v.status === 'uploading';
                })) B.do (x, 'upload', 'complete', file.id);
             });
