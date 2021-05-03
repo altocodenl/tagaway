@@ -39,12 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Improve date parsing for pictures with bad metadata: date/time original, fromName: -20......-, add field to mark which date we're using.
+- Review improvements to date parsing: date/time original by default if valid, fromName field, add field to mark which date we're using.
 - Improve performance with click & double click when having a large amount of pictures.
+- Review all invalid pics/vids.
 - Fix memory leak in upload and complete upload.
 
 - See if there's a way to detect whatsapp videos that look the same but are slightly different.
-- Review all invalid pics/vids.
 - If repeated picture has older date, add them to dates and use one of them as date?
 - Review fonts not loading in incognito FF
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
@@ -707,6 +707,7 @@ All the routes below require an admin user to be logged in.
    dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
+   dateSource: STRING (metadata field used to get date)
    format: STRING
    t200: STRING or absent
    by200: INT or absent (size of 200 thumbnail in FS)

@@ -262,6 +262,16 @@ H.isUserTag = function (tag) {
    return ! H.isYear (tag) && ! H.isGeo (tag);
 }
 
+// Returns ms >= 0 if valid or -1 if not valid.
+H.parseDate = function (date) {
+   if (! date) return -1;
+   var d = new Date (date);
+   if (d.getTime () && d.getTime () >= 0) return d.getTime ();
+   d = new Date (date.replace (':', '-').replace (':', '-'));
+   if (d.getTime () && d.getTime () >= 0) return d.getTime ();
+   return -1;
+ }
+
 H.getGeotags = function (s, metadata) {
    var countryCodes = {'AF':'Afghanistan','AX':'Åland Islands','AL':'Albania','DZ':'Algeria','AS':'American Samoa','AD':'Andorra','AO':'Angola','AI':'Anguilla','AQ':'Antarctica','AG':'Antigua and Barbuda','AR':'Argentina','AM':'Armenia','AW':'Aruba','AU':'Australia','AT':'Austria','AZ':'Azerbaijan','BS':'Bahamas','BH':'Bahrain','BD':'Bangladesh','BB':'Barbados','BY':'Belarus','BE':'Belgium','BZ':'Belize','BJ':'Benin','BM':'Bermuda','BT':'Bhutan','BO':'Bolivia, Plurinational State of','BQ':'Bonaire, Sint Eustatius and Saba','BA':'Bosnia and Herzegovina','BW':'Botswana','BV':'Bouvet Island','BR':'Brazil','IO':'British Indian Ocean Territory','BN':'Brunei Darussalam','BG':'Bulgaria','BF':'Burkina Faso','BI':'Burundi','KH':'Cambodia','CM':'Cameroon','CA':'Canada','CV':'Cape Verde','KY':'Cayman Islands','CF':'Central African Republic','TD':'Chad','CL':'Chile','CN':'China','CX':'Christmas Island','CC':'Cocos (Keeling) Islands','CO':'Colombia','KM':'Comoros','CG':'Congo','CD':'Congo, the Democratic Republic of the','CK':'Cook Islands','CR':'Costa Rica','CI':'Côte d\'Ivoire','HR':'Croatia','CU':'Cuba','CW':'Curaçao','CY':'Cyprus','CZ':'Czech Republic','DK':'Denmark','DJ':'Djibouti','DM':'Dominica','DO':'Dominican Republic','EC':'Ecuador','EG':'Egypt','SV':'El Salvador','GQ':'Equatorial Guinea','ER':'Eritrea','EE':'Estonia','ET':'Ethiopia','FK':'Falkland Islands (Malvinas)','FO':'Faroe Islands','FJ':'Fiji','FI':'Finland','FR':'France','GF':'French Guiana','PF':'French Polynesia','TF':'French Southern Territories','GA':'Gabon','GM':'Gambia','GE':'Georgia','DE':'Germany','GH':'Ghana','GI':'Gibraltar','GR':'Greece','GL':'Greenland','GD':'Grenada','GP':'Guadeloupe','GU':'Guam','GT':'Guatemala','GG':'Guernsey','GN':'Guinea','GW':'Guinea-Bissau','GY':'Guyana','HT':'Haiti','HM':'Heard Island and McDonald Islands','VA':'Holy See (Vatican City State)','HN':'Honduras','HK':'Hong Kong','HU':'Hungary','IS':'Iceland','IN':'India','ID':'Indonesia','IR':'Iran, Islamic Republic of','IQ':'Iraq','IE':'Ireland','IM':'Isle of Man','IL':'Israel','IT':'Italy','JM':'Jamaica','JP':'Japan','JE':'Jersey','JO':'Jordan','KZ':'Kazakhstan','KE':'Kenya','KI':'Kiribati','KP':'Korea, Democratic People\'s Republic of','KR':'Korea, Republic of','KW':'Kuwait','KG':'Kyrgyzstan','LA':'Lao People\'s Democratic Republic','LV':'Latvia','LB':'Lebanon','LS':'Lesotho','LR':'Liberia','LY':'Libya','LI':'Liechtenstein','LT':'Lithuania','LU':'Luxembourg','MO':'Macao','MK':'Macedonia, the Former Yugoslav Republic of','MG':'Madagascar','MW':'Malawi','MY':'Malaysia','MV':'Maldives','ML':'Mali','MT':'Malta','MH':'Marshall Islands','MQ':'Martinique','MR':'Mauritania','MU':'Mauritius','YT':'Mayotte','MX':'Mexico','FM':'Micronesia, Federated States of','MD':'Moldova, Republic of','MC':'Monaco','MN':'Mongolia','ME':'Montenegro','MS':'Montserrat','MA':'Morocco','MZ':'Mozambique','MM':'Myanmar','NA':'Namibia','NR':'Nauru','NP':'Nepal','NL':'Netherlands','NC':'New Caledonia','NZ':'New Zealand','NI':'Nicaragua','NE':'Niger','NG':'Nigeria','NU':'Niue','NF':'Norfolk Island','MP':'Northern Mariana Islands','NO':'Norway','OM':'Oman','PK':'Pakistan','PW':'Palau','PS':'Palestine, State of','PA':'Panama','PG':'Papua New Guinea','PY':'Paraguay','PE':'Peru','PH':'Philippines','PN':'Pitcairn','PL':'Poland','PT':'Portugal','PR':'Puerto Rico','QA':'Qatar','RE':'Réunion','RO':'Romania','RU':'Russian Federation','RW':'Rwanda','BL':'Saint Barthélemy','SH':'Saint Helena, Ascension and Tristan da Cunha','KN':'Saint Kitts and Nevis','LC':'Saint Lucia','MF':'Saint Martin (French part)','PM':'Saint Pierre and Miquelon','VC':'Saint Vincent and the Grenadines','WS':'Samoa','SM':'San Marino','ST':'Sao Tome and Principe','SA':'Saudi Arabia','SN':'Senegal','RS':'Serbia','SC':'Seychelles','SL':'Sierra Leone','SG':'Singapore','SX':'Sint Maarten (Dutch part)','SK':'Slovakia','SI':'Slovenia','SB':'Solomon Islands','SO':'Somalia','ZA':'South Africa','GS':'South Georgia and the South Sandwich Islands','SS':'South Sudan','ES':'Spain','LK':'Sri Lanka','SD':'Sudan','SR':'Suriname','SJ':'Svalbard and Jan Mayen','SZ':'Swaziland','SE':'Sweden','CH':'Switzerland','SY':'Syrian Arab Republic','TW':'Taiwan, Province of China','TJ':'Tajikistan','TZ':'Tanzania, United Republic of','TH':'Thailand','TL':'Timor-Leste','TG':'Togo','TK':'Tokelau','TO':'Tonga','TT':'Trinidad and Tobago','TN':'Tunisia','TR':'Turkey','TM':'Turkmenistan','TC':'Turks and Caicos Islands','TV':'Tuvalu','UG':'Uganda','UA':'Ukraine','AE':'United Arab Emirates','GB':'United Kingdom','US':'United States','UM':'United States Minor Outlying Islands','UY':'Uruguay','UZ':'Uzbekistan','VU':'Vanuatu','VE':'Venezuela, Bolivarian Republic of','VN':'Viet Nam','VG':'Virgin Islands, British','VI':'Virgin Islands, U.S.','WF':'Wallis and Futuna','EH':'Western Sahara','YE':'Yemen','ZM':'Zambia','ZW':'Zimbabwe'};
 
@@ -729,7 +739,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                // We only put the tags added on the `start` event, instead of using those on the `ok` or `repeated` events.
                ['total', 'tooLarge', 'unsupported', 'alreadyImported', 'tags'].map (function (key) {
                   // If there are unsupported files that were attempted to be uploaded (and not detected by the client), we concatenate instead of overwriting what's already there.
-                  if (key === 'unsupported' && upload.unsupported) upload.unsupported = upload.unsupported.concat (log.unsupported);
+                  if (key === 'unsupported' && upload.unsupported && log.unsupported) upload.unsupported = upload.unsupported.concat (log.unsupported);
                   else if (log [key] !== undefined) upload [key] = log [key];
                });
                completed++;
@@ -1571,7 +1581,7 @@ var routes = [
             // https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
             if (rq.data.query && rq.data.query.original) {
                headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.pic.name);
-               headers ['last-modified'] = new Date (JSON.parse (s.pic.dates) ['upload:date']).toUTCString ();
+               headers ['last-modified'] = new Date (JSON.parse (s.pic.dates) ['upload:lastModified']).toUTCString ();
             }
             // If the picture is not a video, or it is a mp4 video, or the original video is required, we serve the file.
             if (! s.pic.vid || s.pic.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
@@ -2069,25 +2079,40 @@ var routes = [
             pic.hash         = s.hash;
             pic.originalHash = s.hashorig;
 
-            s.dates ['upload:date'] = lastModified;
+            s.dates ['upload:lastModified'] = lastModified;
+            if (name.match (/(19|20)\d{6}/)) {
+               var dateFromName = name.match (/(19|20)\d{6}/) [0];
+               dateFromName = new Date ([dateFromName.slice (0, 4), dateFromName.slice (4, 6), dateFromName.slice (6)].join ('-'));
+               if (dateFromName && dateFromName.getTime () >= 0) pic.dates ['upload:fromName'] = dateFromName.getTime ();
+            }
+
             pic.dates = JSON.stringify (s.dates);
 
             // All dates are considered to be UTC, unless they explicitly specify a timezone.
             // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
             // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the picture in the filesystem when it is uploaded.
-            pic.date = dale.fil (s.dates, undefined, function (v, k) {
-               if (! v) return;
-               var d = new Date (v);
-               if (d.getTime () && d.getTime () >= 0) return d.getTime ();
-               d = new Date (v.replace (':', '-').replace (':', '-'));
-               if (d.getTime () && d.getTime () >= 0) return d.getTime ();
-            }).sort (function (a, b) {
-               return a - b;
+
+            var validDates = dale.obj (s.dates, function (date, key) {
+               var parsed = H.parseDate (date);
+               if (parsed > -1) return [key, parsed];
             });
 
-            pic.date = pic.date [0];
+            // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
+            if (validDates ['Date/Time Original']) {
+               pic.date = validDates ['Date/Time Original'];
+               pic.dateSource = 'Date/Time Original';
+            }
+            // Otherwise, of all the valid dates (any date we can parse and is after the Unix epoch), we will set the oldest one.
+            else {
+               dale.go (validDates, function (date, key) {
+                  if (pic.date && pic.date <= date) return;
+                  pic.date = date;
+                  pic.dateSource = key;
+               });
+            }
+
             // If date is earlier than 1990, report it but carry on.
-            if (pic.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in picture', user: rq.user.username, dates: s.dates, filename: name});
+            if (pic.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in picture', user: rq.user.username, dates: s.dates, dateSource: pic.dateSource, filename: name});
 
             if (s.t200) pic.t200  = s.t200;
             if (s.t900) pic.t900  = s.t900;
@@ -2649,7 +2674,7 @@ var routes = [
             var downloadId = uuid ();
             redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pics: dale.go (b.ids, function (id, k) {
                var pic = s.last [k];
-               return {owner: pic.owner, id: pic.id, name: pic.name, mtime: JSON.parse (pic.dates) ['upload:date']};
+               return {owner: pic.owner, id: pic.id, name: pic.name, mtime: JSON.parse (pic.dates) ['upload:lastModified']};
             })}), function (error) {
                if (error) return reply (rs, 500, {error: error});
                reply (rs, 200, {id: downloadId + '.zip'});
