@@ -2987,8 +2987,11 @@ dale.do ([
    ['drop', 'files', function (x, ev) {
       if (B.get ('State', 'page') !== 'upload') return;
       dale.do (ev.dataTransfer.files, function (file) {
-         if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
-         else                                                  B.add (['State', 'upload', 'new', 'files'], file);
+         var fileType = file.type;
+         if (! fileType && file.name.match (/\.heic$/i)) fileType = 'image/heic';
+         if (file.size && file.size > window.maxFileSize)          B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         else if (window.allowedFormats.indexOf (fileType) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
+         else                                                      B.add (['State', 'upload', 'new', 'files'], file);
       });
       // TODO: why do we need this timeout?
       setTimeout (function () {
@@ -2998,9 +3001,11 @@ dale.do ([
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
       dale.do (input.files, function (file) {
-         if (file.size && file.size > window.maxFileSize)           B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
-         else if (window.allowedFormats.indexOf (file.type) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
-         else                                                       B.add (['State', 'upload', 'new', 'files'], file);
+         var fileType = file.type;
+         if (! fileType && file.name.match (/\.heic$/i)) fileType = 'image/heic';
+         if (file.size && file.size > window.maxFileSize)          B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         else if (window.allowedFormats.indexOf (fileType) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
+         else                                                      B.add (['State', 'upload', 'new', 'files'], file);
       });
       if (x.path [0] === 'folder') B.do (x, 'clear', 'snackbar');
       B.do (x, 'change', ['State', 'upload', 'new']);

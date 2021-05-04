@@ -1762,7 +1762,7 @@ var routes = [
       }
 
       var path = (rq.data.fields.providerData || {}).path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
-      var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash' + Path.extname (rq.data.files.pic));
+      var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash');
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 
       if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) {
@@ -1905,6 +1905,10 @@ var routes = [
          function (s) {
             a.set (s, 'format', [H.detectFormat, s.rawMetadata, pic.vid ? vidFormat : false]);
          },
+         function (s) {
+            hashpath = hashpath + '.' + s.format;
+            s.next ();
+         },
          [perfTrack, 'format'],
          [a.set, 'hashorig', function (s) {
             fs.readFile (path, function (error, file) {
@@ -1960,7 +1964,9 @@ var routes = [
                file = null;
             });
          }],
-         [H.unlink, hashpath],
+         function (s) {
+            H.unlink (s, hashpath);
+         },
          [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hash'], {'1': [
             [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hash'],
             function (s) {
