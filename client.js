@@ -2614,7 +2614,8 @@ dale.do ([
    }],
    ['change', ['State', 'selected'], function (x) {
       var selected = B.get ('State', 'selected') || {};
-      c ('.pictures-grid__item-picture', function (pic) {
+      var pics = document.getElementsByClassName ('pictures-grid__item-picture');
+      dale.do (pics, function (pic) {
          pic.classList [selected [pic.id] ? 'add' : 'remove'] ('selected');
       });
       var selectedPictures = dale.keys (selected).length > 0;
@@ -2716,8 +2717,7 @@ dale.do ([
    ['click', 'pic', function (x, id, k) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this picture and happened less than 500ms ago, we open the picture in fullscreen.
-      if (last.id) console.log ('DEBUG DOUBLE CLICK', last.id === id, teishi.time () - B.get ('State', 'lastClick').time);
-      if (last.id === id && teishi.time () - B.get ('State', 'lastClick').time < 500) {
+      if (last.id === id && teishi.time () - last.time < 500) {
          B.do (x, 'rem', ['State', 'selected'], id);
          B.do (x, 'set', ['State', 'open'], k);
          return;
@@ -2729,16 +2729,11 @@ dale.do ([
          if (pic.id === last.id) return k;
       });
 
-      // Single select/unselect
-      if (! B.get ('State', 'shift') || lastIndex === undefined) {
-         // TODO DEBUG: why is this so expensive now??
-         //if (! B.get ('State', 'selected', id)) return B.set (['State', 'selected', id], true);
-         //else                                   return B.rem (['State', 'selected'], id);
-         // return;
+      // Single select/unselect (either no shift or the last click wasn't on a picture that we currently have or the last clicked picture is deselected)
+      if (! B.get ('State', 'shift') || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
          if (! B.get ('State', 'selected', id)) return B.do (x, 'set', ['State', 'selected', id], true);
          else                                   return B.do (x, 'rem', ['State', 'selected'], id);
       }
-
       // Multiple select/unselect
       dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
          // Instead of triggering events for each picture, we directly override the value (to avoid triggering n redraws for n pictures).
@@ -2747,16 +2742,8 @@ dale.do ([
       // We manually trigger the change event.
       B.do (x, 'change', ['State', 'selected']);
    }],
-   // TODO: remove after debugging
-   ['change', ['State', 'shift'], function (x) {
-      console.log ('DEBUG SHIFT CHANGED TO ' + B.get ('State', 'shift'));
-   }],
    ['key', /down|up/, function (x, keyCode) {
-      if (keyCode === 16) {
-         // TODO: remove after debugging
-         console.log ('DEBUG SHIFT EVENT', x.path [0]);
-         B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
-      }
+      if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
       if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.do (x, 'tag', 'pics', true);
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.do (x, 'upload', 'tag', true);
    }],
