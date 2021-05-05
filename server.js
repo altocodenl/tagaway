@@ -1779,7 +1779,7 @@ var routes = [
          dateup: Date.now (),
       };
 
-      var vidFormats = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/x-msvideo': 'avi'};
+      var vidFormats = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/x-msvideo': 'avi', 'video/webm': 'webm', 'video/x-ms-wmv': 'wmv', 'video/x-m4v': 'm4v'};
 
       if (vidFormats [mime.getType (rq.data.files.pic)]) {
          var vidFormat = vidFormats [mime.getType (rq.data.files.pic)];
@@ -1854,8 +1854,8 @@ var routes = [
                s.size = {};
                var error = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Warning/)) {
-                     if (line.match ('minor') || line.match ('Invalid EXIF text encoding') || line.match ('Bad IFD1 directory')) return;
-                     return line.replace (/^Warning\s+:\s+/, '');
+                     if (line.match ('minor') || line.match ('Invalid EXIF text encoding') || line.match ('Bad IFD1 directory') || line.match ('Bad length ICC_Profile') || line.match ('Invalid CanonCameraSettings data')) return;
+                     return line;
                   }
                   if (line.match (/^Image Width/))  s.size.w = parseInt (line.split (':') [1].trim ());
                   if (line.match (/^Image Height/)) s.size.h = parseInt (line.split (':') [1].trim ());
@@ -1906,7 +1906,10 @@ var routes = [
             a.set (s, 'format', [H.detectFormat, s.rawMetadata, pic.vid ? vidFormat : false]);
          },
          function (s) {
-            hashpath = hashpath + '.' + s.format;
+            var format = s.format;
+            // If we're working with a video, format is CONTAINER:STREAMFORMAT1:..., so we just keep the container format.
+            if (format.match (':')) format = format.slice (0, format.lastIndexOf (':'));
+            hashpath = hashpath + '.' + format;
             s.next ();
          },
          [perfTrack, 'format'],
@@ -2089,7 +2092,7 @@ var routes = [
             if (name.match (/(19|20)\d{6}/)) {
                var dateFromName = name.match (/(19|20)\d{6}/) [0];
                dateFromName = new Date ([dateFromName.slice (0, 4), dateFromName.slice (4, 6), dateFromName.slice (6)].join ('-'));
-               if (dateFromName && dateFromName.getTime () >= 0) pic.dates ['upload:fromName'] = dateFromName.getTime ();
+               if (dateFromName && dateFromName.getTime () >= 0) s.dates ['upload:fromName'] = dateFromName.getTime ();
             }
 
             pic.dates = JSON.stringify (s.dates);
@@ -3425,15 +3428,11 @@ var routes = [
                               if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
 
                               // NO MORE SPACE
+                              // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
                               if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
 
                               // INVALID FILE (CANNOT BE TOO LARGE OR INVALID FORMAT BECAUSE WE PREFILTER THEM ABOVE)
-                              if (RS.code === 400) return a.seq (s, [
-                                 // Notify and keep on going
-                                 [notify, {priority: 'important', type: 'import upload invalid file error', error: RS.body, code: RS.code, file: file, provider: 'google', user: rq.user.username}],
-                                 [importFile, index + 1]
-                              ]);
-
+                              // OR
                               // SUCCESSFUL UPLOAD OR REPEATED IMAGE, KEEP ON GOING
                               importFile (s, index + 1);
                            }});
@@ -3455,7 +3454,6 @@ var routes = [
                s.next ();
             }],
             [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
-            // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
             [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
             function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);

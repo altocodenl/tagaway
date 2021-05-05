@@ -39,16 +39,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Review improvements to date parsing: date/time original by default if valid, fromName field, add field to mark which date we're using.
 - Improve performance with click & double click when having a large amount of pictures.
-- Review all invalid pics/vids.
 - Fix memory leak in upload and complete upload.
+- After full import & upload:
+   - Review all invalid pics/vids.
+   - Review improvements to date parsing.
+   - If repeated picture has older date, add them to dates and use one of them as date?
 
 - See if there's a way to detect whatsapp videos that look the same but are slightly different.
-- If repeated picture has older date, add them to dates and use one of them as date?
 - Review fonts not loading in incognito FF
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
 
+- Ubuntu distrib dev upgrade.
 - Reset dev & prod servers and start from scratch.
 - ac;log
    - Backup old ac;log, reset it.
@@ -981,7 +983,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 6. Upload
    1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
-   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
+   2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
    4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
    5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post metaupload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post metaupload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
