@@ -2094,6 +2094,11 @@ var routes = [
                dateFromName = new Date ([dateFromName.slice (0, 4), dateFromName.slice (4, 6), dateFromName.slice (6)].join ('-'));
                if (dateFromName && dateFromName.getTime () >= 0) s.dates ['upload:fromName'] = dateFromName.getTime ();
             }
+            else if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
+               var dateFromName = name.match (/(19|20)\d\d-\d\d-\d\d/) [0];
+               dateFromName = new Date ([dateFromName.slice (0, 4), dateFromName.slice (5, 7), dateFromName.slice (8)].join ('-'));
+               if (dateFromName && dateFromName.getTime () >= 0) s.dates ['upload:fromName'] = dateFromName.getTime ();
+            }
 
             pic.dates = JSON.stringify (s.dates);
 
