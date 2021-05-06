@@ -41,13 +41,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - After full import & upload:
    - Review all invalid pics/vids.
-   - Review improvements to date parsing.
-   - If repeated picture has older date, add them to dates and use one of them as date?
-
-- See if there's a way to detect whatsapp videos that look the same but are slightly different.
-- Review fonts not loading in incognito FF
+   - Review dates.
+- If repeated picture has older date, add them to dates and use one of them as date.
+   - In uploadCheck: both for alreadyUploaded and imported, if it comes it has to be the lastModified. Then send it.
+   - Same in upload with identical file: must be lastModified.
 - Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
-
 - Ubuntu distrib dev upgrade.
 - Reset dev & prod servers and start from scratch.
 - ac;log
@@ -62,6 +60,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - New dev server.
 
 - Upload/import:
+   - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Improve display of errors in upload & import:
       - Show foldable list of repeated|invalid|too large pics/vids.
@@ -107,6 +106,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Mobile
    - Login & signup.
    - Upload files & folders.
+
+- Review fonts not loading in incognito FF
 
 ### Already implemented
 
