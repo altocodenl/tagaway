@@ -3342,7 +3342,7 @@ var routes = [
                if (index < s.ids.length) var waitInterval = setInterval (function () {
                   // If the last activity (either the beginning of the process or the last wait event) was 9 minutes ago or more, send a wait event to avoid the upload being stalled.
                   if (Date.now () - lastActivity > 1000 * 60 * 9) {
-                     hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
+                     hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
                         if (RS.code !== 200) {
                            Error = true;
                            clearInterval (waitInterval);
