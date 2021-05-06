@@ -3069,7 +3069,8 @@ dale.do ([
             if (v.status === 'uploading') return true;
          });
          if (needRefresh) B.do (x, 'set', ['State', 'upload', 'timeout'], setTimeout (function () {
-            B.do (x, 'query', 'uploads');
+            // TODO v2: re-add x to call
+            B.do ('query', 'uploads');
          }, 1500));
       });
    }],
@@ -3095,7 +3096,8 @@ dale.do ([
                // Remove file from queue.
                dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                   if (v !== file) return;
-                  B.do (x, 'rem', ['State', 'upload', 'queue'], i);
+                  // TODO v2: re-add x to call
+                  B.do ('rem', ['State', 'upload', 'queue'], i);
                   return true;
                });
 

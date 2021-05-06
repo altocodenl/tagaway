@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Fix memory leak in upload and complete upload.
 - After full import & upload:
    - Review all invalid pics/vids.
    - Review improvements to date parsing.
