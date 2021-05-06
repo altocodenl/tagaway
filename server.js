@@ -2124,6 +2124,22 @@ var routes = [
                   pic.dateSource = key;
                });
             }
+            // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the earliest one of them.
+            if (pic.dateSource === 'upload:fromName') {
+               var fromNameAdjusted;
+               dale.go (validDates, function (date, key) {
+                  if (date - pic.date < 1000 * 60 * 60 * 24) {
+                     if (! fromNameAdjusted) fromNameAdjusted = [key, date];
+                     else {
+                        if (date < fromNameAdjusted [1]) fromNameAdjusted = [key, date];
+                     }
+                  }
+               });
+               if (fromNameAdjusted) {
+                  pic.dateSource = fromDateAdjusted [0];
+                  pic.date       = fromDateAdjusted [1];
+               }
+            }
 
             // If date is earlier than 1990, report it but carry on.
             if (pic.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in picture', user: rq.user.username, dates: s.dates, dateSource: pic.dateSource, filename: name});
