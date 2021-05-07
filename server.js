@@ -1877,7 +1877,7 @@ var routes = [
                s.dates = dale.obj (metadata, function (line) {
                   var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
                   if (! key.match (/\bdate\b/i)) return;
-                  if (key.match (/gps|profile|manufacture|extension/i)) return;
+                  if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
                   if (! value.match (/^\d/)) return;
                   return [key, value];
                });
@@ -1949,7 +1949,12 @@ var routes = [
             }
          ]}],
          pic.vid ? function (s) {
-            a.seq (s, invalidHandler (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath]));
+            a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
+               // If the error wasn't on the 3gp format, it's an unknown error.
+               if (Path.extname (hashpath) !== '.3gp') return invalidHandler (s, error);
+               // Some 3gp files have an issue with ffmpeg for stripping the metadata. For these files, use the original file to compute the hash.
+               return a.make (fs.copyFile) (s, path, hashpath);
+            });
          } : function (s) {
             // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
             if (s.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
