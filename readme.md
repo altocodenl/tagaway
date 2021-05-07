@@ -39,9 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- After full import & upload:
-   - Review all invalid pics/vids.
-   - Review dates.
 - If repeated picture has older date, add them to dates and use one of them as date.
    - In uploadCheck: both for alreadyUploaded and imported, if it comes it has to be the lastModified. Then send it.
    - Same in upload with identical file: must be lastModified.
