@@ -2141,8 +2141,8 @@ var routes = [
                   }
                });
                if (fromNameAdjusted) {
-                  pic.dateSource = fromDateAdjusted [0];
-                  pic.date       = fromDateAdjusted [1];
+                  pic.dateSource = fromNameAdjusted [0];
+                  pic.date       = fromNameAdjusted [1];
                }
             }
 
