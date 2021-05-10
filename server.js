@@ -687,7 +687,7 @@ H.detectFormat = function (s, metadata, vidFormat) {
    s.next (format);
 }
 
-H.getUploads = function (s, username, filters, maxResults) {
+H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) {
    filters = filters || {};
    a.seq (s, [
       [Redis, 'lrange', 'ulog:' + username, 0, -1],
@@ -709,6 +709,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                uploads [log.id] = {id: log.id};
             }
             var upload = uploads [log.id];
+            if (listAlreadyUploaded) upload.listAlreadyUploaded = [];
             if (log.provider && ! upload.provider) upload.provider = log.provider;
             if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity' || log.type === 'error') {
                upload.end = log.t;
@@ -756,6 +757,7 @@ H.getUploads = function (s, username, filters, maxResults) {
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.alreadyUploaded) upload.alreadyUploaded = 0;
                upload.alreadyUploaded++;
+               if (listAlreadyUploaded) listAlreadyUploaded.push (log.fileId);
             }
             else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge' || log.type === 'unsupported') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
@@ -1695,10 +1697,11 @@ var routes = [
       if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
 
       astop (rs, [
-         [H.getUploads, rq.user.username, {id: b.id}],
+         [H.getUploads, rq.user.username, {id: b.id}, null, true],
          function (s) {
             if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
             if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
+            s.upload = s.last [0];
             s.next ();
          },
          [a.cond, [Redis, 'hget', 'hashorig:' + rq.user.username, b.hash], {
@@ -1722,7 +1725,10 @@ var routes = [
                   mexec (s, multi);
                },
                function (s) {
-                  H.log (s, rq.user.username, {ev: 'upload', type: b.filename === s.pic.name ? 'alreadyUploaded' : 'repeated', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename === s.pic.name ? undefined : b.filename, fileSize: b.filename !== s.pic.name ? b.fileSize : undefined, identical: b.filename === s.pic.name ? true : undefined});
+                  // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
+                  var alreadyUploaded = b.filename === s.pic.name && s.upload.alreadyUploadedList.indexOf (s.pic.id) === -1;
+                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined});
+                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename, fileSize: b.fileSize, identical: true});
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -1814,9 +1820,8 @@ var routes = [
       }
 
       a.stop ([
-         [H.getUploads, rq.user.username, {id: rq.data.fields.id}],
+         [H.getUploads, rq.user.username, {id: rq.data.fields.id}, null, true],
          function (s) {
-
             if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
             if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
             s.next ();
@@ -1941,11 +1946,14 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               if (rq.data.fields.providerData || name !== s.pic.name) H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size, identical: true});
-               else H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, fileId: s.pic.id, tags: tags.length ? tags : undefined});
+               // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
+               var alreadyUploaded = ! rq.data.fields.providerData && (name !== s.pic.name && s.upload.alreadyUploadedList.indexOf (s.pic.id) === -1);
+               s.alreadyUploaded = alreadyUploaded;
+               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined});
+               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size, identical: true});
             },
             function (s) {
-               reply (rs, 409, {error: (rq.data.fields.providerData || name !== s.pic.name) ? 'repeated' : 'alreadyUploaded', id: s.pic.id});
+               reply (rs, 409, {error: alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.pic.id});
             }
          ]}],
          pic.vid ? function (s) {
