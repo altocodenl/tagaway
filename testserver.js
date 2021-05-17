@@ -399,6 +399,7 @@ var main = [
       ['hash', 'integer'],
       ['filename', 'string'],
       ['fileSize', 'integer'],
+      ['lastModified', 'integer'],
       ['tags', ['array', 'undefined']],
    ]),
    dale.go ([
@@ -414,7 +415,7 @@ var main = [
       s.uid1 = rs.body.id;
       return true;
    }],
-   ['uploadCheck, no such upload', 'post', 'uploadCheck', {}, {id: Date.now (), hash: 123, filename: 'foo', fileSize: 123, tags: ['a tag']}, 404],
+   ['uploadCheck, no such upload', 'post', 'uploadCheck', {}, {id: Date.now (), hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}, 404],
    ['upload unsupported format', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'pic', path: PICS + 'tram.mp4', filename: 'tram.mp5'},
       {type: 'field', name: 'id', value: s.uid1},
@@ -432,15 +433,15 @@ var main = [
       s.uploadIds = [rs.body.id];
       return true;
    }],
-   ['uploadCheck, hash not found', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 123, filename: 'foo', fileSize: 123, tags: ['a tag']}}, 200, function (s, rq, rs) {
+   ['uploadCheck, hash not found', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {repeated: false})) return clog ('Invalid body.');
       return true;
    }],
-   ['uploadCheck, hash is identical with a different name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 3173476963, filename: 'foo.mp4', fileSize: 123, tags: ['a tag']}}, 200, function (s, rq, rs) {
+   ['uploadCheck, hash is identical with a different name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 3173476963, filename: 'foo.mp4', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {repeated: true})) return clog ('Invalid body.');
       return true;
    }],
-   ['uploadCheck, hash is identical with a different name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 3173476963, filename: 'tram.mp4', fileSize: 123, tags: ['a tag']}}, 200, function (s, rq, rs) {
+   ['uploadCheck, hash is identical with a different name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 3173476963, filename: 'tram.mp4', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {repeated: true})) return clog ('Invalid body.');
       return true;
    }],
@@ -481,34 +482,45 @@ var main = [
       if (! rs.body.error.match (/^Invalid video/)) return clog ('Invalid error message.');
       return true;
    }],
+   ['upload alreadyUploaded video again (should be repeated)', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'field', name: 'id', value: s.uid1},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+      {type: 'field',  name: 'tags', value: '["repeated1", "repeated2"]'}
+   ]}}, 409, function (s, rq, rs, next) {
+      if (rs.body.error !== 'repeated') return clog ('Invalid error', rs.body);
+      if (rs.body.id    !== s.uploadIds [1]) return clog ('Invalid id', rs.body);
+      return true;
+   }],
    ['check user logs after first upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       var uploadLogs = rs.body.logs.slice (0, 8), id;
       if (uploadLogs.length !== 8) return clog ('Missing logs.');
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
          if (v.ev !== 'upload') return 'Invalid action';
-         if (v.type !== ['invalid', 'alreadyUploaded', 'repeated', 'ok', 'alreadyUploaded', 'repeated', 'ok', 'unsupported', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
+         if (v.type !== ['repeated', 'invalid', 'alreadyUploaded', 'repeated', 'ok', 'alreadyUploaded', 'repeated', 'ok', 'unsupported', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
          if (type (v.id) !== 'integer') return 'Invalid id type: ' + v.id;
          if (k === 0) id = v.id;
          if (v.id !== id) return 'Invalid id: ' + v.id;
-         if (k === 0 && v.filename !== 'invalid.mp4') return 'Invalid filename in invalid.';
-         if (k === 0 && type (v.error) !== 'object') return 'No error present';
-         if (k === 1 || k === 2 || k === 3) {
+         if (k === 1 && v.filename !== 'invalid.mp4') return 'Invalid filename in invalid.';
+         if (k === 1 && type (v.error) !== 'object') return 'No error present';
+         if (k === 0 || k === 2 || k === 3 || k === 4) {
             if (v.fileId !== s.uploadIds [1]) return 'Invalid fileId: ' + (k + 1);
          }
-         if (k === 4 || k === 5 || k === 6) {
+         if (k === 5 || k === 6 || k === 7) {
             if (v.fileId !== s.uploadIds [0]) return 'Invalid fileId: ' + (k + 1);
          }
-         if (k === 7 && v.filename !== 'tram.mp5') return 'Invalid filename in unsupported.';
-         if (k === 2 && v.filename !== 'bach-repeated.mp4') return 'Invalid filename in repeated.';
-         if (k === 5 && v.filename !== 'foo.mp4') return 'Invalid filename in repeated (uploadCheck).';
-         if ((k === 4 || k === 5) && ! eq (v.tags, ['a tag'])) return 'Invalid tags in alreadyUploaded or repeated (uploadCheck).';
-         if (k === 8 && ! eq ({tags: v.tags, total: v.total}, {tags: ['video'], total: 3})) return 'Invalid tags or total in start.';
+         if (k === 8 && v.filename !== 'tram.mp5') return 'Invalid filename in unsupported.';
+         if (k === 0 && v.filename !== 'bach.mp4') return 'Invalid filename in repeated (second time alreadyUploaded with same name).';
+         if (k === 3 && v.filename !== 'bach-repeated.mp4') return 'Invalid filename in repeated.';
+         if (k === 6 && v.filename !== 'foo.mp4') return 'Invalid filename in repeated (uploadCheck).';
+         if ((k === 5 || k === 6) && ! eq (v.tags, ['a tag'])) return 'Invalid tags in alreadyUploaded or repeated (uploadCheck).';
+         if (k === 9 && ! eq ({tags: v.tags, total: v.total}, {tags: ['video'], total: 3})) return 'Invalid tags or total in start.';
       });
       if (error) return clog (error);
       return true;
    }],
    ['get uploads after first upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'uploading', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'uploading', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
       return true;
    }],
    ['get pics and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
@@ -516,7 +528,7 @@ var main = [
       return true;
    }],
    ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
-   ['uploadCheck with finished upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 123, filename: 'foo', fileSize: 123, tags: ['a tag']}}, 409],
+   ['uploadCheck with finished upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}}, 409],
    ['get pics and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
       return true;
@@ -527,7 +539,7 @@ var main = [
       var uploadLogs = rs.body.logs.slice (0, 2), id;
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
          if (v.ev !== 'upload') return 'Invalid action';
-         if (v.type !== ['complete', 'invalid'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
+         if (v.type !== ['complete', 'repeated'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
 
          if (type (v.id) !== 'integer') return 'Invalid id type: ' + v.id;
          if (k === 0) id = v.id;
@@ -539,7 +551,7 @@ var main = [
    ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
       if (type (rs.body [0].end) !== 'integer') return clog ('Invalid end field.');
       delete rs.body [0].end;
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'complete', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'complete', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
       return true;
    }],
    ['upload video after upload end', 'post', 'upload', {}, function (s) {return {multipart: [
@@ -565,7 +577,7 @@ var main = [
    }],
    ['get uploads after errored upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
       delete rs.body [0].end;
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'error', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 + 123, unsupported: ['tram.mp5'], error: {foo: 'bar'}})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'error', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5'], error: {foo: 'bar'}})) return clog ('Invalid upload data.');
       return true;
    }],
    ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
@@ -590,6 +602,8 @@ var main = [
       delete vid2.t900;
       delete vid1.dateup;
       delete vid2.dateup;
+      delete vid1.dates;
+      delete vid2.dates;
 
       if (! eq (vid1, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
@@ -727,7 +741,7 @@ var main = [
       if (skipS3) return true;
       if (rs.body.usage.s3used === 3402) return true;
       setTimeout (function () {
-         if (rs.body.usage.s3used !== 3402) return cb ('Invalid S3 usage.');
+         if (rs.body.usage.s3used !== 3402) return cb ('Invalid S3 usage: ' + rs.body.usage.s3used);
          cb ();
       // Wait two seconds more in case S3 is slower than usual.
       }, 2000);
@@ -744,6 +758,7 @@ var main = [
       if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
       delete pic.date;
       delete pic.dateup;
+      delete pic.dates;
       if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
       delete pic.id;
       if (! eq (pic, {
@@ -760,6 +775,37 @@ var main = [
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 409],
+   ['uploadCheck same picture with different lastModified field, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'small.png', fileSize: 0, lastModified: 1621036799999}}, 200],
+   ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 772326011, filename: '2021-05-14', fileSize: 0, lastModified: Date.now ()}}, 200],
+   ['upload alreadyUploaded picture with date in name', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'pic', path: PICS + 'smallmeta.png'},
+      {type: 'field', name: 'id', value: s.uid2},
+      {type: 'field',  name: 'lastModified', value: Date.now ()},
+   ]}}, 409, function (s, rq, rs, next) {
+      if (rs.body.error !== 'repeated') return clog ('Invalid error', rs.body);
+      return true;
+   }],
+   ['check pic dates', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 1}, 200, function (s, rq, rs) {
+      if (type (rs.body) !== 'object') return clog ('Invalid payload.');
+      if (rs.body.total !== 1) return clog ('Invalid total count.');
+      var pic = rs.body.pics [0];
+      if (pic.date !== 1367964383000) return clog ('Date was not updated with Create Date from repeated picture with different metadata.');
+      var keys = dale.keys (pic.dates).length;
+      if (keys !== 9 && keys !== 12) return clog ('Invalid number of keys in pic.dates:', dale.keys (pic.dates).length);
+      var au = 0, r = 0, orig = 0;
+      var reverse = dale.obj (pic.dates, function (v, k) {
+         if (k.match (/^repeated:/)) r++;
+         else if (k.match (/^alreadyUploaded:/)) au++;
+         else orig++;
+         return [v, k];
+      });
+      // Sometimes, three fields in the picture are considered to be 1 second apart, so they're considered; some other times, they're not. That's why the total number of keys might vary between 9 and 12.
+      if (r !== (k === 9 ? 3 : 6)) return clog ('Invalid number of repeated fields in pic.dates.');
+      if (au !== 1) return clog ('Invalid number of alreadyUploaded fields in pic.dates.');
+      if (orig !== 5) return clog ('Invalid number of original fields in pic.dates.');
+      if (! reverse ['2013:05:08 00:06:23']) return clog ('Create Date missing.');
+      return true;
+   }],
    ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
       return {ids: [s.smallpic.id]};
    }, 200],
@@ -806,6 +852,7 @@ var main = [
       if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
       delete pic.date;
       delete pic.dateup;
+      delete pic.dates;
       if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
       delete pic.id;
       if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
@@ -835,6 +882,7 @@ var main = [
       delete pic.date;
       delete pic.dateup;
       delete pic.id;
+      delete pic.dates;
       if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
       if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
       delete pic.t200;
@@ -876,6 +924,7 @@ var main = [
       s.rotatepic = teishi.copy (pic);
       delete pic.date;
       delete pic.dateup;
+      delete pic.dates;
       if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
       delete pic.id;
       if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
@@ -898,17 +947,17 @@ var main = [
       });
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
          if (v.ev !== 'upload') return 'Invalid action';
-         if (v.type !== ['ok', 'ok', 'repeated', 'ok', 'ok', 'repeated', 'ok', 'invalid', 'invalid', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
-         if (v.fileId !== [s.pics [0].id, s.pics [1].id, s.pics [2].id, s.pics [2].id, s.pics [3].id, s.smallpic.id, s.smallpic.id, undefined, undefined, undefined] [k]) return 'Invalid fileId: ' + v.fileId + ' (' + (k + 1) + '), vs ' + [s.pics [0].id, s.pics [1].id, s.pics [2].id, s.pics [2].id, s.pics [3].id, s.smallpic.id, s.smallpic.id, undefined, undefined, undefined] [k];
+         if (v.type !== ['ok', 'ok', 'repeated', 'ok', 'ok', 'repeated', 'alreadyUploaded', 'repeated', 'ok', 'invalid', 'invalid', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
+         if (v.fileId !== [s.pics [0].id, s.pics [1].id, s.pics [2].id, s.pics [2].id, s.pics [3].id, s.smallpic.id, s.smallpic.id, s.smallpic.id, s.smallpic.id, undefined, undefined, undefined] [k]) return 'Invalid fileId: ' + v.fileId + ' (' + (k + 1) + '), vs ' + [s.pics [0].id, s.pics [1].id, s.pics [2].id, s.pics [2].id, s.pics [3].id, s.smallpic.id, s.smallpic.id, s.smallpic.id, s.smallpic.id, undefined, undefined, undefined] [k];
          if (v.deg !== (k === 0 ? 90 : undefined)) return 'Invalid deg: ' + v.deg + ' (' + (k + 1) + ')';
-         if (v.filename !== [undefined, undefined, 'medium-nometa.jpg', undefined, undefined, 'smalldup.png', undefined, 'invalid.jpg', 'empty.jpg', undefined] [k]) return 'Invalid filename: ' + v.filename + ' (' + (k + 1) + ')';
+         if (v.filename !== [undefined, undefined, 'medium-nometa.jpg', undefined, undefined, 'smallmeta.png', undefined, 'smalldup.png', undefined, 'invalid.jpg', 'empty.jpg', undefined] [k]) return 'Invalid filename: ' + v.filename + ' (' + (k + 1) + ')';
          if (v.type === 'error' && ! v.error) return clog ('Error field missing');
       });
       if (error) return clog (error);
       return true;
    }],
    ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPic: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smalldup.png'], repeatedSize: 13530, invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPic: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smallmeta.png', 'smalldup.png'], alreadyUploaded: 1, repeatedSize: 16943, invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
       return true;
    }],
    ttester ('rotate pic', 'post', 'rotate', {}, [
@@ -939,6 +988,7 @@ var main = [
       s.rotatedate = pic.date;
       delete pic.date;
       delete pic.dateup;
+      delete pic.dates;
       if (! eq (pic, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'rotate.jpg',
@@ -1776,7 +1826,7 @@ var main = [
       if (type (rs.body) !== 'object') return clog ('Body must be object');
       if (! eq ({username: userPrefix + ' 1', email: 'a@a.com', type: 'free'}, {username: rs.body.username, email: rs.body.email, type: rs.body.type})) return clog ('Invalid values in fields.');
       if (type (rs.body.created) !== 'integer') return clog ('Invalid created field');
-      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 94 && rs.body.logs.length !== 95)) return clog ('Invalid logs, length ' + rs.body.logs.length);
+      if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 97 && rs.body.logs.length !== 98)) return clog ('Invalid logs, length ' + rs.body.logs.length);
       // Wait for S3
       setTimeout (next, skipS3 ? 0 : 3000);
    }],

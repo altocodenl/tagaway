@@ -3293,19 +3293,19 @@ dale.do ([
          var text;
          if (error) text = error.responseText;
          else {
-            var readableDate = function (item) {
-               try {
-                  return new Date (parseInt (item)).toISOString ();
-               }
-               catch (error) {
-                  return 'Invalid date';
-               }
+            // Returns ms >= 0 if valid or -1 if not valid.
+            var parseDate = function (date) {
+               var d = new Date (date);
+               if (d.getTime () && d.getTime () >= 0) return d.getTime ().toISOString ();
+               d = new Date (date.replace (':', '-').replace (':', '-'));
+               if (d.getTime () && d.getTime () >= 0) return d.getTime ().toISOString ();
+               return -1;
             }
             // Convert dates into readable dates
-            rs.body.db.date = readableDate (rs.body.db.date);
-            rs.body.db.dateup = readableDate (rs.body.db.dateup);
+            rs.body.db.date = parseDate (rs.body.db.date);
+            rs.body.db.dateup = parseDate (rs.body.db.dateup);
             rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
-               return [k, readableDate (v) + ' // ' + v];
+               return [k, parseDate (v) + ' // ' + v];
             });
             text = JSON.stringify (rs.body, null, '   ');
          }

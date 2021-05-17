@@ -39,17 +39,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- If repeated picture has older date, add them to dates and use one of them as date.
-   - In uploadCheck: both for alreadyUploaded and imported, if it comes it has to be the lastModified. Then send it.
-   - Same in upload with identical file: must be lastModified.
-- Refactor docs & code with unified terminology for pic/vid: Pics&Vids? pivs? pivids?
-- Ubuntu distrib dev upgrade.
-- Reset dev & prod servers and start from scratch.
+- Refactor docs & code with unified terminology for pic/vid: piv
+- Provision new prod server
 - ac;log
    - Backup old ac;log, reset it.
+   - Ubuntu distrib dev upgrade.
    - Upload ac;log file to S3 every 15 minutes, with a lifecycle of 30 minutes, copying the file to /tmp first.
+- Reset dev & prod servers and start from scratch.
 
 ### Todo beta
+
+- Refactor UI with unified terminology for pic/vid: Pics&Vids?
 
 - Backend improvements:
    - Check if we're leaving behind temporary files from import.
@@ -404,11 +404,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /uploadCheck`
    - This route is used to see if a picture has already been uploaded.
-   - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, filename: STRING, tags: UNDEFINED|[STRING, ...]}`.
+   - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, filename: STRING, fileSize: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
    - If `tags` are included, after being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - `body.fileSize` must be the size in bytes of the file being checked.
    - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
    - If there's already a picture with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
+   - If the picture matches another one already present and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the picture already present, those dates will be added to it.
 
 - `POST /upload`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
@@ -424,6 +425,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
    - If a file exists for that user that is both identical to an existing one and aso having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
    - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
+   - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the picture already present, those dates will be added to it.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the picture just uploaded and `deg` is the rotation automatically applied to the picture based on its metadata.
 
@@ -761,8 +763,8 @@ All the routes below require an admin user to be logged in.
       - For cancel:             {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For wait for long file: {t: INT, ev: 'upload', type: 'wait',     id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For uploaded file:         {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], filename: STRING (name of file being uploaded), fileSize: INTEGER (size of file being uploaded), identical: true|false (if true, the file was an exact duplicate; if not, its detection was after comparing a version stripped from metadata)}
-      - For already uploaded file: {t: INT, ev: 'upload', type: 'alreadyUploaded', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...]}
+      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated',        id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], lastModified: INTEGER, filename: STRING (name of file being uploaded), fileSize: INTEGER (size of file being uploaded), identical: true|false (if true, the file was an exact duplicate; if not, its detection was after comparing a version stripped from metadata)}
+      - For already uploaded file: {t: INT, ev: 'upload', type: 'alreadyUploaded', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], lastModified: INTEGER}
       - For invalid file:          {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
       - For too large file:        {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
       - For unsupported file:      {t: INT, ev: 'upload', type: 'unsupported', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.

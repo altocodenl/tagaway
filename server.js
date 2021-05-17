@@ -262,16 +262,6 @@ H.isUserTag = function (tag) {
    return ! H.isYear (tag) && ! H.isGeo (tag);
 }
 
-// Returns ms >= 0 if valid or -1 if not valid.
-H.parseDate = function (date) {
-   if (! date) return -1;
-   var d = new Date (date);
-   if (d.getTime () && d.getTime () >= 0) return d.getTime ();
-   d = new Date (date.replace (':', '-').replace (':', '-'));
-   if (d.getTime () && d.getTime () >= 0) return d.getTime ();
-   return -1;
- }
-
 H.getGeotags = function (s, metadata) {
    var countryCodes = {'AF':'Afghanistan','AX':'Åland Islands','AL':'Albania','DZ':'Algeria','AS':'American Samoa','AD':'Andorra','AO':'Angola','AI':'Anguilla','AQ':'Antarctica','AG':'Antigua and Barbuda','AR':'Argentina','AM':'Armenia','AW':'Aruba','AU':'Australia','AT':'Austria','AZ':'Azerbaijan','BS':'Bahamas','BH':'Bahrain','BD':'Bangladesh','BB':'Barbados','BY':'Belarus','BE':'Belgium','BZ':'Belize','BJ':'Benin','BM':'Bermuda','BT':'Bhutan','BO':'Bolivia, Plurinational State of','BQ':'Bonaire, Sint Eustatius and Saba','BA':'Bosnia and Herzegovina','BW':'Botswana','BV':'Bouvet Island','BR':'Brazil','IO':'British Indian Ocean Territory','BN':'Brunei Darussalam','BG':'Bulgaria','BF':'Burkina Faso','BI':'Burundi','KH':'Cambodia','CM':'Cameroon','CA':'Canada','CV':'Cape Verde','KY':'Cayman Islands','CF':'Central African Republic','TD':'Chad','CL':'Chile','CN':'China','CX':'Christmas Island','CC':'Cocos (Keeling) Islands','CO':'Colombia','KM':'Comoros','CG':'Congo','CD':'Congo, the Democratic Republic of the','CK':'Cook Islands','CR':'Costa Rica','CI':'Côte d\'Ivoire','HR':'Croatia','CU':'Cuba','CW':'Curaçao','CY':'Cyprus','CZ':'Czech Republic','DK':'Denmark','DJ':'Djibouti','DM':'Dominica','DO':'Dominican Republic','EC':'Ecuador','EG':'Egypt','SV':'El Salvador','GQ':'Equatorial Guinea','ER':'Eritrea','EE':'Estonia','ET':'Ethiopia','FK':'Falkland Islands (Malvinas)','FO':'Faroe Islands','FJ':'Fiji','FI':'Finland','FR':'France','GF':'French Guiana','PF':'French Polynesia','TF':'French Southern Territories','GA':'Gabon','GM':'Gambia','GE':'Georgia','DE':'Germany','GH':'Ghana','GI':'Gibraltar','GR':'Greece','GL':'Greenland','GD':'Grenada','GP':'Guadeloupe','GU':'Guam','GT':'Guatemala','GG':'Guernsey','GN':'Guinea','GW':'Guinea-Bissau','GY':'Guyana','HT':'Haiti','HM':'Heard Island and McDonald Islands','VA':'Holy See (Vatican City State)','HN':'Honduras','HK':'Hong Kong','HU':'Hungary','IS':'Iceland','IN':'India','ID':'Indonesia','IR':'Iran, Islamic Republic of','IQ':'Iraq','IE':'Ireland','IM':'Isle of Man','IL':'Israel','IT':'Italy','JM':'Jamaica','JP':'Japan','JE':'Jersey','JO':'Jordan','KZ':'Kazakhstan','KE':'Kenya','KI':'Kiribati','KP':'Korea, Democratic People\'s Republic of','KR':'Korea, Republic of','KW':'Kuwait','KG':'Kyrgyzstan','LA':'Lao People\'s Democratic Republic','LV':'Latvia','LB':'Lebanon','LS':'Lesotho','LR':'Liberia','LY':'Libya','LI':'Liechtenstein','LT':'Lithuania','LU':'Luxembourg','MO':'Macao','MK':'Macedonia, the Former Yugoslav Republic of','MG':'Madagascar','MW':'Malawi','MY':'Malaysia','MV':'Maldives','ML':'Mali','MT':'Malta','MH':'Marshall Islands','MQ':'Martinique','MR':'Mauritania','MU':'Mauritius','YT':'Mayotte','MX':'Mexico','FM':'Micronesia, Federated States of','MD':'Moldova, Republic of','MC':'Monaco','MN':'Mongolia','ME':'Montenegro','MS':'Montserrat','MA':'Morocco','MZ':'Mozambique','MM':'Myanmar','NA':'Namibia','NR':'Nauru','NP':'Nepal','NL':'Netherlands','NC':'New Caledonia','NZ':'New Zealand','NI':'Nicaragua','NE':'Niger','NG':'Nigeria','NU':'Niue','NF':'Norfolk Island','MP':'Northern Mariana Islands','NO':'Norway','OM':'Oman','PK':'Pakistan','PW':'Palau','PS':'Palestine, State of','PA':'Panama','PG':'Papua New Guinea','PY':'Paraguay','PE':'Peru','PH':'Philippines','PN':'Pitcairn','PL':'Poland','PT':'Portugal','PR':'Puerto Rico','QA':'Qatar','RE':'Réunion','RO':'Romania','RU':'Russian Federation','RW':'Rwanda','BL':'Saint Barthélemy','SH':'Saint Helena, Ascension and Tristan da Cunha','KN':'Saint Kitts and Nevis','LC':'Saint Lucia','MF':'Saint Martin (French part)','PM':'Saint Pierre and Miquelon','VC':'Saint Vincent and the Grenadines','WS':'Samoa','SM':'San Marino','ST':'Sao Tome and Principe','SA':'Saudi Arabia','SN':'Senegal','RS':'Serbia','SC':'Seychelles','SL':'Sierra Leone','SG':'Singapore','SX':'Sint Maarten (Dutch part)','SK':'Slovakia','SI':'Slovenia','SB':'Solomon Islands','SO':'Somalia','ZA':'South Africa','GS':'South Georgia and the South Sandwich Islands','SS':'South Sudan','ES':'Spain','LK':'Sri Lanka','SD':'Sudan','SR':'Suriname','SJ':'Svalbard and Jan Mayen','SZ':'Swaziland','SE':'Sweden','CH':'Switzerland','SY':'Syrian Arab Republic','TW':'Taiwan, Province of China','TJ':'Tajikistan','TZ':'Tanzania, United Republic of','TH':'Thailand','TL':'Timor-Leste','TG':'Togo','TK':'Tokelau','TO':'Tonga','TT':'Trinidad and Tobago','TN':'Tunisia','TR':'Turkey','TM':'Turkmenistan','TC':'Turks and Caicos Islands','TV':'Tuvalu','UG':'Uganda','UA':'Ukraine','AE':'United Arab Emirates','GB':'United Kingdom','US':'United States','UM':'United States Minor Outlying Islands','UY':'Uruguay','UZ':'Uzbekistan','VU':'Vanuatu','VE':'Venezuela, Bolivarian Republic of','VN':'Viet Nam','VG':'Virgin Islands, British','VI':'Virgin Islands, U.S.','WF':'Wallis and Futuna','EH':'Western Sahara','YE':'Yemen','ZM':'Zambia','ZW':'Zimbabwe'};
 
@@ -709,7 +699,7 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                uploads [log.id] = {id: log.id};
             }
             var upload = uploads [log.id];
-            if (listAlreadyUploaded) upload.listAlreadyUploaded = [];
+            if (listAlreadyUploaded && ! upload.listAlreadyUploaded) upload.listAlreadyUploaded = [];
             if (log.provider && ! upload.provider) upload.provider = log.provider;
             if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity' || log.type === 'error') {
                upload.end = log.t;
@@ -757,7 +747,7 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.alreadyUploaded) upload.alreadyUploaded = 0;
                upload.alreadyUploaded++;
-               if (listAlreadyUploaded) listAlreadyUploaded.push (log.fileId);
+               if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.fileId);
             }
             else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge' || log.type === 'unsupported') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
@@ -827,6 +817,75 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
          s.next (s.uploads);
       }
    ]);
+}
+
+// Returns ms >= 0 if valid or -1 if not valid.
+H.parseDate = function (date) {
+   if (! date) return -1;
+   // Range is years 1970-2100
+   var minDate = 0, maxDate = 4133980799999;
+   var d = new Date (date), ms = d.getTime ();
+   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms
+   d = new Date (date.replace (':', '-').replace (':', '-'));
+   ms = d.getTime ();
+   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms
+   return -1;
+ }
+
+H.updateDates = function (s, repeatedOrAlreadyUploaded, pic, name, lastModified, newDates) {
+   var date = parseInt (pic.date), dates = JSON.parse (pic.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
+   var key = repeatedOrAlreadyUploaded + ':' + Date.now ();
+
+   // newDates are the dates of the repeated or alreadyUploaded picture.
+   newDates = dale.obj (newDates, function (v, k) {
+      return [key + ':' + k, v];
+   });
+   newDates [key + ':lastModified'] = lastModified;
+   name = H.dateFromName (name);
+   if (name !== -1) newDates [key + ':fromName'] = name;
+
+   var minDate = [null, Infinity];
+
+   var validOriginalDates = dale.obj (newDates, function (date, key) {
+      var parsedDate = H.parseDate (date);
+      if (parsedDate === -1) return;
+      if (! existingDates [parsedDate]) {
+         dates [key] = date;
+         if (parsedDate < minDate [1]) minDate = [key, parsedDate];
+         return [key, date];
+      }
+   });
+
+   var multi = redis.multi ();
+   // If there are new dates with different values than the ones already held, add them to the dates object.
+   if (dale.keys (validOriginalDates).length) multi.hset ('pic:' + pic.id, 'dates', JSON.stringify (dates));
+
+   // If Date/Time Original, keep the date and move on.
+   if (pic.dateSource === 'Date/Time Original') return mexec (s, multi);
+
+   if (minDate [1] < date) {
+      // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.on the same date and minDate is a 00, ignore, otherwise, set it.
+      if (minDate [1] !== (date - date % (1000 * 60 * 60 * 24))) {
+         pic.date = minDate [1];
+         pic.dateSource = minDate [0];
+         multi.hset ('pic:' + pic.id, 'date',       pic.date);
+         multi.hset ('pic:' + pic.id, 'dateSource', pic.dateSource);
+      }
+   }
+   mexec (s, multi);
+}
+
+H.dateFromName = function (name) {
+   var date;
+   if (name.match (/(19|20)\d{6}/)) {
+      date = H.parseDate ([dateFromName.slice (0, 4), dateFromName.slice (4, 6), dateFromName.slice (6)].join ('-'));
+      if (date !== -1) return date;
+   }
+   if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
+      date = H.parseDate ([dateFromName.slice (0, 4), dateFromName.slice (5, 7), dateFromName.slice (8)].join ('-'));
+      if (date !== -1) return date;
+   }
+   return -1;
 }
 
 // *** OAUTH HELPERS ***
@@ -1677,12 +1736,14 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['id', 'hash', 'filename', 'fileSize', 'tags'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['id', 'hash', 'filename', 'fileSize', 'lastModified', 'tags'], 'eachOf', teishi.test.equal],
          ['body.id',   b.id,   'integer'],
          ['body.hash', b.hash, 'integer'],
          ['body.filename', b.filename, 'string'],
          ['body.fileSize', b.fileSize, 'integer'],
          ['body.fileSize', b.fileSize, {min: 0}, teishi.test.range],
+         ['body.lastModified', b.lastModified, 'integer'],
+         ['body.lastModified', b.lastModified, {min: 0}, teishi.test.range],
          ['body.tags', b.tags, ['undefined', 'array'], 'oneOf'],
          ['body.tags', b.tags, 'string', 'each'],
       ])) return;
@@ -1726,9 +1787,12 @@ var routes = [
                },
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-                  var alreadyUploaded = b.filename === s.pic.name && s.upload.alreadyUploadedList.indexOf (s.pic.id) === -1;
-                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined});
-                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, filename: b.filename, fileSize: b.fileSize, identical: true});
+                  var alreadyUploaded = s.alreadyUploaded = b.filename === s.pic.name && s.upload.listAlreadyUploaded.indexOf (s.pic.id) === -1;
+                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
+                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
+               },
+               function (s) {
+                  H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.pic, b.filename, b.lastModified);
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -1824,6 +1888,7 @@ var routes = [
          function (s) {
             if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
             if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
+            s.upload = s.last [0];
             s.next ();
          },
          [a.set, 'byfs', [a.make (fs.stat), path]],
@@ -1947,13 +2012,15 @@ var routes = [
             },
             function (s) {
                // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-               var alreadyUploaded = ! rq.data.fields.providerData && (name !== s.pic.name && s.upload.alreadyUploadedList.indexOf (s.pic.id) === -1);
-               s.alreadyUploaded = alreadyUploaded;
-               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined});
-               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size, identical: true});
+               var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.pic.name && s.upload.listAlreadyUploaded.indexOf (s.pic.id) === -1;
+               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
+               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
             },
             function (s) {
-               reply (rs, 409, {error: alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.pic.id});
+               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.pic, name, lastModified, s.dates);
+            },
+            function (s) {
+               reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.pic.id});
             }
          ]}],
          pic.vid ? function (s) {
@@ -1986,24 +2053,30 @@ var routes = [
          [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hash'], {'1': [
             [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hash'],
             function (s) {
-               s.id = s.last;
+               Redis (s, 'hgetall', 'pic:' + s.last);
+            },
+            function (s) {
+               s.pic = s.last;
 
                // We add the tags of this picture to those of the identical picture already existing
                var multi = redis.multi ();
 
                dale.go (tags, function (tag) {
-                  multi.sadd ('pict:' + s.id,                         tag);
+                  multi.sadd ('pict:' + s.pic.id,                     tag);
                   multi.sadd ('tags:' + rq.user.username,             tag);;
-                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.id);
+                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.pic.id);
                });
-               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.id);
+               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.pic.id);
                mexec (s, multi);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.id, tags: tags.length ? tags : undefined, filename: name, fileSize: s.byfs.size, identical: false});
+               H.updateDates (s, 'repeated', s.pic, name, lastModified, s.dates);
             },
             function (s) {
-               reply (rs, 409, {error: 'repeated', id: s.id});
+               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: false});
+            },
+            function (s) {
+               reply (rs, 409, {error: 'repeated', id: s.pic.id});
             }
          ]}],
          [perfTrack, 'hash'],
@@ -2102,16 +2175,8 @@ var routes = [
             pic.originalHash = s.hashorig;
 
             s.dates ['upload:lastModified'] = lastModified;
-            if (name.match (/(19|20)\d{6}/)) {
-               var dateFromName = name.match (/(19|20)\d{6}/) [0];
-               dateFromName = new Date ([dateFromName.slice (0, 4), dateFromName.slice (4, 6), dateFromName.slice (6)].join ('-'));
-               if (dateFromName && dateFromName.getTime () >= 0) s.dates ['upload:fromName'] = dateFromName.getTime ();
-            }
-            else if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
-               var dateFromName = name.match (/(19|20)\d\d-\d\d-\d\d/) [0];
-               dateFromName = new Date ([dateFromName.slice (0, 4), dateFromName.slice (5, 7), dateFromName.slice (8)].join ('-'));
-               if (dateFromName && dateFromName.getTime () >= 0) s.dates ['upload:fromName'] = dateFromName.getTime ();
-            }
+            var dateFromName = H.dateFromName (name);
+            if (dateFromName !== -1) s.dates ['upload:fromName'] = dateFromName;
 
             pic.dates = JSON.stringify (s.dates);
 
@@ -2129,7 +2194,7 @@ var routes = [
                pic.date = validDates ['Date/Time Original'];
                pic.dateSource = 'Date/Time Original';
             }
-            // Otherwise, of all the valid dates (any date we can parse and is after the Unix epoch), we will set the oldest one.
+            // Otherwise, of all the valid dates (any date we can parse and is on or after the Unix epoch), we will set the oldest one.
             else {
                dale.go (validDates, function (date, key) {
                   if (pic.date && pic.date <= date) return;
@@ -2495,7 +2560,8 @@ var routes = [
 
             var output = {pics: []};
 
-            var mindate = b.mindate || 0, maxdate = b.maxdate || new Date ('2101-01-01T00:00:00Z').getTime ();
+            // Range is years 1970-2100
+            var mindate = b.mindate || 0, maxdate = b.maxdate || 4133980799999;
 
             dale.go (s.pics, function (pic) {
                var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
@@ -2567,7 +2633,7 @@ var routes = [
                   else if (pic.vid.match ('error')) vid = 'error';
                   else                              vid = true;
                }
-               s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: vid, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
+               s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dates: ENV ? undefined : JSON.parse (pic.dates), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: vid, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);
