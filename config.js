@@ -200,7 +200,7 @@ module.exports = {
       accessKeyId:     'KEY',
       secretAccessKey: 'SECRETKEY',
       region: 'REGION',
-      pic: {
+      piv: {
          bucketName:      'BUCKETNAME',
       },
       db: {

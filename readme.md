@@ -2,7 +2,7 @@
 
 ## About
 
-ac;pic is an application that allows you to store and manage your pictures. ac;pic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
+ac;pic is an application that allows you to store and manage your pictures and videos (pivs). ac;pic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
 
 To understand why we're sharing the source code of a commercial product, please read [our manifesto](http://federicopereiro.com/manifesto). If that's too long to read, in a nutshell: we want to share our code so that others can learn from it and contribute to us. Sharing is the way to progress.
 
@@ -40,7 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo alpha
 
 - Refactor docs & code with unified terminology for pic/vid: piv
-- Provision new prod server
+- Retest entire import & upload, check date improvements are working.
+- Provision new prod server.
 - ac;log
    - Backup old ac;log, reset it.
    - Ubuntu distrib dev upgrade.
@@ -49,7 +50,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Refactor UI with unified terminology for pic/vid: Pics&Vids?
+- Refactor UI with unified terminology for pivs: Pics&Vids?
 
 - Backend improvements:
    - Check if we're leaving behind temporary files from import.
@@ -60,7 +61,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Improve display of errors in upload & import:
-      - Show foldable list of repeated|invalid|too large pics/vids.
+      - Show foldable list of repeated|invalid|too large pivs.
       - When adding many files to upload, put a "loading, please wait" snackbar.
       - Show provider errors in import.
       - If there's a provider error, give a "try again" option with the same list?
@@ -69,7 +70,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Import from Dropbox.
    - When hashing, chunk large files into smaller segments, both in client and in server.
 
-- Pics
+- Pivs
    - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
    - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
@@ -78,7 +79,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
    - On double click, images fail to open in most cases
-   - When opening thumbnail, big image is superimposed to the same picture (it's like a pic is opened on top of another)
+   - When opening thumbnail, big image is superimposed to the same piv (it's like a piv is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
 - gotoB v2
@@ -88,7 +89,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
       - Replicate & fix mysterious shift bug.
       - Intermittent 403 from GET csrf when already being logged in.
-      - When performance is slow in the browser, double click to open picture when picture is already selected doesn't open the picture.
+      - When performance is slow in the browser, double click to open piv when piv is already selected doesn't open the piv.
 
 - Accounts
    - Recover/reset password.
@@ -108,63 +109,63 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Already implemented
 
-- Pics
-   - Show dialog that indicates that a click selects a picture and that a double click opens it. The dialog should be permanently dismissable.
-   - Show all pictures.
-   - Load more pictures on scroll.
+- Pivs
+   - Show dialog that indicates that a click selects a piv and that a double click opens it. The dialog should be permanently dismissable.
+   - Show all pivs.
+   - Load more pivs on scroll.
    - Sort by newest, oldest & upload date.
-   - Select/unselect picture by clicking on it.
+   - Select/unselect piv by clicking on it.
    - Multiple selection with shift.
    - Select/unselect all.
-   - When selecting pictures, see selection bar.
-   - Hover on picture and see date.
-   - Show untagged pictures.
+   - When selecting pivs, see selection bar.
+   - Hover on piv and see date.
+   - Show untagged pivs.
    - When querying untagged tag, remove non-year and non-geo tags. When querying normal tag, remove untagged tag.
-   - When modifying pictures with `untagged` in the query, add button for confirming operation; show alert if user navigates away.
+   - When modifying pivs with `untagged` in the query, add button for confirming operation; show alert if user navigates away.
    - See list of tags.
    - Query by tag or tags.
-   - Show pictures according to the selected tags.
-   - If there are selected pictures, toggle between browse mode & organize mode.
-   - If query changes but selected pictures are still there, maintain their selection.
+   - Show pivs according to the selected tags.
+   - If there are selected pivs, toggle between browse mode & organize mode.
+   - If query changes but selected pivs are still there, maintain their selection.
    - Filter tags when browsing.
    - Tag/untag.
    - Filter tags when tagging/untagging.
-   - Rotate pictures.
-   - Delete pictures.
+   - Rotate pivs.
+   - Delete pivs.
    - Ignore rotation of videos.
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
-   - When untagging, if no pictures left with that tag, remove tag from query.
-   - Fill pictures grid until screen is full or no pictures remain.
-   - Scroll to the top of the pictures grid when selecting a new combination of tags.
+   - When untagging, if no pivs left with that tag, remove tag from query.
+   - Fill pivs grid until screen is full or no pivs remain.
+   - Scroll to the top of the pivs grid when selecting a new combination of tags.
    - Block selection of a tag if the UI is still processing a previous selection of a tag.
-   - Download a single picture.
-   - Download multiple pictures as one zip file. The original modification times of each file should be respected.
+   - Download a single piv.
+   - Download multiple pivs as one zip file. The original modification times of each file should be respected.
    - Only show tags relevant to the current query.
    - When just enabling geotagging, update tags every 3 seconds.
-   - Suggest geotagging when having a few pictures uploaded, but only once; either enable it or dismiss the message, and don't show it again.
+   - Suggest geotagging when having a few pivs uploaded, but only once; either enable it or dismiss the message, and don't show it again.
    - When clicking on no man's land, unselect.
-   - When querying untagged pictures AND pictures are selected, show "Done tagging" button. When tagging those pictures, they remain in selection until either 1) "Done tagging" button is clicked; 2) all pictures are unselected; or 3) "untagged" is removed from query.
+   - When querying untagged pivs AND pivs are selected, show "Done tagging" button. When tagging those pivs, they remain in selection until either 1) "Done tagging" button is clicked; 2) all pivs are unselected; or 3) "untagged" is removed from query.
 
 - Open
-   - Open picture and trigger fullscreen.
-   - If exit fullscreen, exit picture too.
-   - Show date & picture position.
+   - Open piv and trigger fullscreen.
+   - If exit fullscreen, exit piv too.
+   - Show date & piv position.
    - Use caret icons to move forward & backward.
    - Use arrow keys to move forward & backward.
-   - Wrap-around if there are no more pictures.
-   - Preload the next picture.
-   - If exiting fullscreen, also exit picture.
+   - Wrap-around if there are no more pivs.
+   - Preload the next piv.
+   - If exiting fullscreen, also exit piv.
    - Hide scrollbar on fullscreen and hide it again on exit.
    - If video, show thumbnail & controls.
    - Mobile: no padding, swipe left/right.
-   - If upload is happening in the background, keep the current picture open but update the counter on the bottom right.
+   - If upload is happening in the background, keep the current piv open but update the counter on the bottom right.
    - Warn of leaving page if upload is ongoing.
 
 - Upload
    - Allow only valid images and videos of certain formats.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
-   - Store original pictures in S3 and pictures + thumbnails locally.
+   - Store original pivs in S3 and pivs + thumbnails locally.
    - Ignore images that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
    - Upload files from folder selection, files selection & drop.
    - If uploading from folder, use folder name (and optional subfolders) as tags for the images contained in them.
@@ -173,11 +174,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - See previous uploads.
    - Auto rotate based on metadata.
    - Allow to go back to browse while files are being uploaded in the background.
-   - Refresh list of pics periodically if there's an upload in the background.
-   - Show thumbnail of last picture on each upload.
-   - Cancel current upload. After cancelling, show snackbar that indicates how many pictures were uploaded for the given upload.
+   - Refresh list of pivs periodically if there's an upload in the background.
+   - Show thumbnail of last piv on each upload.
+   - Cancel current upload. After cancelling, show snackbar that indicates how many pivs were uploaded for the given upload.
    - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
-   - Snackbar with success message when pics are finished uploading.
+   - Snackbar with success message when pivs are finished uploading.
    - Show errors.
 
 - Account & payment
@@ -203,7 +204,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Upload
       - Block new import from the same provider.
       - Allow cancelling ongoing upload process.
-      - If user is on the pics view, refresh query every n seconds to show new pictures.
+      - If user is on the pivs view, refresh query every n seconds to show new pivs.
       - Show snackbar when process is done or if the listing ends in error.
       - Send email when process is done or if the listing ends in error.
       - Show recent imports.
@@ -224,7 +225,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload
    - Retry on error.
    - Show estimated time remaining in ongoing uploads.
-   - Ignore deleted pictures flag for both upload & import.
+   - Ignore deleted pivs flag for both upload & import.
    - New upload flow
       - Starting state: area from dropdown & button for files & button for folder upload.
       - Uploading state: button for starting new upload and button for starting tagging state.
@@ -250,12 +251,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - User management.
 
 - Mobile
-   - See pics.
-   - Select tags & sort order to see pics.
+   - See pivs.
+   - Select tags & sort order to see pivs.
    - Select sorting order.
 
 - Other
-   - Check lifecycle of pics bucket in S3.
+   - Check lifecycle of pivs bucket in S3.
    - Disable THP for redis.
    - Check graceful app shutdown on mg restart: wait for S3 uploads and ongoing uploads
    - Downgrade read ECONNRESET errors priority?
@@ -268,27 +269,27 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo future
 
-- Pics
+- Pivs
    - Hidden tags.
    - Set date manually.
    - Filters.
    - Themes for the interface.
    - Set colors of tags?
-   - Order pictures within tag? Set priorities! Manual order mode.
+   - Order pivs within tag? Set priorities! Manual order mode.
 
 - Share & manage
    - Upload to shared tag.
-   - Public tag, including download restrictions per picture?
+   - Public tag, including download restrictions per piv?
    - QR code to share.
    - Create group that groups people.
-   - Create tag that groups tags (can also have pictures directly assigned).
+   - Create tag that groups tags (can also have pivs directly assigned).
 
 ### Todo never
 
 - Share
    - Comments.
    - Share to social platforms.
-   - Share certain tags only on shared pictures.
+   - Share certain tags only on shared pivs.
    - Profile pages.
 
 ## Server
@@ -368,8 +369,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be an object of the form `{message: STRING}` (otherwise 400).
    - If successful, returns a 200.
 
-- `GET /pic/ID`
-   - Pic must exist and the user must have permissions to see it (otherwise, 404).
+- `GET /piv/ID`
+   - Piv must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
    - If the file is a non-mp4 video:
@@ -379,13 +380,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `GET /thumb/SIZE/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
    - Size must be 200 or 900.
-   - If the picture has no thumbnail for that size, the original picture is returned.
+   - If the piv has no thumbnail for that size, the original piv is returned.
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
 - `GET /thumbof/ID`
-   - Gets the smallest thumbnail (or the picture, if the picture has none) of the picture with id ID.
-   - Picture must exist and the user must have permissions to see it (otherwise, 404).
+   - Gets the smallest thumbnail (or the piv, if the piv has none) of the piv with id ID.
+   - Piv must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
@@ -403,42 +404,42 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, the endpoint returns a body of the form `{id: INTEGER}`. In the case of a `start` operation, this id should be used for an ulterior `end` or `cancel`.
 
 - `POST /uploadCheck`
-   - This route is used to see if a picture has already been uploaded.
+   - This route is used to see if a piv has already been uploaded.
    - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, filename: STRING, fileSize: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
    - If `tags` are included, after being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - `body.fileSize` must be the size in bytes of the file being checked.
    - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
-   - If there's already a picture with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
-   - If the picture matches another one already present and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the picture already present, those dates will be added to it.
+   - If there's already a piv with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
+   - If the piv matches another one already present and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
 
 - `POST /upload`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
-   - Must contain one file with name `pic` (otherwise, 400 with body `{error: 'file'}`).
+   - Must contain one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
    - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
    - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
-   - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `pic`.
+   - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `piv`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
-   - If a file exists for that user that is both identical to an existing one and aso having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
-   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical picture/video that is already uploaded.
-   - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the picture already present, those dates will be added to it.
+   - If a file exists for that user that is both identical to an existing one and aso having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
-   - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the picture just uploaded and `deg` is the rotation automatically applied to the picture based on its metadata.
+   - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the piv just uploaded and `deg` is the rotation automatically applied to the piv based on its metadata.
 
 - `POST /delete`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
    - Array with ids can be empty.
-   - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the deletion is successful, a 200 is returned.
 
 - `POST /rotate`
    - Body must be of the form `{ids: [STRING, ...], deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
-   - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - Videos will not be rotated and will be silently ignored.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
@@ -449,7 +450,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`, or any tag that when lowercased equals `all` or `untagged`.
    - `tag` cannot start with `g::`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
-   - All pictures must exist and user must be owner of the pictures, otherwise a 404 is returned.
+   - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If successful, returns a 200.
 
@@ -458,15 +459,15 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /query`
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
-   - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last picture to be returned from a certain query. If both are equal to 1, the first picture for the query will be returned. If they are 1 & 10 respectively, the first ten pictures for the query will be returned.
-   - `all` cannot be included on `body.tags`. If you want to search for all available pictures, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
-   - `untagged` can be included on `body.tags` to retrieve untagged pictures.
+   - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
+   - `all` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
+   - `untagged` can be included on `body.tags` to retrieve untagged pivs.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
-   - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the picture, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
-   - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of picture owned by the user, will be included as a result of the query, even if they are not untagged pictures.
-   - If the query is successful, a 200 is returned with body `pics: [{...}], total: INT, tags: [...], refreshQuery: true|UNDEFINED}`.
-      - Each element within `body.pics` is an object corresponding to a picture and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
-      - `body.total` contains the number of total pictures matched by the query (notice it can be larger than the amount of pictures in `body.pics`).
+   - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
+   - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: [...], refreshQuery: true|UNDEFINED}`.
+      - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
+      - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
       - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
       - `body.refreshQuery`, if set, indicates that there's either at least an upload ongoing or a geotagging process ongoing, in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
@@ -485,12 +486,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 `POST /download`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
    - `body.ids` must have at least a length of 2.
-   - All pictures must exist and user must be owner of the pictures or have the pictures shared with them, otherwise a 404 is returned.
+   - All pivs must exist and user must be owner of the pivs or have the pivs shared with them, otherwise a 404 is returned.
    - If successful, returns a 200 with body `{id: STRING}`. The `id` corresponds to a temporary download file that lasts 5 seconds and is only valid for the user that requested the download.
 
 `GET /download/ID`
    - `ID` is an id returned by `POST /download`.
-   - If successful, the user will receive a zip file with the specified pictures.
+   - If successful, the user will receive a zip file with the specified pivs.
 
 `POST /dismiss`
    - Disables suggestions shown to new users.
@@ -503,7 +504,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
 `GET /uploads`
-   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
+   - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
 
 `GET /imports/PROVIDER`
    - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, provider: PROVIDER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`. If oauth access hasn't been provided yet, the reply will be of the form `[{redirect: URL, provider: PROVIDER}]`, where `URL` is the URL to start the OAuth authorization process for that provider.
@@ -519,7 +520,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the request for an access token is successful, the route responds with a 200.
 
 `POST /import/list/PROVIDER`
-   - Creates a list of available folders with pictures/videos in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if the authorization credentials for that provider haven't been requested yet.
+   - Creates a list of available folders with pivs/videos in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if the authorization credentials for that provider haven't been requested yet.
    - If the credentials have not been requested yet, the endpoint returns a body with the shape `{redirect: URL}`. `URL` is the URL to start the OAuth authorization process for that provider.
    - If the credentials are already granted but authentication against the provider fails, the endpoint returns a 403 with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If there's already a list ready or the import is in the process of uploading, a 409 is returned to the client.
@@ -558,7 +559,7 @@ All the routes below require an admin user to be logged in.
 
 `GET /stats`
    - Publicly accessible.
-   - Returns all public stats information, with the shape `{byfs: INT, bys3: INT, pics: INT, t200: INT, t900: INT, users: INT}`.
+   - Returns all public stats information, with the shape `{byfs: INT, bys3: INT, pivs: INT, t200: INT, t900: INT, users: INT}`.
 
 #### Admin routes
 
@@ -578,13 +579,13 @@ All the routes below require an admin user to be logged in.
    - Returns an object with stats.
 
 `GET /admin/debug/ID`
-   - Returns an object with all the pic/vid information.
+   - Returns an object with all the piv information.
 
 `GET /admin/logs`
    - Returns an array of logs.
 
 `GET /admin/dates`
-   - Returns a CSV file with the date information of pictures.
+   - Returns a CSV file with the date information of pivs.
 
 ### Statistics
 
@@ -598,7 +599,7 @@ All the routes below require an admin user to be logged in.
    - bys3-USERNAME: total bytes stored in S3 for USERNAME
    - pics:          total pics
    - vids:          total vids
-   - format-FORMAT: total pics/vids with the specified format
+   - format-FORMAT: total pivs with the specified format
    - t200:          total thumbnails of size 200
    - t900:          total thumbnails of size 900
    - users:         total users
@@ -606,7 +607,7 @@ All the routes below require an admin user to be logged in.
 3. maximum:
    - ms-all:    maximum ms for successful requests for all endpoints
    - ms-auth:   maximum ms for successful requests for POST /auth
-   - ms-pic:    maximum ms for successful requests for GET /pic
+   - ms-piv:    maximum ms for successful requests for GET /piv
    - ms-thumb:  maximum ms for successful requests for GET /thumb
    - ms-upload: maximum ms for successful requests for POST /upload
    - ms-delete: maximum ms for successful requests for POST /delete
@@ -624,7 +625,7 @@ All the routes below require an admin user to be logged in.
    - rq-bad:    total unsuccessful requests for all endpoints
    - rq-all:    total successful requests for all endpoints
    - rq-auth:   total successful requests for POST /auth
-   - rq-pic:    total successful requests for GET /pic
+   - rq-piv:    total successful requests for GET /piv
    - rq-thumb:  total successful requests for GET /thumb
    - rq-upload: total successful requests for POST /upload
    - rq-delete: total successful requests for POST /delete
@@ -635,7 +636,7 @@ All the routes below require an admin user to be logged in.
    - rq-geo:    total successful requests for POST /geo
    - ms-all:    total ms for successful requests for all endpoints
    - ms-auth:   total ms for successful requests for POST /auth
-   - ms-pic:    total ms for successful requests for GET /pic
+   - ms-piv:    total ms for successful requests for GET /piv
    - ms-thumb:  total ms for successful requests for GET /thumb
    - ms-upload: total ms for successful requests for POST /upload
    - ms-delete: total ms for successful requests for POST /delete
@@ -679,21 +680,21 @@ All the routes below require an admin user to be logged in.
 
 - csrf:SESSION (string): key is session, value is associated CSRF token.
 
-- hash:USERNAME (hash): key is hash of picture uploaded (with metadata stripped), value is id of corresponding pic/vid. Used to check for repeated picture.
+- hash:USERNAME (hash): key is hash of piv uploaded (with metadata stripped), value is id of corresponding piv. Used to check for repeated piv.
 
-- hashorig:USERNAME (hash): key is hash of picture uploaded (without metadata stripped), value is id of corresponding pic/vid. Used to check for already uploaded picture.
+- hashorig:USERNAME (hash): key is hash of piv uploaded (without metadata stripped), value is id of corresponding piv. Used to check for already uploaded piv.
 
-- hash:USERNAME:PROVIDER (set): contains hashes of the pictures imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
+- hash:USERNAME:PROVIDER (set): contains hashes of the pivs imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
 
-- hashdel:USERNAME (set): contains hashes of the pictures deleted by an user, to check for repetition when re-uploading files that were deleted. This field is not in use yet.
+- hashdel:USERNAME (set): contains hashes of the pivs deleted by an user, to check for repetition when re-uploading files that were deleted. This field is not in use yet.
 
-- hashorigdel:USERNAME (set): contains hashes of the pictures deleted by an user (without metadata stripped), to check for repetition when re-uploading files that were deleted. This field is not in use yet.
+- hashorigdel:USERNAME (set): contains hashes of the pivs deleted by an user (without metadata stripped), to check for repetition when re-uploading files that were deleted. This field is not in use yet.
 
-- hashdel:USERNAME:PROVIDER (set): contains hashes of the pictures deleted by an user, to check for repetition when re-importing files that were deleted. The hashed quantity is `ID:MODIFIED_TIME`. This field is not in use yet.
+- hashdel:USERNAME:PROVIDER (set): contains hashes of the pivs deleted by an user, to check for repetition when re-importing files that were deleted. The hashed quantity is `ID:MODIFIED_TIME`. This field is not in use yet.
 
-- thu:ID (string): id of the corresponding pic.
+- thu:ID (string): id of the corresponding piv.
 
-- pic:ID (hash)
+- piv:ID (hash)
    id: STRING (uuid)
    owner: STRING (user id)
    name: STRING
@@ -703,8 +704,8 @@ All the routes below require an admin user to be logged in.
    byfs: INT (size in bytes in FS)
    hash: STRING
    originalHash: STRING
-   providerHash: STRING (provider hash if picture was imported, which comes from combining `FILE_ID:MODIFIED_TIME`; has the shape PROVIDER:HASH)
-   dates: STRING (stringified array of dates belonging to the picture, normalized and sorted by earliest first)
+   providerHash: STRING (provider hash if piv was imported, which comes from combining `FILE_ID:MODIFIED_TIME`; has the shape PROVIDER:HASH)
+   dates: STRING (stringified array of dates belonging to the piv, normalized and sorted by earliest first)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
    dateSource: STRING (metadata field used to get date)
@@ -713,16 +714,16 @@ All the routes below require an admin user to be logged in.
    by200: INT or absent (size of 200 thumbnail in FS)
    t900: STRING or absent
    by900: INT or absent (size of 900 thumbnail in FS)
-   vid: `1` if a mp4 video, absent if a picture, ID for a non-mp4 video (ID points to the mp4 version of the video), `pending:ID` for a pending mp4 conversion, `error:ID` for an errored conversion.
+   vid: `1` if a mp4 video, absent if a piv, ID for a non-mp4 video (ID points to the mp4 version of the video), `pending:ID` for a pending mp4 conversion, `error:ID` for an errored conversion.
    bymp4: if a non-mp4 video, size of mp4 version of the video.
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
-   xp:  INT or absent, number of pics downloaded (also includes cached hits)
-   loc: [INT, INT} or absent - latitude and longitude of picture taken from metadata, only if geotagging is enabled for the pic's owner.
+   xp:  INT or absent, number of pivs downloaded (also includes cached hits)
+   loc: [INT, INT} or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner.
 
-- pict:ID (set): list of all the tags belonging to a picture.
+- pivt:ID (set): list of all the tags belonging to a piv.
 
-- tag:USERNAME:TAG (set): pic ids.
+- tag:USERNAME:TAG (set): piv ids.
 
 - tags:USERNAME (set): list of all tags created by the user. Does not include tags shared with the user.
 
@@ -730,7 +731,7 @@ All the routes below require an admin user to be logged in.
 
 - sho:USERNAME (set): USERA:TAG, USERB:TAG (shared with others)
 
-- download:ID (string): stringified object of the shape `{username: ID, pics: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
+- download:ID (string): stringified object of the shape `{username: ID, pivs: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
 - ulog:USERNAME (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:           {t: INT, ev: 'auth', type: 'login',          ip: STRING, userAgent: STRING, timezone: INTEGER}
@@ -811,8 +812,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 **Pages**:
 
-1. `E.pics`
-   - Depends on: `Data.tags`, `Data.pics`, `Data.picTotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
+1. `E.pivs`
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -822,8 +823,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `click -> set State.untag true`
       - `click -> tag TAG`
       - `click -> untag TAG`
-      - `click -> rotate pics`
-      - `click -> delete pics`
+      - `click -> rotate pivs`
+      - `click -> delete pivs`
       - `click -> set State.showNTags`
       - `click -> set State.showNSelectedTags`
       - `input -> set State.newTag`
@@ -878,17 +879,17 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Contained by: `E.base`.
 3. `E.header`
    - Events: `click -> logout`
-   - Contained by: `E.pics`, `E.upload`, `E.share`, `E.tags`.
+   - Contained by: `E.pivs`, `E.upload`, `E.share`, `E.tags`.
 4. `E.empty`
-   - Contained by: `E.pics`.
+   - Contained by: `E.pivs`.
 5. `E.grid`
-   - Contained by: `E.pics`.
-   - Depends on `State.nPics` and `Data.pics`.
-   - Events: `click -> click pic`.
+   - Contained by: `E.pivs`.
+   - Depends on `State.nPivs` and `Data.pivs`.
+   - Events: `click -> click piv`.
 6. `E.open`
-   - Contained by: `E.pics`.
-   - Depends on `State.open` and `Data.picTotal`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pics 90 PIC`, `goto location PIC`.
+   - Contained by: `E.pivs`.
+   - Depends on `State.open` and `Data.pivTotal`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `goto location PIV`.
 7. `E.noSpace`
    - Contained by: `E.import`, `E.upload`.
    - Depends on `Data.account`.
@@ -945,42 +946,42 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
    6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
-4. Pics
+4. Pivs
    1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
-   2. `change State.page`: if current page is not `pics`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pics true`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pictures if coming back from another view.
-   3. `change State.query`: sets `State.npics` and invokes `query pics true`, but only if the change is not to `State.query.recentlyTagged`.
-   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pictures in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pictures selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
+   2. `change State.page`: if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs true`. It also invokes `query tags`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
+   3. `change State.query`: sets `State.nPivs` and invokes `query pivs true`, but only if the change is not to `State.query.recentlyTagged`.
+   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pics`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPics + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pictures more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pics/vids contains a non-mp4 video currently being converted. If `State.nPics` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pics` and `Data.picTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pics` and `query tags` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
-   7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a picture, it removes `State.selected.PICID` and sets `State.open`. Otherwise, it will change the selection status of the picture itself; if `shift` is pressed and the previous click was done on a picture still displayed, it will perform multiple selection.
+   6. `query pivs`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` and `query tags` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
+   7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed and the previous click was done on a piv still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
    10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
-   12. `tag pics`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pics` and `query tags`. Also invokes `snackbar`.
-   13. `rotate pics`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pics`. In case of error, invokes `snackbar`. If it receives a second argument (which is a picture), it submits its id instead of `State.selected`.
-   14. `delete pics`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pics true` and `query tags`. In case of error, invokes `snackbar`.
+   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs` and `query tags`. Also invokes `snackbar`.
+   13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
+   14. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs true` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
-   16. `scroll`: only will perform actions if `State.page` is `pics`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPics` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pictures being displayed are visible. If the conditions are met, it will invoke `increment nPics` and `change State.selected`.
-   17. `fill screen`: if `State.page` is `pics`, there are pictures present and the pictures do not fill the screen, then it will invoke `increment nPics`.
+   16. `scroll`: only will perform actions if `State.page` is `pivs`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. It will increase `State.nPivs` only if the following conditions are met: 1) the `scroll` goes down; 2) the `scroll` happened while the last pivs being displayed are visible. If the conditions are met, it will invoke `increment nPivs` and `change State.selected`.
+   17. `fill screen`: if `State.page` is `pivs`, there are pivs present and the pivs do not fill the screen, then it will invoke `increment nPivs`.
    18. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
    19. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   20. `increment nPics`: if `Data.picTotal` is more than `State.nPics`, `State.nPics` will be incremented by 20; if `Data.picTotal` is more than `State.nPics` but less than `State.nPics + 20`, then `State.nPics` will be set to `Data.picTotal`.
-   21. `change State.nPics`: if `State.nPics + 100` is more than `Data.picTotal`, the responder will invoke `State.query`.
-   22. `change Data.pendingConversions`: if `Data.pendingConversions` is `true` and `State.pendingConversions` already contains an interval, or if `Data.pendingConversions` is `false` and `State.pendingConversions` is `undefined`, the responder does nothing. If `Data.pendingConversions` is `true` and there's no interval yet, it sets an interval to invoke `query pics` every 2 seconds and stores it in `State.pendingConversions`. If `Data.pendingConversions` is `false` and there's still an interval, it removes it from the store and invokes `clearInterval` on it.
+   20. `increment nPivs`: if `Data.pivTotal` is more than `State.nPivs`, `State.nPivs` will be incremented by 20; if `Data.pivTotal` is more than `State.nPivs` but less than `State.nPivs + 20`, then `State.nPivs` will be set to `Data.pivTotal`.
+   21. `change State.nPivs`: if `State.nPivs + 100` is more than `Data.pivTotal`, the responder will invoke `State.query`.
+   22. `change Data.pendingConversions`: if `Data.pendingConversions` is `true` and `State.pendingConversions` already contains an interval, or if `Data.pendingConversions` is `false` and `State.pendingConversions` is `undefined`, the responder does nothing. If `Data.pendingConversions` is `true` and there's no interval yet, it sets an interval to invoke `query pivs` every 2 seconds and stores it in `State.pendingConversions`. If `Data.pendingConversions` is `false` and there's still an interval, it removes it from the store and invokes `clearInterval` on it.
 
 5. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
    2. `enter fullscreen`: enter fullscreen using the native browser methods and set the `<body>` `overflow` to `hidden`.
    3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
    4. `change State.open`: remove or add `app-fullscreen` class from `#pics`, depending on whether `State.open` is defined. If `State.open` is defined, it invokes `enter fullscreen`.
-   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first picture or when going forward on the last picture. If `State.open` is equal to `State.nPics` and the `next` picture is requested, it invokes `increment nPics`.
+   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first piv or when going forward on the last piv. If `State.open` is equal to `State.nPivs` and the `next` piv is requested, it invokes `increment nPivs`.
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
-   8. `goto location`: takes a `pic` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
+   8. `goto location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
 6. Upload
-   1. `change State.page`: if `State.page` is `upload` or `pics`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
+   1. `change State.page`: if `State.page` is `upload` or `pivs`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
    4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
@@ -1009,7 +1010,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 8. Account
    1. `query account`: `get account`; if successful, `set Data.account`, otherwise invokes `snackbar`. Optionally invokes `cb` passed as extra argument.
    2. `dismiss geotagging|selection`: `post dismiss`; if path is `geotagging`, invokes `snackbar`. If successful, invokes `query account`.
-   3. `toggle geo`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is successful, invokes `query pics` and `query tags`.
+   3. `toggle geo dismiss`: `post geo`; if successful, invokes `query account`. It always invokes `snackbar`. If operation is successful, invokes `query pivs` and `query tags`. If `dismiss` is passed, invokes `dismiss geotagging`.
    4. `submit changePassword`: invokes `post auth/changePassword`, invokes `snackbar`; if successful, invokes `clear changePassword`.
    5. `clear changePassword`: clears inputs of the change password fields and removes `State.changePassword`.
 
@@ -1029,23 +1030,23 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 }
 ```
   `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selected` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
-   - `lastClick`: if present, has the shape `{id: PICID, time: INT}`. Used to determine 1) a double-click (which would open the picture in full); 2) range selection with shift.
-   - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPics`.
+   - `lastClick`: if present, has the shape `{id: PIVID, time: INT}`. Used to determine 1) a double-click (which would open the piv in full); 2) range selection with shift.
+   - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPivs`.
    - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
    - `newTag`: the name of a new tag to be posted.
-   - `nPics`: the number of pictures to show.
-   - `open`: index of the picture to be shown in full-screen mode.
+   - `nPivs`: the number of pivs to show.
+   - `open`: index of the piv to be shown in full-screen mode.
    - `page`: determines the current page.
-   - `pendingConversions`: if set, an interval that invokes `query pics`.
+   - `pendingConversions`: if set, an interval that invokes `query pivs`.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
-   - `query`: determines the current query for pictures. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
-   - `queryRefresh`: if set, a timeout that invokes `query pics` after 1500ms.
-   - `querying`: BOOLEAN|UNDEFINED, set if `query pics` is currently querying the server.
-   - `selected`: an object where each key is a picture id and every value is either `true` or `false`. If a certain picture key has a corresponding `true` value, the picture is selected.
-   - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pictures are selected.
-   - `showNSelectedTags`: UNDEFINED|INTEGER, determines the amount of tags seen when at least one picture is selected.
+   - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
+   - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
+   - `querying`: BOOLEAN|UNDEFINED, set if `query pivs` is currently querying the server.
+   - `selected`: an object where each key is a piv id and every value is either `true` or `false`. If a certain piv key has a corresponding `true` value, the piv is selected.
+   - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pivs are selected.
+   - `showNSelectedTags`: UNDEFINED|INTEGER, determines the amount of tags seen when at least one piv is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
-   - `untag`: flag to mark that we're untagging pictures instead of tagging them.
+   - `untag`: flag to mark that we're untagging pivs instead of tagging them.
    - `upload`:
       - `new`: {unsupported: [STRING, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
       - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED, lastInUpload: true|false}, ...]
@@ -1071,12 +1072,12 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    }
 ```
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
-   - `pics`: `[...]`; comes from `body.pics` from `query pics`.
-   - `picTotal`': UNDEFINED|INTEGER, with the total number of pictures matched by the current query; comes from `body.total` from `query pics`.
-   - `queryTags`: `[...]`; comes from `body.tags` from `query pics`.
+   - `pivs`: `[...]`; comes from `body.pivs` from `query pivs`.
+   - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
+   - `queryTags`: `[...]`; comes from `body.tags` from `query pivs`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
-   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPic: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
+   - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin
 
@@ -1164,7 +1165,7 @@ We start the query process, invoking `astop`. We first bring all the tags shared
          [Redis, 'smembers', 'shm:' + rq.user.username],
 ```
 
-If the user sent no tags, we set a variable `allMode` to denote that we want all possible pictures.
+If the user sent no tags, we set a variable `allMode` to denote that we want all possible pivs.
 
 ```javascript
          function (s) {
@@ -1210,13 +1211,13 @@ We push the username of the shared tag to the entry for that tag. We extract the
 
 By now, `tags` will be an object with each key as a tag, and each value as an array of one or more usernames, with the first one being the username of the user itself: `{KEY1: [USERNAME1, ...], ...}`. This gives us a list of all the tag + username combination that are relevant to the query.
 
-We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of picture ids in redis for the purposes of the query.
+We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of piv ids in redis for the purposes of the query.
 
 ```javascript
             var multi = redis.multi (), qid = 'query:' + uuid ();
 ```
 
-If we have year tags, we bring the ids of all the pictures belonging to each of them and store their union in the query key.
+If we have year tags, we bring the ids of all the pivs belonging to each of them and store their union in the query key.
 
 ```javascript
             if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
@@ -1224,7 +1225,7 @@ If we have year tags, we bring the ids of all the pictures belonging to each of 
             }));
 ```
 
-We iterate the tags. For each tag, for each of its users, we store the ids of the corresponding pictures onto a key made by appending the tag to the query key.
+We iterate the tags. For each tag, for each of its users, we store the ids of the corresponding pivs onto a key made by appending the tag to the query key.
 
 ```javascript
             dale.go (tags, function (users, tag) {
@@ -1234,9 +1235,9 @@ We iterate the tags. For each tag, for each of its users, we store the ids of th
             });
 ```
 
-We compute the ids of all the pictures that match the query. This will be either the intersection of all the ids for each tag. If there are `ytags`, we also use the query key. In the case of `allMode`, we perform the *union* of all tags, since there might be shared tags for the user.
+We compute the ids of all the pivs that match the query. This will be either the intersection of all the ids for each tag. If there are `ytags`, we also use the query key. In the case of `allMode`, we perform the *union* of all tags, since there might be shared tags for the user.
 
-The year tags are queried separately from normal tags because 1) if more than one year tag is sent, we want the union (not the intersection) of their pictures; and 2) it's not possible to share a year tag with another user, so the querying is simpler.
+The year tags are queried separately from normal tags because 1) if more than one year tag is sent, we want the union (not the intersection) of their pivs; and 2) it's not possible to share a year tag with another user, so the querying is simpler.
 
 ```javascript
             multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
@@ -1260,24 +1261,24 @@ We run the transaction and move to the next step of the process.
          },
 ```
 
-By now, we have a list of all the ids of the pictures matching the query. To access them, we look for a certain item returned by the last call to redis. This item will be at index N (where N is the number of `tags`) or N+1, depending on whether the query has `ytags` or not.
+By now, we have a list of all the ids of the pivs matching the query. To access them, we look for a certain item returned by the last call to redis. This item will be at index N (where N is the number of `tags`) or N+1, depending on whether the query has `ytags` or not.
 
 ```javascript
          function (s) {
-            s.pics = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
+            s.pivs = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
 ```
 
-We create another `multi` transaction to retrieve the information for all the pictures. We also create an object `ids`, which we'll review in a minute.
+We create another `multi` transaction to retrieve the information for all the pivs. We also create an object `ids`, which we'll review in a minute.
 
 ```javascript
             var multi = redis.multi (), ids = {};
 ```
 
-We retrieve all the info for this picture. If `b.recentlyTagged` is passed, we also set an entry for this id into the `ids` object.
+We retrieve all the info for this piv. If `b.recentlyTagged` is passed, we also set an entry for this id into the `ids` object.
 
 ```javascript
-            dale.go (s.pics, function (id) {
-               multi.hgetall ('pic:' + id);
+            dale.go (s.pivs, function (id) {
+               multi.hgetall ('piv:' + id);
                if (b.recentlyTagged) ids [id] = true;
             });
 ```
@@ -1288,60 +1289,60 @@ We iterate `b.recentlyTagged` (this will be a no-op if it's not defined) and sto
             s.recentlyTagged = dale.fil (b.recentlyTagged, undefined, function (id) {
 ```
 
-If the picture that is inside `b.recentlyTagged` is already covered by the query, we ignore it.
+If the piv that is inside `b.recentlyTagged` is already covered by the query, we ignore it.
 
 ```javascript
                if (ids [id]) return;
 ```
 
-Otherwise, we bring its information from the database and return its `id`, so that it will be contained in `s.recentlyTagged`; this last variable will be then an array with the list of the recently tagged pictures that are in excess of the query.
+Otherwise, we bring its information from the database and return its `id`, so that it will be contained in `s.recentlyTagged`; this last variable will be then an array with the list of the recently tagged pivs that are in excess of the query.
 
 ```javascript
-               multi.hgetall ('pic:' + id);
+               multi.hgetall ('piv:' + id);
                return id;
             });
 ```
 
-We perform the call to redis to retrieve picture information and move to the next step.
+We perform the call to redis to retrieve piv information and move to the next step.
 
 ```javascript
             mexec (s, multi);
          },
 ```
 
-We iterate the pictures in `s.recentlyTagged`, which are those in `b.recentlyTagged` that are not already contained in the rest of the query. The goal is to prevent returning info from pictures for which the user shouldn't have access.
+We iterate the pivs in `s.recentlyTagged`, which are those in `b.recentlyTagged` that are not already contained in the rest of the query. The goal is to prevent returning info from pivs for which the user shouldn't have access.
 
 ```javascript
          function (s) {
             var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
 ```
 
-If there's no such picture or the picture doesn't belong to the user, it cannot be a recently tagged picture by the user (since the user cannot tag a picture that is not theirs). In this case, we ignore the picture. Otherwise, we return the actuali picture information.
+If there's no such piv or the piv doesn't belong to the user, it cannot be a recently tagged piv by the user (since the user cannot tag a piv that is not theirs). In this case, we ignore the piv. Otherwise, we return the actuali piv information.
 
 ```javascript
-               if (! s.last [s.pics.length + k] || s.last [s.pics.length + k].owner !== rq.user.username) return;
-               return s.last [s.pics.length + k];
+               if (! s.last [s.pivs.length + k] || s.last [s.pivs.length + k].owner !== rq.user.username) return;
+               return s.last [s.pivs.length + k];
             });
 ```
 
-We set `s.pics` to hold the info of the pictures queried, ignoring those coming from `b.recentlyTagged`; we concatenate to it the pictures in `recentlyTagged`, which have been filtered both by existence and ownership. This is the set of pictures that will match the query.
+We set `s.pivs` to hold the info of the pivs queried, ignoring those coming from `b.recentlyTagged`; we concatenate to it the pivs in `recentlyTagged`, which have been filtered both by existence and ownership. This is the set of pivs that will match the query.
 
-Note that we filter out any `null` values, which can happen if some pictures returned by the query got deleted before getting their info but after the first part of the query was done.
+Note that we filter out any `null` values, which can happen if some pivs returned by the query got deleted before getting their info but after the first part of the query was done.
 
 ```javascript
-            s.pics = dale.fil (s.last.slice (0, s.pics.length).concat (recentlyTagged), null, function (pic) {return pic});
+            s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
 ```
 
-If `b.idsOnly` is `true`, we only return an array with the ids of all the matching pictures. Notice that we ignore `b.sort`, `b.from` and `b.to`.
+If `b.idsOnly` is `true`, we only return an array with the ids of all the matching pivs. Notice that we ignore `b.sort`, `b.from` and `b.to`.
 
 ```javascript
-            if (b.idsOnly) return dale.go (s.pics, function (pic) {return pic.id});
+            if (b.idsOnly) return dale.go (s.pivs, function (piv) {return piv.id});
 ```
 
-If there are no pictures, we return an object representing an empty query. The fields are `total`, `pics` and `tags`.
+If there are no pivs, we return an object representing an empty query. The fields are `total`, `pivs` and `tags`.
 
 ```javascript
-            if (s.pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
+            if (s.pivs.length === 0) return reply (rs, 200, {total: 0, pivs: [], tags: []});
 ```
 
 ## License

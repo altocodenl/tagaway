@@ -15,7 +15,7 @@ var U = [
    {username: userPrefix + '2',             password: Math.random () + '@', timezone: new Date ().getTimezoneOffset ()},
 ];
 
-var PICS = 'test/';
+var PIVS = 'test/';
 
 var H = {};
 
@@ -333,7 +333,7 @@ var main = [
       if (type (rs.body.logs) !== 'array' || (rs.body.logs.length !== 11 && rs.body.logs.length !== 12)) return clog ('Invalid logs.');
       return true;
    }],
-   ttester ('query pics', 'post', 'query', {}, [
+   ttester ('query pivs', 'post', 'query', {}, [
       ['tags', 'array'],
       [['tags', 0], 'string'],
       ['mindate', ['undefined', 'integer']],
@@ -343,21 +343,21 @@ var main = [
       ['to', 'integer'],
       ['idsOnly', ['undefined', 'boolean']],
    ]),
-   {tag: 'query pics without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
+   {tag: 'query pivs without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
       if (! eq (rs.body, {error: 'csrf'})) return clog ('Invalid payload');
       return true;
    }},
-   {tag: 'query pics with invalid csrf token', method: 'post', path: 'query', code: 403, body: {csrf: 'foobar', tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
+   {tag: 'query pivs with invalid csrf token', method: 'post', path: 'query', code: 403, body: {csrf: 'foobar', tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: function (s, rq, rs) {
       if (! eq (rs.body, {error: 'csrf'})) return clog ('Invalid payload');
       return true;
    }},
-   ['query pics with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
-   ['get invalid range of pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (! eq (rs.body, {total: 0, pics: [], tags: []})) return clog ('Invalid payload');
+   ['query pivs with invalid tag', 'post', 'query', {}, {tags: ['all'], sort: 'newest', from: 1, to: 10}, 400],
+   ['get invalid range of pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (! eq (rs.body, {total: 0, pivs: [], tags: []})) return clog ('Invalid payload');
       return true;
    }],
-   ['get pics (ids only)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10, idsOnly: true}, 200, function (s, rq, rs) {
+   ['get pivs (ids only)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10, idsOnly: true}, 200, function (s, rq, rs) {
       if (! eq (rs.body, [])) return clog ('Invalid body.');
       return true;
    }],
@@ -367,9 +367,9 @@ var main = [
    ['upload invalid payload #4', 'post', 'upload', {}, {}, 400],
    ['upload invalid payload #5', 'post', 'upload', {}, {file: {}}, 400],
    ['upload video before upload start', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4'},
       {type: 'field', name: 'id', value: Date.now ()},
-      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
    ]}}, 404],
    ttester ('metaupload', 'post', 'metaupload', {}, [
       ['op', 'string'],
@@ -417,17 +417,17 @@ var main = [
    }],
    ['uploadCheck, no such upload', 'post', 'uploadCheck', {}, {id: Date.now (), hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}, 404],
    ['upload unsupported format', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4', filename: 'tram.mp5'},
+      {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4', filename: 'tram.mp5'},
       {type: 'field', name: 'id', value: s.uid1},
-      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
    ]}}, 400, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'fileFormat', filename: 'tram.mp5'})) return clog ('Invalid body returned.');
       return true;
    }],
    ['upload video #1', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
-      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
    ]}}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return clog ('No id returned.');
       s.uploadIds = [rs.body.id];
@@ -446,15 +446,15 @@ var main = [
       return true;
    }],
    ['upload video #2', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
-      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'bach.mp4').mtime.getTime ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'bach.mp4').mtime.getTime ()}
    ]}}, 200, function (s, rq, rs) {
       s.uploadIds [1] = rs.body.id;
       return true;
    }],
    ['upload repeated video', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4', filename: 'bach-repeated.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4', filename: 'bach-repeated.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["repeated1", "repeated2"]'}
@@ -464,7 +464,7 @@ var main = [
       return true;
    }],
    ['upload alreadyUploaded video', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["repeated1", "repeated2"]'}
@@ -474,16 +474,16 @@ var main = [
       return true;
    }],
    ['upload invalid video', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'invalid.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'invalid.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
-      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'bach.mp4').mtime.getTime ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'bach.mp4').mtime.getTime ()}
    ]}}, 400, function (s, rq, rs) {
       if (! rs.body || type (rs.body.error) !== 'string') return clog ('No error present.');
       if (! rs.body.error.match (/^Invalid video/)) return clog ('Invalid error message.');
       return true;
    }],
    ['upload alreadyUploaded video again (should be repeated)', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'bach.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["repeated1", "repeated2"]'}
@@ -520,16 +520,16 @@ var main = [
       return true;
    }],
    ['get uploads after first upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'uploading', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPiv: {id: s.uploadIds [1]}, status: 'uploading', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
       return true;
    }],
-   ['get pics and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
       return true;
    }],
    ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
    ['uploadCheck with finished upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}}, 409],
-   ['get pics and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
       return true;
    }],
@@ -551,13 +551,13 @@ var main = [
    ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
       if (type (rs.body [0].end) !== 'integer') return clog ('Invalid end field.');
       delete rs.body [0].end;
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'complete', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPiv: {id: s.uploadIds [1]}, status: 'complete', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
       return true;
    }],
    ['upload video after upload end', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'tram.mp4'},
+      {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
-      {type: 'field',  name: 'lastModified', value: fs.statSync (PICS + 'tram.mp4').mtime.getTime ()}
+      {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
    ]}}, 409, function (s, rq, rs) {
       if (! eq (rs.body, {error: 'status'})) return clog ('Invalid status error.');
       return true;
@@ -577,16 +577,16 @@ var main = [
    }],
    ['get uploads after errored upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
       delete rs.body [0].end;
-      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPic: {id: s.uploadIds [1]}, status: 'error', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5'], error: {foo: 'bar'}})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPiv: {id: s.uploadIds [1]}, status: 'error', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5'], error: {foo: 'bar'}})) return clog ('Invalid upload data.');
       return true;
    }],
-   ['get pics (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs (videos)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
       if (! eq (rs.body.tags, ['2018', 'a tag', 'repeated1', 'repeated2'])) return clog ('Invalid tags.');
-      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      s.vids = dale.go (rs.body.pics, function (pic) {return pic.id});
-      var vid1 = rs.body.pics [0], vid2 = rs.body.pics [1];
+      if (type (rs.body.pivs) !== 'array') return clog ('Invalid piv array.');
+      s.vids = dale.go (rs.body.pivs, function (piv) {return piv.id});
+      var vid1 = rs.body.pivs [0], vid2 = rs.body.pivs [1];
       if (vid1.id !== s.uploadIds [0] || vid2.id !== s.uploadIds [1]) return clog ('Id mismatch.');
       if (type (vid1.id) !== 'string' || type (vid1.t200) !== 'string' || type (vid1.t900) !== 'string') return clog ('Invalid id, t200 or t900 in vid #1.');
       if (type (vid2.id) !== 'string' || type (vid2.t200) !== 'string' || type (vid2.t900) !== 'string') return clog ('Invalid id, t200 or t900 in vid #2.');
@@ -628,22 +628,22 @@ var main = [
    ['untag first video', 'post', 'tag', {}, function (s) {
       return {tag: 'a tag', ids: [s.vids [0]], del: true};
    }, 200],
-   ['get pics (videos), untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs (videos), untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 1) return clog ('Invalid total count.');
       if (! eq (rs.body.tags, ['2018'])) return clog ('Invalid tags.');
-      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures.');
+      if (type (rs.body.pivs) !== 'array') return clog ('Invalid piv array.');
+      if (rs.body.pivs.length !== 1) return clog ('Invalid amount of pivs.');
       return true;
    }],
    dale.go (dale.times (2, 0), function (k) {
-      return {tag: 'get videos', method: 'get', path: function (s) {return 'pic/' + s.vids [k] + '?original=1'}, code: 200, raw: true, apres: function (s, rq, rs) {
+      return {tag: 'get videos', method: 'get', path: function (s) {return 'piv/' + s.vids [k] + '?original=1'}, code: 200, raw: true, apres: function (s, rq, rs) {
          var name = ['tram.mp4', 'bach.mp4'] [k];
          var up       = Buffer.from (rs.body, 'binary');
          var saved    = fs.writeFileSync (name, rs.body, {encoding: 'binary'});
-         var original = fs.readFileSync (PICS + name);
+         var original = fs.readFileSync (PIVS + name);
          if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded video!');
-         var mtime = fs.statSync (PICS + name).mtime;
+         var mtime = fs.statSync (PIVS + name).mtime;
          // We compare that the difference is less than 1s because the date format of the return header doesn't have millisecond precision.
          if (Math.abs (mtime.getTime () - new Date (rs.headers ['last-modified']).getTime ()) >= 1000) return clog ('Invalid last-modified header: ', rs.headers ['last-modified']);
          fs.unlinkSync (name);
@@ -658,12 +658,12 @@ var main = [
       return true;
    }],
    ['upload empty picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'empty.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'empty.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field', name: 'lastModified', value: Date.now ()},
    ]}}, 400],
    ['upload invalid picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'invalid.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'invalid.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 400, function (s, rq, rs) {
@@ -672,64 +672,64 @@ var main = [
       return true;
    }],
    ['upload picture without id', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
    ]}}, 400],
    ['upload picture with non-numeric id', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: Date.now () + 'a'},
    ]}}, 400],
    ['upload picture with futuristic id', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: Date.now () + 10000000},
    ]}}, 400],
    ['upload picture without lastModified', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'field', name: 'id', value: s.uid2},
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'}
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'}
    ]}}, 400],
    ['upload small picture with extra text field', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'extra', value: Date.now ()}
    ]}}, 400],
    ['upload small picture with extra file field', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
-      {type: 'file',  name: 'pic2', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
+      {type: 'file',  name: 'piv2', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 400],
    ['upload small picture with invalid tags #1', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: 'foobar'},
    ]}}, 400],
    ['upload small picture with invalid tags #2', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify ([2])},
    ]}}, 400],
    ['upload small picture with invalid tags #3', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'all'])},
    ]}}, 400],
    ['upload small picture with invalid tags #4', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', '2017'])},
    ]}}, 400],
    ['upload small picture with invalid tags #5', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'g::Buenos Aires'])},
    ]}}, 400],
    ['upload small picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}}, 200, function (s, rq, rs, next) {
@@ -746,76 +746,76 @@ var main = [
       // Wait two seconds more in case S3 is slower than usual.
       }, 2000);
    }],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 1) return clog ('Invalid total count.');
       if (! eq (rs.body.tags, ['2014'])) return clog ('Invalid tags.');
-      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      var pic = rs.body.pics [0];
-      s.smallpic = teishi.copy (pic);
-      if (pic.date !== H.getDate ('2014:05:08 00:06:23'))  return clog ('Invalid pic.date');
-      if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
-      if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
-      delete pic.date;
-      delete pic.dateup;
-      delete pic.dates;
-      if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
-      delete pic.id;
-      if (! eq (pic, {
+      if (type (rs.body.pivs) !== 'array') return clog ('Invalid piv array.');
+      var piv = rs.body.pivs [0];
+      s.smallpiv = teishi.copy (piv);
+      if (piv.date !== H.getDate ('2014:05:08 00:06:23'))  return clog ('Invalid piv.date');
+      if (type (piv.date)   !== 'integer') return clog ('Invalid piv.date.');
+      if (type (piv.dateup) !== 'integer') return clog ('Invalid piv.dateup.');
+      delete piv.date;
+      delete piv.dateup;
+      delete piv.dates;
+      if (type (piv.id) !== 'string') return clog ('Invalid piv.id.');
+      delete piv.id;
+      if (! eq (piv, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'small.png',
          dimh: 149,
          dimw: 149,
          tags: ['2014']
-      })) return clog ('Invalid pic fields.');
+      })) return clog ('Invalid piv fields.');
       return true;
    }],
    ['upload duplicated picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'smalldup.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'smalldup.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 409],
    ['uploadCheck same picture with different lastModified field, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'small.png', fileSize: 0, lastModified: 1621036799999}}, 200],
-   ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 772326011, filename: '2021-05-14', fileSize: 0, lastModified: Date.now ()}}, 200],
+   ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: '2021-05-14', fileSize: 0, lastModified: Date.now ()}}, 200],
    ['upload alreadyUploaded picture with date in name', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'smallmeta.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'smallmeta.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
    ]}}, 409, function (s, rq, rs, next) {
       if (rs.body.error !== 'repeated') return clog ('Invalid error', rs.body);
       return true;
    }],
-   ['check pic dates', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 1}, 200, function (s, rq, rs) {
+   ['check piv dates', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 1) return clog ('Invalid total count.');
-      var pic = rs.body.pics [0];
-      if (pic.date !== 1367964383000) return clog ('Date was not updated with Create Date from repeated picture with different metadata.');
-      var keys = dale.keys (pic.dates).length;
-      if (keys !== 9 && keys !== 12) return clog ('Invalid number of keys in pic.dates:', dale.keys (pic.dates).length);
+      var piv = rs.body.pivs [0];
+      if (piv.date !== 1367964383000) return clog ('Date was not updated with Create Date from repeated picture with different metadata.');
+      var keys = dale.keys (piv.dates).length;
+      if (keys !== 11 && keys !== 14) return clog ('Invalid number of keys in piv.dates:', dale.keys (piv.dates).length);
       var au = 0, r = 0, orig = 0;
-      var reverse = dale.obj (pic.dates, function (v, k) {
+      var reverse = dale.obj (piv.dates, function (v, k) {
          if (k.match (/^repeated:/)) r++;
          else if (k.match (/^alreadyUploaded:/)) au++;
          else orig++;
          return [v, k];
       });
-      // Sometimes, three fields in the picture are considered to be 1 second apart, so they're considered; some other times, they're not. That's why the total number of keys might vary between 9 and 12.
-      if (r !== (k === 9 ? 3 : 6)) return clog ('Invalid number of repeated fields in pic.dates.');
-      if (au !== 1) return clog ('Invalid number of alreadyUploaded fields in pic.dates.');
-      if (orig !== 5) return clog ('Invalid number of original fields in pic.dates.');
+      // Sometimes, three fields in the piv are considered to be 1 second apart, so they're considered; some other times, they're not. That's why the total number of keys might vary between 11 and 14.
+      if (r !== (k === 11 ? 5 : 8)) return clog ('Invalid number of repeated fields in piv.dates.');
+      if (au !== 1) return clog ('Invalid number of alreadyUploaded fields in piv.dates.');
+      if (orig !== 5) return clog ('Invalid number of original fields in piv.dates.');
       if (! reverse ['2013:05:08 00:06:23']) return clog ('Create Date missing.');
       return true;
    }],
    ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
-      return {ids: [s.smallpic.id]};
+      return {ids: [s.smallpiv.id]};
    }, 200],
    ['upload small picture again', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'small.png'},
+      {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}}, 200],
    ['upload medium picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'medium.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'medium.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}}, 200],
@@ -827,7 +827,7 @@ var main = [
       setTimeout (next, 5000);
    }],
    ['upload medium picture with no metadata', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'medium-nometa.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'medium-nometa.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
    ]}}, 409],
@@ -842,103 +842,103 @@ var main = [
       }, 2000);
       return true;
    }],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 2) return clog ('Invalid total count.');
       if (! eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
-      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      var pic = rs.body.pics [0];
-      if (pic.date !== H.getDate ('2018-06-03T00:00:00.000Z')) return clog ('Invalid pic.date');
-      if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
-      delete pic.date;
-      delete pic.dateup;
-      delete pic.dates;
-      if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
-      delete pic.id;
-      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
-      delete pic.t200;
-      if (! eq (pic, {
+      if (type (rs.body.pivs) !== 'array') return clog ('Invalid piv array.');
+      var piv = rs.body.pivs [0];
+      if (piv.date !== H.getDate ('2018-06-03T00:00:00.000Z')) return clog ('Invalid piv.date');
+      if (type (piv.dateup) !== 'integer') return clog ('Invalid piv.dateup.');
+      delete piv.date;
+      delete piv.dateup;
+      delete piv.dates;
+      if (type (piv.id) !== 'string') return clog ('Invalid piv.id.');
+      delete piv.id;
+      if (type (piv.t200) !== 'string') return clog ('Invalid piv.t200.');
+      delete piv.t200;
+      if (! eq (piv, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'medium.jpg',
          dimh: 204,
          dimw: 248,
          tags: ['2018']
-      })) return clog ('Invalid pic fields.');
+      })) return clog ('Invalid piv fields.');
       return true;
    }],
    ['upload large picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'large.jpeg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'large.jpeg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 3) return clog ('Invalid total count.');
       if (! eq (rs.body.tags.sort (), ['2014', '2018'])) return clog ('Invalid tags.');
-      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      if (rs.body.pics.length !== 1) return clog ('Invalid amount of pictures returned.');
-      var pic = rs.body.pics [0];
-      if (pic.date !== H.getDate ('2014:07:20 18:20:31')) return clog ('Invalid pic.date');
-      delete pic.date;
-      delete pic.dateup;
-      delete pic.id;
-      delete pic.dates;
-      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
-      if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
-      delete pic.t200;
-      delete pic.t900;
+      if (type (rs.body.pivs) !== 'array') return clog ('Invalid piv array.');
+      if (rs.body.pivs.length !== 1) return clog ('Invalid amount of pivs returned.');
+      var piv = rs.body.pivs [0];
+      if (piv.date !== H.getDate ('2014:07:20 18:20:31')) return clog ('Invalid piv.date');
+      delete piv.date;
+      delete piv.dateup;
+      delete piv.id;
+      delete piv.dates;
+      if (type (piv.t200) !== 'string') return clog ('Invalid piv.t200.');
+      if (type (piv.t900) !== 'string') return clog ('Invalid piv.t900.');
+      delete piv.t200;
+      delete piv.t900;
       return true;
-      if (! eq (pic, {
+      if (! eq (piv, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'large.jpeg',
          dimh: 204,
          dimw: 248,
          tags: ['2014']
-      })) return clog ('Invalid pic fields.');
+      })) return clog ('Invalid piv fields.');
       return true;
    }],
-   ['get pics (ids only)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10, idsOnly: true}, 200, function (s, rq, rs) {
+   ['get pivs (ids only)', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10, idsOnly: true}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'array') return clog ('Invalid body.');
       if (rs.body.length !== 3 || type (rs.body [0]) !== 'string') return clog ('Invalid body length or type.');
       return true;
    }],
    ['upload lopsided picture', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 200, function (s, rq, rs) {
       if (rs.body.deg !== 90) return clog ('Invalid body.deg');
       return true;
    }],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid payload.');
       if (rs.body.total !== 4) return clog ('Invalid total count.');
       if (! eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
-      if (type (rs.body.pics) !== 'array') return clog ('Invalid pic array.');
-      s.pics = rs.body.pics;
-      var pic = teishi.copy (rs.body.pics [0]);
-      if (type (pic.date)   !== 'integer') return clog ('Invalid pic.date.');
-      if (type (pic.dateup) !== 'integer') return clog ('Invalid pic.dateup.');
-      if (pic.date !== H.getDate ('2017:03:22 17:35:20')) return clog ('Invalid date.');
-      s.rotateid = pic.id;
-      s.rotatepic = teishi.copy (pic);
-      delete pic.date;
-      delete pic.dateup;
-      delete pic.dates;
-      if (type (pic.id) !== 'string') return clog ('Invalid pic.id.');
-      delete pic.id;
-      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
-      delete pic.t200;
-      if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
-      delete pic.t900;
-      if (! eq (pic, {
+      if (type (rs.body.pivs) !== 'array') return clog ('Invalid piv array.');
+      s.pivs = rs.body.pivs;
+      var piv = teishi.copy (rs.body.pivs [0]);
+      if (type (piv.date)   !== 'integer') return clog ('Invalid piv.date.');
+      if (type (piv.dateup) !== 'integer') return clog ('Invalid piv.dateup.');
+      if (piv.date !== H.getDate ('2017:03:22 17:35:20')) return clog ('Invalid date.');
+      s.rotateid = piv.id;
+      s.rotatepiv = teishi.copy (piv);
+      delete piv.date;
+      delete piv.dateup;
+      delete piv.dates;
+      if (type (piv.id) !== 'string') return clog ('Invalid piv.id.');
+      delete piv.id;
+      if (type (piv.t200) !== 'string') return clog ('Invalid piv.t200.');
+      delete piv.t200;
+      if (type (piv.t900) !== 'string') return clog ('Invalid piv.t900.');
+      delete piv.t900;
+      if (! eq (piv, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
          deg:  90,
          tags: ['2017']
-      })) return clog ('Invalid pic fields.');
+      })) return clog ('Invalid piv fields.');
       return true;
    }],
    ['check user logs after second upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
@@ -947,68 +947,68 @@ var main = [
       });
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
          if (v.ev !== 'upload') return 'Invalid action';
-         if (v.type !== ['ok', 'ok', 'repeated', 'ok', 'ok', 'repeated', 'alreadyUploaded', 'repeated', 'ok', 'invalid', 'invalid', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
-         if (v.fileId !== [s.pics [0].id, s.pics [1].id, s.pics [2].id, s.pics [2].id, s.pics [3].id, s.smallpic.id, s.smallpic.id, s.smallpic.id, s.smallpic.id, undefined, undefined, undefined] [k]) return 'Invalid fileId: ' + v.fileId + ' (' + (k + 1) + '), vs ' + [s.pics [0].id, s.pics [1].id, s.pics [2].id, s.pics [2].id, s.pics [3].id, s.smallpic.id, s.smallpic.id, s.smallpic.id, s.smallpic.id, undefined, undefined, undefined] [k];
+         if (v.type !== ['ok', 'ok', 'repeated', 'ok', 'ok', 'repeated', 'repeated', 'alreadyUploaded', 'repeated', 'ok', 'invalid', 'invalid', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
+         if (v.fileId !== [s.pivs [0].id, s.pivs [1].id, s.pivs [2].id, s.pivs [2].id, s.pivs [3].id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, undefined, undefined, undefined] [k]) return 'Invalid fileId: ' + v.fileId + ' (' + (k + 1) + '), vs ' + [s.pivs [0].id, s.pivs [1].id, s.pivs [2].id, s.pivs [2].id, s.pivs [3].id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, undefined, undefined, undefined] [k];
          if (v.deg !== (k === 0 ? 90 : undefined)) return 'Invalid deg: ' + v.deg + ' (' + (k + 1) + ')';
-         if (v.filename !== [undefined, undefined, 'medium-nometa.jpg', undefined, undefined, 'smallmeta.png', undefined, 'smalldup.png', undefined, 'invalid.jpg', 'empty.jpg', undefined] [k]) return 'Invalid filename: ' + v.filename + ' (' + (k + 1) + ')';
+         if (v.filename !== [undefined, undefined, 'medium-nometa.jpg', undefined, undefined, 'smallmeta.png', '2021-05-14', undefined, 'smalldup.png', undefined, 'invalid.jpg', 'empty.jpg', undefined] [k]) return 'Invalid filename: ' + v.filename + ' (' + (k + 1) + ')';
          if (v.type === 'error' && ! v.error) return clog ('Error field missing');
       });
       if (error) return clog (error);
       return true;
    }],
    ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPic: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smallmeta.png', 'smalldup.png'], alreadyUploaded: 1, repeatedSize: 16943, invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPiv: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smallmeta.png', '2021-05-14', 'smalldup.png'], alreadyUploaded: 1, repeatedSize: 16943, invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
       return true;
    }],
-   ttester ('rotate pic', 'post', 'rotate', {}, [
+   ttester ('rotate piv', 'post', 'rotate', {}, [
       ['ids', 'array'],
       [['ids', 0], 'string'],
       ['deg', 'integer'],
    ]),
-   ['rotate pic (invalid #1)', 'post', 'rotate', {}, {ids: ['hello'], deg: 45}, 400],
-   ['rotate pic (invalid #2, repeated)', 'post', 'rotate', {}, {ids: ['hello', 'hello'], deg: -90}, 400],
-   ['rotate pic (invalid #3, type)', 'post', 'rotate', {}, {ids: 'hello', deg: -90}, 400],
-   ['rotate pic nonexisting #1', 'post', 'rotate', {}, {ids: ['hello'], deg: -90}, 404],
-   ['rotate pic nonexisting #2', 'post', 'rotate', {}, function (s) {
+   ['rotate piv (invalid #1)', 'post', 'rotate', {}, {ids: ['hello'], deg: 45}, 400],
+   ['rotate piv (invalid #2, repeated)', 'post', 'rotate', {}, {ids: ['hello', 'hello'], deg: -90}, 400],
+   ['rotate piv (invalid #3, type)', 'post', 'rotate', {}, {ids: 'hello', deg: -90}, 400],
+   ['rotate piv nonexisting #1', 'post', 'rotate', {}, {ids: ['hello'], deg: -90}, 404],
+   ['rotate piv nonexisting #2', 'post', 'rotate', {}, function (s) {
       return {ids: [s.rotateid, 'foo'], deg: 90};
    }, 404],
-   ['rotate pic', 'post', 'rotate', {}, function (s) {
+   ['rotate piv', 'post', 'rotate', {}, function (s) {
       return {ids: [s.rotateid], deg: -90};
    }, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), ['2014', '2017', '2018'])) return clog ('Invalid tags.');
-      var pic = rs.body.pics [0];
-      delete pic.id;
-      if (type (pic.t200) !== 'string') return clog ('Invalid pic.t200.');
-      delete pic.t200;
-      if (type (pic.t900) !== 'string') return clog ('Invalid pic.t900.');
-      delete pic.t900;
-      if (s.rotatepic.date !== pic.date)     return clog ('date changed after rotate.');
-      if (s.rotatepic.dateup !== pic.dateup) return clog ('dateup changed after rotate.');
-      s.rotatedate = pic.date;
-      delete pic.date;
-      delete pic.dateup;
-      delete pic.dates;
-      if (! eq (pic, {
+      var piv = rs.body.pivs [0];
+      delete piv.id;
+      if (type (piv.t200) !== 'string') return clog ('Invalid piv.t200.');
+      delete piv.t200;
+      if (type (piv.t900) !== 'string') return clog ('Invalid piv.t900.');
+      delete piv.t900;
+      if (s.rotatepiv.date !== piv.date)     return clog ('date changed after rotate.');
+      if (s.rotatepiv.dateup !== piv.dateup) return clog ('dateup changed after rotate.');
+      s.rotatedate = piv.date;
+      delete piv.date;
+      delete piv.dateup;
+      delete piv.dates;
+      if (! eq (piv, {
          owner: U [0].username.replace (/^\s+/, '').replace (' \t', ''),
          name: 'rotate.jpg',
          dimh: 1232,
          dimw: 2048,
          tags: ['2017']
-      })) return clog ('Invalid pic fields.');
+      })) return clog ('Invalid piv fields.');
       return true;
    }],
-   ['rotate pic again', 'post', 'rotate', {}, function (s) {
+   ['rotate piv again', 'post', 'rotate', {}, function (s) {
       return {ids: [s.rotateid], deg: 90};
    }, 200],
    dale.go ([[-90, undefined], [180, 180], [180, undefined], [-90, -90], [-90, 180], [-90, 90], [180, -90], [90, undefined]], function (pair, k) {
       return [
-         ['rotate pic #' + (k + 2), 'post', 'rotate', {}, function (s) {
+         ['rotate piv #' + (k + 2), 'post', 'rotate', {}, function (s) {
             return {ids: [s.rotateid], deg: pair [0]};
          }, 200],
-         ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-            var pic = rs.body.pics [0];
-            if (pic.deg !== pair [1]) return clog ('Rotate wasn\'t calculated properly.');
+         ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+            var piv = rs.body.pivs [0];
+            if (piv.deg !== pair [1]) return clog ('Rotate wasn\'t calculated properly.');
             return true;
          }],
       ];
@@ -1026,7 +1026,7 @@ var main = [
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200],
-   ['get pics and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs and check refreshQuery is on', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
       return true;
    }],
@@ -1039,19 +1039,19 @@ var main = [
    }],
    ['turn off geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409],
    ['turn on geotagging (conflict)', 'post', 'geo', {}, {operation: 'enable'}, 409, function (s, rq, rs, next) {
-      // Wait for pictures to be tagged
+      // Wait for pivs to be tagged
       setTimeout (next, 2000);
    }],
    ['get account after enabling geotagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
       if (rs.body.geoInProgress !== undefined) return clog ('Geo progress should be turned off');
       return true;
    }],
-   ['get pics and check refreshQuery is still on because of upload', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs and check refreshQuery is still on because of upload', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
       return true;
    }],
    ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid2}}, 200],
-   ['get pics and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+   ['get pivs and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
       return true;
    }],
@@ -1086,17 +1086,17 @@ var main = [
       return true;
    }],
    ['upload picture with different date format and geodata', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'dunkerque.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'dunkerque.jpg'},
       {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['dunkerque\t', '   beach'])},
    ]}}, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
-      var pic = rs.body.pics [0];
-      if (! eq (pic.tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::FR'])) return clog ('Invalid tags: ', pic.tags.sort ());
-      if (pic.date !== H.getDate ('2018:03:26 13:23:34.805')) return clog ('GPS timestamp wasn\'t ignored.');
-      s.dunkerque = pic.id;
-      s.allpics = rs.body.pics;
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      var piv = rs.body.pivs [0];
+      if (! eq (piv.tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::FR'])) return clog ('Invalid tags: ', piv.tags.sort ());
+      if (piv.date !== H.getDate ('2018:03:26 13:23:34.805')) return clog ('GPS timestamp wasn\'t ignored.');
+      s.dunkerque = piv.id;
+      s.allpivs = rs.body.pivs;
       return true;
    }],
    ['turn off geotagging', 'post', 'geo', {}, {operation: 'disable'}, 200],
@@ -1110,21 +1110,21 @@ var main = [
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 2, all: 5, untagged: 4, dunkerque: 1, beach: 1})) return clog ('Invalid tags after geotagging disabled.');
       return true;
    }],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
-      if (rs.body.pics [0].loc !== undefined) return clog ('Location wasn\'t removed after disabling geotagging.');
-      var tags = rs.body.pics [0].tags;
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (rs.body.pivs [0].loc !== undefined) return clog ('Location wasn\'t removed after disabling geotagging.');
+      var tags = rs.body.pivs [0].tags;
       if (! eq (tags.sort (), ['2018', 'beach', 'dunkerque'])) return clog ('Geotags not removed.');
       if (tags.length !== 3) return clog ('Geotags not removed.');
       return true;
    }],
    ['turn on geotagging', 'post', 'geo', {}, {operation: 'enable'}, 200, function (s, rq, rs, next) {
-      // Wait for pictures to be tagged
+      // Wait for pivs to be tagged
       setTimeout (next, 2000);
    }],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
-      if (type (rs.body.pics [0].loc) !== 'array') return clog ('Invalid location array for picture with metadata.');
-      if (! eq (rs.body.pics [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
-      var tags = rs.body.pics [0].tags;
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs, next) {
+      if (type (rs.body.pivs [0].loc) !== 'array') return clog ('Invalid location array for pivture with metadata.');
+      if (! eq (rs.body.pivs [0].loc, [51.051094444444445, 2.3877611111111112])) return clog ('Invalid location.');
+      var tags = rs.body.pivs [0].tags;
       if (! eq (tags.sort (), ['2018', 'beach', 'dunkerque', 'g::Dunkerque', 'g::FR'])) return clog ('Invalid tags: ', tags.sort ());
       return true;
    }],
@@ -1133,118 +1133,118 @@ var main = [
       // Wait for S3
       setTimeout (next, skipS3 ? 0 : 6000);
    }],
-   ['get nonexisting picture from S3', 'get', 'original/foobar', {}, '', 404],
+   ['get nonexisting piv from S3', 'get', 'original/foobar', {}, '', 404],
    dale.go (dale.times (5, 0), function (k) {
       if (skipS3) return [];
-      return {tag: 'get original pic from S3', method: 'get', path: function (s) {return 'original/' + s.allpics [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
+      return {tag: 'get original piv from S3', method: 'get', path: function (s) {return 'original/' + s.allpivs [k].id}, code: 200, raw: true, apres: function (s, rq, rs) {
          var up       = Buffer.from (rs.body, 'binary');
-         var original = fs.readFileSync ([PICS + 'dunkerque.jpg', PICS + 'rotate.jpg', PICS + 'large.jpeg', PICS + 'medium.jpg', PICS + 'small.png'] [k]);
-         if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded picture!');
+         var original = fs.readFileSync ([PIVS + 'dunkerque.jpg', PIVS + 'rotate.jpg', PIVS + 'large.jpeg', PIVS + 'medium.jpg', PIVS + 'small.png'] [k]);
+         if (Buffer.compare (up, original) !== 0) return clog ('Mismatch between original and uploaded piv!');
          return true;
       }};
    }),
-   ['delete picture with different date format', 'post', 'delete', {}, function (s) {
+   ['delete piv with different date format', 'post', 'delete', {}, function (s) {
       return {ids: [s.dunkerque]};
    }, 200],
-   ['get pics by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['medium.jpg', 'rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pics, function (v) {
+   ['get pivs by newest', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (['medium.jpg', 'rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by oldest', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['small.png', 'large.jpeg', 'rotate.jpg', 'medium.jpg'], dale.go (rs.body.pics, function (v) {
+   ['get pivs by oldest', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (['small.png', 'large.jpeg', 'rotate.jpg', 'medium.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by mindate #1', 'post', 'query', {}, function (s) {
+   ['get pivs by mindate #1', 'post', 'query', {}, function (s) {
       return {tags: [], sort: 'newest', from: 1, to: 4, mindate: s.rotatedate};
    }, 200, function (s, rq, rs) {
-      if (! eq (['medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
+      if (! eq (['medium.jpg', 'rotate.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by mindate #2', 'post', 'query', {}, function (s) {
+   ['get pivs by mindate #2', 'post', 'query', {}, function (s) {
       return {tags: [], sort: 'oldest', from: 1, to: 4, mindate: s.rotatedate};
    }, 200, function (s, rq, rs) {
-      if (! eq (['rotate.jpg', 'medium.jpg'], dale.go (rs.body.pics, function (v) {
+      if (! eq (['rotate.jpg', 'medium.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by maxdate #1', 'post', 'query', {}, function (s) {
+   ['get pivs by maxdate #1', 'post', 'query', {}, function (s) {
       return {tags: [], sort: 'newest', from: 1, to: 4, maxdate: s.rotatedate};
    }, 200, function (s, rq, rs) {
-      if (! eq (['rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pics, function (v) {
+      if (! eq (['rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by maxdate #2', 'post', 'query', {}, function (s) {
+   ['get pivs by maxdate #2', 'post', 'query', {}, function (s) {
       return {tags: [], sort: 'oldest', from: 1, to: 4, maxdate: s.rotatedate};
    }, 200, function (s, rq, rs) {
-      if (! eq (['small.png', 'large.jpeg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
+      if (! eq (['small.png', 'large.jpeg', 'rotate.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['medium.jpg'], dale.go (rs.body.pics, function (v) {
+   ['get pivs by year #1', 'post', 'query', {}, {tags: ['2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (['medium.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['medium.jpg'], dale.go (rs.body.pics, function (v) {
+   ['get pivs by year #2', 'post', 'query', {}, {tags: ['2018'], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (['medium.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by year #3', 'post', 'query', {}, {tags: ['2017', '2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['medium.jpg', 'rotate.jpg'], dale.go (rs.body.pics, function (v) {
+   ['get pivs by year #3', 'post', 'query', {}, {tags: ['2017', '2018'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (['medium.jpg', 'rotate.jpg'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['get pics by year #4', 'post', 'query', {}, {tags: ['2017', '2014', '2015'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (['rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pics, function (v) {
+   ['get pivs by year #4', 'post', 'query', {}, {tags: ['2017', '2014', '2015'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (['rotate.jpg', 'large.jpeg', 'small.png'], dale.go (rs.body.pivs, function (v) {
          return v.name;
-      }))) return clog ('Invalid pic date sorting');
+      }))) return clog ('Invalid piv date sorting');
       return true;
    }],
    ['upload medium picture with rotation data', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotatemedium.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'rotatemedium.jpg'},
       {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
    ]}}, 200],
    ['upload small picture with rotation data', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotatesmall.jpg'},
+      {type: 'file',  name: 'piv', path: PIVS + 'rotatesmall.jpg'},
       {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
    ]}}, 200],
    ['get non-large pictures with rotation data and check they have thumbnails', 'post', 'query', {}, {from: 1, to: 2, tags: ['rotatethumb'], sort: 'upload'}, 200, function (s, rq, rs) {
-      s.thumbpics = rs.body.pics;
-      if (s.thumbpics.length !== 2) return clog ('Expected two pictures.');
-      if (! s.thumbpics [0].t200) return clog ('Small picture should have t200.');
-      if (s.thumbpics [0].t900) return clog ('Small picture should not have t900.');
-      if (! s.thumbpics [1].t200) return clog ('Medium picture should have t200.');
-      if (! s.thumbpics [1].t900) return clog ('Medium picture should have t290.');
+      s.thumbpivs = rs.body.pivs;
+      if (s.thumbpivs.length !== 2) return clog ('Expected two pivs.');
+      if (! s.thumbpivs [0].t200) return clog ('Small picture should have t200.');
+      if (s.thumbpivs [0].t900) return clog ('Small picture should not have t900.');
+      if (! s.thumbpivs [1].t200) return clog ('Medium picture should have t200.');
+      if (! s.thumbpivs [1].t900) return clog ('Medium picture should have t290.');
       return true;
    }],
    dale.go (dale.times (2, 0), function (k) {
-      return ['delete thumbpic #' + (k + 1), 'post', 'delete', {}, function (s) {
-         return {ids: [s.thumbpics [k].id]};
+      return ['delete thumbpiv #' + (k + 1), 'post', 'delete', {}, function (s) {
+         return {ids: [s.thumbpivs [k].id]};
       }, 200];
    }),
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ttester ('tag pic', 'post', 'tag', {}, [
+   ttester ('tag piv', 'post', 'tag', {}, [
       ['tag', 'string'],
       ['ids', 'array'],
       [['ids', 0], 'string'],
@@ -1271,34 +1271,34 @@ var main = [
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      s.pics = rs.body.pics;
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      s.pivs = rs.body.pivs;
       return true;
    }],
    dale.go (dale.times (4, 0), function (k) {
       return [
-         ['get pic #' + (k + 1), 'get', function (s) {
-            return 'pic/' + s.pics [k].id;
+         ['get piv #' + (k + 1), 'get', function (s) {
+            return 'piv/' + s.pivs [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            var contentType = s.pics [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
+            var contentType = s.pivs [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
             if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
-            if ({'medium.jpg': 21450, 'rotate.jpg': 826476, 'large.jpeg': 3302468, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
+            if ({'medium.jpg': 21450, 'rotate.jpg': 826476, 'large.jpeg': 3302468, 'small.png': 3179} [s.pivs [k].name] !== rs.body.length) return clog ('Invalid length for piv #' + (k + 1));
             return true;
          }],
-         ['get thumb 200 of pic #' + (k + 1), 'get', function (s) {
-            return 'thumb/200/' + s.pics [k].id;
+         ['get thumb 200 of piv #' + (k + 1), 'get', function (s) {
+            return 'thumb/200/' + s.pivs [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            var contentType = s.pics [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
+            var contentType = s.pivs [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
             if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
-            if ({'medium.jpg': 12539, 'rotate.jpg': 7835, 'large.jpeg': 16533, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
+            if ({'medium.jpg': 12539, 'rotate.jpg': 7835, 'large.jpeg': 16533, 'small.png': 3179} [s.pivs [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
             return true;
          }],
-         ['get thumb 900 of pic #' + (k + 1), 'get', function (s) {
-            return 'thumb/900/' + s.pics [k].id;
+         ['get thumb 900 of piv #' + (k + 1), 'get', function (s) {
+            return 'thumb/900/' + s.pivs [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            var contentType = s.pics [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
+            var contentType = s.pivs [k].name === 'small.png' ? 'image/png' : 'image/jpeg';
             if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type.');
-            if ({'rotate.jpg': 94187, 'medium.jpg': 21450, 'large.jpeg': 212473, 'small.png': 3179} [s.pics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
+            if ({'rotate.jpg': 94187, 'medium.jpg': 21450, 'large.jpeg': 212473, 'small.png': 3179} [s.pivs [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
             return true;
          }]
       ];
@@ -1306,35 +1306,35 @@ var main = [
    // *** ADDITIONAL PICTURE FORMATS ***
    dale.go (['deer.bmp', 'sunrise.HEIC', 'tumbleweed.GIF', 'benin.tif'], function (v) {
       return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, function (s) {return {multipart: [
-         {type: 'file',  name: 'pic', path: PICS + v},
+         {type: 'file',  name: 'piv', path: PIVS + v},
          {type: 'field', name: 'id', value: s.uid3},
          {type: 'field',  name: 'lastModified', value: Date.now ()}
       ]}}, 200];
    }),
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
-      s.extrapics = rs.body.pics;
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
+      s.extrapics = rs.body.pivs;
       return true;
    }],
    dale.go (dale.times (4, 0), function (k) {
       return [
          ['get additional pic #' + (k + 1), 'get', function (s) {
-            return 'pic/' + s.extrapics [k].id;
+            return 'piv/' + s.extrapics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            if ({'deer.bmp': 'image/bmp', 'sunrise.HEIC': 'image/heic', 'tumbleweed.GIF': 'image/gif', 'benin.tif': 'image/tiff'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for pic #' + (k + 1));
-            if ({'deer.bmp': 124534, 'sunrise.HEIC': 868012, 'tumbleweed.GIF': 385721, 'benin.tif': 2661656} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for pic #' + (k + 1));
+            if ({'deer.bmp': 'image/bmp', 'sunrise.HEIC': 'image/heic', 'tumbleweed.GIF': 'image/gif', 'benin.tif': 'image/tiff'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for piv #' + (k + 1));
+            if ({'deer.bmp': 124534, 'sunrise.HEIC': 868012, 'tumbleweed.GIF': 385721, 'benin.tif': 2661656} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for piv #' + (k + 1));
             return true;
          }],
          ['get thumb 200 of additional pic #' + (k + 1), 'get', function (s) {
             return 'thumb/200/' + s.extrapics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            if ({'deer.bmp': 'image/jpeg', 'sunrise.HEIC': 'image/jpeg', 'tumbleweed.GIF': 'image/jpeg', 'benin.tif': 'image/jpeg'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for pic #' + (k + 1));
+            if ({'deer.bmp': 'image/jpeg', 'sunrise.HEIC': 'image/jpeg', 'tumbleweed.GIF': 'image/jpeg', 'benin.tif': 'image/jpeg'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for piv #' + (k + 1));
             if ({'deer.bmp': 13880, 'sunrise.HEIC': 9939, 'tumbleweed.GIF': 10673, 'benin.tif': 5922} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 200 #' + (k + 1));
             return true;
          }],
          ['get thumb 900 of additional pic #' + (k + 1), 'get', function (s) {
             return 'thumb/900/' + s.extrapics [k].id;
          }, {}, '', 200, function (s, rq, rs) {
-            if ({'deer.bmp': 'image/jpeg', 'sunrise.HEIC': 'image/jpeg', 'tumbleweed.GIF': 'image/gif', 'benin.tif': 'image/jpeg'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for pic #' + (k + 1));
+            if ({'deer.bmp': 'image/jpeg', 'sunrise.HEIC': 'image/jpeg', 'tumbleweed.GIF': 'image/gif', 'benin.tif': 'image/jpeg'} [s.extrapics [k].name] !== rs.headers ['content-type']) return clog ('Invalid content-type for piv #' + (k + 1));
             if ({'deer.bmp': 17069, 'sunrise.HEIC': 141830, 'tumbleweed.GIF': 385721, 'benin.tif': 91539} [s.extrapics [k].name] !== rs.body.length) return clog ('Invalid length for thumb 900 #' + (k + 1));
             return true;
          }],
@@ -1344,96 +1344,96 @@ var main = [
       ];
    }),
    ['tag nonexisting #2', 'post', 'tag', {}, function (s) {
-      return {tag: '\tfoo', ids: [s.pics [0].id, 'b']};
+      return {tag: '\tfoo', ids: [s.pivs [0].id, 'b']};
    }, 404],
    ['tag valid #1', 'post', 'tag', {}, function (s) {
-      return {tag: '\tfoo', ids: [s.pics [3].id]};
+      return {tag: '\tfoo', ids: [s.pivs [3].id]};
    }, 200],
-   ['get pics, untagged with invalid recentlyTagged #1', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: {}, sort: 'newest', from: 1, to: 10}}, 400],
-   ['get pics, untagged with invalid recentlyTagged #2', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: '', sort: 'newest', from: 1, to: 10}}, 400],
-   ['get pics, untagged with invalid recentlyTagged #3', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: [1], sort: 'newest', from: 1, to: 10}}, 400],
-   ['get pics, untagged with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: [s.pics [3].id], sort: 'newest', from: 1, to: 10}}, 200, function (s, rq, rs, next) {
+   ['get pivs, untagged with invalid recentlyTagged #1', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: {}, sort: 'newest', from: 1, to: 10}}, 400],
+   ['get pivs, untagged with invalid recentlyTagged #2', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: '', sort: 'newest', from: 1, to: 10}}, 400],
+   ['get pivs, untagged with invalid recentlyTagged #3', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: [1], sort: 'newest', from: 1, to: 10}}, 400],
+   ['get pivs, untagged with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: [s.pivs [3].id], sort: 'newest', from: 1, to: 10}}, 200, function (s, rq, rs, next) {
       if (rs.body.total !== 4) return clog ('Invalid total.');
-      if (rs.body.pics.length !== 4) return clog ('Invalid amount of pics.');
-      if (rs.body.pics [3].id !== s.pics [3].id) return clog ('Recently tagged picture not returned.');
+      if (rs.body.pivs.length !== 4) return clog ('Invalid amount of pivs.');
+      if (rs.body.pivs [3].id !== s.pivs [3].id) return clog ('Recently tagged piv not returned.');
       return true;
    }],
-   ['get pics, untagged with recentlyTagged (non-existent pictures)', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: ['foo', s.pics [3].id, 'bar'], sort: 'newest', from: 1, to: 10}}, 200, function (s, rq, rs, next) {
+   ['get pivs, untagged with recentlyTagged (non-existent pivs)', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: ['foo', s.pivs [3].id, 'bar'], sort: 'newest', from: 1, to: 10}}, 200, function (s, rq, rs, next) {
       if (rs.body.total !== 4) return clog ('Invalid total.');
-      if (rs.body.pics.length !== 4) return clog ('Invalid amount of pics.');
-      if (rs.body.pics [3].id !== s.pics [3].id) return clog ('Recently tagged picture not returned.');
+      if (rs.body.pivs.length !== 4) return clog ('Invalid amount of pivs.');
+      if (rs.body.pivs [3].id !== s.pivs [3].id) return clog ('Recently tagged piv not returned.');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 3, foo: 1})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ['get tagged pic', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [3].tags, ['2014', 'foo'])) return clog ('Invalid tags', rs.body);
+   ['get tagged piv', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (rs.body.pivs [3].tags, ['2014', 'foo'])) return clog ('Invalid tags', rs.body);
       return true;
    }],
    ['tag again', 'post', 'tag', {}, function (s) {
-      return {tag: 'foo', ids: [s.pics [3].id]};
+      return {tag: 'foo', ids: [s.pivs [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 3, foo: 1})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ['get tagged pic', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [3].tags, ['2014', 'foo'])) return clog ('Invalid tags');
+   ['get tagged piv', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (rs.body.pivs [3].tags, ['2014', 'foo'])) return clog ('Invalid tags');
       return true;
    }],
-   ['get tagged pic', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get tagged piv', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), ['2014', 'foo'])) return clog ('Invalid tags.');
       if (rs.body.total !== 1) return clog ('Searching by tag does not work.');
-      if (! eq (rs.body.pics [0].tags, ['2014', 'foo'])) return clog ('Invalid tags');
+      if (! eq (rs.body.pivs [0].tags, ['2014', 'foo'])) return clog ('Invalid tags');
       return true;
    }],
    ['untag #1', 'post', 'tag', {}, function (s) {
-      return {tag: '\tfoo  ', ids: [s.pics [3].id, s.pics [0].id], del: true};
+      return {tag: '\tfoo  ', ids: [s.pivs [3].id, s.pivs [0].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ['get pic after untagging', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [3].tags, ['2014'])) return clog ('Invalid tags');
+   ['get piv after untagging', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (rs.body.pivs [3].tags, ['2014'])) return clog ('Invalid tags');
       return true;
    }],
-   ['get tagged pic after untagging', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get tagged piv after untagging', 'post', 'query', {}, {tags: ['foo'], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
       if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
    }],
-   ['tag two pics #1', 'post', 'tag', {}, function (s) {
-      return {tag: '  bla', ids: [s.pics [0].id, s.pics [3].id]};
+   ['tag two pivs #1', 'post', 'tag', {}, function (s) {
+      return {tag: '  bla', ids: [s.pivs [0].id, s.pivs [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 2, bla: 2})) return clog (rs.body);
       return true;
    }],
-   ['get tagged pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get tagged pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), ['2014', '2017', '2018', 'bla'])) return clog ('Invalid tags.');
-      if (! eq (rs.body.pics [0].tags, ['2018', 'bla'])) return clog ('Invalid tags');
-      if (! eq (rs.body.pics [3].tags, ['2014', 'bla'])) return clog ('Invalid tags');
+      if (! eq (rs.body.pivs [0].tags, ['2018', 'bla'])) return clog ('Invalid tags');
+      if (! eq (rs.body.pivs [3].tags, ['2014', 'bla'])) return clog ('Invalid tags');
       return true;
    }],
-   ['get tagged pics again', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
-      if (! eq (rs.body.pics [0].tags, ['2014', 'bla'])) return clog ('Invalid tags');
-      if (! eq (rs.body.pics [3].tags, ['2018', 'bla'])) return clog ('Invalid tags');
+   ['get tagged pivs again', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 4}, 200, function (s, rq, rs) {
+      if (! eq (rs.body.pivs [0].tags, ['2014', 'bla'])) return clog ('Invalid tags');
+      if (! eq (rs.body.pivs [3].tags, ['2018', 'bla'])) return clog ('Invalid tags');
       return true;
    }],
-   ['untag tag two pics with tag they don\'t have', 'post', 'tag', {}, function (s) {
-      return {tag: 'blablabla', ids: [s.pics [0].id, s.pics [3].id], del: true};
+   ['untag tag two pivs with tag they don\'t have', 'post', 'tag', {}, function (s) {
+      return {tag: 'blablabla', ids: [s.pivs [0].id, s.pivs [3].id], del: true};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 2, bla: 2})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ['untag two pics', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla', ids: [s.pics [0].id, s.pics [3].id], del: true};
+   ['untag two pivs', 'post', 'tag', {}, function (s) {
+      return {tag: 'bla', ids: [s.pivs [0].id, s.pivs [3].id], del: true};
    }, 200],
-   ['get tagged pics after untagging', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
+   ['get tagged pivs after untagging', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 4}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
       if (rs.body.total !== 0) return clog ('Searching by tag does not work.');
       return true;
@@ -1442,8 +1442,8 @@ var main = [
       if (! eq (rs.body, {2014: 2, 2017: 1, 2018: 1, all: 4, untagged: 4})) return clog ('Invalid tags', rs.body);
       return true;
    }],
-   ['tag two pics #2', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla   ', ids: [s.pics [0].id, s.pics [3].id]};
+   ['tag two pivs #2', 'post', 'tag', {}, function (s) {
+      return {tag: 'bla   ', ids: [s.pivs [0].id, s.pivs [3].id]};
    }, 200],
    ['invalid delete #1', 'post', 'delete', {}, '', 400],
    ['invalid delete #2', 'post', 'delete', {}, [], 400],
@@ -1451,22 +1451,22 @@ var main = [
    ['invalid delete #4', 'post', 'delete', {}, {ids: [['1']]}, 400],
    ['invalid delete #5', 'post', 'delete', {}, {ids: ['1', 2]}, 400],
    ['empty delete', 'post', 'delete', {}, {ids: []}, 200],
-   ['delete no such picture', 'post', 'delete', {}, {ids: ['foo']}, 404],
-   ['delete tagged picture (repeated)', 'post', 'delete', {}, function (s) {
-      return {ids: [s.pics [3].id, s.pics [3].id]};
+   ['delete nonexisting piv', 'post', 'delete', {}, {ids: ['foo']}, 404],
+   ['delete tagged piv (repeated)', 'post', 'delete', {}, function (s) {
+      return {ids: [s.pivs [3].id, s.pivs [3].id]};
    }, 400],
-   ['delete tagged picture', 'post', 'delete', {}, function (s) {
-      return {ids: [s.pics [3].id]};
+   ['delete tagged piv', 'post', 'delete', {}, function (s) {
+      return {ids: [s.pivs [3].id]};
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
       if (! eq (rs.body, {2014: 1, 2017: 1, 2018: 1, all: 3, untagged: 2, bla: 1})) return clog (rs.body);
       return true;
    }],
-   ['tag another picture', 'post', 'tag', {}, function (s) {
-      return {tag: 'bla', ids: [s.pics [2].id]};
+   ['tag another piv', 'post', 'tag', {}, function (s) {
+      return {tag: 'bla', ids: [s.pivs [2].id]};
    }, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      s.pics = rs.body.pics;
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      s.pivs = rs.body.pivs;
       s.cookie0 = s.headers.cookie;
       return true;
    }],
@@ -1480,7 +1480,7 @@ var main = [
       s.headers.cookie = s.cookie0;
       return true;
    }],
-   ttester ('share pic', 'post', 'share', {}, [
+   ttester ('share piv', 'post', 'share', {}, [
       ['tag',  'string'],
       ['whom', 'string'],
       ['del', ['boolean', 'undefined']],
@@ -1516,52 +1516,52 @@ var main = [
       if (! eq (rs.body, {shm: [[U [0].username.replace (/^\s+/, '').replace (' \t', ''), 'bla']], sho: []})) return clog ('Invalid body', rs.body);
       return true;
    }],
-   ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics.');
-      s.shared = rs.body.pics;
+   ['get pivs as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 2) return clog ('user2 should have two pivs.');
+      s.shared = rs.body.pivs;
       return true;
    }],
-   ['get pics as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+   ['get pivs as user2 with tag', 'post', 'query', {}, {tags: ['bla'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), ['2014', '2018', 'bla'])) return clog ('Invalid tags.');
-      if (rs.body.pics.length !== 2) return clog ('user2 should have two pics with this tag.');
+      if (rs.body.pivs.length !== 2) return clog ('user2 should have two pivs with this tag.');
       return true;
    }],
-   ['get pics as user2 with recentlyTagged ids from other user', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: dale.go (s.pics, function (v) {return v.id}), sort: 'upload', from: 1, to: 10}}, 200, function (s, rq, rs) {
+   ['get pivs as user2 with recentlyTagged ids from other user', 'post', 'query', {}, function (s) {return {tags: ['untagged'], recentlyTagged: dale.go (s.pivs, function (v) {return v.id}), sort: 'upload', from: 1, to: 10}}, 200, function (s, rq, rs) {
       if (! eq (rs.body.tags.sort (), [])) return clog ('Invalid tags.');
-      if (rs.body.pics.length !== 0) return clog ('user2 should have no pics.');
+      if (rs.body.pivs.length !== 0) return clog ('user2 should have no pivs.');
       return true;
    }],
-   ['get shared pic as user2', 'get', function (s) {
-      return 'pic/' + s.shared [0].id;
+   ['get shared piv as user2', 'get', function (s) {
+      return 'piv/' + s.shared [0].id;
    }, {}, '', 200],
-   ['get thumbnail 200 of shared pic as user2', 'get', function (s) {
+   ['get thumbnail 200 of shared piv as user2', 'get', function (s) {
       return 'thumb/200/' + s.shared [0].id;
    }, {}, '', 200],
-   ['get thumbnail 900 of shared pic as user2', 'get', function (s) {
+   ['get thumbnail 900 of shared piv as user2', 'get', function (s) {
       return 'thumb/900/' + s.shared [0].id;
    }, {}, '', 200],
-   ['fail getting nonshared pic as user2', 'get', function (s) {
-      return 'pic/' + s.pics [0].id;
+   ['fail getting nonshared piv as user2', 'get', function (s) {
+      return 'piv/' + s.pivs [0].id;
    }, {}, '', 404],
    ttester ('download', 'post', 'download', {}, [
       ['ids', 'array'],
       [['ids', 0], 'string'],
    ]),
-   ['download shared pics (empty)', 'post', 'download', {}, {ids: []}, 400],
-   ['download shared pics (one picture)', 'post', 'download', {}, function (s) {
+   ['download shared pivs (empty)', 'post', 'download', {}, {ids: []}, 400],
+   ['download shared pivs (one piv)', 'post', 'download', {}, function (s) {
       return {ids: [s.shared [0].id]};
    }, 400],
-   ['download shared pics (two pictures, one lacking permission)', 'post', 'download', {}, function (s) {
-      return {ids: [s.shared [0].id, s.pics [0].id]};
+   ['download shared pivs (two pivs, one lacking permission)', 'post', 'download', {}, function (s) {
+      return {ids: [s.shared [0].id, s.pivs [0].id]};
    }, 404],
-   ['download shared pics as user2', 'post', 'download', {}, function (s) {
+   ['download shared pivs as user2', 'post', 'download', {}, function (s) {
       return {ids: [s.shared [0].id, s.shared [1].id]};
    }, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return log ('Invalid id returned.');
       s.downloadId = rs.body.id;
       return true;
    }],
-   {raw: true, tag: 'download multiple pictures', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
+   {raw: true, tag: 'download multiple pivs', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
       fs.writeFileSync ('download.zip', rs.body);
       a.stop ([
          [k, 'unzip', 'download.zip'],
@@ -1590,20 +1590,20 @@ var main = [
       s.csrf = rs.body.csrf;
       setTimeout (next, 5000);
    }],
-   ['download multiple pictures after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
+   ['download multiple pivs after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
    ['login with valid credentials as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
       s.headers = {cookie: rs.headers ['set-cookie'] [0].split (';') [0]};
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['download own pics', 'post', 'download', {}, function (s) {
+   ['download own pivs', 'post', 'download', {}, function (s) {
       return {ids: [s.shared [0].id, s.shared [1].id]};
    }, 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object' || type (rs.body.id) !== 'string') return log ('Invalid id returned.');
       s.downloadId = rs.body.id;
       return true;
    }],
-   {raw: true, tag: 'download multiple pictures (own)', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
+   {raw: true, tag: 'download multiple pivs (own)', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
       fs.writeFileSync ('download.zip', rs.body);
       a.stop ([
          [k, 'unzip', 'download.zip'],
@@ -1619,10 +1619,10 @@ var main = [
          }
       ], clog);
    }},
-   ['download multiple pictures after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
-   ['tag rotated picture', 'post', 'tag', {}, function (s) {
-      return dale.stopNot (s.pics, undefined, function (pic) {
-         if (pic.name === 'rotate.jpg') return {tag: '\nrotate', ids: [pic.id]};
+   ['download multiple pivs after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
+   ['tag rotated piv', 'post', 'tag', {}, function (s) {
+      return dale.stopNot (s.pivs, undefined, function (piv) {
+         if (piv.name === 'rotate.jpg') return {tag: '\nrotate', ids: [piv.id]};
       });
    }, 200],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
@@ -1634,25 +1634,25 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['get pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 3) return clog ('user2 should have three pics.');
-      s.pics2 = rs.body.pics;
+   ['get pivs as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 3) return clog ('user2 should have three pivs.');
+      s.pivs2 = rs.body.pivs;
       return true;
    }],
-   ['get `rotate` pics as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
+   ['get `rotate` pivs as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 1) return clog ('user2 should have one `rotate` piv.');
       return true;
    }],
    dale.go (dale.times (2, 0), function (k) {
       return [
-         ['get pic #' + (k + 1), 'get', function (s) {
-            return 'pic/' + s.pics2 [k].id;
+         ['get piv #' + (k + 1), 'get', function (s) {
+            return 'piv/' + s.pivs2 [k].id;
          }, {}, '', 200],
          ['get thumb 200 #' + (k + 1), 'get', function (s) {
-            return 'thumb/200/' + s.pics2 [k].id;
+            return 'thumb/200/' + s.pivs2 [k].id;
          }, {}, '', 200],
          ['get thumb 900 #' + (k + 1), 'get', function (s) {
-            return 'thumb/900/' + s.pics2 [k].id;
+            return 'thumb/900/' + s.pivs2 [k].id;
          }, {}, '', 200],
       ];
    }),
@@ -1662,53 +1662,53 @@ var main = [
       s.uid4 = rs.body.id;
       return true;
    }],
-   ['upload lopsided picture as user2 with invalid tags #1', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+   ['upload lopsided piv as user2 with invalid tags #1', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '{}'}
    ]}}, 400],
-   ['upload lopsided picture as user2 with invalid tags #2', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+   ['upload lopsided piv as user2 with invalid tags #2', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '2'}
    ]}}, 400],
-   ['upload lopsided picture as user2 with invalid tags #3', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+   ['upload lopsided piv as user2 with invalid tags #3', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", 1]'}
    ]}}, 400],
-   ['upload lopsided picture as user2 with invalid tags #4', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+   ['upload lopsided piv as user2 with invalid tags #4', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", "all"]'}
    ]}}, 400],
-   ['upload lopsided picture as user2', 'post', 'upload', {}, function (s) {return {multipart: [
-      {type: 'file',  name: 'pic', path: PICS + 'rotate.jpg'},
+   ['upload lopsided piv as user2', 'post', 'upload', {}, function (s) {return {multipart: [
+      {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotate"]'}
    ]}}, 200],
-   ['get all pics as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 3) return clog ('user2 should have three pics.');
-      if (rs.body.total !== 3) return clog ('total not computed properly with repeated pics.');
-      if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
-      s.rotate2 = rs.body.pics [0];
+   ['get all pivs as user2', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 3) return clog ('user2 should have three pivs.');
+      if (rs.body.total !== 3) return clog ('total not computed properly with repeated pivs.');
+      if (rs.body.pivs [0].id === s.pivs2 [0].id) return clog ('user2 should have own piv as priority.');
+      s.rotate2 = rs.body.pivs [0];
       return true;
    }],
-   ['get `rotate` pics as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
-      if (rs.body.total !== 1) return clog ('total not computed properly with repeated pics.');
-      if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
-      s.repeated = rs.body.pics [0].id;
+   ['get `rotate` pivs as user2', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 1) return clog ('user2 should have one `rotate` piv.');
+      if (rs.body.total !== 1) return clog ('total not computed properly with repeated pivs.');
+      if (rs.body.pivs [0].id === s.pivs2 [0].id) return clog ('user2 should have own piv as priority.');
+      s.repeated = rs.body.pivs [0].id;
       return true;
    }],
    ['share rotate tag with user1', 'post', 'share', {}, {tag: 'rotate', whom: U [0].username.replace (/^\s+/, '').replace (' \t', '')}, 200],
-   ['get `rotate` pics as user2 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user2 should have one `rotate` pic.');
-      if (rs.body.pics [0].id === s.pics2 [0].id) return clog ('user2 should have own picture as priority.');
+   ['get `rotate` pivs as user2 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 1) return clog ('user2 should have one `rotate` piv.');
+      if (rs.body.pivs [0].id === s.pivs2 [0].id) return clog ('user2 should have own piv as priority.');
       return true;
    }],
    ['login as user1', 'post', 'auth/login', {}, U [0], 200, function (s, rq, rs) {
@@ -1716,13 +1716,13 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['get `rotate` pics as user1 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user1 should have one `rotate` pic.');
-      if (rs.body.pics [0].id !== s.pics2 [0].id) return clog ('user1 should have own picture as priority.');
+   ['get `rotate` pivs as user1 after sharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 1) return clog ('user1 should have one `rotate` piv.');
+      if (rs.body.pivs [0].id !== s.pivs2 [0].id) return clog ('user1 should have own piv as priority.');
       return true;
    }],
-   ['get all pics as user1 after sharing', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 3) return clog ('user1 should have one `rotate` pic.');
+   ['get all pivs as user1 after sharing', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 3) return clog ('user1 should have one `rotate` piv.');
       return true;
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
@@ -1736,9 +1736,9 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['get `rotate` pics as user1 after unsharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics.length !== 1) return clog ('user1 should have one `rotate` pic.');
-      if (rs.body.pics [0].id !== s.pics2 [0].id) return clog ('user1 should have own picture after unsharing.');
+   ['get `rotate` pivs as user1 after unsharing', 'post', 'query', {}, {tags: ['rotate'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.pivs.length !== 1) return clog ('user1 should have one `rotate` piv.');
+      if (rs.body.pivs [0].id !== s.pivs2 [0].id) return clog ('user1 should have own piv after unsharing.');
       return true;
    }],
    ['login as user2', 'post', 'auth/login', {}, U [1], 200, function (s, rq, rs) {
@@ -1746,7 +1746,7 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['delete pic as user2', 'post', 'delete', {}, function (s) {
+   ['delete piv as user2', 'post', 'delete', {}, function (s) {
       return {ids: [s.rotate2.id]};
    }, 200],
    ['delete account', 'post', 'auth/delete', {}, {}, 200],
@@ -1755,11 +1755,11 @@ var main = [
       s.csrf = rs.body.csrf;
       return s.headers.cookie !== undefined;
    }],
-   ['delete multiple pics', 'post', 'delete', {}, function (s) {
-      return {ids: [s.pics [0].id, s.pics [1].id, s.pics [2].id]};
+   ['delete multiple pivs', 'post', 'delete', {}, function (s) {
+      return {ids: [s.pivs [0].id, s.pivs [1].id, s.pivs [2].id]};
    }, 200],
-   ['get pics', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.total !== 0) return clog ('Some pictures were not deleted.');
+   ['get pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
+      if (rs.body.total !== 0) return clog ('Some pivs were not deleted.');
       return true;
    }],
    ['get tags', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
@@ -1772,7 +1772,7 @@ var main = [
       var format = require ('path').extname (vid).replace ('.', '');
       return [
          ['upload ' + format, 'post', 'upload', {}, function (s) {return {multipart: [
-            {type: 'file',  name: 'pic', path: PICS + vid},
+            {type: 'file',  name: 'piv', path: PIVS + vid},
             {type: 'field', name: 'id', value: s.uid3},
             {type: 'field',  name: 'lastModified', value: Date.now ()}
          ]}}, 200, function (s, rq, rs) {
@@ -1782,14 +1782,14 @@ var main = [
             return true;
          }],
          ['get ' + format, 'get', function (s) {
-            return 'pic/' + s.nonmp4 [k].id + '?original=1';
+            return 'piv/' + s.nonmp4 [k].id + '?original=1';
          }, {}, '', 200, function (s, rq, rs) {
             var contentType = ['video/quicktime', 'video/3gpp', 'video/x-msvideo'] [k];
             if (rs.headers ['content-type'] !== contentType) return clog ('Invalid content type: ' + rs.headers ['content-type']);
             return true;
          }],
          ['get mp4 for ' + format + ' while conversion is ongoing', 'get', function (s) {
-            return 'pic/' + s.nonmp4 [k].id;
+            return 'piv/' + s.nonmp4 [k].id;
          }, {}, '', 404, function (s, rq, rs) {
             if (rs.body !== 'pending') return clog ('Invalid body ' + rs.body);
             return true;
@@ -1808,14 +1808,14 @@ var main = [
       ];
    }),
    ['get mp4 for 3gp after conversion is done', 'get', function (s) {
-      return 'pic/' + s.nonmp4 [1].id;
+      return 'piv/' + s.nonmp4 [1].id;
    }, {}, '', 200, function (s, rq, rs) {
       if (rs.headers ['content-type'] !== 'video/mp4') return clog ('Invalid content type: ' + rs.headers ['content-type']);
       return true;
    }],
    ['get non-mp4 videos', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
-      if (rs.body.pics [0].name !== 'boat.3gp') return clog ('Invalid name field: ' + rs.body [0].name);
-      if (rs.body.pics [0].vid !== true) return clog ('Invalid vid field: ' + rs.body [0].vid);
+      if (rs.body.pivs [0].name !== 'boat.3gp') return clog ('Invalid name field: ' + rs.body [0].name);
+      if (rs.body.pivs [0].vid !== true) return clog ('Invalid vid field: ' + rs.body [0].vid);
       return true;
    }],
    ['delete 3gp', 'post', 'delete', {}, function (s) {
@@ -1848,7 +1848,7 @@ var main = [
    ['get stats after test', 'get', 'admin/stats', {}, '', 200, function (s, rq, rs) {
       if (type (rs.body) !== 'object') return clog ('Invalid body', rs.body);
       if (rs.body.users !== 1) return clog ('Invalid users');
-      if (rs.body.pics !== 0)  return clog ('Invalid pics');
+      if (rs.body.pivs !== 0)  return clog ('Invalid pivs');
       if (rs.body.bytes !== 0) return clog ('Invalid bytes');
       return true;
    }],

@@ -214,7 +214,7 @@ var s3 = new (require ('aws-sdk')).S3 ({
    apiVersion:  '2006-03-01',
    sslEnabled:  true,
    credentials: {accessKeyId: SECRET.s3.accessKeyId, secretAccessKey: SECRET.s3.secretAccessKey},
-   params:      {Bucket: SECRET.s3.pic.bucketName},
+   params:      {Bucket: SECRET.s3.piv.bucketName},
    region:      SECRET.s3.region
 });
 
@@ -328,21 +328,21 @@ H.unlink = function (s, path, checkExistence) {
    ]);
 }
 
-H.thumbPic = function (s, invalidHandler, path, thumbSize, pic, alwaysMakeThumb, heic_path) {
-   var format = pic.format === 'png' ? '.png' : '.jpeg';
-   var multiframeFormat = ['gif', 'tiff'].indexOf (pic.format) !== -1;
+H.thumbPiv = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
+   var format = piv.format === 'png' ? '.png' : '.jpeg';
+   var multiframeFormat = ['gif', 'tiff'].indexOf (piv.format) !== -1;
    a.seq (s, [
       [function (s) {
-         var picMax = Math.max (s.size.w, s.size.h);
-         if (! alwaysMakeThumb && picMax <= thumbSize) {
-            if (! pic.deg) return s.next (true);
-            // if picture has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
-            // If picture is smaller than 200px and we're deciding whether to do the 900px thumb, we skip it since we don't need it.
-            if (picMax < 200 && thumbSize === 900) return s.next (true);
+         var pivMax = Math.max (s.size.w, s.size.h);
+         if (! alwaysMakeThumb && pivMax <= thumbSize) {
+            if (! piv.deg) return s.next (true);
+            // if piv has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
+            // If piv is smaller than 200px and we're deciding whether to do the 900px thumb, we skip it since we don't need it.
+            if (pivMax < 200 && thumbSize === 900) return s.next (true);
          }
          s ['t' + thumbSize] = uuid ();
-         // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the picture is smaller than the desired thumbnail size.
-         var perc = Math.min (Math.round (thumbSize / picMax * 100), 100);
+         // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the piv is smaller than the desired thumbnail size.
+         var perc = Math.min (Math.round (thumbSize / pivMax * 100), 100);
          a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
       }],
       function (s) {
@@ -562,53 +562,53 @@ H.s3exec = function () {
 
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
-H.deletePic = function (s, id, username) {
+H.deletePiv = function (s, id, username) {
    a.stop (s, [
       [function (s) {
          var multi = redis.multi ();
-         multi.hgetall  ('pic:'  + id);
-         multi.smembers ('pict:' + id);
+         multi.hgetall  ('piv:'  + id);
+         multi.smembers ('pivt:' + id);
          mexec (s, multi);
       }],
       function (s) {
-         s.pic  = s.last [0];
+         s.piv  = s.last [0];
          s.tags = s.last [1];
-         if (! s.pic || username !== s.pic.owner) return s.next (0, 'nf');
+         if (! s.piv || username !== s.piv.owner) return s.next (0, 'nf');
 
          H.s3queue (s, 'del', username, Path.join (H.hash (username), id));
       },
       function (s) {
          var thumbs = [];
-         if (s.pic.t200) thumbs.push (s.pic.t200);
-         if (s.pic.t900) thumbs.push (s.pic.t900);
+         if (s.piv.t200) thumbs.push (s.piv.t200);
+         if (s.piv.t900) thumbs.push (s.piv.t900);
          a.fork (s, thumbs, function (v) {
             return [H.unlink, Path.join (CONFIG.basepath, H.hash (username), v)];
          });
       },
       [H.unlink, Path.join (CONFIG.basepath, H.hash (username), id)],
       function (s) {
-         if (! s.pic.vid || s.pic.vid === '1' || s.pic.vid.match (/^pending/) || s.pic.vid.match (/^error/)) return s.next ();
-         H.unlink (s, Path.join (CONFIG.basepath, H.hash (username), s.pic.vid));
+         if (! s.piv.vid || s.piv.vid === '1' || s.piv.vid.match (/^pending/) || s.piv.vid.match (/^error/)) return s.next ();
+         H.unlink (s, Path.join (CONFIG.basepath, H.hash (username), s.piv.vid));
       },
       function (s) {
          var multi = redis.multi ();
 
-         multi.del  ('pic:'  + s.pic.id);
-         multi.del  ('pict:' + s.pic.id);
-         if (s.pic.t200) multi.del ('thu:' + s.pic.t200);
-         if (s.pic.t900) multi.del ('thu:' + s.pic.t900);
-         multi.hdel ('hash:'        + s.pic.owner, s.pic.hash);
-         multi.hdel ('hashorig:'    + s.pic.owner, s.pic.originalHash);
-         multi.sadd ('hashdel:'     + s.pic.owner, s.pic.hash);
-         multi.sadd ('hashorigdel:' + s.pic.owner, s.pic.originalHash);
-         if (s.pic.providerHash) {
-            var providerHash = s.pic.providerHash.split (':');
-            multi.srem ('hash:'    + s.pic.owner + ':' + providerHash [0], providerHash [1]);
-            multi.sadd ('hashdel:' + s.pic.owner + ':' + providerHash [0], providerHash [1]);
+         multi.del  ('piv:'  + s.piv.id);
+         multi.del  ('pivt:' + s.piv.id);
+         if (s.piv.t200) multi.del ('thu:' + s.piv.t200);
+         if (s.piv.t900) multi.del ('thu:' + s.piv.t900);
+         multi.hdel ('hash:'        + s.piv.owner, s.piv.hash);
+         multi.hdel ('hashorig:'    + s.piv.owner, s.piv.originalHash);
+         multi.sadd ('hashdel:'     + s.piv.owner, s.piv.hash);
+         multi.sadd ('hashorigdel:' + s.piv.owner, s.piv.originalHash);
+         if (s.piv.providerHash) {
+            var providerHash = s.piv.providerHash.split (':');
+            multi.srem ('hash:'    + s.piv.owner + ':' + providerHash [0], providerHash [1]);
+            multi.sadd ('hashdel:' + s.piv.owner + ':' + providerHash [0], providerHash [1]);
          }
 
          dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
-            multi.srem ('tag:' + s.pic.owner + ':' + tag, s.pic.id);
+            multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
 
          mexec (s, multi);
@@ -616,26 +616,26 @@ H.deletePic = function (s, id, username) {
       function (s) {
          H.stat.w (s, [
             // The minus sign coerces the strings into numbers.
-            ['stock', 'byfs',             - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0) - (s.pic.bymp4 || 0)],
-            ['stock', 'byfs-' + username, - s.pic.byfs - (s.pic.by200 || 0) - (s.pic.by900 || 0) - (s.pic.bymp4 || 0)],
-            ['stock', s.pic.vid ? 'vids' : 'pics', -1],
-            ['stock', 'format-' + s.pic.format, -1],
-            s.pic.by200 ? ['stock', 't200', -1] : [],
-            s.pic.by900 ? ['stock', 't900', -1] : [],
+            ['stock', 'byfs',             - s.piv.byfs - (s.piv.by200 || 0) - (s.piv.by900 || 0) - (s.piv.bymp4 || 0)],
+            ['stock', 'byfs-' + username, - s.piv.byfs - (s.piv.by200 || 0) - (s.piv.by900 || 0) - (s.piv.bymp4 || 0)],
+            ['stock', s.piv.vid ? 'vids' : 'pics', -1],
+            ['stock', 'format-' + s.piv.format, -1],
+            s.piv.by200 ? ['stock', 't200', -1] : [],
+            s.piv.by900 ? ['stock', 't900', -1] : [],
          ]);
       }
    ]);
 }
 
-H.hasAccess = function (S, username, picId) {
+H.hasAccess = function (S, username, pivId) {
    a.stop ([
-      [a.set, 'pic', [Redis, 'hgetall', 'pic:' + picId], true],
+      [a.set, 'piv', [Redis, 'hgetall', 'piv:' + pivId], true],
       function (s) {
          if (! s.last)             return S.next (false);
-         S.pic = s.pic;
+         S.piv = s.piv;
          s.owner = s.last.owner;
-         if (s.owner === username) return S.next (s.pic);
-         Redis (s, 'smembers', 'pict:' + picId);
+         if (s.owner === username) return S.next (s.piv);
+         Redis (s, 'smembers', 'pivt:' + pivId);
       },
       function (s) {
          if (s.last.length === 0) return S.next (false);
@@ -646,7 +646,7 @@ H.hasAccess = function (S, username, picId) {
          mexec (s, multi);
       },
       function (s) {
-         S.next (dale.stop (s.last, true, function (v) {return !! v}) ? s.pic : false);
+         S.next (dale.stop (s.last, true, function (v) {return !! v}) ? s.piv : false);
       }
    ], function (s, error) {
       S.next (undefined, error);
@@ -741,7 +741,7 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.ok) upload.ok = 0;
                upload.ok++;
-               if (! upload.lastPic) upload.lastPic = {id: log.fileId, deg: log.deg};
+               if (! upload.lastPiv) upload.lastPiv = {id: log.fileId, deg: log.deg};
             }
             else if (log.type === 'alreadyUploaded') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
@@ -832,11 +832,11 @@ H.parseDate = function (date) {
    return -1;
  }
 
-H.updateDates = function (s, repeatedOrAlreadyUploaded, pic, name, lastModified, newDates) {
-   var date = parseInt (pic.date), dates = JSON.parse (pic.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
+H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified, newDates) {
+   var date = parseInt (piv.date), dates = JSON.parse (piv.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
    var key = repeatedOrAlreadyUploaded + ':' + Date.now ();
 
-   // newDates are the dates of the repeated or alreadyUploaded picture.
+   // newDates are the dates of the repeated or alreadyUploaded piv.
    newDates = dale.obj (newDates, function (v, k) {
       return [key + ':' + k, v];
    });
@@ -858,18 +858,18 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, pic, name, lastModified,
 
    var multi = redis.multi ();
    // If there are new dates with different values than the ones already held, add them to the dates object.
-   if (dale.keys (validOriginalDates).length) multi.hset ('pic:' + pic.id, 'dates', JSON.stringify (dates));
+   if (dale.keys (validOriginalDates).length) multi.hset ('piv:' + piv.id, 'dates', JSON.stringify (dates));
 
    // If Date/Time Original, keep the date and move on.
-   if (pic.dateSource === 'Date/Time Original') return mexec (s, multi);
+   if (piv.dateSource === 'Date/Time Original') return mexec (s, multi);
 
    if (minDate [1] < date) {
       // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.on the same date and minDate is a 00, ignore, otherwise, set it.
       if (minDate [1] !== (date - date % (1000 * 60 * 60 * 24))) {
-         pic.date = minDate [1];
-         pic.dateSource = minDate [0];
-         multi.hset ('pic:' + pic.id, 'date',       pic.date);
-         multi.hset ('pic:' + pic.id, 'dateSource', pic.dateSource);
+         piv.date = minDate [1];
+         piv.dateSource = minDate [0];
+         multi.hset ('piv:' + piv.id, 'date',       piv.date);
+         multi.hset ('piv:' + piv.id, 'dateSource', piv.dateSource);
       }
    }
    mexec (s, multi);
@@ -878,11 +878,11 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, pic, name, lastModified,
 H.dateFromName = function (name) {
    var date;
    if (name.match (/(19|20)\d{6}/)) {
-      date = H.parseDate ([dateFromName.slice (0, 4), dateFromName.slice (4, 6), dateFromName.slice (6)].join ('-'));
+      date = H.parseDate ([name.slice (0, 4), name.slice (4, 6), name.slice (6)].join ('-'));
       if (date !== -1) return date;
    }
    if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
-      date = H.parseDate ([dateFromName.slice (0, 4), dateFromName.slice (5, 7), dateFromName.slice (8)].join ('-'));
+      date = H.parseDate ([name.slice (0, 4), name.slice (5, 7), name.slice (8)].join ('-'));
       if (date !== -1) return date;
    }
    return -1;
@@ -1524,8 +1524,8 @@ var routes = [
                [a.set, 'data', [mexec, multi]],
                [a.make (giz.destroy), user.username],
                function (s) {
-                  a.fork (s, s.data [0], function (pic) {
-                     return [H.deletePic, pic, user.username];
+                  a.fork (s, s.data [0], function (piv) {
+                     return [H.deletePiv, piv, user.username];
                   }, {max: os.cpus ().length});
                },
                [H.stat.w, 'stock', 'users', -1],
@@ -1539,7 +1539,7 @@ var routes = [
                   });
                   multi.del ('tags:'        + user.username);
 
-                  // hash and hashorig entries are deleted incrementally when deleting each picture.
+                  // hash and hashorig entries are deleted incrementally when deleting each piv.
                   multi.del ('hashdel:'     + user.username);
                   multi.del ('hashorigdel:' + user.username);
                   dale.go ([':g', ':d'], function (v) {
@@ -1628,30 +1628,30 @@ var routes = [
       ]);
    }],
 
-   // *** DOWNLOAD PICS ***
+   // *** DOWNLOAD PIVS ***
 
-   ['get', 'pic/:id', function (rq, rs) {
+   ['get', 'piv/:id', function (rq, rs) {
       astop (rs, [
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
-         [Redis, 'hincrby', 'pic:' + rq.data.params.id, 'xp', 1],
+         [Redis, 'hincrby', 'piv:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
-            var etag = cicek.etag (s.pic.id, true), headers = {etag: etag, 'content-type': mime.getType (s.pic.format.split (':') [0])};
+            var etag = cicek.etag (s.piv.id, true), headers = {etag: etag, 'content-type': mime.getType (s.piv.format.split (':') [0])};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
 
             // https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
             if (rq.data.query && rq.data.query.original) {
-               headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.pic.name);
-               headers ['last-modified'] = new Date (JSON.parse (s.pic.dates) ['upload:lastModified']).toUTCString ();
+               headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.piv.name);
+               headers ['last-modified'] = new Date (JSON.parse (s.piv.dates) ['upload:lastModified']).toUTCString ();
             }
-            // If the picture is not a video, or it is a mp4 video, or the original video is required, we serve the file.
-            if (! s.pic.vid || s.pic.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.id), [CONFIG.basepath], headers);
+            // If the piv is not a video, or it is a mp4 video, or the original video is required, we serve the file.
+            if (! s.piv.vid || s.piv.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.id), [CONFIG.basepath], headers);
 
-            if (s.pic.vid.match (/pending/)) return reply (rs, 404, 'pending');
-            if (s.pic.vid.match (/error/))   return reply (rs, 500, 'error');
+            if (s.piv.vid.match (/pending/)) return reply (rs, 404, 'pending');
+            if (s.piv.vid.match (/error/))   return reply (rs, 500, 'error');
             // We serve the mp4 version of the video.
             headers ['content-type'] = mime.getType ('mp4');
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), s.pic.vid), [CONFIG.basepath], headers);
+            cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.vid), [CONFIG.basepath], headers);
          }
       ]);
    }],
@@ -1660,20 +1660,20 @@ var routes = [
       if (['200', '900'].indexOf (rq.data.params.size) === -1) return reply (rs, 400);
       astop (rs, [
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
-         [Redis, 'hincrby', 'pic:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
+         [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
          function (s) {
-            var id = s.pic ['t' + rq.data.params.size] || s.pic.id;
-            var format = s.pic.format === 'png' ? 'png' : 'jpeg';
-            if (rq.data.params.size === '900' && s.pic.format === 'gif') format = 'gif';
+            var id = s.piv ['t' + rq.data.params.size] || s.piv.id;
+            var format = s.piv.format === 'png' ? 'png' : 'jpeg';
+            if (rq.data.params.size === '900' && s.piv.format === 'gif') format = 'gif';
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.getType (format)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
-            cicek.file (rq, rs, Path.join (H.hash (s.pic.owner), id), [CONFIG.basepath], headers);
+            cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), id), [CONFIG.basepath], headers);
          }
       ]);
    }],
 
-   // *** UPLOAD PICTURES ***
+   // *** UPLOAD PIVS ***
 
    ['post', 'metaupload', function (rq, rs) {
 
@@ -1769,30 +1769,30 @@ var routes = [
             'null': [reply, rs, 200, {repeated: false}],
             'else': [
                [function (s) {
-                  Redis (s, 'hgetall', 'pic:' + s.last);
+                  Redis (s, 'hgetall', 'piv:' + s.last);
                }],
                function (s) {
-                  s.pic = s.last;
+                  s.piv = s.last;
 
-                  // We add the tags of this picture to those of the identical picture already existing
+                  // We add the tags of this piv to those of the identical piv already existing
                   var multi = redis.multi ();
 
                   dale.go (b.tags, function (tag) {
-                     multi.sadd ('pict:' + s.pic.id,                     tag);
+                     multi.sadd ('pivt:' + s.piv.id,                     tag);
                      multi.sadd ('tags:' + rq.user.username,             tag);;
-                     multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.pic.id);
+                     multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.piv.id);
                   });
-                  if (b.tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.pic.id);
+                  if (b.tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.piv.id);
                   mexec (s, multi);
                },
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-                  var alreadyUploaded = s.alreadyUploaded = b.filename === s.pic.name && s.upload.listAlreadyUploaded.indexOf (s.pic.id) === -1;
-                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
-                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.pic.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
+                  var alreadyUploaded = s.alreadyUploaded = b.filename === s.piv.name && s.upload.listAlreadyUploaded.indexOf (s.piv.id) === -1;
+                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
+                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
                },
                function (s) {
-                  H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.pic, b.filename, b.lastModified);
+                  H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, b.filename, b.lastModified);
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -1813,7 +1813,7 @@ var routes = [
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
       if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
 
-      if (! eq (dale.keys (rq.data.files), ['pic'])) return reply (rs, 400, {error: 'invalidFile'});
+      if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'invalidFile'});
 
       var tags = teishi.parse (rq.data.fields.tags), invalidTag;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
@@ -1831,18 +1831,18 @@ var routes = [
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
       }
 
-      var path = (rq.data.fields.providerData || {}).path || rq.data.files.pic, lastModified = parseInt (rq.data.fields.lastModified);
-      var hashpath = Path.join (Path.dirname (rq.data.files.pic), Path.basename (rq.data.files.pic).replace (Path.extname (rq.data.files.pic), '') + 'hash');
+      var path = (rq.data.fields.providerData || {}).path || rq.data.files.piv, lastModified = parseInt (rq.data.fields.lastModified);
+      var hashpath = Path.join (Path.dirname (rq.data.files.piv), Path.basename (rq.data.files.piv).replace (Path.extname (rq.data.files.piv), '') + 'hash');
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 
-      if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.pic)) === -1) {
+      if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.piv)) === -1) {
          return astop (rs, [
             [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name}],
             [reply, rs, 400, {error: 'fileFormat', filename: name}]
          ]);
       }
 
-      var pic = {
+      var piv = {
          id:     uuid (),
          owner:  rq.user.username,
          name:   name,
@@ -1851,13 +1851,13 @@ var routes = [
 
       var vidFormats = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/x-msvideo': 'avi', 'video/webm': 'webm', 'video/x-ms-wmv': 'wmv', 'video/x-m4v': 'm4v'};
 
-      if (vidFormats [mime.getType (rq.data.files.pic)]) {
-         var vidFormat = vidFormats [mime.getType (rq.data.files.pic)];
-         // If the format is mp4, we only put a truthy placeholder in pic.vid; otherwise, we create an id to point to the mp4 version of the video.
-         pic.vid = vidFormat === 'mp4' ? 1 : uuid ();
+      if (vidFormats [mime.getType (rq.data.files.piv)]) {
+         var vidFormat = vidFormats [mime.getType (rq.data.files.piv)];
+         // If the format is mp4, we only put a truthy placeholder in piv.vid; otherwise, we create an id to point to the mp4 version of the video.
+         piv.vid = vidFormat === 'mp4' ? 1 : uuid ();
       }
 
-      var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic.id);
+      var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), piv.id);
 
       var perf = [['init', Date.now ()]], perfTrack = function (s, label) {
          perf.push ([label, Date.now ()]);
@@ -1872,7 +1872,7 @@ var routes = [
                ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
                ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
                [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, error: error}],
-               [reply, rs, 400, {error: 'Invalid ' + (pic.vid ? 'video' : 'image'), data: error, filename: name}],
+               [reply, rs, 400, {error: 'Invalid ' + (piv.vid ? 'video' : 'image'), data: error, filename: name}],
             ]);
          }
          // If input is an async sequence, we return another async sequence
@@ -1914,13 +1914,13 @@ var routes = [
          },
          [perfTrack, 'initial'],
          function (s) {
-            a.seq (s, invalidHandler (s, [H.getMetadata, path, pic.vid]));
+            a.seq (s, invalidHandler (s, [H.getMetadata, path, piv.vid]));
          },
          function (s) {
             s.rawMetadata = s.last;
-            s.metadata = s.last [pic.vid ? 'stderr' : 'stdout'];
+            s.metadata = s.last [piv.vid ? 'stderr' : 'stdout'];
             var metadata = s.metadata.split ('\n');
-            if (! pic.vid) {
+            if (! piv.vid) {
                s.size = {};
                var error = dale.stopNot (metadata, undefined, function (line) {
                   if (line.match (/^Warning/)) {
@@ -1940,9 +1940,9 @@ var routes = [
                   if (line.match (/^Orientation/)) return line;
                }) || '';
 
-               if      (rotation.match ('270')) pic.deg = -90;
-               else if (rotation.match ('90'))  pic.deg = 90;
-               else if (rotation.match ('180')) pic.deg = 180;
+               if      (rotation.match ('270')) piv.deg = -90;
+               else if (rotation.match ('90'))  piv.deg = 90;
+               else if (rotation.match ('180')) piv.deg = 180;
 
                s.dates = dale.obj (metadata, function (line) {
                   var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
@@ -1973,7 +1973,7 @@ var routes = [
             s.next ();
          },
          function (s) {
-            a.set (s, 'format', [H.detectFormat, s.rawMetadata, pic.vid ? vidFormat : false]);
+            a.set (s, 'format', [H.detectFormat, s.rawMetadata, piv.vid ? vidFormat : false]);
          },
          function (s) {
             var format = s.format;
@@ -1994,36 +1994,36 @@ var routes = [
          [a.cond, [a.get, Redis, 'hexists', 'hashorig:' + rq.user.username, '@hashorig'], {'1': [
             [a.get, Redis, 'hget', 'hashorig:' + rq.user.username, '@hashorig'],
             function (s) {
-               Redis (s, 'hgetall', 'pic:' + s.last);
+               Redis (s, 'hgetall', 'piv:' + s.last);
             },
             function (s) {
-               s.pic = s.last;
+               s.piv = s.last;
 
-               // We add the tags of this picture to those of the identical picture already existing
+               // We add the tags of this piv to those of the identical piv already existing
                var multi = redis.multi ();
 
                dale.go (tags, function (tag) {
-                  multi.sadd ('pict:' + s.pic.id,                     tag);
+                  multi.sadd ('pivt:' + s.piv.id,                     tag);
                   multi.sadd ('tags:' + rq.user.username,             tag);;
-                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.pic.id);
+                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.piv.id);
                });
-               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.pic.id);
+               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.piv.id);
                mexec (s, multi);
             },
             function (s) {
                // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-               var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.pic.name && s.upload.listAlreadyUploaded.indexOf (s.pic.id) === -1;
-               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
-               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
+               var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.piv.name && s.upload.listAlreadyUploaded.indexOf (s.piv.id) === -1;
+               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
+               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
             },
             function (s) {
-               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.pic, name, lastModified, s.dates);
+               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, name, lastModified, s.dates);
             },
             function (s) {
-               reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.pic.id});
+               reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});
             }
          ]}],
-         pic.vid ? function (s) {
+         piv.vid ? function (s) {
             a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
                // If the error wasn't on the 3gp format, it's an unknown error.
                if (Path.extname (hashpath) !== '.3gp') return invalidHandler (s, error);
@@ -2053,30 +2053,30 @@ var routes = [
          [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hash'], {'1': [
             [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hash'],
             function (s) {
-               Redis (s, 'hgetall', 'pic:' + s.last);
+               Redis (s, 'hgetall', 'piv:' + s.last);
             },
             function (s) {
-               s.pic = s.last;
+               s.piv = s.last;
 
-               // We add the tags of this picture to those of the identical picture already existing
+               // We add the tags of this piv to those of the identical piv already existing
                var multi = redis.multi ();
 
                dale.go (tags, function (tag) {
-                  multi.sadd ('pict:' + s.pic.id,                     tag);
+                  multi.sadd ('pivt:' + s.piv.id,                     tag);
                   multi.sadd ('tags:' + rq.user.username,             tag);;
-                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.pic.id);
+                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.piv.id);
                });
-               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.pic.id);
+               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.piv.id);
                mexec (s, multi);
             },
             function (s) {
-               H.updateDates (s, 'repeated', s.pic, name, lastModified, s.dates);
+               H.updateDates (s, 'repeated', s.piv, name, lastModified, s.dates);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.pic.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: false});
+               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: false});
             },
             function (s) {
-               reply (rs, 409, {error: 'repeated', id: s.pic.id});
+               reply (rs, 409, {error: 'repeated', id: s.piv.id});
             }
          ]}],
          [perfTrack, 'hash'],
@@ -2086,27 +2086,27 @@ var routes = [
          [perfTrack, 'fs'],
          // This function converts non-mp4 videos to mp4.
          function (s) {
-            if (! pic.vid || vidFormat === 'mp4') return s.next ();
-            var id = pic.vid, start = Date.now ();
-            pic.vid = 'pending:' + id;
+            if (! piv.vid || vidFormat === 'mp4') return s.next ();
+            var id = piv.vid, start = Date.now ();
+            piv.vid = 'pending:' + id;
             // Don't wait for conversion process, run it in new astack thread.
             s.next ();
 
             a.stop ([
-               [Redis, 'hset', 'proc:vid', pic.id, Date.now ()],
+               [Redis, 'hset', 'proc:vid', piv.id, Date.now ()],
                // TODO: add queuing to allow a maximum of N simultaneous conversions.
                [k, 'ffmpeg', '-i', newpath, '-vcodec', 'h264', '-acodec', 'mp2', Path.join (Path.dirname (newpath), id + '.mp4')],
                [a.make (fs.rename), Path.join (Path.dirname (newpath), id + '.mp4'), Path.join (Path.dirname (newpath), id)],
                [a.set, 'bymp4', [a.make (fs.stat), Path.join (Path.dirname (newpath), id)]],
-               [Redis, 'exists', 'pic:' + pic.id],
+               [Redis, 'exists', 'piv:' + piv.id],
                function (s) {
                   if (! s.last) return a.stop ([H.unlink, Path.join (Path.dirname (newpath), id), true], function (error) {
                      notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, username: rq.user.username});
                   });
                   s.bymp4 = s.bymp4.size;
                   var multi = redis.multi ();
-                  multi.hmset ('pic:' + pic.id, {vid: id, bymp4: s.bymp4});
-                  multi.hdel ('proc:vid', pic.id);
+                  multi.hmset ('piv:' + piv.id, {vid: id, bymp4: s.bymp4});
+                  multi.hdel ('proc:vid', piv.id);
                   mexec (s, multi);
                },
                function (s) {
@@ -2118,11 +2118,11 @@ var routes = [
                   ]);
                }
             ], function (s, error) {
-               redis.exists ('pic:' + pic.id, function (Error, exists) {
+               redis.exists ('piv:' + piv.id, function (Error, exists) {
                   if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
-                  // If the picture was deleted, ignore the error.
+                  // If the piv was deleted, ignore the error.
                   if (! exists) return;
-                  redis.set ('pic:' + pic.id, 'vid', 'error:' + id, function (Error) {
+                  redis.set ('piv:' + piv.id, 'vid', 'error:' + id, function (Error) {
                      if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
                      notify (s, {priority: 'critical', type: 'video conversion to mp4 error', error: error, username: rq.user.username});
                   });
@@ -2130,29 +2130,29 @@ var routes = [
             });
          },
          function (s) {
-            pic.format = s.format;
-            if (pic.format !== 'heic') return s.next ();
-            s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), pic.uuid + '.jpeg');
+            piv.format = s.format;
+            if (piv.format !== 'heic') return s.next ();
+            s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), piv.uuid + '.jpeg');
             a.seq (s, invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]));
          },
          function (s) {
-            if (pic.vid) return H.thumbVid (s, invalidHandler, newpath);
+            if (piv.vid) return H.thumbVid (s, invalidHandler, newpath);
             var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
             // If gif, only make small thumbnail.
-            if (pic.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, pic, true], [perfTrack, 'resize200']]);
+            if (piv.format === 'gif') a.seq (s, [[H.thumbPiv, invalidHandler, newpath, 200, piv, true], [perfTrack, 'resize200']]);
             else a.seq (s, [
-               [H.thumbPic, invalidHandler, newpath, 200, pic, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPiv, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize200'],
-               [H.thumbPic, invalidHandler, newpath, 900, pic, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPiv, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize900']
             ]);
          },
          function (s) {
-            if (pic.format !== 'heic') return s.next ();
+            if (piv.format !== 'heic') return s.next ();
             H.unlink (s, s.heic_jpg);
          },
-         // We store only the original pictures in S3, not the thumbnails. We do this only after the picture/video has been considered valid.
-         [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), pic.id), newpath],
+         // We store only the original pivs in S3, not the thumbnails. We do this only after the piv has been considered valid.
+         [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), piv.id), newpath],
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
          function (s) {
@@ -2162,27 +2162,27 @@ var routes = [
          function (s) {
             s.geotags = s.last;
             if (s.geotags.length) {
-               pic.loc = JSON.stringify ([s.last [0], s.last [1]]);
+               piv.loc = JSON.stringify ([s.last [0], s.last [1]]);
                s.geotags = s.geotags.slice (2);
             }
 
             var multi = redis.multi ();
 
-            pic.dimw         = s.size.w;
-            pic.dimh         = s.size.h;
-            pic.byfs         = s.byfs.size;
-            pic.hash         = s.hash;
-            pic.originalHash = s.hashorig;
+            piv.dimw         = s.size.w;
+            piv.dimh         = s.size.h;
+            piv.byfs         = s.byfs.size;
+            piv.hash         = s.hash;
+            piv.originalHash = s.hashorig;
 
             s.dates ['upload:lastModified'] = lastModified;
             var dateFromName = H.dateFromName (name);
             if (dateFromName !== -1) s.dates ['upload:fromName'] = dateFromName;
 
-            pic.dates = JSON.stringify (s.dates);
+            piv.dates = JSON.stringify (s.dates);
 
             // All dates are considered to be UTC, unless they explicitly specify a timezone.
             // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
-            // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the picture in the filesystem when it is uploaded.
+            // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
 
             var validDates = dale.obj (s.dates, function (date, key) {
                var parsed = H.parseDate (date);
@@ -2191,22 +2191,22 @@ var routes = [
 
             // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
             if (validDates ['Date/Time Original']) {
-               pic.date = validDates ['Date/Time Original'];
-               pic.dateSource = 'Date/Time Original';
+               piv.date = validDates ['Date/Time Original'];
+               piv.dateSource = 'Date/Time Original';
             }
             // Otherwise, of all the valid dates (any date we can parse and is on or after the Unix epoch), we will set the oldest one.
             else {
                dale.go (validDates, function (date, key) {
-                  if (pic.date && pic.date <= date) return;
-                  pic.date = date;
-                  pic.dateSource = key;
+                  if (piv.date && piv.date <= date) return;
+                  piv.date = date;
+                  piv.dateSource = key;
                });
             }
             // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the earliest one of them.
-            if (pic.dateSource === 'upload:fromName') {
+            if (piv.dateSource === 'upload:fromName') {
                var fromNameAdjusted;
                dale.go (validDates, function (date, key) {
-                  if (date - pic.date < 1000 * 60 * 60 * 24) {
+                  if (date - piv.date < 1000 * 60 * 60 * 24) {
                      if (! fromNameAdjusted) fromNameAdjusted = [key, date];
                      else {
                         if (date < fromNameAdjusted [1]) fromNameAdjusted = [key, date];
@@ -2214,64 +2214,64 @@ var routes = [
                   }
                });
                if (fromNameAdjusted) {
-                  pic.dateSource = fromNameAdjusted [0];
-                  pic.date       = fromNameAdjusted [1];
+                  piv.dateSource = fromNameAdjusted [0];
+                  piv.date       = fromNameAdjusted [1];
                }
             }
 
             // If date is earlier than 1990, report it but carry on.
-            if (pic.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in picture', user: rq.user.username, dates: s.dates, dateSource: pic.dateSource, filename: name});
+            if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: s.dates, dateSource: piv.dateSource, filename: name});
 
-            if (s.t200) pic.t200  = s.t200;
-            if (s.t900) pic.t900  = s.t900;
-            if (s.t200) pic.by200 = s.t200size;
-            if (s.t900) pic.by900 = s.t900size;
-            if (s.t200) multi.set ('thu:' + pic.t200, pic.id);
-            if (s.t900) multi.set ('thu:' + pic.t900, pic.id);
+            if (s.t200) piv.t200  = s.t200;
+            if (s.t900) piv.t900  = s.t900;
+            if (s.t200) piv.by200 = s.t200size;
+            if (s.t900) piv.by900 = s.t900size;
+            if (s.t200) multi.set ('thu:' + piv.t200, piv.id);
+            if (s.t900) multi.set ('thu:' + piv.t900, piv.id);
 
-            multi.hset ('hash:'     + rq.user.username, pic.hash,         pic.id);
-            multi.hset ('hashorig:' + rq.user.username, pic.originalHash, pic.id);
-            multi.srem ('hashdel:'     + rq.user.username, pic.hash);
-            multi.srem ('hashdelorig:' + rq.user.username, pic.originalHash);
+            multi.hset ('hash:'     + rq.user.username, piv.hash,         piv.id);
+            multi.hset ('hashorig:' + rq.user.username, piv.originalHash, piv.id);
+            multi.srem ('hashdel:'     + rq.user.username, piv.hash);
+            multi.srem ('hashdelorig:' + rq.user.username, piv.originalHash);
 
             if (rq.data.fields.providerData) {
                var providerKey = {google: 'g', dropbox: 'd'} [rq.data.fields.providerData.provider];
                var providerHash = H.hash (rq.data.fields.providerData.id + ':' + rq.data.fields.providerData.modifiedTime);
                multi.sadd ('hash:'    + rq.user.username + ':' + providerKey, providerHash);
                multi.srem ('hashdel:' + rq.user.username + ':' + providerKey, providerHash);
-               pic.providerHash = providerKey + ':' + providerHash;
+               piv.providerHash = providerKey + ':' + providerHash;
             }
-            multi.sadd ('tag:' + rq.user.username + ':all', pic.id);
+            multi.sadd ('tag:' + rq.user.username + ':all', piv.id);
 
-            dale.go (tags.concat (new Date (pic.date).getUTCFullYear ()).concat (s.geotags), function (tag) {
-               multi.sadd ('pict:' + pic.id,                       tag);
+            dale.go (tags.concat (new Date (piv.date).getUTCFullYear ()).concat (s.geotags), function (tag) {
+               multi.sadd ('pivt:' + piv.id,                       tag);
                multi.sadd ('tags:' + rq.user.username,             tag);;
-               multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic.id);
+               multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
 
-            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', pic.id);
+            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', piv.id);
 
-            multi.hmset ('pic:' + pic.id, pic);
+            multi.hmset ('piv:' + piv.id, piv);
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {ev: 'upload', type: 'ok', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: pic.id, tags: tags.length ? tags : undefined, deg: pic.deg});
+            H.log (s, rq.user.username, {ev: 'upload', type: 'ok', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: piv.id, tags: tags.length ? tags : undefined, deg: piv.deg});
          },
          [perfTrack, 'db'],
          function (s) {
             H.stat.w (s, [
-               ['stock', 'byfs',                     pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
-               ['stock', 'byfs-' + rq.user.username, pic.byfs + (pic.by200 || 0) + (pic.by900 || 0)],
-               ['stock', pic.vid ? 'vids' : 'pics', 1],
-               ['stock', 'format-' + pic.format, 1],
-               pic.by200 ? ['stock', 't200', 1] : [],
-               pic.by900 ? ['stock', 't900', 1] : [],
+               ['stock', 'byfs',                     piv.byfs + (piv.by200 || 0) + (piv.by900 || 0)],
+               ['stock', 'byfs-' + rq.user.username, piv.byfs + (piv.by200 || 0) + (piv.by900 || 0)],
+               ['stock', piv.vid ? 'vids' : 'pics', 1],
+               ['stock', 'format-' + piv.format, 1],
+               piv.by200 ? ['stock', 't200', 1] : [],
+               piv.by900 ? ['stock', 't900', 1] : [],
             ].concat (dale.fil (perf, undefined, function (item, k) {
                if (k > 0) return ['flow', 'ms-upload-' + item [0], item [1] - perf [k - 1] [1]];
             })));
          },
          function (s) {
-            reply (rs, 200, {id: pic.id, deg: pic.deg});
+            reply (rs, 200, {id: piv.id, deg: piv.deg});
          }
       ], function (s, error) {
          H.log (s, rq.user.username, {ev: 'upload', type: 'error', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, error: error});
@@ -2279,7 +2279,7 @@ var routes = [
       });
    }],
 
-   // *** DELETE PICS ***
+   // *** DELETE PIVS ***
 
    ['post', 'delete', function (rq, rs) {
       var b = rq.body;
@@ -2296,7 +2296,7 @@ var routes = [
 
       a.stop ([
          [a.fork, b.ids, function (id) {
-            return [H.deletePic, id, rq.user.username];
+            return [H.deletePiv, id, rq.user.username];
          }, {max: os.cpus ().length}],
          [H.log, rq.user.username, {ev: 'delete', ids: b.ids}],
          [reply, rs, 200],
@@ -2320,7 +2320,7 @@ var routes = [
       ])) return;
 
       var multi = redis.multi (), seen = dale.obj (b.ids, function (id) {
-         multi.hgetall ('pic:' + id);
+         multi.hgetall ('piv:' + id);
          return [id, true];
       });
 
@@ -2331,15 +2331,15 @@ var routes = [
          function (s) {
             var multi = redis.multi ();
 
-            if (dale.stopNot (s.last, undefined, function (pic) {
-               if (pic === null || pic.owner !== rq.user.username) {
+            if (dale.stopNot (s.last, undefined, function (piv) {
+               if (piv === null || piv.owner !== rq.user.username) {
                   reply (rs, 404);
                   return true;
                }
                // We ignore rotation of videos
-               if (pic.vid) return;
+               if (piv.vid) return;
 
-               var deg = parseInt (pic.deg) || 0;
+               var deg = parseInt (piv.deg) || 0;
                if (deg === 0) deg = b.deg;
                else if (deg === -90) {
                   if (b.deg === -90) deg = 180;
@@ -2357,8 +2357,8 @@ var routes = [
                   if (b.deg === 180) deg = 0;
                }
 
-               if (deg) multi.hset ('pic:' + pic.id, 'deg', deg);
-               else     multi.hdel ('pic:' + pic.id, 'deg');
+               if (deg) multi.hset ('piv:' + piv.id, 'deg', deg);
+               else     multi.hdel ('piv:' + piv.id, 'deg');
             })) return;
 
             mexec (s, multi);
@@ -2389,8 +2389,8 @@ var routes = [
       var multi = redis.multi (), seen = {};
       dale.go (b.ids, function (id) {
          seen [id] = true;
-         multi.hget     ('pic:'  + id, 'owner');
-         multi.smembers ('pict:' + id);
+         multi.hget     ('piv:'  + id, 'owner');
+         multi.smembers ('pivt:' + id);
       });
 
       if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
@@ -2415,14 +2415,14 @@ var routes = [
 
                if (b.del) {
                   if (s.last [k + 1].indexOf (b.tag) === -1) return;
-                  multi.srem ('pict:' + id, b.tag);
+                  multi.srem ('pivt:' + id, b.tag);
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
                   if (extags === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
                }
 
                else {
                   if (s.last [k + 1].indexOf (b.tag) !== -1) return;
-                  multi.sadd ('pict:' + id, b.tag);
+                  multi.sadd ('pivt:' + id, b.tag);
                   multi.sadd ('tags:' + rq.user.username, b.tag);
                   multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
                   multi.srem ('tag:'  + rq.user.username + ':untagged', id);
@@ -2533,74 +2533,74 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            s.pics = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
+            s.pivs = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
             var multi = redis.multi (), ids = {};
-            dale.go (s.pics, function (id) {
-               multi.hgetall ('pic:' + id);
+            dale.go (s.pivs, function (id) {
+               multi.hgetall ('piv:' + id);
                if (b.recentlyTagged) ids [id] = true;
             });
             s.recentlyTagged = dale.fil (b.recentlyTagged, undefined, function (id) {
                if (ids [id]) return;
-               multi.hgetall ('pic:' + id);
+               multi.hgetall ('piv:' + id);
                return id;
             });
             mexec (s, multi);
          },
          function (s) {
             var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
-               if (! s.last [s.pics.length + k] || s.last [s.pics.length + k].owner !== rq.user.username) return;
-               return s.last [s.pics.length + k];
+               if (! s.last [s.pivs.length + k] || s.last [s.pivs.length + k].owner !== rq.user.username) return;
+               return s.last [s.pivs.length + k];
             });
 
-            s.pics = dale.fil (s.last.slice (0, s.pics.length).concat (recentlyTagged), null, function (pic) {return pic});
+            s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
 
-            if (b.idsOnly) return reply (rs, 200, dale.go (s.pics, function (pic) {return pic.id}));
+            if (b.idsOnly) return reply (rs, 200, dale.go (s.pivs, function (piv) {return piv.id}));
 
-            if (s.pics.length === 0) return reply (rs, 200, {total: 0, pics: [], tags: []});
+            if (s.pivs.length === 0) return reply (rs, 200, {total: 0, pivs: [], tags: []});
 
-            var output = {pics: []};
+            var output = {pivs: []};
 
             // Range is years 1970-2100
             var mindate = b.mindate || 0, maxdate = b.maxdate || 4133980799999;
 
-            dale.go (s.pics, function (pic) {
-               var d = parseInt (pic [b.sort === 'upload' ? 'dateup' : 'date']);
-               if (d >= mindate && d <= maxdate) output.pics.push (pic);
+            dale.go (s.pivs, function (piv) {
+               var d = parseInt (piv [b.sort === 'upload' ? 'dateup' : 'date']);
+               if (d >= mindate && d <= maxdate) output.pivs.push (piv);
             });
 
-            // Sort own pictures first.
-            output.pics.sort (function (a, b) {
+            // Sort own pivs first.
+            output.pivs.sort (function (a, b) {
                if (a.owner === rq.user.username) return -1;
                if (b.owner === rq.user.username) return 1;
                return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
             });
 
-            // To avoid returning duplicated picture if someone shares a picture you already have with you. Own picture has priority.
+            // To avoid returning duplicated piv if someone shares a piv you already have with you. Own piv has priority.
             var hashes = {};
-            output.pics = dale.fil (output.pics, undefined, function (pic, k) {
-               if (! hashes [pic.hash]) {
-                  hashes [pic.hash] = true;
-                  return pic;
+            output.pivs = dale.fil (output.pivs, undefined, function (piv, k) {
+               if (! hashes [piv.hash]) {
+                  hashes [piv.hash] = true;
+                  return piv;
                }
             });
 
-            // Sort pictures by criteria.
-            output.pics.sort (function (a, B) {
+            // Sort pivs by criteria.
+            output.pivs.sort (function (a, B) {
                var d1 = parseInt (a [b.sort === 'upload' ? 'dateup' : 'date']);
                var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
 
-            output.total = output.pics.length;
+            output.total = output.pivs.length;
 
-            output.pics = output.pics.slice (b.from - 1, b.to);
+            output.pivs = output.pivs.slice (b.from - 1, b.to);
 
             var multi = redis.multi ();
-            dale.go (output.pics, function (pic) {
-               multi.smembers ('pict:' + pic.id);
+            dale.go (output.pivs, function (piv) {
+               multi.smembers ('pivt:' + piv.id);
             });
-            multi.sunion (dale.go (s.pics, function (pic) {
-               return 'pict:' + pic.id;
+            multi.sunion (dale.go (s.pivs, function (piv) {
+               return 'pivt:' + piv.id;
             }));
             s.output = output;
             multi.get ('geo:' + rq.user.username);
@@ -2626,14 +2626,14 @@ var routes = [
          },
          function (s) {
             s.output.tags = teishi.last (s.last, 2).sort ();
-            dale.go (s.output.pics, function (pic, k) {
+            dale.go (s.output.pivs, function (piv, k) {
                var vid = undefined;
-               if (pic.vid) {
-                  if (pic.vid.match ('pending'))    vid = 'pending';
-                  else if (pic.vid.match ('error')) vid = 'error';
+               if (piv.vid) {
+                  if (piv.vid.match ('pending'))    vid = 'pending';
+                  else if (piv.vid.match ('error')) vid = 'error';
                   else                              vid = true;
                }
-               s.output.pics [k] = {id: pic.id, t200: ! ENV ? pic.t200 : undefined, t900: ! ENV ? pic.t900 : undefined, owner: pic.owner, name: pic.name, tags: s.last [k].sort (), date: parseInt (pic.date), dateup: parseInt (pic.dateup), dates: ENV ? undefined : JSON.parse (pic.dates), dimh: parseInt (pic.dimh), dimw: parseInt (pic.dimw), deg: parseInt (pic.deg) || undefined, vid: vid, loc: pic.loc ? teishi.parse (pic.loc) : undefined};
+               s.output.pivs [k] = {id: piv.id, t200: ! ENV ? piv.t200 : undefined, t900: ! ENV ? piv.t900 : undefined, owner: piv.owner, name: piv.name, tags: s.last [k].sort (), date: parseInt (piv.date), dateup: parseInt (piv.dateup), dates: ENV ? undefined : JSON.parse (piv.dates), dimh: parseInt (piv.dimh), dimw: parseInt (piv.dimw), deg: parseInt (piv.deg) || undefined, vid: vid, loc: piv.loc ? teishi.parse (piv.loc) : undefined};
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);
@@ -2719,16 +2719,16 @@ var routes = [
          }
 
          a.seq ([
-            [a.fork, download.pics, function (pic) {
-               return [a.make (fs.stat), Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)];
+            [a.fork, download.pivs, function (piv) {
+               return [a.make (fs.stat), Path.join (CONFIG.basepath, H.hash (piv.owner), piv.id)];
             }, {max: os.cpus ().length}],
             function (s) {
                if (s.error) return reply (rs, 500, {error: error});
-               dale.go (download.pics, function (pic, k) {
+               dale.go (download.pivs, function (piv, k) {
                   var stat = s.last [k];
-                  stat.mtime = new Date (pic.mtime - new Date ().getTimezoneOffset () * 60 * 1000);
+                  stat.mtime = new Date (piv.mtime - new Date ().getTimezoneOffset () * 60 * 1000);
                   // https://www.archiverjs.com/docs/archiver#entry-data
-                  archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (pic.owner), pic.id)), {name: unrepeatName (pic.name), stats: stat});
+                  archive.append (fs.createReadStream (Path.join (CONFIG.basepath, H.hash (piv.owner), piv.id)), {name: unrepeatName (piv.name), stats: stat});
                });
 
                archive.pipe (rs);
@@ -2757,10 +2757,10 @@ var routes = [
          [function (s) {
             var multi = redis.multi ();
             dale.go (b.ids, function (id) {
-               multi.hgetall ('pic:' + id);
+               multi.hgetall ('piv:' + id);
             });
             dale.go (b.ids, function (id) {
-               multi.smembers ('pict:' + id);
+               multi.smembers ('pivt:' + id);
             });
             multi.smembers ('shm:' + rq.user.username);
             mexec (s, multi);
@@ -2768,22 +2768,22 @@ var routes = [
          function (s) {
             var sharedWithUser = teishi.last (s.last);
 
-            var hasAccess = dale.stopNot (s.last.slice (0, b.ids.length), true, function (pic, k) {
-               // No such picture
-               if (! pic) return false;
-               if (pic.owner === rq.user.username) return true;
+            var hasAccess = dale.stopNot (s.last.slice (0, b.ids.length), true, function (piv, k) {
+               // No such piv
+               if (! piv) return false;
+               if (piv.owner === rq.user.username) return true;
                var tags = s.last [b.ids.length + k];
                return dale.stop (tags, true, function (tag) {
-                  return sharedWithUser.indexOf (pic.owner + ':' + tag) > -1;
+                  return sharedWithUser.indexOf (piv.owner + ':' + tag) > -1;
                });
             });
 
             if (! hasAccess) return reply (rs, 404);
 
             var downloadId = uuid ();
-            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pics: dale.go (b.ids, function (id, k) {
-               var pic = s.last [k];
-               return {owner: pic.owner, id: pic.id, name: pic.name, mtime: JSON.parse (pic.dates) ['upload:lastModified']};
+            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pivs: dale.go (b.ids, function (id, k) {
+               var piv = s.last [k];
+               return {owner: piv.owner, id: piv.id, name: piv.name, mtime: JSON.parse (piv.dates) ['upload:lastModified']};
             })}), function (error) {
                if (error) return reply (rs, 500, {error: error});
                reply (rs, 200, {id: downloadId + '.zip'});
@@ -2893,7 +2893,7 @@ var routes = [
             s.next ();
          },
          b.operation === 'disable' ? [
-            [a.set, 'allPics', [Redis, 'smembers', 'tag:' + rq.user.username + ':all']],
+            [a.set, 'allPivs', [Redis, 'smembers', 'tag:' + rq.user.username + ':all']],
             [Redis, 'smembers', 'tags:' + rq.user.username],
             function (s) {
                var multi = redis.multi ();
@@ -2906,15 +2906,15 @@ var routes = [
             },
             function (s) {
                var multi = redis.multi ();
-               dale.go (s.allPics, function (pic) {
-                  multi.hdel ('pic:' + pic, 'loc');
+               dale.go (s.allPivs, function (piv) {
+                  multi.hdel ('piv:' + piv, 'loc');
                });
                dale.go (s.geotags, function (tag, k) {
                   if (! H.isGeo (tag)) return;
                   multi.srem ('tags:' + rq.user.username, tag);
                   multi.del ('tag:' + rq.user.username + ':' + tag);
-                  dale.go (s.last [k], function (pic) {
-                     multi.srem ('pict:' + pic, tag);
+                  dale.go (s.last [k], function (piv) {
+                     multi.srem ('pivt:' + piv, tag);
                   });
                });
                multi.hdel ('users:' + rq.user.username, 'geo');
@@ -2933,10 +2933,10 @@ var routes = [
             },
             [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
             function (s) {
-               s.pics = s.last;
+               s.pivs = s.last;
                var multi = redis.multi ();
-               dale.go (s.last, function (pic) {
-                  multi.hget ('pic:' + pic, 'vid');
+               dale.go (s.last, function (piv) {
+                  multi.hget ('piv:' + piv, 'vid');
                });
                mexec (s, multi);
             },
@@ -2960,8 +2960,8 @@ var routes = [
                   }
                   dale.go (dale.times (simult), fire);
                }
-               asyncFork (s.pics, os.cpus ().length, function (pic, K, cb) {
-                  var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), pic);
+               asyncFork (s.pivs, os.cpus ().length, function (piv, K, cb) {
+                  var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), piv);
                   var vid = s.last [K];
                   a.stop ([
                      [H.getMetadata, path, vid],
@@ -2973,11 +2973,11 @@ var routes = [
                         if (! s.last.length) return cb ();
                         var loc = JSON.stringify ([s.last [0], s.last [1]]);
                         var multi = redis.multi ();
-                        multi.hset ('pic:'  + pic, 'loc', loc);
+                        multi.hset ('piv:'  + piv, 'loc', loc);
                         dale.go (s.last.slice (2), function (tag) {
                            multi.sadd ('tags:' + rq.user.username,             tag);
-                           multi.sadd ('tag:'  + rq.user.username + ':' + tag, pic);
-                           multi.sadd ('pict:' + pic,                          tag);
+                           multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv);
+                           multi.sadd ('pivt:' + piv,                          tag);
                         });
                         multi.exec (cb);
                      }
@@ -3223,7 +3223,7 @@ var routes = [
                [getFilePage],
                getParentBatch,
                function (s) {
-                  // Count how many pics/vids per folder there are.
+                  // Count how many pivs per folder there are.
                   var porotoSum = function (id) {
                      if (! folders [id].count) folders [id].count = 0;
                      folders [id].count++;
@@ -3381,7 +3381,7 @@ var routes = [
                dale.go (folder.children, function (childId) {
                   // If child of folder is a folder, invoke recursively
                   if (data.folders [childId]) return recurseDown (childId);
-                  // Else, it is a pic/vid.
+                  // Else, it is a piv
                   // We check whether we already have the file. If we do, we ignore it and not have into account at all, not even on the total count.
                   var file = data.files [childId];
                   if (hashes [H.hash (childId + ':' + file.modifiedTime)]) return alreadyImported++;
@@ -3508,7 +3508,7 @@ var routes = [
                            // UPLOAD THE FILE
                            hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {multipart: [
                               // This `file` field is a dummy one to pass validation, but the actual file informastion goes inside providerData
-                              {type: 'file',  name: 'pic', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
+                              {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                               {type: 'field', name: 'id', value: parseInt (s.import.id)},
                               // Use oldest date, whether createdTime or updatedTime
                               {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
@@ -3691,11 +3691,11 @@ var routes = [
       ]);
    }],
 
-   // *** ADMIN: DEBUG PIC ***
+   // *** ADMIN: DEBUG PIV ***
 
    ['get', 'admin/debug/:id', function (rq, rs) {
       astop (rs, [
-         [Redis, 'hgetall', 'pic:' + rq.data.params.id],
+         [Redis, 'hgetall', 'piv:' + rq.data.params.id],
          function (s) {
             if (! s.last) return reply (rs, 200, {});
             s.data = {db: s.last};
@@ -3744,29 +3744,29 @@ var routes = [
       ]);
    }],
 
-   // *** ADMIN: PICTURE DATES ***
+   // *** ADMIN: PIV DATES ***
 
    ['get', 'admin/dates', function (rq, rs) {
 
       astop (rs, [
-         // Get list of pics and thumbs
-         [redis.keyscan, 'pic:*'],
+         // Get list of pivs and thumbs
+         [redis.keyscan, 'piv:*'],
          function (s) {
             var multi = redis.multi ();
             dale.go (s.last, function (id) {
                multi.hgetall (id);
             });
             dale.go (s.last, function (id) {
-               multi.sinter (id.replace ('pic', 'pict'));
+               multi.sinter (id.replace ('piv', 'pivt'));
             });
             mexec (s, multi);
          },
          function (s) {
             var output = [];
             // id, owner, name, tags, date effective (sorted by, earliest at the top), s.dates
-            dale.go (s.last, function (pic, k) {
+            dale.go (s.last, function (piv, k) {
                if (k >= s.last.length / 2) return;
-               output.push ([pic.id, pic.owner, pic.name, s.last [s.last.length / 2 + k].join (' // '), parseInt (pic.date), new Date (parseInt (pic.date)).toISOString ()].concat (dale.go (JSON.parse (pic.dates), function (v2, k2) {return k2 + ': ' + v2})));
+               output.push ([piv.id, piv.owner, piv.name, s.last [s.last.length / 2 + k].join (' // '), parseInt (piv.date), new Date (parseInt (piv.date)).toISOString ()].concat (dale.go (JSON.parse (piv.dates), function (v2, k2) {return k2 + ': ' + v2})));
             });
             output.sort (function (a, b) {
                return a [4] - b [4];
@@ -3807,8 +3807,8 @@ cicek.apres = function (rs) {
       logs.push (['flow', 'rq-all', 1]);
       logs.push (['flow', 'ms-all', t - rs.log.startTime]);
       logs.push (['max',  'ms-all', t - rs.log.startTime]);
-      dale.go (['auth', 'pic', 'thumb', 'upload', 'delete', 'rotate', 'tag', 'query', 'share', 'geo'], function (path) {
-         if (rs.log.method !== ((path === 'pic' || path === 'thumb') ? 'get' : 'post')) return;
+      dale.go (['auth', 'piv', 'thumb', 'upload', 'delete', 'rotate', 'tag', 'query', 'share', 'geo'], function (path) {
+         if (rs.log.method !== ((path === 'piv' || path === 'thumb') ? 'get' : 'post')) return;
          if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
          logs.push (['flow', 'rq-' + path, 1]);
          logs.push (['flow', 'ms-' + path, t - rs.log.startTime]);
@@ -3980,8 +3980,8 @@ if (cicek.isMaster) a.stop ([
       });
       s.next ();
    },
-   // Get list of pics and thumbs
-   [redis.keyscan, 'pic:*'],
+   // Get list of pivs and thumbs
+   [redis.keyscan, 'piv:*'],
    function (s) {
       var multi = redis.multi ();
       dale.go (s.last, function (id) {
@@ -3991,12 +3991,12 @@ if (cicek.isMaster) a.stop ([
    },
    function (s) {
       s.dbfiles = {};
-      dale.go (s.last, function (pic) {
-         var prefix = H.hash (pic.owner) + '/';
-         s.dbfiles [prefix + pic.id] = 'pic';
-         if (pic.t200) s.dbfiles [prefix + pic.t200] = 'thumb';
-         if (pic.t900) s.dbfiles [prefix + pic.t900] = 'thumb';
-         if (pic.vid && pic.vid !== '1') s.dbfiles [prefix + pic.vid] = 'thumb';
+      dale.go (s.last, function (piv) {
+         var prefix = H.hash (piv.owner) + '/';
+         s.dbfiles [prefix + piv.id] = 'piv';
+         if (piv.t200) s.dbfiles [prefix + piv.t200] = 'thumb';
+         if (piv.t900) s.dbfiles [prefix + piv.t900] = 'thumb';
+         if (piv.vid && piv.vid !== '1') s.dbfiles [prefix + piv.vid] = 'thumb';
       });
       s.next ();
    },
@@ -4010,9 +4010,9 @@ if (cicek.isMaster) a.stop ([
       s.s3missing = [];
 
       dale.go (s.dbfiles, function (type, dbfile) {
-         // S3 only holds original pictures
-         if (type === 'pic' && ! s.s3files [dbfile]) s.s3missing.push (dbfile);
-         // FS holds both original pictures and thumbnails
+         // S3 only holds original pivs
+         if (type === 'piv' && ! s.s3files [dbfile]) s.s3missing.push (dbfile);
+         // FS holds both original pivs and thumbnails
          if (! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
       });
       dale.go (s.s3files, function (v, s3file) {
@@ -4029,7 +4029,7 @@ if (cicek.isMaster) a.stop ([
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
 
       if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'important', type: 'File consistency check done.'});
-      // We delete the list of pics from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
+      // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
       if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
    },
@@ -4077,8 +4077,8 @@ if (cicek.isMaster) a.stop ([
       });
       s.next ();
    },
-   // Get list of pics and thumbs
-   [redis.keyscan, 'pic:*'],
+   // Get list of pivs and thumbs
+   [redis.keyscan, 'piv:*'],
    function (s) {
       var multi = redis.multi ();
       dale.go (s.last, function (id) {
@@ -4090,16 +4090,16 @@ if (cicek.isMaster) a.stop ([
       var actual = {TOTAL: {s3: 0, fs: 0}};
       if (! s ['s3:files']) s ['s3:files'] = {};
       var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {};
-      dale.go (s.last, function (pic) {
-         if (! actual [pic.owner]) actual [pic.owner] = {s3: 0, fs: 0};
-         actual [pic.owner].fs += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0) + parseInt (pic.bymp4 || 0);
-         actual.TOTAL.fs       += parseInt (pic.byfs) + parseInt (pic.by200 || 0) + parseInt (pic.by900 || 0) + parseInt (pic.bymp4 || 0);
-         var key = H.hash (pic.owner) + '/' + pic.id;
+      dale.go (s.last, function (piv) {
+         if (! actual [piv.owner]) actual [piv.owner] = {s3: 0, fs: 0};
+         actual [piv.owner].fs += parseInt (piv.byfs) + parseInt (piv.by200 || 0) + parseInt (piv.by900 || 0) + parseInt (piv.bymp4 || 0);
+         actual.TOTAL.fs       += parseInt (piv.byfs) + parseInt (piv.by200 || 0) + parseInt (piv.by900 || 0) + parseInt (piv.bymp4 || 0);
+         var key = H.hash (piv.owner) + '/' + piv.id;
          var s3entry = s ['s3:files'] [key];
          delete extraneousS3 [key];
          if (type (parseInt (s3entry)) === 'integer') {
-            actual [pic.owner].s3 += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
-            actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (pic.owner) + '/' + pic.id]);
+            actual [piv.owner].s3 += parseInt (s ['s3:files'] [H.hash (piv.owner) + '/' + piv.id]);
+            actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (piv.owner) + '/' + piv.id]);
          }
          else if (s3entry === undefined) missingS3 = s3entry;
          else invalidS3 [key] = s3entry;

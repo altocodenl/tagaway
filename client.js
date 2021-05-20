@@ -2604,21 +2604,21 @@ dale.do ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.do (x, 'query', 'pics', true);
+      else B.do (x, 'query', 'pivs', true);
       B.do (x, 'query', 'tags');
       B.do (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], function (x) {
-      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.do (x, 'set', ['State', 'nPics'], 20);
+      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.do (x, 'set', ['State', 'nPivs'], 20);
       B.do (x, 'query', 'pics', true);
    }],
    ['change', ['State', 'selected'], function (x) {
       var selected = B.get ('State', 'selected') || {};
-      var pics = document.getElementsByClassName ('pictures-grid__item-picture');
-      dale.do (pics, function (pic) {
-         pic.classList [selected [pic.id] ? 'add' : 'remove'] ('selected');
+      var pivs = document.getElementsByClassName ('pictures-grid__item-picture');
+      dale.do (pivs, function (piv) {
+         piv.classList [selected [piv.id] ? 'add' : 'remove'] ('selected');
       });
-      var selectedPictures = dale.keys (selected).length > 0;
+      var selectedPivs = dale.keys (selected).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
          organise: ['app-organise', 'app-show-organise-bar', State.untag ? 'app-untag-tags' : 'app-attach-tags'],
@@ -2631,15 +2631,15 @@ dale.do ([
       setTimeout (function () {
          dale.do (classes, function (classes, mode) {
             dale.do (classes, function (v) {
-               if (mode === 'browse')   target.classList [selectedPictures ? 'remove' : 'add']    (v);
-               if (mode === 'organise') target.classList [selectedPictures ? 'add'    : 'remove'] (v);
+               if (mode === 'browse')   target.classList [selectedPivs ? 'remove' : 'add']    (v);
+               if (mode === 'organise') target.classList [selectedPivs ? 'add'    : 'remove'] (v);
             });
          });
       }, 0);
 
-      if (B.get ('State', 'untag') && ! selectedPictures) B.do (x, 'rem', 'State', 'untag');
+      if (B.get ('State', 'untag') && ! selectedPivs) B.do (x, 'rem', 'State', 'untag');
 
-      if (! selectedPictures && B.get ('State', 'query', 'recentlyTagged')) {
+      if (! selectedPivs && B.get ('State', 'query', 'recentlyTagged')) {
          B.do (x, 'rem', ['State', 'query'], 'recentlyTagged');
          B.do (x, 'snackbar', 'green', 'You can find your pictures under the tags you just used.');
       }
@@ -2650,7 +2650,7 @@ dale.do ([
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
-   ['query', 'pics', function (x, updateSelected) {
+   ['query', 'pivs', function (x, updateSelected) {
       var query = B.get ('State', 'query');
       if (! query) return;
       B.do (x, 'set', ['State', 'querying'], true);
@@ -2661,62 +2661,62 @@ dale.do ([
          clearTimeout (timeout);
       }
 
-      B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPics') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          B.do (x, 'set', ['State', 'querying'], false);
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
-         if (B.get ('State', 'nPics') === 20) window.scrollTo (0, 0);
+         if (B.get ('State', 'nPivs') === 20) window.scrollTo (0, 0);
 
-         B.do (x, 'set', ['Data', 'pendingConversions'], dale.stop (rs.body.pics, true, function (pic) {
-            return pic.vid === 'pending';
+         B.do (x, 'set', ['Data', 'pendingConversions'], dale.stop (rs.body.pivs, true, function (piv) {
+            return piv.vid === 'pending';
          }));
 
          B.do (x, 'set', ['Data', 'queryTags'], rs.body.tags);
 
          var selected = B.get ('State', 'selected') || {};
-         var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pics, function (pic) {
-            if (selected [pic.id]) return [pic.id, true];
+         var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pivs, function (piv) {
+            if (selected [piv.id]) return [piv.id, true];
          });
          B.set (['State', 'selected'], updatedSelection);
 
-         B.do (x, 'set', ['Data', 'picTotal'], rs.body.total);
+         B.do (x, 'set', ['Data', 'pivTotal'], rs.body.total);
 
          // Set timeout for refreshing query
          if (rs.body.refreshQuery) B.do (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
-            B.do (x, 'query', 'pics');
+            B.do (x, 'query', 'pivs');
             B.do (x, 'query', 'tags');
          }, 1500));
 
          if (B.get ('State', 'open') === undefined) {
-            B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+            B.do (x, 'set', ['Data', 'pivs'], rs.body.pivs);
             B.do (x, 'change', ['State', 'selected'], updatedSelection);
             B.do (x, 'fill', 'screen');
             return;
          }
 
-         var open = B.get ('Data', 'pics') [B.get ('State', 'open')];
-         var newOpen = dale.stopNot (rs.body.pics, undefined, function (pic, k) {
-            if (pic.id === open.id) return k;
+         var open = B.get ('Data', 'pivs') [B.get ('State', 'open')];
+         var newOpen = dale.stopNot (rs.body.pivs, undefined, function (piv, k) {
+            if (piv.id === open.id) return k;
          });
-         // If opened picture is no longer in query, exit open.
+         // If opened piv is no longer in query, exit open.
          if (newOpen === undefined) {
-            B.do (x, 'set', ['Data', 'pics'], rs.body.pics);
+            B.do (x, 'set', ['Data', 'pivs'], rs.body.pivs);
             B.do (x, 'exit', 'fullscreen');
             return;
          }
-         // Otherwise, update the index of the opened picture.
-         // We first set the values, then trigger the change event, to prevent the picture flickering.
+         // Otherwise, update the index of the opened piv.
+         // We first set the values, then trigger the change event, to prevent the piv flickering.
          B.set (['State', 'open'], newOpen);
-         B.set (['Data', 'pics'], rs.body.pics);
+         B.set (['Data', 'pivs'], rs.body.pivs);
          B.do (x, 'change', ['State', 'open']);
-         B.do (x, 'change', ['Data', 'pics']);
+         B.do (x, 'change', ['Data', 'pivs']);
          B.do (x, 'change', ['State', 'selected'], updatedSelection);
 
       });
    }],
-   ['click', 'pic', function (x, id, k) {
+   ['click', 'piv', function (x, id, k) {
       var last = B.get ('State', 'lastClick') || {time: 0};
-      // If the last click was also on this picture and happened less than 500ms ago, we open the picture in fullscreen.
+      // If the last click was also on this piv and happened less than 500ms ago, we open the piv in fullscreen.
       if (last.id === id && teishi.time () - last.time < 500) {
          B.do (x, 'rem', ['State', 'selected'], id);
          B.do (x, 'set', ['State', 'open'], k);
@@ -2725,26 +2725,26 @@ dale.do ([
 
       B.do (x, 'set', ['State', 'lastClick'], {id: id, time: teishi.time ()});
 
-      var lastIndex = dale.stopNot (B.get ('Data', 'pics'), undefined, function (pic, k) {
-         if (pic.id === last.id) return k;
+      var lastIndex = dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
+         if (piv.id === last.id) return k;
       });
 
-      // Single select/unselect (either no shift or the last click wasn't on a picture that we currently have or the last clicked picture is deselected)
+      // Single select/unselect (either no shift or the last click wasn't on a piv that we currently have or the last clicked piv is deselected)
       if (! B.get ('State', 'shift') || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
          if (! B.get ('State', 'selected', id)) return B.do (x, 'set', ['State', 'selected', id], true);
          else                                   return B.do (x, 'rem', ['State', 'selected'], id);
       }
       // Multiple select/unselect
       dale.do (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
-         // Instead of triggering events for each picture, we directly override the value (to avoid triggering n redraws for n pictures).
-         B.set (['State', 'selected', B.get ('Data', 'pics', k, 'id')], true);
+         // Instead of triggering events for each piv, we directly override the value (to avoid triggering n redraws for n pivs).
+         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], true);
       });
       // We manually trigger the change event.
       B.do (x, 'change', ['State', 'selected']);
    }],
    ['key', /down|up/, function (x, keyCode) {
       if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
-      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.do (x, 'tag', 'pics', true);
+      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.do (x, 'tag', 'pivs', true);
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.do (x, 'upload', 'tag', true);
    }],
    ['toggle', 'tag', function (x, tag) {
@@ -2782,7 +2782,7 @@ dale.do ([
          B.do (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
       });
    }],
-   ['tag', 'pics', function (x, tag, del, ev) {
+   ['tag', 'pivs', function (x, tag, del, ev) {
       if (ev) ev.stopPropagation ();
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
@@ -2802,33 +2802,33 @@ dale.do ([
       B.do (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
          if (! del) B.do (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
-         B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'pivs');
          B.do (x, 'query', 'tags');
          if (tag === B.get ('State', 'newTag')) B.do (x, 'rem', 'State', 'newTag');
       });
    }],
-   ['rotate', 'pics', function (x, deg, pic) {
-      var pics = pic ? [pic.id] : dale.keys (B.get ('State', 'selected'));
-      if (pics.length === 0) return;
-      B.do (x, 'post', 'rotate', {}, {deg: deg, ids: pics}, function (x, error, rs) {
+   ['rotate', 'pivs', function (x, deg, piv) {
+      var pivs = piv ? [piv.id] : dale.keys (B.get ('State', 'selected'));
+      if (pivs.length === 0) return;
+      B.do (x, 'post', 'rotate', {}, {deg: deg, ids: pivs}, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error rotating the picture(s).');
-         B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'pivs');
       });
    }],
-   ['delete', 'pics', function (x, deg) {
-      var pics = dale.keys (B.get ('State', 'selected'));
-      if (pics.length === 0) return;
-      if (! confirm ('Are you sure you want to delete the ' + pics.length + ' selected pictures?')) return;
+   ['delete', 'pivs', function (x, deg) {
+      var pivs = dale.keys (B.get ('State', 'selected'));
+      if (pivs.length === 0) return;
+      if (! confirm ('Are you sure you want to delete the ' + pivs.length + ' selected pictures?')) return;
       var operationComplete, timeoutFired, timeout = setTimeout (function () {
          if (operationComplete) return;
          timeoutFired = true;
          B.do (x, 'snackbar', 'yellow', 'This process may take a few more seconds, please wait...', true);
       }, 1000);
-      B.do (x, 'post', 'delete', {}, {ids: pics}, function (x, error, rs) {
+      B.do (x, 'post', 'delete', {}, {ids: pivs}, function (x, error, rs) {
          operationComplete = true;
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          if (timeoutFired) B.do (x, 'clear', 'snackbar');
-         B.do (x, 'query', 'pics', true);
+         B.do (x, 'query', 'pivs', true);
          B.do (x, 'query', 'tags');
       });
    }],
@@ -2843,22 +2843,22 @@ dale.do ([
       B.do (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
       if (lastScroll && lastScroll.y > window.scrollY) return;
 
-      var lastPic = teishi.last (c ('.pictures-grid__item-picture'));
-      if (! lastPic) return;
+      var lastPiv = teishi.last (c ('.pictures-grid__item-picture'));
+      if (! lastPiv) return;
 
-      if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
+      if (window.innerHeight < lastPiv.getBoundingClientRect ().top) return;
 
-      B.do (x, 'increment', 'nPics');
+      B.do (x, 'increment', 'nPivs');
       B.do (x, 'change', ['State', 'selected']);
    }],
    ['fill', 'screen', function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
-      // We fill the screen with pictures.
-      var lastPic = teishi.last (c ('.pictures-grid__item-picture'));
-      if (! lastPic) return;
-      if (window.innerHeight < lastPic.getBoundingClientRect ().top) return;
+      // We fill the screen with pivs.
+      var lastPiv = teishi.last (c ('.pictures-grid__item-picture'));
+      if (! lastPiv) return;
+      if (window.innerHeight < lastPiv.getBoundingClientRect ().top) return;
       // If there are not enough images to fill the grid, increment the amount of images to show.
-      B.do (x, 'increment', 'nPics');
+      B.do (x, 'increment', 'nPivs');
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -2866,8 +2866,8 @@ dale.do ([
       if (ids.length === 1) {
          var a = document.createElement ('a');
          // We add the `original` query parameter in case we're downloading a non-mp4 video. In all other cases, the parameter will be ignored.
-         a.download = 'pic/' + ids [0] + '?original=1';
-         a.href     = 'pic/' + ids [0] + '?original=1';
+         a.download = 'piv/' + ids [0] + '?original=1';
+         a.href     = 'piv/' + ids [0] + '?original=1';
          document.body.appendChild (a);
          a.click ();
          document.body.removeChild (a);
@@ -2881,13 +2881,13 @@ dale.do ([
    ['stop', 'propagation', function (x, ev) {
       ev.stopPropagation ();
    }],
-   ['increment', 'nPics', function (x) {
-      if (B.get ('Data', 'picTotal') <= B.get ('State', 'nPics')) return;
-      B.do (x, 'set', ['State', 'nPics'], Math.min (B.get ('State', 'nPics') + 20, B.get ('Data', 'picTotal')));
+   ['increment', 'nPivs', function (x) {
+      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
+      B.do (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 20, B.get ('Data', 'pivTotal')));
    }],
-   ['change', ['State', 'nPics'], function (x) {
-      if (B.get ('Data', 'picTotal') <= B.get ('State', 'nPics') + 100) return;
-      B.do (x, 'query', 'pics');
+   ['change', ['State', 'nPivs'], function (x) {
+      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs') + 100) return;
+      B.do (x, 'query', 'pivs');
    }],
    ['change', ['Data', 'pendingConversions'], function (x) {
       var pending = B.get ('Data', 'pendingConversions'), interval = B.get ('State', 'pendingConversions');
@@ -2897,7 +2897,7 @@ dale.do ([
          return clearInterval (interval);
       }
       B.do (x, 'set', ['State', 'pendingConversions'], setInterval (function () {
-         B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'pivs');
       }, 2000));
    }],
 
@@ -2938,8 +2938,8 @@ dale.do ([
       var open = B.get ('State', 'open');
       if (x.path [0] === 'prev' && open === 0) return;
       if (x.path [0] === 'next') {
-         if ((open + 1) >= B.get ('State', 'nPics')) B.do (x, 'increment', 'nPics');
-         B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pics', open + 1) ? open + 1 : 0);
+         if ((open + 1) >= B.get ('State', 'nPivs')) B.do (x, 'increment', 'nPivs');
+         B.do (x, 'set', ['State', 'open'], B.get ('Data', 'pivs', open + 1) ? open + 1 : 0);
       }
       else                       B.do (x, 'set', ['State', 'open'], open - 1);
    }],
@@ -2957,8 +2957,8 @@ dale.do ([
       if (ev.changedTouches [0].pageX > lastTouch.x) B.do (x, 'open', 'prev');
       else                                           B.do (x, 'open', 'next');
    }],
-   ['goto', 'location', function (x, pic) {
-      var url = 'https://www.google.com/maps/place/' + pic.loc [0] + ',' + pic.loc [1];
+   ['goto', 'location', function (x, piv) {
+      var url = 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
       var loc = window.open (url, '_blank');
       loc.focus ();
    }],
@@ -3087,7 +3087,7 @@ dale.do ([
             var f = new FormData ();
             f.append ('lastModified', file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ());
             f.append ('id', file.id);
-            f.append ('pic', file.file);
+            f.append ('piv', file.file);
             if (file.tags) f.append ('tags', JSON.stringify (file.tags));
             B.do (x, 'post', 'upload', {}, f, function (x, error, rs) {
 
@@ -3126,7 +3126,7 @@ dale.do ([
 
          H.hash (file.file, function (error, hash) {
             if (error) return B.do (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
-            B.do (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size}, function (x, error, rs) {
+            B.do (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
                // If the upload was just cancelled or errored by another file, don't do anything.
                if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
                if (error) return B.do (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
@@ -3222,7 +3222,7 @@ dale.do ([
          // We create a placeholder data object to immediately put a box to show import progress without waiting for the server's reply.
          B.do ('set', ['Data', 'imports', provider], [{id: Date.now (), ok: 0, total: 0}]);
          B.do (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
-            if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pics/vids from ' + H.upper (provider));
+            if (error) return B.do (x, 'snackbar', 'red', 'There was an error starting the import of pictures from ' + H.upper (provider));
             B.do (x, 'query', 'imports', provider);
          });
       });
@@ -3251,7 +3251,7 @@ dale.do ([
       });
    }],
 
-   ['toggle', 'geo', function (x) {
+   ['toggle', 'geo', function (x, dismiss) {
       var operation = B.get ('Data', 'account', 'geo') ? 'disable' : 'enable';
       B.do (x, 'post', 'geo', {}, {operation: operation}, function (x, error, rs) {
          if (error) {
@@ -3261,8 +3261,9 @@ dale.do ([
             }
             return B.do (x, 'snackbar', 'red', 'There was an error ' + operation + 'd geotagging.');
          }
+         if (dismiss) B.do (x, 'dismiss', 'geotagging');
 
-         B.do (x, 'query', 'pics');
+         B.do (x, 'query', 'pivs');
          B.do (x, 'query', 'tags');
          B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully. You can always change this from Account.');
       });
@@ -3296,9 +3297,9 @@ dale.do ([
             // Returns ms >= 0 if valid or -1 if not valid.
             var parseDate = function (date) {
                var d = new Date (date);
-               if (d.getTime () && d.getTime () >= 0) return d.getTime ().toISOString ();
+               if (d.getTime () && d.getTime () >= 0) return d.toISOString ();
                d = new Date (date.replace (':', '-').replace (':', '-'));
-               if (d.getTime () && d.getTime () >= 0) return d.getTime ().toISOString ();
+               if (d.getTime () && d.getTime () >= 0) return d.toISOString ();
                return -1;
             }
             // Convert dates into readable dates
@@ -3834,9 +3835,9 @@ E.pics = function () {
       E.header (true, true),
       E.open (),
       // TODO v2: merge two elements into one
-      B.view (['Data', 'pics'], function (x, pics) {
+      B.view (['Data', 'pivs'], function (x, pivs) {
          return B.view (['Data', 'tags'], function (x, tags) {
-            if (! pics || ! tags) return;
+            if (! pivs || ! tags) return;
             if (tags.all === 0) return E.empty ();
             return [
                ['style', [
@@ -4029,7 +4030,7 @@ E.pics = function () {
                               return [
                                  ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
                                  ['input', B.ev ({id: 'newTag', class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name', value: newTag}, ['oninput', 'set', ['State', 'newTag']])],
-                                 ['div', B.ev ({style: style ({cursor: 'pointer', 'margin-left': 0.48, 'margin-top': 10}), class: 'button button--one'}, H.stopPropagation (['onclick', 'tag', 'pics', true])), 'Add new tag']
+                                 ['div', B.ev ({style: style ({cursor: 'pointer', 'margin-left': 0.48, 'margin-top': 10}), class: 'button button--one'}, H.stopPropagation (['onclick', 'tag', 'pivs', true])), 'Add new tag']
                               ];
                            }),
                         ]],
@@ -4042,9 +4043,9 @@ E.pics = function () {
                                  // *** TAG/UNTAG LIST ***
                                  B.view (['State', 'selected'], {tag: 'ul', attrs: {class: 'tag-list tag-list--attach'}}, function (x, selected) {
                                     var selectedTags = {}, filterRegex = H.makeRegex (filter);
-                                    if (selected) dale.do (B.get ('Data', 'pics'), function (pic) {
-                                       if (! selected [pic.id]) return;
-                                       dale.do (pic.tags, function (tag) {
+                                    if (selected) dale.do (B.get ('Data', 'pivs'), function (piv) {
+                                       if (! selected [piv.id]) return;
+                                       dale.do (piv.tags, function (tag) {
                                           if (! selectedTags [tag]) selectedTags [tag] = 0;
                                           selectedTags [tag]++;
                                        });
@@ -4069,7 +4070,7 @@ E.pics = function () {
                                              // TODO v2: add inline SVG
                                              return ['li', B.ev ({class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true}, H.stopPropagation (['onclick', 'goto', 'tag', tag])), [
                                                 ['span', {class: 'tag__title'}, tag],
-                                                ['div', B.ev ({class: 'tag__actions'}, H.stopPropagation (['onclick', 'tag', 'pics', tag, untag, {rawArgs: 'event'}])), [
+                                                ['div', B.ev ({class: 'tag__actions'}, H.stopPropagation (['onclick', 'tag', 'pivs', tag, untag, {rawArgs: 'event'}])), [
                                                    ['div', {class: 'tag-actions'}, [
                                                       // TODO v2: add inline SVG
                                                       ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
@@ -4125,7 +4126,7 @@ E.pics = function () {
                      ['div', B.ev ({class: 'organise-bar__button organise-bar__button--select-all', opaque: true}, H.stopPropagation (['onclick', 'select', 'all'])), [
                         ['span', {class: 'organise-bar__button-title'}, 'Select all'],
                      ]],
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--rotate'}, H.stopPropagation (['onclick', 'rotate', 'pics', 90])), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--rotate'}, H.stopPropagation (['onclick', 'rotate', 'pivs', 90])), [
                         // TODO v2: add inline SVG
                         ['div', {class: 'organise-bar__button-icon-container', opaque: true}],
                         ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
@@ -4138,7 +4139,7 @@ E.pics = function () {
                         ['span', {class: 'organise-bar__button-title'}, 'Download'],
                      ]],
                      // TODO v2: add inline SVG
-                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--delete', opaque: true}, H.stopPropagation (['onclick', 'delete', 'pics'])), [
+                     ['div', B.ev ({class: 'organise-bar__button organise-bar__button--delete', opaque: true}, H.stopPropagation (['onclick', 'delete', 'pivs'])), [
                         ['span', {class: 'organise-bar__button-title'}, 'Delete'],
                      ]],
                   ]];
@@ -4149,7 +4150,7 @@ E.pics = function () {
                      B.view (['State', 'selected'], {attrs: {class: 'pictures-header'}}, function (x, selected) {
                         selected = dale.keys (selected).length;
                         return [
-                           B.view (['Data', 'picTotal'], {tag: 'h2', attrs: {class: 'pictures-header__title page-title'}}, function (x, total) {
+                           B.view (['Data', 'pivTotal'], {tag: 'h2', attrs: {class: 'pictures-header__title page-title'}}, function (x, total) {
                               return [total + ' pictures', H.if (selected, [', ', selected, ' selected'])];
                            }),
                            ['div', {class: 'pictures-header__action-bar'}, [
@@ -4217,7 +4218,7 @@ E.pics = function () {
                            }),
                         ];
                      }),
-                     // PICTURES GRID
+                     // PIVS GRID
                      ['div', {class: 'pictures-grid'}, E.grid ()],
                   ]],
                ]],
@@ -4269,17 +4270,17 @@ E.grid = function () {
          }],
       ]],
       // TODO v2: merge two elements into one
-      B.view (['State', 'nPics'], function (x, nPics) {
-         if (! nPics) return;
-         return B.view (['Data', 'pics'], {attrs: {style: style ({'min-height': window.innerHeight})}}, function (x, pics) {
-            return dale.do (pics.slice (0, nPics), function (pic, k) {
-               var askance = pic.deg === 90 || pic.deg === -90;
-               var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + pic.deg + 'deg)'];
+      B.view (['State', 'nPivs'], function (x, nPivs) {
+         if (! nPivs) return;
+         return B.view (['Data', 'pivs'], {attrs: {style: style ({'min-height': window.innerHeight})}}, function (x, pivs) {
+            return dale.do (pivs.slice (0, nPivs), function (piv, k) {
+               var askance = piv.deg === 90 || piv.deg === -90;
+               var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + piv.deg + 'deg)'];
                });
-               rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
-                  if (pic.deg === 90)  return [v + 'transform-origin', 'left bottom'];
-                  if (pic.deg === -90) return [v + 'transform-origin', 'right bottom'];
+               rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+                  if (piv.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+                  if (piv.deg === -90) return [v + 'transform-origin', 'right bottom'];
                });
                // 122w 224h 102m-left
 
@@ -4292,45 +4293,45 @@ E.grid = function () {
                //if (((k + 1) % 3) === 0)           frameWidth = 180;
                //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
 
-               var picWidth = askance ? pic.dimh : pic.dimw, picHeight = askance ? pic.dimw : pic.dimh;
-               var picRatio = picWidth / picHeight;
+               var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
+               var pivRatio = pivWidth / pivHeight;
 
                // padding right: 16px, padding left: 18px
                var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
-               if      (picRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
-               else if (picRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
-               else if (picRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
+               if      (pivRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
+               else if (pivRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
+               else if (pivRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
                else    frameWidth = sizes [3];
 
                // TODO: understand this magic number.
-               if (pic.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
+               if (piv.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
                   return [v [0], v [1]];
                });
 
                return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
                   ['div', B.ev ({
                      class: 'pictures-grid__item-picture',
-                     id: pic.id,
-                  }, H.stopPropagation (['onclick', 'click', 'pic', pic.id, k])), [
+                     id: piv.id,
+                  }, H.stopPropagation (['onclick', 'click', 'piv', piv.id, k])), [
                      ['div', {
                         class: 'inner',
                         style: style ({
                            'border-radius': 'inherit',
                            width: askance ? frameHeight : frameWidth,
                            height: askance ? frameWidth : frameHeight,
-                           'background-image': 'url(thumb/200/' + pic.id + ')',
+                           'background-image': 'url(thumb/200/' + piv.id + ')',
                            'background-position': 'center',
                            'background-repeat': 'no-repeat',
                            'background-size': 'cover',
-                           'margin-left': pic.deg !== -90 ? 0 : margin [frameWidth],
+                           'margin-left': piv.deg !== -90 ? 0 : margin [frameWidth],
                            rotation: rotation,
                         }),
                      }],
-                     pic.vid ? ['div', {class: 'video-playback', opaque: true}] : [],
+                     piv.vid ? ['div', {class: 'video-playback', opaque: true}] : [],
                      ['div', {class: 'mask'}],
                      ['div', {class: 'caption'}, [
-                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + pic.tags.length]],
-                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (pic.date)],
+                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + piv.tags.length]],
+                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
                      ]],
                   ]],
                ]];
@@ -4346,14 +4347,14 @@ E.open = function () {
    return B.view (['State', 'open'], {attrs: {class: 'fullscreen'}}, function (x, open) {
       if (open === undefined) return;
       // TODO v2: merge two elements into one
-      return B.view (['Data', 'pics'], {attrs: {class: 'fullscreen'}}, function (x, pics) {
-         var pic = pics [open], next = pics [open + 1];
+      return B.view (['Data', 'pivs'], {attrs: {class: 'fullscreen'}}, function (x, pivs) {
+         var piv = pivs [open], next = pivs [open + 1];
 
-         var askance = pic.deg === 90 || pic.deg === -90;
-         var rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-            return [v + 'transform', 'rotate(' + pic.deg + 'deg)'];
+         var askance = piv.deg === 90 || piv.deg === -90;
+         var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+            return [v + 'transform', 'rotate(' + piv.deg + 'deg)'];
          });
-         rotation = ! pic.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+         rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
             return ['transform-origin', 'center center'];
          });
 
@@ -4365,35 +4366,35 @@ E.open = function () {
             // TODO v2: add inline SVG
             ['div', B.ev ({class: 'fullscreen__nav fullscreen__nav--right', opaque: true}, ['onclick', 'open', 'next'])],
             ['div', {class: 'fullscreen__date'}, [
-               ['span', {class: 'fullscreen__date-text'}, H.dateFormat (pic.date)],
+               ['span', {class: 'fullscreen__date-text'}, H.dateFormat (piv.date)],
             ]],
             ['style', media ('screen and (max-width: 767px)', [
                ['.fullscreen__image-container', {padding: 0}],
             ])],
             ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
-               if (! pic.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/900/' + pic.id, alt: 'picture'}];
+               if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/900/' + piv.id, alt: 'picture'}];
                // TODO: add formatting
-               if (pic.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
-               if (pic.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
-               return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'pic/' + pic.id, type: 'video/mp4', poster: 'thumb/900/' + pic.id, loop: true}];
+               if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
+               if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
+               return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/900/' + piv.id, loop: true}];
             }) ()],
             ['div', {class: 'fullscreen__actions'}, [
-               H.if (! pic.vid, ['div', B.ev ({style: style ({'margin-right': 15}), class: 'fullscreen__action'}, ['onclick', 'rotate', 'pics', 90, pic]), [
+               H.if (! piv.vid, ['div', B.ev ({style: style ({'margin-right': 15}), class: 'fullscreen__action'}, ['onclick', 'rotate', 'pivs', 90, piv]), [
                   // TODO v2: add inline SVG
                   ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate', opaque: true}],
                   ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
                ]]),
-               ! pic.loc ? [] : ['div', B.ev ({class: 'fullscreen__action'}, ['onclick', 'goto', 'location', pic]), [
+               ! piv.loc ? [] : ['div', B.ev ({class: 'fullscreen__action'}, ['onclick', 'goto', 'location', piv]), [
                   // TODO v2: add inline SVG
                   ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures', opaque: true}],
                   ['div', {class: 'fullscreen__action-text'}, 'Location'],
                ]],
-               ['a', B.ev ({href: '#'}, ['onclick', 'debug', 'info', pic.id]), 'Info']
+               ['a', B.ev ({href: '#'}, ['onclick', 'debug', 'info', piv.id]), 'Info']
             ]],
             ['div', {class: 'fullscreen__count'}, [
                ['span', {class: 'fullscreen__count-current'}, open + 1],
                '/',
-               ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'picTotal')],
+               ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pivTotal')],
             ]],
             next ? ['img', {src: 'thumb/900/' + next.id, style: style ({display: 'none'})}] : [],
          ];
@@ -4558,12 +4559,12 @@ E.upload = function () {
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                               // TODO v2: add inline SVG
-                              ! upload.lastPic ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                                 'background-image': 'url(thumb/200/' + upload.lastPic.id + ')',
+                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                                 'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',
-                                 transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPic.deg],
+                                 transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPiv.deg],
                               })}],
                               ['div', {class: 'upload-box__main'}, [
                                  ['div', {class: 'upload-box__section'}, [
@@ -4621,12 +4622,12 @@ E.upload = function () {
                      return ['li', {class: 'recent-uploads__list-item'}, [
                         // UPLOAD BOX
                         ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                           ! upload.lastPic ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
-                              'background-image': 'url(thumb/200/' + upload.lastPic.id + ')',
+                           ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                              'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
                               'background-position': 'center',
                               'background-repeat': 'no-repeat',
                               'background-size': 'cover',
-                              transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPic.deg],
+                              transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [upload.lastPiv.deg],
                            })}],
                            ['div', {class: 'upload-box__main'}, [
                               // UPLOAD BOX SECTION
