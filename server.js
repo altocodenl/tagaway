@@ -1218,7 +1218,7 @@ var routes = [
                }],
                [H.log, s.username, {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent'], timezone: b.timezone}],
                function (s) {
-                  reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+                  reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
                }
             ])}
          }],
@@ -1299,7 +1299,7 @@ var routes = [
                });
             }],
             function (s) {
-               reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+               reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
             },
          ],
       ]);
@@ -1428,12 +1428,12 @@ var routes = [
       }
 
       if (! rq.data.cookie)                               return reply (rs, 403, {error: 'nocookie'});
-      if (! rq.data.cookie [CONFIG.cookiename]) {
-         if (rq.headers.cookie.match (CONFIG.cookiename)) return reply (rs, 403, {error: 'tampered'});
+      if (! rq.data.cookie [CONFIG.cookieName]) {
+         if (rq.headers.cookie.match (CONFIG.cookieName)) return reply (rs, 403, {error: 'tampered'});
                                                           return reply (rs, 403, {error: 'noappcookie'});
       }
 
-      giz.auth (rq.data.cookie [CONFIG.cookiename], function (error, user) {
+      giz.auth (rq.data.cookie [CONFIG.cookieName], function (error, user) {
          if (error)  return reply (rs, 500, {error: error});
          if (! user) return reply (rs, 403, {error: 'session'});
 
@@ -1447,8 +1447,8 @@ var routes = [
                ['unique', 'active',    user.username],
                ['flow',   'rq-user-' + user.username, 1],
             ]],
-            [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookiename], giz.config.expires],
-            [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookiename]],
+            [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookieName], giz.config.expires],
+            [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookieName]],
             function (s) {
                rq.csrf = s.last;
                rs.next ();
@@ -1485,11 +1485,11 @@ var routes = [
 
    ['post', 'auth/logout', function (rq, rs) {
       astop (rs, [
-         [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]],
+         [a.make (giz.logout), rq.data.cookie [CONFIG.cookieName]],
          [H.log, rq.user.username, {ev: 'auth', type: 'logout', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
-         [Redis, 'del', 'csrf:' + rq.data.cookie [CONFIG.cookiename]],
+         [Redis, 'del', 'csrf:' + rq.data.cookie [CONFIG.cookieName]],
          // Firefox throws a console error if it receives an empty body.
-         [reply, rs, 200, {}, {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {httponly: true, samesite: 'Lax', path: '/'})}],
+         [reply, rs, 200, {}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, false, {httponly: true, samesite: 'Lax', path: '/'})}],
       ]);
    }],
 
@@ -1530,7 +1530,7 @@ var routes = [
                [H.stat.w, 'stock', 'users', -1],
                function (s) {
                   var multi = redis.multi ();
-                  if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookiename]);
+                  if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
                   multi.hdel ('emails',  user.email);
                   multi.hdel ('invites', user.email);
                   dale.go (s.data [1].concat (['all', 'untagged']), function (tag) {
@@ -1549,9 +1549,9 @@ var routes = [
                   multi.del ('ulog:'  + user.username);
                   mexec (s, multi);
                },
-               b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookiename]] : [],
+               b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookieName]] : [],
                [H.log, user.username, {ev: 'auth', type: 'destroy', ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
-               [reply, rs, 200, '', b.username === undefined ? {'set-cookie': cicek.cookie.write (CONFIG.cookiename, false, {httponly: true, samesite: 'Lax', path: '/'})} : {}],
+               [reply, rs, 200, '', b.username === undefined ? {'set-cookie': cicek.cookie.write (CONFIG.cookieName, false, {httponly: true, samesite: 'Lax', path: '/'})} : {}],
             ]);
          }
       ]);
@@ -3407,7 +3407,7 @@ var routes = [
          [a.set, 'csrf',    [a.make (require ('bcryptjs').genSalt), 20]],
          function (s) {
             // We use s.Cookie instead of s.cookie to avoid it being overwritten by the call to the notify function
-            s.Cookie = cicek.cookie.write (CONFIG.cookiename, s.session);
+            s.Cookie = cicek.cookie.write (CONFIG.cookieName, s.session);
             Redis (s, 'setex', 'session:' + s.session, giz.config.expires, rq.user.username);
          },
          function (s) {

@@ -26,7 +26,7 @@ var GREETING = function (username) {
 
 module.exports = {
    domain: DOMAIN,
-   cookiename: 'ac-v1' + (ENV ? '-' + ENV : ''),
+   cookieName: 'acpic' + (ENV ? '-' + ENV : ''),
    allowedFormats: ['image/jpeg', 'image/png', 'image/bmp', 'image/heic', 'image/heif', 'image/gif', 'image/tiff', 'image/webp', 'video/mp4', 'video/quicktime', 'video/3gpp', 'video/avi', 'video/x-msvideo', 'video/webm', 'video/x-ms-wmv', 'video/x-m4v'],
    port: 1427,
    basepath: ENV ? '/root/files' : '/tmp',
