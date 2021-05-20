@@ -1270,7 +1270,6 @@ var routes = [
             multi.hmset ('users:' + b.username, {
                username:            b.username,
                email:               b.email,
-               type:                'tier1',
                created:             Date.now (),
                suggestGeotagging:   1,
                suggestSelection:    1
@@ -1902,10 +1901,8 @@ var routes = [
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
          function (s) {
             var used = parseInt (s.last) || 0;
-            var limit = CONFIG.storelimit [rq.user.type];
-            // TODO: remove
-            // Temporarily override limit for admins until we roll out paid accounts.
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
+            var limit = CONFIG.freeSpace;
+            if (ENV !== 'prod' && SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
             if (used + s.byfs.size >= limit) return a.seq (s, [
                [H.log, rq.user.username, {ev: 'upload', type: 'noCapacity', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider}],
                [reply, rs, 409, {error: 'capacity'}]
@@ -2806,15 +2803,12 @@ var routes = [
             mexec (s, multi);
          }],
          function (s) {
-            // TODO: remove
-            // Temporarily override limit for admins until we roll out paid accounts.
-            var limit = CONFIG.storelimit [rq.user.type];
-            if (SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
+            var limit = CONFIG.freeSpace;
+            if (ENV !== 'prod' && SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
 
             reply (rs, 200, {
                username: rq.user.username,
                email:    rq.user.email,
-               type:     rq.user.type === 'tier1' ? 'free' : 'paid',
                created:  parseInt (rq.user.created),
                usage:    {
                   limit:  limit,

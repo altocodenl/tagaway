@@ -37,9 +37,7 @@ module.exports = {
       nonceLength: 16,
       tagLength: 16,
    },
-   storelimit: {
-      tier1: 2 * 1000 * 1000 * 1000,
-   },
+   freeSpace: 5 * 1000 * 1000 * 1000,
    backup: {
       frequency: 10,
       path: '/var/lib/redis/dump.rdb',

@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Refactor docs & code with unified terminology for pic/vid: piv
 - Retest entire import & upload, check date improvements are working.
 - Provision new prod server.
 - ac;log

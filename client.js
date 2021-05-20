@@ -5120,7 +5120,7 @@ E.account = function () {
          if (! account) return;
          var percUsed = Math.round ((account.usage.fsused / account.usage.limit) * 100);
          var gbUsed = Math.round (account.usage.fsused * 10 / 1000000000) / 10;
-         var free   = account.type !== 'free';
+         var free   = true;
          return ['div', {class: 'main-centered'}, [
             ['div', {class: 'main-centered__inner max-width--m'}, [
                // PAGE HEADER
