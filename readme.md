@@ -39,13 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Retest entire import & upload, check date improvements are working.
-- Provision new prod server.
-- ac;log
-   - Backup old ac;log, reset it.
-   - Ubuntu distrib dev upgrade.
-   - Upload ac;log file to S3 every 15 minutes, with a lifecycle of 30 minutes, copying the file to /tmp first.
-- Reset dev & prod servers and start from scratch.
+- Retest entire import & upload in dev, check date improvements are working.
+- Provision new prod server and start from scratch.
 
 ### Todo beta
 
