@@ -3036,7 +3036,7 @@ var routes = [
          },
          function (s) {
 
-            var PAGESIZE = process.argv [2] === 'dev' ? 10 : 1000, PAGES = process.argv [2] === 'dev' ? 100 : 10000;
+            var PAGESIZE = 1000, PAGES = 10000;
 
             var files = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
@@ -3859,7 +3859,7 @@ if (cicek.isMaster) a.seq ([
       // TODO: remove timeout after implementing separate log service
       setTimeout (function () {
          notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
-      }, ENV === 'dev' ? 1500 : 0);
+      }, 1500);
    }
 ]);
 
