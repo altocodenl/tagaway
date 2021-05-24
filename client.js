@@ -2610,7 +2610,7 @@ dale.do ([
    }],
    ['change', ['State', 'query'], function (x) {
       if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.do (x, 'set', ['State', 'nPivs'], 20);
-      B.do (x, 'query', 'pics', true);
+      B.do (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], function (x) {
       var selected = B.get ('State', 'selected') || {};
@@ -5174,7 +5174,7 @@ E.account = function () {
                               ]],
                            ]],
                            ['tr', {class: 'subtext-left-table'}, [
-                              ['td', 'Of your free 2 GB']
+                              ['td', 'Of your free 5 GB']
                            ]],
                            free ? [] : ['tr', {class: 'space-limit'}, [
                               ['td', {class: 'text-left-account-data-table'}, 'Space limit'],
@@ -5188,7 +5188,7 @@ E.account = function () {
                            ['tr', {class: 'account-type'}, [
                               ['td', {class: 'text-left-account-data-table'}, [
                                  ['span', 'Account type: '],
-                                 ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, account.type [0].toUpperCase () + account.type.slice (1)]
+                                 ['span', {style: style ({'font-weight': CSS.vars.fontPrimaryMedium})}, 'Free']
                               ]],
                               free ? ['td', {class: 'call-to-action-text'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']] : ['td', {class: 'values-right-table', 'rowspan': '2'}, '€ 3.5 / Month']
                            ]],

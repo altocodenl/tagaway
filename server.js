@@ -2095,15 +2095,19 @@ var routes = [
                [k, 'ffmpeg', '-i', newpath, '-vcodec', 'h264', '-acodec', 'mp2', Path.join (Path.dirname (newpath), id + '.mp4')],
                [a.make (fs.rename), Path.join (Path.dirname (newpath), id + '.mp4'), Path.join (Path.dirname (newpath), id)],
                [a.set, 'bymp4', [a.make (fs.stat), Path.join (Path.dirname (newpath), id)]],
+               [Redis, 'hdel', 'proc:vid', piv.id],
+               // Wait one second in case the conversion was done so quickly that the piv object hasn't been created yet.
+               [function (s) {
+                  setTimeout (function () {s.next ()}, 1000);
+               }],
                [Redis, 'exists', 'piv:' + piv.id],
                function (s) {
-                  if (! s.last) return a.stop ([H.unlink, Path.join (Path.dirname (newpath), id), true], function (error) {
-                     notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, username: rq.user.username});
+                  if (! s.last) return a.stop (a.creat (), [H.unlink, Path.join (Path.dirname (newpath), id)], function (s, error) {
+                     notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, username: rq.user.username, piv: piv.id});
                   });
                   s.bymp4 = s.bymp4.size;
                   var multi = redis.multi ();
                   multi.hmset ('piv:' + piv.id, {vid: id, bymp4: s.bymp4});
-                  multi.hdel ('proc:vid', piv.id);
                   mexec (s, multi);
                },
                function (s) {
@@ -2115,15 +2119,20 @@ var routes = [
                   ]);
                }
             ], function (s, error) {
-               redis.exists ('piv:' + piv.id, function (Error, exists) {
-                  if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
+               a.seq (s, [
+                  [notify, {priority: 'critical', type: 'video conversion to mp4 error', error: error, username: rq.user.username, piv: piv.id}],
+                  [H.unlink, Path.join (Path.dirname (newpath), id), true],
+                  [Redis, 'hdel', 'proc:vid', piv.id],
+                  // Wait one second in case the conversion failed so quickly that the piv object hasn't been created yet.
+                  [function (s) {
+                     setTimeout (function () {s.next ()}, 1000);
+                  }],
+                  [Redis, 'exists', 'piv:' + piv.id],
                   // If the piv was deleted, ignore the error.
-                  if (! exists) return;
-                  redis.set ('piv:' + piv.id, 'vid', 'error:' + id, function (Error) {
-                     if (Error) return notify (s, {priority: 'critical', type: 'redis error', error: Error});
-                     notify (s, {priority: 'critical', type: 'video conversion to mp4 error', error: error, username: rq.user.username});
-                  });
-               });
+                  function (s) {
+                     if (s.last) Redis (s, 'hset', 'piv:' + piv.id, 'vid', 'error:' + id);
+                  }
+               ]);
             });
          },
          function (s) {
@@ -4006,8 +4015,8 @@ if (cicek.isMaster) a.stop ([
       dale.go (s.dbfiles, function (type, dbfile) {
          // S3 only holds original pivs
          if (type === 'piv' && ! s.s3files [dbfile]) s.s3missing.push (dbfile);
-         // FS holds both original pivs and thumbnails
-         if (! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
+         // FS holds both original pivs and thumbnails. Ignore pending or errored conversions to mp4.
+         if (! dbfile.match (/(pending|error)/) && ! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
       });
       dale.go (s.s3files, function (v, s3file) {
          if (! s.dbfiles [s3file]) s.s3extra.push (s3file);
