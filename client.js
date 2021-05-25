@@ -2746,6 +2746,7 @@ dale.do ([
       if (keyCode === 16) B.do (x, 'set', ['State', 'shift'], x.path [0] === 'down');
       if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.do (x, 'tag', 'pivs', true);
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.do (x, 'upload', 'tag', true);
+      if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length) B.do (x, 'delete', 'pivs');
    }],
    ['toggle', 'tag', function (x, tag) {
       if (B.get ('State', 'querying')) return;
