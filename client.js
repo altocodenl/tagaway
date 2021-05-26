@@ -2761,6 +2761,7 @@ dale.do ([
          if (tag === 'untagged' && ! H.isYear (existingTag) && ! H.isGeo (existingTag)) return;
          return existingTag;
       }).concat (tag));
+      if (H.isUserTag (tag)) B.do (x, 'rem', 'State', 'filter');
    }],
    ['select', 'all', function (x) {
       var query = B.get ('State', 'query');
