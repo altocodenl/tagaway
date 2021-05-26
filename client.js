@@ -2793,7 +2793,7 @@ dale.do ([
       var ids = dale.keys (B.get ('State', 'selected'));
       if (ids.length === 0) return;
 
-      var query = B.get ('State', 'query');
+      var query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
       if (! del && query.tags.indexOf ('untagged') > -1) {
          dale.do (ids, function (id) {
             if ((query.recentlyTagged || []).indexOf (id) === -1) B.add (['State', 'query', 'recentlyTagged'], id);
@@ -2803,6 +2803,12 @@ dale.do ([
       B.do (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
          if (! del) B.do (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
+         if (del) {
+            if (ids.length === pivTotal) {
+               B.do (x, 'query', 'tags');
+               return B.do (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
+            }
+         }
          B.do (x, 'query', 'pivs');
          B.do (x, 'query', 'tags');
          if (tag === B.get ('State', 'newTag')) B.do (x, 'rem', 'State', 'newTag');

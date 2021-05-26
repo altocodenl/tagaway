@@ -39,6 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
+- Finish fixing dateFromName tests.
+- Get time from dateFromName.
 - Provision new prod server and start from scratch.
 
 ### Todo beta
@@ -951,7 +953,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it.
    10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
-   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs` and `query tags`. Also invokes `snackbar`.
+   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs` and `query tags`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pictures that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
    13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    14. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs true` and `query tags`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
