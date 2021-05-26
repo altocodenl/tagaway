@@ -2605,7 +2605,6 @@ dale.do ([
       if (! B.get ('Data', 'account')) B.do (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.do (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.do (x, 'query', 'pivs', true);
-      B.do (x, 'query', 'tags');
       B.do (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], function (x) {
@@ -2664,6 +2663,7 @@ dale.do ([
       B.do (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          B.do (x, 'set', ['State', 'querying'], false);
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+         B.do (x, 'query', 'tags');
 
          if (B.get ('State', 'nPivs') === 20) window.scrollTo (0, 0);
 
@@ -2684,7 +2684,6 @@ dale.do ([
          // Set timeout for refreshing query
          if (rs.body.refreshQuery) B.do (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
             B.do (x, 'query', 'pivs');
-            B.do (x, 'query', 'tags');
          }, 1500));
 
          if (B.get ('State', 'open') === undefined) {
@@ -2810,7 +2809,6 @@ dale.do ([
             }
          }
          B.do (x, 'query', 'pivs');
-         B.do (x, 'query', 'tags');
          if (tag === B.get ('State', 'newTag')) B.do (x, 'rem', 'State', 'newTag');
       });
    }],
@@ -2836,7 +2834,6 @@ dale.do ([
          if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          if (timeoutFired) B.do (x, 'clear', 'snackbar');
          B.do (x, 'query', 'pivs', true);
-         B.do (x, 'query', 'tags');
       });
    }],
    ['goto', 'tag', function (x, tag) {
@@ -3271,7 +3268,6 @@ dale.do ([
          if (dismiss) B.do (x, 'dismiss', 'geotagging');
 
          B.do (x, 'query', 'pivs');
-         B.do (x, 'query', 'tags');
          B.do (x, 'snackbar', 'green', 'Geotagging ' + operation + 'd successfully. You can always change this from Account.');
       });
    }],
