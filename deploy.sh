@@ -3,7 +3,7 @@ if [ "$1" == "prod" ] ; then
       echo "Must add 'confirm' to deploy to prod"
       exit 1
    fi
-   HOST="root@"
+   HOST="root@136.243.174.166"
 elif [ "$1" == "dev" ] ; then
    HOST="root@95.216.118.115"
 else
