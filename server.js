@@ -825,10 +825,10 @@ H.parseDate = function (date) {
    // Range is years 1970-2100
    var minDate = 0, maxDate = 4133980799999;
    var d = new Date (date), ms = d.getTime ();
-   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms
+   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
    d = new Date (date.replace (':', '-').replace (':', '-'));
    ms = d.getTime ();
-   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms
+   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
    return -1;
  }
 
@@ -860,8 +860,10 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    // If there are new dates with different values than the ones already held, add them to the dates object.
    if (dale.keys (validOriginalDates).length) multi.hset ('piv:' + piv.id, 'dates', JSON.stringify (dates));
 
-   // If Date/Time Original, keep the date and move on.
+   // If the picture has a valid Date/Time Original date, keep the date and move on.
    if (piv.dateSource === 'Date/Time Original') return mexec (s, multi);
+
+   var oldYearTag = new Date (date).getUTCFullYear ();
 
    if (minDate [1] < date) {
       // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.on the same date and minDate is a 00, ignore, otherwise, set it.
@@ -872,17 +874,28 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
          multi.hset ('piv:' + piv.id, 'dateSource', piv.dateSource);
       }
    }
+   var newYearTag = new Date (parseInt (piv.date)).getUTCFullYear ();
+   if (oldYearTag !== newYearTag) {
+      multi.sadd ('pivt:' + piv.id, newYearTag);
+      multi.srem ('pivt:' + piv.id, oldYearTag);
+      multi.sadd ('tags:' + piv.owner, newYearTag);
+      // The cleanup on /GET tags takes charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag
+      multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
+      multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
+   }
    mexec (s, multi);
 }
 
 H.dateFromName = function (name) {
    var date;
    if (name.match (/(19|20)\d{6}/)) {
-      date = H.parseDate ([name.slice (0, 4), name.slice (4, 6), name.slice (6)].join ('-'));
+      date = name.match (/(19|20)\d{6}/g) [0];
+      date = H.parseDate ([date.slice (0, 4), date.slice (4, 6), date.slice (6)].join ('-'));
       if (date !== -1) return date;
    }
    if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
-      date = H.parseDate ([name.slice (0, 4), name.slice (5, 7), name.slice (8)].join ('-'));
+      date = name.match (/(19|20)\d\d-\d\d-\d\d/g) [0];
+      date = H.parseDate ([date.slice (0, 4), date.slice (5, 7), date.slice (8)].join ('-'));
       if (date !== -1) return date;
    }
    return -1;
@@ -2251,7 +2264,7 @@ var routes = [
 
             dale.go (tags.concat (new Date (piv.date).getUTCFullYear ()).concat (s.geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id,                       tag);
-               multi.sadd ('tags:' + rq.user.username,             tag);;
+               multi.sadd ('tags:' + rq.user.username,             tag);
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
 

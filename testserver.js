@@ -787,7 +787,7 @@ var main = [
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 409],
    ['uploadCheck same picture with different lastModified field, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'small.png', fileSize: 0, lastModified: 1621036799999}}, 200],
-   ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: '2021-05-14', fileSize: 0, lastModified: Date.now ()}}, 200],
+   ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'PHOTO-2021-05-14.jpg', fileSize: 0, lastModified: Date.now ()}}, 200],
    ['upload alreadyUploaded picture with date in name', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'smallmeta.png'},
       {type: 'field', name: 'id', value: s.uid2},
@@ -965,14 +965,14 @@ var main = [
          if (v.type !== ['ok', 'ok', 'repeated', 'ok', 'ok', 'repeated', 'repeated', 'alreadyUploaded', 'repeated', 'ok', 'invalid', 'invalid', 'start'] [k]) return 'Invalid type: ' + v.type + ' (' + (k + 1) + ')';
          if (v.fileId !== [s.pivs [0].id, s.pivs [1].id, s.pivs [2].id, s.pivs [2].id, s.pivs [3].id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, undefined, undefined, undefined] [k]) return 'Invalid fileId: ' + v.fileId + ' (' + (k + 1) + '), vs ' + [s.pivs [0].id, s.pivs [1].id, s.pivs [2].id, s.pivs [2].id, s.pivs [3].id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, s.smallpiv.id, undefined, undefined, undefined] [k];
          if (v.deg !== (k === 0 ? 90 : undefined)) return 'Invalid deg: ' + v.deg + ' (' + (k + 1) + ')';
-         if (v.filename !== [undefined, undefined, 'medium-nometa.jpg', undefined, undefined, 'smallmeta.png', '2021-05-14', undefined, 'smalldup.png', undefined, 'invalid.jpg', 'empty.jpg', undefined] [k]) return 'Invalid filename: ' + v.filename + ' (' + (k + 1) + ')';
+         if (v.filename !== [undefined, undefined, 'medium-nometa.jpg', undefined, undefined, 'smallmeta.png', 'PHOTO-2021-05-14.jpg', undefined, 'smalldup.png', undefined, 'invalid.jpg', 'empty.jpg', undefined] [k]) return 'Invalid filename: ' + v.filename + ' (' + (k + 1) + ')';
          if (v.type === 'error' && ! v.error) return clog ('Error field missing');
       });
       if (error) return clog (error);
       return true;
    }],
    ['get uploads after complete upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs, next) {
-      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPiv: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smallmeta.png', '2021-05-14', 'smalldup.png'], alreadyUploaded: 1, repeatedSize: 16943, invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
+      if (! eq (rs.body [0], {id: s.uid2, ok: 5, lastPiv: {id: s.rotateid, deg: 90}, repeated: ['medium-nometa.jpg', 'smallmeta.png', 'PHOTO-2021-05-14.jpg', 'smalldup.png'], alreadyUploaded: 1, repeatedSize: 16943, invalid: ['invalid.jpg', 'empty.jpg'], status: 'uploading', total: 100})) return clog ('Invalid upload data.');
       return true;
    }],
    ttester ('rotate piv', 'post', 'rotate', {}, [

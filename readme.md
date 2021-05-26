@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo alpha
 
-- Finish fixing dateFromName tests.
 - Get time from dateFromName.
 - Provision new prod server and start from scratch.
 
