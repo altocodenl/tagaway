@@ -37,11 +37,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ## Features
 
-### Todo alpha
-
-- Get time from dateFromName.
-- Provision new prod server and start from scratch.
-
 ### Todo beta
 
 - Refactor UI with unified terminology for pivs: Pics&Vids?

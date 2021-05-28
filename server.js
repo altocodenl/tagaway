@@ -830,7 +830,7 @@ H.parseDate = function (date) {
    ms = d.getTime ();
    if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
    return -1;
- }
+}
 
 H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified, newDates) {
    var date = parseInt (piv.date), dates = JSON.parse (piv.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
@@ -841,24 +841,26 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       return [key + ':' + k, v];
    });
    newDates [key + ':lastModified'] = lastModified;
-   name = H.dateFromName (name);
-   if (name !== -1) newDates [key + ':fromName'] = name;
+   var dateFromName = H.dateFromName (name);
+   if (dateFromName !== -1) newDates [key + ':fromName'] = name;
 
    var minDate = [null, Infinity];
 
-   var validOriginalDates = dale.obj (newDates, function (date, key) {
-      var parsedDate = H.parseDate (date);
+   var updateDates;
+   dale.obj (newDates, function (date, k) {
+      var parsedDate = (k === key + ':fromName') ? dateFromName : H.parseDate (date);
       if (parsedDate === -1) return;
       if (! existingDates [parsedDate]) {
-         dates [key] = date;
-         if (parsedDate < minDate [1]) minDate = [key, parsedDate];
-         return [key, date];
+         updateDates = true;
+         dates [k] = date;
+         if (parsedDate < minDate [1]) minDate = [k, parsedDate];
+         return [k, date];
       }
    });
 
    var multi = redis.multi ();
    // If there are new dates with different values than the ones already held, add them to the dates object.
-   if (dale.keys (validOriginalDates).length) multi.hset ('piv:' + piv.id, 'dates', JSON.stringify (dates));
+   if (updateDates) multi.hset ('piv:' + piv.id, 'dates', JSON.stringify (dates));
 
    // If the picture has a valid Date/Time Original date, keep the date and move on.
    if (piv.dateSource === 'Date/Time Original') return mexec (s, multi);
@@ -866,7 +868,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    var oldYearTag = new Date (date).getUTCFullYear ();
 
    if (minDate [1] < date) {
-      // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.on the same date and minDate is a 00, ignore, otherwise, set it.
+      // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.
       if (minDate [1] !== (date - date % (1000 * 60 * 60 * 24))) {
          piv.date = minDate [1];
          piv.dateSource = minDate [0];
@@ -890,12 +892,32 @@ H.dateFromName = function (name) {
    var date;
    if (name.match (/(19|20)\d{6}/)) {
       date = name.match (/(19|20)\d{6}/g) [0];
-      date = H.parseDate ([date.slice (0, 4), date.slice (4, 6), date.slice (6)].join ('-'));
+      date = [date.slice (0, 4), date.slice (4, 6), date.slice (6)].join ('-');
+      var time = name.match (/(19|20)\d{6}[^\d]*(\d{1,2})[^\d]*(\d{2})[^\d]*(\d{2})?[^a-zA-Z]*(am|AM|pm|PM)?/);
+      if (time && time [2] !== undefined && time [3] !== undefined) {
+         var hour = parseInt (time [2]);
+         if (time [5] && time [5].match (/pm/i) && hour > 0 && hour < 12) hour += 12;
+         hour += '';
+         var dateWithTime = date + 'T' + (hour.length === 1 ? '0' : '') + hour + ':' + time [3] + ':' + (time [4] || '00') + '.000Z';
+         dateWithTime = H.parseDate (dateWithTime);
+         if (dateWithTime !== -1) return dateWithTime;
+      }
+      date = H.parseDate (date);
       if (date !== -1) return date;
    }
    if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
       date = name.match (/(19|20)\d\d-\d\d-\d\d/g) [0];
-      date = H.parseDate ([date.slice (0, 4), date.slice (5, 7), date.slice (8)].join ('-'));
+      date = [date.slice (0, 4), date.slice (5, 7), date.slice (8)].join ('-');
+      var time = name.match (/(19|20)\d\d-\d\d-\d\d[^\d]*(\d{1,2})[^\d]*(\d{2})[^\d]*(\d{2})?[^a-zA-Z]*(am|AM|pm|PM)?/);
+      if (time && time [2] !== undefined && time [3] !== undefined) {
+         var hour = parseInt (time [2]);
+         if (time [5] && time [5].match (/pm/i) && hour > 0 && hour < 12) hour += 12;
+         hour += '';
+         var dateWithTime = date + 'T' + (hour.length === 1 ? '0' : '') + hour + ':' + time [3] + ':' + (time [4] || '00') + '.000Z';
+         dateWithTime = H.parseDate (dateWithTime);
+         if (dateWithTime !== -1) return dateWithTime;
+      }
+      date = H.parseDate (date);
       if (date !== -1) return date;
    }
    return -1;
@@ -2195,7 +2217,7 @@ var routes = [
 
             s.dates ['upload:lastModified'] = lastModified;
             var dateFromName = H.dateFromName (name);
-            if (dateFromName !== -1) s.dates ['upload:fromName'] = dateFromName;
+            if (dateFromName !== -1) s.dates ['upload:fromName'] = name;
 
             piv.dates = JSON.stringify (s.dates);
 

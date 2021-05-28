@@ -786,9 +786,9 @@ var main = [
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 409],
-   ['uploadCheck same picture with different lastModified field, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'small.png', fileSize: 0, lastModified: 1621036799999}}, 200],
+   ['uploadCheck same picture with different lastModified field, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'small.png', fileSize: 0, lastModified: Date.now ()}}, 200],
    ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'PHOTO-2021-05-14.jpg', fileSize: 0, lastModified: Date.now ()}}, 200],
-   ['upload alreadyUploaded picture with date in name', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload repeated picture with different metadata', 'post', 'upload', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'smallmeta.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -806,6 +806,7 @@ var main = [
          if (k.match (/^repeated:\d+:File/)) return;
          return [k, v];
       });
+      // Original file: 4 fields from metadata, 1 from lastModified; repeated 1: lastModified; alreadyUploaded: lastModified; repeated 2: lastModified & fromName; repeated 3: lastModified & 1 field from metadata. Total is 11.
       var keys = dale.keys (piv.dates).length;
       if (keys !== 11) return clog ('Invalid number of keys in piv.dates:', dale.keys (piv.dates).length);
       var au = 0, r = 0, orig = 0;
