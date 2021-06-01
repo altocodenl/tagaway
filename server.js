@@ -2157,6 +2157,7 @@ var routes = [
                a.seq (s, [
                   [notify, {priority: 'critical', type: 'video conversion to mp4 error', error: error, username: rq.user.username, piv: piv.id}],
                   [H.unlink, Path.join (Path.dirname (newpath), id), true],
+                  [H.unlink, Path.join (Path.dirname (newpath), id + '.mp4'), true],
                   [Redis, 'hdel', 'proc:vid', piv.id],
                   // Wait one second in case the conversion failed so quickly that the piv object hasn't been created yet.
                   [function (s) {
