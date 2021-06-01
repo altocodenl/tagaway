@@ -3471,19 +3471,24 @@ var routes = [
             }
 
             var importFile = function (s, index) {
-               var Error, lastActivity = Date.now ();
+               var Error, lastActivity = Date.now (), currentStatus = 'initial';
                // We only set the interval if there are files still left to upload.
                if (index < s.ids.length) var waitInterval = setInterval (function () {
                   // If the last activity (either the beginning of the process or the last wait event) was 9 minutes ago or more, send a wait event to avoid the upload being stalled.
                   if (Date.now () - lastActivity > 1000 * 60 * 9) {
-                     hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
-                        if (RS.code !== 200) {
-                           Error = true;
-                           clearInterval (waitInterval);
-                           return s.next (null, {code: RS.code, error: RS.body});
+                     a.seq (s, [
+                        [notify, {priority: 'important', type: 'import wait event', currentStatus: currentStatus, user: rq.user.username, provider: 'google', file: s.filesToUpload [s.ids [index]]}],
+                        function (s) {
+                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
+                              if (RS.code !== 200) {
+                                 Error = true;
+                                 clearInterval (waitInterval);
+                                 return s.next (null, {code: RS.code, error: RS.body});
+                              }
+                              lastActivity = Date.now ();
+                           }});
                         }
-                        lastActivity = Date.now ();
-                     }});
+                     ]);
                   }
                }, 1000 * 15);
                a.seq (s, [
@@ -3491,6 +3496,7 @@ var routes = [
                   // If the import was cancelled, we interrupt the async chain to stop the process.
                   [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'0': function () {}}],
                   function (s) {
+                     currentStatus = 'auth-ok';
                      // If we reached the end of the list, we're done.
                      if (index === s.ids.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
@@ -3516,9 +3522,12 @@ var routes = [
                         ]);
                      }
 
+                     currentStatus = 'before-google';
                      // We stream the response body directly into a file.
                      // https://developers.google.com/drive/api/v3/reference/files/export
                      https.request ({host: 'www.googleapis.com', path: '/drive/v3/files/' + file.id + '?alt=media', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}}, function (response) {
+                        currentStatus = 'after-google';
+
                         response.on ('error', function (error) {
                            providerError (null, error);
                         });
@@ -3542,11 +3551,13 @@ var routes = [
                            s.next (null, error);
                         });
                         response.pipe (wstream);
+                        currentStatus = 'before-write';
                         wstream.on ('finish', function () {
+                           currentStatus = 'before-upload';
                            if (Error) return;
                            // UPLOAD THE FILE
                            hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {multipart: [
-                              // This `file` field is a dummy one to pass validation, but the actual file informastion goes inside providerData
+                              // This `file` field is a dummy one to pass validation, but the actual file information goes inside providerData
                               {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                               {type: 'field', name: 'id', value: parseInt (s.import.id)},
                               // Use oldest date, whether createdTime or updatedTime
@@ -3561,6 +3572,7 @@ var routes = [
                               })},
                               {type: 'field', name: 'csrf', value: s.csrf}
                            ]}, code: '*', apres: function (S, RQ, RS, next) {
+                              currentStatus = 'after-upload';
                               clearInterval (waitInterval);
 
                               // UNEXPECTED ERROR
