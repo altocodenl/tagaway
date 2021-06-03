@@ -2227,7 +2227,7 @@ var routes = [
             // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
 
             var validDates = dale.obj (s.dates, function (date, key) {
-               var parsed = H.parseDate (date);
+               var parsed = key.match ('fromName') ? H.dateFromName (date) : H.parseDate (date);
                if (parsed > -1) return [key, parsed];
             });
 
