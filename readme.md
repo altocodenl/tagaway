@@ -39,12 +39,27 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- UX round
+   - Backspace when on filter or tag input
+   - Suggest tags when inserting in main view.
+   - Months:
+      - Show months only if one year is selected. If 0 or >2, don't show.
+      - If selected a month, don't show other years.
+      - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
+      - unforbid years by using y::?
+   - Increase thumbnail size
+   - In which order to show tags:
+      - By piv number
+      - latest tagged
+      - latest queried
+      - pinned (manual solution)
+      - compress years and geo? also other categories to compress (with overlap): latest queried, latest tagged, pinned, all
+
 - Refactor UI with unified terminology for pivs: Pics&Vids?
 
 - Backend improvements:
    - Check if we're leaving behind temporary files from import.
    - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
-   - New dev server.
 
 - Upload/import:
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
@@ -55,9 +70,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Show provider errors in import.
       - If there's a provider error, give a "try again" option with the same list?
       - If there's another type of error, mark "ac;pic/server error".
-   - Implement support for large files (> 500MB).
    - Import from Dropbox.
-   - When hashing, chunk large files into smaller segments, both in client and in server.
 
 - Pivs
    - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
