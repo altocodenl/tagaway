@@ -54,6 +54,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - latest queried
       - pinned (manual solution)
       - compress years and geo? also other categories to compress (with overlap): latest queried, latest tagged, pinned, all
+   - Arcade mode when browsing:
+      - changes in query/position are reflected in url, back button works
+      - maybe add back button for queries explicitly, especially on mobile
+      - "window of vision" in scroll. keep n pivs maximum on display but have infinite scroll.
+      - remember position by the piv at a certain position (top/left), not the number, so it works while uploads are happening in the background
+      - see last actions so you can see where you left off.
 
 - Refactor UI with unified terminology for pivs: Pics&Vids?
 
