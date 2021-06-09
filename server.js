@@ -222,7 +222,7 @@ var s3 = new (require ('aws-sdk')).S3 ({
 
 var H = {};
 
-H.email = /^(([_\da-zA-Z\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+H.email = /^(([_\da-zA-Z+\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
 
 H.trim = function (string) {
    return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');

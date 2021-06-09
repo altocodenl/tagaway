@@ -39,6 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- bug with missing AR tags?
 - UX round
    - Backspace when on filter or tag input
    - Suggest tags when inserting in main view.
