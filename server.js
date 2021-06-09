@@ -3913,10 +3913,7 @@ if (cicek.isMaster) a.seq ([
    [k, 'git', 'rev-parse', 'HEAD'],
    function (s) {
       if (s.error) return notify (a.creat (), {priority: 'critical', type: 'server start', error: s.error});
-      // TODO: remove timeout after implementing separate log service
-      setTimeout (function () {
-         notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
-      }, 1500);
+      notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
    }
 ]);
 
