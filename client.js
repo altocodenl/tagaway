@@ -2299,7 +2299,7 @@ H.if = function (condition, then, Else) {
    return condition ? then : Else;
 }
 
-H.email = /^(([_\da-zA-Z\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+H.email = /^(([_\da-zA-Z+\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
 
 H.stopPropagation = function (ev) {
    return [['onclick', 'stop', 'propagation', {rawArgs: 'event'}], ev];
