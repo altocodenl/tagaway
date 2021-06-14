@@ -39,6 +39,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- gotoB v2
+   - Migrate to gotoB v2: https://github.com/fpereiro/gotoB/releases/tag/2.0.0
+      - Put SVGS inline
+   - Long-standing bugs, see after migration to gotoB v2:
+      - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
+      - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
+      - Replicate & fix mysterious shift bug.
+      - Intermittent 403 from GET csrf when already being logged in.
+      - When performance is slow in the browser, double click to open piv when piv is already selected doesn't open the piv.
+
+
 - bug with missing AR tags?
 - UX round
    - Backspace when on filter or tag input
@@ -90,15 +101,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - On double click, images fail to open in most cases
    - When opening thumbnail, big image is superimposed to the same piv (it's like a piv is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
-
-- gotoB v2
-   - Migrate to gotoB v2.
-   - Long-standing bugs, see after migration to gotoB v2:
-      - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
-      - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
-      - Replicate & fix mysterious shift bug.
-      - Intermittent 403 from GET csrf when already being logged in.
-      - When performance is slow in the browser, double click to open piv when piv is already selected doesn't open the piv.
 
 - Accounts
    - Recover/reset password.
@@ -817,11 +819,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 ### Views
 
-**Container**: `E.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other views.
+**Container**: `views.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other views.
 
 **Pages**:
 
-1. `E.pivs`
+1. `views.pivs`
    - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
    - Events:
       - `click -> stop propagation`
@@ -841,7 +843,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> rem State.showNSelectedTags`
       - `input -> set State.filter`
       - `click -> goto tag`
-2. `E.upload`
+2. `views.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
       - `onclick -> snackbar yellow MESSAGE true`
@@ -852,9 +854,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `onclick -> rem State.upload.new.tags.INDEX`
       - `onclick -> upload start`
       - `onclick -> upload cancel`
-3. `E.share`
-4. `E.tags`
-5. `E.import`
+3. `views.share`
+4. `views.tags`
+5. `views.import`
    - Depends on: `Data.imports`, `State.imports` and `Data.account`.
    - Events:
       - `onclick -> import cancel`
@@ -864,46 +866,46 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `onclick -> set/rem State.imports.PROVIDER.showFolders`
       - `onclick -> set/rem State.imports.PROVIDER.currentFolder`
       - `onclick -> set/rem State.imports.PROVIDER.selection`
-6. `E.account`
+6. `views.account`
    - Depends on: `Data.account`.
    - Events:
       - `click -> clear changePassword`.
       - `click -> submit changePassword`.
 7. Auth:
-   7.1 `E.login`
+   7.1 `views.login`
       - Events: `click -> login`
-   7.2 `E.signup`
+   7.2 `views.signup`
       - Depends on: `Data.signup.username`.
       - Events: `click -> signup`
-   7.3 `E.recover`
-   7.4 `E.reset`
+   7.3 `views.recover`
+   7.4 `views.reset`
 
 **Other**:
 
-1. `E.logo`
-   - Contained by: `E.header`.
-2. `E.snackbar`
+1. `views.logo`
+   - Contained by: `views.header`.
+2. `views.snackbar`
    - Depends on: `State.snackbar`.
    - Events: `click -> clear snackbar`.
-   - Contained by: `E.base`.
-3. `E.header`
+   - Contained by: `views.base`.
+3. `views.header`
    - Events: `click -> logout`
-   - Contained by: `E.pivs`, `E.upload`, `E.share`, `E.tags`.
-4. `E.empty`
-   - Contained by: `E.pivs`.
-5. `E.grid`
-   - Contained by: `E.pivs`.
+   - Contained by: `views.pivs`, `views.upload`, `views.share`, `views.tags`.
+4. `views.empty`
+   - Contained by: `views.pivs`.
+5. `views.grid`
+   - Contained by: `views.pivs`.
    - Depends on `State.nPivs` and `Data.pivs`.
    - Events: `click -> click piv`.
-6. `E.open`
-   - Contained by: `E.pivs`.
+6. `views.open`
+   - Contained by: `views.pivs`.
    - Depends on `State.open` and `Data.pivTotal`.
    - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `goto location PIV`.
-7. `E.noSpace`
-   - Contained by: `E.import`, `E.upload`.
+7. `views.noSpace`
+   - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
-8. `E.importFolders`
-   - Contained by: `E.import`.
+8. `views.importFolders`
+   - Contained by: `views.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
       - `onclick -> rem State.import.current`
@@ -929,7 +931,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    11. `touchend` -> `touch end`
 
 2. General
-   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `E.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
+   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `views.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
    2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current page should be `login`).
    3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
    4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument. As second argument it takes a flag `noSnackbar` that doesn't set a timeout to clear the snackbar.
@@ -959,7 +961,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
    3. `change State.query`: sets `State.nPivs` and invokes `query pivs true`, but only if the change is not to `State.query.recentlyTagged`.
-   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `E.grid` (this is done here for performance purposes, instead of making `E.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
+   4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pivs`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed and the previous click was done on a piv still displayed, it will perform multiple selection.
@@ -1041,7 +1043,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
   `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selected` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
    - `lastClick`: if present, has the shape `{id: PIVID, time: INT}`. Used to determine 1) a double-click (which would open the piv in full); 2) range selection with shift.
    - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPivs`.
-   - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `E.open`.
+   - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `views.open`.
    - `newTag`: the name of a new tag to be posted.
    - `nPivs`: the number of pivs to show.
    - `open`: index of the piv to be shown in full-screen mode.
@@ -1096,21 +1098,21 @@ Only things that differ from client are noted.
 
 **Pages**:
 
-1. `E.dashboard`
-2. `E.invites`
+1. `views.dashboard`
+2. `views.invites`
    - Depends on: `Data.invites`, `State.newInvite`
    - Events:
       - `click -> create invite`
       - `click -> delete invite`
       - `change -> set State.newInvite.ID`
       - `click -> del State.newInvite`
-3. `E.users`
+3. `views.users`
    - Depends on: `Data.users`
    - Events:
       - `click -> delete user USERNAME`
-4. `E.logs`
+4. `views.logs`
    - Depends on: `Data.logs`
-5. `E.deploy`
+5. `views.deploy`
    - Events:
       - `click -> deploy client`
 
