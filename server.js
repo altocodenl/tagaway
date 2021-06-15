@@ -3896,6 +3896,10 @@ cicek.apres = function (rs) {
 cicek.log = function (message) {
    if (type (message) !== 'array' || message [0] !== 'error') return;
    var notification;
+   if (message [1] === 'client error') {
+      if (message [2] === 'Error: read ECONNRESET') return;
+      if (message [2].match ('Error: Parse Error:')) return;
+   }
    if (message [1] === 'Invalid signature in cookie') notification = {
       priority: 'important',
       type: 'invalid signature in cookie',
