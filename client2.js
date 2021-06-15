@@ -2602,7 +2602,7 @@ B.mrespond ([
          browse:   ['app-pictures',  'app-all-tags'],
          organise: ['app-organise', 'app-show-organise-bar', State.untag ? 'app-untag-tags' : 'app-attach-tags'],
       }
-      var target = c ('#pics');
+      var target = c ('.pics-target') [0];
       if (! target) return;
 
       // This timeout is needed because on certain occasions, if the classes are changed before a redraw, the CSS won't be applied correctly.
@@ -2625,7 +2625,7 @@ B.mrespond ([
    }],
    ['change', ['State', 'untag'], function (x) {
       var untag = B.get ('State', 'untag');
-      var target = c ('#pics');
+      var target = c ('.pics-target') [0];
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
@@ -2914,7 +2914,7 @@ B.mrespond ([
       if (wscript) wscript.SendKeys ('{ESC}');
    }],
    ['change', ['State', 'open'], function (x) {
-      var target = c ('#pics'), open = B.get ('State', 'open') !== undefined;
+      var target = c ('.pics-target') [0], open = B.get ('State', 'open') !== undefined;
       if (! open) return target.classList.remove ('app-fullscreen');
       target.classList.add ('app-fullscreen');
       B.call (x, 'enter', 'fullscreen');
@@ -3315,7 +3315,8 @@ views.logo = function (size) {
 
 views.base = function () {
    return [
-      ['style', CSS.litc],
+      // TODO: fix style with v2, remove lith.css.g
+      ['style', lith.css.g (CSS.litc)],
       views.snackbar (),
       B.view ([['Data', 'csrf'], ['State', 'page']], function (csrf, page) {
          if (csrf === undefined || ! views [page]) return ['div'];
@@ -3394,8 +3395,9 @@ views.snackbar = function () {
 // *** LOGIN VIEW ***
 
 views.login = function () {
-   return [
-      ['style', [
+   return ['div', [
+      // TODO: fix style with v2, remove lith.css.g
+      ['style', lith.css.g ([
          ['input', {'font-size': 24}],
          // *** enter ***
          ['.enter', {
@@ -3538,7 +3540,7 @@ views.login = function () {
             color: CSS.vars ['highlight-60'],
             mixin1: CSS.vars.fontPrimaryRegular,
          }],
-      ]],
+      ])],
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
@@ -3559,14 +3561,15 @@ views.login = function () {
             ]]
          ]],
       ]],
-   ];
+   ]];
 }
 
 // *** SIGNUP VIEW ***
 
 views.signup = function () {
-   return [
-      ['style', [
+   return ['div', [
+      // TODO: fix style with v2, remove lith.css.g
+      ['style', lith.css.g ([
          ['input', {'font-size': 24}],
          // *** enter ***
          ['.enter', {
@@ -3707,7 +3710,7 @@ views.signup = function () {
             color: CSS.vars ['highlight-60'],
             mixin1: CSS.vars.fontPrimaryRegular,
          }],
-      ]],
+      ])],
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
@@ -3726,7 +3729,7 @@ views.signup = function () {
             ]]
          ]],
       ]],
-   ];
+   ]];
 }
 
 // *** HEADER VIEW ***
@@ -3740,7 +3743,7 @@ views.header = function (showUpload, showImport) {
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#/pics', class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item'},                           ['a', {class: 'main-menu__item-link', onclick: B.ev (H.stopPropagation, 'snackbar', 'green', 'Coming soon, hang tight!')}, 'Manage tags']],
+            ['li', {class: 'main-menu__item'},                           ['a', {class: 'main-menu__item-link', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Manage tags']],
          ]]
       ]],
       // ACCOUNT MENU
@@ -3811,7 +3814,7 @@ views.empty = function () {
 // *** PICS VIEW ***
 
 views.pics = function () {
-   return ['div', {id: 'pics', class: 'app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
+   return ['div', {class: 'pics-target app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
       views.header (true, true),
       views.open (),
       // TODO v2: merge two elements into one
@@ -3819,13 +3822,14 @@ views.pics = function () {
          if (! pivs || ! tags) return ['div'];
          if (tags.all === 0) return views.empty ();
          return ['div', [
-            ['style', [
+            // TODO: fix style with v2, remove lith.css.g
+            ['style', lith.css.g ([
                ['.tag-list__item--time', {width: 0.33, float: 'left'}],
                ['.tag-list__item--geo-country', {width: 0.33, float: 'left'}],
                ['.tag--bolded .tag__title', {color: CSS.vars ['color--one'], 'font-weight': 'bold'}],
                ['.tag--bolded svg', {stroke: CSS.vars ['color--one'], 'stroke-width': 4}],
                ['.clear-both', {clear: 'both'}],
-            ]],
+            ])],
             ['div', {class: 'sidebar'}, [
                ['div', {class: 'sidebar__inner'}, [
                   // Sidebar section View pictures
@@ -4190,7 +4194,8 @@ views.pics = function () {
 
 views.grid = function () {
    return [
-      ['style', [
+      // TODO: fix style with v2, remove lith.css.g
+      ['style', lith.css.g ([
          ['div.caption', {
             'border-radius': 10,
             opacity: 0,
@@ -4226,7 +4231,7 @@ views.grid = function () {
             'height, width': 50,
             'top, left': 'calc(50% - 25px)',
          }],
-      ]],
+      ])],
       B.view ([['State', 'nPivs'], ['Data', 'pivs']], function (nPivs, pivs) {
          if (! nPivs) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
@@ -4277,7 +4282,7 @@ views.grid = function () {
                            'border-radius': 'inherit',
                            width: askance ? frameHeight : frameWidth,
                            height: askance ? frameWidth : frameHeight,
-                           //'background-image': 'url(thumb/200/' + piv.id + ')',
+                           'background-image': 'url(thumb/200/' + piv.id + ')',
                            'background-position': 'center',
                            'background-repeat': 'no-repeat',
                            'background-size': 'cover',
@@ -4839,7 +4844,7 @@ views.import = function () {
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
             B.view (['Data', 'imports'], function (providers) {
-               return dale.go (providers, function (v, provider) {
+               return ['div', dale.go (providers, function (v, provider) {
                   return dale.go (v, function (v2) {
                      if (['complete', 'error'].indexOf (v2.status) === -1) return;
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
@@ -4890,7 +4895,7 @@ views.import = function () {
                         ]],
                      ]];
                   });
-               });
+               })];
             }),
             // BACK LINK
             ['div', {class: 'page-section'}, [
