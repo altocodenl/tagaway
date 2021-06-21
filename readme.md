@@ -40,15 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - gotoB v2
-   - Migrate to gotoB v2: https://github.com/fpereiro/gotoB/releases/tag/2.0.0
-      - Put SVGS inline
-   - Long-standing bugs, see after migration to gotoB v2:
-      - Clicking on a tag and a year tag selects two tags (onclick on recycled element gets triggered).
-      - While app is uploading files, especially during large uploads, the 'view pictures' view and its functionalities behave with difficulty due to the constant redrawing of view. Buttons blink when on hover, thumbnails require more than a click to select and more than 2 to open, close functionalities when clicking on 'x' require several clicks.
-      - Replicate & fix mysterious shift bug.
-      - Intermittent 403 from GET csrf when already being logged in.
-      - When performance is slow in the browser, double click to open piv when piv is already selected doesn't open the piv.
-
+   - Put SVGS inline
+   - Fix selection CSS, pics are not marked in blue
 
 - bug with missing AR tags?
 - UX round

@@ -2227,6 +2227,21 @@ CSS.litc = [
    ['.fullscreen__action:hover .fullscreen__action-text', {color: CSS.vars ['grey--lightest']}],
 ];
 
+// *** SVG ***
+
+var svg = {
+   accountMenu: '<svg class="account-menu__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 2h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3zm0 1c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2z"/></svg>',
+   sidebarSearch: '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>',
+   tagAll: '<svg class="tag__icon tag__icon--all" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm0-6c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5zm-4.5-.5c0-.3-.2-.5-.5-.5h-1c-.3 0-.5.2-.5.5s.2.5.5.5h1c.3 0 .5-.2.5-.5zm10.5-3v-1c0-.3-.2-.5-.5-.5s-.5.2-.5.5v1h-2v-.5c0-.8-.6-1.5-1.3-1.5h-3.3c-.8 0-1.4.7-1.4 1.5v.5h-2.5c-1.9 0-3.5 1.6-3.5 3.5v5c0 1.9 1.6 3.5 3.5 3.5h11c1.9 0 3.5-1.6 3.5-3.5v-5c0-1.8-1.3-3.2-3-3.5zm-8-.5c0-.3.2-.5.3-.5h3.3c.2 0 .4.2.4.5v.5h-4zm10 9c0 1.4-1.1 2.5-2.5 2.5h-11c-1.4 0-2.5-1.1-2.5-2.5v-5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5z"/></svg>',
+   itemSelected: '<svg class="tag-actions__item-icon tag-actions__item-icon--selected tag-actions__selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>',
+   itemDeselect: '<svg class="tag-actions__item-icon tag-actions__item-icon--deselect" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
+   itemAttach: '<svg class="tag-actions__item-icon tag-actions__item-icon--attach" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 7h-1v4.5h-4.5v1h4.5v4.5h1v-4.5h4.5v-1h-4.5z"/></svg>',
+   itemAttached: '<svg class="tag-actions__item-icon tag-actions__item-icon--attached" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.3 15.7c-.1 0-.3-.1-.4-.1l-3-3c-.2-.2-.2-.5 0-.7s.5-.2.7 0l2.6 2.6 6.1-6.1c.2-.2.5-.2.7 0s.2.5 0 .7l-6.4 6.4c-.1.2-.2.2-.3.2z"/></svg>',
+   itemUntag: '<svg class="tag-actions__item-icon tag-actions__item-icon--untag" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 9.4c-.1-.3-.4-.4-.6-.3l-6.5 1.9 1.9-6.4c.1-.3 0-.5-.3-.6s-.5.1-.6.3l-2.1 7.1-2.6.8c.3-.9.1-1.9-.6-2.6-1-1-2.6-1-3.5 0s-1 2.6 0 3.5c.5.5 1.1.7 1.8.7.4 0 .7-.1 1-.2h.1l3.4-1-1 3.4v.2c-.2.3-.2.7-.2 1 0 .7.3 1.3.7 1.8.5.5 1.1.7 1.8.7.6 0 1.3-.2 1.8-.7s.7-1.1.7-1.8-.3-1.3-.7-1.8c-.7-.7-1.7-.9-2.6-.6l.8-2.6 7.1-2.1c.1-.1.3-.4.2-.7zm-14.2 3c-.6-.6-.6-1.5 0-2.1.3-.3.6-.5 1-.5s.8.2 1.1.4c.6.6.6 1.5 0 2.1s-1.6.6-2.1.1zm7.9 3.7c.3.3.4.7.4 1.1s-.2.8-.4 1.1c-.6.6-1.5.6-2.1 0-.3-.3-.4-.7-.4-1.1s.2-.8.4-1.1c.3-.3.7-.4 1.1-.4.4-.1.7.1 1 .4z"/></svg>',
+   itemUntagged: '<svg class="tag__icon tag__icon--untagged" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>',
+
+}
+
 // *** HELPERS ***
 
 var H = {};
@@ -2531,16 +2546,6 @@ B.mrespond ([
             if (! element.innerHTML.match ('^<svg')) element.insertAdjacentHTML (where, svg);
          });
       }
-      putSvg ('.account-menu__item', 'afterBegin', '<svg class="account-menu__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 2h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3zm0 1c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2z"/></svg>');
-      putSvg ('.sidebar-search', 'beforeEnd', '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>');
-      //putSvg ('.sidebar-header__filter-selected', 'afterBegin', '<svg class="sidebar-header__filter-selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
-      putSvg ('.tag--all-pictures', 'afterBegin', '<svg class="tag__icon tag__icon--all" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm0-6c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5zm-4.5-.5c0-.3-.2-.5-.5-.5h-1c-.3 0-.5.2-.5.5s.2.5.5.5h1c.3 0 .5-.2.5-.5zm10.5-3v-1c0-.3-.2-.5-.5-.5s-.5.2-.5.5v1h-2v-.5c0-.8-.6-1.5-1.3-1.5h-3.3c-.8 0-1.4.7-1.4 1.5v.5h-2.5c-1.9 0-3.5 1.6-3.5 3.5v5c0 1.9 1.6 3.5 3.5 3.5h11c1.9 0 3.5-1.6 3.5-3.5v-5c0-1.8-1.3-3.2-3-3.5zm-8-.5c0-.3.2-.5.3-.5h3.3c.2 0 .4.2.4.5v.5h-4zm10 9c0 1.4-1.1 2.5-2.5 2.5h-11c-1.4 0-2.5-1.1-2.5-2.5v-5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5z"/></svg>');
-      putSvg ('.tag-actions__item--selected', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--selected tag-actions__selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
-      putSvg ('.tag-actions__item--deselect', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--deselect" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>');
-      putSvg ('.tag-actions__item--attach', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--attach" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 7h-1v4.5h-4.5v1h4.5v4.5h1v-4.5h4.5v-1h-4.5z"/></svg>');
-      putSvg ('.tag-actions__item--attached', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--attached" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.3 15.7c-.1 0-.3-.1-.4-.1l-3-3c-.2-.2-.2-.5 0-.7s.5-.2.7 0l2.6 2.6 6.1-6.1c.2-.2.5-.2.7 0s.2.5 0 .7l-6.4 6.4c-.1.2-.2.2-.3.2z"/></svg>');
-      putSvg ('.tag-actions__item--untag', 'afterBegin', '<svg class="tag-actions__item-icon tag-actions__item-icon--untag" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 9.4c-.1-.3-.4-.4-.6-.3l-6.5 1.9 1.9-6.4c.1-.3 0-.5-.3-.6s-.5.1-.6.3l-2.1 7.1-2.6.8c.3-.9.1-1.9-.6-2.6-1-1-2.6-1-3.5 0s-1 2.6 0 3.5c.5.5 1.1.7 1.8.7.4 0 .7-.1 1-.2h.1l3.4-1-1 3.4v.2c-.2.3-.2.7-.2 1 0 .7.3 1.3.7 1.8.5.5 1.1.7 1.8.7.6 0 1.3-.2 1.8-.7s.7-1.1.7-1.8-.3-1.3-.7-1.8c-.7-.7-1.7-.9-2.6-.6l.8-2.6 7.1-2.1c.1-.1.3-.4.2-.7zm-14.2 3c-.6-.6-.6-1.5 0-2.1.3-.3.6-.5 1-.5s.8.2 1.1.4c.6.6.6 1.5 0 2.1s-1.6.6-2.1.1zm7.9 3.7c.3.3.4.7.4 1.1s-.2.8-.4 1.1c-.6.6-1.5.6-2.1 0-.3-.3-.4-.7-.4-1.1s.2-.8.4-1.1c.3-.3.7-.4 1.1-.4.4-.1.7.1 1 .4z"/></svg>');
-      putSvg ('.tag-list__item--untagged', 'afterBegin', '<svg class="tag__icon tag__icon--untagged" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
       putSvg ('.tag-list-horizontal__item--untagged', 'afterBegin', '<svg class="tag__icon tag__icon--untagged" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
       dale.go (CSS.vars.tagColors, function (color) {
          putSvg ('.tag-list__item--' + color,           'afterBegin', '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>');
@@ -3054,8 +3059,7 @@ B.mrespond ([
             if (v.status === 'uploading') return true;
          });
          if (needRefresh) B.call (x, 'set', ['State', 'upload', 'timeout'], setTimeout (function () {
-            // TODO v2: re-add x to call
-            B.call ('query', 'uploads');
+            B.call (x, 'query', 'uploads');
          }, 1500));
       });
    }],
@@ -3081,8 +3085,7 @@ B.mrespond ([
                // Remove file from queue.
                dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                   if (v !== file) return;
-                  // TODO v2: re-add x to call
-                  B.call ('rem', ['State', 'upload', 'queue'], i);
+                  B.call (x, 'rem', ['State', 'upload', 'queue'], i);
                   return true;
                });
 
@@ -3315,8 +3318,7 @@ views.logo = function (size) {
 
 views.base = function () {
    return [
-      // TODO: fix style with v2, remove lith.css.g
-      ['style', lith.css.g (CSS.litc)],
+      ['style', CSS.litc],
       views.snackbar (),
       B.view ([['Data', 'csrf'], ['State', 'page']], function (csrf, page) {
          if (csrf === undefined || ! views [page]) return ['div'];
@@ -3396,8 +3398,7 @@ views.snackbar = function () {
 
 views.login = function () {
    return ['div', [
-      // TODO: fix style with v2, remove lith.css.g
-      ['style', lith.css.g ([
+      ['style', [
          ['input', {'font-size': 24}],
          // *** enter ***
          ['.enter', {
@@ -3540,7 +3541,7 @@ views.login = function () {
             color: CSS.vars ['highlight-60'],
             mixin1: CSS.vars.fontPrimaryRegular,
          }],
-      ])],
+      ]],
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
@@ -3568,8 +3569,7 @@ views.login = function () {
 
 views.signup = function () {
    return ['div', [
-      // TODO: fix style with v2, remove lith.css.g
-      ['style', lith.css.g ([
+      ['style', [
          ['input', {'font-size': 24}],
          // *** enter ***
          ['.enter', {
@@ -3710,7 +3710,7 @@ views.signup = function () {
             color: CSS.vars ['highlight-60'],
             mixin1: CSS.vars.fontPrimaryRegular,
          }],
-      ])],
+      ]],
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
@@ -3749,8 +3749,8 @@ views.header = function (showUpload, showImport) {
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
-            // TODO v2: add inline SVG
             ['li', {class: 'account-menu__item', opaque: true}, [
+               ['LITERAL', svg.accountMenu],
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
                   ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
@@ -3787,9 +3787,9 @@ views.empty = function () {
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
-            // TODO v2: add inline SVG
             ['div', {class: 'sidebar-search', opaque: true}, [
                ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
+               ['LITERAL', svg.sidebarSearch],
             ]],
          ]],
       ]],
@@ -3817,19 +3817,17 @@ views.pics = function () {
    return ['div', {class: 'pics-target app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
       views.header (true, true),
       views.open (),
-      // TODO v2: merge two elements into one
       B.view ([['Data', 'pivs'], ['Data', 'tags']], function (pivs, tags) {
          if (! pivs || ! tags) return ['div'];
          if (tags.all === 0) return views.empty ();
          return ['div', [
-            // TODO: fix style with v2, remove lith.css.g
-            ['style', lith.css.g ([
+            ['style', [
                ['.tag-list__item--time', {width: 0.33, float: 'left'}],
                ['.tag-list__item--geo-country', {width: 0.33, float: 'left'}],
                ['.tag--bolded .tag__title', {color: CSS.vars ['color--one'], 'font-weight': 'bold'}],
                ['.tag--bolded svg', {stroke: CSS.vars ['color--one'], 'stroke-width': 4}],
                ['.clear-both', {clear: 'both'}],
-            ])],
+            ]],
             ['div', {class: 'sidebar'}, [
                ['div', {class: 'sidebar__inner'}, [
                   // Sidebar section View pictures
@@ -3838,12 +3836,10 @@ views.pics = function () {
                         ['div', {class: 'sidebar-header'}, [
                            ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
                            // TODO v2: add inline SVG
-                           // TODO: why must specify height so it looks exactly the same as markup?
                            ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     // TODO v2: merge two elements into one
                      B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, tags, account, showNTags) {
                         if (! account) return ['ul'];
                         filter = H.trim (filter || '');
@@ -3921,20 +3917,16 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '');
                            }
                            return ['li', {class: Class, opaque: true, onclick: B.ev (H.stopPropagation, action)}, [
+                              H.if (which === 'all', ['LITERAL', svg.tagAll], []),
+                              H.if (which === 'untagged', ['LITERAL', svg.itemUntagged], []),
                               ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
-                              // TODO: why must specify height so it looks exactly the same as markup?
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
-                                    // TODO v2: add inline SVG
-                                    ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
-                                    // TODO v2: add inline SVG
-                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
-                                    // TODO v2: add inline SVG
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
-                                    // TODO v2: add inline SVG
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
-                                    // TODO v2: add inline SVG
-                                    ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['LITERAL', svg.itemSelected]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['LITERAL', svg.itemDeselect]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach',   opaque: true}, ['LITERAL', svg.itemAttach]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['LITERAL', svg.itemAttached]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag',    opaque: true}, ['LITERAL', svg.itemUntag]],
                                  ]]
                               ]]
                            ]];
@@ -4004,7 +3996,6 @@ views.pics = function () {
                            ]];
                         }),
                      ]],
-                     // TODO v2: merge two elements into one
                      B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags']], function (untag, filter, selected, showNSelectedTags) {
 
                         filter = H.trim (filter || '');
@@ -4039,16 +4030,11 @@ views.pics = function () {
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
                                     ['div', {class: 'tag-actions'}, [
-                                       // TODO v2: add inline SVG
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}],
-                                       // TODO v2: add inline SVG
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}],
-                                       // TODO v2: add inline SVG
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach', opaque: true}],
-                                       // TODO v2: add inline SVG
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}],
-                                       // TODO v2: add inline SVG
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag', opaque: true}],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['LITERAL', svg.itemSelected]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['LITERAL', svg.itemDeselect]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attach',   opaque: true}, ['LITERAL', svg.itemAttach]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['LITERAL', svg.itemAttached]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--untag',    opaque: true}, ['LITERAL', svg.itemUntag]],
                                     ]],
                                  ]],
                               ]];
@@ -4065,7 +4051,8 @@ views.pics = function () {
                   var tags = query ? query.tags : [];
                   return ['div', {class: 'sidebar__footer', onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search', opaque: true}, [
-                        ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}]
+                        ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
+                        ['LITERAL', svg.sidebarSearch],
                      ]],
                      // DONE TAGGING BUTTON
                      H.if (tags.indexOf ('untagged') > -1 && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
@@ -4124,11 +4111,9 @@ views.pics = function () {
                                     // TODO v2: add inline SVG
                                     return ['li', {class: Class, opaque: true}, [
                                        ['span', {class: 'tag__title'}, tag === 'untagged' ? 'Untagged' : tag.replace (/^g::/, '')],
-                                       // TODO: why must specify height so it looks exactly the same as markup?
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
-                                             // TODO v2: add inline SVG
-                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}]
+                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, ['LITERAL', svg.itemDeselect]],
                                           ]],
                                        ]],
                                     ]];
@@ -4194,8 +4179,7 @@ views.pics = function () {
 
 views.grid = function () {
    return [
-      // TODO: fix style with v2, remove lith.css.g
-      ['style', lith.css.g ([
+      ['style', [
          ['div.caption', {
             'border-radius': 10,
             opacity: 0,
@@ -4231,7 +4215,7 @@ views.grid = function () {
             'height, width': 50,
             'top, left': 'calc(50% - 25px)',
          }],
-      ])],
+      ]],
       B.view ([['State', 'nPivs'], ['Data', 'pivs']], function (nPivs, pivs) {
          if (! nPivs) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
@@ -4477,12 +4461,9 @@ views.upload = function () {
                                                 // TODO v2: add inline SVG
                                                 return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
                                                    ['span', {class: 'tag__title'}, tag],
-                                                   // TODO: why must specify height so it looks exactly the same as markup?
                                                    ['div', {class: 'tag__actions', style: style ({height: 24}), onclick: B.ev ('rem', ['State', 'upload', 'new', 'tags'], k)}, [
                                                       ['div', {class: 'tag-actions'}, [
-                                                         // TODO v2: add inline SVG
-                                                         // TODO: why must specify height so it looks exactly the same as markup?
-                                                         ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}],
+                                                         ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['LITERAL', svg.itemDeselect]],
                                                       ]],
                                                    ]],
                                                 ]];
@@ -4816,19 +4797,19 @@ views.import = function () {
                                     ]];
 
                                     // If there's an error, print an error on click.
-                                    if (providerData.status === 'error' || providerData.status === 'stalled') return ['div', attrs ('snackbar', 'red', 'There was an error retrieving the list of files, please retry.')];
+                                    if (providerData.status === 'error' || providerData.status === 'stalled') return ['div', attrs (['snackbar', 'red', 'There was an error retrieving the list of files, please retry.'])];
 
                                     // If there's an import upload in process, print a warning on click.
-                                    if (providerData.status === 'uploading') return ['div', attrs ('snackbar', 'yellow', 'Files being uploaded, please wait.')];
+                                    if (providerData.status === 'uploading') return ['div', attrs (['snackbar', 'yellow', 'Files being uploaded, please wait.'])];
 
                                     // If there no list or the last import is finished, trigger listing.
-                                    if ([undefined, 'cancelled', 'complete'].indexOf (providerData.status) > -1) return ['div', attrs ('import', 'list', provider.provider)];
+                                    if ([undefined, 'cancelled', 'complete'].indexOf (providerData.status) > -1) return ['div', attrs (['import', 'list', provider.provider])];
 
                                     // If we are currently listing, print a warning on click.
-                                    if (providerData.status === 'listing') return ['div', attrs ('snackbar', 'yellow', 'Files being listed, please wait.')];
+                                    if (providerData.status === 'listing') return ['div', attrs (['snackbar', 'yellow', 'Files being listed, please wait.'])];
 
                                     // There's already a completed list, show it.
-                                    if (providerData.status === 'ready') return ['div', attrs ('set', ['State', 'imports', provider.provider, 'showFolders'], true)];
+                                    if (providerData.status === 'ready') return ['div', attrs (['set', ['State', 'imports', provider.provider, 'showFolders'], true])];
                                  })]
                               ]],
                            ]];
@@ -5007,21 +4988,15 @@ views.importFolders = function (importState, importData) {
                })],
             ]],
             ['div', {class: 'import-process-box'}, [
-               // TODO: when upgrading gotoB v2, remove decoy div and check that recycle doesn't trigger onclick twice
-               ['div', {style: 'display: none', class: 'import-process-box-back pointer', onclick: B.ev ('foo', 'bar')}, [
-                  ['div', {class: 'import-process-box-back-icon', opaque: true}],
-                  ['div', {class: 'import-process-box-back-text'}, 'Back']
-               ]],
-               ['div', {class: 'import-process-box-back pointer', onclick: B.ev ([
+               ['div', {class: 'import-process-box-back pointer', onclick: B.ev (
                   ['import', 'select', importData.provider],
                   ['rem', ['State', 'imports', importData.provider], 'showFolders'],
                   ['rem', ['State', 'imports', importData.provider], 'currentFolder']
-               ])}, [
+               )}, [
                   ['div', {class: 'import-process-box-back-icon', opaque: true}],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
-                  // TODO: when upgrading gotoB v2, remove decoy div and check that recycle doesn't trigger onclick twice
                   ['div', {style: importState.currentFolder ? '' : 'display: none', class: 'import-process-box-list-up pointer', onclick: B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], importState.currentFolder ? importData.data.folders [importState.currentFolder].parent : '')}, [
                      ['div', {class: 'up-icon', opaque: true}],
                      ['span', 'Up']
@@ -5057,11 +5032,11 @@ views.importFolders = function (importState, importData) {
                   ]],
                ]],
             ]],
-            ['div', {class: 'start-import-button button', onclick: B.ev ([
+            ['div', {class: 'start-import-button button', onclick: B.ev (
                ['import', 'select', importData.provider, true],
                ['rem', ['State', 'imports', importData.provider], 'showFolders'],
                ['rem', ['State', 'imports', importData.provider], 'currentFolder']
-            ])}, 'Start import'],
+            )}, 'Start import'],
          ]],
       ]]
    ]];
@@ -5070,10 +5045,10 @@ views.importFolders = function (importState, importData) {
 // *** ACCOUNT VIEW ***
 
 views.account = function () {
-   return [
+   return ['div', [
       views.header (true, true),
       B.view (['Data', 'account'], function (account) {
-         if (! account) return;
+         if (! account) return ['div'];
          var percUsed = Math.round ((account.usage.fsused / account.usage.limit) * 100);
          var gbUsed = Math.round (account.usage.fsused * 10 / 1000000000) / 10;
          var free   = true;
@@ -5201,7 +5176,7 @@ views.account = function () {
             ]],
          ]];
       })
-   ];
+   ]];
 }
 
 // *** UPGRADE VIEW ***
