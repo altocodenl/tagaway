@@ -2262,6 +2262,13 @@ var svg = {
    geotagOpen: '<svg class="fullscreen__action-icon" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#ffffff" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>',
    geoCity: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;" xml:space="preserve"><path d="M56.4,5.8C53.6,5,48.9,4.8,46,5.3C28.6,8.5,17.2,26.2,24,42.2c7.7,18,17.4,35.2,26,52.8  c8.6-17.6,18.3-34.7,26-52.7C82.5,27,72.5,10.3,56.4,5.8z M50,49.2c-8.4,0-15.2-6.9-15.2-15.4S41.6,18.5,50,18.5s15.2,6.9,15.2,15.4  S58.4,49.2,50,49.2z"/></svg>',
    geoCountry: '<svg width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;stroke-width: 1.5;" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#000000" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>',
+   spaceAlert: '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>',
+   googleDriveIcon: '<svg viewBox="0 0 94 94" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="94" height="94"/><path d="M10.7219 73.2906L14.4917 79.8021C15.275 81.1729 16.401 82.25 17.7229 83.0333L31.1865 59.7292H4.25937C4.25937 61.2469 4.65104 62.7646 5.43437 64.1354L10.7219 73.2906Z" fill="#0066DA"/><path d="M47 32.3125L33.5365 9.00833C32.2146 9.79166 31.0885 10.8687 30.3052 12.2396L5.43437 55.3229C4.65104 56.6938 4.25937 58.2115 4.25937 59.7292H31.1865L47 32.3125Z" fill="#00AC47"/><path d="M47 32.3125L60.4635 9.00833C59.1416 8.22499 57.6239 7.83333 56.0573 7.83333H37.9427C36.376 7.83333 34.8583 8.27395 33.5364 9.00833L47 32.3125Z" fill="#00832D"/><path d="M62.8135 59.7292H31.1864L17.7229 83.0333C19.0448 83.8167 20.5625 84.2083 22.1292 84.2083H71.8708C73.4375 84.2083 74.9552 83.7677 76.2771 83.0333L62.8135 59.7292Z" fill="#2684FC"/><path d="M76.2771 83.0333C77.599 82.25 78.725 81.1729 79.5083 79.8021L81.075 77.1094L88.5656 64.1354C89.3489 62.7646 89.7406 61.2469 89.7406 59.7292H62.8625L76.2771 83.0333Z" fill="#2684FC"/><path d="M76.1302 33.7813L63.6948 12.2396C62.9115 10.8687 61.7854 9.79166 60.4635 9.00833L47 32.3125L62.8135 59.7292H89.6917C89.6917 58.2115 89.3 56.6938 88.5167 55.3229L76.1302 33.7813Z" fill="#FFBA00"/></svg>',
+   dropboxIcon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" style="fill: rgb(0, 97, 255);"><title></title><path d="M8 2.4l8 5.1-8 5.1-8-5.1 8-5.1zm16 0l8 5.1-8 5.1-8-5.1 8-5.1zM0 17.7l8-5.1 8 5.1-8 5.1-8-5.1zm24-5.1l8 5.1-8 5.1-8-5.1 8-5.1zM8 24.5l8-5.1 8 5.1-8 5.1-8-5.1z"></path></svg>',
+   folderIcon: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 36 36" style="enable-background:new 0 0 36 36;" xml:space="preserve"><g><path d="M32.5,13.5H30V10c0-0.28-0.22-0.5-0.5-0.5H15.81l-1.86-3.72C13.86,5.61,13.69,5.5,13.5,5.5h-10C3.22,5.5,3,5.72,3,6v24   c0,0,0,0,0,0s0,0,0,0v0c0,0,0,0,0,0c0,0,0,0,0,0s0,0,0,0v0v0c0,0,0,0,0,0c0,0.13,0.05,0.24,0.13,0.33c0.03,0.03,0.06,0.06,0.1,0.08   c0,0,0,0,0,0c0.07,0.04,0.15,0.07,0.24,0.08c0.01,0,0.02,0,0.03,0c0,0,0,0,0.01,0H28.5c0.23,0,0.43-0.16,0.49-0.38l4-16   c0.04-0.15,0-0.31-0.09-0.43S32.65,13.5,32.5,13.5z M4,6.5h9.19l1.86,3.72c0.08,0.17,0.26,0.28,0.45,0.28H29v3H7.5   c-0.23,0-0.43,0.16-0.49,0.38L4,25.94V6.5z M28.11,29.5H4.14l3.75-15h23.97L28.11,29.5z"/></g></svg>',
+   upIcon: '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>',
+   backIcon: '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
+   folderDeselect: '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
@@ -2566,21 +2573,6 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   // TODO v2: remove, use literals
-   ['change', [], {priority: -10000, match: H.matchVerb}, function (x) {
-      var putSvg = function (selector, where, svg) {
-         c (selector, function (element) {
-            if (! element.innerHTML.match ('^<svg')) element.insertAdjacentHTML (where, svg);
-         });
-      }
-      putSvg ('.space-alert-icon, .space-alert-icon-small', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>');
-      putSvg ('.google-drive-icon, .google-drive-icon-small', 'afterBegin', '<svg viewBox="0 0 94 94" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="94" height="94"/><path d="M10.7219 73.2906L14.4917 79.8021C15.275 81.1729 16.401 82.25 17.7229 83.0333L31.1865 59.7292H4.25937C4.25937 61.2469 4.65104 62.7646 5.43437 64.1354L10.7219 73.2906Z" fill="#0066DA"/><path d="M47 32.3125L33.5365 9.00833C32.2146 9.79166 31.0885 10.8687 30.3052 12.2396L5.43437 55.3229C4.65104 56.6938 4.25937 58.2115 4.25937 59.7292H31.1865L47 32.3125Z" fill="#00AC47"/><path d="M47 32.3125L60.4635 9.00833C59.1416 8.22499 57.6239 7.83333 56.0573 7.83333H37.9427C36.376 7.83333 34.8583 8.27395 33.5364 9.00833L47 32.3125Z" fill="#00832D"/><path d="M62.8135 59.7292H31.1864L17.7229 83.0333C19.0448 83.8167 20.5625 84.2083 22.1292 84.2083H71.8708C73.4375 84.2083 74.9552 83.7677 76.2771 83.0333L62.8135 59.7292Z" fill="#2684FC"/><path d="M76.2771 83.0333C77.599 82.25 78.725 81.1729 79.5083 79.8021L81.075 77.1094L88.5656 64.1354C89.3489 62.7646 89.7406 61.2469 89.7406 59.7292H62.8625L76.2771 83.0333Z" fill="#2684FC"/><path d="M76.1302 33.7813L63.6948 12.2396C62.9115 10.8687 61.7854 9.79166 60.4635 9.00833L47 32.3125L62.8135 59.7292H89.6917C89.6917 58.2115 89.3 56.6938 88.5167 55.3229L76.1302 33.7813Z" fill="#FFBA00"/></svg>');
-      putSvg ('.dropbox-icon, .dropbox-icon-small', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" style="fill: rgb(0, 97, 255);"><title></title><path d="M8 2.4l8 5.1-8 5.1-8-5.1 8-5.1zm16 0l8 5.1-8 5.1-8-5.1 8-5.1zM0 17.7l8-5.1 8 5.1-8 5.1-8-5.1zm24-5.1l8 5.1-8 5.1-8-5.1 8-5.1zM8 24.5l8-5.1 8 5.1-8 5.1-8-5.1z"></path></svg>');
-      putSvg ('.folder-icon', 'afterBegin', '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 36 36" style="enable-background:new 0 0 36 36;" xml:space="preserve"><g><path d="M32.5,13.5H30V10c0-0.28-0.22-0.5-0.5-0.5H15.81l-1.86-3.72C13.86,5.61,13.69,5.5,13.5,5.5h-10C3.22,5.5,3,5.72,3,6v24   c0,0,0,0,0,0s0,0,0,0v0c0,0,0,0,0,0c0,0,0,0,0,0s0,0,0,0v0v0c0,0,0,0,0,0c0,0.13,0.05,0.24,0.13,0.33c0.03,0.03,0.06,0.06,0.1,0.08   c0,0,0,0,0,0c0.07,0.04,0.15,0.07,0.24,0.08c0.01,0,0.02,0,0.03,0c0,0,0,0,0.01,0H28.5c0.23,0,0.43-0.16,0.49-0.38l4-16   c0.04-0.15,0-0.31-0.09-0.43S32.65,13.5,32.5,13.5z M4,6.5h9.19l1.86,3.72c0.08,0.17,0.26,0.28,0.45,0.28H29v3H7.5   c-0.23,0-0.43,0.16-0.49,0.38L4,25.94V6.5z M28.11,29.5H4.14l3.75-15h23.97L28.11,29.5z"/></g></svg>');
-      putSvg ('.up-icon', 'afterBegin', '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>');
-      putSvg ('.import-process-box-back-icon', 'afterBegin', '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>');
-      putSvg ('.selected-folder-deselect', 'afterBegin', '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>');
-   }],
    ['change', ['State', 'page'], {priority: -10000}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
@@ -3831,8 +3823,7 @@ views.pics = function () {
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
                            ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
-                           // TODO v2: add inline SVG
-                           ['div', {class: 'sidebar-header__filter-selected', opaque: true}],
+                           ['div', {class: 'sidebar-header__filter-selected'}],
                         ]],
                      ]],
                      // *** QUERY LIST ***
@@ -3924,17 +3915,16 @@ views.pics = function () {
                               ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
-                                    ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['LITERAL', svg.itemSelected]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['LITERAL', svg.itemDeselect]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attach',   opaque: true}, ['LITERAL', svg.itemAttach]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['LITERAL', svg.itemAttached]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--untag',    opaque: true}, ['LITERAL', svg.itemUntag]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, ['LITERAL', svg.itemSelected]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, ['LITERAL', svg.itemDeselect]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   ['LITERAL', svg.itemAttach]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, ['LITERAL', svg.itemAttached]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    ['LITERAL', svg.itemUntag]],
                                  ]]
                               ]]
                            ]];
                         }
 
-                        // TODO v2: add inline SVG
                         return ['div', {class: 'sidebar__tags'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('all'),
                            makeTag ('untagged'),
@@ -4032,11 +4022,11 @@ views.pics = function () {
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
                                     ['div', {class: 'tag-actions'}, [
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected', opaque: true}, ['LITERAL', svg.itemSelected]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true}, ['LITERAL', svg.itemDeselect]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach',   opaque: true}, ['LITERAL', svg.itemAttach]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached', opaque: true}, ['LITERAL', svg.itemAttached]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag',    opaque: true}, ['LITERAL', svg.itemUntag]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, ['LITERAL', svg.itemSelected]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, ['LITERAL', svg.itemDeselect]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   ['LITERAL', svg.itemAttach]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, ['LITERAL', svg.itemAttached]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    ['LITERAL', svg.itemUntag]],
                                     ]],
                                  ]],
                               ]];
@@ -4052,9 +4042,9 @@ views.pics = function () {
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
                   return ['div', {class: 'sidebar__footer', onclick: B.ev (H.stopPropagation)}, [
-                     ['div', {class: 'sidebar-search', opaque: true}, [
+                     ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
-                        ['LITERAL', svg.sidebarSearch],
+                        ['span', {opaque: true}, ['LITERAL', svg.sidebarSearch]]
                      ]],
                      // DONE TAGGING BUTTON
                      H.if (tags.indexOf ('untagged') > -1 && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
@@ -4117,7 +4107,7 @@ views.pics = function () {
                                        ['span', {class: 'tag__title'}, tag === 'untagged' ? 'Untagged' : tag.replace (/^g::/, '')],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
-                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, ['LITERAL', svg.itemDeselect]],
+                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, ['LITERAL', svg.itemDeselect]],
                                           ]],
                                        ]],
                                     ]];
@@ -4143,7 +4133,7 @@ views.pics = function () {
                            if (! account || ! account.suggestSelection) return ['div'];
                            return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
                               ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-                                 ['div', {class: 'space-alert__image', opaque: true}, [
+                                 ['div', {class: 'space-alert__image'}, [
                                     ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
                                  ]],
                                  ['div', {class: 'boxed-alert__main'}, [
@@ -4437,7 +4427,7 @@ views.upload = function () {
                                                 // SEARCH FORM
                                                 ['div', {class: 'search-form'}, [
                                                    ['input', {autocomplete: 'off', value: filter, id: 'uploadTag', class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags', oninput: B.ev ('set', ['State', 'upload', 'tag'])}],
-                                                   ['LITERAL', svg.searchForm],
+                                                   ['span', {opaque: true}, ['LITERAL', svg.searchForm]],
                                                    ['div', {class: 'search-form__dropdown'}, [
                                                       // TAG LIST DROPDOWN
                                                       ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
@@ -4490,7 +4480,7 @@ views.upload = function () {
                         return ['li', {class: 'upload-box-list__item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
                                  'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
@@ -4553,7 +4543,7 @@ views.upload = function () {
                         return ['li', {class: 'recent-uploads__list-item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]] : ['div', {class: 'upload-box__image upload-box__image-pic', opaque: true, style: style ({
+                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
                                  'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
@@ -4622,13 +4612,13 @@ views.noSpace = function () {
       var noSpace = account && account.usage.fsused >= account.usage.limit;
       if (! noSpace) return ['div'];
       return ['div', {class: 'boxed-alert'}, [
-         ['div', {class: 'space-alert__image', opaque: true}, [
-            ['div', {class: 'space-alert-icon', opaque: true}]
+         ['div', {class: 'space-alert__image'}, [
+            ['div', {class: 'space-alert-icon', opaque: true}, ['LITERAL', svg.spaceAlert]]
          ]],
          ['div', {class: 'boxed-alert__main'}, [
             ['div', {class: 'upload-box__section'}, [
                ['p', {class: 'boxed-alert-message'}, [
-                  ['span', {class: 'space-alert-icon-small', opaque: true}],
+                  ['span', {class: 'space-alert-icon-small', opaque: true}, ['LITERAL', svg.spaceAlert]],
                   ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']
                ]],
                ['div', {class: 'progress-bar'}],
@@ -4651,12 +4641,14 @@ views.import = function () {
 
       if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: className + '-icon', opaque: true}]
+            ['div', {class: 'space-alert__image'}, [
+               // TODO: add SVG
+               ['div', {class: className + '-icon', opaque: true}, ]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
+                     // TODO: add SVG
                      ['span', {class: className + '-icon-small', opaque: true}],
                      ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
                   ]],
@@ -4681,12 +4673,14 @@ views.import = function () {
 
       if (status === 'ready') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
+            ['div', {class: 'space-alert__image'}, [
+               // TODO: add SVG
                ['div', {class: className + '-icon', opaque: true}]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
+                     // TODO: add SVG
                      ['span', {class: className + '-icon-small', opaque: true}],
                      ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
                   ]],
@@ -4702,13 +4696,13 @@ views.import = function () {
 
       if (status === 'error' || status === 'stalled') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
-               ['div', {class: 'space-alert-icon', opaque: true}]
+            ['div', {class: 'space-alert__image'}, [
+               ['div', {class: 'space-alert-icon', opaque: true}, ['LITERAL', svg.spaceAlert]]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: 'space-alert-icon-small', opaque: true}],
+                     ['span', {class: 'space-alert-icon-small', opaque: true}, ['LITERAL', svg.spaceAlert]],
                      ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : data.error)]]
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4722,12 +4716,14 @@ views.import = function () {
 
       if (status === 'uploading') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
-            ['div', {class: 'space-alert__image', opaque: true}, [
+            ['div', {class: 'space-alert__image'}, [
+               // TODO: add SVG
                ['div', {class: className + '-icon', opaque: true}]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
+                     // TODO: add SVG
                      ['span', {class: className + '-icon-small', opaque: true}],
                      ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
                   ]],
@@ -4775,7 +4771,7 @@ views.import = function () {
                            var noSpace = account && account.usage.fsused >= account.usage.limit;
                            return ['div', {class: 'upload-box__section'}, [
                               ['h3', {class: 'upload-box__section-title'}, 'Import files'],
-                              ['div', {class: 'drag-and-drop-import', opaque: true}, [
+                              ['div', {class: 'drag-and-drop-import'}, [
                                  ['div', dale.go ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo', svg: svg.dropboxLogo}], function (provider) {
 
                                     // We consider only the first import entry for the provider.
@@ -4829,8 +4825,8 @@ views.import = function () {
                      if (['complete', 'error'].indexOf (v2.status) === -1) return;
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
-                        ['div', {class: 'space-alert__image', opaque: true}, [
-                           ['div', {class: 'google-drive-icon', opaque: true}]
+                        ['div', {class: 'space-alert__image'}, [
+                           ['div', {class: 'google-drive-icon', opaque: true}, ['LITERAL', svg.googleDriveIcon]]
                         ]],
                         ['div', {class: 'upload-box__main'}, [
                            ['div', {class: 'upload-box__section'}, [
@@ -4979,7 +4975,7 @@ views.importFolders = function (importState, importData) {
          ['div', {class: 'listing-table-container'}, [
             ['div', {class: 'import-breadcrumb-container'}, [
                ['div', {class: 'import-breadcrumb-icon'}, [
-                  ['div', {class: 'google-drive-icon-small'}]
+                  ['div', {opaque: true, class: 'google-drive-icon-small'}, ['LITERAL', svg.googleDriveIcon]]
                ]],
                ['div', {class: 'import-breadcrumb'}, dale.go (breadcrumb, function (item, k) {
                   if (k === 0) return ['span', {class: 'pointer', onclick: B.ev ('rem', ['State', 'imports', importData.provider], 'currentFolder')}, item];
@@ -4994,12 +4990,12 @@ views.importFolders = function (importState, importData) {
                   ['rem', ['State', 'imports', importData.provider], 'showFolders'],
                   ['rem', ['State', 'imports', importData.provider], 'currentFolder']
                )}, [
-                  ['div', {class: 'import-process-box-back-icon', opaque: true}],
+                  ['div', {class: 'import-process-box-back-icon', opaque: true}, ['LITERAL', svg.backIcon]],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
                   ['div', {style: importState.currentFolder ? '' : 'display: none', class: 'import-process-box-list-up pointer', onclick: B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], importState.currentFolder ? importData.data.folders [importState.currentFolder].parent : '')}, [
-                     ['div', {class: 'up-icon', opaque: true}],
+                     ['div', {class: 'up-icon', opaque: true}, ['LITERAL', svg.upIcon]],
                      ['span', 'Up']
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.go (folderList, function (id) {
@@ -5013,7 +5009,7 @@ views.importFolders = function (importState, importData) {
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
-                        ['div', {class: 'folder-icon', opaque: true}],
+                        ['div', {class: 'folder-icon', opaque: true}, ['LITERAL', svg.folderIcon]],
                         ['div', {title: folder.name, class: 'import-folder-name pointer', onclick: folder.children ? '' : B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], id)}, folder.name],
                         ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                      ]];
@@ -5025,9 +5021,9 @@ views.importFolders = function (importState, importData) {
                      dale.go (selection, function (selected, id) {
                         var name = importData.data.folders [id].name;
                         return ['div', {class: 'import-process-box-selected-row'}, [
-                           ['div', {class: 'folder-icon'}],
+                           ['div', {class: 'folder-icon', opaque: true}, ['LITERAL', svg.folderIcon]],
                            ['div', {title: name, class: 'selected-folder-name'}, name],
-                           ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true, onclick: B.ev ('rem', ['State', 'imports', importData.provider, 'selection'], id)}]
+                           ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true, onclick: B.ev ('rem', ['State', 'imports', importData.provider, 'selection'], id)}, ['LITERAL', svg.folderDeselect]]
                         ]];
                      })
                   ]],
