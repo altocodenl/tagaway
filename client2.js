@@ -2225,6 +2225,7 @@ CSS.litc = [
       'font-size': CSS.typography.fontSize (0),
    }],
    ['.fullscreen__action:hover .fullscreen__action-text', {color: CSS.vars ['grey--lightest']}],
+   ['.no-svg svg', {display: 'none'}],
 ];
 
 // *** SVG ***
@@ -2279,6 +2280,10 @@ dale.go (CSS.vars.tagColors, function (color) {
 // *** HELPERS ***
 
 var H = {};
+
+H.putSvg = function (which) {
+   return ['span', {opaque: true}, ['LITERAL', svg [which]]];
+}
 
 H.matchVerb = function (ev, responder) {
    return B.r.compare (ev.verb, responder.verb);
@@ -3737,8 +3742,8 @@ views.header = function (showUpload, showImport) {
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
-            ['li', {class: 'account-menu__item', opaque: true}, [
-               ['LITERAL', svg.accountMenu],
+            ['li', {class: 'account-menu__item'}, [
+               H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
                   ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
@@ -3775,9 +3780,9 @@ views.empty = function () {
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
-            ['div', {class: 'sidebar-search', opaque: true}, [
+            ['div', {class: 'sidebar-search'}, [
                ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
-               ['LITERAL', svg.sidebarSearch],
+               H.putSvg ('sidebarSearch'),
             ]],
          ]],
       ]],
@@ -3905,21 +3910,21 @@ views.pics = function () {
                               colorTag = true;
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '');
                            }
-                           return ['li', {class: Class, opaque: true, onclick: B.ev (H.stopPropagation, action)}, [
-                              H.if (which === 'all', ['LITERAL', svg.tagAll]),
-                              H.if (which === 'untagged', ['LITERAL', svg.itemUntagged]),
-                              H.if (colorTag, ['LITERAL', svg ['tagItem' + H.tagColor (which)]]),
-                              H.if (H.isYear (which), ['LITERAL', svg.itemTime]),
-                              H.if (H.isGeo (which) && ! H.isCountry (which), ['LITERAL', svg.geoCity]),
-                              H.if (H.isCountry (which), ['LITERAL', svg.geoCountry]),
+                           return ['li', {class: Class, onclick: B.ev (H.stopPropagation, action)}, [
+                              H.if (which === 'all', H.putSvg ('tagAll')),
+                              H.if (which === 'untagged', H.putSvg ('itemUntagged')),
+                              H.if (colorTag, H.putSvg ('tagItem' + H.tagColor (which))),
+                              H.if (H.isYear (which), H.putSvg ('itemTime')),
+                              H.if (H.isGeo (which) && ! H.isCountry (which), H.putSvg ('geoCity')),
+                              H.if (H.isCountry (which), H.putSvg ('geoCountry')),
                               ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
-                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, ['LITERAL', svg.itemSelected]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, ['LITERAL', svg.itemDeselect]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   ['LITERAL', svg.itemAttach]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, ['LITERAL', svg.itemAttached]],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    ['LITERAL', svg.itemUntag]],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag')],
                                  ]]
                               ]]
                            ]];
@@ -3964,14 +3969,14 @@ views.pics = function () {
                         ['div', {class: 'switch'}, [
                            ['ul', {class: 'switch-list'}, [
                               ['li', {class: 'switch-list__item', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'untag'])}, [
-                                 ['div', {class: 'switch-list__button switch-list__button--attach', opaque: true}, [
-                                    ['LITERAL', svg.buttonAttach],
+                                 ['div', {class: 'switch-list__button switch-list__button--attach'}, [
+                                    H.putSvg ('buttonAttach'),
                                     ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
                                  ]],
                               ]],
                               ['li', {class: 'switch-list__item', style: style ({width: 110}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'untag'], true])}, [
-                                 ['div', {class: 'switch-list__button switch-list__button--untag', opaque: true}, [
-                                    ['LITERAL', svg.buttonUntag],
+                                 ['div', {class: 'switch-list__button switch-list__button--untag'}, [
+                                    H.putSvg ('buttonUntag'),
                                     ['span', {class: 'switch-list__button-text'}, 'Untag '],
                                     ['span', {class: 'switch-list__button-text-amount'}, ' '],
                                  ]],
@@ -4017,16 +4022,16 @@ views.pics = function () {
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
                               var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
-                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), opaque: true, onclick: B.ev (H.stopPropagation, ['goto', 'tag', tag])}, [
-                                 ['LITERAL', svg ['tagItem' + H.tagColor (tag)]],
+                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['goto', 'tag', tag])}, [
+                                 H.putSvg ('tagItem' + H.tagColor (tag)),
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
                                     ['div', {class: 'tag-actions'}, [
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, ['LITERAL', svg.itemSelected]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, ['LITERAL', svg.itemDeselect]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   ['LITERAL', svg.itemAttach]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, ['LITERAL', svg.itemAttached]],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    ['LITERAL', svg.itemUntag]],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag')],
                                     ]],
                                  ]],
                               ]];
@@ -4044,7 +4049,7 @@ views.pics = function () {
                   return ['div', {class: 'sidebar__footer', onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
-                        ['span', {opaque: true}, ['LITERAL', svg.sidebarSearch]]
+                        H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
                      H.if (tags.indexOf ('untagged') > -1 && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
@@ -4056,31 +4061,31 @@ views.pics = function () {
                return ['div', {class: 'organise-bar'}, ['div', {class: 'organise-bar__inner'}, [
                   ['div', {class: 'organise-bar__selected'}, [
                      ['div', {class: 'selected-box'}, [
-                        ['span', {class: 'selected-box__close', opaque: true, onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, [
-                           ['LITERAL', svg.close]
+                        ['span', {class: 'selected-box__close', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, [
+                           H.putSvg ('close')
                         ]],
                         ['span', {class: 'selected-box__count'}, dale.keys (selected).length],
                      ]],
                      ['p', {class: 'organise-bar__selected-title'}, 'Selected'],
                   ]],
-                  ['div', {class: 'organise-bar__button organise-bar__button--select-all', opaque: true, onclick: B.ev (H.stopPropagation, ['select', 'all'])}, [
-                     ['LITERAL', svg.selectAll],
+                  ['div', {class: 'organise-bar__button organise-bar__button--select-all', onclick: B.ev (H.stopPropagation, ['select', 'all'])}, [
+                     H.putSvg ('selectAll'),
                      ['span', {class: 'organise-bar__button-title'}, 'Select all'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--rotate', onclick: B.ev (H.stopPropagation, ['rotate', 'pivs', 90])}, [
-                     ['div', {class: 'organise-bar__button-icon-container', opaque: true}, ['LITERAL', svg.rotate]],
+                     ['div', {class: 'organise-bar__button-icon-container'}, H.putSvg ('rotate')],
                      ['span', {class: 'organise-bar__button-title'}, 'Rotate'],
                   ]],
-                  ['div', {class: 'organise-bar__button organise-bar__button--select-all', opaque: true, onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, [
-                     ['LITERAL', svg.selectAll],
+                  ['div', {class: 'organise-bar__button organise-bar__button--select-all', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, [
+                     H.putSvg ('selectAll'),
                      ['span', {class: 'organise-bar__button-title'}, 'Unselect all'],
                   ]],
-                  ['div', {class: 'organise-bar__button organise-bar__button--download', opaque: true, onclick: B.ev (H.stopPropagation, ['download', []])}, [
-                     ['LITERAL', svg.download],
+                  ['div', {class: 'organise-bar__button organise-bar__button--download', onclick: B.ev (H.stopPropagation, ['download', []])}, [
+                     H.putSvg ('download'),
                      ['span', {class: 'organise-bar__button-title'}, 'Download'],
                   ]],
-                  ['div', {class: 'organise-bar__button organise-bar__button--delete', opaque: true, onclick: B.ev (H.stopPropagation, ['delete', 'pivs'])}, [
-                     ['LITERAL', svg.delete],
+                  ['div', {class: 'organise-bar__button organise-bar__button--delete', onclick: B.ev (H.stopPropagation, ['delete', 'pivs'])}, [
+                     H.putSvg ('delete'),
                      ['span', {class: 'organise-bar__button-title'}, 'Delete'],
                   ]],
                ]]];
@@ -4101,13 +4106,13 @@ views.pics = function () {
                                     var Class = 'tag tag-list-horizontal__item ';
                                     if (H.isGeo (tag)) Class += H.isCountry (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
                                     else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
-                                    return ['li', {class: Class, opaque: true}, [
-                                       H.if (H.isCountry (tag), ['LITERAL', svg.geoCountry]),
-                                       H.if (! H.isCountry (tag) && H.isGeo (tag), ['LITERAL', svg.geoCity]),
+                                    return ['li', {class: Class}, [
+                                       H.if (H.isCountry (tag), H.putSvg ('geoCountry')),
+                                       H.if (! H.isCountry (tag) && H.isGeo (tag), H.putSvg ('geoCity')),
                                        ['span', {class: 'tag__title'}, tag === 'untagged' ? 'Untagged' : tag.replace (/^g::/, '')],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
-                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, ['LITERAL', svg.itemDeselect]],
+                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
                                           ]],
                                        ]],
                                     ]];
@@ -4268,7 +4273,7 @@ views.grid = function () {
                            rotation: rotation,
                         }),
                      }],
-                     piv.vid ? ['div', {class: 'video-playback', opaque: true}, ['LITERAL', svg.videoPlayback]] : [],
+                     piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
                      ['div', {class: 'mask'}],
                      ['div', {class: 'caption'}, [
                         //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + piv.tags.length]],
@@ -4297,9 +4302,9 @@ views.open = function () {
          return ['transform-origin', 'center center'];
       });
       return ['div', {class: 'fullscreen'}, [
-         ['div', {class: 'fullscreen__close', opaque: true, onclick: B.ev ('exit', 'fullscreen')}, ['LITERAL', svg.fullScreenClose]],
-         ['div', {class: 'fullscreen__nav fullscreen__nav--left', opaque: true, onclick: B.ev ('open', 'prev')}, ['LITERAL', svg.left]],
-         ['div', {class: 'fullscreen__nav fullscreen__nav--right', opaque: true, onclick: B.ev ('open', 'next')}, ['LITERAL', svg.right]],
+         ['div', {class: 'fullscreen__close', onclick: B.ev ('exit', 'fullscreen')}, H.putSvg ('fullScreenClose')],
+         ['div', {class: 'fullscreen__nav fullscreen__nav--left', onclick: B.ev ('open', 'prev')}, H.putSvg ('left')],
+         ['div', {class: 'fullscreen__nav fullscreen__nav--right', onclick: B.ev ('open', 'next')}, H.putSvg ('right')],
          ['div', {class: 'fullscreen__date'}, [
             ['span', {class: 'fullscreen__date-text'}, H.dateFormat (piv.date)],
          ]],
@@ -4314,11 +4319,11 @@ views.open = function () {
          }) ()],
          ['div', {class: 'fullscreen__actions'}, [
             H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
-               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate', opaque: true}, ['LITERAL', svg.fullScreenRotate]],
+               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
                ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
             ]]),
             ! piv.loc ? [] : ['div', {class: 'fullscreen__action', onclick: B.ev ('goto', 'location', piv)}, [
-               ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures', opaque: true}, ['LITERAL', svg.geotagOpen]],
+               ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],
             ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
@@ -4355,7 +4360,7 @@ views.upload = function () {
                         ['div', {class: 'upload-box'}, [
                            ['input', {id: 'files-upload',  type: 'file', multiple:  true, style: style ({display: 'none'}), onchange: B.ev ('upload', 'files')}],
                            ['input', {id: 'folder-upload', type: 'file', directory: true, webkitdirectory: true, mozdirectory: true, style: style ({display: 'none'}), onclick: B.ev ('snackbar', 'yellow', 'For a folder with many files, listing the files may take a few minutes. Please wait...', true), onchange: B.ev ('upload', 'folder')}],
-                           ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]],
+                           ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')],
                            ['div', {class: 'upload-box__main'}, [
                               // UPLOAD BOX SECTION
                               B.view (['Data', 'account'], function (account) {
@@ -4363,8 +4368,8 @@ views.upload = function () {
                                  return ['div', {class: 'upload-box__section'}, [
                                     ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
                                     // DRAG & DROP
-                                    ['div', {draggable: noSpace ? false : undefined, class: 'drag-and-drop', opaque: true}, [
-                                       ['LITERAL', svg.dragDrop],
+                                    ['div', {draggable: noSpace ? false : undefined, class: 'drag-and-drop'}, [
+                                       H.putSvg ('dragDrop'),
                                        H.isMobile () ? [
                                           ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
                                        ] : [
@@ -4382,23 +4387,21 @@ views.upload = function () {
                                        var unsupported = B.get ('State', 'upload', 'new', 'unsupported') || [];
                                        var tooLarge    = B.get ('State', 'upload', 'new', 'tooLarge')    || [];
                                        return ['div', {class: 'upload-box__selection'}, [
-                                          ['div', {class: 'upload-selection', opaque: true}, [
-                                             ['LITERAL', svg.uploadSelection],
+                                          ['div', {class: 'upload-selection'}, [
+                                             H.putSvg ('uploadSelection'),
                                              ['p', {class: 'upload-selection__text'}, (! selected.length ? 'No' : selected.length) + ' pictures selected'],
                                               H.if (selected.length, ['div', {class: 'upload-selection__remove', onclick: B.ev ('rem', ['State', 'upload'], 'new')}, [
                                                 ['div', {class: 'cross-button'}, ['span', {class: 'cross-button__cross'}]],
                                              ]]),
                                           ]],
-                                          H.if (unsupported.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
-                                             ['LITERAL', svg.uploadSelection],
-                                             ['style', ['.no-svg svg', {display: 'none'}]],
+                                          H.if (unsupported.length, ['div', {class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
+                                             H.putSvg ('uploadSelection'),
                                              ['p', {class: 'upload-selection__text'}, [
                                                 [unsupported.length, ' file(s) have unsupported formats and will be ignored.']
                                              ]]
                                           ]]),
-                                          H.if (tooLarge.length, ['div', {opaque: true, class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
-                                             ['LITERAL', svg.uploadSelection],
-                                             ['style', ['.no-svg svg', {display: 'none'}]],
+                                          H.if (tooLarge.length, ['div', {class: 'upload-selection no-svg', style: style ({color: CSS.vars ['color--remove']})}, [
+                                             H.putSvg ('uploadSelection'),
                                              ['p', {class: 'upload-selection__text'}, [
                                                 [tooLarge.length, ' file(s) are too large and will be ignored.']
                                              ]]
@@ -4427,13 +4430,13 @@ views.upload = function () {
                                                 // SEARCH FORM
                                                 ['div', {class: 'search-form'}, [
                                                    ['input', {autocomplete: 'off', value: filter, id: 'uploadTag', class: 'search-form__input search-input', type: 'text', placeholder: 'Add existing or new tags', oninput: B.ev ('set', ['State', 'upload', 'tag'])}],
-                                                   ['span', {opaque: true}, ['LITERAL', svg.searchForm]],
+                                                   H.putSvg ('searchForm'),
                                                    ['div', {class: 'search-form__dropdown'}, [
                                                       // TAG LIST DROPDOWN
                                                       ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
                                                          return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev ('upload', 'tag', tag === filter + ' (new tag)' ? filter : tag)}, [
-                                                            ['div', {class: 'tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
-                                                               ['LITERAL', svg ['tagItem' + H.tagColor (tag)]],
+                                                            ['div', {class: 'tag tag-list__item--' + H.tagColor (tag)}, [
+                                                               H.putSvg ('tagItem' + H.tagColor (tag)),
                                                                ['span', {class: 'tag__title'}, tag]
                                                             ]],
                                                          ]];
@@ -4445,12 +4448,12 @@ views.upload = function () {
                                           // TAG LIST HORIZONTAL
                                           ['ul', {class: 'tag-list-horizontal'}, [
                                              dale.go (newUpload.tags, function (tag, k) {
-                                                return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag), opaque: true}, [
-                                                   ['LITERAL', svg ['tagItemHorizontal' + H.tagColor (tag)]],
+                                                return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                                   H.putSvg ('tagItemHorizontal' + H.tagColor (tag)),
                                                    ['span', {class: 'tag__title'}, tag],
                                                    ['div', {class: 'tag__actions', style: style ({height: 24}), onclick: B.ev ('rem', ['State', 'upload', 'new', 'tags'], k)}, [
                                                       ['div', {class: 'tag-actions'}, [
-                                                         ['div', {class: 'tag-actions__item tag-actions__item--deselect', opaque: true, style: style ({height: 24})}, ['LITERAL', svg.itemDeselect]],
+                                                         ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24})}, H.putSvg ('itemDeselect')],
                                                       ]],
                                                    ]],
                                                 ]];
@@ -4480,7 +4483,7 @@ views.upload = function () {
                         return ['li', {class: 'upload-box-list__item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
+                              ! upload.lastPiv ? ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
                                  'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
@@ -4489,8 +4492,8 @@ views.upload = function () {
                               })}],
                               ['div', {class: 'upload-box__main'}, [
                                  ['div', {class: 'upload-box__section'}, [
-                                    ['p', {class: 'upload-progress', opaque: true}, [
-                                       ['LITERAL', svg.uploadProgress],
+                                    ['p', {class: 'upload-progress'}, [
+                                       H.putSvg ('uploadProgress'),
                                        ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
                                           var texts = [done + '/' + upload.total + ' uploading'];
                                           if (upload.alreadyUploaded) texts.push (upload.alreadyUploaded + ' already uploaded');
