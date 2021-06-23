@@ -4642,14 +4642,12 @@ views.import = function () {
       if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               // TODO: add SVG
-               ['div', {class: className + '-icon', opaque: true}, ]
+               ['div', {class: className + '-icon', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     // TODO: add SVG
-                     ['span', {class: className + '-icon-small', opaque: true}],
+                     ['span', {class: className + '-icon-small', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
                      ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4674,14 +4672,12 @@ views.import = function () {
       if (status === 'ready') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               // TODO: add SVG
-               ['div', {class: className + '-icon', opaque: true}]
+               ['div', {class: className + '-icon', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     // TODO: add SVG
-                     ['span', {class: className + '-icon-small', opaque: true}],
+                     ['span', {class: className + '-icon-small', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]],
                      ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4717,14 +4713,12 @@ views.import = function () {
       if (status === 'uploading') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               // TODO: add SVG
-               ['div', {class: className + '-icon', opaque: true}]
+               ['div', {class: className + '-icon', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     // TODO: add SVG
-                     ['span', {class: className + '-icon-small', opaque: true}],
+                     ['span', {class: className + '-icon-small', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
                      ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4778,13 +4772,13 @@ views.import = function () {
                                     var providerData = (importData [provider.provider] || []) [0] || {};
 
                                     var attrs = function (ev) {
-                                       return {opaque: true, style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: B.ev (ev)};
+                                       return {opaque: true, style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: ev ? B.ev (ev) : undefined};
                                     }
                                     // No space left, just show the bare div.
-                                    if (noSpace) return ['div', attrs, ['LITERAL', provider.svg]];
+                                    if (noSpace) return ['div', attrs (), ['LITERAL', provider.svg]];
 
                                     // If the OAuth flow hasn't been started yet, offer a link to start it.
-                                    if (providerData.redirect) return ['div', attrs, [
+                                    if (providerData.redirect) return ['div', attrs (), [
                                        ['LITERAL', provider.svg],
                                        ['a', {href: providerData.redirect}, [
                                           ['span', {style: style ({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}],
@@ -4804,7 +4798,7 @@ views.import = function () {
                                     if (providerData.status === 'listing') return ['div', attrs (['snackbar', 'yellow', 'Files being listed, please wait.']), ['LITERAL', provider.svg]];
 
                                     // There's already a completed list, show it.
-                                    if (providerData.status === 'ready') return ['div', attrs (['set', ['State', 'imports', provider.provider, 'showFolders'], true]), ['LITERAL', provider.svg]];
+                                    if (providerData.status === 'ready') return ['div', attrs (['set', ['State', 'imports', provider.provider, 'showFolders'], true]), provider.svg ? ['LITERAL', provider.svg] : []];
                                  })]
                               ]],
                            ]];
