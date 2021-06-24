@@ -4503,8 +4503,7 @@ views.upload = function () {
                                           return texts.join (', ');
                                        }) ()],
                                     ]],
-                                    ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
-                                       ['style', ['.no-svg svg', {display: 'none'}]],
+                                    ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                           'Error:',
                                           ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
@@ -4518,8 +4517,8 @@ views.upload = function () {
                                  ['div', {class: 'upload-box__section'}, [
                                     // TAG LIST HORIZONTAL
                                     ['ul', {class: 'tag-list-horizontal'}, dale.go (upload.tags, function (tag) {
-                                       return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
-                                          ['LITERAL', svg ['tagItemHorizontal' + H.tagColor (tag)]],
+                                       return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          H.putSvg ('tagItemHorizontal' + H.tagColor (tag)),
                                           ['span', {class: 'tag__title'}, tag],
                                        ]];
                                     })],
@@ -4546,7 +4545,7 @@ views.upload = function () {
                         return ['li', {class: 'recent-uploads__list-item'}, [
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
-                              ! upload.lastPiv ? ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
+                              ! upload.lastPiv ? ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
                                  'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
@@ -4556,8 +4555,8 @@ views.upload = function () {
                               ['div', {class: 'upload-box__main'}, [
                                  // UPLOAD BOX SECTION
                                  ['div', {class: 'upload-box__section'}, [
-                                    ['p', {class: 'upload-progress', opaque: true}, [
-                                       ['LITERAL', svg.uploadProgress],
+                                    ['p', {class: 'upload-progress'}, [
+                                       H.putSvg ('uploadProgress'),
                                        ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
                                           var texts = [done + ' pics uploaded'];
                                           if (upload.alreadyUploaded) texts.push (upload.alreadyUploaded + ' already uploaded');
@@ -4570,8 +4569,7 @@ views.upload = function () {
                                        ['span', {class: 'upload-progress__default-text'}, '(' + upload.status + '. ' + H.ago (Date.now () - upload.end) + ' ago)'],
                                        ['br'],
                                     ]],
-                                    ['p', {class: 'upload-progress no-svg', opaque: true, style: style ({color: 'red'})}, [
-                                       ['style', ['.no-svg svg', {display: 'none'}]],
+                                    ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                           'Error:',
                                           ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
@@ -4581,8 +4579,8 @@ views.upload = function () {
                                  ['div', {class: 'upload-box__section'}, [
                                     // TAG LIST HORIZONTAL
                                     ['ul', {class: 'tag-list-horizontal'}, dale.go (upload.tags, function (tag) {
-                                       return ['li', {opaque: true, class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
-                                          ['LITERAL', svg ['tagItemHorizontal' + H.tagColor (tag)]],
+                                       return ['li', {class: 'tag-list-horizontal__item tag tag-list__item--' + H.tagColor (tag)}, [
+                                          H.putSvg ('tagItemHorizontal' + H.tagColor (tag)),
                                           ['span', {class: 'tag__title'}, tag],
                                        ]];
                                     })],
@@ -4597,8 +4595,8 @@ views.upload = function () {
             ['div', {class: 'page-section'}, [
                // BACK LINK
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
-                     ['LITERAL', svg.backLink],
+                  ['a', {class: 'back-link__link', href: '#/pics'}, [
+                     H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
                ]],
@@ -4616,12 +4614,12 @@ views.noSpace = function () {
       if (! noSpace) return ['div'];
       return ['div', {class: 'boxed-alert'}, [
          ['div', {class: 'space-alert__image'}, [
-            ['div', {class: 'space-alert-icon', opaque: true}, ['LITERAL', svg.spaceAlert]]
+            ['div', {class: 'space-alert-icon'}, H.putSvg ('spaceAlert')]
          ]],
          ['div', {class: 'boxed-alert__main'}, [
             ['div', {class: 'upload-box__section'}, [
                ['p', {class: 'boxed-alert-message'}, [
-                  ['span', {class: 'space-alert-icon-small', opaque: true}, ['LITERAL', svg.spaceAlert]],
+                  ['span', {class: 'space-alert-icon-small'}, H.putSvg ('spaceAlert')],
                   ['span', {class: 'upload-progress__default-text'}, 'You’ve ran out of space!']
                ]],
                ['div', {class: 'progress-bar'}],
@@ -4645,12 +4643,12 @@ views.import = function () {
       if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               ['div', {class: className + '-icon', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
+               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: className + '-icon-small', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
+                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                      ['span', {class: 'upload-progress__default-text'}, 'Listing in process...']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4675,12 +4673,12 @@ views.import = function () {
       if (status === 'ready') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               ['div', {class: className + '-icon', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
+               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)]
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: className + '-icon-small', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]],
+                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                      ['span', {class: 'upload-progress__default-text'}, 'Your files are ready to be imported']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4696,12 +4694,12 @@ views.import = function () {
       if (status === 'error' || status === 'stalled') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               ['div', {class: 'space-alert-icon', opaque: true}, ['LITERAL', svg.spaceAlert]]
+               ['div', {class: 'space-alert-icon'}, H.putSvg ('spaceAlert')],
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: 'space-alert-icon-small', opaque: true}, ['LITERAL', svg.spaceAlert]],
+                     ['span', {class: 'space-alert-icon-small'}, H.putSvg ('spaceAlert')],
                      ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : data.error)]]
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4716,12 +4714,12 @@ views.import = function () {
       if (status === 'uploading') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
-               ['div', {class: className + '-icon', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
+               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
             ]],
             ['div', {class: 'boxed-alert__main'}, [
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
-                     ['span', {class: className + '-icon-small', opaque: true}, ['LITERAL', svg [provider === 'google' ? 'googleDriveIcon' : dropboxIcon]]]
+                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                      ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
                   ]],
                   ['div', {class: 'progress-bar'}],
@@ -4762,46 +4760,46 @@ views.import = function () {
                return ['div', {class: 'page-section'}, [
                   // IMPORT BOX SECTION
                   ['div', {class: 'upload-box'}, [
-                     ['div', {class: 'upload-box__image', opaque: true}, ['LITERAL', svg.uploadImage]],
+                     ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')],
                      ['div', {class: 'upload-box__main'}, [
                         B.view (['Data', 'account'], function (account) {
                            var noSpace = account && account.usage.fsused >= account.usage.limit;
                            return ['div', {class: 'upload-box__section'}, [
                               ['h3', {class: 'upload-box__section-title'}, 'Import files'],
                               ['div', {class: 'drag-and-drop-import'}, [
-                                 ['div', dale.go ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo', svg: svg.dropboxLogo}], function (provider) {
+                                 ['div', dale.go ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo', svg: H.putSvg ('dropboxLogo')}], function (provider) {
 
                                     // We consider only the first import entry for the provider.
                                     var providerData = (importData [provider.provider] || []) [0] || {};
 
                                     var attrs = function (ev) {
-                                       return {opaque: true, style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: ev ? B.ev (ev) : undefined};
+                                       return {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: ev ? B.ev (ev) : undefined};
                                     }
                                     // No space left, just show the bare div.
-                                    if (noSpace) return ['div', attrs (), ['LITERAL', provider.svg]];
+                                    if (noSpace) return ['div', attrs (), provider.svg];
 
                                     // If the OAuth flow hasn't been started yet, offer a link to start it.
                                     if (providerData.redirect) return ['div', attrs (), [
-                                       ['LITERAL', provider.svg],
+                                       provider.svg,
                                        ['a', {href: providerData.redirect}, [
                                           ['span', {style: style ({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}],
                                        ]],
                                     ]];
 
                                     // If there's an error, print an error on click.
-                                    if (providerData.status === 'error' || providerData.status === 'stalled') return ['div', attrs (['snackbar', 'red', 'There was an error retrieving the list of files, please retry.']), ['LITERAL', provider.svg]];
+                                    if (providerData.status === 'error' || providerData.status === 'stalled') return ['div', attrs (['snackbar', 'red', 'There was an error retrieving the list of files, please retry.']), provider.svg];
 
                                     // If there's an import upload in process, print a warning on click.
-                                    if (providerData.status === 'uploading') return ['div', attrs (['snackbar', 'yellow', 'Files being uploaded, please wait.']), ['LITERAL', provider.svg]];
+                                    if (providerData.status === 'uploading') return ['div', attrs (['snackbar', 'yellow', 'Files being uploaded, please wait.']), provider.svg];
 
                                     // If there no list or the last import is finished, trigger listing.
-                                    if ([undefined, 'cancelled', 'complete'].indexOf (providerData.status) > -1) return ['div', attrs (['import', 'list', provider.provider]), ['LITERAL', provider.svg]];
+                                    if ([undefined, 'cancelled', 'complete'].indexOf (providerData.status) > -1) return ['div', attrs (['import', 'list', provider.provider]), provider.svg];
 
                                     // If we are currently listing, print a warning on click.
-                                    if (providerData.status === 'listing') return ['div', attrs (['snackbar', 'yellow', 'Files being listed, please wait.']), ['LITERAL', provider.svg]];
+                                    if (providerData.status === 'listing') return ['div', attrs (['snackbar', 'yellow', 'Files being listed, please wait.']), provider.svg];
 
                                     // There's already a completed list, show it.
-                                    if (providerData.status === 'ready') return ['div', attrs (['set', ['State', 'imports', provider.provider, 'showFolders'], true]), provider.svg ? ['LITERAL', provider.svg] : []];
+                                    if (providerData.status === 'ready') return ['div', attrs (['set', ['State', 'imports', provider.provider, 'showFolders'], true]), provider.svg];
                                  })]
                               ]],
                            ]];
@@ -4823,12 +4821,12 @@ views.import = function () {
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
                         ['div', {class: 'space-alert__image'}, [
-                           ['div', {class: 'google-drive-icon', opaque: true}, ['LITERAL', svg.googleDriveIcon]]
+                           ['div', {class: 'google-drive-icon'}, H.putSvg ('googleDriveIcon')]
                         ]],
                         ['div', {class: 'upload-box__main'}, [
                            ['div', {class: 'upload-box__section'}, [
-                              ['p', {class: 'upload-progress', opaque: true}, [
-                                 ['LITERAL', svg.uploadProgress],
+                              ['p', {class: 'upload-progress'}, [
+                                 H.putSvg ('uploadProgress'),
                                  ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
                                  ['span', {class: 'upload-progress__default-text'}, ' pics imported.'],
                                  ['LITERAL', '&nbsp'],
@@ -4874,8 +4872,8 @@ views.import = function () {
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', href: '#/pics', opaque: true}, [
-                     ['LITERAL', svg.backLink],
+                  ['a', {class: 'back-link__link', href: '#/pics'}, [
+                     H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
                ]],
@@ -4972,7 +4970,7 @@ views.importFolders = function (importState, importData) {
          ['div', {class: 'listing-table-container'}, [
             ['div', {class: 'import-breadcrumb-container'}, [
                ['div', {class: 'import-breadcrumb-icon'}, [
-                  ['div', {opaque: true, class: 'google-drive-icon-small'}, ['LITERAL', svg.googleDriveIcon]]
+                  ['div', {class: 'google-drive-icon-small'}, H.putSvg ('googleDriveIcon')]
                ]],
                ['div', {class: 'import-breadcrumb'}, dale.go (breadcrumb, function (item, k) {
                   if (k === 0) return ['span', {class: 'pointer', onclick: B.ev ('rem', ['State', 'imports', importData.provider], 'currentFolder')}, item];
@@ -4987,12 +4985,12 @@ views.importFolders = function (importState, importData) {
                   ['rem', ['State', 'imports', importData.provider], 'showFolders'],
                   ['rem', ['State', 'imports', importData.provider], 'currentFolder']
                )}, [
-                  ['div', {class: 'import-process-box-back-icon', opaque: true}, ['LITERAL', svg.backIcon]],
+                  ['div', {class: 'import-process-box-back-icon'}, H.putSvg ('backIcon')],
                   ['div', {class: 'import-process-box-back-text'}, 'Back']
                ]],
                ['div', {class: 'import-process-box-list'}, [
                   ['div', {style: importState.currentFolder ? '' : 'display: none', class: 'import-process-box-list-up pointer', onclick: B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], importState.currentFolder ? importData.data.folders [importState.currentFolder].parent : '')}, [
-                     ['div', {class: 'up-icon', opaque: true}, ['LITERAL', svg.upIcon]],
+                     ['div', {class: 'up-icon'}, H.putSvg ('upIcon')],
                      ['span', 'Up']
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.go (folderList, function (id) {
@@ -5006,7 +5004,7 @@ views.importFolders = function (importState, importData) {
                               ['span', {class: 'select-folder-box-checkmark'}]
                            ]],
                         ]],
-                        ['div', {class: 'folder-icon', opaque: true}, ['LITERAL', svg.folderIcon]],
+                        ['div', {class: 'folder-icon'}, H.putSvg ('folderIcon')],
                         ['div', {title: folder.name, class: 'import-folder-name pointer', onclick: folder.children ? '' : B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], id)}, folder.name],
                         ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                      ]];
@@ -5018,9 +5016,9 @@ views.importFolders = function (importState, importData) {
                      dale.go (selection, function (selected, id) {
                         var name = importData.data.folders [id].name;
                         return ['div', {class: 'import-process-box-selected-row'}, [
-                           ['div', {class: 'folder-icon', opaque: true}, ['LITERAL', svg.folderIcon]],
+                           ['div', {class: 'folder-icon'}, H.putSvg ('folderIcon')],
                            ['div', {title: name, class: 'selected-folder-name'}, name],
-                           ['div', {class: 'selected-folder-deselect tag-actions__item', opaque: true, onclick: B.ev ('rem', ['State', 'imports', importData.provider, 'selection'], id)}, ['LITERAL', svg.folderDeselect]]
+                           ['div', {class: 'selected-folder-deselect tag-actions__item', onclick: B.ev ('rem', ['State', 'imports', importData.provider, 'selection'], id)}, H.putSvg ('folderDeselect')]
                         ]];
                      })
                   ]],

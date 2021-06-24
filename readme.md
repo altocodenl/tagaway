@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - gotoB v2
-   - Add missing svgs; move all svgs to spans so opaques are minimized.
    - Fix selection CSS, pics are not marked in blue
 
 - bug with missing AR tags?
