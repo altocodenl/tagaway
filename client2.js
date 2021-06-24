@@ -2589,7 +2589,7 @@ B.mrespond ([
       if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.call (x, 'set', ['State', 'nPivs'], 20);
       B.call (x, 'query', 'pivs', true);
    }],
-   ['change', ['State', 'selected'], function (x) {
+   ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
       var selected = B.get ('State', 'selected') || {};
       var pivs = document.getElementsByClassName ('pictures-grid__item-picture');
       dale.go (pivs, function (piv) {
@@ -2598,7 +2598,7 @@ B.mrespond ([
       var selectedPivs = dale.keys (selected).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
-         organise: ['app-organise', 'app-show-organise-bar', State.untag ? 'app-untag-tags' : 'app-attach-tags'],
+         organise: ['app-organise', 'app-show-organise-bar', B.get ('State', 'untag') ? 'app-untag-tags' : 'app-attach-tags'],
       }
       var target = c ('.pics-target') [0];
       if (! target) return;
