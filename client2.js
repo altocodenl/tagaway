@@ -2495,7 +2495,7 @@ B.mrespond ([
          }
       }
    }],
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       var page = B.get ('State', 'page'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
 
       if (logged && redirect) {
@@ -2526,7 +2526,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
       });
    }],
-   ['change', ['Data', 'csrf'], function (x) {
+   ['change', ['Data', 'csrf'], {match: B.changeResponder}, function (x) {
       B.call (x, 'change', ['State', 'page']);
    }],
    ['login', [], function (x) {
@@ -2578,7 +2578,7 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {priority: -10000}, function (x) {
+   ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
@@ -2621,7 +2621,7 @@ B.mrespond ([
          B.call (x, 'snackbar', 'green', 'You can find your pictures under the tags you just used.');
       }
    }],
-   ['change', ['State', 'untag'], function (x) {
+   ['change', ['State', 'untag'], {match: B.changeResponder}, function (x) {
       var untag = B.get ('State', 'untag');
       var target = c ('.pics-target') [0];
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
@@ -2868,11 +2868,11 @@ B.mrespond ([
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
       B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 20, B.get ('Data', 'pivTotal')));
    }],
-   ['change', ['State', 'nPivs'], function (x) {
+   ['change', ['State', 'nPivs'], {match: B.changeResponder}, function (x) {
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs') + 100) return;
       B.call (x, 'query', 'pivs');
    }],
-   ['change', ['Data', 'pendingConversions'], function (x) {
+   ['change', ['Data', 'pendingConversions'], {match: B.changeResponder}, function (x) {
       var pending = B.get ('Data', 'pendingConversions'), interval = B.get ('State', 'pendingConversions');
       if ((pending && interval) || (! pending && ! interval)) return;
       if (! pending) {
@@ -2911,7 +2911,7 @@ B.mrespond ([
       var wscript = new ActiveXObject ('WScript.Shell');
       if (wscript) wscript.SendKeys ('{ESC}');
    }],
-   ['change', ['State', 'open'], function (x) {
+   ['change', ['State', 'open'], {match: B.changeResponder}, function (x) {
       var target = c ('.pics-target') [0], open = B.get ('State', 'open') !== undefined;
       if (! open) return target.classList.remove ('app-fullscreen');
       target.classList.add ('app-fullscreen');
@@ -2948,7 +2948,7 @@ B.mrespond ([
 
    // *** UPLOAD RESPONDERS ***
 
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'upload') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       if (! B.get ('Data', 'tags'))    B.call (x, 'query', 'tags');
@@ -3056,7 +3056,7 @@ B.mrespond ([
          }, 1500));
       });
    }],
-   ['change', ['State', 'upload', 'queue'], function (x) {
+   ['change', ['State', 'upload', 'queue'], {match: B.changeResponder}, function (x) {
       var queue = B.get ('State', 'upload', 'queue');
       var MAXSIMULT = 2, uploading = 0;
       dale.stop (queue, false, function (file) {
@@ -3139,7 +3139,7 @@ B.mrespond ([
 
    // *** IMPORT RESPONDERS ***
 
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       var page = B.get ('State', 'page');
       if (page !== 'import') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
@@ -3211,7 +3211,7 @@ B.mrespond ([
 
    // *** ACCOUNT RESPONDERS ***
 
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'account') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
    }],
