@@ -1143,27 +1143,6 @@ var routes = [
       ]]
    ])],
 
-   ['get', '/v2', reply, lith.g ([
-      ['!DOCTYPE HTML'],
-      ['html', [
-         ['head', [
-            ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['meta', {charset: 'utf-8'}],
-            ['title', 'ac;pic'],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-         ]],
-         ['body', [
-            dale.go (['murmurhash.js', 'gotoBv2.min.js'], function (v) {
-               return ['script', {src: 'assets/' + v}];
-            }),
-            ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
-            ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
-            ['script', {src: 'client2.js'}]
-         ]]
-      ]]
-   ])],
-
    ['get', 'admin', reply, lith.g ([
       ['!DOCTYPE HTML'],
       ['html', [
