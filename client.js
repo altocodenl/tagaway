@@ -2724,7 +2724,7 @@ B.mrespond ([
       if (keyCode === 16) B.call (x, 'set', ['State', 'shift'], x.path [0] === 'down');
       if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.call (x, 'tag', 'pivs', true);
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
-      if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length) B.call (x, 'delete', 'pivs');
+      if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
    ['toggle', 'tag', function (x, tag) {
       if (B.get ('State', 'querying')) return;
@@ -4125,10 +4125,10 @@ views.pics = function () {
                               B.view (['State', 'query'], function (query) {
                                  if (! query) return ['div'];
                                  return ['div', {class: 'dropdown'}, [
-                                    ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'recently uploaded' : query.sort],
+                                    ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
                                     ['ul', {class: 'dropdown__list'}, [
                                        dale.go (['newest', 'oldest', 'upload'], function (sort) {
-                                          return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'recently uploaded' : sort];
+                                          return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
                                        })
                                     ]],
                                  ]];

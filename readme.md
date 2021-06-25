@@ -41,7 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - bug with missing AR tags?
 - UX round
-   - Backspace when on filter or tag input
    - Suggest tags when inserting in main view.
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.
@@ -62,6 +61,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - remember position by the piv at a certain position (top/left), not the number, so it works while uploads are happening in the background
       - see last actions so you can see where you left off.
 
+- Pivs
+   - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
+   - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+   - Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
+   - Implement video streaming.
+
 - Refactor UI with unified terminology for pivs: Pics&Vids?
 
 - Backend improvements:
@@ -78,12 +83,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - If there's a provider error, give a "try again" option with the same list?
       - If there's another type of error, mark "ac;pic/server error".
    - Import from Dropbox.
-
-- Pivs
-   - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
-   - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
-   - Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
-   - Implement video streaming.
 
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
