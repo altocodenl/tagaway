@@ -39,9 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- gotoB v2
-   - Fix selection CSS, pics are not marked in blue
-
 - bug with missing AR tags?
 - UX round
    - Backspace when on filter or tag input
