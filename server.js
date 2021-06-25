@@ -1162,6 +1162,8 @@ var routes = [
       ]]
    ])],
 
+   ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
+
    // *** REQUEST INVITE ***
 
    ['post', 'requestInvite', function (rq, rs) {
