@@ -2423,6 +2423,11 @@ document.body.addEventListener ('touchend', function (ev) {
 
 // *** RESPONDERS ***
 
+B.r.addLog = function (log) {
+   if (log.args && log.args [1] && log.args [1].password) log.args [1].password = 'REDACTED';
+   B.log.push (log);
+}
+
 B.mrespond ([
 
    // *** GENERAL RESPONDERS ***
@@ -2465,9 +2470,6 @@ B.mrespond ([
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
-      // TODO v2: uncomment
-      //if (signup/login/recover/reset/changepassword) teishi.last (B.r.log).args [1] = 'OMITTED';
-      var tdebug = Date.now ();
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
@@ -2965,10 +2967,7 @@ B.mrespond ([
          else if (window.allowedFormats.indexOf (fileType) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
          else                                                      B.add (['State', 'upload', 'new', 'files'], file);
       });
-      // TODO: why do we need this timeout?
-      setTimeout (function () {
-         B.call (x, 'change', ['State', 'upload', 'new']);
-      }, 0);
+      B.call (x, 'change', ['State', 'upload', 'new']);
    }],
    ['upload', /files|folder/, function (x) {
       var input = c ('#' + x.path [0] + '-upload');
