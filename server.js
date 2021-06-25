@@ -1120,6 +1120,8 @@ var routes = [
 
    ['get', 'img/*', cicek.file, ['markup']],
 
+   ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
+
    ['get', ['assets/*', 'client.js', 'client2.js', 'testclient.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
@@ -1161,8 +1163,6 @@ var routes = [
          ]]
       ]]
    ])],
-
-   ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
    // *** REQUEST INVITE ***
 

@@ -2624,6 +2624,7 @@ B.mrespond ([
    ['change', ['State', 'untag'], {match: B.changeResponder}, function (x) {
       var untag = B.get ('State', 'untag');
       var target = c ('.pics-target') [0];
+      if (! target) return;
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
@@ -2913,6 +2914,7 @@ B.mrespond ([
    }],
    ['change', ['State', 'open'], {match: B.changeResponder}, function (x) {
       var target = c ('.pics-target') [0], open = B.get ('State', 'open') !== undefined;
+      if (! target) return;
       if (! open) return target.classList.remove ('app-fullscreen');
       target.classList.add ('app-fullscreen');
       B.call (x, 'enter', 'fullscreen');
@@ -3833,7 +3835,7 @@ views.pics = function () {
                      ]],
                      // *** QUERY LIST ***
                      B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, tags, account, showNTags) {
-                        if (! account) return ['ul'];
+                        if (! account || ! selected) return ['ul'];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
 

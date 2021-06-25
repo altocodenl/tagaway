@@ -16,7 +16,6 @@ TAR="acpic.tar.gz"
 
 if [ "$2" == "client" ] ; then
    scp client.js $HOST:$FOLDER
-   scp client2.js $HOST:$FOLDER
    #scp testclient.js $HOST:$FOLDER
    exit 0
 fi
