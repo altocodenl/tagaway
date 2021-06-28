@@ -4206,29 +4206,25 @@ if (cicek.isMaster) a.stop ([
 // *** LOAD GEODATA ***
 
 if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
-   [function (s) {
-      var path = process.argv [4];
-      var file = fs.createReadStream (path);
-      var errorCb = function (error) {
-         notify (a.creat (), {priority: 'critical', type: 'Geodata file error.', error: error});
+   [Redis, 'del', 'geo'],
+   function (s) {
+      try {
+         var lines = fs.readFileSync (process.argv [4], 'utf8').split ('\n');
       }
-      var output = [], lines = require ('readline').createInterface ({input: file});
-      file.on  ('error', errorCb);
-      lines.on ('error', errorCb);
-      redis.del ('geo', function (error) {
-         if (error) return errorCb (error);
-         lines.on ('line', function (line) {
-            line = line.split ('\t');
-            // name 1, lat 4, lon 5, country 8, pop 14
-            // https://redis.io/commands/geoadd - latitudes close to the pole cannot be added.
-            if (Math.abs (parseFloat (line [4])) > 85.05112878) return;
-            redis.geoadd ('geo', line [5], line [4], line [8] + ':' + line [14] + ':' + line [1], function (error) {
-               if (error) throw error;
-            });
-         });
-         lines.on ('close', function () {
-            notify (s, {priority: 'critical', type: 'Geodata loaded correctly.'});
-         });
+      catch (error) {
+         s.next (null, 'Geodata file error: ' + error.toString ());
+      }
+      var multi = redis.multi ();
+      dale.go (lines, function (line) {
+         line = line.split ('\t');
+         // name 1, lat 4, lon 5, country 8, pop 14
+         // https://redis.io/commands/geoadd - latitudes close to the pole cannot be added.
+         if (Math.abs (parseFloat (line [4])) > 85.05112878) return;
+         multi.geoadd ('geo', line [5], line [4], line [8] + ':' + line [14] + ':' + line [1]);
       });
-   }],
-]);
+      mexec (s, multi);
+   },
+   [notify, {priority: 'critical', type: 'Geodata loaded correctly.'}],
+], function (s, error) {
+   notify (s, {priority: 'critical', type: 'Geodata load error', error: error});
+});

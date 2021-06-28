@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- bug with missing AR tags?
 - refactor admin for gotoB v2
 - UX round
    - Suggest tags when inserting in main view.
