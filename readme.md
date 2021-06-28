@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- refactor admin for gotoB v2
 - UX round
    - Suggest tags when inserting in main view.
    - Months:
@@ -89,6 +88,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - On double click, images fail to open in most cases
    - When opening thumbnail, big image is superimposed to the same piv (it's like a piv is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
+
+- If required page is not default and you're not logged in, set the redirect (both client & admin).
 
 - Accounts
    - Recover/reset password.

@@ -1,23 +1,7 @@
-// *** GOTOB V2 SHIM ***
-// TODO v2: remove
-
-B.forget ('eventlog');
-
-var T = teishi.time ();
-var Do = B.do;
-B.listen ('*', [], {priority: 1000000}, function (x) {
-   //x.args ? console.log (teishi.time () - T, x.verb, x.path, x.args) : console.log (teishi.time () - T, x.verb, x.path);
-});
-
-lith.css.style = function (attributes, prod) {
-   var result = lith.css.g (['', attributes], prod);
-   return result === false ? result : result.slice (1, -1);
-}
-
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.t, clog = teishi.l, media = lith.css.media, style = lith.css.style;
+var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style;
 
 // *** CSS ***
 
@@ -225,92 +209,105 @@ CSS.litc = [
    }],
 ];
 
+// *** HELPERS ***
+
+var H = {};
+
+H.matchVerb = function (ev, responder) {
+   return B.r.compare (ev.verb, responder.verb);
+}
+
 // *** VIEWS ***
 
-var E = {};
+var views = {};
 
 // *** NATIVE RESPONDERS ***
 
 window.onerror = function () {
-   B.do.apply (null, ['error', []].concat (dale.do (arguments, function (v) {return v})));
+   B.call.apply (null, ['error', []].concat (dale.go (arguments, function (v) {return v})));
 }
 
 window.addEventListener ('hashchange', function () {
-   B.do ('read', 'hash');
+   B.call ('read', 'hash');
 });
 
 // *** RESPONDERS ***
 
-dale.do ([
+B.r.addLog = function (log) {
+   if (log.args && log.args [1] && log.args [1].password) log.args [1].password = 'REDACTED';
+   B.log.push (log);
+}
+
+B.mrespond ([
 
    // *** GENERAL RESPONDERS ***
 
    ['initialize', [], {burn: true}, function (x) {
-      B.do (x, 'reset',    'store');
-      B.do (x, 'read',     'hash');
-      B.do (x, 'retrieve', 'csrf');
-      B.mount ('body', E.base ());
+      document.querySelector ('meta[name="viewport"]').content = 'width=1200';
+      B.call (x, 'reset',    'store');
+      B.call (x, 'read',     'hash');
+      B.call (x, 'retrieve', 'csrf');
+      B.mount ('body', views.base);
    }],
    ['reset', 'store', function (x, logout) {
-      B.do (x, 'set', 'State', {});
-      B.do (x, 'set', 'Data',  {});
+      B.call (x, 'set', 'State', {});
+      B.call (x, 'set', 'Data',  {});
       if (logout) {
-         B.r.log = [];
-         B.do (x, 'set', ['Data', 'csrf'], false);
+         B.log = B.r.log = [];
+         B.call (x, 'set', ['Data', 'csrf'], false);
       }
       window.State = B.get ('State'), window.Data = B.get ('Data');
    }],
    ['clear', 'snackbar', function (x) {
       var existing = B.get ('State', 'snackbar');
       if (! existing) return;
-      clearTimeout (existing.timeout);
-      B.do (x, 'rem', 'State', 'snackbar');
+      if (existing.timeout) clearTimeout (existing.timeout);
+      B.call (x, 'rem', 'State', 'snackbar');
    }],
-   ['snackbar', [], function (x, message) {
-      B.do (x, 'clear', 'snackbar');
+   ['snackbar', [], {match: H.matchVerb}, function (x, snackbar, noTimeout) {
+      B.call (x, 'clear', 'snackbar');
       var colors = {green: '#04E762', red: '#D33E43', yellow: '#ffff00'};
+      if (noTimeout) return B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar});
       var timeout = setTimeout (function () {
-         B.do (x, 'rem', 'State', 'snackbar');
+         B.call (x, 'rem', 'State', 'snackbar');
       }, 4000);
-      B.do (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: message, timeout: timeout});
+      B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: message, timeout: timeout});
    }],
-   [/get|post/, [], function (x, headers, body, cb) {
+   [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
       var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout' && path !== 'auth/delete';
       // CSRF protection
       if (x.verb === 'post' && ! authRequest) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
-      // TODO v2: uncomment
-      //if (authRequest) teishi.last (B.r.log).args [1] = 'OMITTED';
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
-            B.do (x, 'reset', 'store', true);
-            return B.do (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
+            B.call (x, 'reset', 'store', true);
+            return B.call (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
          }
          if (cb) cb (x, error, rs);
       });
    }],
    ['error', [], function (x) {
-      B.do (x, 'post', 'error', {}, {log: B.r.log, error: dale.do (arguments, teishi.s).slice (1)});
+      B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
    }],
    ['read', 'hash', function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/');
-      B.do (x, 'set', ['State', 'page'], hash [0]);
+      B.call (x, 'set', ['State', 'page'], hash [0]);
    }],
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       var page = B.get ('State', 'page'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
 
       if (logged && redirect) {
          page = redirect;
-         B.do (x, 'rem', 'State', 'redirect');
+         B.call (x, 'rem', 'State', 'redirect');
       }
 
       var allowed = logged ? ['dashboard', 'invites', 'users', 'logs', 'deploy'] : ['login'];
 
       if (allowed.indexOf (page) === -1) {
-         if (! logged) B.do (x, 'set', ['State', 'redirect'], page);
-         return B.do (x, 'set', ['State', 'page'], allowed [0]);
+         if (! logged) B.call (x, 'set', ['State', 'redirect'], page);
+         return B.call (x, 'set', ['State', 'page'], allowed [0]);
       }
 
       document.title = ['ac;pic admin', page].join (' - ');
@@ -321,64 +318,64 @@ dale.do ([
    // *** AUTH RESPONDERS ***
 
    ['retrieve', 'csrf', function (x) {
-      B.do (x, 'get', 'csrf', {}, '', function (x, error, rs) {
-         if (error && error.status !== 403) return B.do (x, 'snackbar', 'red', 'Connection or server error.');
-         B.do (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
+      B.call (x, 'get', 'csrf', {}, '', function (x, error, rs) {
+         if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
+         B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
       });
    }],
-   ['change', ['Data', 'csrf'], function (x) {
-      B.do (x, 'change', ['State', 'page']);
+   ['change', ['Data', 'csrf'], {match: B.changeResponder}, function (x) {
+      B.call (x, 'change', ['State', 'page']);
    }],
    ['login', [], function (x) {
-      B.do (x, 'post', 'auth/login', {}, {
+      B.call (x, 'post', 'auth/login', {}, {
          username: c ('#auth-username').value,
          password: c ('#auth-password').value,
          timezone: new Date ().getTimezoneOffset ()
       }, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'Please submit valid credentials.');
-         B.do (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
+         B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
       });
    }],
    ['logout', [], function (x) {
-      B.do (x, 'post', 'auth/logout', {}, {}, function (x, error) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error logging you out.');
-         B.do (x, 'reset', 'store', true);
+      B.call (x, 'post', 'auth/logout', {}, {}, function (x, error) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error logging you out.');
+         B.call (x, 'reset', 'store', true);
       });
    }],
 
    // *** INVITE RESPONDERS ***
 
    ['retrieve', 'invites', function (x) {
-      B.do (x, 'get', 'admin/invites', {}, '', function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving data.');
-         B.do (x, 'set', ['Data', 'invites'], rs.body);
+      B.call (x, 'get', 'admin/invites', {}, '', function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving data.');
+         B.call (x, 'set', ['Data', 'invites'], rs.body);
       });
    }],
    ['create', 'invite', function (x) {
-      B.do (x, 'post', 'admin/invites', {}, B.get ('State', 'newInvite'), function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error creating the invite.');
-         B.do (x, 'snackbar', 'green', 'Invite sent!');
-         B.do (x, 'rem', 'State', 'newInvite');
-         B.do (x, 'retrieve', 'invites');
+      B.call (x, 'post', 'admin/invites', {}, B.get ('State', 'newInvite'), function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error creating the invite.');
+         B.call (x, 'snackbar', 'green', 'Invite sent!');
+         B.call (x, 'rem', 'State', 'newInvite');
+         B.call (x, 'retrieve', 'invites');
       });
    }],
    ['delete', 'invite', function (x, email) {
       if (! confirm ('Are you sure you want to delete the invite?')) return;
-      B.do (x, 'post', 'admin/invites/delete', {}, {email: email}, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the invite.');
-         B.do (x, 'snackbar', 'green', 'Invite deleted successfully.');
-         B.do (x, 'retrieve', 'invites');
+      B.call (x, 'post', 'admin/invites/delete', {}, {email: email}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting the invite.');
+         B.call (x, 'snackbar', 'green', 'Invite deleted successfully.');
+         B.call (x, 'retrieve', 'invites');
       });
    }],
-   ['change', ['State', 'page'], function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') === 'invites') {
-         if (! B.get ('Data', 'invites')) B.do (x, 'retrieve', 'invites');
+         if (! B.get ('Data', 'invites')) B.call (x, 'retrieve', 'invites');
       }
       if (B.get ('State', 'page') === 'users') {
-         if (! B.get ('Data', 'users')) B.do (x, 'retrieve', 'users');
+         if (! B.get ('Data', 'users')) B.call (x, 'retrieve', 'users');
       }
       if (B.get ('State', 'page') === 'logs') {
-         if (! B.get ('Data', 'logs')) B.do (x, 'retrieve', 'logs');
+         if (! B.get ('Data', 'logs')) B.call (x, 'retrieve', 'logs');
       }
    }],
 
@@ -386,26 +383,31 @@ dale.do ([
 
    ['delete', 'user', function (x, username) {
       if (! confirm ('Are you sure you want to delete the user ' + username + '?')) return;
-      B.do (x, 'post', 'auth/delete', {}, {username: username}, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error deleting the user.');
-         B.do (x, 'snackbar', 'green', 'User deleted successfully.');
-         B.do (x, 'retrieve', 'users');
+      B.call (x, 'post', 'auth/delete', {}, {username: username}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting the user.');
+         B.call (x, 'snackbar', 'green', 'User deleted successfully.');
+         B.call (x, 'retrieve', 'users');
       });
    }],
 
    ['retrieve', 'users', function (x, username) {
-      B.do (x, 'get', 'admin/users', {}, '', function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving users.');
-         B.do (x, 'set', ['Data', 'users'], rs.body);
+      B.call (x, 'get', 'admin/users', {}, '', function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving users.');
+         B.call (x, 'set', ['Data', 'users'], rs.body);
       });
    }],
 
    // *** LOGS RESPONDERS ***
 
    ['retrieve', 'logs', function (x, username) {
-      B.do (x, 'get', 'admin/logs', {}, '', function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', 'There was an error retrieving logs.');
-         B.do (x, 'set', ['Data', 'logs'], rs.body);
+      B.call (x, 'get', 'admin/logs', {}, '', function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving logs.');
+         if (rs.body.length > 5000) {
+            var length = rs.body.length;
+            rs.body = rs.body.slice (-5000);
+            rs.body.push ({t: 0, username: (length - 5000) + ' older logs omitted'});
+         }
+         B.call (x, 'set', ['Data', 'logs'], rs.body);
       });
    }],
 
@@ -414,23 +416,20 @@ dale.do ([
 
    ['deploy', 'client', function (x) {
       var input = c ('#deploy');
-      if (! input.files.length) return B.do (x, 'snackbar', 'yellow', 'Please select a file.');
+      if (! input.files.length) return B.call (x, 'snackbar', 'yellow', 'Please select a file.');
       var f = new FormData ();
       f.append ('file', input.files [0]);
-      B.do (x, 'post', 'admin/deploy', {}, f, function (x, error, rs) {
-         if (error) return B.do (x, 'snackbar', 'red', error.responseText);
+      B.call (x, 'post', 'admin/deploy', {}, f, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', error.responseText);
          input.value = '';
-         B.do (x, 'snackbar', 'green', 'Deploy OK!');
+         B.call (x, 'snackbar', 'green', 'Deploy OK!');
       });
    }],
-
-], function (v) {
-   B.listen.apply (null, v);
-});
+]);
 
 // *** LOGO VIEW ***
 
-E.logo = function (size) {
+views.logo = function (size) {
    return [
       ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
       ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'ac;'],
@@ -442,28 +441,25 @@ E.logo = function (size) {
 
 // *** BASE VIEW ***
 
-E.base = function () {
+views.base = function () {
    return [
       ['style', CSS.litc],
-      B.view (['Data', 'csrf'], function (x, csrf) {
-         if (csrf) return [
+      views.snackbar (),
+      B.view ([['Data', 'csrf'], ['State', 'page']], function (csrf, page) {
+         if (csrf === undefined || ! views [page]) return ['div'];
+         return ['div', [
             ['style', ['.logout', {position: 'absolute', 'top, right': 40, 'font-size': CSS.typography.fontSize (3)}]],
-            ['a', B.ev ({href: '#', class: 'logout'}, ['onclick', 'logout', []]), 'Logout'],
-         ];
-      }),
-      E.snackbar (),
-      // TODO v2: merge two elements into one
-      B.view (['Data', 'csrf'], function (x, csrf) {
-         if (csrf !== undefined) return B.view (['State', 'page'], function (x, page) {
-            if (E [page]) return E [page] ();
-         });
+            ['a', {href: '#', class: 'logout', onclick: B.ev ('logout', [])}, 'Logout'],
+            views [page] ()
+         ]];
       })
    ];
 }
 
+
 // *** SNACKBAR VIEW ***
 
-E.snackbar = function () {
+views.snackbar = function () {
    return [
       ['style', [
          ['.snackbar', {
@@ -508,14 +504,14 @@ E.snackbar = function () {
          }],
          ['.snackbar__text-concept', {mixin1: CSS.vars.fontPrimarySemiBold}],
       ]],
-      B.view (['State', 'snackbar'], function (x, snackbar) {
-         if (! snackbar) return;
+      B.view (['State', 'snackbar'], function (snackbar) {
+         if (! snackbar) return ['div'];
          var bcolor = 'rgba(' + CSS.toRGBA (snackbar.color) + ', 0.9)';
          return ['div', {class: 'snackbar', style: style ({bottom: 0, 'background-color': bcolor})}, [
             ['p', {class: 'snackbar__text'}, [
                ['span', {class: 'snackbar__text-concept'}, snackbar.message],
             ]],
-            ['div', B.ev ({class: 'snackbar__close'}, ['onclick', 'clear', 'snackbar']), [
+            ['div', {class: 'snackbar__close', onclick: B.ev ('clear', 'snackbar')}, [
                ['div', {class: 'close-button close-button--snackbar'}, [
                   ['div', {class: 'close-button__inner'}, [
                      ['span', {class: 'close-button__line'}],
@@ -530,7 +526,7 @@ E.snackbar = function () {
 
 // *** LOGIN VIEW ***
 
-E.login = function () {
+views.login = function () {
    return [
       ['style', [
          ['input', {'font-size': 24}],
@@ -678,7 +674,7 @@ E.login = function () {
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
-                  ['p', {class: 'auth-card__header-logo'}, E.logo (28)],
+                  ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
                   ['p', {class: 'auth-card__header-text'}, 'admin'],
                ]],
                // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
@@ -686,7 +682,7 @@ E.login = function () {
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
-                  ['input', B.ev ({type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in'}, ['onclick', 'login', []])],
+                  ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in', onclick: B.ev ('login', [])}],
                ]]
             ]]
          ]],
@@ -696,7 +692,7 @@ E.login = function () {
 
 // *** DASHBOARD VIEW ***
 
-E.dashboard = function (x) {
+views.dashboard = function (x) {
    return ['div', {style: style ({padding: 60})}, [
       ['h2', {class: 'page-title'}, 'ac;pic admin'],
       ['br'],
@@ -714,37 +710,37 @@ E.dashboard = function (x) {
 
 // *** INVITES VIEW ***
 
-E.invites = function () {
-   return B.view (['Data', 'invites'], function (x, invites) {
+views.invites = function () {
+   return B.view (['Data', 'invites'], function (invites) {
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Invites'],
          ['table', {class: 'pure-table pure-table-striped'}, [
-            ['tr', dale.do (['email', 'firstName', 'token', 'sent', 'accepted', 'delete'], function (v) {return ['th', v]})],
-            dale.do (Data.invites, function (invite, email) {
+            ['tr', dale.go (['email', 'firstName', 'token', 'sent', 'accepted', 'delete'], function (v) {return ['th', v]})],
+            dale.go (Data.invites, function (invite, email) {
                return ['tr', [
                   ['td', email],
                   ['td', invite.firstName],
                   ['td', invite.token],
                   ['td', new Date (invite.sent).toUTCString ()],
                   ['td', invite.accepted ? new Date (invite.accepted).toUTCString () : ''],
-                  ['td', ['span', B.ev ({class: 'action'}, ['onclick', 'delete', 'invite', email]), 'Delete']],
+                  ['td', ['span', {class: 'action', onclick: B.ev ('delete', 'invite', email)}, 'Delete']],
                ]];
             }),
          ]],
          ['br'],
-         B.view (['State', 'newInvite'], function (x, newInvite) {
-            if (! newInvite) return ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'set', ['State', 'newInvite'], {email: '', firstName: ''}]), 'Create invite'];
+         B.view (['State', 'newInvite'], function (newInvite) {
+            if (! newInvite) return ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('set', ['State', 'newInvite'], {email: '', firstName: ''})}, 'Create invite'];
             return [
-               ['input', B.ev ({placeholder: 'email', value: newInvite.email}, ['onchange', 'set', ['State', 'newInvite', 'email']])],
+               ['input', {placeholder: 'email', value: newInvite.email, onchange: B.ev ('set', ['State', 'newInvite', 'email'])}],
                ['br'],
                ['br'],
-               ['input', B.ev ({placeholder: 'name', value: newInvite.firstName}, ['onchange', 'set', ['State', 'newInvite', 'firstName']])],
+               ['input', {placeholder: 'name', value: newInvite.firstName, onchange: B.ev ('set', ['State', 'newInvite', 'firstName'])}],
                ['br'],
                ['br'],
-               ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'create', 'invite']), 'Create invite'],
+               ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('create', 'invite')}, 'Create invite'],
                ['br'],
                ['br'],
-               ['span', B.ev ({class: 'action'}, ['onclick', 'rem', 'State', 'newInvite']), 'Cancel'],
+               ['span', {class: 'action', onclick: B.ev ('rem', 'State', 'newInvite')}, 'Cancel'],
             ];
          }),
       ]];
@@ -753,16 +749,16 @@ E.invites = function () {
 
 // *** USERS VIEW ***
 
-E.users = function () {
-   return B.view (['Data', 'users'], function (x, users) {
+views.users = function () {
+   return B.view (['Data', 'users'], function (users) {
       var columns = ['username', 'email', 'type', 'created', 'actions'];
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Users'],
          ['table', {class: 'pure-table pure-table-striped'}, [
-            ['tr', dale.do (columns, function (v) {return ['th', v]})],
-            dale.do (Data.users, function (user) {
-               return ['tr', dale.do (columns, function (k) {
-                  if (k === 'actions') return ['td', ['span', B.ev ({class: 'action'}, ['onclick', 'delete', 'user', user.username]), 'Delete user']];
+            ['tr', dale.go (columns, function (v) {return ['th', v]})],
+            dale.go (Data.users, function (user) {
+               return ['tr', dale.go (columns, function (k) {
+                  if (k === 'actions') return ['td', ['span', {class: 'action', onclick: B.ev ('delete', 'user', user.username)}, 'Delete user']];
                   if (k === 'created') return ['td', new Date (parseInt (user [k])).toUTCString ()];
                   return ['td', user [k]];
                })];
@@ -774,25 +770,26 @@ E.users = function () {
 
 // *** LOGS VIEW ***
 
-E.logs = function () {
-   return B.view (['Data', 'logs'], function (x, logs) {
+views.logs = function () {
+   return B.view (['Data', 'logs'], function (logs) {
       var columns = ['t', 'username', 'ev', 'type'];
-      dale.do (logs, function (log) {
-         dale.do (log, function (v, k) {
+      dale.go (logs, function (log) {
+         dale.go (log, function (v, k) {
             if (columns.indexOf (k) === -1) columns.push (k);
          });
       });
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Logs'],
          ['table', {class: 'pure-table pure-table-striped'}, [
-            ['tr', dale.do (columns, function (v) {return ['th', v]})],
-            dale.do (Data.logs, function (log) {
-               return ['tr', dale.do (columns, function (k) {
+            ['tr', dale.go (columns, function (v) {return ['th', v]})],
+            dale.go (Data.logs, function (log) {
+               return ['tr', dale.go (columns, function (k) {
                   if (k === 't') return ['td', new Date (parseInt (log.t)).toUTCString ()];
                   var value = log [k];
-                  if (value === undefined) return ['td'];
+                  if (value === undefined || value === null) return ['td'];
+                  if (value === true || value === false) return ['td', value + ''];
                   if (teishi.complex (value)) value = JSON.stringify (value);
-                  if (value.length > 300) value = value.slice (0, 300) + '...';
+                  if (type (value) === 'string' && value.length > 300) value = value.slice (0, 300) + '...';
                   return ['td', value];
                })];
             }),
@@ -803,14 +800,14 @@ E.logs = function () {
 
 // *** DEPLOY VIEW ***
 
-E.deploy = function () {
+views.deploy = function () {
    return ['div', {style: style ({padding: 60})}, [
       ['h2', {class: 'page-title'}, 'Deploy client.js'],
       ['br'], ['br'],
       ['form', {onsubmit: 'event.preventDefault ()'}, [
          ['input', {id: 'deploy', type: 'file', name: 'file'}],
          ['br'], ['br'],
-         ['button', B.ev ({class: 'pure-button pure-button-primary'}, ['onclick', 'deploy', 'client']), 'Update client.js'],
+         ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('deploy', 'client')}, 'Update client.js'],
       ]]
    ]];
 }
@@ -819,4 +816,4 @@ E.deploy = function () {
 
 // *** INITIALIZATION ***
 
-B.do ('initialize', []);
+B.call ('initialize', []);
