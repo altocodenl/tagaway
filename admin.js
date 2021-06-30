@@ -3,6 +3,15 @@
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
 var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style;
 
+window.addEventListener ('keydown', function (ev) {
+   var code = (ev || document.event).keyCode;
+   if (code !== 75) return;
+   ev.preventDefault ();
+   var query = prompt ('Search the eventlog');
+   if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
+   B.eventlog (query);
+});
+
 // *** CSS ***
 
 var CSS = {
@@ -274,13 +283,13 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: message, timeout: timeout});
    }],
    [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout' && path !== 'auth/delete';
-      // CSRF protection
+      var t = Date.now (), path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout' && path !== 'auth/delete';
       if (x.verb === 'post' && ! authRequest) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
+         B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
          if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
             return B.call (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
