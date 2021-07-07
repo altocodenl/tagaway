@@ -2843,7 +2843,7 @@ var routes = [
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.lrange ('ulog:' + rq.user.username, 0, -1);
+            ENV ? multi.get ('foo') : multi.lrange ('ulog:' + rq.user.username, 0, -1);
             multi.get    ('stat:s:byfs-' + rq.user.username);
             multi.get    ('stat:s:bys3-' + rq.user.username);
             multi.get    ('geo:'         + rq.user.username);
