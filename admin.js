@@ -254,17 +254,17 @@ B.mrespond ([
    ['initialize', [], {burn: true}, function (x) {
       document.querySelector ('meta[name="viewport"]').content = 'width=1200';
       B.call (x, 'reset',    'store');
-      B.call (x, 'read',     'hash');
       B.call (x, 'retrieve', 'csrf');
       B.mount ('body', views.base);
    }],
    ['reset', 'store', function (x, logout) {
-      B.call (x, 'set', 'State', {});
-      B.call (x, 'set', 'Data',  {});
       if (logout) {
          B.log = B.r.log = [];
-         B.call (x, 'set', ['Data', 'csrf'], false);
+         B.call (x, 'set', 'lastLogout', Date.now ());
       }
+      var redirect = B.get ('State', 'redirect');
+      B.call (x, 'set', 'State', redirect ? {redirect: redirect} : {});
+      B.call (x, 'set', 'Data',  {});
       window.State = B.get ('State'), window.Data = B.get ('Data');
    }],
    ['clear', 'snackbar', function (x) {
@@ -283,15 +283,18 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: message, timeout: timeout});
    }],
    [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var t = Date.now (), path = x.path [0], authRequest = path.match (/^auth/) && path !== 'auth/logout' && path !== 'auth/delete';
-      if (x.verb === 'post' && ! authRequest) {
+      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && ['auth/logout', 'auth/delete', 'auth/changePassword'].indexOf (path) === -1);
+      if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
          B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
-         if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
+         var authPath = path === 'csrf' || path.match (/^auth/);
+         if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
+         if (! authPath && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
+            B.call (x, 'goto', 'page', 'login');
             return B.call (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
          }
          if (cb) cb (x, error, rs);
@@ -301,27 +304,34 @@ B.mrespond ([
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
    }],
    ['read', 'hash', function (x) {
-      var hash = window.location.hash.replace ('#/', '').split ('/');
-      B.call (x, 'set', ['State', 'page'], hash [0]);
+      var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
+      B.call (x, 'goto', 'page', page);
    }],
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
-      var page = B.get ('State', 'page'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
-
-      if (logged && redirect) {
-         page = redirect;
-         B.call (x, 'rem', 'State', 'redirect');
+   ['goto', 'page', function (x, page) {
+      var pages = {
+         logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
+         unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
-      var allowed = logged ? ['dashboard', 'invites', 'users', 'logs', 'deploy'] : ['login'];
-
-      if (allowed.indexOf (page) === -1) {
-         if (! logged) B.call (x, 'set', ['State', 'redirect'], page);
-         return B.call (x, 'set', ['State', 'page'], allowed [0]);
+      if (pages.logged.indexOf (page) === -1 && pages.unlogged.indexOf (page) === -1) {
+         page = pages.logged [0];
       }
 
-      document.title = ['ac;pic admin', page].join (' - ');
+      var logged = B.get ('Data', 'csrf');
 
-      if (window.location.hash.replace ('#/', '').split ('/') [0] !== page) window.location.hash = '#/' + page;
+      if (! logged && pages.logged.indexOf (page) > -1) {
+         B.call (x, 'set', ['State', 'redirect'], page);
+         return B.call (x, 'goto', 'page', pages.unlogged [0]);
+      }
+      if (logged && pages.unlogged.indexOf (page) > -1) {
+         return B.call (x, 'goto', 'page', pages.logged [0]);
+      }
+      if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
+
+      document.title = ['ac;pic', page].join (' - ');
+
+      if (page !== B.get ('State', 'page'))     B.call (x, 'set', ['State', 'page'], page);
+      if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
 
    // *** AUTH RESPONDERS ***
@@ -330,10 +340,8 @@ B.mrespond ([
       B.call (x, 'get', 'csrf', {}, '', function (x, error, rs) {
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
+         B.call (x, 'read', 'hash');
       });
-   }],
-   ['change', ['Data', 'csrf'], {match: B.changeResponder}, function (x) {
-      B.call (x, 'change', ['State', 'page']);
    }],
    ['login', [], function (x) {
       B.call (x, 'post', 'auth/login', {}, {
@@ -343,12 +351,14 @@ B.mrespond ([
       }, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
    ['logout', [], function (x) {
       B.call (x, 'post', 'auth/logout', {}, {}, function (x, error) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error logging you out.');
          B.call (x, 'reset', 'store', true);
+         B.call (x, 'goto', 'page', 'login');
       });
    }],
 
