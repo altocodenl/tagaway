@@ -470,66 +470,66 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `body.refreshQuery`, if set, indicates that there's either at least an upload ongoing or a geotagging process ongoing, in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
-`POST /share`
+- `POST /share`
    - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`.
    - The target user (`body.whom`) must exist, otherwise a 404 is returned.
    - If the tag being shared is `all` or `untagged`, a 400 is returned with body `{error: 'tag'}`.
    - If try to share with yourself, a 400 is returned with body `{error: 'self'}`.
    - If successful, returns a 200.
 
-`GET /share`
+- `GET /share`
    - If successful, returns a 200 with body `{sho: [[USERNAME1, TAG1], ...], shm: [[USERNAME2, TAG2], ...]}`.
    - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
 
-`POST /download`
+- `POST /download`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
    - `body.ids` must have at least a length of 2.
    - All pivs must exist and user must be owner of the pivs or have the pivs shared with them, otherwise a 404 is returned.
    - If successful, returns a 200 with body `{id: STRING}`. The `id` corresponds to a temporary download file that lasts 5 seconds and is only valid for the user that requested the download.
 
-`GET /download/ID`
+- `GET /download/ID`
    - `ID` is an id returned by `POST /download`.
    - If successful, the user will receive a zip file with the specified pivs.
 
-`POST /dismiss`
+- `POST /dismiss`
    - Disables suggestions shown to new users.
    - Body must be of the form `{operation: 'geotagging|selection'}`.
 
-`POST /geo`
+- `POST /geo`
    - Enables or disables geotagging.
    - Body must be of the form `{operation: 'enable|disable'}`.
    - If an operation is ongoing while the request is being made, the server will reply with a 409 code. Otherwise it will reply with a 200 code.
    - In the case of enabling geotagging, a server reply doesn't mean that the geotagging is complete, since it's a background process that might take minutes. In contrast, when disabling geotagging a 200 response will be sent after the geotags are removed, without the need for a background p rocess.
 
-`GET /uploads`
+- `GET /uploads`
    - If successful, returns a 200 with an array as body. The array contains one or more of the following objects: `{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}`.
 
-`GET /imports/PROVIDER`
+- `GET /imports/PROVIDER`
    - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, provider: PROVIDER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`. If oauth access hasn't been provided yet, the reply will be of the form `[{redirect: URL, provider: PROVIDER}]`, where `URL` is the URL to start the OAuth authorization process for that provider.
 
-`GET /account`
+- `GET /account`
    - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
 
-`GET /import/oauth/PROVIDER`
+- `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
    - If no query parameters are received, the route responds with a 400.
    - If no authorization code is received, the route responds with a 403.
    - If the request for an access token is not successful, the route responds with a 403 and with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If the request for an access token is successful, the route responds with a 200.
 
-`POST /import/list/PROVIDER`
+- `POST /import/list/PROVIDER`
    - Creates a list of available folders with pivs/videos in the PROVIDER's cloud, or provides a `redirect` URL for the OAuth flow if the authorization credentials for that provider haven't been requested yet.
    - If the credentials have not been requested yet, the endpoint returns a body with the shape `{redirect: URL}`. `URL` is the URL to start the OAuth authorization process for that provider.
    - If the credentials are already granted but authentication against the provider fails, the endpoint returns a 403 with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If there's already a list ready or the import is in the process of uploading, a 409 is returned to the client.
    - If there's access or refresh tokens and no import process ongoing, a process is started to query the PROVIDER's API and 200 is returned to the client. The listing will be performed asynchronously after replying the 200 to the request.
 
-`POST /import/cancel/PROVIDER`
+- `POST /import/cancel/PROVIDER`
    - Deletes list of files/folders available in the PROVIDER's cloud.
    - If no listing was done, the route succeeds anyway.
    - If successful, the route returns no body.
 
-`POST /import/select/PROVIDER`
+- `POST /import/select/PROVIDER`
    - Updates the list of selected folders for import from `PROVIDER`.
    - Requires a list of files to be present; otherwise a 404 is returned.
    - If the import is listing, uploading or experienced an error, a 409 is returned.
@@ -537,7 +537,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If any of the ids doesn't belong to a folder id on the `PROVIDER`'s list, a 400 is returned.
    - If there previously was an array of selected folder ids on the list, it will be overwritten.
 
-`POST /import/upload/PROVIDER`
+- `POST /import/upload/PROVIDER`
    - If no credentials are present or the credentials are already granted but authentication against the provider fails, the endpoint returns a 403 with a body of the shape `{code: <CODE RETURNED BY PROVIDER'S API>, body: <BODY RETURNED BY REQUEST TO PROVIDER'S API>}`.
    - If there's no import process present, returns a 404.
    - If there's an import process present but 1) the listing process is ongoing; or 2) there was an error; or 3) there are no folders selected yet; or 4) the import process already started; the endpoint returns a 409.
