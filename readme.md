@@ -39,8 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- UX round
-   - Suggest tags when inserting in main view.
+- document responder changes (prevent ajax, lastLogout, navigation, shift)
+
+- Pivs
+   - Suggest tags when inserting in tag view.
+   - Move year tags to d::, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.
       - If selected a month, don't show other years.
@@ -53,20 +56,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - latest queried
       - pinned (manual solution)
       - compress years and geo? also other categories to compress (with overlap): latest queried, latest tagged, pinned, all
-   - Arcade mode when browsing:
-      - changes in query/position are reflected in url, back button works
-      - maybe add back button for queries explicitly, especially on mobile
-      - "window of vision" in scroll. keep n pivs maximum on display but have infinite scroll.
-      - remember position by the piv at a certain position (top/left), not the number, so it works while uploads are happening in the background
-      - see last actions so you can see where you left off.
-
-- Pivs
    - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
-   - Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
-   - Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
+   - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+   - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
    - Implement video streaming.
-
-- Refactor UI with unified terminology for pivs: Pics&Vids?
+   - [To be specified] Arcade mode when browsing:
+      - changes in query/position are reflected in url, back button works
+      - remember position by the piv at a certain position (top/left), not the number, so it works while uploads are happening in the background
+      - top bar showing position
+      - fixed piv separators as milestones
 
 - Backend improvements:
    - Check if we're leaving behind temporary files from import.
@@ -89,7 +87,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When opening thumbnail, big image is superimposed to the same piv (it's like a piv is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
-- If required page is not default and you're not logged in, set the redirect (both client & admin).
+- Refactor UI with unified terminology for pivs: Pics&Vids?
 
 - Accounts
    - Recover/reset password.
@@ -105,7 +103,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Login & signup.
    - Upload files & folders.
 
-- Review fonts not loading in incognito FF
+- [incognito FF] Review fonts not loading
 
 ### Already implemented
 
@@ -808,7 +806,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 ### Views
 
-**Container**: `views.base`: depends on `Data.csrf` and `State.page`. Will only draw something if the client attempted to retrieve `Data.csrf`. Contains all other views.
+**Container**: `views.base`: depends on `State.page`. Will only draw something if `State.page` is set (otherwise it will return an empty `<div>`). Contains all other views.
 
 **Pages**:
 
@@ -920,8 +918,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    11. `touchend` -> `touch end`
 
 2. General
-   1. `initialize`: calls `reset store`, `read hash` and `retrieve csrf`. Finally mounts `views.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
-   2. `reset store`: (Re)initializes `B.store.State` and `B.store.Data` to empty objects and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console). If its first argument (`logout`) is truthy, it also clears out `B.r.log` (to remove all user data from the local event log) and sets `Data.csrf` to `false` (which indicates that the current page should be `login`).
+   1. `initialize`: calls `reset store` and `retrieve csrf`. Then mounts `views.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
+   2. `reset store`: If its first argument (`logout`) is truthy, it clears out `B.r.log` (to remove all user data from the local event log) and sets `lastLogout` to the current date. Notes `State.redirect` and (re)initializes `B.store.State` and `B.store.Data` to empty objects (with the exception of `State.redirect`) and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
    3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
    4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument. As second argument it takes a flag `noSnackbar` that doesn't set a timeout to clear the snackbar.
    5. `get` & `post`: wrapper for ajax functions.
@@ -929,21 +927,44 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
       - Adds `Data.csrf` to most `POST` requests.
-      - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store` (with truthy `logout` argument) and `snackbar`.
+      - If by the time the response from the server is received, the user has just logged out (judging by `lastLogout`), and the request is not an auth request, the callback will not be executed.
+      - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store true` (with truthy `logout` argument), `goto page login` and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
    7. `read hash`:
-      - Places the first part of `window.location.hash` into (`State.page`).
       - If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
       - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `State.import.PROVIDER.authOK` to `true`.
-   8. `change State.page`: validates whether a certain page can be shown, based on 1) whether the page exists; and 2) the user's session status (logged or unlogged) allows for showing it. Optionally sets/removes `State.redirect`, `State.page` and overwrites `window.location.hash`.
-   9. `test`: loads test suite.
+      - Invokes `goto page PAGE`, where `PAGE` is the first part of the hash.
+   8. `goto page PAGE`: this is the main navigation responder, which decides whether a change in the hash should take the app to a new page.
+      - Before explaining the implementation, it is useful to understand the requirements of navigation in the application.
+         - We cannot go to views that don't exist.
+         - We can only show certain pages while being logged in, and certain pages only when being logged out.
+         - When requesting a logged in page when being logged out, the user should be redirected to the requested page after signup/login. We'll use `State.redirect` to store the required view after signup/login.
+         - When loading the app for the first time, we should notice whether the user wants to go to no view or the default view (which means the default view), or a valid view that requires login.
+         - Navigation covers four cases: 1) initial load of the app; 2) change of hash (the user has decided to go to another view); 3) signup/login; 4) logout.
+            - The initial load can take you to the requested view if you're logged in, or to `login` otherwise (but remembering that choice). It should disregard non-existing views being requested.
+            - The change of hash is very similar to the initial load.
+            - `signup/login` takes you to either the requested view (`State.redirect`) or the default logged in view.
+            - `logout` takes you to `signup/login`.
+      - Implementation notes:
+         - This responder is invoked directly by `signup/login` and `logout`. Also by `read hash`. The initial load hits it through invoking `read hash`.
+         - This responder exists as a gatekeeper to `State.page`, to prevent responders that are matched on a certain value of `State.page` being triggered if the user doesn't have access to a certain page. For example, the responders that perform queries in `pics` should not be triggered until the user is logged in.
+      - Sequence:
+         - The responder defines a list of valid views when being logged and unlogged.
+         - If `PAGE` is undefined or it isn't a valid view, the responder will consider `PAGE` to be the default logged in page (`pics`).
+         - The responder checks whether the user is logged by reading `Data.csrf`.
+         - If the user is not logged, we set `State.redirect` to `PAGE` and then invoke `goto page login`. We don't do anything else.
+         - If the user is logged but the requested view requires being unlogged, we invoke `goto page pics`. We don't do anything else.
+         - If we're logged and `State.redirect` is set, we invoke `rem State.redirect`.
+         - We update the document's title using `PAGE`.
+         - If `State.page` is different from `PAGE`, we set it.
+         - If `window.location.hash` doesn't match `PAGE`, we update it.
+   8. `test`: loads the test suite.
 
 3. Auth
-   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also triggers a `change` on `State.page` so that the responder that handles page changes gets fired.
-   2. `change Data.csrf`: when it changes, it triggers a change in `State.page` to potentially update the current page.
-   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
-   4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument).
-   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf`.
+   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not.
+   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf` and invokes `goto page State.redirect`.
+   4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument) and invokes `goto page login`.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf` and invokes `goto page State.redirect`.
    6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pivs
@@ -953,8 +974,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pivs`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
-   7. `click pic`: depends on `State.lastClick`, `State.selected` and `State.shift`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed and the previous click was done on a piv still displayed, it will perform multiple selection.
-   8. `key down|up`: if `keyCode` is 16, toggle `State.shift`; if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pictures, it invokes `delete pivs`.
+   7. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
+   8. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pictures, it invokes `delete pivs`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it. If the tag is added and it is an user tag, we invoke `rem State.filter`.
    10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
@@ -1016,6 +1037,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 ### Store
 
+- `lastLogout`: date of the last logout done in the current tab.
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `filter`: filters tags shown in sidebar.

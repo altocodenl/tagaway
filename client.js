@@ -4,12 +4,22 @@ var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c
 var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style;
 
 window.addEventListener ('keydown', function (ev) {
-   var code = (ev || document.event).keyCode;
-   if (code !== 75) return;
-   ev.preventDefault ();
-   var query = prompt ('Search the eventlog');
-   if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
-   B.eventlog (query);
+   ev = ev || document.event;
+   if (! ev.ctrlKey) return;
+   if (ev.keyCode === 75) {
+      ev.preventDefault ();
+      var query = prompt ('Search the eventlog');
+      if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
+      B.eventlog (query);
+   }
+   if (ev.keyCode === 76) {
+      ev.preventDefault ();
+      c ('.evlog-resp', function (element) {element.style.display = window.getComputedStyle (element).display === 'table-row' ? 'none' : 'table-row'});
+   }
+   if (ev.keyCode === 80) {
+      ev.preventDefault ();
+      B.call ('test', []);
+   }
 });
 
 // *** CSS ***
@@ -2444,17 +2454,17 @@ B.mrespond ([
    ['initialize', [], {burn: true}, function (x) {
       document.querySelector ('meta[name="viewport"]').content = 'width=1200';
       B.call (x, 'reset',    'store');
-      B.call (x, 'read',     'hash');
       B.call (x, 'retrieve', 'csrf');
       B.mount ('body', views.base);
    }],
    ['reset', 'store', function (x, logout) {
-      B.call (x, 'set', 'State', {});
-      B.call (x, 'set', 'Data',  {});
       if (logout) {
          B.log = B.r.log = [];
-         B.call (x, 'set', ['Data', 'csrf'], false);
+         B.call (x, 'set', 'lastLogout', Date.now ());
       }
+      var redirect = B.get ('State', 'redirect');
+      B.call (x, 'set', 'State', redirect ? {redirect: redirect} : {});
+      B.call (x, 'set', 'Data',  {});
       window.State = B.get ('State'), window.Data = B.get ('Data');
    }],
    ['clear', 'snackbar', function (x) {
@@ -2480,8 +2490,11 @@ B.mrespond ([
       }
       c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
          B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
-         if (path !== 'csrf' && ! path.match (/^auth/) && error && error.status === 403) {
+         var authPath = path === 'csrf' || path.match (/^auth/);
+         if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
+         if (! authPath && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
+            B.call (x, 'goto', 'page', 'login');
             return B.call (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
          }
          if (cb) cb (x, error, rs);
@@ -2491,39 +2504,46 @@ B.mrespond ([
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
    }],
    ['read', 'hash', function (x) {
-      var hash = window.location.hash.replace ('#/', '').split ('/');
-      B.call (x, 'set', ['State', 'page'], hash [0]);
-      if (hash [0] === 'signup') {
+      var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
+
+      if (page === 'signup') {
          if (hash [1]) {
             B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
-            window.location.hash = '#/signup';
          }
       }
-      if (hash [0] === 'import') {
+      if (page === 'import') {
          if (hash [1] === 'success' && hash [2]) {
             B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'], true);
-            window.location.hash = '#/import';
          }
       }
+
+      B.call (x, 'goto', 'page', page);
    }],
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
-      var page = B.get ('State', 'page'), logged = B.get ('Data', 'csrf'), redirect = B.get ('State', 'redirect');
-
-      if (logged && redirect) {
-         page = redirect;
-         B.call (x, 'rem', 'State', 'redirect');
+   ['goto', 'page', function (x, page) {
+      var pages = {
+         logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
+         unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
-      var allowedPages = logged ? ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'] : ['login', 'signup', 'recover', 'reset'];
-
-      if (allowedPages.indexOf (page) === -1) {
-         if (! logged) B.call (x, 'set', ['State', 'redirect'], page);
-         return B.call (x, 'set', ['State', 'page'], allowedPages [0]);
+      if (pages.logged.indexOf (page) === -1 && pages.unlogged.indexOf (page) === -1) {
+         page = pages.logged [0];
       }
+
+      var logged = B.get ('Data', 'csrf');
+
+      if (! logged && pages.logged.indexOf (page) > -1) {
+         B.call (x, 'set', ['State', 'redirect'], page);
+         return B.call (x, 'goto', 'page', pages.unlogged [0]);
+      }
+      if (logged && pages.unlogged.indexOf (page) > -1) {
+         return B.call (x, 'goto', 'page', pages.logged [0]);
+      }
+      if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
 
       document.title = ['ac;pic', page].join (' - ');
 
-      if (window.location.hash.replace ('#/', '').split ('/') [0] !== page) window.location.hash = '#/' + page;
+      if (page !== B.get ('State', 'page'))     B.call (x, 'set', ['State', 'page'], page);
+      if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
    ['test', [], function (x) {
       c.loadScript ('testclient.js');
@@ -2535,10 +2555,8 @@ B.mrespond ([
       B.call (x, 'get', 'csrf', {}, '', function (x, error, rs) {
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
+         B.call (x, 'read', 'hash');
       });
-   }],
-   ['change', ['Data', 'csrf'], {match: B.changeResponder}, function (x) {
-      B.call (x, 'change', ['State', 'page']);
    }],
    ['login', [], function (x) {
       B.call (x, 'post', 'auth/login', {}, {
@@ -2548,12 +2566,14 @@ B.mrespond ([
       }, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
    ['logout', [], function (x) {
       B.call (x, 'post', 'auth/logout', {}, {}, function (x, error) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error logging you out.');
          B.call (x, 'reset', 'store', true);
+         B.call (x, 'goto', 'page', 'login');
       });
    }],
    ['signup', [], function (x) {
@@ -2576,6 +2596,7 @@ B.mrespond ([
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
          }
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
    ['request', 'invite', function (x) {
@@ -2604,7 +2625,8 @@ B.mrespond ([
       var selected = B.get ('State', 'selected') || {};
       var pivs = document.getElementsByClassName ('pictures-grid__item-picture');
       dale.go (pivs, function (piv) {
-         piv.classList [selected [piv.id] ? 'add' : 'remove'] ('selected');
+         if (selected [piv.id]   && ! piv.classList.contains ('selected')) piv.classList.add    ('selected');
+         if (! selected [piv.id] &&   piv.classList.contains ('selected')) piv.classList.remove ('selected');
       });
       var selectedPivs = dale.keys (selected).length > 0;
       var classes = {
@@ -2703,23 +2725,23 @@ B.mrespond ([
 
       });
    }],
-   ['click', 'piv', function (x, id, k) {
+   ['click', 'piv', function (x, id, k, ev) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this piv and happened less than 500ms ago, we open the piv in fullscreen.
-      if (last.id === id && teishi.time () - last.time < 500) {
+      if (last.id === id && Date.now () - last.time < 500) {
          B.call (x, 'rem', ['State', 'selected'], id);
          B.call (x, 'set', ['State', 'open'], k);
          return;
       }
 
-      B.call (x, 'set', ['State', 'lastClick'], {id: id, time: teishi.time ()});
+      B.call (x, 'set', ['State', 'lastClick'], {id: id, time: Date.now ()});
 
       var lastIndex = dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
          if (piv.id === last.id) return k;
       });
 
       // Single select/unselect (either no shift or the last click wasn't on a piv that we currently have or the last clicked piv is deselected)
-      if (! B.get ('State', 'shift') || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
+      if (! ev.shiftKey || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
          if (! B.get ('State', 'selected', id)) return B.call (x, 'set', ['State', 'selected', id], true);
          else                                   return B.call (x, 'rem', ['State', 'selected'], id);
       }
@@ -2732,7 +2754,6 @@ B.mrespond ([
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['key', /down|up/, function (x, keyCode) {
-      if (keyCode === 16) B.call (x, 'set', ['State', 'shift'], x.path [0] === 'down');
       if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.call (x, 'tag', 'pivs', true);
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
@@ -3323,8 +3344,8 @@ views.base = function () {
    return [
       ['style', CSS.litc],
       views.snackbar (),
-      B.view ([['Data', 'csrf'], ['State', 'page']], function (csrf, page) {
-         if (csrf === undefined || ! views [page]) return ['div'];
+      B.view (['State', 'page'], function (page) {
+         if (! views [page]) return ['div'];
          return views [page] ();
       })
    ];
@@ -4267,7 +4288,7 @@ views.grid = function () {
                   ['div', {
                      class: 'pictures-grid__item-picture',
                      id: piv.id,
-                     onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, k])
+                     onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, k, {raw: 'event'}])
                   }, [
                      ['div', {
                         class: 'inner',
