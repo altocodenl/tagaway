@@ -222,7 +222,9 @@ var s3 = new (require ('aws-sdk')).S3 ({
 
 var H = {};
 
-H.email = /^(([_\da-zA-Z+\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+//H.email = /^(([_\da-zA-Z+\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+// Adapted from https://www.regular-expressions.info/email.html
+H.email = /^(?=[A-Z0-9][A-Z0-9@._%+-]{5,253}$)[A-Z0-9._%+-]{1,64}@(?:(?=[A-Z0-9-]{1,63}\.)[A-Z0-9]+(?:-[A-Z0-9]+)*\.){1,8}[A-Z]{2,63}$/i
 
 H.trim = function (string) {
    return string.replace (/^\s+|\s+$/g, '').replace (/\s+/g, ' ');
@@ -702,12 +704,13 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             if (listAlreadyUploaded && ! upload.listAlreadyUploaded) upload.listAlreadyUploaded = [];
             if (log.provider && ! upload.provider) upload.provider = log.provider;
             if (log.type === 'complete' || log.type === 'cancel' || log.type === 'noCapacity' || log.type === 'error') {
-               upload.end = log.t;
+               if (! upload.end) upload.end = log.t;
                // For complete and error, type of log equals upload.status
                // We check if status is already set in case an error comes after either a cancel or a completed
                if (! upload.status) upload.status = {cancel: 'cancelled', noCapacity: 'error'} [log.type] || log.type;
                if (log.type === 'noCapacity') upload.error = 'You have run out of space!';
-               if (log.type === 'error')      upload.error = log.error;
+               // If there's already another error for this upload, we keep it instead of overwriting to show the latest one
+               if (log.type === 'error' && ! upload.error) upload.error = log.error;
             }
             else if (log.type === 'providerError') {
                if (! upload.providerErrors) upload.providerErrors = [];
@@ -1122,7 +1125,7 @@ var routes = [
 
    ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
-   ['get', ['assets/*', 'client.js', 'client2.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['assets/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
       ['!DOCTYPE HTML'],
@@ -1180,7 +1183,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
+         ! ENV ? [] : [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
          [reply, rs, 200],
       ]);
    }],
@@ -1225,6 +1228,8 @@ var routes = [
                return ['body.' + key, b [key], 'string']
             }),
             ['body.timezone', b.timezone, 'integer'],
+            // UTC-12 to UTC+14
+            ['body.timezone', b.timezone, {min: -840, max: 720}, teishi.test.range]
          ]},
       ])) return;
 
@@ -1298,6 +1303,8 @@ var routes = [
             if (s.last [2]) return reply (rs, 403, {error: 'username'});
             s.next ();
          },
+         // logs are deleted in case a deleted user with the same username existed, in which case there will be a `destroy` log.
+         [Redis, 'del', 'ulog:' + b.username],
          [a.set, 'emailtoken', [a.make (require ('bcryptjs').genSalt), 20]],
          [a.make (giz.signup), b.username, b.password],
          function (s) {
@@ -1311,6 +1318,8 @@ var routes = [
                suggestGeotagging:   1,
                suggestSelection:    1
             });
+            // email verification happens only when testing, since now all users come through invites.
+            // when this changes, the verificationPending flag should be set for all users
             if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
             s.invite.accepted = Date.now ();
             multi.hset  ('invites', b.email, JSON.stringify (s.invite));
@@ -1366,7 +1375,7 @@ var routes = [
             notify (s, {type: 'verify', user: s.username});
          },
          ! ENV ? [] : [sendmail, {to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}],
-         [reply, rs, 302, {location: '/#auth/login/verified'}],
+         [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/verified'}],
       ]);
    }],
 
@@ -1397,7 +1406,12 @@ var routes = [
             if (type (error) === 'string') reply (rs, 403, {error: 'auth'});
             else                           reply (rs, 500, {error: error});
          }],
-         ENV ? [] : [a.get, reply, rs, 200, {token: '@token'}],
+         ENV ? [] : [
+            [function (s) {
+               H.log (s, s.username, {ev: 'auth', type: 'recover', ip: rq.origin, userAgent: rq.headers ['user-agent']});
+            }],
+            [a.get, reply, rs, 200, {token: '@token'}],
+         ],
          [a.set, 'user', [a.get, Redis, 'hgetall', 'users:@username']],
          function (s) {
             sendmail (s, {
@@ -1407,9 +1421,9 @@ var routes = [
                message: CONFIG.etemplates.recover.message (s.user.username, s.token)
             });
          },
-         function (s) {
-            H.log (s, s.user.username, {ev: 'auth', type: 'recover', ip: rq.origin, userAgent: rq.headers ['user-agent']});
-         },
+         [function (s) {
+            H.log (s, s.username, {ev: 'auth', type: 'recover', ip: rq.origin, userAgent: rq.headers ['user-agent']});
+         }],
          [reply, rs, 200],
       ]);
    }],
@@ -1420,7 +1434,6 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
-         ['body', b, 'string', 'each'],
          ['keys of body', dale.keys (b), ['username', 'password', 'token'], 'eachOf', teishi.test.equal],
          function () {return [
             dale.go (['username', 'password', 'token'], function (key) {
@@ -1430,8 +1443,9 @@ var routes = [
          function () {return ['body.password length', b.password.length, {min: 6}, teishi.test.range]}
       ])) return;
 
+      // username is not trimmed because it is read from the token, which is generated by the server
       astop (rs, [
-         [a.stop, [a.set, 'token', [a.make (giz.reset), b.username, b.token, b.password]], function (s, error) {
+         [a.stop, [a.make (giz.reset), b.username, b.token, b.password], function (s, error) {
             if (type (error) === 'string') reply (rs, 403, {error: 'token'});
             else                           reply (rs, 500, {error: error});
          }],
@@ -1467,7 +1481,7 @@ var routes = [
       if (! rq.data.cookie)                               return reply (rs, 403, {error: 'nocookie'});
       if (! rq.data.cookie [CONFIG.cookieName]) {
          if (rq.headers.cookie.match (CONFIG.cookieName)) return reply (rs, 403, {error: 'tampered'});
-                                                          return reply (rs, 403, {error: 'noappcookie'});
+                                                          return reply (rs, 403, {error: 'nocookie'});
       }
 
       giz.auth (rq.data.cookie [CONFIG.cookieName], function (error, user) {
@@ -1511,7 +1525,7 @@ var routes = [
          delete rq.data.fields.csrf;
       }
       else {
-         if (type (rq.body) !== 'object') return reply (rs, 400);
+         if (type (rq.body) !== 'object') return reply (rs, 400, {error: 'body should have as type object but instead is ' + JSON.stringify (rq.body) + ' with type ' + type (rq.body)});
          if (rq.body.csrf !== rq.csrf)    return reply (rs, 403, {error: 'csrf'});
          delete rq.body.csrf;
       }
@@ -1535,8 +1549,6 @@ var routes = [
    ['post', 'auth/delete', function (rq, rs) {
 
       var b = rq.body;
-
-      if (type (b) !== 'object') return reply (rs, 400, 'body must be an object.');
 
       if (b.username !== undefined && type (b.username) !== 'string') return reply (rs, 400, 'body.user must be either undefined or a string.');
 
@@ -1587,7 +1599,8 @@ var routes = [
                   mexec (s, multi);
                },
                b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookieName]] : [],
-               [H.log, user.username, {ev: 'auth', type: 'destroy', ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
+               [notify, {priority: 'important', type: 'delete', user: rq.user.username, ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
+               [H.log, user.username, {ev: 'auth', type: 'delete', ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
                [reply, rs, 200, '', b.username === undefined ? {'set-cookie': cicek.cookie.write (CONFIG.cookieName, false, {httponly: true, samesite: 'Lax', path: '/'})} : {}],
             ]);
          }
@@ -1601,7 +1614,6 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['old', 'new'], 'eachOf', teishi.test.equal],
          function () {return [
             ['body.old', b.old,     'string'],
@@ -1624,6 +1636,42 @@ var routes = [
             });
          });
       });
+   }],
+
+   // *** ACCOUNT ***
+
+   ['get', 'account', function (rq, rs) {
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            ENV ? multi.get ('foo') : multi.lrange ('ulog:' + rq.user.username, 0, -1);
+            multi.get    ('stat:s:byfs-' + rq.user.username);
+            multi.get    ('stat:s:bys3-' + rq.user.username);
+            multi.get    ('geo:'         + rq.user.username);
+            mexec (s, multi);
+         }],
+         function (s) {
+            var limit = CONFIG.freeSpace;
+            if (ENV !== 'prod' && SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
+
+            reply (rs, 200, {
+               username: rq.user.username,
+               email:    rq.user.email,
+               created:  parseInt (rq.user.created),
+               usage:    {
+                  limit:  limit,
+                  fsused: parseInt (s.last [1]) || 0,
+                  s3used: parseInt (s.last [2]) || 0,
+               },
+               geo:           rq.user.geo ? true : undefined,
+               geoInProgress: s.last [3]  ? true : undefined,
+               suggestGeotagging: rq.user.suggestGeotagging ? true : undefined,
+               suggestSelection:  rq.user.suggestSelection  ? true : undefined,
+               // We only return logs for testing purposes when running the app locally
+               logs:          ENV ? undefined : dale.go (s.last [0], JSON.parse).reverse ()
+            });
+         }
+      ]);
    }],
 
    // *** FEEDBACK COLLECTION ***
@@ -1650,7 +1698,7 @@ var routes = [
       ]);
    }],
 
-   // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES) ***
+   // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES ONLY) ***
 
    ['get', 'original/:id', function (rq, rs) {
       if (ENV) return reply (rs, 400);
@@ -1709,9 +1757,18 @@ var routes = [
       ]);
    }],
 
-   // *** UPLOAD PIVS ***
+   // *** UPLOAD ***
 
-   ['post', 'metaupload', function (rq, rs) {
+   ['get', 'uploads', function (rq, rs) {
+      astop (rs, [
+         [H.getUploads, rq.user.username, {provider: null}, 20],
+         function (s) {
+            reply (rs, 200, s.last);
+         }
+      ]);
+   }],
+
+   ['post', 'upload', function (rq, rs) {
 
       var b = rq.body, t = Date.now ();
 
@@ -1738,7 +1795,7 @@ var routes = [
 
       var invalidTag;
       if (b.tags && b.tags.length) b.tags = dale.go (b.tags, function (tag) {
-         if (! H.isUserTag (tag)) return invalidTag = tag;
+         if (! H.isUserTag (tag)) return invalidTag = H.trim (tag).toLowerCase ();
          return H.trim (tag);
       });
 
@@ -1749,9 +1806,8 @@ var routes = [
       astop (rs, [
          [H.getUploads, rq.user.username, {id: b.id}],
          function (s) {
-            if (b.op === 'start' && s.last.length) return reply (rs, 409);
             if (b.op !== 'start' && b.op !== 'error') {
-               if (! s.last.length)                   return reply (rs, 404);
+               if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
                if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
             }
             if (b.op === 'start') b.id = t;
@@ -1787,7 +1843,7 @@ var routes = [
       var invalidTag;
 
       b.tags = dale.go (b.tags, function (tag) {
-         if (! H.isUserTag (tag)) invalidTag = tag;
+         if (! H.isUserTag (tag)) invalidTag = H.trim (tag).toLowerCase ();
          return H.trim (tag);
       });
 
@@ -1836,7 +1892,7 @@ var routes = [
       ]);
    }],
 
-   ['post', 'upload', function (rq, rs) {
+   ['post', 'piv', function (rq, rs) {
 
       if (! rq.data.fields)                    return reply (rs, 400, {error: 'field'});
       if (! rq.data.files)                     return reply (rs, 400, {error: 'file'});
@@ -2349,7 +2405,7 @@ var routes = [
       });
    }],
 
-   // *** ROTATE IMAGE ***
+   // *** ROTATE ***
 
    ['post', 'rotate', function (rq, rs) {
 
@@ -2523,10 +2579,8 @@ var routes = [
          ['body.to',      b.to,   'integer'],
          ['body.from',    b.from, {min: 1},      teishi.test.range],
          ['body.to',      b.to,   {min: b.from}, teishi.test.range],
-         b.recentlyTagged === undefined ? [] : [
-            ['body.recentlyTagged', b.recentlyTagged, 'array'],
-            ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
-         ],
+         ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
+         ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
       ])) return;
 
@@ -2837,61 +2891,6 @@ var routes = [
       ]);
    }],
 
-   // *** ACCOUNT ***
-
-   ['get', 'account', function (rq, rs) {
-      astop (rs, [
-         [function (s) {
-            var multi = redis.multi ();
-            ENV ? multi.get ('foo') : multi.lrange ('ulog:' + rq.user.username, 0, -1);
-            multi.get    ('stat:s:byfs-' + rq.user.username);
-            multi.get    ('stat:s:bys3-' + rq.user.username);
-            multi.get    ('geo:'         + rq.user.username);
-            mexec (s, multi);
-         }],
-         function (s) {
-            var limit = CONFIG.freeSpace;
-            if (ENV !== 'prod' && SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
-
-            reply (rs, 200, {
-               username: rq.user.username,
-               email:    rq.user.email,
-               created:  parseInt (rq.user.created),
-               usage:    {
-                  limit:  limit,
-                  fsused: parseInt (s.last [1]) || 0,
-                  s3used: parseInt (s.last [2]) || 0,
-               },
-               geo:           rq.user.geo ? true : undefined,
-               geoInProgress: s.last [3]  ? true : undefined,
-               suggestGeotagging: rq.user.suggestGeotagging ? true : undefined,
-               suggestSelection:  rq.user.suggestSelection  ? true : undefined,
-               // We only return logs for testing purposes when running the app locally
-               logs:          ENV ? undefined : dale.go (s.last [0], JSON.parse)
-            });
-         }
-      ]);
-   }],
-
-   ['get', 'uploads', function (rq, rs) {
-      astop (rs, [
-         [H.getUploads, rq.user.username, {provider: null}, 20],
-         function (s) {
-            reply (rs, 200, s.last);
-         }
-      ]);
-   }],
-
-   ['get', 'imports/:provider', function (rq, rs) {
-      if (['google', 'dropbox'].indexOf (rq.data.params.provider) === -1) return reply (rs, 400);
-      astop (rs, [
-         [H.getImports, rq, rs, rq.data.params.provider, 20],
-         function (s) {
-            reply (rs, 200, s.last);
-         }
-      ]);
-   }],
-
    // *** DISMISS SUGGESTIONS ***
 
    ['post', 'dismiss', function (rq, rs) {
@@ -2914,7 +2913,7 @@ var routes = [
       ]);
    }],
 
-   // *** ENABLE/DISABLE GEOTAGGING ***
+   // *** GEOTAGGING ***
 
    ['post', 'geo', function (rq, rs) {
 
@@ -3035,7 +3034,17 @@ var routes = [
       ]);
    }],
 
-   // *** IMPORT ROUTES ***
+   // *** IMPORT ***
+
+   ['get', 'imports/:provider', function (rq, rs) {
+      if (['google', 'dropbox'].indexOf (rq.data.params.provider) === -1) return reply (rs, 400);
+      astop (rs, [
+         [H.getImports, rq, rs, rq.data.params.provider, 20],
+         function (s) {
+            reply (rs, 200, s.last);
+         }
+      ]);
+   }],
 
    // This route is executed after the OAuth flow, the provider redirects here.
    ['get', 'import/oauth/google', function (rq, rs) {
@@ -3481,7 +3490,7 @@ var routes = [
                      a.seq (s, [
                         [notify, {priority: 'important', type: 'import wait event', currentStatus: currentStatus, user: rq.user.username, provider: 'google', file: s.filesToUpload [s.ids [index]]}],
                         function (s) {
-                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'metaupload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
+                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
                               if (RS.code !== 200) {
                                  Error = true;
                                  clearInterval (waitInterval);
@@ -3558,7 +3567,7 @@ var routes = [
                            currentStatus = 'before-upload';
                            if (Error) return;
                            // UPLOAD THE FILE
-                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {multipart: [
+                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', headers: {cookie: s.Cookie}, body: {multipart: [
                               // This `file` field is a dummy one to pass validation, but the actual file information goes inside providerData
                               {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                               {type: 'field', name: 'id', value: parseInt (s.import.id)},
@@ -3672,6 +3681,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
+         ['body', b, 'object'],
          ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
          ['body.email', b.email, 'string'],
          ['body.email', b.email, H.email, teishi.test.match],
@@ -3861,6 +3871,7 @@ cicek.apres = function (rs) {
       logs.push (['flow', 'ms-all', t - rs.log.startTime]);
       logs.push (['max',  'ms-all', t - rs.log.startTime]);
       dale.go (['auth', 'piv', 'thumb', 'upload', 'delete', 'rotate', 'tag', 'query', 'share', 'geo'], function (path) {
+         if (path === 'piv' && rs.log.url === 'post') path = 'pivup';
          if (rs.log.method !== ((path === 'piv' || path === 'thumb') ? 'get' : 'post')) return;
          if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
          logs.push (['flow', 'rq-' + path, 1]);
@@ -3963,7 +3974,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 // *** CHECK OS RESOURCES ***
 
-if (cicek.isMaster) setInterval (function () {
+if (cicek.isMaster && ENV) setInterval (function () {
    a.seq ([
       [a.fork, ['mpstat', 'free'], function (v) {return [k, v]}],
       function (s) {
@@ -3985,7 +3996,7 @@ if (cicek.isMaster) setInterval (function () {
 
 // *** BOOTSTRAP FIRST ADMIN USER ***
 
-if (cicek.isMaster) setTimeout (function () {
+if (cicek.isMaster && ENV) setTimeout (function () {
    a.stop ([
       [Redis, 'hget', 'invites', SECRET.admins [0]],
       function (s) {
@@ -3999,7 +4010,7 @@ if (cicek.isMaster) setTimeout (function () {
 
 // *** CHECK CONSISTENCY OF FILES BETWEEN DB, FS AND S3 ***
 
-if (cicek.isMaster) a.stop ([
+if (cicek.isMaster && ENV) a.stop ([
    // Get list of files from S3
    [H.s3list, ''],
    function (s) {
@@ -4111,7 +4122,7 @@ if (cicek.isMaster) a.stop ([
 
 // *** CHECK CONSISTENCY OF STORED SIZES IN DB ***
 
-if (cicek.isMaster) a.stop ([
+if (cicek.isMaster && ENV) a.stop ([
    // Get list of all S3 sizes
    [a.set, 's3:files', [Redis, 'hgetall', 's3:files']],
    [redis.keyscan, 'stat:s:by*'],
@@ -4192,7 +4203,7 @@ if (cicek.isMaster) a.stop ([
 
 // *** CHECK S3 QUEUE ON STARTUP ***
 
-if (cicek.isMaster) a.stop ([
+if (cicek.isMaster && ENV) a.stop ([
    [a.set, 'proc', [Redis, 'get', 's3:proc']],
    [Redis, 'llen', 's3:queue'],
    function (s) {

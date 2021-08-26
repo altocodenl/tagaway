@@ -2360,7 +2360,7 @@ H.if = function (condition, then, Else) {
    return condition ? then : Else;
 }
 
-H.email = /^(([_\da-zA-Z+\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+H.email = /^(?=[A-Z0-9][A-Z0-9@._%+-]{5,253}$)[A-Z0-9._%+-]{1,64}@(?:(?=[A-Z0-9-]{1,63}\.)[A-Z0-9]+(?:-[A-Z0-9]+)*\.){1,8}[A-Z]{2,63}$/i
 
 H.stopPropagation = ['stop', 'propagation', {raw: 'event'}];
 
@@ -3014,7 +3014,7 @@ B.mrespond ([
    }],
    ['upload', 'start', function (x) {
       var files = B.get ('State', 'upload', 'new', 'files');
-      B.call (x, 'post', 'metaupload', {}, {op: 'start', total: files.length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
+      B.call (x, 'post', 'upload', {}, {op: 'start', total: files.length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error starting the upload.');
 
          B.call (x, 'set', ['State', 'upload', 'wait', rs.body.id + ''], {
@@ -3045,7 +3045,7 @@ B.mrespond ([
    }],
    ['upload', /cancel|complete|wait|error/, function (x, id, noSnackbar, error) {
       var op = x.path [0];
-      B.call (x, 'post', 'metaupload', {}, {op: op, id: id, error: error}, function (x, error, rs) {
+      B.call (x, 'post', 'upload', {}, {op: op, id: id, error: error}, function (x, error, rs) {
          if (op === 'wait') return B.call (x, 'set', ['State', 'upload', 'wait', id + '', 'lastActivity'], Date.now ());
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'complete' ? 'completing' : 'cancelling') + ' the upload.');
          // If we cancel or error the upload, we clear files belonging to the upload from the queue.
@@ -3102,7 +3102,7 @@ B.mrespond ([
             f.append ('id', file.id);
             f.append ('piv', file.file);
             if (file.tags) f.append ('tags', JSON.stringify (file.tags));
-            B.call (x, 'post', 'upload', {}, f, function (x, error, rs) {
+            B.call (x, 'post', 'piv', {}, f, function (x, error, rs) {
 
                B.call (x, 'set', ['State', 'upload', 'wait', file.id + '', 'lastActivity'], Date.now ());
 
@@ -3141,7 +3141,7 @@ B.mrespond ([
             B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
                // If the upload was just cancelled or errored by another file, don't do anything.
                if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
-               if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
+               if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'upload error', error: error.responseText});
 
                if (! rs.body.repeated) return uploadFile ();
                // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.

@@ -372,17 +372,17 @@ var main = [
       if (! eq (rs.body, [])) return clog ('Invalid body.');
       return true;
    }],
-   ['upload invalid payload #1', 'post', 'upload', {}, '', 400],
-   ['upload invalid payload #2', 'post', 'upload', {}, 1, 400],
-   ['upload invalid payload #3', 'post', 'upload', {}, [], 400],
-   ['upload invalid payload #4', 'post', 'upload', {}, {}, 400],
-   ['upload invalid payload #5', 'post', 'upload', {}, {file: {}}, 400],
-   ['upload video before upload start', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload invalid payload #1', 'post', 'piv', {}, '', 400],
+   ['upload invalid payload #2', 'post', 'piv', {}, 1, 400],
+   ['upload invalid payload #3', 'post', 'piv', {}, [], 400],
+   ['upload invalid payload #4', 'post', 'piv', {}, {}, 400],
+   ['upload invalid payload #5', 'post', 'piv', {}, {file: {}}, 400],
+   ['upload video before upload start', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4'},
       {type: 'field', name: 'id', value: Date.now ()},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
    ]}}, 404],
-   ttester ('metaupload', 'post', 'metaupload', {}, [
+   ttester ('upload', 'post', 'upload', {}, [
       ['op', 'string'],
       ['pro', ['undefined', 'string']],
    ]),
@@ -403,7 +403,7 @@ var main = [
       {op: 'start', tags: ['ok', 'untagged'], total: 1},
       {op: 'complete', tags: ['ok'], total: 1},
    ], function (v, k) {
-      return ['invalid start upload #' + (k + 1), 'post', 'metaupload', {}, v, 400];
+      return ['invalid start upload #' + (k + 1), 'post', 'upload', {}, v, 400];
    }),
    ttester ('uploadCheck', 'post', 'uploadCheck', {}, [
       ['id', 'integer'],
@@ -420,14 +420,14 @@ var main = [
    ], function (v, k) {
       return ['invalid uploadCheck #' + (k + 1), 'post', 'uploadCheck', {}, v, 400];
    }),
-   ['start upload', 'post', 'metaupload', {}, {op: 'start', tags: ['video   '], total: 3}, 200, function (s, rq, rs) {
+   ['start upload', 'post', 'upload', {}, {op: 'start', tags: ['video   '], total: 3}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
       if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
       s.uid1 = rs.body.id;
       return true;
    }],
    ['uploadCheck, no such upload', 'post', 'uploadCheck', {}, {id: Date.now (), hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}, 404],
-   ['upload unsupported format', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload unsupported format', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4', filename: 'tram.mp5'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
@@ -435,7 +435,7 @@ var main = [
       if (! eq (rs.body, {error: 'fileFormat', filename: 'tram.mp5'})) return clog ('Invalid body returned.');
       return true;
    }],
-   ['upload video #1', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload video #1', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
@@ -456,7 +456,7 @@ var main = [
       if (! eq (rs.body, {repeated: true})) return clog ('Invalid body.');
       return true;
    }],
-   ['upload video #2', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload video #2', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'bach.mp4').mtime.getTime ()}
@@ -464,7 +464,7 @@ var main = [
       s.uploadIds [1] = rs.body.id;
       return true;
    }],
-   ['upload repeated video', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload repeated video', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4', filename: 'bach-repeated.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -474,7 +474,7 @@ var main = [
       if (rs.body.id    !== s.uploadIds [1]) return clog ('Invalid id', rs.body);
       return true;
    }],
-   ['upload alreadyUploaded video', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload alreadyUploaded video', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -484,7 +484,7 @@ var main = [
       if (rs.body.id    !== s.uploadIds [1]) return clog ('Invalid id', rs.body);
       return true;
    }],
-   ['upload invalid video', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload invalid video', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'invalid.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'bach.mp4').mtime.getTime ()}
@@ -493,7 +493,7 @@ var main = [
       if (! rs.body.error.match (/^Invalid video/)) return clog ('Invalid error message.');
       return true;
    }],
-   ['upload alreadyUploaded video again (should be repeated)', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload alreadyUploaded video again (should be repeated)', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'bach.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -538,14 +538,14 @@ var main = [
       if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
       return true;
    }],
-   ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
+   ['complete upload', 'post', 'upload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 200],
    ['uploadCheck with finished upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid1, hash: 123, filename: 'foo', fileSize: 123, lastModified: Date.now (), tags: ['a tag']}}, 409],
    ['get pivs and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
       return true;
    }],
-   ['complete upload again', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 409],
-   ['cancel complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'cancel', id: s.uid1}}, 409],
+   ['complete upload again', 'post', 'upload', {}, function (s) {return {op: 'complete', id: s.uid1}}, 409],
+   ['cancel complete upload', 'post', 'upload', {}, function (s) {return {op: 'cancel', id: s.uid1}}, 409],
    ['check user logs after complete upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       var uploadLogs = rs.body.logs.slice (0, 2), id;
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
@@ -565,7 +565,7 @@ var main = [
       if (! eq (rs.body [0], {id: s.uid1, invalid: ['invalid.mp4'], repeated: ['bach.mp4', 'bach-repeated.mp4', 'foo.mp4'], ok: 2, lastPiv: {id: s.uploadIds [1]}, status: 'complete', total: 3, tags: ['video'], alreadyUploaded: 2, repeatedSize: 892698 * 2 + 123, unsupported: ['tram.mp5']})) return clog ('Invalid upload data.');
       return true;
    }],
-   ['upload video after upload end', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload video after upload end', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'tram.mp4'},
       {type: 'field', name: 'id', value: s.uid1},
       {type: 'field',  name: 'lastModified', value: fs.statSync (PIVS + 'tram.mp4').mtime.getTime ()}
@@ -573,8 +573,8 @@ var main = [
       if (! eq (rs.body, {error: 'status'})) return clog ('Invalid status error.');
       return true;
    }],
-   ['error upload (invalid)', 'post', 'metaupload', {}, function (s) {return {op: 'error', id: s.uid1, error: 'foo'}}, 400],
-   ['error upload', 'post', 'metaupload', {}, function (s) {return {op: 'error', id: s.uid1, error: {foo: 'bar'}}}, 200],
+   ['error upload (invalid)', 'post', 'upload', {}, function (s) {return {op: 'error', id: s.uid1, error: 'foo'}}, 400],
+   ['error upload', 'post', 'upload', {}, function (s) {return {op: 'error', id: s.uid1, error: {foo: 'bar'}}}, 200],
    ['check user logs after errored upload', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
       var uploadLogs = rs.body.logs.slice (0, 2);
       var error = dale.stopNot (uploadLogs, undefined, function (v, k) {
@@ -664,16 +664,16 @@ var main = [
    ['delete videos', 'post', 'delete', {}, function (s) {
       return {ids: s.vids};
    }, 200],
-   ['start upload', 'post', 'metaupload', {}, {op: 'start', total: 100}, 200, function (s, rq, rs) {
+   ['start upload', 'post', 'upload', {}, {op: 'start', total: 100}, 200, function (s, rq, rs) {
       s.uid2 = rs.body.id;
       return true;
    }],
-   ['upload empty picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload empty picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'empty.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field', name: 'lastModified', value: Date.now ()},
    ]}}, 400],
-   ['upload invalid picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload invalid picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'invalid.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -682,64 +682,64 @@ var main = [
       if (! rs.body.error.match (/^Invalid image/)) return clog ('Invalid error message.');
       return true;
    }],
-   ['upload picture without id', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload picture without id', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
    ]}}, 400],
-   ['upload picture with non-numeric id', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload picture with non-numeric id', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: Date.now () + 'a'},
    ]}}, 400],
-   ['upload picture with futuristic id', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload picture with futuristic id', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: Date.now () + 10000000},
    ]}}, 400],
-   ['upload picture without lastModified', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload picture without lastModified', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'}
    ]}}, 400],
-   ['upload small picture with extra text field', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with extra text field', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'extra', value: Date.now ()}
    ]}}, 400],
-   ['upload small picture with extra file field', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with extra file field', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'file',  name: 'piv2', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 400],
-   ['upload small picture with invalid tags #1', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with invalid tags #1', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: 'foobar'},
    ]}}, 400],
-   ['upload small picture with invalid tags #2', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with invalid tags #2', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify ([2])},
    ]}}, 400],
-   ['upload small picture with invalid tags #3', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with invalid tags #3', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'all'])},
    ]}}, 400],
-   ['upload small picture with invalid tags #4', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with invalid tags #4', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', '2017'])},
    ]}}, 400],
-   ['upload small picture with invalid tags #5', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with invalid tags #5', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: JSON.stringify (['hello', 'g::Buenos Aires'])},
    ]}}, 400],
-   ['upload small picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
@@ -781,14 +781,14 @@ var main = [
       })) return clog ('Invalid piv fields.');
       return true;
    }],
-   ['upload duplicated picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload duplicated picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'smalldup.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
    ]}}, 409],
    ['uploadCheck same picture with different lastModified field, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'small.png', fileSize: 0, lastModified: Date.now ()}}, 200],
    ['uploadCheck same picture with date in name, check it is added to s.dates', 'post', 'uploadCheck', {}, function (s) {return {id: s.uid2, hash: 2011409414, filename: 'PHOTO-2021-05-14.jpg', fileSize: 0, lastModified: Date.now ()}}, 200],
-   ['upload repeated picture with different metadata', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload repeated picture with different metadata', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'smallmeta.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -825,12 +825,12 @@ var main = [
    ['delete freshly uploaded picture', 'post', 'delete', {}, function (s) {
       return {ids: [s.smallpiv.id]};
    }, 200],
-   ['upload small picture again', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture again', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'small.png'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-07T00:00:00.000Z').getTime ()}
    ]}}, 200],
-   ['upload medium picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload medium picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'medium.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
@@ -842,7 +842,7 @@ var main = [
       // Wait for S3
       setTimeout (next, 5000);
    }],
-   ['upload medium picture with no metadata', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload medium picture with no metadata', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'medium-nometa.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: new Date ('2018-06-03T00:00:00.000Z').getTime ()}
@@ -882,7 +882,7 @@ var main = [
       })) return clog ('Invalid piv fields.');
       return true;
    }],
-   ['upload large picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload large picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'large.jpeg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -918,7 +918,7 @@ var main = [
       if (rs.body.length !== 3 || type (rs.body [0]) !== 'string') return clog ('Invalid body length or type.');
       return true;
    }],
-   ['upload lopsided picture', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload lopsided picture', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid2},
       {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -1066,7 +1066,7 @@ var main = [
       if (rs.body.refreshQuery !== true) return clog ('refreshQuery should be on', rs.body);
       return true;
    }],
-   ['complete upload', 'post', 'metaupload', {}, function (s) {return {op: 'complete', id: s.uid2}}, 200],
+   ['complete upload', 'post', 'upload', {}, function (s) {return {op: 'complete', id: s.uid2}}, 200],
    ['get pivs and check refreshQuery is off', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs, next) {
       if (rs.body.refreshQuery !== undefined) return clog ('refreshQuery should be off', rs.body);
       return true;
@@ -1095,13 +1095,13 @@ var main = [
       return true;
    }],
    ['dismiss selection suggestion (again)', 'post', 'dismiss', {}, {operation: 'selection'}, 200],
-   ['start upload #3', 'post', 'metaupload', {}, {op: 'start', total: 3}, 200, function (s, rq, rs) {
+   ['start upload #3', 'post', 'upload', {}, {op: 'start', total: 3}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
       if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
       s.uid3 = rs.body.id;
       return true;
    }],
-   ['upload picture with different date format and geodata', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload picture with different date format and geodata', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'dunkerque.jpg'},
       {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -1230,13 +1230,13 @@ var main = [
       }))) return clog ('Invalid piv date sorting');
       return true;
    }],
-   ['upload medium picture with rotation data', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload medium picture with rotation data', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotatemedium.jpg'},
       {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["rotatethumb"]'}
    ]}}, 200],
-   ['upload small picture with rotation data', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload small picture with rotation data', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotatesmall.jpg'},
       {type: 'field', name: 'id', value: s.uid3},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -1321,7 +1321,7 @@ var main = [
    }),
    // *** ADDITIONAL PICTURE FORMATS ***
    dale.go (['deer.bmp', 'sunrise.HEIC', 'tumbleweed.GIF', 'benin.tif'], function (v) {
-      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'upload', {}, function (s) {return {multipart: [
+      return ['upload ' + require ('path').extname (v).toLowerCase (), 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv', path: PIVS + v},
          {type: 'field', name: 'id', value: s.uid3},
          {type: 'field',  name: 'lastModified', value: Date.now ()}
@@ -1672,36 +1672,36 @@ var main = [
          }, {}, '', 200],
       ];
    }),
-   ['start upload as user 2', 'post', 'metaupload', {}, {op: 'start', total: 3}, 200, function (s, rq, rs) {
+   ['start upload as user 2', 'post', 'upload', {}, {op: 'start', total: 3}, 200, function (s, rq, rs) {
       if (! eq (rs.body, {id: rs.body.id})) return clog ('Invalid body.');
       if (type (rs.body.id) !== 'integer') return clog ('Invalid body.id.');
       s.uid4 = rs.body.id;
       return true;
    }],
-   ['upload lopsided piv as user2 with invalid tags #1', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload lopsided piv as user2 with invalid tags #1', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '{}'}
    ]}}, 400],
-   ['upload lopsided piv as user2 with invalid tags #2', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload lopsided piv as user2 with invalid tags #2', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '2'}
    ]}}, 400],
-   ['upload lopsided piv as user2 with invalid tags #3', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload lopsided piv as user2 with invalid tags #3', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", 1]'}
    ]}}, 400],
-   ['upload lopsided piv as user2 with invalid tags #4', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload lopsided piv as user2 with invalid tags #4', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
       {type: 'field',  name: 'tags', value: '["hello", "all"]'}
    ]}}, 400],
-   ['upload lopsided piv as user2', 'post', 'upload', {}, function (s) {return {multipart: [
+   ['upload lopsided piv as user2', 'post', 'piv', {}, function (s) {return {multipart: [
       {type: 'file',  name: 'piv', path: PIVS + 'rotate.jpg'},
       {type: 'field', name: 'id', value: s.uid4},
       {type: 'field',  name: 'lastModified', value: Date.now ()},
@@ -1787,7 +1787,7 @@ var main = [
    dale.go (['circus.MOV', 'boat.3gp', 'drumming.avi'], function (vid, k) {
       var format = require ('path').extname (vid).replace ('.', '');
       return [
-         ['upload ' + format, 'post', 'upload', {}, function (s) {return {multipart: [
+         ['upload ' + format, 'post', 'piv', {}, function (s) {return {multipart: [
             {type: 'file',  name: 'piv', path: PIVS + vid},
             {type: 'field', name: 'id', value: s.uid3},
             {type: 'field',  name: 'lastModified', value: Date.now ()}

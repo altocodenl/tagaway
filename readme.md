@@ -18,8 +18,8 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 ### Core functions
 
-1. **Upload**. Converse operation is **delete**.
-2. **Tag**. Converse operation is **untag**. Complementary operation is **rotate**.
+1. **Upload**. Converse operation are **delete** and **import**.
+2. **Tag**. Converse operation is **untag**. Complementary operation are **rotate** and **enable/disable geotagging**.
 3. **Share**. Converse operation is **unshare**. Complementary operations are **accepting a shared tag** and **deleting a shared tag**.
 4. **See**. No converse operation. Complementary operation is **download**.
 
@@ -39,7 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- document responder changes (prevent ajax, lastLogout, navigation, shift)
+- Tests refactor
 
 - Pivs
    - Suggest tags when inserting in tag view.
@@ -298,7 +298,7 @@ General server approach outlined [here](https://github.com/fpereiro/backendlore)
 
 If any route fails with an internal error, a 500 code will be returned with body `{error: ...}`.
 
-All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /upload`, which must be of type `multipart/form-data`.
+All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /piv`, which must be of type `multipart/form-data`.
 
 All non-auth routes (unless marked otherwise) will respond with a 403 error with body `{error: 'nocookie'}` if the user is not logged in.
 
@@ -306,7 +306,7 @@ If a cookie with invalid signature is sent along, the application will respond w
 
 If a cookie with valid signature but that has already expired is sent along, the application will respond with a 403 error with body `{error: 'session'}`.
 
-All POST requests (unless marked otherwise) must contain a `csrf` field equivalent to the `csrf` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the `csrf` field must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
+All POST requests (unless marked otherwise) must contain a `csrf` field equivalent to the `csrf` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /piv`, the `csrf` field must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
 
 #### Request invite
 
@@ -388,7 +388,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
-- `POST /metaupload`
+- `POST /upload`
    - Body can have one of five forms:
       - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
       - `{op: 'complete', id: INTEGER}`
@@ -397,7 +397,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `{op: 'error',    id: INTEGER, error: OBJECT}`
    - The body can contain a field `provider` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
-   - If an `id` is provided in the case of `complete`, `cancel`, `wait` or `error`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
+   - If an `id` is provided in the case of `complete`, `cancel`, `wait` or `error`, it must correspond to that of an existing upload, otherwise the endpoint returns 404 with body `{error: 'upload'}`.
    - In the case of `complete`, `cancel` or `wait`, the existing upload must have a status of `uploading`, otherwise the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
    - If successful, the endpoint returns a body of the form `{id: INTEGER}`. In the case of a `start` operation, this id should be used for an ulterior `end` or `cancel`.
 
@@ -406,16 +406,16 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, filename: STRING, fileSize: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
    - If `tags` are included, after being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - `body.fileSize` must be the size in bytes of the file being checked.
-   - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
+   - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404 with body `{error: 'upload'}`; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
    - If there's already a piv with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
    - If the piv matches another one already present and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
 
-- `POST /upload`
+- `POST /piv`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
    - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
    - Must contain one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
    - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
-   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
+   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /upload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
    - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `piv`.
@@ -607,7 +607,7 @@ All the routes below require an admin user to be logged in.
    - ms-auth:   maximum ms for successful requests for POST /auth
    - ms-piv:    maximum ms for successful requests for GET /piv
    - ms-thumb:  maximum ms for successful requests for GET /thumb
-   - ms-upload: maximum ms for successful requests for POST /upload
+   - ms-pivup:  maximum ms for successful requests for POST /piv
    - ms-delete: maximum ms for successful requests for POST /delete
    - ms-rotate: maximum ms for successful requests for POST /rotate
    - ms-tag:    maximum ms for successful requests for POST /tag
@@ -625,7 +625,7 @@ All the routes below require an admin user to be logged in.
    - rq-auth:   total successful requests for POST /auth
    - rq-piv:    total successful requests for GET /piv
    - rq-thumb:  total successful requests for GET /thumb
-   - rq-upload: total successful requests for POST /upload
+   - rq-pivup:  total successful requests for POST /piv
    - rq-delete: total successful requests for POST /delete
    - rq-rotate: total successful requests for POST /rotate
    - rq-tag:    total successful requests for POST /tag and /tags
@@ -636,20 +636,20 @@ All the routes below require an admin user to be logged in.
    - ms-auth:   total ms for successful requests for POST /auth
    - ms-piv:    total ms for successful requests for GET /piv
    - ms-thumb:  total ms for successful requests for GET /thumb
-   - ms-upload: total ms for successful requests for POST /upload
+   - ms-pivup:  total ms for successful requests for POST /piv
    - ms-delete: total ms for successful requests for POST /delete
    - ms-rotate: total ms for successful requests for POST /rotate
    - ms-tag:    total ms for successful requests for POST /tag
    - ms-query:  total ms for successful requests for POST /query
    - ms-share:  total ms for successful requests for POST /share
    - ms-geo:    total ms for successful requests for POST /geo
-   - ms-upload-initial:  total ms for initial checks in POST /upload
-   - ms-upload-format:    total ms for format check in POST /upload
-   - ms-upload-hash:      total ms for hash check in POST /upload
-   - ms-upload-fs:        total ms for FS operations in POST /upload
-   - ms-upload-resize200: total ms for 200 resize operation in POST /upload
-   - ms-upload-resize900: total ms for 900 resize operation in POST /upload
-   - ms-upload-db:        total ms for info storage & DB processing in POST /upload
+   - ms-pivup-initial:   total ms for initial checks in POST /piv
+   - ms-pivup-format:    total ms for format check in POST /piv
+   - ms-pivup-hash:      total ms for hash check in POST /piv
+   - ms-pivup-fs:        total ms for FS operations in POST /piv
+   - ms-pivup-resize200: total ms for 200 resize operation in POST /piv
+   - ms-pivup-resize900: total ms for 900 resize operation in POST /piv
+   - ms-pivup-db:        total ms for info storage & DB processing in POST /piv
    - ms-video-convert:    total ms for non-mp4 to mp4 video conversion
    - ms-video-convert:FORMAT:  total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
 
@@ -737,8 +737,8 @@ All the routes below require an admin user to be logged in.
    - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING}
    - For recover:         {t: INT, ev: 'auth', type: 'recover',        ip: STRING, userAgent: STRING}
    - For reset:           {t: INT, ev: 'auth', type: 'reset',          ip: STRING, userAgent: STRING}
-   - For destroy:         {t: INT, ev: 'auth', type: 'destroy',        ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
    - For password change: {t: INT, ev: 'auth', type: 'passwordChange', ip: STRING, userAgent: STRING}
+   - For account delete:  {t: INT, ev: 'auth', type: 'delete',         ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
    - For deletes:         {t: INT, ev: 'delete', ids: [STRING, ...]}
    - For rotates:         {t: INT, ev: 'rotate', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, ev: 'tag',        type: tag|untag, ids: [STRING, ...], tag: STRING}
@@ -1005,15 +1005,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    1. `change State.page`: if `State.page` is `upload` or `pivs`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
-   4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
-   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post metaupload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post metaupload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
+   4. `upload start`: invokes `post upload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
+   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post upload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post upload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
    8. `change State.upload.queue`:
       - Hashes the file; if there is an error, invokes `upload error` and returns.
       - Invokes `post uploadCheck` to check if an identical file already exists; if there is an error, invokes `upload error` and returns.
       - If a file with the same hash already exists, the responder removes it from `State.upload.queue` and conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`). It then returns.
-      - Invokes `post upload` to upload the file.
+      - Invokes `post piv` to upload the file.
       - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
       - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
