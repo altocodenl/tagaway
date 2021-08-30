@@ -5,6 +5,8 @@ var Path = require ('path');
 var toRun = process.argv [2];
 process.argv [2] = undefined;
 
+var hash   = require ('murmurhash').v3;
+
 var CONFIG = require ('./config.js');
 var dale   = require ('dale');
 var teishi = require ('teishi');
@@ -18,6 +20,7 @@ var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
 
 var tk = {
    pivPath: 'test/',
+   pivDataPath: 'test/pivdata.json',
    users: {
       user1: {username: 'user1', password: Math.random () + '', firstName: 'name1', email: 'user1@example.com', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
@@ -76,6 +79,13 @@ var H = {
    },
    runServer: function () {
       a.seq ([
+         [a.stop, [
+            [a.make (fs.readFile), tk.pivDataPath],
+            function (s) {
+               tk.pivs = JSON.parse (s.last);
+               s.next ();
+            }
+         ], H.loadPivData],
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
          [k, 'node', 'server', 'local', 'geodata', tk.geodataPath],
          function (s) {
@@ -106,167 +116,207 @@ var H = {
          return true;
       }
    },
-}
-
-var testMaker = function (label, Path, rules) {
-   var error = function (error) {
-      throw new Error (error);
-   }
-   if (type (rules) !== 'array') return error ('Rules must be an array.');
-   var types = {
-      string:    function () {return Math.random () + ''},
-      integer:   function () {return Math.round (Math.random () + Math.random ())},
-      float:     function () {return Math.random ()},
-      object:    function () {return {}},
-      array:     function () {return []},
-      null:      function () {return null},
-      boolean:   function () {return Math.random > 0.5},
-      undefined: function () {},
-   }
-   var stringMaker = function (length) {
-      return dale.go (dale.times (length), function () {
-         return (Math.random () + '') [2];
-      }).join ('');
-   }
-
-   var get = function (target, path) {
-      return dale.stop (path, false, function (v, k) {
-         if (k < path.length - 1 && teishi.simple (target [v])) return false;
-         target = target [v];
-      }) === false ? undefined : target;
-   }
-   var updateValid = function (path, value) {
-      if (path.length === 0) valid = value;
-      else get (valid, path.slice (0, -1)) [teishi.last (path)] = value;
-   }
-   var addTest = function (label, path, value, checkError) {
-      var body;
-      if (path.length === 0) body = value;
-      else {
-         body = teishi.copy (valid);
-         get (body, path.slice (0, -1)) [teishi.last (path)] = value;
-      }
-      tests.push ([label + ' ' + (path.length === 0 ? 'root object' : path.join ('.')), body, function (s, rq, rs) {
-         return checkError (rs.body);
-      }]);
-   }
-
-   // keep track/copy of last valid object so you can add incrementally
-   var valid, tests = [];
-
-   var runOne = function (rule) {
-      // Type constraint
-      if (rule.length === 2 || rule [1] === 'type') {
-         if (rule [1] === 'type') rule = [rule [0]].concat (rule.slice (2));
-         // If more than one desired type, default to the first one
-         var sdesired = type (rule [1]) === 'array' ? ('one of ' + cicek.escape (teishi.str (rule [1]))) : rule [1];
-
-         dale.go (types, function (maker, type) {
-            var valid = teishi.type (rule [1]) === 'array' ? rule [1].indexOf (type) > -1 : rule [1] === type;
-            if (valid) {
-               if (type !== 'undefined') updateValid (rule [0], maker ());
-            }
-            else addTest ('type ' + type, rule [0], maker (), function (body) {
-               if (rule [0].length === 0 && ['array', 'object'].indexOf (type) === -1) return body === 'All post requests must be either multipart/form-data or application/json!';
-               var match = new RegExp ((teishi.last (rule [0]) !== undefined ? teishi.last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
-               var customMatch;
-               if (rule [2]) customMatch = new RegExp (rule [2]);
-               // TODO REMOVE
-               //console.log ('debug type', body.error, match, customMatch, rule);
-               //console.log ('error', body.error);
-               return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : body.error.match (match));
-            });
-         });
-      }
-      // This constraint doesn't update the valid payload
-      else if (rule [1] === 'keys') {
-         dale.go (types, function (maker, type) {
-            if (type === 'undefined') return;
-            addTest ('invalid key with type ' + type, rule [0].concat (types.string ()), maker (), function (body) {
-               var match = new RegExp ('each of the keys of .+ should be equal to one of ' + cicek.escape (teishi.str (rule [2])) + ' but one of .+ is');
-               // TODO REMOVE
-               //console.log ('debug keys', body.error, match);
-               return body && teishi.type (body.error) === 'string' && body.error.match (match);
-            });
-         });
-      }
-      // This constraint doesn't update the valid payload
-      else if (rule [1] === 'invalidKeys') {
-         dale.go (rule [2], function (invalid, k) {
-            addTest ('invalid key #' + (k + 1), rule [0].concat (invalid), types.string (), function (body) {
-               var match = new RegExp ('each of the keys of .+ should be equal to one of .+ but one of .+ is ' + cicek.escape (invalid));
-               // TODO REMOVE
-               //console.log ('debug invalidKeys', body.error, match);
-               return body && teishi.type (body.error) === 'string' && body.error.match (match);
-            });
-         });
-      }
-      // Values takes an array of possible values and defaults to the first one
-      // This constraint doesn't generate tests, only updates the valid payload
-      else if (rule [1] === 'values') {
-         updateValid (rule [0], rule [2] [0]);
-      }
-      // This constraint doesn't update the valid payload
-      else if (rule [1] === 'invalidValues') {
-         dale.go (rule [2], function (invalid, k) {
-            addTest ('invalid value #' + (k + 1), rule [0], invalid, function (body) {
-               var regexMatch = new RegExp (teishi.last (rule [0]) + ' should match .+ but instead is ' + invalid);
-               var equalMatch = new RegExp (teishi.last (rule [0]) + ' should be (equal to|) one of .+ but instead is ' + invalid);
-               var customMatch;
-               if (rule [3]) customMatch = new RegExp (rule [3]);
-               // TODO REMOVE
-               //console.log ('debug invalidValues', body.error, regexMatch, equalMatch, customMatch);
-               return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : (body.error.match (regexMatch) || body.error.match (equalMatch)));
-            });
-         });
-      }
-      // This constraint only works for generating strings
-      else if (rule [1] === 'length') {
-         dale.go (rule [2], function (v, k) {
-            updateValid (rule [0], stringMaker (v));
-            var invalidValue = v + (k === 'min' ? -1 : 1);
-            addTest ('invalid length - ' + k + ': ' + v, rule [0], stringMaker (invalidValue), function (body) {
-               var match = new RegExp (teishi.last (rule [0]) + ' length should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
-               var customMatch;
-               if (rule [3]) customMatch = new RegExp (rule [3]);
-               //console.log ('debug length', body.error, match, customMatch);
-               return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : body.error.match (match));
-            });
-         });
-      }
-      else if (rule [1] === 'range') {
-         dale.go (rule [2], function (v, k) {
-            updateValid (rule [0], v);
-            var invalidValue = v + (k === 'min' ? -1 : 1);
-            addTest ('invalid range - ' + k + ': ' + v, rule [0], invalidValue, function (body) {
-               var match = new RegExp (teishi.last (rule [0]) + ' should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
-               // TODO REMOVE
-               //console.log ('debug range', body.error, match);
-               return body && teishi.type (body.error) === 'string' && body.error.match (match);
-            });
-         });
-      }
-      else return error ('Invalid rule type: ' + rule [1]);
-   }
-
-   var parseRules = function (list) {
-      var invalid = dale.stopNot (list, undefined, function (ruleOrList) {
-         if (type (ruleOrList) !== 'array' || (type (ruleOrList [0]) !== 'array' && ruleOrList.length)) return ['Invalid rule or list of rules', ruleOrList, 'with type', type (ruleOrList)];
-         if (ruleOrList.length === 0) return;
-         if (type (ruleOrList [0] [0]) === 'array') return parseRules (ruleOrList);
-         runOne (ruleOrList);
+   loadPivData: function (s) {
+      var invalid = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
+      var repeated = ['medium-nometa.jpg', 'smalldup.png', 'smallmeta.png'];
+      var pivs = dale.go (fs.readdirSync (tk.pivPath).sort (), function (file) {
+         var stat = fs.statSync (Path.join (tk.pivPath, file));
+         var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: invalid.indexOf (file) > -1, repeated: repeated.indexOf (file) > -1};
+         data.hash = hash (fs.readFileSync (data.path));
+         return data;
       });
-      if (invalid) return clog (invalid);
+      a.seq (s || a.creat (), [
+         [a.fork, pivs, function (piv) {
+            return [
+               [k, 'exiftool', piv.path],
+               function (s) {
+                  var metadata = (s.last ? s.last.stdout : s.error.stdout).split ('\n');
+                  dale.go (metadata, function (line) {
+                     if (line.match (/^Image Width/))  piv.dimw = parseInt (line.split (':') [1].trim ());
+                     if (line.match (/^Image Height/)) piv.dimh = parseInt (line.split (':') [1].trim ());
+                     if (line.match (/^Orientation/)) {
+                        if (line.match ('270')) piv.deg = -90;
+                        if (line.match ('90')) piv.deg = 90;
+                        if (line.match ('180')) piv.deg = 180;
+                     }
+                  });
+                  piv.dates = dale.fil (metadata, undefined, function (line) {
+                     var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
+                     if (! key.match (/\bdate\b/i)) return;
+                     if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
+                     if (! value.match (/^\d/)) return;
+                     return [key, value];
+                  });
+                  s.next ();
+               },
+            ];
+         }],
+         function (s) {
+            a.make (fs.writeFile) (s, tk.pivDataPath, JSON.stringify (pivs, null, '   '), 'utf8');
+            tk.pivs = pivs;
+         }
+      ]);
+   },
+   testMaker: function (label, Path, rules) {
+      var error = function (error) {
+         throw new Error (error);
+      }
+      if (type (rules) !== 'array') return error ('Rules must be an array.');
+      var types = {
+         string:    function () {return Math.random () + ''},
+         integer:   function () {return Math.round (Math.random () + Math.random ())},
+         float:     function () {return Math.random ()},
+         object:    function () {return {}},
+         array:     function () {return []},
+         null:      function () {return null},
+         boolean:   function () {return Math.random > 0.5},
+         undefined: function () {},
+      }
+      var stringMaker = function (length) {
+         return dale.go (dale.times (length), function () {
+            return (Math.random () + '') [2];
+         }).join ('');
+      }
+
+      var get = function (target, path) {
+         return dale.stop (path, false, function (v, k) {
+            if (k < path.length - 1 && teishi.simple (target [v])) return false;
+            target = target [v];
+         }) === false ? undefined : target;
+      }
+      var updateValid = function (path, value) {
+         if (path.length === 0) valid = value;
+         else get (valid, path.slice (0, -1)) [teishi.last (path)] = value;
+      }
+      var addTest = function (label, path, value, checkError) {
+         var body;
+         if (path.length === 0) body = value;
+         else {
+            body = teishi.copy (valid);
+            get (body, path.slice (0, -1)) [teishi.last (path)] = value;
+         }
+         tests.push ([label + ' ' + (path.length === 0 ? 'root object' : path.join ('.')), body, function (s, rq, rs) {
+            return checkError (rs.body);
+         }]);
+      }
+
+      // keep track/copy of last valid object so you can add incrementally
+      var valid, tests = [];
+
+      var runOne = function (rule) {
+         // Type constraint
+         if (rule.length === 2 || rule [1] === 'type') {
+            if (rule [1] === 'type') rule = [rule [0]].concat (rule.slice (2));
+            // If more than one desired type, default to the first one
+            var sdesired = type (rule [1]) === 'array' ? ('one of ' + cicek.escape (teishi.str (rule [1]))) : rule [1];
+
+            dale.go (types, function (maker, type) {
+               var valid = teishi.type (rule [1]) === 'array' ? rule [1].indexOf (type) > -1 : rule [1] === type;
+               if (valid) {
+                  if (type !== 'undefined') updateValid (rule [0], maker ());
+               }
+               else addTest ('type ' + type, rule [0], maker (), function (body) {
+                  if (rule [0].length === 0 && ['array', 'object'].indexOf (type) === -1) return body === 'All post requests must be either multipart/form-data or application/json!';
+                  var match = new RegExp ((teishi.last (rule [0]) !== undefined ? teishi.last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
+                  var customMatch;
+                  if (rule [2]) customMatch = new RegExp (rule [2]);
+                  // TODO REMOVE
+                  //console.log ('debug type', body.error, match, customMatch, rule);
+                  //console.log ('error', body.error);
+                  return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : body.error.match (match));
+               });
+            });
+         }
+         // This constraint doesn't update the valid payload
+         else if (rule [1] === 'keys') {
+            dale.go (types, function (maker, type) {
+               if (type === 'undefined') return;
+               addTest ('invalid key with type ' + type, rule [0].concat (types.string ()), maker (), function (body) {
+                  var match = new RegExp ('each of the keys of .+ should be equal to one of ' + cicek.escape (teishi.str (rule [2])) + ' but one of .+ is');
+                  // TODO REMOVE
+                  //console.log ('debug keys', body.error, match);
+                  return body && teishi.type (body.error) === 'string' && body.error.match (match);
+               });
+            });
+         }
+         // This constraint doesn't update the valid payload
+         else if (rule [1] === 'invalidKeys') {
+            dale.go (rule [2], function (invalid, k) {
+               addTest ('invalid key #' + (k + 1), rule [0].concat (invalid), types.string (), function (body) {
+                  var match = new RegExp ('each of the keys of .+ should be equal to one of .+ but one of .+ is ' + cicek.escape (invalid));
+                  // TODO REMOVE
+                  //console.log ('debug invalidKeys', body.error, match);
+                  return body && teishi.type (body.error) === 'string' && body.error.match (match);
+               });
+            });
+         }
+         // Values takes an array of possible values and defaults to the first one
+         // This constraint doesn't generate tests, only updates the valid payload
+         else if (rule [1] === 'values') {
+            updateValid (rule [0], rule [2] [0]);
+         }
+         // This constraint doesn't update the valid payload
+         else if (rule [1] === 'invalidValues') {
+            dale.go (rule [2], function (invalid, k) {
+               addTest ('invalid value #' + (k + 1), rule [0], invalid, function (body) {
+                  var regexMatch = new RegExp (teishi.last (rule [0]) + ' should match .+ but instead is ' + invalid);
+                  var equalMatch = new RegExp (teishi.last (rule [0]) + ' should be (equal to|) one of .+ but instead is ' + invalid);
+                  var customMatch;
+                  if (rule [3]) customMatch = new RegExp (rule [3]);
+                  // TODO REMOVE
+                  //console.log ('debug invalidValues', body.error, regexMatch, equalMatch, customMatch);
+                  return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : (body.error.match (regexMatch) || body.error.match (equalMatch)));
+               });
+            });
+         }
+         // This constraint only works for generating strings
+         else if (rule [1] === 'length') {
+            dale.go (rule [2], function (v, k) {
+               updateValid (rule [0], stringMaker (v));
+               var invalidValue = v + (k === 'min' ? -1 : 1);
+               addTest ('invalid length - ' + k + ': ' + v, rule [0], stringMaker (invalidValue), function (body) {
+                  var match = new RegExp (teishi.last (rule [0]) + ' length should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
+                  var customMatch;
+                  if (rule [3]) customMatch = new RegExp (rule [3]);
+                  //console.log ('debug length', body.error, match, customMatch);
+                  return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : body.error.match (match));
+               });
+            });
+         }
+         else if (rule [1] === 'range') {
+            dale.go (rule [2], function (v, k) {
+               updateValid (rule [0], v);
+               var invalidValue = v + (k === 'min' ? -1 : 1);
+               addTest ('invalid range - ' + k + ': ' + v, rule [0], invalidValue, function (body) {
+                  var match = new RegExp (teishi.last (rule [0]) + ' should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
+                  // TODO REMOVE
+                  //console.log ('debug range', body.error, match);
+                  return body && teishi.type (body.error) === 'string' && body.error.match (match);
+               });
+            });
+         }
+         else return error ('Invalid rule type: ' + rule [1]);
+      }
+
+      var parseRules = function (list) {
+         var invalid = dale.stopNot (list, undefined, function (ruleOrList) {
+            if (type (ruleOrList) !== 'array' || (type (ruleOrList [0]) !== 'array' && ruleOrList.length)) return ['Invalid rule or list of rules', ruleOrList, 'with type', type (ruleOrList)];
+            if (ruleOrList.length === 0) return;
+            if (type (ruleOrList [0] [0]) === 'array') return parseRules (ruleOrList);
+            runOne (ruleOrList);
+         });
+         if (invalid) return clog (invalid);
+      }
+
+      parseRules (rules);
+
+      return dale.go (tests, function (test) {
+         return ['Invalid payload - ' + label + ' - ' + test [0], 'post', Path, {}, test [1], 400, function (s, rq, rs) {
+            if (test [2]) return test [2] (s, rq, rs);
+            return true;
+         }];
+      });
    }
-
-   parseRules (rules);
-
-   return dale.go (tests, function (test) {
-      return ['Invalid payload - ' + label + ' - ' + test [0], 'post', Path, {}, test [1], 400, function (s, rq, rs) {
-         if (test [2]) return test [2] (s, rq, rs);
-         return true;
-      }];
-   });
 }
 
 // *** TEST SUITES ***
@@ -303,7 +353,7 @@ suites.auth = {
    full: function () {
       var user = tk.users.user1;
       return [
-         testMaker ('signup', 'auth/signup', [
+         H.testMaker ('signup', 'auth/signup', [
             [[], 'object'],
             [[], 'keys', ['username', 'password', 'email', 'token']],
             dale.go (['username', 'password', 'email', 'token'], function (key) {
@@ -316,7 +366,7 @@ suites.auth = {
             // Taken from https://help.xmatters.com/ondemand/trial/valid_email_format.htm
             [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
          ]),
-         testMaker ('login', 'auth/login', [
+         H.testMaker ('login', 'auth/login', [
             [[], 'object'],
             [[], 'keys', ['username', 'password', 'timezone']],
             [['username'], 'string'],
@@ -324,19 +374,19 @@ suites.auth = {
             [['timezone'], 'integer'],
             [['timezone'], 'range', {min: -840, max: 720}]
          ]),
-         testMaker ('recover', 'auth/recover', [
+         H.testMaker ('recover', 'auth/recover', [
             [[], 'object'],
             [[], 'keys', ['username']],
             [['username'], 'string'],
          ]),
-         testMaker ('reset', 'auth/reset', [
+         H.testMaker ('reset', 'auth/reset', [
             [[], 'object'],
             [[], 'keys', ['username', 'password', 'token']],
             [['username'], 'string'],
             [['password'], 'string'],
             [['token'],    'string'],
          ]),
-         testMaker ('create invite', 'admin/invites', [
+         H.testMaker ('create invite', 'admin/invites', [
             [[], 'object'],
             [[], 'keys', ['email', 'firstName']],
             [['email'], 'string'],
@@ -423,7 +473,7 @@ suites.auth = {
                return ['login with username with spaces', 'post', 'auth/login', {}, function () {return {username: spacedUsername, password: user.password, timezone: user.timezone}}, 200];
             });
          }),
-         testMaker ('change password', 'auth/changePassword', [
+         H.testMaker ('change password', 'auth/changePassword', [
             [[], 'object'],
             [[], 'keys', ['old', 'new']],
             [['old'], 'string'],
@@ -475,7 +525,7 @@ suites.auth = {
             return true;
          }],
          // /feedback is not really part of auth, but it goes here for lack of a better place to put it
-         testMaker ('feedback', 'feedback', [
+         H.testMaker ('feedback', 'feedback', [
             [[], 'object'],
             [[], 'keys', ['message']],
             [['message'], 'string'],
@@ -504,14 +554,14 @@ suites.public = function () {
       }),
       ['get app root', 'get', '/', {}, '', 200],
       ['get admin root', 'get', 'admin', {}, '', 200],
-      testMaker ('request invite', 'requestInvite', [
+      H.testMaker ('request invite', 'requestInvite', [
          [[], 'object'],
          [[], 'keys', ['email']],
          [['email'], 'string'],
          // Taken from https://help.xmatters.com/ondemand/trial/valid_email_format.htm
          [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
       ]),
-      testMaker ('submit error', 'requestInvite', [
+      H.testMaker ('submit error', 'requestInvite', [
          [[], ['object', 'array']],
       ]),
       ['submit error (array)', 'post', 'error', {}, [], 200],
@@ -540,7 +590,7 @@ suites.upload.upload = function () {
             keys = keys.concat (['id']);
             invalidKeys = ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'].concat ('error');
          }
-         return testMaker ('upload' + op, 'upload', [
+         return H.testMaker ('upload ' + op, 'upload', [
             [[], 'object'],
             [['op'], 'values', [op]],
             [[], 'keys', keys],
@@ -665,7 +715,7 @@ suites.upload.uploadCheck = function () {
    var validBody = {id: 1, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()};
    return [
       suites.auth.in (tk.users.user1),
-      testMaker ('uploadCheck', 'uploadCheck', [
+      H.testMaker ('uploadCheck', 'uploadCheck', [
          [[], 'object'],
          [[], 'keys', ['id', 'hash', 'filename', 'fileSize', 'lastModified', 'tags']],
          [[], 'invalidKeys', ['foo']],
@@ -710,9 +760,10 @@ suites.upload.uploadCheck = function () {
          s.uploadId = rs.body.id;
          return true;
       }],
+      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
       // TODO: add non-validation tests
-      // hash: 1, check {repeated: false}
-      // indeed repeated or alreadyUploaded: add tags
+      // upload small.jpg
+      // test for repeated or alreadyUploaded: add tags
       // update dates
       // check increased count of repeated or alreadyUploaded
       suites.auth.out (tk.users.user1),
@@ -724,18 +775,6 @@ suites.upload.piv = function () {
 
    ];
 
-
-   var invalidPivs = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
-   var repeated    = ['medium-nometa.jpg', 'smalldup.png', 'smallmeta.png'];
-   var pivs = dale.fil (fs.readdirSync (tk.pivPath), undefined, function (file) {
-      if (repeated.indexOf (file) > -1) return;
-      // TODO: unignore large files
-      if (['circus.MOV', 'drumming.avi'].indexOf (file) > -1) return;
-      var stat = fs.statSync (Path.join (tk.pivPath, file));
-      var info = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: invalidPivs.indexOf (file) > -1};
-      clog (info);
-      return info;
-   });
    return [
       suites.auth.in (tk.users.user1),
       ['start upload with all keys', 'post', 'uploadGroup', {}, {op: 'start', total: pivs.length}, 200, function (s, rq, rs) {
@@ -759,7 +798,7 @@ suites.upload.piv = function () {
 
 suites.upload.full = function () {
    return [
-      suites.upload.upload (),
+      //suites.upload.upload (),
       suites.upload.uploadCheck (),
       //suites.upload.piv (),
    ];
@@ -769,7 +808,7 @@ suites.upload.full = function () {
 suites.query = function () {
    return [
       suites.auth.in (tk.users.user1),
-      testMaker ('query pivs', 'query', [
+      H.testMaker ('query pivs', 'query', [
          [[], 'object'],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
