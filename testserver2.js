@@ -14,7 +14,7 @@ var cicek  = require ('cicek');
 var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
-var clog   = teishi.clog, type = teishi.type, eq = teishi.eq;
+var clog   = teishi.clog, type = teishi.type, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}
 
 // *** TEST CONSTANTS ***
 
@@ -119,11 +119,11 @@ var H = {
    loadPivData: function (s) {
       var invalid = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
       var repeated = ['medium-nometa.jpg', 'smalldup.png', 'smallmeta.png'];
-      var pivs = dale.go (fs.readdirSync (tk.pivPath).sort (), function (file) {
+      var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
-         var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: invalid.indexOf (file) > -1, repeated: repeated.indexOf (file) > -1};
+         var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file), repeated: inc (repeated, file)};
          data.hash = hash (fs.readFileSync (data.path));
-         return data;
+         return [data.name.split ('.') [0], data];
       });
       a.seq (s || a.creat (), [
          [a.fork, pivs, function (piv) {
@@ -140,7 +140,7 @@ var H = {
                         if (line.match ('180')) piv.deg = 180;
                      }
                   });
-                  piv.dates = dale.fil (metadata, undefined, function (line) {
+                  piv.dates = dale.obj (metadata, function (line) {
                      var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
                      if (! key.match (/\bdate\b/i)) return;
                      if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
@@ -211,12 +211,12 @@ var H = {
             var sdesired = type (rule [1]) === 'array' ? ('one of ' + cicek.escape (teishi.str (rule [1]))) : rule [1];
 
             dale.go (types, function (maker, type) {
-               var valid = teishi.type (rule [1]) === 'array' ? rule [1].indexOf (type) > -1 : rule [1] === type;
+               var valid = teishi.type (rule [1]) === 'array' ? inc (rule [1], type) : rule [1] === type;
                if (valid) {
                   if (type !== 'undefined') updateValid (rule [0], maker ());
                }
                else addTest ('type ' + type, rule [0], maker (), function (body) {
-                  if (rule [0].length === 0 && ['array', 'object'].indexOf (type) === -1) return body === 'All post requests must be either multipart/form-data or application/json!';
+                  if (rule [0].length === 0 && ! inc (['array', 'object'], type)) return body === 'All post requests must be either multipart/form-data or application/json!';
                   var match = new RegExp ((teishi.last (rule [0]) !== undefined ? teishi.last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
                   var customMatch;
                   if (rule [2]) customMatch = new RegExp (rule [2]);
@@ -757,12 +757,34 @@ suites.upload.uploadCheck = function () {
       suites.auth.out (tk.users.user1),
       suites.auth.in  (tk.users.user1),
       ['start upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
-         s.uploadId = rs.body.id;
+         s.uploadId1 = rs.body.id;
          return true;
       }],
-      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
+      ['start another upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId2 = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId1},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200],
+      ['get piv metadata before uploadCheck modifications', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.originalSmall = rs.body.pivs [0];
+         return true;
+      }],
+      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId1, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
+      ['uploadCheck piv with match, same name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId2, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId2, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
+      ['get piv metadata after uploadCheck (same name & different name, no dates or tags), ensure no modifications happened', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
+         return true;
+      }],
+      ['get upload after uploadCheck', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         clog (rs.body);
+         return true;
+      }],
       // TODO: add non-validation tests
-      // upload small.jpg
       // test for repeated or alreadyUploaded: add tags
       // update dates
       // check increased count of repeated or alreadyUploaded
@@ -872,7 +894,7 @@ H.tryTimeout (50, 500, function (cb) {
             if (! s.headers || ! s.headers.cookie) return b;
 
             // Skip CSRF token for these routes
-            if (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset', 'requestInvite', 'admin/invites'].indexOf (test [2]) !== -1) return b;
+            if (inc (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset', 'requestInvite', 'admin/invites'], test [2])) return b;
 
             var b2 = teishi.copy (b);
             if (b2.multipart) b2.multipart.push ({type: 'field', name: 'csrf', value: s.csrf});

@@ -36,7 +36,7 @@ var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
-var type = teishi.type, clog = console.log, eq = teishi.eq, reply = function () {
+var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, reply = function () {
    var rs = dale.stopNot (arguments, undefined, function (arg) {
       if (arg && type (arg.log) === 'object') return arg;
    });
@@ -278,12 +278,12 @@ H.getGeotags = function (s, metadata) {
       lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
 
       // We filter out invalid latitudes and latitudes over 85 degrees.
-      if (['float', 'integer'].indexOf (type (lat)) === -1 || Math.abs (lat) > 85) {
+      if (! inc (['float', 'integer'], type (lat)) || Math.abs (lat) > 85) {
          notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
          return;
       }
       // We filter out invalid longitudes.
-      if (['float', 'integer'].indexOf (type (lat)) === -1) {
+      if (! inc (['float', 'integer'], type (lat))) {
          notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
          return;
       }
@@ -332,7 +332,7 @@ H.unlink = function (s, path, checkExistence) {
 
 H.thumbPiv = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
    var format = piv.format === 'png' ? '.png' : '.jpeg';
-   var multiframeFormat = ['gif', 'tiff'].indexOf (piv.format) !== -1;
+   var multiframeFormat = inc (['gif', 'tiff'], piv.format);
    a.seq (s, [
       [function (s) {
          var pivMax = Math.max (s.size.w, s.size.h);
@@ -745,11 +745,14 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                if (! upload.ok) upload.ok = 0;
                upload.ok++;
                if (! upload.lastPiv) upload.lastPiv = {id: log.fileId, deg: log.deg};
+               // Uploaded files go into the alreadyUploaded list to properly track repeated vs alreadyUploaded within the upload
+               if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.fileId);
             }
             else if (log.type === 'alreadyUploaded') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.alreadyUploaded) upload.alreadyUploaded = 0;
                upload.alreadyUploaded++;
+               // alreadyUploaded files go into the alreadyUploaded list to properly track repeated vs alreadyUploaded within the upload
                if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.fileId);
             }
             else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge' || log.type === 'unsupported') {
@@ -1113,7 +1116,7 @@ var routes = [
    ['head', '*', function (rq, rs) {
       redis.info (function (error) {
          if (error) reply (rs, 500);
-         reply (rs, ['/stats'].indexOf (rq.url) !== -1 ? 200 : 404);
+         reply (rs, inc (['/stats'], rq.url) ? 200 : 404);
       });
    }],
 
@@ -1491,7 +1494,7 @@ var routes = [
          rs.log.username = user.username;
          rq.user         = user;
 
-         if ((rq.url.match (/^\/admin/) || rq.url.match (/^\/redmin/)) && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
+         if ((rq.url.match (/^\/admin/) || rq.url.match (/^\/redmin/)) && ! inc (SECRET.admins, rq.user.email)) return reply (rs, 403);
 
          astop (rs, [
             [H.stat.w, [
@@ -1556,7 +1559,7 @@ var routes = [
       if (ENV && ! b.username) return reply (rs, 501);
 
       // Only admins can delete another user.
-      if (b.username !== undefined && SECRET.admins.indexOf (rq.user.email) === -1) return reply (rs, 403);
+      if (b.username !== undefined && ! inc (SECRET.admins, rq.user.email)) return reply (rs, 403);
 
       astop (rs, [
          [function (s) {
@@ -1652,7 +1655,7 @@ var routes = [
          }],
          function (s) {
             var limit = CONFIG.freeSpace;
-            if (ENV !== 'prod' && SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
+            if (ENV !== 'prod' && inc (SECRET.admins, rq.user.email)) limit = 1000 * 1000 * 1000 * 1000;
 
             reply (rs, 200, {
                username: rq.user.username,
@@ -1741,7 +1744,7 @@ var routes = [
    }],
 
    ['get', 'thumb/:size/:id', function (rq, rs) {
-      if (['200', '900'].indexOf (rq.data.params.size) === -1) return reply (rs, 400);
+      if (! inc (['200', '900'], rq.data.params.size)) return reply (rs, 400);
       astop (rs, [
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
@@ -1879,11 +1882,12 @@ var routes = [
                },
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-                  var alreadyUploaded = s.alreadyUploaded = b.filename === s.piv.name && s.upload.listAlreadyUploaded.indexOf (s.piv.id) === -1;
+                  var alreadyUploaded = s.alreadyUploaded = b.filename === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
                   if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
                   else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
                },
                function (s) {
+                  // Since the metadata of this piv is identical to that of an already uploaded piv (because both files are identical by hash), the only different date can be provided in the lastModified field.
                   H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, b.filename, b.lastModified);
                },
                [reply, rs, 200, {repeated: true}]
@@ -1927,7 +1931,7 @@ var routes = [
       var hashpath = Path.join (Path.dirname (rq.data.files.piv), Path.basename (rq.data.files.piv).replace (Path.extname (rq.data.files.piv), '') + 'hash');
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 
-      if (CONFIG.allowedFormats.indexOf (mime.getType (rq.data.files.piv)) === -1) {
+      if (! inc (CONFIG.allowedFormats, mime.getType (rq.data.files.piv))) {
          return astop (rs, [
             [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name}],
             [reply, rs, 400, {error: 'fileFormat', filename: name}]
@@ -1995,7 +1999,7 @@ var routes = [
          function (s) {
             var used = parseInt (s.last) || 0;
             var limit = CONFIG.freeSpace;
-            if (ENV !== 'prod' && SECRET.admins.indexOf (rq.user.email) !== -1) limit = 1000 * 1000 * 1000 * 1000;
+            if (ENV !== 'prod' && inc (SECRET.admins, rq.user.email)) limit = 1000 * 1000 * 1000 * 1000;
             if (used + s.byfs.size >= limit) return a.seq (s, [
                [H.log, rq.user.username, {ev: 'upload', type: 'noCapacity', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider}],
                [reply, rs, 409, {error: 'capacity'}]
@@ -2038,6 +2042,8 @@ var routes = [
                   var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
                   if (! key.match (/\bdate\b/i)) return;
                   if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
+                  // Ignore metadata fields related to the newly created file itself, because they have the same date as the upload itself and they are irrelevant for dating the piv
+                  if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], key)) return;
                   if (! value.match (/^\d/)) return;
                   return [key, value];
                });
@@ -2102,7 +2108,7 @@ var routes = [
             },
             function (s) {
                // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-               var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.piv.name && s.upload.listAlreadyUploaded.indexOf (s.piv.id) === -1;
+               var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
                if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
                else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
             },
@@ -2514,14 +2520,14 @@ var routes = [
                });
 
                if (b.del) {
-                  if (s.last [k + 1].indexOf (b.tag) === -1) return;
+                  if (! inc (s.last [k + 1], b.tag)) return;
                   multi.srem ('pivt:' + id, b.tag);
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
                   if (extags === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
                }
 
                else {
-                  if (s.last [k + 1].indexOf (b.tag) !== -1) return;
+                  if (inc (s.last [k + 1], b.tag)) return;
                   multi.sadd ('pivt:' + id, b.tag);
                   multi.sadd ('tags:' + rq.user.username, b.tag);
                   multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
@@ -2584,8 +2590,8 @@ var routes = [
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
       ])) return;
 
-      if (b.tags.indexOf ('all') !== -1) return reply (rs, 400, {error: 'all'});
-      if (b.recentlyTagged && b.tags.indexOf ('untagged') === -1) return reply (rs, 400, {error: 'recentlyTagged'});
+      if (inc (b.tags, 'all')) return reply (rs, 400, {error: 'all'});
+      if (b.recentlyTagged && ! inc (b.tags, 'untagged')) return reply (rs, 400, {error: 'recentlyTagged'});
 
       var ytags = [];
 
@@ -2753,9 +2759,8 @@ var routes = [
       ])) return;
 
       b.tag = H.trim (b.tag);
-      if (['all', 'untagged'].indexOf (b.tag) !== -1) return reply (rs, 400, {error: 'tag'});
-      if (H.isYear (b.tag) || H.isGeo (b.tag))        return reply (rs, 400, {error: 'tag'});
-      if (b.whom === rq.user.username)                return reply (rs, 400, {error: 'self'});
+      if (! H.isUserTag (b.tag))       return reply (rs, 400, {error: 'tag'});
+      if (b.whom === rq.user.username) return reply (rs, 400, {error: 'self'});
 
       astop (rs, [
          [a.cond, [Redis, 'exists', 'users:' + b.whom], {'0': [reply, rs, 404]}],
@@ -2872,7 +2877,7 @@ var routes = [
                if (piv.owner === rq.user.username) return true;
                var tags = s.last [b.ids.length + k];
                return dale.stop (tags, true, function (tag) {
-                  return sharedWithUser.indexOf (piv.owner + ':' + tag) > -1;
+                  return inc (sharedWithUser, piv.owner + ':' + tag);
                });
             });
 
@@ -3037,7 +3042,7 @@ var routes = [
    // *** IMPORT ***
 
    ['get', 'imports/:provider', function (rq, rs) {
-      if (['google', 'dropbox'].indexOf (rq.data.params.provider) === -1) return reply (rs, 400);
+      if (! inc (['google', 'dropbox'], rq.data.params.provider)) return reply (rs, 400);
       astop (rs, [
          [H.getImports, rq, rs, rq.data.params.provider, 20],
          function (s) {
@@ -3142,7 +3147,7 @@ var routes = [
                                  file.size = parseInt (file.size);
                                  // Ignore trashed files!
                                  if (file.trashed) return;
-                                 if (CONFIG.allowedFormats.indexOf (mime.getType (file.originalFilename)) === -1) {
+                                 if (! inc (CONFIG.allowedFormats, mime.getType (file.originalFilename))) {
                                     unsupported.push (file.originalFilename);
                                     return;
                                  }
@@ -3151,7 +3156,7 @@ var routes = [
 
                               dale.go (allowedFiles, function (v) {
                                  dale.go (v.parents, function (v2) {
-                                    if (! folders [v2] && parentsToRetrieve.indexOf (v2) === -1) parentsToRetrieve.push (v2);
+                                    if (! folders [v2] && ! inc (parentsToRetrieve, v2)) parentsToRetrieve.push (v2);
                                     if (! children [v2]) children [v2] = [];
                                     children [v2].push (v.id);
                                  });
@@ -3219,9 +3224,9 @@ var routes = [
                            if (! json.parents) roots [json.id] = true;
                            dale.go (json.parents, function (id) {
                               if (! children [id]) children [id] = [];
-                              if (children [id].indexOf (json.id) === -1) children [id].push (json.id);
+                              if (! inc (children [id], json.id)) children [id].push (json.id);
                               // If parent is not already retrieved and not in the list to be retrieved, add it to the list.
-                              if (! folders [id] && parentsToRetrieve.indexOf (id) === -1) parentsToRetrieve.push (id);
+                              if (! folders [id] && ! inc (parentsToRetrieve, id)) parentsToRetrieve.push (id);
                            });
                         });
                         if (error) return s.next (null, error);
@@ -3859,7 +3864,7 @@ cicek.apres = function (rs) {
    if (rs.log.code >= 400) {
       logs.push (['flow', 'rq-bad', 1]);
       var report = function () {
-         if (['/assets/normalize.min.css.map', '/csrf'].indexOf (rs.log.url) !== -1) return false;
+         if (inc (['/assets/normalize.min.css.map', '/csrf'], rs.log.url)) return false;
          return true;
       }
       if (report ()) {

@@ -67,6 +67,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - fixed piv separators as milestones
 
 - Backend improvements:
+   - Route logging
+      - Log all non-admin routes in terms of performance
+      - Distinguish 4xx from 5xx
+      - Tighter 4xx ignoring rules for endpoints
    - Check if we're leaving behind temporary files from import.
    - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
 
@@ -422,7 +426,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
-   - If a file exists for that user that is both identical to an existing one and aso having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - If a file exists for that user that is both identical to an existing one and also having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
    - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
    - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
