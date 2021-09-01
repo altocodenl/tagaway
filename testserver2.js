@@ -14,7 +14,7 @@ var cicek  = require ('cicek');
 var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
-var clog   = teishi.clog, type = teishi.type, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}
+var clog   = teishi.clog, type = teishi.type, eq = teishi.eq, last = teishi.last, inc = function (a, v) {return a.indexOf (v) > -1}
 
 // *** TEST CONSTANTS ***
 
@@ -104,16 +104,14 @@ var H = {
       fn (retry);
    },
    stop: function (label, result, value) {
-      if (! eq (result, value)) {
-         clog ('Invalid ' + label + ', expecting', value, 'got', result);
-         return true;
-      }
-      return false;
+      if (eq (result, value)) return false;
+      if (teishi.complex (result) && teishi.complex (value)) clog ('Invalid ' + label + ', expecting', value, 'got', result, 'in field', dale.stopNot (result, undefined, function (v, k) {if (! eq (v, value [k])) return k}));
+      else                                                   clog ('Invalid ' + label + ', expecting', value, 'got', result);
+      return true;
    },
    cBody: function (value) {
       return function (s, rq, rs) {
-         if (! eq (rs.body, value)) return clog ('Invalid body, expecting', value, 'got', rs.body);
-         return true;
+         return ! H.stop ('body', rs.body, value);
       }
    },
    loadPivData: function (s) {
@@ -186,14 +184,14 @@ var H = {
       }
       var updateValid = function (path, value) {
          if (path.length === 0) valid = value;
-         else get (valid, path.slice (0, -1)) [teishi.last (path)] = value;
+         else get (valid, path.slice (0, -1)) [last (path)] = value;
       }
       var addTest = function (label, path, value, checkError) {
          var body;
          if (path.length === 0) body = value;
          else {
             body = teishi.copy (valid);
-            get (body, path.slice (0, -1)) [teishi.last (path)] = value;
+            get (body, path.slice (0, -1)) [last (path)] = value;
          }
          tests.push ([label + ' ' + (path.length === 0 ? 'root object' : path.join ('.')), body, function (s, rq, rs) {
             return checkError (rs.body);
@@ -217,7 +215,7 @@ var H = {
                }
                else addTest ('type ' + type, rule [0], maker (), function (body) {
                   if (rule [0].length === 0 && ! inc (['array', 'object'], type)) return body === 'All post requests must be either multipart/form-data or application/json!';
-                  var match = new RegExp ((teishi.last (rule [0]) !== undefined ? teishi.last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
+                  var match = new RegExp ((last (rule [0]) !== undefined ? last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
                   var customMatch;
                   if (rule [2]) customMatch = new RegExp (rule [2]);
                   // TODO REMOVE
@@ -259,8 +257,8 @@ var H = {
          else if (rule [1] === 'invalidValues') {
             dale.go (rule [2], function (invalid, k) {
                addTest ('invalid value #' + (k + 1), rule [0], invalid, function (body) {
-                  var regexMatch = new RegExp (teishi.last (rule [0]) + ' should match .+ but instead is ' + invalid);
-                  var equalMatch = new RegExp (teishi.last (rule [0]) + ' should be (equal to|) one of .+ but instead is ' + invalid);
+                  var regexMatch = new RegExp (last (rule [0]) + ' should match .+ but instead is ' + invalid);
+                  var equalMatch = new RegExp (last (rule [0]) + ' should be (equal to|) one of .+ but instead is ' + invalid);
                   var customMatch;
                   if (rule [3]) customMatch = new RegExp (rule [3]);
                   // TODO REMOVE
@@ -275,7 +273,7 @@ var H = {
                updateValid (rule [0], stringMaker (v));
                var invalidValue = v + (k === 'min' ? -1 : 1);
                addTest ('invalid length - ' + k + ': ' + v, rule [0], stringMaker (invalidValue), function (body) {
-                  var match = new RegExp (teishi.last (rule [0]) + ' length should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
+                  var match = new RegExp (last (rule [0]) + ' length should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
                   var customMatch;
                   if (rule [3]) customMatch = new RegExp (rule [3]);
                   //console.log ('debug length', body.error, match, customMatch);
@@ -288,7 +286,7 @@ var H = {
                updateValid (rule [0], v);
                var invalidValue = v + (k === 'min' ? -1 : 1);
                addTest ('invalid range - ' + k + ': ' + v, rule [0], invalidValue, function (body) {
-                  var match = new RegExp (teishi.last (rule [0]) + ' should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
+                  var match = new RegExp (last (rule [0]) + ' should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
                   // TODO REMOVE
                   //console.log ('debug range', body.error, match);
                   return body && teishi.type (body.error) === 'string' && body.error.match (match);
@@ -506,7 +504,7 @@ suites.auth = {
          ['reset password with invaliidated token', 'post', 'auth/reset', {}, function (s) {return {username: user.username, password: user.password, token: s.recoveryToken1}}, 403],
          ['reset password', 'post', 'auth/reset', {}, function (s) {return {username: user.username, password: user.password + 'bar', token: s.recoveryToken2}}, 200],
          ['login after password reset', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 200, H.setCredentials],
-         ['get account to check auth logs', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         ['get auth logs', 'get', 'account', {}, '', 200, function (s, rq, rs) {
 
             var sequence = ['signup', 'login', 'logout', 'login'];
             dale.go (dale.times (24), function () {sequence.push ('login')});
@@ -642,7 +640,7 @@ suites.upload.upload = function () {
          }) === false) return false;
          return true;
       }],
-      ['get account to check upload logs', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      ['get upload logs', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('logs length', rs.body.logs.length, 8)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
@@ -671,7 +669,7 @@ suites.upload.upload = function () {
          }) === false) return false;
          return true;
       }],
-      ['get account to check upload after double error', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      ['get upload logs after double error', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('logs length', rs.body.logs.length, 4)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
@@ -697,7 +695,7 @@ suites.upload.upload = function () {
       }],
       ['send wait operation to upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
       ['send second wait operation to upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
-      ['get account to check upload after double wait', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      ['get upload logs after double wait', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('logs length', rs.body.logs.length, 5)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
@@ -757,37 +755,210 @@ suites.upload.uploadCheck = function () {
       suites.auth.out (tk.users.user1),
       suites.auth.in  (tk.users.user1),
       ['start upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
-         s.uploadId1 = rs.body.id;
+         s.uploadId = rs.body.id;
          return true;
       }],
       ['start another upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
-         s.uploadId2 = rs.body.id;
+         s.uploadIdAlt = rs.body.id;
          return true;
       }],
       ['upload small piv to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
-         {type: 'field', name: 'id',           value: s.uploadId1},
+         {type: 'field', name: 'id',           value: s.uploadId},
          {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
       ]}}, 200],
       ['get piv metadata before uploadCheck modifications', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
-      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId1, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
-      ['uploadCheck piv with match, same name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId2, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
-      ['uploadCheck piv with match, different name', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId2, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
+      ['uploadCheck piv with match, same name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck (same name & different name, no dates or tags), ensure no modifications happened', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
       }],
-      ['get upload after uploadCheck', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
-         clog (rs.body);
+      ['check that piv is still marked as untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body length', rs.body.pivs.length, 1)) return false;
+         return true;
+      }],
+      ['get upload after uploadCheck alreadyUploaded & repeated, different upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('last upload', rs.body [0], {
+            id: s.uploadIdAlt,
+            repeated: [tk.pivs.small.name + 'foo'],
+            repeatedSize: tk.pivs.small.size,
+            alreadyUploaded: 1,
+            status: 'uploading',
+            total: 0
+         })) return false;
+         return true;
+      }],
+      ['get uploadCheck logs after alreadyUploaded & repeated, different upload', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('logs length', rs.body.logs.length, 7)) return false;
+         if (H.stop ('alreadyUploaded log', last (rs.body.logs, 2), {
+            ev: 'upload',
+            type: 'alreadyUploaded',
+            id: s.uploadIdAlt,
+            pivId: s.originalSmall.id,
+            lastModified: tk.pivs.small.mtime,
+            t: last (rs.body.logs, 2).t
+         })) return false;
+
+         if (H.stop ('repeated log', last (rs.body.logs), {
+            ev: 'upload',
+            type: 'repeated',
+            id: s.uploadIdAlt,
+            pivId: s.originalSmall.id,
+            lastModified: tk.pivs.small.mtime,
+            filename: tk.pivs.small.name + 'foo',
+            fileSize: tk.pivs.small.size,
+            identical: true,
+            t: last (rs.body.logs).t
+         })) return false;
+
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.in  (tk.users.user1),
+      ['start upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200],
+      ['get piv metadata before uploadCheck modifications', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.originalSmall = rs.body.pivs [0];
+         return true;
+      }],
+      ['uploadCheck piv with match, same name, same upload, with tags', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime, tags: ['tag1']}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name, same upload, with tags', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime, tags: ['tag2']}}, 200, H.cBody ({repeated: true})],
+      ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         // Update tags in comparison
+         s.originalSmall.tags.push ('tag1', 'tag2');
+         if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
+         return true;
+      }],
+      ['check that piv is no longer marked as untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body length', rs.body.pivs.length, 0)) return false;
+         return true;
+      }],
+      ['get upload after uploadCheck repeated, same upload, tags', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('only upload', rs.body [0], {
+            id: s.uploadId,
+            repeated: [tk.pivs.small.name + 'foo', tk.pivs.small.name],
+            repeatedSize: tk.pivs.small.size * 2,
+            ok: 1,
+            lastPiv: {id: s.originalSmall.id},
+            status: 'uploading',
+            total: 0
+         })) return false;
+         return true;
+      }],
+      ['get uploadCheck logs after repeated, same upload, tags', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('logs length', rs.body.logs.length, 6)) return false;
+         if (H.stop ('repeated #1 log', last (rs.body.logs, 2), {
+            ev: 'upload',
+            type: 'repeated',
+            id: s.uploadId,
+            pivId: s.originalSmall.id,
+            tags: ['tag1'],
+            lastModified: tk.pivs.small.mtime,
+            filename: tk.pivs.small.name,
+            fileSize: tk.pivs.small.size,
+            identical: true,
+            t: last (rs.body.logs, 2).t
+         })) return false;
+
+         if (H.stop ('repeated #2 log', last (rs.body.logs), {
+            ev: 'upload',
+            type: 'repeated',
+            id: s.uploadId,
+            pivId: s.originalSmall.id,
+            tags: ['tag2'],
+            lastModified: tk.pivs.small.mtime,
+            filename: tk.pivs.small.name + 'foo',
+            fileSize: tk.pivs.small.size,
+            identical: true,
+            t: last (rs.body.logs).t
+         })) return false;
+
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.in  (tk.users.user1),
+      ['start upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200],
+      ['get piv metadata before uploadCheck modifications', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.originalSmall = rs.body.pivs [0];
+         return true;
+      }],
+      ['uploadCheck piv with match, same name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: new Date ('2010-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: new Date ('2005-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
+      ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         // TODO update dates & tags
+         // 'repeated:1630528173646:lastModified': 1262304000000, 'repeated:1630528173678:lastModified': 1104537600000
+         // update tags: 2005
+         if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
+         return true;
+      }],
+      ['check that piv is no still marked as untagged', 'post', 'query', {}, {tags: ['untagged'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body length', rs.body.pivs.length, 1)) return false;
+         return true;
+      }],
+      ['get upload after uploadCheck repeated, same upload, with another date', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('only upload', rs.body [0], {
+            id: s.uploadId,
+            repeated: [tk.pivs.small.name + 'foo', tk.pivs.small.name],
+            repeatedSize: tk.pivs.small.size * 2,
+            ok: 1,
+            lastPiv: {id: s.originalSmall.id},
+            status: 'uploading',
+            total: 0
+         })) return false;
+         return true;
+      }],
+      ['get uploadCheck logs after repeated, same upload, with another date', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('logs length', rs.body.logs.length, 6)) return false;
+         if (H.stop ('repeated #1 log', last (rs.body.logs, 2), {
+            ev: 'upload',
+            type: 'repeated',
+            id: s.uploadId,
+            pivId: s.originalSmall.id,
+            tags: ['tag1'],
+            lastModified: tk.pivs.small.mtime,
+            filename: tk.pivs.small.name,
+            fileSize: tk.pivs.small.size,
+            identical: true,
+            t: last (rs.body.logs, 2).t
+         })) return false;
+
+         if (H.stop ('repeated #2 log', last (rs.body.logs), {
+            ev: 'upload',
+            type: 'repeated',
+            id: s.uploadId,
+            pivId: s.originalSmall.id,
+            tags: ['tag2'],
+            lastModified: tk.pivs.small.mtime,
+            filename: tk.pivs.small.name + 'foo',
+            fileSize: tk.pivs.small.size,
+            identical: true,
+            t: last (rs.body.logs).t
+         })) return false;
+
          return true;
       }],
       // TODO: add non-validation tests
-      // test for repeated or alreadyUploaded: add tags
       // update dates
-      // check increased count of repeated or alreadyUploaded
       suites.auth.out (tk.users.user1),
    ];
 }
@@ -820,6 +991,7 @@ suites.upload.piv = function () {
 
 suites.upload.full = function () {
    return [
+      // TODO uncomment
       //suites.upload.upload (),
       suites.upload.uploadCheck (),
       //suites.upload.piv (),

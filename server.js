@@ -744,16 +744,16 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.ok) upload.ok = 0;
                upload.ok++;
-               if (! upload.lastPiv) upload.lastPiv = {id: log.fileId, deg: log.deg};
+               if (! upload.lastPiv) upload.lastPiv = {id: log.pivId, deg: log.deg};
                // Uploaded files go into the alreadyUploaded list to properly track repeated vs alreadyUploaded within the upload
-               if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.fileId);
+               if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.pivId);
             }
             else if (log.type === 'alreadyUploaded') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload.alreadyUploaded) upload.alreadyUploaded = 0;
                upload.alreadyUploaded++;
                // alreadyUploaded files go into the alreadyUploaded list to properly track repeated vs alreadyUploaded within the upload
-               if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.fileId);
+               if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.pivId);
             }
             else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge' || log.type === 'unsupported') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
@@ -1883,8 +1883,8 @@ var routes = [
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
                   var alreadyUploaded = s.alreadyUploaded = b.filename === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
-                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, fileId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
-                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, fileId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
+                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
+                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
                },
                function (s) {
                   // Since the metadata of this piv is identical to that of an already uploaded piv (because both files are identical by hash), the only different date can be provided in the lastModified field.
@@ -2109,8 +2109,8 @@ var routes = [
             function (s) {
                // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
                var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
-               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
-               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
+               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
+               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
             },
             function (s) {
                H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, name, lastModified, s.dates);
@@ -2169,7 +2169,7 @@ var routes = [
                H.updateDates (s, 'repeated', s.piv, name, lastModified, s.dates);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: false});
+               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: false});
             },
             function (s) {
                reply (rs, 409, {error: 'repeated', id: s.piv.id});
@@ -2361,7 +2361,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {ev: 'upload', type: 'ok', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, fileId: piv.id, tags: tags.length ? tags : undefined, deg: piv.deg});
+            H.log (s, rq.user.username, {ev: 'upload', type: 'ok', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: piv.id, tags: tags.length ? tags : undefined, deg: piv.deg});
          },
          [perfTrack, 'db'],
          function (s) {
