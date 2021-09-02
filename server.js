@@ -1904,7 +1904,9 @@ var routes = [
       if (! rq.data.fields.id.match (/^\d+$/)) return reply (rs, 400, {error: 'id'});
       rq.data.fields.id = parseInt (rq.data.fields.id);
 
-      if (type (parseInt (rq.data.fields.lastModified)) !== 'integer') return reply (rs, 400, {error: 'lastModified'});
+      if (! rq.data.fields.lastModified)                 return reply (rs, 400, {error: 'lastModified'});
+      if (! rq.data.fields.lastModified.match (/^\d+$/)) return reply (rs, 400, {error: 'lastModified'});
+      var lastModified = parseInt (rq.data.fields.lastModified);
 
       if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
       if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
@@ -1927,7 +1929,7 @@ var routes = [
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
       }
 
-      var path = (rq.data.fields.providerData || {}).path || rq.data.files.piv, lastModified = parseInt (rq.data.fields.lastModified);
+      var path = (rq.data.fields.providerData || {}).path || rq.data.files.piv;
       var hashpath = Path.join (Path.dirname (rq.data.files.piv), Path.basename (rq.data.files.piv).replace (Path.extname (rq.data.files.piv), '') + 'hash');
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
 

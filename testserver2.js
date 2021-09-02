@@ -905,9 +905,17 @@ suites.upload.uploadCheck = function () {
       ['uploadCheck piv with match, same name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: new Date ('2010-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
       ['uploadCheck piv with match, different name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: new Date ('2005-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-         // TODO update dates & tags
-         // 'repeated:1630528173646:lastModified': 1262304000000, 'repeated:1630528173678:lastModified': 1104537600000
-         // update tags: 2005
+         // Update tags
+         s.originalSmall.tags = ['2005'];
+         s.originalSmall.date = new Date ('2005-01-01').getTime ();
+         var newDates = 0;
+         if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
+            if (s.originalSmall.dates [k]) return;
+            if (! k.match (/^repeated:\d+:lastModified$/)) return 'Invalid new date field: ' + k;
+            newDates++;
+            s.originalSmall.dates [k] = v;
+         }) === false) return false;
+         if (H.stop ('new dates', newDates, 2)) return false;
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
       }],
@@ -934,8 +942,7 @@ suites.upload.uploadCheck = function () {
             type: 'repeated',
             id: s.uploadId,
             pivId: s.originalSmall.id,
-            tags: ['tag1'],
-            lastModified: tk.pivs.small.mtime,
+            lastModified: new Date ('2010-01-01').getTime (),
             filename: tk.pivs.small.name,
             fileSize: tk.pivs.small.size,
             identical: true,
@@ -947,8 +954,7 @@ suites.upload.uploadCheck = function () {
             type: 'repeated',
             id: s.uploadId,
             pivId: s.originalSmall.id,
-            tags: ['tag2'],
-            lastModified: tk.pivs.small.mtime,
+            lastModified: new Date ('2005-01-01').getTime (),
             filename: tk.pivs.small.name + 'foo',
             fileSize: tk.pivs.small.size,
             identical: true,
@@ -957,16 +963,42 @@ suites.upload.uploadCheck = function () {
 
          return true;
       }],
-      // TODO: add non-validation tests
-      // update dates
       suites.auth.out (tk.users.user1),
    ];
 }
 
 suites.upload.piv = function () {
+   var testInvalid = function (body, notMultipart) {
+      return ['upload piv, invalid body', 'post', 'piv', {}, notMultipart ? body : {multipart: body}, 400, function (s, rq, rs) {
+         clog ('debug', rs.body);
+         return true;
+      }];
+   }
    return [
-
+      suites.auth.in (tk.users.user1),
+      dale.go ([
+         1,
+         'id1',
+         [],
+         {},
+         // multipart requests from now onwards
+         // TODO: why no files error?
+         [],
+         [{type: 'field', name: 'id', value: 'notanid'}],
+         [{type: 'field', name: 'id', value: 1234}],
+         [{type: 'field', name: 'lastModified', value: 'abc'}],
+         [{type: 'field', name: 'lastModified', value: 1234}],
+      ], function (v, k) {
+         return testInvalid (v, k < 4);
+      }),
+      suites.auth.out (tk.users.user1),
    ];
+   /*
+      if (! rq.data.fields)                    return reply (rs, 400, {error: 'field'});
+      if (! rq.data.files)                     return reply (rs, 400, {error: 'file'});
+      if (! rq.data.fields.id)                 return reply (rs, 400, {error: 'id'});
+      if (! rq.data.fields.id.match (/^\d+$/)) return reply (rs, 400, {error: 'id'});
+      */
 
    return [
       suites.auth.in (tk.users.user1),
@@ -993,8 +1025,8 @@ suites.upload.full = function () {
    return [
       // TODO uncomment
       //suites.upload.upload (),
-      suites.upload.uploadCheck (),
-      //suites.upload.piv (),
+      //suites.upload.uploadCheck (),
+      suites.upload.piv (),
    ];
 }
 
