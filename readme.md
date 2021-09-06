@@ -415,17 +415,15 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the piv matches another one already present and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
 
 - `POST /piv`
-   - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
-   - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
-   - Must contain one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
-   - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
-   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /upload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
-   - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`) (otherwise, 400 with body `{error: 'multipart'}`).
+   - Must contain exactly one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
-   - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `piv`.
+   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /upload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
+   - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
    - If a file exists for that user that is both identical to an existing one and also having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
    - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
    - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.

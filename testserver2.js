@@ -25,7 +25,7 @@ var tk = {
       user1: {username: 'user1', password: Math.random () + '', firstName: 'name1', email: 'user1@example.com', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
    },
-   geodatapath: '~/desktop/cities500.txt'
+   geodataPath: '/home/hq/Desktop/cities500.txt'
 }
 
 // *** HELPER FUNCTIONS ***
@@ -89,7 +89,7 @@ var H = {
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
          [k, 'node', 'server', 'local', 'geodata', tk.geodataPath],
          function (s) {
-            if (s.error && ! H.testsDone) console.log (s.error.stdout.slice (-2000));
+            if (s.error && ! H.testsDone) console.log (s.error.stdout.slice (-2500));
          }
       ]);
    },
@@ -142,6 +142,8 @@ var H = {
                      var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
                      if (! key.match (/\bdate\b/i)) return;
                      if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
+                     // Ignore metadata fields related to the newly created file itself, because they have the same date as the upload itself and they are irrelevant for dating the piv
+                     if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], key)) return;
                      if (! value.match (/^\d/)) return;
                      return [key, value];
                   });
@@ -968,37 +970,68 @@ suites.upload.uploadCheck = function () {
 }
 
 suites.upload.piv = function () {
-   var testInvalid = function (body, notMultipart) {
-      return ['upload piv, invalid body', 'post', 'piv', {}, notMultipart ? body : {multipart: body}, 400, function (s, rq, rs) {
-         clog ('debug', rs.body);
+   var testInvalid = function (body, expectedError, k) {
+      return ['upload piv, invalid body #' + (k + 1), 'post', 'piv', {}, k < 4 ? body : {multipart: body}, 400, function (s, rq, rs) {
+         if (H.stop ('error message for invalid payload #' + (k + 1), rs.body, expectedError)) return false;
          return true;
       }];
    }
    return [
       suites.auth.in (tk.users.user1),
       dale.go ([
-         1,
-         'id1',
-         [],
-         {},
+         [1, 'All post requests must be either multipart/form-data or application/json!'],
+         ['id1', 'All post requests must be either multipart/form-data or application/json!'],
+         [[], {error: 'body should have as type object but instead is [] with type array'}],
+         [{}, {error: 'multipart'}],
          // multipart requests from now onwards
-         // TODO: why no files error?
-         [],
-         [{type: 'field', name: 'id', value: 'notanid'}],
-         [{type: 'field', name: 'id', value: 1234}],
-         [{type: 'field', name: 'lastModified', value: 'abc'}],
-         [{type: 'field', name: 'lastModified', value: 1234}],
-      ], function (v, k) {
-         return testInvalid (v, k < 4);
+         [[{type: 'field', name: 'foo', value: 'bar'}], {error: 'invalidField'}],
+         [[], {error: 'id'}],
+         [[{type: 'field', name: 'id', value: 'notanid'}], {error: 'id'}],
+         [[{type: 'field', name: 'id', value: 1234}], {error: 'lastModified'}],
+         [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 'abc'}
+         ], {error: 'lastModified'}],
+         [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 'abc'}
+         ], {error: 'lastModified'}],
+      ].concat (dale.go (['', 1234, 'foo', '{}'], function (invalidTags) {
+         return [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 1234},
+            {type: 'field', name: 'tags',         value: invalidTags},
+         ], {error: 'tags'}];
+      })).concat (dale.go ([[1], [{}], ['all'], ['untagged'], ['1987']], function (invalidTags) {
+         return [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 1234},
+            {type: 'field', name: 'tags',         value: JSON.stringify (invalidTags)},
+         ], {error: 'invalid tag: ' + invalidTags [0]}];
+      })).concat ([
+         [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 1234},
+            {type: 'field', name: 'tags',         value: '[]'},
+            {type: 'file',  name: 'foo',          path:  tk.pivs.small.path},
+         ], {error: 'file'}],
+         [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 1234},
+            {type: 'field', name: 'tags',         value: '[]'},
+            {type: 'file',  name: 'piv',          path:  tk.pivs.small.path, filename: 'foo.pdf'},
+         ], {error: 'format'}],
+         [[
+            {type: 'field', name: 'id',           value: 1234},
+            {type: 'field', name: 'lastModified', value: 1234},
+            {type: 'field', name: 'tags',         value: '[]'},
+            {type: 'file',  name: 'piv',          path:  tk.pivs.small.path, filename: 'noextension'},
+         ], {error: 'format'}],
+      ]), function (v, k) {
+         return testInvalid (v [0], v [1], k);
       }),
       suites.auth.out (tk.users.user1),
    ];
-   /*
-      if (! rq.data.fields)                    return reply (rs, 400, {error: 'field'});
-      if (! rq.data.files)                     return reply (rs, 400, {error: 'file'});
-      if (! rq.data.fields.id)                 return reply (rs, 400, {error: 'id'});
-      if (! rq.data.fields.id.match (/^\d+$/)) return reply (rs, 400, {error: 'id'});
-      */
 
    return [
       suites.auth.in (tk.users.user1),
@@ -1057,18 +1090,6 @@ suites.query = function () {
    ];
 }
 
-// *** SUITE PICKER ***
-
-var suitesToRun = (function () {
-   if (! toRun) return dale.go (suites, function (v) {
-      if (type (v) === 'function') return v ();
-      return v.full ();
-   });
-   var suite = suites [toRun];
-   if (type (suite) === 'function') return suite ();
-   return suite.full ();
-}) ();
-
 // *** RUN TESTS ***
 
 var t = Date.now ();
@@ -1080,6 +1101,17 @@ H.tryTimeout (50, 500, function (cb) {
 }, function (error) {
    if (error) return clog ('SERVER DID NOT START');
    var serverStart = Date.now () - t;
+
+   var suitesToRun = (function () {
+      if (! toRun) return dale.go (suites, function (v) {
+         if (type (v) === 'function') return v ();
+         return v.full ();
+      });
+      var suite = suites [toRun];
+      if (type (suite) === 'function') return suite ();
+      return suite.full ();
+   }) ();
+
    h.seq ({port: CONFIG.port}, suitesToRun, function (error) {
       if (error) {
          if (error.request && error.request.body && type (error.request.body) === 'string') error.request.body = error.request.body.slice (0, 1000) + (error.request.body.length > 1000 ? '... OMITTING REMAINDER' : '');

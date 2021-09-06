@@ -1898,8 +1898,10 @@ var routes = [
 
    ['post', 'piv', function (rq, rs) {
 
-      if (! rq.data.fields)                    return reply (rs, 400, {error: 'field'});
-      if (! rq.data.files)                     return reply (rs, 400, {error: 'file'});
+      if (! (rq.headers ['content-type'] || '').match (/^multipart\/form-data/i)) return reply (rs, 400, {error: 'multipart'});
+
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+
       if (! rq.data.fields.id)                 return reply (rs, 400, {error: 'id'});
       if (! rq.data.fields.id.match (/^\d+$/)) return reply (rs, 400, {error: 'id'});
       rq.data.fields.id = parseInt (rq.data.fields.id);
@@ -1908,11 +1910,7 @@ var routes = [
       if (! rq.data.fields.lastModified.match (/^\d+$/)) return reply (rs, 400, {error: 'lastModified'});
       var lastModified = parseInt (rq.data.fields.lastModified);
 
-      if (! rq.data.fields.tags) rq.data.fields.tags = '[]';
-      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
-
-      if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'invalidFile'});
-
+      if (rq.data.fields.tags === undefined) rq.data.fields.tags = '[]';
       var tags = teishi.parse (rq.data.fields.tags), invalidTag;
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
       tags = dale.go (tags, function (tag) {
@@ -1929,6 +1927,8 @@ var routes = [
          rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
       }
 
+      if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
+
       var path = (rq.data.fields.providerData || {}).path || rq.data.files.piv;
       var hashpath = Path.join (Path.dirname (rq.data.files.piv), Path.basename (rq.data.files.piv).replace (Path.extname (rq.data.files.piv), '') + 'hash');
       var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
@@ -1936,7 +1936,7 @@ var routes = [
       if (! inc (CONFIG.allowedFormats, mime.getType (rq.data.files.piv))) {
          return astop (rs, [
             [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name}],
-            [reply, rs, 400, {error: 'fileFormat', filename: name}]
+            [reply, rs, 400, {error: 'format'}]
          ]);
       }
 
