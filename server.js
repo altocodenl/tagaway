@@ -758,10 +758,10 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             else if (log.type === 'repeated' || log.type === 'invalid' || log.type === 'tooLarge' || log.type === 'unsupported') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
                if (! upload [log.type]) upload [log.type] = [];
-               upload [log.type].push (log.filename);
+               upload [log.type].push (log.name);
                if (log.type === 'repeated') {
                   if (! upload.repeatedSize) upload.repeatedSize = 0;
-                  upload.repeatedSize += log.fileSize;
+                  upload.repeatedSize += log.size;
                }
             }
          });
@@ -842,7 +842,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    var date = parseInt (piv.date), dates = JSON.parse (piv.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
    var key = repeatedOrAlreadyUploaded + ':' + Date.now ();
 
-   // newDates are the dates of the repeated or alreadyUploaded piv.
+   // newDates are the dates of the repeated or alreadyUploaded piv. It can be either an object or `undefined`.
    newDates = dale.obj (newDates, function (v, k) {
       return [key + ':' + k, v];
    });
@@ -895,38 +895,32 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
 }
 
 H.dateFromName = function (name) {
-   var date;
+   // Date example: 20220308
    if (name.match (/(19|20)\d{6}/)) {
-      date = name.match (/(19|20)\d{6}/g) [0];
+      var date = name.match (/(19|20)\d{6}/g) [0];
       date = [date.slice (0, 4), date.slice (4, 6), date.slice (6)].join ('-');
+      // Date with time acceptable format: date + 0 or more non digits + 1-2 digits (hour) + 0 or more non digits + 2 digits (minutes) + 0 or more non digits + optional two digits (seconds) + zero or more non letters plus optional am|AM|pm|PM
       var time = name.match (/(19|20)\d{6}[^\d]*(\d{1,2})[^\d]*(\d{2})[^\d]*(\d{2})?[^a-zA-Z]*(am|AM|pm|PM)?/);
-      if (time && time [2] !== undefined && time [3] !== undefined) {
-         var hour = parseInt (time [2]);
-         if (time [5] && time [5].match (/pm/i) && hour > 0 && hour < 12) hour += 12;
-         hour += '';
-         var dateWithTime = date + 'T' + (hour.length === 1 ? '0' : '') + hour + ':' + time [3] + ':' + (time [4] || '00') + '.000Z';
-         dateWithTime = H.parseDate (dateWithTime);
-         if (dateWithTime !== -1) return dateWithTime;
-      }
-      date = H.parseDate (date);
-      if (date !== -1) return date;
    }
-   if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
-      date = name.match (/(19|20)\d\d-\d\d-\d\d/g) [0];
+   // Date example: 2022-03-08
+   else if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
+      var date = name.match (/(19|20)\d\d-\d\d-\d\d/g) [0];
       date = [date.slice (0, 4), date.slice (5, 7), date.slice (8)].join ('-');
+      // Date with time acceptable format: date + 0 or more non digits + 1-2 digits (hour) + 0 or more non digits + 2 digits (minutes) + 0 or more non digits + optional two digits (seconds) + zero or more non letters plus optional am|AM|pm|PM
       var time = name.match (/(19|20)\d\d-\d\d-\d\d[^\d]*(\d{1,2})[^\d]*(\d{2})[^\d]*(\d{2})?[^a-zA-Z]*(am|AM|pm|PM)?/);
-      if (time && time [2] !== undefined && time [3] !== undefined) {
-         var hour = parseInt (time [2]);
-         if (time [5] && time [5].match (/pm/i) && hour > 0 && hour < 12) hour += 12;
-         hour += '';
-         var dateWithTime = date + 'T' + (hour.length === 1 ? '0' : '') + hour + ':' + time [3] + ':' + (time [4] || '00') + '.000Z';
-         dateWithTime = H.parseDate (dateWithTime);
-         if (dateWithTime !== -1) return dateWithTime;
-      }
-      date = H.parseDate (date);
-      if (date !== -1) return date;
    }
-   return -1;
+   else return -1;
+
+   // Attempt to get the time from the date. If it fails, just return the date with no time.
+   if (time && time [2] !== undefined && time [3] !== undefined) {
+      var hour = parseInt (time [2]);
+      if (time [5] && time [5].match (/pm/i) && hour > 0 && hour < 12) hour += 12;
+      hour += '';
+      var dateWithTime = date + 'T' + (hour.length === 1 ? '0' : '') + hour + ':' + time [3] + ':' + (time [4] || '00') + '.000Z';
+      dateWithTime = H.parseDate (dateWithTime);
+      if (dateWithTime !== -1) return dateWithTime;
+   }
+   return H.parseDate (date);
 }
 
 // *** OAUTH HELPERS ***
@@ -1831,12 +1825,12 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['id', 'hash', 'filename', 'fileSize', 'lastModified', 'tags'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['id', 'hash', 'name', 'size', 'lastModified', 'tags'], 'eachOf', teishi.test.equal],
          ['body.id',   b.id,   'integer'],
          ['body.hash', b.hash, 'integer'],
-         ['body.filename', b.filename, 'string'],
-         ['body.fileSize', b.fileSize, 'integer'],
-         ['body.fileSize', b.fileSize, {min: 0}, teishi.test.range],
+         ['body.name', b.name, 'string'],
+         ['body.size', b.size, 'integer'],
+         ['body.size', b.size, {min: 0}, teishi.test.range],
          ['body.lastModified', b.lastModified, 'integer'],
          ['body.lastModified', b.lastModified, {min: 0}, teishi.test.range],
          ['body.tags', b.tags, ['undefined', 'array'], 'oneOf'],
@@ -1882,13 +1876,13 @@ var routes = [
                },
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-                  var alreadyUploaded = s.alreadyUploaded = b.filename === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
+                  var alreadyUploaded = s.alreadyUploaded = b.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
                   if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
-                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, filename: b.filename, fileSize: b.fileSize, identical: true});
+                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, name: b.name, size: b.size, identical: true});
                },
                function (s) {
                   // Since the metadata of this piv is identical to that of an already uploaded piv (because both files are identical by hash), the only different date can be provided in the lastModified field.
-                  H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, b.filename, b.lastModified);
+                  H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, b.name, b.lastModified);
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -1900,7 +1894,7 @@ var routes = [
 
       if (! (rq.headers ['content-type'] || '').match (/^multipart\/form-data/i)) return reply (rs, 400, {error: 'multipart'});
 
-      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'providerData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+      if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'importData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
 
       if (! rq.data.fields.id)                 return reply (rs, 400, {error: 'id'});
       if (! rq.data.fields.id.match (/^\d+$/)) return reply (rs, 400, {error: 'id'});
@@ -1922,40 +1916,40 @@ var routes = [
       });
       if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
 
-      if (rq.data.fields.providerData !== undefined) {
+      var importData;
+      if (rq.data.fields.importData !== undefined) {
          if (rq.origin !== '::ffff:127.0.0.1') return reply (rs, 403);
-         rq.data.fields.providerData = teishi.parse (rq.data.fields.providerData);
+         importData = teishi.parse (rq.data.fields.importData);
       }
 
       if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
 
-      var path = (rq.data.fields.providerData || {}).path || rq.data.files.piv;
-      var hashpath = Path.join (Path.dirname (rq.data.files.piv), Path.basename (rq.data.files.piv).replace (Path.extname (rq.data.files.piv), '') + 'hash');
-      var name = rq.data.fields.providerData ? rq.data.fields.providerData.name : path.slice (path.indexOf ('_') + 1);
-
-      if (! inc (CONFIG.allowedFormats, mime.getType (rq.data.files.piv))) {
-         return astop (rs, [
-            [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name}],
-            [reply, rs, 400, {error: 'format'}]
-         ]);
-      }
+      var path     = importData ? importData.path : rq.data.files.piv;
+      var hashpath = Path.join (Path.dirname (path), Path.basename (path).replace (Path.extname (path), '') + 'hash');
 
       var piv = {
          id:     uuid (),
          owner:  rq.user.username,
-         name:   name,
+         name:   importData ? importData.name : path.slice (path.indexOf ('_') + 1),
          dateup: Date.now (),
       };
+
+      var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), piv.id);
+
+      if (! inc (CONFIG.allowedFormats, mime.getType (rq.data.files.piv))) {
+         return astop (rs, [
+            [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name}],
+            [reply, rs, 400, {error: 'format'}]
+         ]);
+      }
 
       var vidFormats = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/x-msvideo': 'avi', 'video/webm': 'webm', 'video/x-ms-wmv': 'wmv', 'video/x-m4v': 'm4v'};
 
       if (vidFormats [mime.getType (rq.data.files.piv)]) {
          var vidFormat = vidFormats [mime.getType (rq.data.files.piv)];
-         // If the format is mp4, we only put a truthy placeholder in piv.vid; otherwise, we create an id to point to the mp4 version of the video.
+         // If the format is mp4, we put a truthy placeholder in piv.vid; otherwise, we create an id to point to the mp4 version of the video.
          piv.vid = vidFormat === 'mp4' ? 1 : uuid ();
       }
-
-      var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), piv.id);
 
       var perf = [['init', Date.now ()]], perfTrack = function (s, label) {
          perf.push ([label, Date.now ()]);
@@ -1969,8 +1963,8 @@ var routes = [
                [H.unlink, newpath, true],
                ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
                ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
-               [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, error: error}],
-               [reply, rs, 400, {error: 'Invalid ' + (piv.vid ? 'video' : 'image'), data: error, filename: name}],
+               [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error}],
+               [reply, rs, 400, {error: 'Invalid ' + (piv.vid ? 'video' : 'image'), data: error, name: piv.name}],
             ]);
          }
          // If input is an async sequence, we return another async sequence
@@ -1993,8 +1987,8 @@ var routes = [
          function (s) {
             if (s.byfs.size <= CONFIG.maxFileSize) return s.next ();
             a.seq (s, [
-               [H.log, rq.user.username, {ev: 'upload', type: 'tooLarge', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, size: s.byfs.size}],
-               [reply, rs, 400, {error: 'tooLarge', filename: name}]
+               [H.log, rq.user.username, {ev: 'upload', type: 'tooLarge', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, size: s.byfs.size}],
+               [reply, rs, 400, {error: 'tooLarge', name: piv.name}]
             ]);
          },
          [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
@@ -2003,7 +1997,7 @@ var routes = [
             var limit = CONFIG.freeSpace;
             if (ENV !== 'prod' && inc (SECRET.admins, rq.user.email)) limit = 1000 * 1000 * 1000 * 1000;
             if (used + s.byfs.size >= limit) return a.seq (s, [
-               [H.log, rq.user.username, {ev: 'upload', type: 'noCapacity', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider}],
+               [H.log, rq.user.username, {ev: 'upload', type: 'noCapacity', id: rq.data.fields.id, provider: importData ? importData.provider : undefined}],
                [reply, rs, 409, {error: 'capacity'}]
             ]);
             s.next ();
@@ -2109,13 +2103,14 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-               var alreadyUploaded = s.alreadyUploaded = ! rq.data.fields.providerData && name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
-               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
-               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: true});
+               // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system, but not in the same upload. The second file, if any, is considered as repeated.
+               // In the case of an import, any repetition is considered a repetition, not an alreadyUploaded, since the mechanism for bringing the piv is not an upload.
+               var alreadyUploaded = s.alreadyUploaded = ! importData && piv.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
+               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
+               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
             },
             function (s) {
-               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, name, lastModified, s.dates);
+               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified, s.dates);
             },
             function (s) {
                reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});
@@ -2168,10 +2163,10 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               H.updateDates (s, 'repeated', s.piv, name, lastModified, s.dates);
+               H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, s.dates);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, filename: name, fileSize: s.byfs.size, identical: false});
+               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false});
             },
             function (s) {
                reply (rs, 409, {error: 'repeated', id: s.piv.id});
@@ -2283,8 +2278,8 @@ var routes = [
             piv.originalHash = s.hashorig;
 
             s.dates ['upload:lastModified'] = lastModified;
-            var dateFromName = H.dateFromName (name);
-            if (dateFromName !== -1) s.dates ['upload:fromName'] = name;
+            var dateFromName = H.dateFromName (piv.name);
+            if (dateFromName !== -1) s.dates ['upload:fromName'] = piv.name;
 
             piv.dates = JSON.stringify (s.dates);
 
@@ -2328,7 +2323,7 @@ var routes = [
             }
 
             // If date is earlier than 1990, report it but carry on.
-            if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: s.dates, dateSource: piv.dateSource, filename: name});
+            if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: s.dates, dateSource: piv.dateSource, name: piv.name});
 
             if (s.t200) piv.t200  = s.t200;
             if (s.t900) piv.t900  = s.t900;
@@ -2342,11 +2337,11 @@ var routes = [
             multi.srem ('hashdel:'     + rq.user.username, piv.hash);
             multi.srem ('hashdelorig:' + rq.user.username, piv.originalHash);
 
-            if (rq.data.fields.providerData) {
-               var providerKey = {google: 'g', dropbox: 'd'} [rq.data.fields.providerData.provider];
-               var providerHash = H.hash (rq.data.fields.providerData.id + ':' + rq.data.fields.providerData.modifiedTime);
-               multi.sadd ('hash:'    + rq.user.username + ':' + providerKey, providerHash);
-               multi.srem ('hashdel:' + rq.user.username + ':' + providerKey, providerHash);
+            if (importData) {
+               var providerKey = {google: 'g', dropbox: 'd'} [importData.provider];
+               var providerHash = H.hash (importData.id + ':' + importData.modifiedTime);
+               multi.sadd ('hash:'    + rq.user.username  + ':' + providerKey, providerHash);
+               multi.srem ('hashdel:' + rq.user.username  + ':' + providerKey, providerHash);
                piv.providerHash = providerKey + ':' + providerHash;
             }
             multi.sadd ('tag:' + rq.user.username + ':all', piv.id);
@@ -2363,7 +2358,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            H.log (s, rq.user.username, {ev: 'upload', type: 'ok', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, pivId: piv.id, tags: tags.length ? tags : undefined, deg: piv.deg});
+            H.log (s, rq.user.username, {ev: 'upload', type: 'ok', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: piv.id, tags: tags.length ? tags : undefined, deg: piv.deg});
          },
          [perfTrack, 'db'],
          function (s) {
@@ -2382,7 +2377,7 @@ var routes = [
             reply (rs, 200, {id: piv.id, deg: piv.deg});
          }
       ], function (s, error) {
-         H.log (s, rq.user.username, {ev: 'upload', type: 'error', id: rq.data.fields.id, provider: (rq.data.fields.providerData || {}).provider, filename: name, error: error});
+         H.log (s, rq.user.username, {ev: 'upload', type: 'error', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error});
          reply (rs, 500, {error: error});
       });
    }],
@@ -3575,13 +3570,13 @@ var routes = [
                            if (Error) return;
                            // UPLOAD THE FILE
                            hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', headers: {cookie: s.Cookie}, body: {multipart: [
-                              // This `file` field is a dummy one to pass validation, but the actual file information goes inside providerData
+                              // This `file` field is a dummy one to pass validation. The actual file information goes inside importData
                               {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
                               {type: 'field', name: 'id', value: parseInt (s.import.id)},
                               // Use oldest date, whether createdTime or updatedTime
                               {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
                               {type: 'field', name: 'tags', value: JSON.stringify (file.tags.concat ('Google Drive'))},
-                              {type: 'field', name: 'providerData', value: JSON.stringify ({
+                              {type: 'field', name: 'importData', value: JSON.stringify ({
                                  provider:     'google',
                                  id:           file.id,
                                  name:         file.originalFilename,

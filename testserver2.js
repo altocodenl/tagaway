@@ -712,18 +712,18 @@ suites.upload.upload = function () {
 }
 
 suites.upload.uploadCheck = function () {
-   var validBody = {id: 1, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()};
+   var validBody = {id: 1, hash: 1, name: 'small.jpg', size: 1, lastModified: Date.now ()};
    return [
       suites.auth.in (tk.users.user1),
       H.testMaker ('uploadCheck', 'uploadCheck', [
          [[], 'object'],
-         [[], 'keys', ['id', 'hash', 'filename', 'fileSize', 'lastModified', 'tags']],
+         [[], 'keys', ['id', 'hash', 'name', 'size', 'lastModified', 'tags']],
          [[], 'invalidKeys', ['foo']],
          [['id'], 'integer'],
          [['hash'], 'integer'],
-         [['filename'], 'string'],
-         [['fileSize'], 'integer'],
-         [['fileSize'], 'range', {min: 0}],
+         [['name'], 'string'],
+         [['size'], 'integer'],
+         [['size'], 'range', {min: 0}],
          [['lastModified'], 'integer'],
          [['lastModified'], 'range', {min: 0}],
          [['tags'], ['undefined', 'array']],
@@ -773,9 +773,9 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
-      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: 1, filename: 'small.jpg', fileSize: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
-      ['uploadCheck piv with match, same name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
-      ['uploadCheck piv with match, different name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: 1, name: 'small.jpg', size: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
+      ['uploadCheck piv with match, same name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, name: tk.pivs.small.name, size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, name: tk.pivs.small.name + 'foo', size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck (same name & different name, no dates or tags), ensure no modifications happened', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
@@ -812,8 +812,8 @@ suites.upload.uploadCheck = function () {
             id: s.uploadIdAlt,
             pivId: s.originalSmall.id,
             lastModified: tk.pivs.small.mtime,
-            filename: tk.pivs.small.name + 'foo',
-            fileSize: tk.pivs.small.size,
+            name:  tk.pivs.small.name + 'foo',
+            size: tk.pivs.small.size,
             identical: true,
             t: last (rs.body.logs).t
          })) return false;
@@ -835,8 +835,8 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
-      ['uploadCheck piv with match, same name, same upload, with tags', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime, tags: ['tag1']}}, 200, H.cBody ({repeated: true})],
-      ['uploadCheck piv with match, different name, same upload, with tags', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: tk.pivs.small.mtime, tags: ['tag2']}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, same name, same upload, with tags', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name, size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime, tags: ['tag1']}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name, same upload, with tags', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name + 'foo', size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime, tags: ['tag2']}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          // Update tags in comparison
          s.originalSmall.tags.push ('tag1', 'tag2');
@@ -848,7 +848,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get upload after uploadCheck repeated, same upload, tags', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('only upload', rs.body [0], {
+         if (H.stop ('upload', rs.body [0], {
             id: s.uploadId,
             repeated: [tk.pivs.small.name + 'foo', tk.pivs.small.name],
             repeatedSize: tk.pivs.small.size * 2,
@@ -868,8 +868,8 @@ suites.upload.uploadCheck = function () {
             pivId: s.originalSmall.id,
             tags: ['tag1'],
             lastModified: tk.pivs.small.mtime,
-            filename: tk.pivs.small.name,
-            fileSize: tk.pivs.small.size,
+            name: tk.pivs.small.name,
+            size: tk.pivs.small.size,
             identical: true,
             t: last (rs.body.logs, 2).t
          })) return false;
@@ -881,8 +881,8 @@ suites.upload.uploadCheck = function () {
             pivId: s.originalSmall.id,
             tags: ['tag2'],
             lastModified: tk.pivs.small.mtime,
-            filename: tk.pivs.small.name + 'foo',
-            fileSize: tk.pivs.small.size,
+            name: tk.pivs.small.name + 'foo',
+            size: tk.pivs.small.size,
             identical: true,
             t: last (rs.body.logs).t
          })) return false;
@@ -904,20 +904,20 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
-      ['uploadCheck piv with match, same name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name, fileSize: tk.pivs.small.size, lastModified: new Date ('2010-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
-      ['uploadCheck piv with match, different name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, filename: tk.pivs.small.name + 'foo', fileSize: tk.pivs.small.size, lastModified: new Date ('2005-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, same name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name, size: tk.pivs.small.size, lastModified: new Date ('2010-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, different name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name + 'foo', size: tk.pivs.small.size, lastModified: new Date ('2005-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          // Update tags
          s.originalSmall.tags = ['2005'];
          s.originalSmall.date = new Date ('2005-01-01').getTime ();
-         var newDates = 0;
+         var newDates = [];
          if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
             if (s.originalSmall.dates [k]) return;
-            if (! k.match (/^repeated:\d+:lastModified$/)) return 'Invalid new date field: ' + k;
-            newDates++;
+            if (! k.match (/^repeated:\d+:lastModified$/)) return clog ('Invalid new date field', k);
+            newDates.push (v);
             s.originalSmall.dates [k] = v;
          }) === false) return false;
-         if (H.stop ('new dates', newDates, 2)) return false;
+         if (H.stop ('new dates', newDates.sort (), dale.go (['2005-01-01', '2010-01-01'], function (v) {return new Date (v).getTime ()}))) return false;
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
       }],
@@ -926,7 +926,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get upload after uploadCheck repeated, same upload, with another date', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('only upload', rs.body [0], {
+         if (H.stop ('upload', rs.body [0], {
             id: s.uploadId,
             repeated: [tk.pivs.small.name + 'foo', tk.pivs.small.name],
             repeatedSize: tk.pivs.small.size * 2,
@@ -945,8 +945,8 @@ suites.upload.uploadCheck = function () {
             id: s.uploadId,
             pivId: s.originalSmall.id,
             lastModified: new Date ('2010-01-01').getTime (),
-            filename: tk.pivs.small.name,
-            fileSize: tk.pivs.small.size,
+            name: tk.pivs.small.name,
+            size: tk.pivs.small.size,
             identical: true,
             t: last (rs.body.logs, 2).t
          })) return false;
@@ -957,12 +957,99 @@ suites.upload.uploadCheck = function () {
             id: s.uploadId,
             pivId: s.originalSmall.id,
             lastModified: new Date ('2005-01-01').getTime (),
-            filename: tk.pivs.small.name + 'foo',
-            fileSize: tk.pivs.small.size,
+            name: tk.pivs.small.name + 'foo',
+            size: tk.pivs.small.size,
             identical: true,
             t: last (rs.body.logs).t
          })) return false;
 
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.in  (tk.users.user1),
+      ['start upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200],
+      ['get piv metadata before uploadCheck modifications', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.originalSmall = rs.body.pivs [0];
+         return true;
+      }],
+      dale.go (['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'], function (nameWithDate, k) {
+         return ['uploadCheck piv with match, same name, same upload, with another date from name #' + (k + 1), 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: nameWithDate, size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})];
+      }),
+      ['get piv metadata after uploadCheck with dates from names', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.originalSmall.tags = ['2001'];
+         s.originalSmall.date = new Date ('2001-03-21T16:26:52.000Z').getTime ();
+         var newDates = [];
+         if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
+            if (s.originalSmall.dates [k]) return;
+            if (! k.match (/^repeated:\d+:fromName$/)) return clog ('Invalid new date field', k);
+            newDates.push (v);
+            s.originalSmall.dates [k] = v;
+         }) === false) return false;
+         if (H.stop ('new dates', newDates.sort (), ['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'].sort ())) return false;
+         if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
+         return true;
+      }],
+      ['get upload after uploadCheck with dates from names', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('upload', rs.body [0], {
+            id: s.uploadId,
+            repeated: ['Pic - 20010321 04:26:52 PM.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-18.jpg'],
+            repeatedSize: tk.pivs.small.size * 4,
+            ok: 1,
+            lastPiv: {id: s.originalSmall.id},
+            status: 'uploading',
+            total: 0
+         })) return false;
+         return true;
+      }],
+      ['get uploadCheck logs after dates from names', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('logs length', rs.body.logs.length, 8)) return false;
+         if (dale.stop (['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'], false, function (v, k) {
+            if (H.stop ('repeated #' + (k + 1) + ' log', last (rs.body.logs, 4 - k), {
+               ev: 'upload',
+               type: 'repeated',
+               id: s.uploadId,
+               pivId: s.originalSmall.id,
+               lastModified: tk.pivs.small.mtime,
+               name: v,
+               size: tk.pivs.small.size,
+               identical: true,
+               t: last (rs.body.logs, 4 - k).t
+            })) return false;
+         }) === false) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.in  (tk.users.user1),
+      ['start upload', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload piv with Date/Time Original field to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.rotate.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.rotate.mtime},
+      ]}}, 200],
+      ['get piv metadata before uploadCheck modifications', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.originalSmall = rs.body.pivs [0];
+         return true;
+      }],
+      ['uploadCheck piv with match, same name, same upload, with another date but original picture has Date/Time Original field', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.rotate.hash, name: 'Pic - 20010321 04:26:52 PM.jpg', size: tk.pivs.rotate.size, lastModified: tk.pivs.rotate.mtime}}, 200, H.cBody ({repeated: true})],
+      ['get piv metadata after uploadCheck with dates from names', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         var newDates = [];
+         if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
+            if (s.originalSmall.dates [k]) return;
+            if (! k.match (/^repeated:\d+:fromName$/)) return clog ('Invalid new date field', k);
+            s.originalSmall.dates [k] = v;
+         }) === false) return false;
+         if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -1030,6 +1117,46 @@ suites.upload.piv = function () {
       ]), function (v, k) {
          return testInvalid (v [0], v [1], k);
       }),
+      ['attempt to upload piv to non-existing upload', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: 4321},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 404, H.cBody ({error: 'upload'})],
+      dale.go (['complete', 'cancel', 'error'], function (firstOp) {
+         var error = firstOp === 'error' ? {foo: 'bar'} : undefined
+         return [
+            // An errored upload can be created without calling start, so in that case we skip the 404 check
+            error ? [] : [firstOp + ' upload with invalid id', 'post', 'upload', {}, {op: firstOp, id: 1, error: error}, 404, H.cBody ({error: 'upload'})],
+            ['start upload to test ' + firstOp, 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+               if (H.stop ('body type', type (rs.body), 'object')) return false;
+               if (H.stop ('body.id type', type (rs.body.id), 'integer')) return false;
+               s.uploadId = rs.body.id;
+               return true;
+            }],
+            [firstOp + ' upload', 'post', 'upload', {}, function (s) {return {op: firstOp, id: s.uploadId, error: error}}, 200],
+            ['attempt to upload piv to upload with state ' + firstOp, 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+               {type: 'field', name: 'id',           value: s.uploadId},
+               {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+            ]}}, 409, H.cBody ({error: 'status'})],
+         ];
+      }),
+      suites.auth.out (tk.users.user1),
+      suites.auth.in  (tk.users.user1),
+      // TODO
+      // Untested: too large file
+      // Untested: no capacity
+      // Invalid size pic?
+      // get rotations
+      // TODO: remove metadata to compute hash here on test? Except for bmp
+      // alreadyModified (also updateDates)
+      // repeated identical (also updateDates)
+      // repeated not identical (also updateDates)
+      // get pending status on non mp4 videos, finally get it again
+      // check presence of 200 & 900 correspondingly
+      // dates: if date/time original, use that; otherwise, use older.
+      // check increase in stats
+      // geo enable & upload with geo
       suites.auth.out (tk.users.user1),
    ];
 
@@ -1040,6 +1167,7 @@ suites.upload.piv = function () {
          return true;
       }],
       dale.go (pivs, function (piv) {
+         if (piv.size > 1000000) return [];
          return ['upload ' + piv.name, 'post', 'upload', {}, function (s) {return {multipart: [
             {type: 'file',  name: 'piv', path: piv.path},
             {type: 'field', name: 'id', value: s.uploadId},
@@ -1085,7 +1213,7 @@ suites.query = function () {
          [['idsOnly'], ['undefined', 'boolean']],
       ]),
       ['get invalid range of pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
-      // TODO: add uploads for testing
+      // TODO: add uploads for testing?
       suites.auth.out (tk.users.user1),
    ];
 }

@@ -3138,7 +3138,7 @@ B.mrespond ([
 
          H.hash (file.file, function (error, hash) {
             if (error) return B.call (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
-            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
+            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
                // If the upload was just cancelled or errored by another file, don't do anything.
                if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
                if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'upload error', error: error.responseText});
