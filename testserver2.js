@@ -114,9 +114,21 @@ var H = {
          return ! H.stop ('body', rs.body, value);
       }
    },
+   parseDate: function (date) {
+      if (! date) return -1;
+      // Range is years 1970-2100
+      var minDate = 0, maxDate = 4133980799999;
+      var d = new Date (date), ms = d.getTime ();
+      if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
+      d = new Date (date.replace (':', '-').replace (':', '-'));
+      ms = d.getTime ();
+      if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
+      return -1;
+   },
    loadPivData: function (s) {
       var invalid = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
       var repeated = ['medium-nometa.jpg', 'smalldup.png', 'smallmeta.png'];
+      var videos   = ['bach.mp4', 'boat.3gp', 'circus.MOV', 'drumming.avi', 'invalid.mp4', 'tram.mp4'];
       var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
          var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file), repeated: inc (repeated, file)};
@@ -125,9 +137,11 @@ var H = {
       });
       a.seq (s || a.creat (), [
          [a.fork, pivs, function (piv) {
+            if (piv.invalid) return [];
             return [
-               [k, 'exiftool', piv.path],
+               inc (videos, piv.name) ? [k, 'ffprobe', '-i', piv.path, '-show_streams'] : [k, 'exiftool', piv.path],
                function (s) {
+                  if (inc (videos, piv.name)) return s.next ();
                   var metadata = (s.last ? s.last.stdout : s.error.stdout).split ('\n');
                   dale.go (metadata, function (line) {
                      if (line.match (/^Image Width/))  piv.dimw = parseInt (line.split (':') [1].trim ());
@@ -147,8 +161,30 @@ var H = {
                      if (! value.match (/^\d/)) return;
                      return [key, value];
                   });
+                  piv.date = (dale.fil (piv.dates, -1, H.parseDate).concat (piv.mtime)).sort () [0];
                   s.next ();
                },
+               function (s) {
+                  if (! inc (videos, piv.name)) return s.next ();
+                  var rotation;
+                  s.size = {};
+                  dale.go ((s.last.stdout + s.last.stderr).split ('\n'), function (line) {
+                     if (line.match (/\s+rotate\s+:/)) rotation = line.replace (/rotate\s+:/, '').trim ();
+                     if (line.match (/^width/i))  s.size.w = parseInt (line.split ('=') [1]);
+                     if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
+                  });
+                  if (! s.size.w || ! s.size.h) return invalidHandler (s, {error: 'Invalid size', metadata: metadata});
+
+                  if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
+                  s.dates = dale.obj ((s.last.stdout + s.last.stderr).split ('\n'), function (line) {
+                     var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
+                     if (! key.match (/_time\b/i)) return;
+                     if (! value.match (/^\d/)) return;
+                     return [key, value];
+                  });
+                  piv.date = (dale.fil (piv.dates, -1, H.parseDate).concat (piv.mtime)).sort () [0];
+                  s.next ();
+               }
             ];
          }],
          function (s) {
@@ -220,9 +256,6 @@ var H = {
                   var match = new RegExp ((last (rule [0]) !== undefined ? last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
                   var customMatch;
                   if (rule [2]) customMatch = new RegExp (rule [2]);
-                  // TODO REMOVE
-                  //console.log ('debug type', body.error, match, customMatch, rule);
-                  //console.log ('error', body.error);
                   return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : body.error.match (match));
                });
             });
@@ -233,8 +266,6 @@ var H = {
                if (type === 'undefined') return;
                addTest ('invalid key with type ' + type, rule [0].concat (types.string ()), maker (), function (body) {
                   var match = new RegExp ('each of the keys of .+ should be equal to one of ' + cicek.escape (teishi.str (rule [2])) + ' but one of .+ is');
-                  // TODO REMOVE
-                  //console.log ('debug keys', body.error, match);
                   return body && teishi.type (body.error) === 'string' && body.error.match (match);
                });
             });
@@ -244,8 +275,6 @@ var H = {
             dale.go (rule [2], function (invalid, k) {
                addTest ('invalid key #' + (k + 1), rule [0].concat (invalid), types.string (), function (body) {
                   var match = new RegExp ('each of the keys of .+ should be equal to one of .+ but one of .+ is ' + cicek.escape (invalid));
-                  // TODO REMOVE
-                  //console.log ('debug invalidKeys', body.error, match);
                   return body && teishi.type (body.error) === 'string' && body.error.match (match);
                });
             });
@@ -263,8 +292,6 @@ var H = {
                   var equalMatch = new RegExp (last (rule [0]) + ' should be (equal to|) one of .+ but instead is ' + invalid);
                   var customMatch;
                   if (rule [3]) customMatch = new RegExp (rule [3]);
-                  // TODO REMOVE
-                  //console.log ('debug invalidValues', body.error, regexMatch, equalMatch, customMatch);
                   return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : (body.error.match (regexMatch) || body.error.match (equalMatch)));
                });
             });
@@ -289,8 +316,6 @@ var H = {
                var invalidValue = v + (k === 'min' ? -1 : 1);
                addTest ('invalid range - ' + k + ': ' + v, rule [0], invalidValue, function (body) {
                   var match = new RegExp (last (rule [0]) + ' should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
-                  // TODO REMOVE
-                  //console.log ('debug range', body.error, match);
                   return body && teishi.type (body.error) === 'string' && body.error.match (match);
                });
             });
@@ -1142,41 +1167,51 @@ suites.upload.piv = function () {
          ];
       }),
       suites.auth.out (tk.users.user1),
+      // Untested case: too large file
+      // Untested case: no capacity
       suites.auth.in  (tk.users.user1),
-      // TODO
-      // Untested: too large file
-      // Untested: no capacity
-      // Invalid size pic?
-      // get rotations
       // TODO: remove metadata to compute hash here on test? Except for bmp
-      // alreadyModified (also updateDates)
-      // repeated identical (also updateDates)
-      // repeated not identical (also updateDates)
-      // get pending status on non mp4 videos, finally get it again
-      // check presence of 200 & 900 correspondingly
-      // dates: if date/time original, use that; otherwise, use older.
-      // check increase in stats
+      // get data: query, logs & account (byfs bys3)
+      //   - rotations
+      //   - t200 & t900
+      //   - mp4 conversion
+      //   - dates
+      // upload identical duplicate, alreadyModified (identical, different upload), not identical with no metadata, not identical with metadata
       // geo enable & upload with geo
-      suites.auth.out (tk.users.user1),
-   ];
-
-   return [
-      suites.auth.in (tk.users.user1),
-      ['start upload with all keys', 'post', 'uploadGroup', {}, {op: 'start', total: pivs.length}, 200, function (s, rq, rs) {
+      // get pending status on non mp4 videos, finally get it again
+      ['start upload for all pivs', 'post', 'upload', {}, {op: 'start', total: dale.keys (tk.pivs).length}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
       }],
-      dale.go (pivs, function (piv) {
+      dale.go (tk.pivs, function (piv, name) {
+         // TODO: do all pivs
          if (piv.size > 1000000) return [];
-         return ['upload ' + piv.name, 'post', 'upload', {}, function (s) {return {multipart: [
-            {type: 'file',  name: 'piv', path: piv.path},
-            {type: 'field', name: 'id', value: s.uploadId},
-            {type: 'field',  name: 'lastModified', value: piv.mtime}
-         ]}}, piv.invalid ? 400 : 200, function (s, rq, rs) {
-            clog (piv.name, rs.body);
-            //if (! rs.body || type (rs.body.id) !== '
-            return true;
-         }];
+         return [
+            ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv', path: piv.path},
+               {type: 'field', name: 'id', value: s.uploadId},
+               {type: 'field',  name: 'lastModified', value: piv.mtime}
+            ]}}, piv.invalid ? 400 : 200, function (s, rq, rs) {
+               if (H.stop ('id', type (rs.body.id), 'string'))  return false;
+               if (H.stop ('deg', rs.body.deg, piv.deg)) return false;
+               return true;
+            }],
+            ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+               console.log ('debug', name, rs.body.pivs [0]);
+               if (dale.stop ({
+                  owner: 'user1',
+                  name: piv.name,
+                  tags: [new Date (piv.date).getUTCFullYear () + ''],
+                  date: piv.date,
+                  dates: dale.obj ({'upload:lastModified': piv.mtime}, teishi.copy (piv.dates), function (v, k) {return [k, v]}),
+                  dimw: piv.dimw,
+                  dimh: piv.dimh
+               }, false, function (v, k) {
+                  if (H.stop (name + ' field ' + k, rs.body.pivs [0] [k], v)) return false;
+               }) === false) return false;
+               return true;
+            }],
+         ];
       }),
       suites.auth.out (tk.users.user1),
    ];

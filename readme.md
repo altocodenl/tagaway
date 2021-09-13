@@ -40,6 +40,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Tests refactor
+   - Script to see if exiftool is enough for video metadata
+   - Refactor metadata extraction into single function
+   - Update get metadata in testserver
+   - Remove metadata to compute hashes
 
 - Pivs
    - Suggest tags when inserting in tag view.
@@ -469,7 +473,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
       - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
-      - `body.refreshQuery`, if set, indicates that there's either at least an upload ongoing or a geotagging process ongoing, in which case it makes sense to repeat the query after a short amount of time to update the results.
+      - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing (or both), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
 - `POST /share`
@@ -889,7 +893,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 6. `views.open`
    - Contained by: `views.pivs`.
    - Depends on `State.open` and `Data.pivTotal`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `goto location PIV`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
 7. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
@@ -1001,7 +1005,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first piv or when going forward on the last piv. If `State.open` is equal to `State.nPivs` and the `next` piv is requested, it invokes `increment nPivs`.
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
-   8. `goto location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
+   8. `open location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
 6. Upload
    1. `change State.page`: if `State.page` is `upload` or `pivs`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.

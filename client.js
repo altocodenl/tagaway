@@ -2974,7 +2974,7 @@ B.mrespond ([
       if (ev.changedTouches [0].pageX > lastTouch.x) B.call (x, 'open', 'prev');
       else                                           B.call (x, 'open', 'next');
    }],
-   ['goto', 'location', function (x, piv) {
+   ['open', 'location', function (x, piv) {
       var url = 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
       var loc = window.open (url, '_blank');
       loc.focus ();
@@ -4353,7 +4353,7 @@ views.open = function () {
                ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
                ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
             ]]),
-            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', onclick: B.ev ('goto', 'location', piv)}, [
+            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', onclick: B.ev ('open', 'location', piv)}, [
                ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],

@@ -7,16 +7,7 @@
       "invalid": false,
       "repeated": false,
       "hash": 2989754675,
-      "dimw": 683,
-      "dimh": 384,
-      "dates": {
-         "Create Date": "2018:09:28 17:05:39",
-         "Modify Date": "2018:09:28 17:05:59",
-         "Track Create Date": "2018:09:28 17:05:39",
-         "Track Modify Date": "2018:09:28 17:05:59",
-         "Media Create Date": "2018:09:28 17:05:39",
-         "Media Modify Date": "2018:09:28 17:05:59"
-      }
+      "date": 1538154359909
    },
    "benin": {
       "name": "benin.tif",
@@ -30,7 +21,8 @@
       "dimh": 3000,
       "dates": {
          "Modify Date": "1999:02:12 09:33:02"
-      }
+      },
+      "date": 1608568060487
    },
    "boat": {
       "name": "boat.3gp",
@@ -40,16 +32,7 @@
       "invalid": false,
       "repeated": false,
       "hash": 3748825687,
-      "dimw": 352,
-      "dimh": 288,
-      "dates": {
-         "Create Date": "0000:00:00 00:00:00",
-         "Modify Date": "0000:00:00 00:00:00",
-         "Track Create Date": "0000:00:00 00:00:00",
-         "Track Modify Date": "0000:00:00 00:00:00",
-         "Media Create Date": "0000:00:00 00:00:00",
-         "Media Modify Date": "0000:00:00 00:00:00"
-      }
+      "date": 1602081246206
    },
    "circus": {
       "name": "circus.MOV",
@@ -58,7 +41,8 @@
       "mtime": 1602081246230,
       "invalid": false,
       "repeated": false,
-      "hash": 3086668155
+      "hash": 3086668155,
+      "date": 1602081246230
    },
    "deer": {
       "name": "deer.bmp",
@@ -70,7 +54,8 @@
       "hash": 2383897131,
       "dimw": 153,
       "dimh": 204,
-      "dates": {}
+      "dates": {},
+      "date": 1602171568064
    },
    "drumming": {
       "name": "drumming.avi",
@@ -80,9 +65,7 @@
       "invalid": false,
       "repeated": false,
       "hash": 113721823,
-      "dimw": 1080,
-      "dimh": 1920,
-      "dates": {}
+      "date": 1602081246486
    },
    "dunkerque": {
       "name": "dunkerque.jpg",
@@ -91,7 +74,15 @@
       "mtime": 1551955438469,
       "invalid": false,
       "repeated": false,
-      "hash": 245638445
+      "hash": 245638445,
+      "dimw": 3264,
+      "dimh": 2448,
+      "dates": {
+         "Modify Date": "2018:03:26 13:23:34",
+         "Date/Time Original": "2018:03:26 13:23:34.805",
+         "Create Date": "2018:03:26 13:23:34.805"
+      },
+      "date": 1522063414000
    },
    "empty": {
       "name": "empty.jpg",
@@ -100,8 +91,7 @@
       "mtime": 1538154536342,
       "invalid": true,
       "repeated": false,
-      "hash": 0,
-      "dates": {}
+      "hash": 0
    },
    "invalid": {
       "name": "invalid.mp4",
@@ -119,7 +109,15 @@
       "mtime": 1537291888000,
       "invalid": false,
       "repeated": false,
-      "hash": 2526606026
+      "hash": 2526606026,
+      "dimw": 3264,
+      "dimh": 2448,
+      "dates": {
+         "Modify Date": "2014:07:20 18:20:31",
+         "Date/Time Original": "2014:07:20 18:20:31",
+         "Create Date": "2014:07:20 18:20:31"
+      },
+      "date": 1405873231000
    },
    "medium-nometa": {
       "name": "medium-nometa.jpg",
@@ -131,7 +129,8 @@
       "hash": 3972466237,
       "dimw": 248,
       "dimh": 204,
-      "dates": {}
+      "dates": {},
+      "date": 1588864098437
    },
    "medium": {
       "name": "medium.jpg",
@@ -143,7 +142,8 @@
       "hash": 194393043,
       "dimw": 248,
       "dimh": 204,
-      "dates": {}
+      "dates": {},
+      "date": 1537291888000
    },
    "rotate": {
       "name": "rotate.jpg",
@@ -160,7 +160,8 @@
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
          "Create Date": "2017:03:22 17:35:20"
-      }
+      },
+      "date": 1490200520000
    },
    "rotatemedium": {
       "name": "rotatemedium.jpg",
@@ -169,7 +170,16 @@
       "mtime": 1595446644835,
       "invalid": false,
       "repeated": false,
-      "hash": 1441551623
+      "hash": 1441551623,
+      "deg": 90,
+      "dimw": 819,
+      "dimh": 493,
+      "dates": {
+         "Modify Date": "2017:03:22 17:35:20",
+         "Date/Time Original": "2017:03:22 17:35:20",
+         "Create Date": "2017:03:22 17:35:20"
+      },
+      "date": 1490200520000
    },
    "rotatesmall": {
       "name": "rotatesmall.jpg",
@@ -186,7 +196,8 @@
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
          "Create Date": "2017:03:22 17:35:20"
-      }
+      },
+      "date": 1490200520000
    },
    "small": {
       "name": "small.png",
@@ -200,7 +211,8 @@
       "dimh": 149,
       "dates": {
          "Modify Date": "2014:05:08 00:06:23"
-      }
+      },
+      "date": 1399500383000
    },
    "smalldup": {
       "name": "smalldup.png",
@@ -209,7 +221,13 @@
       "mtime": 1537291888000,
       "invalid": false,
       "repeated": true,
-      "hash": 2011409414
+      "hash": 2011409414,
+      "dimw": 149,
+      "dimh": 149,
+      "dates": {
+         "Modify Date": "2014:05:08 00:06:23"
+      },
+      "date": 1399500383000
    },
    "smallmeta": {
       "name": "smallmeta.png",
@@ -218,7 +236,14 @@
       "mtime": 1621538070620,
       "invalid": false,
       "repeated": true,
-      "hash": 3659108096
+      "hash": 3659108096,
+      "dimw": 149,
+      "dimh": 149,
+      "dates": {
+         "Modify Date": "2014:05:08 00:06:23",
+         "Create Date": "2013:05:08 00:06:23"
+      },
+      "date": 1367964383000
    },
    "sunrise": {
       "name": "sunrise.HEIC",
@@ -227,7 +252,16 @@
       "mtime": 1602081246486,
       "invalid": false,
       "repeated": false,
-      "hash": 581334427
+      "hash": 581334427,
+      "deg": 90,
+      "dimw": 4032,
+      "dimh": 3024,
+      "dates": {
+         "Modify Date": "2020:08:29 06:43:41-04:00",
+         "Date/Time Original": "2020:08:29 06:43:41.254-04:00",
+         "Create Date": "2020:08:29 06:43:41.254-04:00"
+      },
+      "date": 1598697821000
    },
    "tram": {
       "name": "tram.mp4",
@@ -236,7 +270,8 @@
       "mtime": 1587049352980,
       "invalid": false,
       "repeated": false,
-      "hash": 3173476963
+      "hash": 3173476963,
+      "date": 1587049352980
    },
    "tumbleweed": {
       "name": "tumbleweed.GIF",
@@ -248,6 +283,7 @@
       "hash": 3943946902,
       "dimw": 180,
       "dimh": 180,
-      "dates": {}
+      "dates": {},
+      "date": 1602081246490
    }
 }
