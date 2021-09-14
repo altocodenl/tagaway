@@ -277,13 +277,13 @@ H.getGeotags = function (s, metadata) {
       lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
       lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
 
-      // We filter out invalid latitudes and latitudes over 85 degrees.
-      if (! inc (['float', 'integer'], type (lat)) || Math.abs (lat) > 85) {
+      // We filter out invalid latitudes.
+      if (! inc (['float', 'integer'], type (lat))) {
          notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
          return;
       }
       // We filter out invalid longitudes.
-      if (! inc (['float', 'integer'], type (lat))) {
+      if (! inc (['float', 'integer'], type (lon))) {
          notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
          return;
       }
@@ -2022,7 +2022,7 @@ var routes = [
                   if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
                });
 
-               if (error) return invalidHandler (s, {error: 'Exiftool error', data: error});
+               if (error) return invalidHandler (s, {error: 'Metadata error', data: error});
 
                if (! s.size.w || ! s.size.h) return invalidHandler (s, {error: 'Invalid size', metadata: metadata});
 

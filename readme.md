@@ -41,6 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Tests refactor
    - Script to see if exiftool is enough for video metadata
+      dimw/dimh, deg, format, loc (lat|lon), dates
    - Refactor metadata extraction into single function
    - Update get metadata in testserver
    - Remove metadata to compute hashes
@@ -723,7 +724,7 @@ All the routes below require an admin user to be logged in.
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pivs downloaded (also includes cached hits)
-   loc: [INT, INT} or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner.
+   loc: [INT, INT] or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner.
 
 - pivt:ID (set): list of all the tags belonging to a piv.
 
