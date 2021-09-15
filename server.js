@@ -330,7 +330,7 @@ H.unlink = function (s, path, checkExistence) {
    ]);
 }
 
-H.thumbPiv = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
+H.thumbPic = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
    var format = piv.format === 'png' ? '.png' : '.jpeg';
    var multiframeFormat = inc (['gif', 'tiff'], piv.format);
    a.seq (s, [
@@ -2242,11 +2242,11 @@ var routes = [
             if (piv.vid) return H.thumbVid (s, invalidHandler, newpath);
             var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
             // If gif, only make small thumbnail.
-            if (piv.format === 'gif') a.seq (s, [[H.thumbPiv, invalidHandler, newpath, 200, piv, true], [perfTrack, 'resize200']]);
+            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, piv, true], [perfTrack, 'resize200']]);
             else a.seq (s, [
-               [H.thumbPiv, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPic, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize200'],
-               [H.thumbPiv, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPic, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize900']
             ]);
          },

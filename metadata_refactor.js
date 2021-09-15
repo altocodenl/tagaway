@@ -18,6 +18,20 @@ var mexec = function (s, multi) {
    });
 }
 
+redis.keyscan = function (s, match, cursor, keys) {
+   if (! cursor) cursor = 0;
+   if (! keys)   keys   = {};
+   redis.scan (cursor, 'MATCH', match, function (error, result) {
+      if (error) return s.next (null, error);
+      cursor = result [0];
+      dale.go (result [1], function (key) {
+         keys [key] = true;
+      });
+      if (cursor !== '0') return redis.keyscan (s, match, cursor, keys);
+      s.next (dale.keys (keys));
+   });
+}
+
 var k = function (s) {
 
    var command = [].slice.call (arguments, 1);
@@ -58,7 +72,21 @@ var k = function (s) {
    });
 }
 
-var getMetadata = function (s, path) {
+var H = {};
+
+H.parseDate = function (date) {
+   if (! date) return -1;
+   // Range is years 1970-2100
+   var minDate = 0, maxDate = 4133980799999;
+   var d = new Date (date), ms = d.getTime ();
+   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
+   d = new Date (date.replace (':', '-').replace (':', '-'));
+   ms = d.getTime ();
+   if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
+   return -1;
+}
+
+H.getMetadata = function (s, path, isVid) {
    a.seq (s, [
       [k, 'exiftool', path],
       function (s) {
@@ -74,9 +102,9 @@ var getMetadata = function (s, path) {
                return line;
             }
             else if (line.match (/^Error/)) return line;
-            else if (line.match (/^Image Width/))  output.dimw = parseInt (line.split (':') [1].trim ());
-            else if (line.match (/^Image Height/)) output.dimh = parseInt (line.split (':') [1].trim ());
-            else if (line.match (/^GPS Position/)) {
+            else if (line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
+            else if (line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
+            else if (line.match (/^GPS Position\s+:/)) {
                var originalLine = line;
                line = (line.split (':') [1]).split (',');
                var lat = line [0].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
@@ -88,7 +116,7 @@ var getMetadata = function (s, path) {
                if (! inc (['float', 'integer'], type (lat)) || lat < -90  || lat > 90)  return 'Invalid GPS data: ' + originalLine;
                if (! inc (['float', 'integer'], type (lon)) || lon < -180 || lon > 180) return 'Invalid GPS data: ' + originalLine;
             }
-            else if (line.match (/^Orientation/)) {
+            else if ((! isVid && line.match (/^Orientation\s+:/)) || (isVid && line.match (/Rotation\s+:/))) {
                if (line.match ('270')) output.deg = -90;
                if (line.match ('90'))  output.deg = 90;
                if (line.match ('180')) output.deg = 180;
@@ -104,27 +132,18 @@ var getMetadata = function (s, path) {
                if (! value.match (/^\d/) || ! value.match (/[1-9]/)) return;
                output.dates [key] = value;
             }
-            else if (line.match (/^File Type/)) output.format = line.split (':') [1].trim ().toLowerCase ();
-            // TODO: add audio codec for videos
+            else if (line.match (/^File Type\s+:/)) output.format = line.split (':') [1].trim ().toLowerCase ();
+            // TODO: add audio codec for videos (codec_name, filter out unknown codec_names)
          });
          if (error) return s.next (null, {error: 'Metadata error', data: error});
+         if (isVid && (output.deg === 90 || output.deg === -90)) {
+            var w = output.dimh;
+            output.dimh = output.dimw;
+            output.dimw = w;
+         }
          s.next (output);
       }
    ]);
-}
-
-redis.keyscan = function (s, match, cursor, keys) {
-   if (! cursor) cursor = 0;
-   if (! keys)   keys   = {};
-   redis.scan (cursor, 'MATCH', match, function (error, result) {
-      if (error) return s.next (null, error);
-      cursor = result [0];
-      dale.go (result [1], function (key) {
-         keys [key] = true;
-      });
-      if (cursor !== '0') return redis.keyscan (s, match, cursor, keys);
-      s.next (dale.keys (keys));
-   });
 }
 
 a.stop ([
@@ -137,33 +156,50 @@ a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      var counter = 0, MAX = 50;
+      var counter = 0, MAX = 30000;
       var pivs = dale.fil (s.last, undefined, function (piv) {
-         if (piv.vid && counter++ < MAX) return piv;
+         if (! piv.vid && counter++ < MAX) return piv;
       });
       s.last = undefined;
-      a.fork (s, pivs, function (piv) {
+      a.fork (s, pivs, function (piv, k) {
          return [
-            [getMetadata, Path.join (BASEPATH, hash (piv.owner) + '', piv.id)],
+            [H.getMetadata, Path.join (BASEPATH, hash (piv.owner) + '', piv.id), piv.vid],
             function (s) {
+               var repeatedDates = [];
                var dbData = {
                   loc: piv.loc ? JSON.parse (piv.loc) : undefined,
                   deg: parseInt (piv.deg) || undefined,
                   dimw: parseInt (piv.dimw),
                   dimh: parseInt (piv.dimh),
+                  // TODO: compare formats
                   format: piv.format,
                   dates: dale.obj (JSON.parse (piv.dates), function (v, k) {
-                     if (! k.match (/^(upload|alreadyUploaded|repeated):/)) return [k, v];
+                     if (k.match (/^(upload|alreadyUploaded|repeated):/)) return;
+                     // Ignore dates with only zeroes
+                     if (! v.match (/[1-9]/)) return;
+                     if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], k)) return;
+                     var date = H.parseDate (v);
+                     dale.go (s.last.dates, function (v2, k2) {
+                        if (H.parseDate (v2) === date) {
+                           repeatedDates.push (date);
+                           // Remove date with same value from dates coming from script
+                           delete s.last.dates [k2];
+                        }
+                     });
+                     // Remove date entries from db.dates that have matching entries in the dates coming from script
+                     if (! inc (repeatedDates, date)) return [k, v];
                   }),
                }
                var diff = dale.obj (dbData, function (v, k) {
+                  // We ignore differences in deg since the new logic will store that field in the DB for videos.
+                  if (piv.vid && k === 'deg') return;
                   if (! teishi.eq (v, s.last [k])) return [k, {db: v, script: s.last [k]}];
                });
-               clog ('OUTPUT', piv.id, diff);
+               if (dale.keys (diff).length) clog ('OUTPUT', '#' + (k + 1), piv.id, diff);
                s.next ();
             }
          ];
-      }, {max: 2});
+      }, {max: require ('os').cpus ().length});
    },
    function (s) {
       clog ('DONE');
