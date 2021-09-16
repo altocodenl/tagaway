@@ -91,9 +91,26 @@ H.getMetadata = function (s, path, isVid) {
       [k, 'exiftool', path],
       function (s) {
          if (s.error) {
-            clog ('ERROR', s.error);
-            return s.next (null, s.error);
+            clog ('ERROR', {path: path, error: s.error});
+            return s.next (null, {path: path, error: s.error});
          }
+         if (! isVid) return s.next ();
+         function (s) {
+            var metadata = s.last;
+            a.seq (s, [
+               [k, 'ffprobe', '-i', path, '-show_streams'],
+               function (s) {
+                  if (s.error) {
+                     clog ('ERROR', {path: path, error: s.error});
+                     return s.next (null, {path: path, error: s.error});
+                  }
+                  s.vidMetadata = s.last.stdout + '\n' + s.last.stderr
+                  s.next (metadata);
+               }
+            ]);
+         }
+      },
+      function (s) {
          var output = {dates: {}};
          var error = dale.stopNot (s.last.stdout.split ('\n'), undefined, function (line) {
             if (line.match (/^Warning/)) {
@@ -102,8 +119,8 @@ H.getMetadata = function (s, path, isVid) {
                return line;
             }
             else if (line.match (/^Error/)) return line;
-            else if (line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
-            else if (line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
+            else if (! isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
+            else if (! isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
             else if (line.match (/^GPS Position\s+:/)) {
                var originalLine = line;
                line = (line.split (':') [1]).split (',');
@@ -111,10 +128,10 @@ H.getMetadata = function (s, path, isVid) {
                var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
                lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
                lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
-               output.loc = [lat, lon];
-               // We filter out invalid latitudes.
-               if (! inc (['float', 'integer'], type (lat)) || lat < -90  || lat > 90)  return 'Invalid GPS data: ' + originalLine;
-               if (! inc (['float', 'integer'], type (lon)) || lon < -180 || lon > 180) return 'Invalid GPS data: ' + originalLine;
+               if (isNaN (lat) || lat <  -90 || lat >  90) lat = undefined;
+               if (isNaN (lon) || lon < -180 || lon > 180) lon = undefined;
+               // We set location only if both latitude and longitude are valid
+               if (lat && lon) output.loc = [lat, lon];
             }
             else if ((! isVid && line.match (/^Orientation\s+:/)) || (isVid && line.match (/Rotation\s+:/))) {
                if (line.match ('270')) output.deg = -90;
@@ -133,9 +150,30 @@ H.getMetadata = function (s, path, isVid) {
                output.dates [key] = value;
             }
             else if (line.match (/^File Type\s+:/)) output.format = line.split (':') [1].trim ().toLowerCase ();
-            // TODO: add audio codec for videos (codec_name, filter out unknown codec_names)
          });
          if (error) return s.next (null, {error: 'Metadata error', data: error});
+         if (isVid) {
+            var formats = [];
+            dale.go (s.vidMetadata.split ('\n'), function (line) {
+               if (line.match (/^width/i))  output.dimw = parseInt (line.split ('=') [1]);
+               if (line.match (/^height/i)) output.dimh = parseInt (line.split ('=') [1]);
+               if (line.match (/\s+rotate\s+:/)) {
+                  if (line.match ('270')) output.deg = -90;
+                  if (line.match ('90'))  output.deg = 90;
+                  if (line.match ('180')) output.deg = 180;
+               }
+               /*
+               s.dates = dale.obj (metadata, function (line) {
+                  var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
+                  if (! key.match (/_time\b/i)) return;
+                  if (! value.match (/^\d/)) return;
+                  return [key, value];
+               });
+               */
+            });
+            if (error) return s.next (null, {error: 'Metadata error', data: error});
+         }
+         // TODO: check for dimw & dimh
          if (isVid && (output.deg === 90 || output.deg === -90)) {
             var w = output.dimh;
             output.dimh = output.dimw;
@@ -156,7 +194,7 @@ a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      var counter = 0, MAX = 30000;
+      var counter = 0, MAX = 300000;
       var pivs = dale.fil (s.last, undefined, function (piv) {
          if (! piv.vid && counter++ < MAX) return piv;
       });
@@ -168,11 +206,11 @@ a.stop ([
                var repeatedDates = [];
                var dbData = {
                   loc: piv.loc ? JSON.parse (piv.loc) : undefined,
-                  deg: parseInt (piv.deg) || undefined,
-                  dimw: parseInt (piv.dimw),
-                  dimh: parseInt (piv.dimh),
-                  // TODO: compare formats
-                  format: piv.format,
+                  // TODO: ADD THESE FIELDS
+                  //deg: parseInt (piv.deg) || undefined,
+                  //dimw: parseInt (piv.dimw),
+                  //dimh: parseInt (piv.dimh),
+                  //format: piv.format,
                   dates: dale.obj (JSON.parse (piv.dates), function (v, k) {
                      if (k.match (/^(upload|alreadyUploaded|repeated):/)) return;
                      // Ignore dates with only zeroes
@@ -197,7 +235,7 @@ a.stop ([
                });
                if (dale.keys (diff).length) clog ('OUTPUT', '#' + (k + 1), piv.id, diff);
                s.next ();
-            }
+            },
          ];
       }, {max: require ('os').cpus ().length});
    },

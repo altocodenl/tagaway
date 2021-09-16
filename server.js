@@ -2074,7 +2074,7 @@ var routes = [
             hashpath = hashpath + '.' + format;
             s.next ();
          },
-         [perfTrack, 'format'],
+         [perfTrack, 'metadata'],
          [a.set, 'hashorig', function (s) {
             fs.readFile (path, function (error, file) {
                if (error) return s.next (null, error);

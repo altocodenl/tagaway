@@ -41,8 +41,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Tests refactor
    - Script to see if exiftool is enough for video metadata
-      dimw/dimh, deg, format, loc (lat|lon), dates
-   - Refactor metadata extraction into single function
+      - pics OK
+      - vids
+         dimw/dimh, deg, format, dates, loc (lat|lon)
+   - Refactor metadata extraction
+      - List changes to pic
+      - Remove vidFormat references
+      - Check if it's needed to swap h & w in rotated vids
    - Update get metadata in testserver
    - Remove metadata to compute hashes
 
@@ -651,14 +656,14 @@ All the routes below require an admin user to be logged in.
    - ms-share:  total ms for successful requests for POST /share
    - ms-geo:    total ms for successful requests for POST /geo
    - ms-pivup-initial:   total ms for initial checks in POST /piv
-   - ms-pivup-format:    total ms for format check in POST /piv
+   - ms-pivup-metadata:  total ms for metadata check in POST /piv
    - ms-pivup-hash:      total ms for hash check in POST /piv
    - ms-pivup-fs:        total ms for FS operations in POST /piv
    - ms-pivup-resize200: total ms for 200 resize operation in POST /piv
    - ms-pivup-resize900: total ms for 900 resize operation in POST /piv
    - ms-pivup-db:        total ms for info storage & DB processing in POST /piv
-   - ms-video-convert:    total ms for non-mp4 to mp4 video conversion
-   - ms-video-convert:FORMAT:  total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
+   - ms-video-convert:   total ms for non-mp4 to mp4 video conversion
+   - ms-video-convert:FORMAT: total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
 
 ### Redis structure
 
