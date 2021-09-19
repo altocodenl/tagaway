@@ -90,35 +90,25 @@ H.getMetadata = function (s, path, isVid) {
    a.seq (s, [
       [k, 'exiftool', path],
       function (s) {
-         if (s.error) {
-            clog ('ERROR', {path: path, error: s.error});
-            return s.next (null, {path: path, error: s.error});
-         }
          if (! isVid) return s.next ();
-         function (s) {
-            var metadata = s.last;
-            a.seq (s, [
-               [k, 'ffprobe', '-i', path, '-show_streams'],
-               function (s) {
-                  if (s.error) {
-                     clog ('ERROR', {path: path, error: s.error});
-                     return s.next (null, {path: path, error: s.error});
-                  }
-                  s.vidMetadata = s.last.stdout + '\n' + s.last.stderr
-                  s.next (metadata);
-               }
-            ]);
-         }
+         var metadata = s.last;
+         a.seq (s, [
+            [k, 'ffprobe', '-i', path, '-show_streams'],
+            function (s) {
+               s.vidMetadata = s.last.stdout + '\n' + s.last.stderr;
+               s.next (metadata);
+            }
+         ]);
       },
       function (s) {
          var output = {dates: {}};
          var error = dale.stopNot (s.last.stdout.split ('\n'), undefined, function (line) {
-            if (line.match (/^Warning/)) {
-               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data'].join ('|'));
+            if (line.match (/^Warning\s+:/)) {
+               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated'].join ('|'));
                if (line.match (exceptions)) return;
                return line;
             }
-            else if (line.match (/^Error/)) return line;
+            else if (line.match (/^Error\s+:/)) return line;
             else if (! isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
             else if (! isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
             else if (line.match (/^GPS Position\s+:/)) {
@@ -151,7 +141,7 @@ H.getMetadata = function (s, path, isVid) {
             }
             else if (line.match (/^File Type\s+:/)) output.format = line.split (':') [1].trim ().toLowerCase ();
          });
-         if (error) return s.next (null, {error: 'Metadata error', data: error});
+         if (error) return s.next (null, {error: 'Metadata error', data: error, path: path});
          if (isVid) {
             var formats = [];
             dale.go (s.vidMetadata.split ('\n'), function (line) {
@@ -171,7 +161,6 @@ H.getMetadata = function (s, path, isVid) {
                });
                */
             });
-            if (error) return s.next (null, {error: 'Metadata error', data: error});
          }
          // TODO: check for dimw & dimh
          if (isVid && (output.deg === 90 || output.deg === -90)) {
@@ -196,17 +185,18 @@ a.stop ([
    function (s) {
       var counter = 0, MAX = 300000;
       var pivs = dale.fil (s.last, undefined, function (piv) {
-         if (! piv.vid && counter++ < MAX) return piv;
+         if (piv.vid && counter++ < MAX) return piv;
       });
+      clog ('PROCESSING', pivs.length, 'ITEMS');
       s.last = undefined;
       a.fork (s, pivs, function (piv, k) {
          return [
             [H.getMetadata, Path.join (BASEPATH, hash (piv.owner) + '', piv.id), piv.vid],
             function (s) {
-               var repeatedDates = [];
+               var repeatedDates = [], minDbDate = Infinity, minScriptDate = Infinity;
                var dbData = {
-                  loc: piv.loc ? JSON.parse (piv.loc) : undefined,
                   // TODO: ADD THESE FIELDS
+                  //loc: piv.loc ? JSON.parse (piv.loc) : undefined,
                   //deg: parseInt (piv.deg) || undefined,
                   //dimw: parseInt (piv.dimw),
                   //dimh: parseInt (piv.dimh),
@@ -217,8 +207,11 @@ a.stop ([
                      if (! v.match (/[1-9]/)) return;
                      if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], k)) return;
                      var date = H.parseDate (v);
+                     if (date < minDbDate) minDbDate = date;
                      dale.go (s.last.dates, function (v2, k2) {
-                        if (H.parseDate (v2) === date) {
+                        var scriptDate = H.parseDate (v2);
+                        if (scriptDate !== -1 && scriptDate < minScriptDate) minScriptDate = scriptDate;
+                        if (scriptDate === date) {
                            repeatedDates.push (date);
                            // Remove date with same value from dates coming from script
                            delete s.last.dates [k2];
@@ -231,7 +224,11 @@ a.stop ([
                var diff = dale.obj (dbData, function (v, k) {
                   // We ignore differences in deg since the new logic will store that field in the DB for videos.
                   if (piv.vid && k === 'deg') return;
-                  if (! teishi.eq (v, s.last [k])) return [k, {db: v, script: s.last [k]}];
+                  if (! teishi.eq (v, s.last [k])) {
+                     if (k !== 'dates') return [k, {db: v, script: s.last [k]}];
+                     // Only report differences in dates that are more than one minute
+                     if (Math.abs (minScriptDate - minDbDate) > 1000 * 60 * 1) return [k, {db: v, script: s.last [k], minDb: new Date (minDbDate), minScript: new Date (minScriptDate)}];
+                  }
                });
                if (dale.keys (diff).length) clog ('OUTPUT', '#' + (k + 1), piv.id, diff);
                s.next ();
