@@ -86,48 +86,47 @@ H.parseDate = function (date) {
    return -1;
 }
 
-H.getMetadata = function (s, path, isVid) {
+H.getMetadata = function (s, path, isVid, onlyLocation) {
    a.seq (s, [
       [k, 'exiftool', path],
       function (s) {
-         if (! isVid) return s.next ();
-         var metadata = s.last;
+         var output = {dates: {}};
+         dale.stop (s.last.stdout.split ('\n'), true, function (line) {
+            if (! line.match (/^GPS Position\s+:/)) return;
+            var originalLine = line;
+            line = (line.split (':') [1]).split (',');
+            var lat = line [0].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
+            var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
+            lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
+            lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
+            if (isNaN (lat) || lat <  -90 || lat >  90) lat = undefined;
+            if (isNaN (lon) || lon < -180 || lon > 180) lon = undefined;
+            // We set location only if both latitude and longitude are valid
+            if (lat && lon) output.loc = [lat, lon];
+            return true;
+         });
+
+         if (onlyLocation) return s.next (output);
+         if (! isVid) return s.next ({output: output, exiftoolMetadata: s.last.stdout});
+
+         var exiftoolMetadata = s.last.stdout;
          a.seq (s, [
             [k, 'ffprobe', '-i', path, '-show_streams'],
             function (s) {
-               s.vidMetadata = s.last.stdout + '\n' + s.last.stderr;
-               s.next (metadata);
+               s.next ({output: output, exiftoolMetadata: exiftoolMetadata, ffprobeMetadata: s.last.stdout + '\n' + s.last.stderr});
             }
          ]);
       },
       function (s) {
-         var output = {dates: {}};
-         var error = dale.stopNot (s.last.stdout.split ('\n'), undefined, function (line) {
+         if (onlyLocation) return s.next ();
+         var output = s.last.output;
+         var error = dale.stopNot (s.last.exiftoolMetadata.split ('\n'), undefined, function (line) {
             if (line.match (/^Warning\s+:/)) {
                var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated'].join ('|'));
                if (line.match (exceptions)) return;
                return line;
             }
             else if (line.match (/^Error\s+:/)) return line;
-            else if (! isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
-            else if (! isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
-            else if (line.match (/^GPS Position\s+:/)) {
-               var originalLine = line;
-               line = (line.split (':') [1]).split (',');
-               var lat = line [0].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
-               var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
-               lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
-               lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
-               if (isNaN (lat) || lat <  -90 || lat >  90) lat = undefined;
-               if (isNaN (lon) || lon < -180 || lon > 180) lon = undefined;
-               // We set location only if both latitude and longitude are valid
-               if (lat && lon) output.loc = [lat, lon];
-            }
-            else if ((! isVid && line.match (/^Orientation\s+:/)) || (isVid && line.match (/Rotation\s+:/))) {
-               if (line.match ('270')) output.deg = -90;
-               if (line.match ('90'))  output.deg = 90;
-               if (line.match ('180')) output.deg = 180;
-            }
             else if (line.match (/date/i)) {
                var key = line.split (':') [0].trim ();
                if (! key.match (/\bdate\b/i)) return;
@@ -140,13 +139,24 @@ H.getMetadata = function (s, path, isVid) {
                output.dates [key] = value;
             }
             else if (line.match (/^File Type\s+:/)) output.format = line.split (':') [1].trim ().toLowerCase ();
+            else if (! isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
+            else if (! isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
+            else if ((! isVid && line.match (/^Orientation\s+:/)) || (isVid && line.match (/Rotation\s+:/))) {
+               if (line.match ('270')) output.deg = -90;
+               if (line.match ('90'))  output.deg = 90;
+               if (line.match ('180')) output.deg = 180;
+            }
          });
          if (error) return s.next (null, {error: 'Metadata error', data: error, path: path});
          if (isVid) {
             var formats = [];
-            dale.go (s.vidMetadata.split ('\n'), function (line) {
-               if (line.match (/^width/i))  output.dimw = parseInt (line.split ('=') [1]);
-               if (line.match (/^height/i)) output.dimh = parseInt (line.split ('=') [1]);
+            dale.go (s.last.ffprobeMetadata.split ('\n'), function (line) {
+               if (line.match (/^width=\d+$/))  output.dimw = parseInt (line.split ('=') [1]);
+               if (line.match (/^height=\d+$/)) output.dimh = parseInt (line.split ('=') [1]);
+               if (line.match (/^codec_name=/)) {
+                  var format = line.split ('=') [1];
+                  if (format !== 'unknown') formats.push (format);
+               }
                if (line.match (/\s+rotate\s+:/)) {
                   if (line.match ('270')) output.deg = -90;
                   if (line.match ('90'))  output.deg = 90;
@@ -161,6 +171,7 @@ H.getMetadata = function (s, path, isVid) {
                });
                */
             });
+            if (formats.length) output.format += ':' + formats.sort ().join ('/');
          }
          // TODO: check for dimw & dimh
          if (isVid && (output.deg === 90 || output.deg === -90)) {
@@ -195,12 +206,15 @@ a.stop ([
             function (s) {
                var repeatedDates = [], minDbDate = Infinity, minScriptDate = Infinity;
                var dbData = {
-                  // TODO: ADD THESE FIELDS
-                  //loc: piv.loc ? JSON.parse (piv.loc) : undefined,
-                  //deg: parseInt (piv.deg) || undefined,
+                  // Videos had no location data, now they do
+                  loc: piv.vid ? s.last.loc : (piv.loc ? JSON.parse (piv.loc) : undefined),
+                  // Videos stored no rotation data, now they do
+                  deg: piv.vid ? s.last.deg : (parseInt (piv.deg) || undefined),
+                  // No more "unknown" formats stored from unrecognized streams, also format is detected properly through exiftool
+                  format: piv.vid ? s.last.format : piv.format.replace (/\/unknown/g, ''),
                   //dimw: parseInt (piv.dimw),
                   //dimh: parseInt (piv.dimh),
-                  //format: piv.format,
+                  /*
                   dates: dale.obj (JSON.parse (piv.dates), function (v, k) {
                      if (k.match (/^(upload|alreadyUploaded|repeated):/)) return;
                      // Ignore dates with only zeroes
@@ -220,15 +234,13 @@ a.stop ([
                      // Remove date entries from db.dates that have matching entries in the dates coming from script
                      if (! inc (repeatedDates, date)) return [k, v];
                   }),
+                  */
                }
                var diff = dale.obj (dbData, function (v, k) {
-                  // We ignore differences in deg since the new logic will store that field in the DB for videos.
-                  if (piv.vid && k === 'deg') return;
-                  if (! teishi.eq (v, s.last [k])) {
-                     if (k !== 'dates') return [k, {db: v, script: s.last [k]}];
-                     // Only report differences in dates that are more than one minute
-                     if (Math.abs (minScriptDate - minDbDate) > 1000 * 60 * 1) return [k, {db: v, script: s.last [k], minDb: new Date (minDbDate), minScript: new Date (minScriptDate)}];
-                  }
+                  if (teishi.eq (v, s.last [k])) return;
+                  if (k !== 'dates') return [k, {db: v, script: s.last [k]}];
+                  // Only report differences in dates that are more than one minute
+                  if (Math.abs (minScriptDate - minDbDate) > 1000 * 60 * 1) return [k, {db: v, script: s.last [k], minDb: new Date (minDbDate), minScript: new Date (minScriptDate)}];
                });
                if (dale.keys (diff).length) clog ('OUTPUT', '#' + (k + 1), piv.id, diff);
                s.next ();
