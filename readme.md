@@ -328,6 +328,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 #### Auth routes
 
+- `GET /csrf`.
+   - If the user is not logged in or the session expired, returns a 403.
+   - Otherwise, returns a body `{csrf: STRING}`, where `STRING` is the CSRF token to be used in all requests.
+
 - `POST /auth/login`.
    - Does not require the user to be logged in.
    - Body must be `{username: STRING, password: STRING, timezone: INTEGER}`. If not, a 400 code will be returned with body `{error: ...}`.
