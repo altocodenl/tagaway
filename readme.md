@@ -41,15 +41,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Tests refactor
    - Script to see if exiftool is enough for video metadata
-      - vids
-         - check differences in dimw/dimh between exiftool and ffprobe
-         - dates: see if ffprobe has dates that exiftool doesn't find
-         - see why we invert width and height with 90 -90
-      - pics OK recheck
+      - pics & vids OK recheck
    - Refactor metadata extraction
-      - List changes to pic
+      - List changes to pic & vid
       - Remove vidFormat references
       - Refactor getMetadata and getGeoTags
+      - Video: keep deg, don't flip thumbnails in client, invert w and h when making thumbnails
    - Update get metadata in testserver
    - Remove metadata to compute hashes
 

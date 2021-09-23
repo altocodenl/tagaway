@@ -86,6 +86,7 @@ H.parseDate = function (date) {
    return -1;
 }
 
+// Returns an output of the shape: {dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, loc: UNDEFINED|[INT, INT}
 H.getMetadata = function (s, path, isVid, onlyLocation) {
    a.seq (s, [
       [k, 'exiftool', path],
@@ -147,9 +148,10 @@ H.getMetadata = function (s, path, isVid, onlyLocation) {
                if (line.match ('180')) output.deg = 180;
             }
          });
-         if (error) return s.next (null, {error: 'Metadata error', data: error, path: path});
+         if (error) return s.next (null, {error: error});
          if (isVid) {
             var formats = [];
+            // ffprobe metadata is only used to detect width, height and the names of the codecs of the video & audio streams
             dale.go (s.last.ffprobeMetadata.split ('\n'), function (line) {
                if (line.match (/^width=\d+$/))  output.dimw = parseInt (line.split ('=') [1]);
                if (line.match (/^height=\d+$/)) output.dimh = parseInt (line.split ('=') [1]);
@@ -157,28 +159,13 @@ H.getMetadata = function (s, path, isVid, onlyLocation) {
                   var format = line.split ('=') [1];
                   if (format !== 'unknown') formats.push (format);
                }
-               if (line.match (/\s+rotate\s+:/)) {
-                  if (line.match ('270')) output.deg = -90;
-                  if (line.match ('90'))  output.deg = 90;
-                  if (line.match ('180')) output.deg = 180;
-               }
-               /*
-               s.dates = dale.obj (metadata, function (line) {
-                  var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
-                  if (! key.match (/_time\b/i)) return;
-                  if (! value.match (/^\d/)) return;
-                  return [key, value];
-               });
-               */
             });
             if (formats.length) output.format += ':' + formats.sort ().join ('/');
          }
-         // TODO: check for dimw & dimh
-         if (isVid && (output.deg === 90 || output.deg === -90)) {
-            var w = output.dimh;
-            output.dimh = output.dimw;
-            output.dimw = w;
-         }
+         // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
+         if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
+         if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
+         if (! output.format) return s.next (null, {error: 'Missing format'});
          s.next (output);
       }
    ]);
@@ -210,37 +197,42 @@ a.stop ([
                   loc: piv.vid ? s.last.loc : (piv.loc ? JSON.parse (piv.loc) : undefined),
                   // Videos stored no rotation data, now they do
                   deg: piv.vid ? s.last.deg : (parseInt (piv.deg) || undefined),
-                  // No more "unknown" formats stored from unrecognized streams, also format is detected properly through exiftool
-                  format: piv.vid ? s.last.format : piv.format.replace (/\/unknown/g, ''),
-                  //dimw: parseInt (piv.dimw),
-                  //dimh: parseInt (piv.dimh),
-                  /*
+                  // Videos: no more "unknown" formats stored from unrecognized streams, also format is detected properly through exiftool
+                  format: piv.vid ? s.last.format : piv.format,
+                  // For videos with rotation, we invert height and width in the comparison (but we won't do that anymore later)
+                  dimw: piv.vid && s.last.deg && s.last.deg !== 180 ? parseInt (s.piv.dimh) : parseInt (piv.dimw),
+                  dimh: piv.vid && s.last.deg && s.last.deg !== 180 ? parseInt (s.piv.dimw) : parseInt (piv.dimh),
                   dates: dale.obj (JSON.parse (piv.dates), function (v, k) {
                      if (k.match (/^(upload|alreadyUploaded|repeated):/)) return;
-                     // Ignore dates with only zeroes
+                     // Images: Ignore dates with only zeroes
                      if (! v.match (/[1-9]/)) return;
+                     // Images: Ignore fields related to the newly created piv file itself
                      if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], k)) return;
-                     var date = H.parseDate (v);
-                     if (date < minDbDate) minDbDate = date;
-                     dale.go (s.last.dates, function (v2, k2) {
-                        var scriptDate = H.parseDate (v2);
-                        if (scriptDate !== -1 && scriptDate < minScriptDate) minScriptDate = scriptDate;
-                        if (scriptDate === date) {
-                           repeatedDates.push (date);
-                           // Remove date with same value from dates coming from script
-                           delete s.last.dates [k2];
-                        }
-                     });
-                     // Remove date entries from db.dates that have matching entries in the dates coming from script
-                     if (! inc (repeatedDates, date)) return [k, v];
+                     // Videos: date strings will be different because we read them from exiftool now. We compare only non-repeated parsed dates, eliminating dates that are both on the db data and on the script data.
+                     if (piv.vid) {
+                        var date = H.parseDate (v);
+                        if (date < minDbDate) minDbDate = date;
+                        dale.go (s.last.dates, function (v2, k2) {
+                           var scriptDate = H.parseDate (v2);
+                           if (scriptDate !== -1 && scriptDate < minScriptDate) minScriptDate = scriptDate;
+                           if (scriptDate === date) {
+                              repeatedDates.push (date);
+                              // Remove date with same value from dates coming from script
+                              delete s.last.dates [k2];
+                           }
+                        });
+                        // Remove date entries from db.dates that have matching entries in the dates coming from script
+                        if (! inc (repeatedDates, date)) return [k, v];
+                     }
                   }),
-                  */
                }
                var diff = dale.obj (dbData, function (v, k) {
                   if (teishi.eq (v, s.last [k])) return;
                   if (k !== 'dates') return [k, {db: v, script: s.last [k]}];
                   // Only report differences in dates that are more than one minute
-                  if (Math.abs (minScriptDate - minDbDate) > 1000 * 60 * 1) return [k, {db: v, script: s.last [k], minDb: new Date (minDbDate), minScript: new Date (minScriptDate)}];
+                  // if (Math.abs (minScriptDate - minDbDate) > 1000 * 60 * 1) return [k, {db: v, script: s.last [k], minDb: new Date (minDbDate), minScript: new Date (minScriptDate)}];
+                  // Alternative: report only dates in db that are not picked up by script
+                  if (dale.keys (v).length) return [k, {db: v, script: s.last [k]}];
                });
                if (dale.keys (diff).length) clog ('OUTPUT', '#' + (k + 1), piv.id, diff);
                s.next ();
