@@ -183,7 +183,7 @@ a.stop ([
    function (s) {
       var counter = 0, MAX = 300000;
       var pivs = dale.fil (s.last, undefined, function (piv) {
-         if (piv.vid && counter++ < MAX) return piv;
+         if (counter++ < MAX) return piv;
       });
       clog ('PROCESSING', pivs.length, 'ITEMS');
       s.last = undefined;
@@ -200,8 +200,8 @@ a.stop ([
                   // Videos: no more "unknown" formats stored from unrecognized streams, also format is detected properly through exiftool
                   format: piv.vid ? s.last.format : piv.format,
                   // For videos with rotation, we invert height and width in the comparison (but we won't do that anymore later)
-                  dimw: piv.vid && s.last.deg && s.last.deg !== 180 ? parseInt (s.piv.dimh) : parseInt (piv.dimw),
-                  dimh: piv.vid && s.last.deg && s.last.deg !== 180 ? parseInt (s.piv.dimw) : parseInt (piv.dimh),
+                  dimw: piv.vid && s.last.deg && s.last.deg !== 180 ? parseInt (piv.dimh) : parseInt (piv.dimw),
+                  dimh: piv.vid && s.last.deg && s.last.deg !== 180 ? parseInt (piv.dimw) : parseInt (piv.dimh),
                   dates: dale.obj (JSON.parse (piv.dates), function (v, k) {
                      if (k.match (/^(upload|alreadyUploaded|repeated):/)) return;
                      // Images: Ignore dates with only zeroes
