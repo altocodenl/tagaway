@@ -1,7 +1,7 @@
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var redis  = require ('redis').createClient ({db: 15});
-var a      = require ('./assets/astack.js');
+var a      = require ('../assets/astack.js');
 var Path   = require ('path');
 var hash   = require ('murmurhash').v3;
 
@@ -86,12 +86,13 @@ H.parseDate = function (date) {
    return -1;
 }
 
-// Returns an output of the shape: {dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, loc: UNDEFINED|[INT, INT}
-H.getMetadata = function (s, path, isVid, onlyLocation) {
+// Returns an output of the shape: {isVid: UNDEFINED|true, mimetype: STRING, dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, loc: UNDEFINED|[INT, INT}
+// If onlyLocation flag is passed, output will only have the `loc` field.
+H.getMetadata = function (s, path, onlyLocation) {
+   var output = {dates: {}};
    a.seq (s, [
       [k, 'exiftool', path],
       function (s) {
-         var output = {dates: {}};
          dale.stop (s.last.stdout.split ('\n'), true, function (line) {
             if (! line.match (/^GPS Position\s+:/)) return;
             var originalLine = line;
@@ -107,21 +108,19 @@ H.getMetadata = function (s, path, isVid, onlyLocation) {
             return true;
          });
 
-         if (onlyLocation) return s.next (output);
-         if (! isVid) return s.next ({output: output, exiftoolMetadata: s.last.stdout});
-
-         var exiftoolMetadata = s.last.stdout;
-         a.seq (s, [
-            [k, 'ffprobe', '-i', path, '-show_streams'],
-            function (s) {
-               s.next ({output: output, exiftoolMetadata: exiftoolMetadata, ffprobeMetadata: s.last.stdout + '\n' + s.last.stderr});
-            }
-         ]);
+         if (onlyLocation) s.next ();
+         else              s.next (s.last.stdout.split ('\n'));
       },
       function (s) {
          if (onlyLocation) return s.next ();
-         var output = s.last.output;
-         var error = dale.stopNot (s.last.exiftoolMetadata.split ('\n'), undefined, function (line) {
+         // We first detect the mimetype to ascertain whether this is a vid or a pic
+         dale.stopNot (s.last, undefined, function (line) {
+            if (! line.match (/^MIME Type\s+:/)) return;
+            output.mimetype = line.split (':') [1].trim ();
+            if (line.match (/^MIME Type\s+:\s+video\//)) output.isVid = true;
+            return true;
+         });
+         var error = dale.stopNot (s.last, undefined, function (line) {
             if (line.match (/^Warning\s+:/)) {
                var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated'].join ('|'));
                if (line.match (exceptions)) return;
@@ -140,32 +139,47 @@ H.getMetadata = function (s, path, isVid, onlyLocation) {
                output.dates [key] = value;
             }
             else if (line.match (/^File Type\s+:/)) output.format = line.split (':') [1].trim ().toLowerCase ();
-            else if (! isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
-            else if (! isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
-            else if ((! isVid && line.match (/^Orientation\s+:/)) || (isVid && line.match (/Rotation\s+:/))) {
+            else if (! output.isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
+            else if (! output.isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
+            else if ((! output.isVid && line.match (/^Orientation\s+:/)) || (output.isVid && line.match (/Rotation\s+:/))) {
                if (line.match ('270')) output.deg = -90;
                if (line.match ('90'))  output.deg = 90;
                if (line.match ('180')) output.deg = 180;
             }
          });
          if (error) return s.next (null, {error: error});
-         if (isVid) {
-            var formats = [];
-            // ffprobe metadata is only used to detect width, height and the names of the codecs of the video & audio streams
-            dale.go (s.last.ffprobeMetadata.split ('\n'), function (line) {
-               if (line.match (/^width=\d+$/))  output.dimw = parseInt (line.split ('=') [1]);
-               if (line.match (/^height=\d+$/)) output.dimh = parseInt (line.split ('=') [1]);
-               if (line.match (/^codec_name=/)) {
-                  var format = line.split ('=') [1];
-                  if (format !== 'unknown') formats.push (format);
-               }
-            });
-            if (formats.length) output.format += ':' + formats.sort ().join ('/');
+
+         if (! output.isVid) return s.next ();
+
+         a.seq (s, [
+            [k, 'ffprobe', '-i', path, '-show_streams'],
+            function (s) {
+               var ffprobeMetadata = (s.last.stdout + '\n' + s.last.stderr).split ('\n');
+               var formats = [];
+               // ffprobe metadata is only used to detect width, height and the names of the codecs of the video & audio streams
+               dale.go (ffprobeMetadata, function (line) {
+                  if (line.match (/^width=\d+$/))  output.dimw = parseInt (line.split ('=') [1]);
+                  if (line.match (/^height=\d+$/)) output.dimh = parseInt (line.split ('=') [1]);
+                  if (line.match (/^codec_name=/)) {
+                     var format = line.split ('=') [1];
+                     if (format !== 'unknown') formats.push (format);
+                  }
+               });
+               if (formats.length) output.format += ':' + formats.sort ().join ('/');
+               s.next ();
+            }
+         ]);
+      },
+      function (s) {
+         if (onlyLocation) {
+            delete output.dates;
+            return s.next (output);
          }
-         // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
+         // Despite our trust in exiftool, we make sure that the required output fields are present
          if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
          if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
          if (! output.format) return s.next (null, {error: 'Missing format'});
+         if (! output.mimetype) return s.next (null, {error: 'Missing mimetype'});
          s.next (output);
       }
    ]);
@@ -189,10 +203,12 @@ a.stop ([
       s.last = undefined;
       a.fork (s, pivs, function (piv, k) {
          return [
-            [H.getMetadata, Path.join (BASEPATH, hash (piv.owner) + '', piv.id), piv.vid],
+            [H.getMetadata, Path.join (BASEPATH, hash (piv.owner) + '', piv.id)],
             function (s) {
                var repeatedDates = [], minDbDate = Infinity, minScriptDate = Infinity;
                var dbData = {
+                  // Added to make sure that the script properly detects videos
+                  isVid: piv.vid ? true : undefined,
                   // Videos had no location data, now they do
                   loc: piv.vid ? s.last.loc : (piv.loc ? JSON.parse (piv.loc) : undefined),
                   // Videos stored no rotation data, now they do
