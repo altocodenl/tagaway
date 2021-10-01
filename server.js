@@ -264,35 +264,12 @@ H.isUserTag = function (tag) {
    return ! H.isYear (tag) && ! H.isGeo (tag);
 }
 
-H.getGeotags = function (s, metadata) {
+H.getGeotags = function (s, lat, lon) {
    var countryCodes = {'AF':'Afghanistan','AX':'Åland Islands','AL':'Albania','DZ':'Algeria','AS':'American Samoa','AD':'Andorra','AO':'Angola','AI':'Anguilla','AQ':'Antarctica','AG':'Antigua and Barbuda','AR':'Argentina','AM':'Armenia','AW':'Aruba','AU':'Australia','AT':'Austria','AZ':'Azerbaijan','BS':'Bahamas','BH':'Bahrain','BD':'Bangladesh','BB':'Barbados','BY':'Belarus','BE':'Belgium','BZ':'Belize','BJ':'Benin','BM':'Bermuda','BT':'Bhutan','BO':'Bolivia, Plurinational State of','BQ':'Bonaire, Sint Eustatius and Saba','BA':'Bosnia and Herzegovina','BW':'Botswana','BV':'Bouvet Island','BR':'Brazil','IO':'British Indian Ocean Territory','BN':'Brunei Darussalam','BG':'Bulgaria','BF':'Burkina Faso','BI':'Burundi','KH':'Cambodia','CM':'Cameroon','CA':'Canada','CV':'Cape Verde','KY':'Cayman Islands','CF':'Central African Republic','TD':'Chad','CL':'Chile','CN':'China','CX':'Christmas Island','CC':'Cocos (Keeling) Islands','CO':'Colombia','KM':'Comoros','CG':'Congo','CD':'Congo, the Democratic Republic of the','CK':'Cook Islands','CR':'Costa Rica','CI':'Côte d\'Ivoire','HR':'Croatia','CU':'Cuba','CW':'Curaçao','CY':'Cyprus','CZ':'Czech Republic','DK':'Denmark','DJ':'Djibouti','DM':'Dominica','DO':'Dominican Republic','EC':'Ecuador','EG':'Egypt','SV':'El Salvador','GQ':'Equatorial Guinea','ER':'Eritrea','EE':'Estonia','ET':'Ethiopia','FK':'Falkland Islands (Malvinas)','FO':'Faroe Islands','FJ':'Fiji','FI':'Finland','FR':'France','GF':'French Guiana','PF':'French Polynesia','TF':'French Southern Territories','GA':'Gabon','GM':'Gambia','GE':'Georgia','DE':'Germany','GH':'Ghana','GI':'Gibraltar','GR':'Greece','GL':'Greenland','GD':'Grenada','GP':'Guadeloupe','GU':'Guam','GT':'Guatemala','GG':'Guernsey','GN':'Guinea','GW':'Guinea-Bissau','GY':'Guyana','HT':'Haiti','HM':'Heard Island and McDonald Islands','VA':'Holy See (Vatican City State)','HN':'Honduras','HK':'Hong Kong','HU':'Hungary','IS':'Iceland','IN':'India','ID':'Indonesia','IR':'Iran, Islamic Republic of','IQ':'Iraq','IE':'Ireland','IM':'Isle of Man','IL':'Israel','IT':'Italy','JM':'Jamaica','JP':'Japan','JE':'Jersey','JO':'Jordan','KZ':'Kazakhstan','KE':'Kenya','KI':'Kiribati','KP':'Korea, Democratic People\'s Republic of','KR':'Korea, Republic of','KW':'Kuwait','KG':'Kyrgyzstan','LA':'Lao People\'s Democratic Republic','LV':'Latvia','LB':'Lebanon','LS':'Lesotho','LR':'Liberia','LY':'Libya','LI':'Liechtenstein','LT':'Lithuania','LU':'Luxembourg','MO':'Macao','MK':'Macedonia, the Former Yugoslav Republic of','MG':'Madagascar','MW':'Malawi','MY':'Malaysia','MV':'Maldives','ML':'Mali','MT':'Malta','MH':'Marshall Islands','MQ':'Martinique','MR':'Mauritania','MU':'Mauritius','YT':'Mayotte','MX':'Mexico','FM':'Micronesia, Federated States of','MD':'Moldova, Republic of','MC':'Monaco','MN':'Mongolia','ME':'Montenegro','MS':'Montserrat','MA':'Morocco','MZ':'Mozambique','MM':'Myanmar','NA':'Namibia','NR':'Nauru','NP':'Nepal','NL':'Netherlands','NC':'New Caledonia','NZ':'New Zealand','NI':'Nicaragua','NE':'Niger','NG':'Nigeria','NU':'Niue','NF':'Norfolk Island','MP':'Northern Mariana Islands','NO':'Norway','OM':'Oman','PK':'Pakistan','PW':'Palau','PS':'Palestine, State of','PA':'Panama','PG':'Papua New Guinea','PY':'Paraguay','PE':'Peru','PH':'Philippines','PN':'Pitcairn','PL':'Poland','PT':'Portugal','PR':'Puerto Rico','QA':'Qatar','RE':'Réunion','RO':'Romania','RU':'Russian Federation','RW':'Rwanda','BL':'Saint Barthélemy','SH':'Saint Helena, Ascension and Tristan da Cunha','KN':'Saint Kitts and Nevis','LC':'Saint Lucia','MF':'Saint Martin (French part)','PM':'Saint Pierre and Miquelon','VC':'Saint Vincent and the Grenadines','WS':'Samoa','SM':'San Marino','ST':'Sao Tome and Principe','SA':'Saudi Arabia','SN':'Senegal','RS':'Serbia','SC':'Seychelles','SL':'Sierra Leone','SG':'Singapore','SX':'Sint Maarten (Dutch part)','SK':'Slovakia','SI':'Slovenia','SB':'Solomon Islands','SO':'Somalia','ZA':'South Africa','GS':'South Georgia and the South Sandwich Islands','SS':'South Sudan','ES':'Spain','LK':'Sri Lanka','SD':'Sudan','SR':'Suriname','SJ':'Svalbard and Jan Mayen','SZ':'Swaziland','SE':'Sweden','CH':'Switzerland','SY':'Syrian Arab Republic','TW':'Taiwan, Province of China','TJ':'Tajikistan','TZ':'Tanzania, United Republic of','TH':'Thailand','TL':'Timor-Leste','TG':'Togo','TK':'Tokelau','TO':'Tonga','TT':'Trinidad and Tobago','TN':'Tunisia','TR':'Turkey','TM':'Turkmenistan','TC':'Turks and Caicos Islands','TV':'Tuvalu','UG':'Uganda','UA':'Ukraine','AE':'United Arab Emirates','GB':'United Kingdom','US':'United States','UM':'United States Minor Outlying Islands','UY':'Uruguay','UZ':'Uzbekistan','VU':'Vanuatu','VE':'Venezuela, Bolivarian Republic of','VN':'Viet Nam','VG':'Virgin Islands, British','VI':'Virgin Islands, U.S.','WF':'Wallis and Futuna','EH':'Western Sahara','YE':'Yemen','ZM':'Zambia','ZW':'Zimbabwe'};
 
-   var position = dale.stopNot (metadata.split ('\n'), undefined, function (line) {
-      if (! line.match (/gps position/i)) return;
-      var originalLine = line;
-      line = line.split (':') [1];
-      line = line.split (',');
-      var lat = line [0].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
-      var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
-      lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
-      lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
-
-      // We filter out invalid latitudes.
-      if (! inc (['float', 'integer'], type (lat))) {
-         notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
-         return;
-      }
-      // We filter out invalid longitudes.
-      if (! inc (['float', 'integer'], type (lon))) {
-         notify (a.creat (), {priority: 'important', type: 'invalid geotagging data', data: originalLine});
-         return;
-      }
-      return [lat, lon];
-   });
-   if (! position) return s.next ([]);
-   redis.georadius ('geo', position [1], position [0], 15, 'km', 'count', 100, 'asc', function (error, data) {
+   redis.georadius ('geo', lon, lat, 15, 'km', 'count', 100, 'asc', function (error, data) {
       if (error) return s.next (null, error);
-      if (! data.length) return s.next ([position [0], position [1]]);
+      if (! data.length) return s.next ([]);
       var biggestPop = 0, geotags = [];
       dale.go (data, function (item) {
          item = item.split (':');
@@ -301,7 +278,7 @@ H.getGeotags = function (s, metadata) {
          biggestPop = pop;
          geotags = ['g::' + item [0], 'g::' + item [2]];
       });
-      s.next ([position [0], position [1]].concat (geotags));
+      s.next (geotags);
    });
 }
 
@@ -330,12 +307,12 @@ H.unlink = function (s, path, checkExistence) {
    ]);
 }
 
-H.thumbPic = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
+H.thumbPic = function (s, invalidHandler, path, dimw, dimh, thumbSize, piv, alwaysMakeThumb, heic_path) {
    var format = piv.format === 'png' ? '.png' : '.jpeg';
    var multiframeFormat = inc (['gif', 'tiff'], piv.format);
    a.seq (s, [
       [function (s) {
-         var pivMax = Math.max (s.size.w, s.size.h);
+         var pivMax = Math.max (dimw, dimh);
          if (! alwaysMakeThumb && pivMax <= thumbSize) {
             if (! piv.deg) return s.next (true);
             // if piv has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
@@ -363,24 +340,30 @@ H.thumbPic = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb,
    ]);
 }
 
-H.thumbVid = function (s, invalidHandler, path) {
-   var max = Math.max (s.size.h, s.size.w);
+H.thumbVid = function (s, invalidHandler, dimw, dimh, deg, path) {
+   // If video is rotated by 90 or -90, invert width and height for the purposes of the thumbnail
+   if (deg === 90 || deg === -90) {
+      var c = dimw;
+      dimw = dimh;
+      dimh = c;
+   }
+   var max = Math.max (dimw, dimh);
    s.t200 = uuid (), s.t900 = max > 200 ? uuid () : undefined;
    // small video: make t200 and t200 will be smaller or equal than 200
-   if (max <= 200) var t200dim = s.size;
+   if (max <= 200) var t200dim = [dimw, dimh];
    // medium video: make t200 and t900 but t900 will be smaller or equal than 900
    else if (max <= 900) {
-      var t200dim = {h: Math.round (s.size.h * 200 / max), w: Math.round (s.size.w * 200 / max)};
-      var t900dim = s.size;
+      var t200dim = [Math.round (dimw * 200 / max), Math.round (dimh * 200 / max)];
+      var t900dim = [dimw, dimh];
    }
    // large video: make t200 and t900
    else {
-      var t200dim = {h: Math.round (s.size.h * 200 / max), w: Math.round (s.size.w * 200 / max)};
-      var t900dim = {h: Math.round (s.size.h * 900 / max), w: Math.round (s.size.w * 900 / max)};
+      var t200dim = [Math.round (dimw * 200 / max), Math.round (dimh * 200 / max)];
+      var t900dim = [Math.round (dimw * 900 / max), Math.round (dimh * 900 / max)];
    }
    a.stop (s, [
       [
-         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim.w + 'x' + t200dim.h, Path.join (Path.dirname (path), s.t200 + '.png')]),
+         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim [0] + 'x' + t200dim [1], Path.join (Path.dirname (path), s.t200 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
          function (s) {
@@ -389,7 +372,7 @@ H.thumbVid = function (s, invalidHandler, path) {
          },
       ],
       ! s.t900 ? [] : [
-         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim.w + 'x' + t900dim.h, Path.join (Path.dirname (path), s.t900 + '.png')]),
+         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim [0] + 'x' + t900dim [1], Path.join (Path.dirname (path), s.t900 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
          function (s) {
@@ -655,28 +638,103 @@ H.hasAccess = function (S, username, pivId) {
    });
 }
 
-H.getMetadata = function (s, path, vidFormat) {
-   a.seq (s, ! vidFormat ? [k, 'exiftool', path] : [k, 'ffprobe', '-i', path, '-show_streams']);
-}
+// Returns an output of the shape: {isVid: UNDEFINED|true, mimetype: STRING, dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, loc: UNDEFINED|[INT, INT}
+// If onlyLocation flag is passed, output will only have the `loc` field.
+H.getMetadata = function (s, path, onlyLocation) {
+   var output = {dates: {}};
+   a.seq (s, [
+      [k, 'exiftool', path],
+      function (s) {
+         dale.stop (s.last.stdout.split ('\n'), true, function (line) {
+            if (! line.match (/^GPS Position\s+:/)) return;
+            var originalLine = line;
+            line = (line.split (':') [1]).split (',');
+            var lat = line [0].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
+            var lon = line [1].replace ('deg', '').replace ('\'', '').replace ('"', '').split (/\s+/);
+            lat = (lat [4] === 'S' ? -1 : 1) * (parseFloat (lat [1]) + parseFloat (lat [2]) / 60 + parseFloat (lat [3]) / 3600);
+            lon = (lon [4] === 'W' ? -1 : 1) * (parseFloat (lon [1]) + parseFloat (lon [2]) / 60 + parseFloat (lon [3]) / 3600);
+            if (isNaN (lat) || lat <  -90 || lat >  90) lat = undefined;
+            if (isNaN (lon) || lon < -180 || lon > 180) lon = undefined;
+            // We set location only if both latitude and longitude are valid
+            if (lat && lon) output.loc = [lat, lon];
+            return true;
+         });
 
-H.detectFormat = function (s, metadata, vidFormat) {
-   metadata = (vidFormat ? metadata.stderr + '\n' + s.last.stdout : s.last.stdout).split ('\n');
-   var format;
-   if (! vidFormat) {
-      format = dale.stopNot (metadata, undefined, function (line) {
-         if (line.match (/^File Type\s+:/)) return line.split (':') [1].replace (/\s/g, '');
-      });
-      if (! format) return s.next (null, {type: 'pic', error: 'no format detected', metadata: metadata});
-      format = format.toLowerCase ();
-   }
-   else {
-      format = dale.fil (metadata, undefined, function (line) {
-         if (line.match (/^codec_name/)) return line.split ('=') [1];
-      });
-      if (format.length === 0) return s.next (null, {type: 'vid', error: 'no format', container: vidFormat, metadata: metadata});
-      format = vidFormat + ':' + format.sort ().join ('/').toLowerCase ();
-   }
-   s.next (format);
+         if (onlyLocation) s.next ();
+         else              s.next (s.last.stdout.split ('\n'));
+      },
+      function (s) {
+         if (onlyLocation) return s.next ();
+         // We first detect the mimetype to ascertain whether this is a vid or a pic
+         dale.stopNot (s.last, undefined, function (line) {
+            if (! line.match (/^MIME Type\s+:/)) return;
+            output.mimetype = line.split (':') [1].trim ();
+            if (line.match (/^MIME Type\s+:\s+video\//)) output.isVid = true;
+            return true;
+         });
+         var error = dale.stopNot (s.last, undefined, function (line) {
+            if (line.match (/^Warning\s+:/)) {
+               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated'].join ('|'));
+               if (line.match (exceptions)) return;
+               return line;
+            }
+            else if (line.match (/^Error\s+:/)) return line;
+            else if (line.match (/date/i)) {
+               var key = line.split (':') [0].trim ();
+               if (! key.match (/\bdate\b/i)) return;
+               if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
+               // Ignore metadata fields related to the newly created file itself, because they have the same date as the upload itself and they are irrelevant for dating the piv
+               if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], key)) return;
+               var value = line.split (':').slice (1).join (':').trim ();
+               // If value doesn't start with a number or only contains zeroes, we ignore it.
+               if (! value.match (/^\d/) || ! value.match (/[1-9]/)) return;
+               output.dates [key] = value;
+            }
+            else if (line.match (/^File Type\s+:/)) output.format = line.split (':') [1].trim ().toLowerCase ();
+            else if (! output.isVid && line.match (/^Image Width\s+:/))  output.dimw = parseInt (line.split (':') [1].trim ());
+            else if (! output.isVid && line.match (/^Image Height\s+:/)) output.dimh = parseInt (line.split (':') [1].trim ());
+            else if ((! output.isVid && line.match (/^Orientation\s+:/)) || (output.isVid && line.match (/Rotation\s+:/))) {
+               if (line.match ('270')) output.deg = -90;
+               if (line.match ('90'))  output.deg = 90;
+               if (line.match ('180')) output.deg = 180;
+            }
+         });
+         if (error) return s.next (null, {error: error});
+
+         if (! output.isVid) return s.next ();
+
+         a.seq (s, [
+            [k, 'ffprobe', '-i', path, '-show_streams'],
+            function (s) {
+               var ffprobeMetadata = (s.last.stdout + '\n' + s.last.stderr).split ('\n');
+               var formats = [];
+               // ffprobe metadata is only used to detect width, height and the names of the codecs of the video & audio streams
+               dale.go (ffprobeMetadata, function (line) {
+                  if (line.match (/^width=\d+$/))  output.dimw = parseInt (line.split ('=') [1]);
+                  if (line.match (/^height=\d+$/)) output.dimh = parseInt (line.split ('=') [1]);
+                  if (line.match (/^codec_name=/)) {
+                     var format = line.split ('=') [1];
+                     if (format !== 'unknown') formats.push (format);
+                  }
+               });
+               if (formats.length) output.format += ':' + formats.sort ().join ('/');
+               s.next ();
+            }
+         ]);
+      },
+      function (s) {
+         if (onlyLocation) {
+            delete output.dates;
+            return s.next (output);
+         }
+         // Despite our trust in exiftool, we make sure that the required output fields are present
+         if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
+         if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
+         if (! output.format)   return s.next (null, {error: 'Missing format'});
+         if (! output.mimetype) return s.next (null, {error: 'Missing mimetype'});
+         s.next (output);
+      }
+   ]);
 }
 
 H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) {
@@ -1936,21 +1994,6 @@ var routes = [
 
       var newpath = Path.join (CONFIG.basepath, H.hash (rq.user.username), piv.id);
 
-      if (! inc (CONFIG.allowedFormats, mime.getType (rq.data.files.piv))) {
-         return astop (rs, [
-            [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name}],
-            [reply, rs, 400, {error: 'format'}]
-         ]);
-      }
-
-      var vidFormats = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/x-msvideo': 'avi', 'video/webm': 'webm', 'video/x-ms-wmv': 'wmv', 'video/x-m4v': 'm4v'};
-
-      if (vidFormats [mime.getType (rq.data.files.piv)]) {
-         var vidFormat = vidFormats [mime.getType (rq.data.files.piv)];
-         // If the format is mp4, we put a truthy placeholder in piv.vid; otherwise, we create an id to point to the mp4 version of the video.
-         piv.vid = vidFormat === 'mp4' ? 1 : uuid ();
-      }
-
       var perf = [['init', Date.now ()]], perfTrack = function (s, label) {
          perf.push ([label, Date.now ()]);
          s.next (s.last);
@@ -2003,76 +2046,78 @@ var routes = [
             s.next ();
          },
          [perfTrack, 'initial'],
+
+         // *** METADATA ***
+
+         [invalidHandler, [H.getMetadata, path]],
          function (s) {
-            a.seq (s, invalidHandler (s, [H.getMetadata, path, piv.vid]));
-         },
-         function (s) {
-            s.rawMetadata = s.last;
-            s.metadata = s.last [piv.vid ? 'stderr' : 'stdout'];
-            var metadata = s.metadata.split ('\n');
-            if (! piv.vid) {
-               s.size = {};
-               var error = dale.stopNot (metadata, undefined, function (line) {
-                  if (line.match (/^Warning/)) {
-                     if (line.match ('minor') || line.match ('Invalid EXIF text encoding') || line.match ('Bad IFD1 directory') || line.match ('Bad length ICC_Profile') || line.match ('Invalid CanonCameraSettings data')) return;
-                     return line;
-                  }
-                  if (line.match (/^Image Width/))  s.size.w = parseInt (line.split (':') [1].trim ());
-                  if (line.match (/^Image Height/)) s.size.h = parseInt (line.split (':') [1].trim ());
-                  if (line.match (/^Error/))   return line.replace (/^Error\s+:\s+/, '');
-               });
 
-               if (error) return invalidHandler (s, {error: 'Metadata error', data: error});
+            if (! inc (CONFIG.allowedFormats, s.last.mimetype)) return astop (rs, [
+               [H.log, rq.user.username, {ev: 'upload', type: 'unsupported', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name}],
+               [reply, rs, 400, {error: 'format'}]
+            ]);
 
-               if (! s.size.w || ! s.size.h) return invalidHandler (s, {error: 'Invalid size', metadata: metadata});
-
-               var rotation = dale.stopNot (metadata, undefined, function (line) {
-                  if (line.match (/^Orientation/)) return line;
-               }) || '';
-
-               if      (rotation.match ('270')) piv.deg = -90;
-               else if (rotation.match ('90'))  piv.deg = 90;
-               else if (rotation.match ('180')) piv.deg = 180;
-
-               s.dates = dale.obj (metadata, function (line) {
-                  var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
-                  if (! key.match (/\bdate\b/i)) return;
-                  if (key.match (/gps|profile|manufacture|extension|firmware/i)) return;
-                  // Ignore metadata fields related to the newly created file itself, because they have the same date as the upload itself and they are irrelevant for dating the piv
-                  if (inc (['File Modification Date/Time', 'File Access Date/Time', 'File Inode Change Date/Time'], key)) return;
-                  if (! value.match (/^\d/)) return;
-                  return [key, value];
-               });
+            if (s.last.isVid) {
+               // If the format is mp4, we put a truthy placeholder in piv.vid; otherwise, we create an id to point to the mp4 version of the video.
+               if (s.last.format.slice (0, 3) === 'mp4') piv.vid = 1;
+               else                                      piv.vid = uuid ();
             }
+
+            // Add fields: piv.dimw, piv.dimh, piv.format, piv.deg, piv.dates, piv.loc
+            dale.go (s.last, function (v, k) {
+               if (k === 'isVid' || k === 'mimetype') return;
+               piv [k] = v;
+            });
+            // If we're working with a video, format is CONTAINER:STREAMFORMAT1:..., so we just keep the container format for the extension.
+            hashpath += '.' + piv.format.split (':') [0]
+
+            piv.dates ['upload:lastModified'] = lastModified;
+            if (H.dateFromName (piv.name) !== -1) piv.dates ['upload:fromName'] = piv.name;
+
+            piv.dates = JSON.stringify (piv.dates);
+
+            // All dates are considered to be UTC, unless they explicitly specify a timezone.
+            // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
+            // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
+
+            var validDates = dale.obj (piv.dates, function (date, key) {
+               var parsed = key.match ('fromName') ? H.dateFromName (date) : H.parseDate (date);
+               if (parsed > -1) return [key, parsed];
+            });
+
+            // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
+            if (validDates ['Date/Time Original']) {
+               piv.date = validDates ['Date/Time Original'];
+               piv.dateSource = 'Date/Time Original';
+            }
+            // Otherwise, of all the valid dates (any date we can parse and is on or after the Unix epoch), we will set the oldest one.
             else {
-               var rotation;
-               s.size = {};
-               dale.go ((s.rawMetadata.stdout + s.rawMetadata.stderr).split ('\n'), function (line) {
-                  if (line.match (/\s+rotate\s+:/)) rotation = line.replace (/rotate\s+:/, '').trim ();
-                  if (line.match (/^width/i))  s.size.w = parseInt (line.split ('=') [1]);
-                  if (line.match (/^height/i)) s.size.h = parseInt (line.split ('=') [1]);
-               });
-               if (! s.size.w || ! s.size.h) return invalidHandler (s, {error: 'Invalid size', metadata: metadata});
-
-               if (rotation === '90' || rotation === '270') s.size = {w: s.size.h, h: s.size.w};
-               s.dates = dale.obj (metadata, function (line) {
-                  var key = line.split (':') [0].trim (), value = line.split (':').slice (1).join (':').trim ();
-                  if (! key.match (/_time\b/i)) return;
-                  if (! value.match (/^\d/)) return;
-                  return [key, value];
+               dale.go (validDates, function (date, key) {
+                  if (piv.date && piv.date <= date) return;
+                  piv.date = date;
+                  piv.dateSource = key;
                });
             }
-            s.next ();
-         },
-         function (s) {
-            a.set (s, 'format', [H.detectFormat, s.rawMetadata, piv.vid ? vidFormat : false]);
-         },
-         function (s) {
-            var format = s.format;
-            // If we're working with a video, format is CONTAINER:STREAMFORMAT1:..., so we just keep the container format.
-            if (format.match (':')) format = format.slice (0, format.lastIndexOf (':'));
-            hashpath = hashpath + '.' + format;
-            s.next ();
+            // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the earliest one of them.
+            if (piv.dateSource === 'upload:fromName') {
+               var fromNameAdjusted;
+               dale.go (validDates, function (date, key) {
+                  if (date - piv.date < 1000 * 60 * 60 * 24) {
+                     if (! fromNameAdjusted) fromNameAdjusted = [key, date];
+                     else {
+                        if (date < fromNameAdjusted [1]) fromNameAdjusted = [key, date];
+                     }
+                  }
+               });
+               if (fromNameAdjusted) {
+                  piv.dateSource = fromNameAdjusted [0];
+                  piv.date       = fromNameAdjusted [1];
+               }
+            }
+
+            // If date is earlier than 1990, report it but carry on.
+            if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: piv.dates, dateSource: piv.dateSource, name: piv.name});
+
          },
          [perfTrack, 'metadata'],
          [a.set, 'hashorig', function (s) {
@@ -2110,7 +2155,7 @@ var routes = [
                else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
             },
             function (s) {
-               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified, s.dates);
+               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified, piv.dates);
             },
             function (s) {
                reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});
@@ -2125,11 +2170,11 @@ var routes = [
             });
          } : function (s) {
             // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
-            if (s.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
+            if (piv.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
             a.seq (s, [
                [a.make (fs.copyFile), path, hashpath],
                // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
-               invalidHandler (s, s.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath])
+               invalidHandler (s, piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath])
             ]);
          },
          [a.set, 'hash', function (s) {
@@ -2163,7 +2208,7 @@ var routes = [
                mexec (s, multi);
             },
             function (s) {
-               H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, s.dates);
+               H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, piv.dates);
             },
             function (s) {
                H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false});
@@ -2179,7 +2224,7 @@ var routes = [
          [perfTrack, 'fs'],
          // This function converts non-mp4 videos to mp4.
          function (s) {
-            if (! piv.vid || vidFormat === 'mp4') return s.next ();
+            if (! piv.vid || piv.vid === 1) return s.next ();
             var id = piv.vid, start = Date.now ();
             piv.vid = 'pending:' + id;
             // Don't wait for conversion process, run it in new astack thread.
@@ -2211,7 +2256,7 @@ var routes = [
                      ['stock', 'byfs',                     s.bymp4],
                      ['stock', 'byfs-' + rq.user.username, s.bymp4],
                      ['flow', 'ms-video-convert', Date.now () - start],
-                     ['flow', 'ms-video-convert:' + vidFormat, Date.now () - start]
+                     ['flow', 'ms-video-convert:' + piv.format.split (':') [0], Date.now () - start]
                   ]);
                }
             ], function (s, error) {
@@ -2233,20 +2278,20 @@ var routes = [
             });
          },
          function (s) {
-            piv.format = s.format;
+            // If heic, convert to jpg to later make the thumbnails
             if (piv.format !== 'heic') return s.next ();
-            s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), piv.uuid + '.jpeg');
+            s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), piv.id + '.jpeg');
             a.seq (s, invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]));
          },
          function (s) {
-            if (piv.vid) return H.thumbVid (s, invalidHandler, newpath);
-            var alwaysMakeThumb = s.format !== 'jpeg' && s.format !== 'png';
+            if (piv.vid) return H.thumbVid (s, invalidHandler, piv.dimw, piv.dimh, piv.deg, newpath);
+            var alwaysMakeThumb = piv.format !== 'jpeg' && piv.format !== 'png';
             // If gif, only make small thumbnail.
-            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, piv, true], [perfTrack, 'resize200']]);
+            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, dimw, dimh, 200, piv, true], [perfTrack, 'resize200']]);
             else a.seq (s, [
-               [H.thumbPic, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPic, invalidHandler, newpath, dimw, dimh, 200, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize200'],
-               [H.thumbPic, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPic, invalidHandler, newpath, dimw, dimh, 900, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize900']
             ]);
          },
@@ -2254,76 +2299,28 @@ var routes = [
             if (piv.format !== 'heic') return s.next ();
             H.unlink (s, s.heic_jpg);
          },
-         // We store only the original pivs in S3, not the thumbnails. We do this only after the piv has been considered valid.
+         // We store only the original pivs in S3, not the thumbnails. We do this only after the piv has been considered valid and the thumbnails have been created.
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), piv.id), newpath],
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
          function (s) {
-            if (! s.last) return s.next ([]);
-            H.getGeotags (s, s.metadata);
+            if (piv.loc) {
+               // We remove piv.loc if geotagging is disabled
+               if (! s.last) delete piv.loc;
+               else {
+                  piv.loc = JSON.stringify (piv.loc);
+                  return H.getGeotags (s, piv.loc [0], piv.loc [1]);
+               }
+            }
+            return s.next ([]);
          },
          function (s) {
-            s.geotags = s.last;
-            if (s.geotags.length) {
-               piv.loc = JSON.stringify ([s.last [0], s.last [1]]);
-               s.geotags = s.geotags.slice (2);
-            }
-
+            var geotags = s.last;
             var multi = redis.multi ();
 
-            piv.dimw         = s.size.w;
-            piv.dimh         = s.size.h;
             piv.byfs         = s.byfs.size;
             piv.hash         = s.hash;
             piv.originalHash = s.hashorig;
-
-            s.dates ['upload:lastModified'] = lastModified;
-            var dateFromName = H.dateFromName (piv.name);
-            if (dateFromName !== -1) s.dates ['upload:fromName'] = piv.name;
-
-            piv.dates = JSON.stringify (s.dates);
-
-            // All dates are considered to be UTC, unless they explicitly specify a timezone.
-            // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
-            // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
-
-            var validDates = dale.obj (s.dates, function (date, key) {
-               var parsed = key.match ('fromName') ? H.dateFromName (date) : H.parseDate (date);
-               if (parsed > -1) return [key, parsed];
-            });
-
-            // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
-            if (validDates ['Date/Time Original']) {
-               piv.date = validDates ['Date/Time Original'];
-               piv.dateSource = 'Date/Time Original';
-            }
-            // Otherwise, of all the valid dates (any date we can parse and is on or after the Unix epoch), we will set the oldest one.
-            else {
-               dale.go (validDates, function (date, key) {
-                  if (piv.date && piv.date <= date) return;
-                  piv.date = date;
-                  piv.dateSource = key;
-               });
-            }
-            // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the earliest one of them.
-            if (piv.dateSource === 'upload:fromName') {
-               var fromNameAdjusted;
-               dale.go (validDates, function (date, key) {
-                  if (date - piv.date < 1000 * 60 * 60 * 24) {
-                     if (! fromNameAdjusted) fromNameAdjusted = [key, date];
-                     else {
-                        if (date < fromNameAdjusted [1]) fromNameAdjusted = [key, date];
-                     }
-                  }
-               });
-               if (fromNameAdjusted) {
-                  piv.dateSource = fromNameAdjusted [0];
-                  piv.date       = fromNameAdjusted [1];
-               }
-            }
-
-            // If date is earlier than 1990, report it but carry on.
-            if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: s.dates, dateSource: piv.dateSource, name: piv.name});
 
             if (s.t200) piv.t200  = s.t200;
             if (s.t900) piv.t900  = s.t900;
@@ -2346,7 +2343,7 @@ var routes = [
             }
             multi.sadd ('tag:' + rq.user.username + ':all', piv.id);
 
-            dale.go (tags.concat (new Date (piv.date).getUTCFullYear ()).concat (s.geotags), function (tag) {
+            dale.go (tags.concat (new Date (piv.date).getUTCFullYear ()).concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id,                       tag);
                multi.sadd ('tags:' + rq.user.username,             tag);
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
@@ -2975,14 +2972,7 @@ var routes = [
             },
             [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
             function (s) {
-               s.pivs = s.last;
-               var multi = redis.multi ();
-               dale.go (s.last, function (piv) {
-                  multi.hget ('piv:' + piv, 'vid');
-               });
-               mexec (s, multi);
-            },
-            function (s) {
+               var pivs = s.last;
                // TODO: replace by a.fork when bug is fixed: f7cdb4f4381c85dae1e6282d39348e260c3cafce
                var asyncFork = function (data, simult, fun, cb) {
                   var counter = 0, done = 0, results = [], fire = function () {
@@ -3002,21 +2992,21 @@ var routes = [
                   }
                   dale.go (dale.times (simult), fire);
                }
-               asyncFork (s.pivs, os.cpus ().length, function (piv, K, cb) {
+               asyncFork (pivs, os.cpus ().length, function (piv, K, cb) {
                   var path = Path.join (CONFIG.basepath, H.hash (rq.user.username), piv);
-                  var vid = s.last [K];
                   a.stop ([
-                     [H.getMetadata, path, vid],
+                     [H.getMetadata, path, true],
                      function (s) {
-                        var metadata = ! vid ? s.last.stdout : s.last.stderr;
-                        H.getGeotags (s, metadata);
+                        if (! s.last.loc) return s.next ([]);
+                        s.loc = s.last.loc;
+                        H.getGeotags (s, s.loc [0], s.loc [1]);
                      },
                      function (s) {
-                        if (! s.last.length) return cb ();
-                        var loc = JSON.stringify ([s.last [0], s.last [1]]);
+                        if (! s.loc) return cb ();
+                        var loc = JSON.stringify (s.loc);
                         var multi = redis.multi ();
                         multi.hset ('piv:'  + piv, 'loc', loc);
-                        dale.go (s.last.slice (2), function (tag) {
+                        dale.go (s.last, function (tag) {
                            multi.sadd ('tags:' + rq.user.username,             tag);
                            multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv);
                            multi.sadd ('pivt:' + piv,                          tag);
@@ -3763,16 +3753,22 @@ var routes = [
          [Redis, 'hgetall', 'piv:' + rq.data.params.id],
          function (s) {
             if (! s.last) return reply (rs, 200, {});
-            s.data = {db: s.last};
+            var db = s.last;
             var path = Path.join (CONFIG.basepath, H.hash (s.last.owner), s.last.id);
-            H.getMetadata (s, path, s.last.vid);
+            a.seq (s, [
+               [k, 'exiftool', path],
+               function (s) {
+                  if (! s.last.vid) return reply (rs, 200, {db: db, exiftoolMetadata: s.last.stdout});
+                  var exiftoolMetadata = s.last.stdout;
+                  a.seq (s, [
+                     [k, 'ffprobe', '-i', path, '-show_streams'],
+                     function (s) {
+                        reply (rs, 200, {db: db, exiftoolMetadata: exiftoolMetadata, ffprobeMetadata: s.last.stdout + '\n' + s.last.stderr});
+                     }
+                  ]);
+               }
+            ]);
          },
-         function (s) {
-            s.data.metadata = dale.go ((s.last.stdout + s.last.stderr).split ('\n'), function (v) {
-               return v.replace (/\s+/g, ' ');
-            });
-            reply (rs, 200, s.data);
-         }
       ]);
    }],
 
