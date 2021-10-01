@@ -40,15 +40,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Tests refactor
-   - Script to see if exiftool is enough for video metadata
-      - pics & vids OK recheck
-   - Refactor metadata extraction
-      - List changes to pic & vid
-      - Remove vidFormat references
-      - Refactor getMetadata and getGeoTags
-      - Video: keep deg, don't flip thumbnails in client, invert w and h when making thumbnails
    - Update get metadata in testserver
    - Remove metadata to compute hashes
+   - upload images/videos without extension in name, make sure we pick them up anyway
 
 - Pivs
    - Suggest tags when inserting in tag view.
