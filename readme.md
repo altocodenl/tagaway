@@ -40,9 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Tests refactor
-   - Do we need repeated files? only those with different metadata
-   - Remove metadata to compute hashes
-   - upload images/videos without extension in name, make sure we pick them up anyway
 
 - Pivs
    - Suggest tags when inserting in tag view.

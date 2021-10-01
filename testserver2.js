@@ -229,12 +229,12 @@ var H = {
       var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
          var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file), repeated: inc (repeated, file)};
-         data.hash = hash (fs.readFileSync (data.path));
          return [data.name.split ('.') [0], data];
       });
       a.seq (s, [
          [a.fork, pivs, function (piv) {
             if (piv.invalid) return [];
+            var hashpath = Path.join (Path.dirname (piv.path), 'HASH' + Path.basename (piv.path));
             return [
                [H.getMetadata, piv.path],
                function (s) {
@@ -243,6 +243,25 @@ var H = {
                   });
                   s.next ();
                },
+               function (s) {
+                  // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
+                  if (piv.format === 'bmp') return s.next ();
+                  a.seq (s, [
+                     [a.make (fs.copyFile), piv.path, hashpath],
+                     // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
+                     piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath]
+                  ]);
+               },
+               function (s) {
+                  fs.readFile (piv.format === 'bmp' ? piv.path : hashpath, function (error, file) {
+                     if (error) return s.next (null, error);
+                     piv.hash = hash (file);
+                     // We remove the reference to the buffer to free memory.
+                     file = null;
+                     if (piv.format !== 'bmp') fs.unlinkSync (hashpath);
+                     s.next ();
+                  });
+               }
             ];
          }],
          function (s) {
@@ -1228,15 +1247,17 @@ suites.upload.piv = function () {
       // Untested case: too large file
       // Untested case: no capacity
       suites.auth.in  (tk.users.user1),
-      // TODO: remove metadata to compute hash here on test? Except for bmp
+      // TODO
       // get data: query, logs & account (byfs bys3)
       //   - rotations
       //   - t200 & t900
       //   - mp4 conversion
       //   - dates
+      // TODO Do we need repeated files? only those with different metadata
       // upload identical duplicate, alreadyModified (identical, different upload), not identical with no metadata, not identical with metadata
       // geo enable & upload with geo
       // get pending status on non mp4 videos, finally get it again
+      // upload images/videos without extension in name, make sure we pick them up anyway
       ['start upload for all pivs', 'post', 'upload', {}, {op: 'start', total: dale.keys (tk.pivs).length}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;

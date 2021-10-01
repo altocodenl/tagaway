@@ -6,7 +6,6 @@
       "mtime": 1631560309188,
       "invalid": false,
       "repeated": false,
-      "hash": 2989754675,
       "dates": {
          "Create Date": "2018:09:28 17:05:39",
          "Modify Date": "2018:09:28 17:05:59",
@@ -19,7 +18,8 @@
       "isVid": true,
       "format": "mp4:h264/mp3",
       "dimw": 1366,
-      "dimh": 768
+      "dimh": 768,
+      "hash": 1558324846
    },
    "benin": {
       "name": "benin.tif",
@@ -28,14 +28,14 @@
       "mtime": 1631560309204,
       "invalid": false,
       "repeated": false,
-      "hash": 743013579,
       "dates": {
          "Modify Date": "1999:02:12 09:33:02"
       },
       "mimetype": "image/tiff",
       "format": "tiff",
       "dimw": 898,
-      "dimh": 3000
+      "dimh": 3000,
+      "hash": 743013579
    },
    "boat": {
       "name": "boat.3gp",
@@ -44,7 +44,6 @@
       "mtime": 1631560309208,
       "invalid": false,
       "repeated": false,
-      "hash": 3748825687,
       "dates": {},
       "mimetype": "video/3gpp",
       "isVid": true,
@@ -59,7 +58,6 @@
       "mtime": 1631560309224,
       "invalid": false,
       "repeated": false,
-      "hash": 3086668155,
       "dates": {
          "Create Date": "2020:10:06 21:59:01",
          "Modify Date": "2020:10:06 21:59:01",
@@ -83,12 +81,12 @@
       "mtime": 1631560309224,
       "invalid": false,
       "repeated": false,
-      "hash": 2383897131,
       "dates": {},
       "mimetype": "image/bmp",
       "format": "bmp",
       "dimw": 153,
-      "dimh": 204
+      "dimh": 204,
+      "hash": 2383897131
    },
    "drumming": {
       "name": "drumming.avi",
@@ -97,13 +95,13 @@
       "mtime": 1631560309228,
       "invalid": false,
       "repeated": false,
-      "hash": 113721823,
       "dates": {},
       "mimetype": "video/x-msvideo",
       "isVid": true,
       "format": "avi:aac/h264",
       "dimw": 1080,
-      "dimh": 1920
+      "dimh": 1920,
+      "hash": 113721823
    },
    "dunkerque": {
       "name": "dunkerque.jpg",
@@ -112,7 +110,6 @@
       "mtime": 1631560309232,
       "invalid": false,
       "repeated": false,
-      "hash": 245638445,
       "dates": {
          "Modify Date": "2018:03:26 13:23:34",
          "Date/Time Original": "2018:03:26 13:23:34.805",
@@ -125,7 +122,8 @@
       "mimetype": "image/jpeg",
       "format": "jpeg",
       "dimw": 3264,
-      "dimh": 2448
+      "dimh": 2448,
+      "hash": 2803709825
    },
    "empty": {
       "name": "empty.jpg",
@@ -133,8 +131,7 @@
       "size": 0,
       "mtime": 1631560309232,
       "invalid": true,
-      "repeated": false,
-      "hash": 0
+      "repeated": false
    },
    "invalid": {
       "name": "invalid.mp4",
@@ -142,8 +139,7 @@
       "size": 1000,
       "mtime": 1631560309232,
       "invalid": true,
-      "repeated": false,
-      "hash": 471250308
+      "repeated": false
    },
    "large": {
       "name": "large.jpeg",
@@ -152,7 +148,6 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 2526606026,
       "dates": {
          "Modify Date": "2014:07:20 18:20:31",
          "Date/Time Original": "2014:07:20 18:20:31",
@@ -161,7 +156,8 @@
       "mimetype": "image/jpeg",
       "format": "jpeg",
       "dimw": 3264,
-      "dimh": 2448
+      "dimh": 2448,
+      "hash": 2375516235
    },
    "medium-nometa": {
       "name": "medium-nometa.jpg",
@@ -170,12 +166,12 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": true,
-      "hash": 3972466237,
       "dates": {},
       "mimetype": "image/jpeg",
       "format": "jpeg",
       "dimw": 248,
-      "dimh": 204
+      "dimh": 204,
+      "hash": 3972466237
    },
    "medium": {
       "name": "medium.jpg",
@@ -184,12 +180,12 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 194393043,
       "dates": {},
       "mimetype": "image/jpeg",
       "format": "jpeg",
       "dimw": 248,
-      "dimh": 204
+      "dimh": 204,
+      "hash": 3972466237
    },
    "rotate": {
       "name": "rotate.jpg",
@@ -198,7 +194,6 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 1001643281,
       "dates": {
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
@@ -208,7 +203,8 @@
       "format": "jpeg",
       "deg": 90,
       "dimw": 2048,
-      "dimh": 1232
+      "dimh": 1232,
+      "hash": 776499219
    },
    "rotatemedium": {
       "name": "rotatemedium.jpg",
@@ -217,7 +213,6 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 1441551623,
       "dates": {
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
@@ -227,7 +222,8 @@
       "format": "jpeg",
       "deg": 90,
       "dimw": 819,
-      "dimh": 493
+      "dimh": 493,
+      "hash": 349266192
    },
    "rotatesmall": {
       "name": "rotatesmall.jpg",
@@ -236,7 +232,6 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 2864754819,
       "dates": {
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
@@ -246,7 +241,8 @@
       "format": "jpeg",
       "deg": 90,
       "dimw": 123,
-      "dimh": 74
+      "dimh": 74,
+      "hash": 1546793829
    },
    "small": {
       "name": "small.png",
@@ -255,14 +251,14 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 2011409414,
       "dates": {
          "Modify Date": "2014:05:08 00:06:23"
       },
       "mimetype": "image/png",
       "format": "png",
       "dimw": 149,
-      "dimh": 149
+      "dimh": 149,
+      "hash": 772326011
    },
    "smallmeta": {
       "name": "smallmeta.png",
@@ -271,7 +267,6 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": true,
-      "hash": 3659108096,
       "dates": {
          "Modify Date": "2014:05:08 00:06:23",
          "Create Date": "2013:05:08 00:06:23"
@@ -279,7 +274,8 @@
       "mimetype": "image/png",
       "format": "png",
       "dimw": 149,
-      "dimh": 149
+      "dimh": 149,
+      "hash": 772326011
    },
    "sunrise": {
       "name": "sunrise.HEIC",
@@ -288,7 +284,6 @@
       "mtime": 1631560309236,
       "invalid": false,
       "repeated": false,
-      "hash": 581334427,
       "dates": {
          "Modify Date": "2020:08:29 06:43:41-04:00",
          "Date/Time Original": "2020:08:29 06:43:41.254-04:00",
@@ -298,7 +293,8 @@
       "format": "heic",
       "deg": 90,
       "dimw": 4032,
-      "dimh": 3024
+      "dimh": 3024,
+      "hash": 588340344
    },
    "tram": {
       "name": "tram.mp4",
@@ -307,7 +303,6 @@
       "mtime": 1631560309252,
       "invalid": false,
       "repeated": false,
-      "hash": 3173476963,
       "dates": {
          "Create Date": "2018:12:15 15:59:57",
          "Modify Date": "2018:12:15 15:59:57",
@@ -330,11 +325,11 @@
       "mtime": 1631560309256,
       "invalid": false,
       "repeated": false,
-      "hash": 3943946902,
       "dates": {},
       "mimetype": "image/gif",
       "format": "gif",
       "dimw": 180,
-      "dimh": 180
+      "dimh": 180,
+      "hash": 3943946902
    }
 }

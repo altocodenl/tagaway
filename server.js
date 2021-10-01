@@ -2170,7 +2170,7 @@ var routes = [
             });
          } : function (s) {
             // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
-            if (piv.format === 'bmp') return a.make (fs.copyFile) (s, path, hashpath);
+            if (piv.format === 'bmp') return s.next ();
             a.seq (s, [
                [a.make (fs.copyFile), path, hashpath],
                // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
@@ -2178,7 +2178,7 @@ var routes = [
             ]);
          },
          [a.set, 'hash', function (s) {
-            fs.readFile (hashpath, function (error, file) {
+            fs.readFile (piv.format === 'bmp' ? path : hashpath, function (error, file) {
                if (error) return s.next (null, error);
                s.next (hash (file));
                // We remove the reference to the buffer to free memory.
