@@ -1193,18 +1193,6 @@ suites.upload.piv = function () {
             {type: 'field', name: 'tags',         value: '[]'},
             {type: 'file',  name: 'foo',          path:  tk.pivs.small.path},
          ], {error: 'file'}],
-         [[
-            {type: 'field', name: 'id',           value: 1234},
-            {type: 'field', name: 'lastModified', value: 1234},
-            {type: 'field', name: 'tags',         value: '[]'},
-            {type: 'file',  name: 'piv',          path:  tk.pivs.small.path, filename: 'foo.pdf'},
-         ], {error: 'format'}],
-         [[
-            {type: 'field', name: 'id',           value: 1234},
-            {type: 'field', name: 'lastModified', value: 1234},
-            {type: 'field', name: 'tags',         value: '[]'},
-            {type: 'file',  name: 'piv',          path:  tk.pivs.small.path, filename: 'noextension'},
-         ], {error: 'format'}],
       ]), function (v, k) {
          return testInvalid (v [0], v [1], k);
       }),
@@ -1247,11 +1235,13 @@ suites.upload.piv = function () {
       // geo enable & upload with geo
       // get pending status on non mp4 videos, finally get it again
       // upload images/videos without extension in name, make sure we pick them up anyway
+      // upload file that is not from a piv mimetype
       ['start upload for all pivs', 'post', 'upload', {}, {op: 'start', total: dale.keys (tk.pivs).length}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
       }],
       dale.go (tk.pivs, function (piv, name) {
+         return [];
          // TODO: do all pivs
          if (piv.size > 1000000) return [];
          return [
@@ -1288,9 +1278,9 @@ suites.upload.piv = function () {
 suites.upload.full = function () {
    return [
       // TODO uncomment
-      suites.upload.upload (),
-      suites.upload.uploadCheck (),
-      //suites.upload.piv (),
+      //suites.upload.upload (),
+      //suites.upload.uploadCheck (),
+      suites.upload.piv (),
    ];
 }
 
