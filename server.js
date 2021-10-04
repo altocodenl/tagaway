@@ -307,12 +307,12 @@ H.unlink = function (s, path, checkExistence) {
    ]);
 }
 
-H.thumbPic = function (s, invalidHandler, path, dimw, dimh, thumbSize, piv, alwaysMakeThumb, heic_path) {
+H.thumbPic = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
    var format = piv.format === 'png' ? '.png' : '.jpeg';
    var multiframeFormat = inc (['gif', 'tiff'], piv.format);
    a.seq (s, [
       [function (s) {
-         var pivMax = Math.max (dimw, dimh);
+         var pivMax = Math.max (piv.dimw, piv.dimh);
          if (! alwaysMakeThumb && pivMax <= thumbSize) {
             if (! piv.deg) return s.next (true);
             // if piv has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
@@ -322,7 +322,7 @@ H.thumbPic = function (s, invalidHandler, path, dimw, dimh, thumbSize, piv, alwa
          s ['t' + thumbSize] = uuid ();
          // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the piv is smaller than the desired thumbnail size.
          var perc = Math.min (Math.round (thumbSize / pivMax * 100), 100);
-         a.seq (s, invalidHandler (s, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]));
+         a.seq (s, [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]]);
       }],
       function (s) {
          if (s.last === true) return s.next (true);
@@ -340,30 +340,26 @@ H.thumbPic = function (s, invalidHandler, path, dimw, dimh, thumbSize, piv, alwa
    ]);
 }
 
-H.thumbVid = function (s, invalidHandler, dimw, dimh, deg, path) {
-   // If video is rotated by 90 or -90, invert width and height for the purposes of the thumbnail
-   if (deg === 90 || deg === -90) {
-      var c = dimw;
-      dimw = dimh;
-      dimh = c;
-   }
-   var max = Math.max (dimw, dimh);
+H.thumbVid = function (s, invalidHandler, piv, path) {
+   var askance = piv.deg === 90 || piv.deg === -90;
+   var max = Math.max (piv.dimw, piv.dimh);
    s.t200 = uuid (), s.t900 = max > 200 ? uuid () : undefined;
    // small video: make t200 and t200 will be smaller or equal than 200
-   if (max <= 200) var t200dim = [dimw, dimh];
+   if (max <= 200) var t200dim = [piv.dimw, piv.dimh];
    // medium video: make t200 and t900 but t900 will be smaller or equal than 900
    else if (max <= 900) {
-      var t200dim = [Math.round (dimw * 200 / max), Math.round (dimh * 200 / max)];
-      var t900dim = [dimw, dimh];
+      var t200dim = [Math.round (piv.dimw * 200 / max), Math.round (piv.dimh * 200 / max)];
+      var t900dim = [piv.dimw, piv.dimh];
    }
    // large video: make t200 and t900
    else {
-      var t200dim = [Math.round (dimw * 200 / max), Math.round (dimh * 200 / max)];
-      var t900dim = [Math.round (dimw * 900 / max), Math.round (dimh * 900 / max)];
+      var t200dim = [Math.round (piv.dimw * 200 / max), Math.round (piv.dimh * 200 / max)];
+      var t900dim = [Math.round (piv.dimw * 900 / max), Math.round (piv.dimh * 900 / max)];
    }
    a.stop (s, [
       [
-         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim [0] + 'x' + t200dim [1], Path.join (Path.dirname (path), s.t200 + '.png')]),
+         // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
+         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim [askance ? 1 : 0] + 'x' + t200dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t200 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
          function (s) {
@@ -372,7 +368,8 @@ H.thumbVid = function (s, invalidHandler, dimw, dimh, deg, path) {
          },
       ],
       ! s.t900 ? [] : [
-         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim [0] + 'x' + t900dim [1], Path.join (Path.dirname (path), s.t900 + '.png')]),
+         // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
+         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim [askance ? 1 : 0] + 'x' + t900dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t900 + '.png')]),
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
          function (s) {
@@ -1753,7 +1750,7 @@ var routes = [
       ]);
    }],
 
-   // *** RETRIEVE ORIGINAL IMAGE (FOR TESTING PURPOSES ONLY) ***
+   // *** RETRIEVE ORIGINAL PIV (FOR TESTING PURPOSES ONLY) ***
 
    ['get', 'original/:id', function (rq, rs) {
       if (ENV) return reply (rs, 400);
@@ -1983,7 +1980,6 @@ var routes = [
       if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
 
       var path     = importData ? importData.path : rq.data.files.piv;
-      var hashpath = Path.join (Path.dirname (path), Path.basename (path).replace (Path.extname (path), '') + 'hash');
 
       var piv = {
          id:     uuid (),
@@ -2007,13 +2003,13 @@ var routes = [
                ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
                ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
                [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error}],
-               [reply, rs, 400, {error: 'Invalid ' + (piv.vid ? 'video' : 'image'), data: error, name: piv.name}],
+               [reply, rs, 400, {error: 'Invalid ' + (piv.vid ? 'vid' : 'pic'), data: error, name: piv.name}],
             ]);
          }
          // If input is an async sequence, we return another async sequence
-         if (type (input) === 'array') return [a.stop, input, function (s, error) {
+         if (type (input) === 'array') return a.stop (s, input, function (s, error) {
             cbError (error);
-         }];
+         });
          // Otherwise, we invoke cbError with the error directly
          else cbError (input);
       }
@@ -2068,13 +2064,13 @@ var routes = [
                if (k === 'isVid' || k === 'mimetype') return;
                piv [k] = v;
             });
-            // If we're working with a video, format is CONTAINER:STREAMFORMAT1:..., so we just keep the container format for the extension.
-            hashpath += '.' + piv.format.split (':') [0]
+
+            // If we're working with a video, format is CONTAINER:STREAMFORMAT1:..., so we just keep the container format for the extension of the path we'll use for creating a copy of the piv without metadata.
+            // Otherwise, we use the format itself for pictures.
+            s.hashpath = path + '.' + piv.format.split (':') [0]
 
             piv.dates ['upload:lastModified'] = lastModified;
             if (H.dateFromName (piv.name) !== -1) piv.dates ['upload:fromName'] = piv.name;
-
-            piv.dates = JSON.stringify (piv.dates);
 
             // All dates are considered to be UTC, unless they explicitly specify a timezone.
             // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
@@ -2118,6 +2114,9 @@ var routes = [
             // If date is earlier than 1990, report it but carry on.
             if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: piv.dates, dateSource: piv.dateSource, name: piv.name});
 
+            piv.dates = JSON.stringify (piv.dates);
+
+            s.next ();
          },
          [perfTrack, 'metadata'],
          [a.set, 'hashorig', function (s) {
@@ -2162,23 +2161,23 @@ var routes = [
             }
          ]}],
          piv.vid ? function (s) {
-            a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', hashpath], function (s, error) {
+            a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', s.hashpath], function (s, error) {
                // If the error wasn't on the 3gp format, it's an unknown error.
-               if (Path.extname (hashpath) !== '.3gp') return invalidHandler (s, error);
+               if (piv.format !== '.3gp') return invalidHandler (s, error);
                // Some 3gp files have an issue with ffmpeg for stripping the metadata. For these files, use the original file to compute the hash.
-               return a.make (fs.copyFile) (s, path, hashpath);
+               return a.make (fs.copyFile) (s, path, s.hashpath);
             });
          } : function (s) {
             // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
             if (piv.format === 'bmp') return s.next ();
             a.seq (s, [
-               [a.make (fs.copyFile), path, hashpath],
+               [a.make (fs.copyFile), path, s.hashpath],
                // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
-               invalidHandler (s, piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath])
+               [invalidHandler, piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', s.hashpath] : [k, 'exiv2', 'rm', s.hashpath]],
             ]);
          },
          [a.set, 'hash', function (s) {
-            fs.readFile (piv.format === 'bmp' ? path : hashpath, function (error, file) {
+            fs.readFile (piv.format === 'bmp' ? path : s.hashpath, function (error, file) {
                if (error) return s.next (null, error);
                s.next (hash (file));
                // We remove the reference to the buffer to free memory.
@@ -2186,7 +2185,7 @@ var routes = [
             });
          }],
          function (s) {
-            H.unlink (s, hashpath);
+            H.unlink (s, s.hashpath);
          },
          [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hash'], {'1': [
             [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hash'],
@@ -2287,11 +2286,11 @@ var routes = [
             if (piv.vid) return H.thumbVid (s, invalidHandler, piv.dimw, piv.dimh, piv.deg, newpath);
             var alwaysMakeThumb = piv.format !== 'jpeg' && piv.format !== 'png';
             // If gif, only make small thumbnail.
-            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, dimw, dimh, 200, piv, true], [perfTrack, 'resize200']]);
+            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, piv, true], [perfTrack, 'resize200']]);
             else a.seq (s, [
-               [H.thumbPic, invalidHandler, newpath, dimw, dimh, 200, piv, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPic, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize200'],
-               [H.thumbPic, invalidHandler, newpath, dimw, dimh, 900, piv, alwaysMakeThumb, s.heic_jpg],
+               [H.thumbPic, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
                [perfTrack, 'resize900']
             ]);
          },
@@ -3587,7 +3586,7 @@ var routes = [
 
                               // INVALID FILE (CANNOT BE TOO LARGE OR INVALID FORMAT BECAUSE WE PREFILTER THEM ABOVE)
                               // OR
-                              // SUCCESSFUL UPLOAD OR REPEATED IMAGE, KEEP ON GOING
+                              // SUCCESSFUL UPLOAD OR REPEATED PIV, KEEP ON GOING
                               importFile (s, index + 1);
                            }});
                         });

@@ -89,7 +89,7 @@ var H = {
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
          [k, 'node', 'server', 'local', 'geodata', tk.geodataPath],
          function (s) {
-            if (s.error && ! H.testsDone) console.log (s.error.stdout.slice (-2500));
+            if (s.error && ! H.testsDone) process.stdout.write (s.error.stdout.slice (-2500));
          }
       ]);
    },
@@ -234,7 +234,6 @@ var H = {
       a.seq (s, [
          [a.fork, pivs, function (piv) {
             if (piv.invalid) return [];
-            var hashpath = Path.join (Path.dirname (piv.path), 'HASH' + Path.basename (piv.path));
             return [
                [H.getMetadata, piv.path],
                function (s) {
@@ -244,21 +243,11 @@ var H = {
                   s.next ();
                },
                function (s) {
-                  // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
-                  if (piv.format === 'bmp') return s.next ();
-                  a.seq (s, [
-                     [a.make (fs.copyFile), piv.path, hashpath],
-                     // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
-                     piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', hashpath] : [k, 'exiv2', 'rm', hashpath]
-                  ]);
-               },
-               function (s) {
-                  fs.readFile (piv.format === 'bmp' ? piv.path : hashpath, function (error, file) {
+                  fs.readFile (piv.path, function (error, file) {
                      if (error) return s.next (null, error);
                      piv.hash = hash (file);
                      // We remove the reference to the buffer to free memory.
                      file = null;
-                     if (piv.format !== 'bmp') fs.unlinkSync (hashpath);
                      s.next ();
                   });
                }
@@ -1143,7 +1132,7 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
-      ['uploadCheck piv with match, same name, same upload, with another date but original picture has Date/Time Original field', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.rotate.hash, name: 'Pic - 20010321 04:26:52 PM.jpg', size: tk.pivs.rotate.size, lastModified: tk.pivs.rotate.mtime}}, 200, H.cBody ({repeated: true})],
+      ['uploadCheck piv with match, same name, same upload, with another date but original piv has Date/Time Original field', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.rotate.hash, name: 'Pic - 20010321 04:26:52 PM.jpg', size: tk.pivs.rotate.size, lastModified: tk.pivs.rotate.mtime}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck with dates from names', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          var newDates = [];
          if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
@@ -1299,8 +1288,8 @@ suites.upload.piv = function () {
 suites.upload.full = function () {
    return [
       // TODO uncomment
-      //suites.upload.upload (),
-      //suites.upload.uploadCheck (),
+      suites.upload.upload (),
+      suites.upload.uploadCheck (),
       //suites.upload.piv (),
    ];
 }

@@ -19,7 +19,7 @@
       "format": "mp4:h264/mp3",
       "dimw": 1366,
       "dimh": 768,
-      "hash": 1558324846
+      "hash": 2989754675
    },
    "benin": {
       "name": "benin.tif",
@@ -49,7 +49,8 @@
       "isVid": true,
       "format": "3gp:amr_nb/h263",
       "dimw": 352,
-      "dimh": 288
+      "dimh": 288,
+      "hash": 3748825687
    },
    "circus": {
       "name": "circus.MOV",
@@ -72,7 +73,8 @@
       "format": "mov:aac/hevc",
       "deg": 90,
       "dimw": 1920,
-      "dimh": 1080
+      "dimh": 1080,
+      "hash": 3086668155
    },
    "deer": {
       "name": "deer.bmp",
@@ -123,7 +125,7 @@
       "format": "jpeg",
       "dimw": 3264,
       "dimh": 2448,
-      "hash": 2803709825
+      "hash": 245638445
    },
    "empty": {
       "name": "empty.jpg",
@@ -157,7 +159,7 @@
       "format": "jpeg",
       "dimw": 3264,
       "dimh": 2448,
-      "hash": 2375516235
+      "hash": 2526606026
    },
    "medium-nometa": {
       "name": "medium-nometa.jpg",
@@ -185,7 +187,7 @@
       "format": "jpeg",
       "dimw": 248,
       "dimh": 204,
-      "hash": 3972466237
+      "hash": 194393043
    },
    "rotate": {
       "name": "rotate.jpg",
@@ -204,7 +206,7 @@
       "deg": 90,
       "dimw": 2048,
       "dimh": 1232,
-      "hash": 776499219
+      "hash": 1001643281
    },
    "rotatemedium": {
       "name": "rotatemedium.jpg",
@@ -223,7 +225,7 @@
       "deg": 90,
       "dimw": 819,
       "dimh": 493,
-      "hash": 349266192
+      "hash": 1441551623
    },
    "rotatesmall": {
       "name": "rotatesmall.jpg",
@@ -242,7 +244,7 @@
       "deg": 90,
       "dimw": 123,
       "dimh": 74,
-      "hash": 1546793829
+      "hash": 2864754819
    },
    "small": {
       "name": "small.png",
@@ -258,7 +260,7 @@
       "format": "png",
       "dimw": 149,
       "dimh": 149,
-      "hash": 772326011
+      "hash": 2011409414
    },
    "smallmeta": {
       "name": "smallmeta.png",
@@ -275,7 +277,7 @@
       "format": "png",
       "dimw": 149,
       "dimh": 149,
-      "hash": 772326011
+      "hash": 3659108096
    },
    "sunrise": {
       "name": "sunrise.HEIC",
@@ -294,7 +296,7 @@
       "deg": 90,
       "dimw": 4032,
       "dimh": 3024,
-      "hash": 588340344
+      "hash": 581334427
    },
    "tram": {
       "name": "tram.mp4",
@@ -316,7 +318,8 @@
       "format": "mp4:aac/h264",
       "deg": 90,
       "dimw": 1920,
-      "dimh": 1080
+      "dimh": 1080,
+      "hash": 3173476963
    },
    "tumbleweed": {
       "name": "tumbleweed.GIF",

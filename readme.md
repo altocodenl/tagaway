@@ -87,8 +87,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
-   - On double click, images fail to open in most cases
-   - When opening thumbnail, big image is superimposed to the same piv (it's like a piv is opened on top of another)
+   - On double click, pivs fail to open in most cases
+   - When opening thumbnail, big picture is superimposed to the same piv (it's like a piv is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
 - Refactor UI with unified terminology for pivs: Pics&Vids?
@@ -164,13 +164,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Warn of leaving page if upload is ongoing.
 
 - Upload
-   - Allow only valid images and videos of certain formats.
+   - Allow only valid pivs of certain formats.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pivs in S3 and pivs + thumbnails locally.
-   - Ignore images that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
+   - Ignore pivs that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
    - Upload files from folder selection, files selection & drop.
-   - If uploading from folder, use folder name (and optional subfolders) as tags for the images contained in them.
+   - If uploading from folder, use folder name (and optional subfolders) as tags for the pivs contained in them.
    - See progress when uploading files, using a progress bar.
    - Add one or more tags to the upcoming upload batch.
    - See previous uploads.
@@ -981,11 +981,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pivs`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
-   8. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pictures, it invokes `delete pivs`.
+   8. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it. If the tag is added and it is an user tag, we invoke `rem State.filter`.
    10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
-   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pictures that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
+   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
    13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    14. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs true`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
