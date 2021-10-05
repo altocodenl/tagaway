@@ -1224,53 +1224,60 @@ suites.upload.piv = function () {
       // Untested case: too large file
       // Untested case: no capacity
       suites.auth.in  (tk.users.user1),
-      // TODO
-      // get data: query, logs & account (byfs bys3)
-      //   - rotations
-      //   - t200 & t900
-      //   - mp4 conversion
-      //   - dates
-      // TODO Do we need repeated files? only those with different metadata
-      // upload identical duplicate, alreadyModified (identical, different upload), not identical with no metadata, not identical with metadata
-      // geo enable & upload with geo
-      // get pending status on non mp4 videos, finally get it again
-      // upload images/videos without extension in name, make sure we pick them up anyway
-      // upload file that is not from a piv mimetype
       ['start upload for all pivs', 'post', 'upload', {}, {op: 'start', total: dale.keys (tk.pivs).length}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
       }],
       dale.go (tk.pivs, function (piv, name) {
-         return [];
          // TODO: do all pivs
-         if (piv.size > 1000000) return [];
+         if (! piv.invalid && piv.mimetype.match ('video') && ! piv.format.match (/^mp4:/)) return [];
+         if (piv.repeated) return [];
          return [
             ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
                {type: 'file',  name: 'piv', path: piv.path},
                {type: 'field', name: 'id', value: s.uploadId},
                {type: 'field',  name: 'lastModified', value: piv.mtime}
             ]}}, piv.invalid ? 400 : 200, function (s, rq, rs) {
-               if (H.stop ('id', type (rs.body.id), 'string'))  return false;
+               if (piv.invalid) return true;
+               if (H.stop ('id type', type (rs.body.id), 'string'))  return false;
                if (H.stop ('deg', rs.body.deg, piv.deg)) return false;
                return true;
             }],
-            ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-               console.log ('debug', name, rs.body.pivs [0]);
+            piv.invalid ? [] : ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+               var upiv = rs.body.pivs [0];
+               if (H.stop ('id type', type (upiv.id), 'string')) return false;
+               if (H.stop ('dateup type', type (upiv.dateup), 'integer')) return false;
+               if (Date.now () - upiv.dateup > 1000 || upiv.dateup - Date.now () < -1000) return clog ('dateup must be less than 100ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
                if (dale.stop ({
                   owner: 'user1',
-                  name: piv.name,
-                  tags: [new Date (piv.date).getUTCFullYear () + ''],
-                  date: piv.date,
-                  dates: dale.obj ({'upload:lastModified': piv.mtime}, teishi.copy (piv.dates), function (v, k) {return [k, v]}),
-                  dimw: piv.dimw,
-                  dimh: piv.dimh
+                  name: upiv.name,
+                  tags: [new Date (upiv.date).getUTCFullYear () + ''],
+                  date: upiv.date,
+                  dates: dale.obj ({'upload:lastModified': piv.mtime}, teishi.copy (upiv.dates), function (v, k) {return [k, v]}),
+                  dimw: upiv.dimw,
+                  dimh: upiv.dimh,
+                  deg:  upiv.deg,
+                  format: upiv.format
                }, false, function (v, k) {
                   if (H.stop (name + ' field ' + k, rs.body.pivs [0] [k], v)) return false;
                }) === false) return false;
+               // TODO
+               // In test/pivdata: compute date. See if logic for getting dates can be encapsulated better in server.
+               // if video, check that if mp4 it is a 1, otherwise a string (but pending check)
+               // check thumbnails: gif only has small one, pics only have 200 or 900 if their largest dimension is over that, pics with rotation info should have the thumbnails (if < 200, only the 200 one)
                return true;
             }],
+            // TODO: check that account byfs/bys3 go up; general: check that vids/pics goes up by 1, check that format count goes by 1, check that byfs and bys3 go up, check that t200 and t900 counters go up
          ];
       }),
+      // TODO
+      // for files with date/time original, check it matches date, despite submitting a lower date
+      // for identical piv, add tags & dates (lastModified, fromName)
+      // for piv with different metadata, add tags & dates (also from different metadata)
+      // add rotation metadata to sub-200 and sub-900 picture, see that thumbnails are made
+      // get pending status on non mp4 videos, finally get it again
+      // upload images/videos without extension in name, make sure we pick them up anyway
+      // upload file that is not from a piv mimetype
       suites.auth.out (tk.users.user1),
    ];
 }

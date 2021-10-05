@@ -653,8 +653,7 @@ All the routes below require an admin user to be logged in.
    - ms-pivup-metadata:  total ms for metadata check in POST /piv
    - ms-pivup-hash:      total ms for hash check in POST /piv
    - ms-pivup-fs:        total ms for FS operations in POST /piv
-   - ms-pivup-resize200: total ms for 200 resize operation in POST /piv
-   - ms-pivup-resize900: total ms for 900 resize operation in POST /piv
+   - ms-pivup-thumb:     total ms for thumbnail creation in POST /piv
    - ms-pivup-db:        total ms for info storage & DB processing in POST /piv
    - ms-video-convert:   total ms for non-mp4 to mp4 video conversion
    - ms-video-convert:FORMAT: total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
@@ -723,7 +722,7 @@ All the routes below require an admin user to be logged in.
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pivs downloaded (also includes cached hits)
-   loc: [INT, INT] or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner.
+   loc: [INT, INT] or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner and the piv has valid geodata.
 
 - pivt:ID (set): list of all the tags belonging to a piv.
 

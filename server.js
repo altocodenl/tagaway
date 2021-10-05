@@ -359,7 +359,7 @@ H.thumbVid = function (s, invalidHandler, piv, path) {
    a.stop (s, [
       [
          // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
-         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim [askance ? 1 : 0] + 'x' + t200dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t200 + '.png')]),
+         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim [askance ? 1 : 0] + 'x' + t200dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t200 + '.png')]],
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
          function (s) {
@@ -369,7 +369,7 @@ H.thumbVid = function (s, invalidHandler, piv, path) {
       ],
       ! s.t900 ? [] : [
          // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
-         invalidHandler (s, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim [askance ? 1 : 0] + 'x' + t900dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t900 + '.png')]),
+         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim [askance ? 1 : 0] + 'x' + t900dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t900 + '.png')]],
          [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
          [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
          function (s) {
@@ -1936,7 +1936,7 @@ var routes = [
                   else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, name: b.name, size: b.size, identical: true});
                },
                function (s) {
-                  // Since the metadata of this piv is identical to that of an already uploaded piv (because both files are identical by hash), the only different date can be provided in the lastModified field.
+                  // Since the metadata of this piv is identical to that of an already uploaded piv, the only different date can be provided in the lastModified field.
                   H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, b.name, b.lastModified);
                },
                [reply, rs, 200, {repeated: true}]
@@ -2114,8 +2114,6 @@ var routes = [
             // If date is earlier than 1990, report it but carry on.
             if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: piv.dates, dateSource: piv.dateSource, name: piv.name});
 
-            piv.dates = JSON.stringify (piv.dates);
-
             s.next ();
          },
          [perfTrack, 'metadata'],
@@ -2128,6 +2126,8 @@ var routes = [
             });
          }],
          [a.cond, [a.get, Redis, 'hexists', 'hashorig:' + rq.user.username, '@hashorig'], {'1': [
+            // If we are here, this user already has an identical piv.
+            // The two modifications possible to the original piv are tags and dates.
             [a.get, Redis, 'hget', 'hashorig:' + rq.user.username, '@hashorig'],
             function (s) {
                Redis (s, 'hgetall', 'piv:' + s.last);
@@ -2154,12 +2154,14 @@ var routes = [
                else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
             },
             function (s) {
-               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified, piv.dates);
+               // Since the metadata of this piv is identical to that of an already uploaded piv, the only different date can be provided in the lastModified field.
+               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified);
             },
             function (s) {
                reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});
             }
          ]}],
+         // We compute the hash of the piv with stripped metadata
          piv.vid ? function (s) {
             a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', s.hashpath], function (s, error) {
                // If the error wasn't on the 3gp format, it's an unknown error.
@@ -2185,9 +2187,12 @@ var routes = [
             });
          }],
          function (s) {
+            if (piv.format === 'bmp') return s.next ();
             H.unlink (s, s.hashpath);
          },
          [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hash'], {'1': [
+            // If we are here, this user already has a piv that is identical in its content, but not in its metadata.
+            // As with identical pivs, the two modifications possible to the original piv are tags and dates.
             [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hash'],
             function (s) {
                Redis (s, 'hgetall', 'piv:' + s.last);
@@ -2280,18 +2285,17 @@ var routes = [
             // If heic, convert to jpg to later make the thumbnails
             if (piv.format !== 'heic') return s.next ();
             s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), piv.id + '.jpeg');
-            a.seq (s, invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]));
+            invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]);
          },
          function (s) {
-            if (piv.vid) return H.thumbVid (s, invalidHandler, piv.dimw, piv.dimh, piv.deg, newpath);
+            if (piv.vid) return H.thumbVid (s, invalidHandler, piv, newpath);
             var alwaysMakeThumb = piv.format !== 'jpeg' && piv.format !== 'png';
             // If gif, only make small thumbnail.
-            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, piv, true], [perfTrack, 'resize200']]);
+            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, piv, true], [perfTrack, 'thumb']]);
             else a.seq (s, [
                [H.thumbPic, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
-               [perfTrack, 'resize200'],
                [H.thumbPic, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
-               [perfTrack, 'resize900']
+               [perfTrack, 'thumb']
             ]);
          },
          function (s) {
@@ -2320,6 +2324,7 @@ var routes = [
             piv.byfs         = s.byfs.size;
             piv.hash         = s.hash;
             piv.originalHash = s.hashorig;
+            piv.dates        = JSON.stringify (piv.dates);
 
             if (s.t200) piv.t200  = s.t200;
             if (s.t900) piv.t900  = s.t900;
@@ -2362,7 +2367,7 @@ var routes = [
                ['stock', 'byfs',                     piv.byfs + (piv.by200 || 0) + (piv.by900 || 0)],
                ['stock', 'byfs-' + rq.user.username, piv.byfs + (piv.by200 || 0) + (piv.by900 || 0)],
                ['stock', piv.vid ? 'vids' : 'pics', 1],
-               ['stock', 'format-' + piv.format, 1],
+               ['stock', 'format-' + piv.format.split (':') [0], 1],
                piv.by200 ? ['stock', 't200', 1] : [],
                piv.by900 ? ['stock', 't900', 1] : [],
             ].concat (dale.fil (perf, undefined, function (item, k) {
@@ -2730,7 +2735,7 @@ var routes = [
                   else if (piv.vid.match ('error')) vid = 'error';
                   else                              vid = true;
                }
-               s.output.pivs [k] = {id: piv.id, t200: ! ENV ? piv.t200 : undefined, t900: ! ENV ? piv.t900 : undefined, owner: piv.owner, name: piv.name, tags: s.last [k].sort (), date: parseInt (piv.date), dateup: parseInt (piv.dateup), dates: ENV ? undefined : JSON.parse (piv.dates), dimh: parseInt (piv.dimh), dimw: parseInt (piv.dimw), deg: parseInt (piv.deg) || undefined, vid: vid, loc: piv.loc ? teishi.parse (piv.loc) : undefined};
+               s.output.pivs [k] = {id: piv.id, t200: ! ENV ? piv.t200 : undefined, t900: ! ENV ? piv.t900 : undefined, format: ! ENV ? piv.ormat : undefined, owner: piv.owner, name: piv.name, tags: s.last [k].sort (), date: parseInt (piv.date), dateup: parseInt (piv.dateup), dates: ENV ? undefined : JSON.parse (piv.dates), dimh: parseInt (piv.dimh), dimw: parseInt (piv.dimw), deg: parseInt (piv.deg) || undefined, vid: vid, loc: piv.loc ? teishi.parse (piv.loc) : undefined};
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);
