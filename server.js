@@ -307,77 +307,61 @@ H.unlink = function (s, path, checkExistence) {
    ]);
 }
 
-H.thumbPic = function (s, invalidHandler, path, thumbSize, piv, alwaysMakeThumb, heic_path) {
-   var format = piv.format === 'png' ? '.png' : '.jpeg';
+H.thumbPic = function (s, invalidHandler, piv, path, heic_path) {
+   var max = Math.max (piv.dimw, piv.dimh);
+   // If we have a gif, we only make a small thumbnail, since we'll show the full gif when opening the piv.
+   if (piv.format === 'gif') s.t200 = uuid ();
+   else if (piv.deg || ! inc (['jpeg', 'png'], piv.format)) {
+      // if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
+      // Also if piv is neither a jpeg or a png, we need to create a jpeg or png thumbnail to show in the browser.
+      s.t200 = uuid ();
+      // If piv has a dimension larger than 200, we'll also need a 900 thumbnail.
+      if (max > 200) s.t900 = uuid ();
+   }
+   else {
+      if (max > 200) s.t200 = uuid ();
+      if (max > 900) s.t900 = uuid ();
+   }
    var multiframeFormat = inc (['gif', 'tiff'], piv.format);
-   a.seq (s, [
-      [function (s) {
-         var pivMax = Math.max (piv.dimw, piv.dimh);
-         if (! alwaysMakeThumb && pivMax <= thumbSize) {
-            if (! piv.deg) return s.next (true);
-            // if piv has rotation metadata, we need to create a thumbnail, which has no metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
-            // If piv is smaller than 200px and we're deciding whether to do the 900px thumb, we skip it since we don't need it.
-            if (pivMax < 200 && thumbSize === 900) return s.next (true);
+   a.seq (s, dale.go ([200, 900], function (size) {
+      if (! s ['t' + size]) return [];
+      // In the case of thumbnails done for stripping rotation metadata or non jpeg/png formats, we don't go over 100% if the piv is smaller than the desired thumbnail size.
+      var percentage = Math.min (Math.round (size / max * 100), 100);
+      return [
+         [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', percentage + '%', Path.join (Path.dirname (path), s ['t' + size] + '.' + piv.format)]],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.' + piv.format), Path.join (Path.dirname (path), s ['t' + size])],
+         [a.make (fs.stat), Path.join (Path.dirname (path), s ['t' + size])],
+         function (s) {
+            s ['t' + size + 'size'] = s.last.size;
+            s.next ();
          }
-         s ['t' + thumbSize] = uuid ();
-         // In the case of thumbnails done for stripping rotation metadata, we don't go over 100% if the piv is smaller than the desired thumbnail size.
-         var perc = Math.min (Math.round (thumbSize / pivMax * 100), 100);
-         a.seq (s, [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', perc + '%', Path.join (Path.dirname (path), s ['t' + thumbSize] + format)]]);
-      }],
-      function (s) {
-         if (s.last === true) return s.next (true);
-         a.make (fs.rename) (s, Path.join (Path.dirname (path), s ['t' + thumbSize] + format), Path.join (Path.dirname (path), s ['t' + thumbSize]));
-      },
-      function (s) {
-         if (s.last === true) return s.next (true);
-         a.make (fs.stat) (s, Path.join (Path.dirname (path), s ['t' + thumbSize]));
-      },
-      function (s) {
-         if (s.last === true) return s.next ();
-         s ['t' + thumbSize + 'size'] = s.last.size;
-         s.next ();
-      }
-   ]);
+      ];
+   }));
 }
 
 H.thumbVid = function (s, invalidHandler, piv, path) {
    var askance = piv.deg === 90 || piv.deg === -90;
    var max = Math.max (piv.dimw, piv.dimh);
-   s.t200 = uuid (), s.t900 = max > 200 ? uuid () : undefined;
-   // small video: make t200 and t200 will be smaller or equal than 200
-   if (max <= 200) var t200dim = [piv.dimw, piv.dimh];
-   // medium video: make t200 and t900 but t900 will be smaller or equal than 900
-   else if (max <= 900) {
-      var t200dim = [Math.round (piv.dimw * 200 / max), Math.round (piv.dimh * 200 / max)];
-      var t900dim = [piv.dimw, piv.dimh];
-   }
-   // large video: make t200 and t900
-   else {
-      var t200dim = [Math.round (piv.dimw * 200 / max), Math.round (piv.dimh * 200 / max)];
-      var t900dim = [Math.round (piv.dimw * 900 / max), Math.round (piv.dimh * 900 / max)];
-   }
-   a.stop (s, [
-      [
+   s.t200 = uuid ();
+   // If video has a dimension larger than 200, we'll also need a 900 thumbnail.
+   if (max > 200) s.t900 = uuid ();
+   a.seq (s, dale.go ([200, 900], function (size) {
+      if (! s ['t' + size]) return [];
+      // In the case of thumbnails done for very small videos, do not go over 100%.
+      var percentage = Math.min (Math.round (size / max * 100), 100);
+      var width  = Math.round (piv.dimw * percentage / 100);
+      var height = Math.round (piv.dimh * percentage / 100);
+      return [
          // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
-         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t200dim [askance ? 1 : 0] + 'x' + t200dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t200 + '.png')]],
-         [a.make (fs.rename), Path.join (Path.dirname (path), s.t200 + '.png'), Path.join (Path.dirname (path), s.t200)],
-         [a.make (fs.stat), Path.join (Path.dirname (path), s.t200)],
+         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', (askance ? height : width) + 'x' + (askance ? width : height), Path.join (Path.dirname (path), s ['t' + size] + '.png')]],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.png'), Path.join (Path.dirname (path), s ['t' + size])],
+         [a.make (fs.stat), Path.join (Path.dirname (path), s ['t' + size])],
          function (s) {
-            s.t200size = s.last.size;
+            s ['t' + size + 'size'] = s.last.size;
             s.next ();
-         },
-      ],
-      ! s.t900 ? [] : [
-         // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
-         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', t900dim [askance ? 1 : 0] + 'x' + t900dim [askance ? 0 : 1], Path.join (Path.dirname (path), s.t900 + '.png')]],
-         [a.make (fs.rename), Path.join (Path.dirname (path), s.t900 + '.png'), Path.join (Path.dirname (path), s.t900)],
-         [a.make (fs.stat), Path.join (Path.dirname (path), s.t900)],
-         function (s) {
-            s.t900size = s.last.size;
-            s.next ();
-         },
-      ]
-   ]);
+         }
+      ];
+   }));
 }
 
 H.encrypt = function (path, cb) {
@@ -1798,7 +1782,8 @@ var routes = [
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
          function (s) {
-            var id = s.piv ['t' + rq.data.params.size] || s.piv.id;
+            // If there's no thumbnail of the specified size, we return the small thumbnail (this will default to 200 if asking for a 900 thumb of a piv smaller than 200); if there's no small thumbnail, we return the original piv instead.
+            var id = s.piv ['t' + rq.data.params.size] || s.piv.t200 || s.piv.id;
             var format = s.piv.format === 'png' ? 'png' : 'jpeg';
             if (rq.data.params.size === '900' && s.piv.format === 'gif') format = 'gif';
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
@@ -2161,22 +2146,23 @@ var routes = [
                reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});
             }
          ]}],
-         // We compute the hash of the piv with stripped metadata
-         piv.vid ? function (s) {
-            a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', s.hashpath], function (s, error) {
+         function (s) {
+            // We compute the hash of the piv with stripped metadata
+            if (piv.vid) a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', s.hashpath], function (s, error) {
                // If the error wasn't on the 3gp format, it's an unknown error.
                if (piv.format !== '.3gp') return invalidHandler (s, error);
                // Some 3gp files have an issue with ffmpeg for stripping the metadata. For these files, use the original file to compute the hash.
                return a.make (fs.copyFile) (s, path, s.hashpath);
             });
-         } : function (s) {
-            // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
-            if (piv.format === 'bmp') return s.next ();
-            a.seq (s, [
-               [a.make (fs.copyFile), path, s.hashpath],
-               // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
-               [invalidHandler, piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', s.hashpath] : [k, 'exiv2', 'rm', s.hashpath]],
-            ]);
+            else {
+               // exiftool doesn't support removing metadata from bmp files, so we use the original file to compute the hash.
+               if (piv.format === 'bmp') return s.next ();
+               a.seq (s, [
+                  [a.make (fs.copyFile), path, s.hashpath],
+                  // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
+                  [invalidHandler, piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', s.hashpath] : [k, 'exiv2', 'rm', s.hashpath]],
+               ]);
+            }
          },
          [a.set, 'hash', function (s) {
             fs.readFile (piv.format === 'bmp' ? path : s.hashpath, function (error, file) {
@@ -2288,20 +2274,13 @@ var routes = [
             invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]);
          },
          function (s) {
-            if (piv.vid) return H.thumbVid (s, invalidHandler, piv, newpath);
-            var alwaysMakeThumb = piv.format !== 'jpeg' && piv.format !== 'png';
-            // If gif, only make small thumbnail.
-            if (piv.format === 'gif') a.seq (s, [[H.thumbPic, invalidHandler, newpath, 200, piv, true], [perfTrack, 'thumb']]);
-            else a.seq (s, [
-               [H.thumbPic, invalidHandler, newpath, 200, piv, alwaysMakeThumb, s.heic_jpg],
-               [H.thumbPic, invalidHandler, newpath, 900, piv, alwaysMakeThumb, s.heic_jpg],
-               [perfTrack, 'thumb']
-            ]);
+            a.seq (s, piv.vid ? [H.thumbVid, invalidHandler, piv, newpath] : [H.thumbPic, invalidHandler, piv, newpath, s.heic_jpg]);
          },
          function (s) {
             if (piv.format !== 'heic') return s.next ();
             H.unlink (s, s.heic_jpg);
          },
+         [perfTrack, 'thumb'],
          // We store only the original pivs in S3, not the thumbnails. We do this only after the piv has been considered valid and the thumbnails have been created.
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), piv.id), newpath],
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
