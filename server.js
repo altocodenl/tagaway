@@ -618,10 +618,11 @@ H.hasAccess = function (S, username, pivId) {
    });
 }
 
-// Returns an output of the shape: {isVid: UNDEFINED|true, mimetype: STRING, dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, loc: UNDEFINED|[INT, INT}
+// Returns an output of the shape: {isVid: UNDEFINED|true, mimetype: STRING, dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, date: INTEGER, dateSource: STRING, loc: UNDEFINED|[INT, INT]}
 // If onlyLocation flag is passed, output will only have the `loc` field.
-H.getMetadata = function (s, path, onlyLocation) {
-   var output = {dates: {}};
+H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
+   var output = {};
+
    a.seq (s, [
       [k, 'exiftool', path],
       function (s) {
@@ -645,6 +646,7 @@ H.getMetadata = function (s, path, onlyLocation) {
       },
       function (s) {
          if (onlyLocation) return s.next ();
+         output.dates = {};
          // We first detect the mimetype to ascertain whether this is a vid or a pic
          dale.stopNot (s.last, undefined, function (line) {
             if (! line.match (/^MIME Type\s+:/)) return;
@@ -703,15 +705,57 @@ H.getMetadata = function (s, path, onlyLocation) {
          ]);
       },
       function (s) {
-         if (onlyLocation) {
-            delete output.dates;
-            return s.next (output);
-         }
+         if (onlyLocation) return s.next (output);
+
          // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
          if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
          if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
          if (! output.format)   return s.next (null, {error: 'Missing format'});
          if (! output.mimetype) return s.next (null, {error: 'Missing mimetype'});
+
+         // All dates are considered to be UTC, unless they explicitly specify a timezone.
+         // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
+         // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
+         output.dates ['upload:lastModified'] = lastModified;
+         if (H.dateFromName (name) !== -1) output.dates ['upload:fromName'] = name;
+
+         var validDates = dale.obj (output.dates, function (date, key) {
+            var parsed = key.match ('fromName') ? H.dateFromName (date) : H.parseDate (date);
+            // We ignore invalid dates (-1) or dates before the Unix epoch (< 0).
+            if (parsed > -1) return [key, parsed];
+         });
+
+         // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
+         if (validDates ['Date/Time Original']) {
+            output.date       = validDates ['Date/Time Original'];
+            output.dateSource = 'Date/Time Original';
+         }
+         // Otherwise, of all the valid dates, we will set the oldest one.
+         else {
+            dale.go (validDates, function (date, key) {
+               if (output.date && output.date <= date) return;
+               output.date = date;
+               output.dateSource = key;
+            });
+         }
+
+         // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the latest one of them. This avoids files with a name that contains a date without time to override the date + time combination of another metadata tag.
+         if (output.dateSource === 'upload:fromName') {
+            var adjustedDate;
+            dale.go (validDates, function (date, key) {
+               if (date - piv.date < 1000 * 60 * 60 * 24) {
+                  if (! adjustedDate) adjustedDate = [key, date];
+                  else {
+                     if (date < adjustedDate [1]) adjustedDate = [key, date];
+                  }
+               }
+            });
+            if (adjustedDate) {
+               piv.dateSource = adjustedDate [0];
+               piv.date       = adjustedDate [1];
+            }
+         }
+
          s.next (output);
       }
    ]);
@@ -2034,7 +2078,7 @@ var routes = [
 
          // *** METADATA ***
 
-         [invalidHandler, [H.getMetadata, path]],
+         [invalidHandler, [H.getMetadata, path, false, lastModified, piv.name]],
          function (s) {
 
             if (! inc (CONFIG.allowedFormats, s.last.mimetype)) return astop (rs, [
@@ -2042,63 +2086,21 @@ var routes = [
                [reply, rs, 400, {error: 'format'}]
             ]);
 
+            // Add fields: piv.dimw, piv.dimh, piv.format, piv.deg, piv.dates, piv.loc, piv.date, piv.dateSource
+            dale.go (s.last, function (v, k) {
+               if (k === 'isVid' || k === 'mimetype') return;
+               piv [k] = v;
+            });
+
             if (s.last.isVid) {
                // If the format is mp4, we put a truthy placeholder in piv.vid; otherwise, we create an id to point to the mp4 version of the video.
                if (s.last.format.slice (0, 3) === 'mp4') piv.vid = 1;
                else                                      piv.vid = uuid ();
             }
 
-            // Add fields: piv.dimw, piv.dimh, piv.format, piv.deg, piv.dates, piv.loc
-            dale.go (s.last, function (v, k) {
-               if (k === 'isVid' || k === 'mimetype') return;
-               piv [k] = v;
-            });
-
             // If we're working with a video, format is CONTAINER:STREAMFORMAT1:..., so we just keep the container format for the extension of the path we'll use for creating a copy of the piv without metadata.
             // Otherwise, we use the format itself for pictures.
             s.hashpath = path + '.' + piv.format.split (':') [0]
-
-            piv.dates ['upload:lastModified'] = lastModified;
-            if (H.dateFromName (piv.name) !== -1) piv.dates ['upload:fromName'] = piv.name;
-
-            // All dates are considered to be UTC, unless they explicitly specify a timezone.
-            // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
-            // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
-
-            var validDates = dale.obj (piv.dates, function (date, key) {
-               var parsed = key.match ('fromName') ? H.dateFromName (date) : H.parseDate (date);
-               if (parsed > -1) return [key, parsed];
-            });
-
-            // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
-            if (validDates ['Date/Time Original']) {
-               piv.date = validDates ['Date/Time Original'];
-               piv.dateSource = 'Date/Time Original';
-            }
-            // Otherwise, of all the valid dates (any date we can parse and is on or after the Unix epoch), we will set the oldest one.
-            else {
-               dale.go (validDates, function (date, key) {
-                  if (piv.date && piv.date <= date) return;
-                  piv.date = date;
-                  piv.dateSource = key;
-               });
-            }
-            // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the earliest one of them.
-            if (piv.dateSource === 'upload:fromName') {
-               var fromNameAdjusted;
-               dale.go (validDates, function (date, key) {
-                  if (date - piv.date < 1000 * 60 * 60 * 24) {
-                     if (! fromNameAdjusted) fromNameAdjusted = [key, date];
-                     else {
-                        if (date < fromNameAdjusted [1]) fromNameAdjusted = [key, date];
-                     }
-                  }
-               });
-               if (fromNameAdjusted) {
-                  piv.dateSource = fromNameAdjusted [0];
-                  piv.date       = fromNameAdjusted [1];
-               }
-            }
 
             // If date is earlier than 1990, report it but carry on.
             if (piv.date < new Date ('1990-01-01').getTime ()) notify (a.creat (), {priority: 'important', type: 'old date in piv', user: rq.user.username, dates: piv.dates, dateSource: piv.dateSource, name: piv.name});

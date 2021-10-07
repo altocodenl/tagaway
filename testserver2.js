@@ -114,6 +114,34 @@ var H = {
          return ! H.stop ('body', rs.body, value);
       }
    },
+   dateFromName: function (name) {
+      // Date example: 20220308
+      if (name.match (/(19|20)\d{6}/)) {
+         var date = name.match (/(19|20)\d{6}/g) [0];
+         date = [date.slice (0, 4), date.slice (4, 6), date.slice (6)].join ('-');
+         // Date with time acceptable format: date + 0 or more non digits + 1-2 digits (hour) + 0 or more non digits + 2 digits (minutes) + 0 or more non digits + optional two digits (seconds) + zero or more non letters plus optional am|AM|pm|PM
+         var time = name.match (/(19|20)\d{6}[^\d]*(\d{1,2})[^\d]*(\d{2})[^\d]*(\d{2})?[^a-zA-Z]*(am|AM|pm|PM)?/);
+      }
+      // Date example: 2022-03-08
+      else if (name.match (/(19|20)\d\d-\d\d-\d\d/)) {
+         var date = name.match (/(19|20)\d\d-\d\d-\d\d/g) [0];
+         date = [date.slice (0, 4), date.slice (5, 7), date.slice (8)].join ('-');
+         // Date with time acceptable format: date + 0 or more non digits + 1-2 digits (hour) + 0 or more non digits + 2 digits (minutes) + 0 or more non digits + optional two digits (seconds) + zero or more non letters plus optional am|AM|pm|PM
+         var time = name.match (/(19|20)\d\d-\d\d-\d\d[^\d]*(\d{1,2})[^\d]*(\d{2})[^\d]*(\d{2})?[^a-zA-Z]*(am|AM|pm|PM)?/);
+      }
+      else return -1;
+
+      // Attempt to get the time from the date. If it fails, just return the date with no time.
+      if (time && time [2] !== undefined && time [3] !== undefined) {
+         var hour = parseInt (time [2]);
+         if (time [5] && time [5].match (/pm/i) && hour > 0 && hour < 12) hour += 12;
+         hour += '';
+         var dateWithTime = date + 'T' + (hour.length === 1 ? '0' : '') + hour + ':' + time [3] + ':' + (time [4] || '00') + '.000Z';
+         dateWithTime = H.parseDate (dateWithTime);
+         if (dateWithTime !== -1) return dateWithTime;
+      }
+      return H.parseDate (date);
+   },
    parseDate: function (date) {
       if (! date) return -1;
       // Range is years 1970-2100
@@ -125,10 +153,11 @@ var H = {
       if (! isNaN (ms) && ms >= minDate && ms <= maxDate) return ms;
       return -1;
    },
-   // Returns an output of the shape: {isVid: UNDEFINED|true, mimetype: STRING, dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, loc: UNDEFINED|[INT, INT}
+   // Returns an output of the shape: {isVid: UNDEFINED|true, mimetype: STRING, dimw: INT, dimh: INT, format: STRING, deg: UNDEFINED|90|180|-90, dates: {...}, date: INTEGER, dateSource: STRING, loc: UNDEFINED|[INT, INT]}
    // If onlyLocation flag is passed, output will only have the `loc` field.
-   getMetadata: function (s, path, onlyLocation) {
-      var output = {dates: {}};
+   getMetadata: function (s, path, onlyLocation, lastModified, name) {
+      var output = {};
+
       a.seq (s, [
          [k, 'exiftool', path],
          function (s) {
@@ -152,6 +181,7 @@ var H = {
          },
          function (s) {
             if (onlyLocation) return s.next ();
+            output.dates = {};
             // We first detect the mimetype to ascertain whether this is a vid or a pic
             dale.stopNot (s.last, undefined, function (line) {
                if (! line.match (/^MIME Type\s+:/)) return;
@@ -210,15 +240,57 @@ var H = {
             ]);
          },
          function (s) {
-            if (onlyLocation) {
-               delete output.dates;
-               return s.next (output);
-            }
+            if (onlyLocation) return s.next (output);
+
             // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
             if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
             if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
             if (! output.format)   return s.next (null, {error: 'Missing format'});
             if (! output.mimetype) return s.next (null, {error: 'Missing mimetype'});
+
+            // All dates are considered to be UTC, unless they explicitly specify a timezone.
+            // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.
+            // The client also ignores timezones, except for applying a timezone offset for the `last modified` metadata of the piv in the filesystem when it is uploaded.
+            output.dates ['upload:lastModified'] = lastModified;
+            if (H.dateFromName (name) !== -1) output.dates ['upload:fromName'] = name;
+
+            var validDates = dale.obj (output.dates, function (date, key) {
+               var parsed = key.match ('fromName') ? H.dateFromName (date) : H.parseDate (date);
+               // We ignore invalid dates (-1) or dates before the Unix epoch (< 0).
+               if (parsed > -1) return [key, parsed];
+            });
+
+            // We first try to find a valid Date/Time Original, if it's the case, then we will use that date.
+            if (validDates ['Date/Time Original']) {
+               output.date       = validDates ['Date/Time Original'];
+               output.dateSource = 'Date/Time Original';
+            }
+            // Otherwise, of all the valid dates, we will set the oldest one.
+            else {
+               dale.go (validDates, function (date, key) {
+                  if (output.date && output.date <= date) return;
+                  output.date = date;
+                  output.dateSource = key;
+               });
+            }
+
+            // If the date source is upload:fromName and there's another valid date entry on the same date (but a later time), we use the latest one of them. This avoids files with a name that contains a date without time to override the date + time combination of another metadata tag.
+            if (output.dateSource === 'upload:fromName') {
+               var adjustedDate;
+               dale.go (validDates, function (date, key) {
+                  if (date - piv.date < 1000 * 60 * 60 * 24) {
+                     if (! adjustedDate) adjustedDate = [key, date];
+                     else {
+                        if (date < adjustedDate [1]) adjustedDate = [key, date];
+                     }
+                  }
+               });
+               if (adjustedDate) {
+                  piv.dateSource = adjustedDate [0];
+                  piv.date       = adjustedDate [1];
+               }
+            }
+
             s.next (output);
          }
       ]);
@@ -235,11 +307,13 @@ var H = {
          [a.fork, pivs, function (piv) {
             if (piv.invalid) return [];
             return [
-               [H.getMetadata, piv.path],
+               [H.getMetadata, piv.path, false, piv.mtime, piv.name],
                function (s) {
                   dale.go (s.last, function (v, k) {
                      piv [k] = v;
                   });
+                  // humanReadableDate is there just for manual checking purposes, to see that the date indeed makes sense at a glance compared to the dates contained in the metadata
+                  piv.humanReadableDate = new Date (piv.date).toISOString ();
                   s.next ();
                },
                function (s) {
@@ -1253,7 +1327,7 @@ suites.upload.piv = function () {
                   name: upiv.name,
                   tags: [new Date (upiv.date).getUTCFullYear () + ''],
                   date: upiv.date,
-                  dates: dale.obj ({'upload:lastModified': piv.mtime}, teishi.copy (upiv.dates), function (v, k) {return [k, v]}),
+                  dates: upiv.dates,
                   dimw: upiv.dimw,
                   dimh: upiv.dimh,
                   deg:  upiv.deg,
