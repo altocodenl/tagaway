@@ -707,7 +707,7 @@ H.getMetadata = function (s, path, onlyLocation) {
             delete output.dates;
             return s.next (output);
          }
-         // Despite our trust in exiftool, we make sure that the required output fields are present
+         // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
          if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
          if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
          if (! output.format)   return s.next (null, {error: 'Missing format'});
@@ -2697,7 +2697,24 @@ var routes = [
                   else if (piv.vid.match ('error')) vid = 'error';
                   else                              vid = true;
                }
-               s.output.pivs [k] = {id: piv.id, t200: ! ENV ? piv.t200 : undefined, t900: ! ENV ? piv.t900 : undefined, format: ! ENV ? piv.ormat : undefined, owner: piv.owner, name: piv.name, tags: s.last [k].sort (), date: parseInt (piv.date), dateup: parseInt (piv.dateup), dates: ENV ? undefined : JSON.parse (piv.dates), dimh: parseInt (piv.dimh), dimw: parseInt (piv.dimw), deg: parseInt (piv.deg) || undefined, vid: vid, loc: piv.loc ? teishi.parse (piv.loc) : undefined};
+               s.output.pivs [k] = {
+                  id: piv.id,
+                  t200:       ! ENV ? piv.t200 : undefined,
+                  t900:       ! ENV ? piv.t900 : undefined,
+                  dates:      ! ENV ? JSON.parse (piv.dates) : undefined,
+                  dateSource: ! ENV ? piv.dateSource : undefined,
+                  format:     ! ENV ? piv.format : undefined,
+                  owner: piv.owner,
+                  name: piv.name,
+                  tags: s.last [k].sort (),
+                  date: parseInt (piv.date),
+                  dateup: parseInt (piv.dateup),
+                  dimh: parseInt (piv.dimh),
+                  dimw: parseInt (piv.dimw),
+                  deg: parseInt (piv.deg) || undefined,
+                  vid: vid,
+                  loc: piv.loc ? teishi.parse (piv.loc) : undefined
+               };
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);

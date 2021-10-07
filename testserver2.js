@@ -214,7 +214,7 @@ var H = {
                delete output.dates;
                return s.next (output);
             }
-            // Despite our trust in exiftool, we make sure that the required output fields are present
+            // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
             if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
             if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
             if (! output.format)   return s.next (null, {error: 'Missing format'});
