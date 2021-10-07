@@ -1259,7 +1259,7 @@ suites.upload.piv = function () {
                   deg:  upiv.deg,
                   format: upiv.format
                }, false, function (v, k) {
-                  if (H.stop (name + ' field ' + k, rs.body.pivs [0] [k], v)) return false;
+                  if (H.stop (name + ' field ' + k, upiv [k], v)) return false;
                }) === false) return false;
                // TODO
                // In test/pivdata: compute date. See if logic for getting dates can be encapsulated better in server.
