@@ -876,6 +876,21 @@ H.parseDate = function (date) {
    return -1;
 }
 
+
+H.addTags = function (s, tags, username, id) {
+   // We add the tags of this piv to those of the identical piv already existing
+   var multi = redis.multi ();
+   dale.go (tags, function (tag) {
+      multi.sadd ('pivt:' + id,       tag);
+      multi.sadd ('tags:' + username, tag);;
+      multi.sadd ('tag:'  + username + ':' + tag, id);
+   });
+   if (tags.length > 0) multi.srem ('tag:' + username + ':untagged', id);
+   mexec (s, multi);
+}
+
+// Updates piv.dates if there are new dates that have different values than those already existing.
+// Updates piv.date if any of the new dates is the existing piv date is not from a Date/Time Original metadata tag AND lower than the existing date of the piv. In that case, it also updates piv.dateSource and optionally the year tags for the piv.
 H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified, newDates) {
    var date = parseInt (piv.date), dates = JSON.parse (piv.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
    var key = repeatedOrAlreadyUploaded + ':' + Date.now ();
@@ -925,7 +940,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       multi.sadd ('pivt:' + piv.id, newYearTag);
       multi.srem ('pivt:' + piv.id, oldYearTag);
       multi.sadd ('tags:' + piv.owner, newYearTag);
-      // The cleanup on /GET tags takes charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag
+      // The cleanup on /GET tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag
       multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
    }
@@ -1901,17 +1916,7 @@ var routes = [
                }],
                function (s) {
                   s.piv = s.last;
-
-                  // We add the tags of this piv to those of the identical piv already existing
-                  var multi = redis.multi ();
-
-                  dale.go (b.tags, function (tag) {
-                     multi.sadd ('pivt:' + s.piv.id,                     tag);
-                     multi.sadd ('tags:' + rq.user.username,             tag);;
-                     multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.piv.id);
-                  });
-                  if (b.tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.piv.id);
-                  mexec (s, multi);
+                  H.addTags (s, b.tags, rq.user.username, s.piv.id);
                },
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
@@ -2118,17 +2123,7 @@ var routes = [
             },
             function (s) {
                s.piv = s.last;
-
-               // We add the tags of this piv to those of the identical piv already existing
-               var multi = redis.multi ();
-
-               dale.go (tags, function (tag) {
-                  multi.sadd ('pivt:' + s.piv.id,                     tag);
-                  multi.sadd ('tags:' + rq.user.username,             tag);;
-                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.piv.id);
-               });
-               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.piv.id);
-               mexec (s, multi);
+               H.addTags (s, tags, rq.user.username, s.piv.id);
             },
             function (s) {
                // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system, but not in the same upload. The second file, if any, is considered as repeated.
@@ -2184,17 +2179,7 @@ var routes = [
             },
             function (s) {
                s.piv = s.last;
-
-               // We add the tags of this piv to those of the identical piv already existing
-               var multi = redis.multi ();
-
-               dale.go (tags, function (tag) {
-                  multi.sadd ('pivt:' + s.piv.id,                     tag);
-                  multi.sadd ('tags:' + rq.user.username,             tag);;
-                  multi.sadd ('tag:'  + rq.user.username + ':' + tag, s.piv.id);
-               });
-               if (tags.length > 0) multi.srem ('tag:' + rq.user.username + ':untagged', s.piv.id);
-               mexec (s, multi);
+               H.addTags (s, tags, rq.user.username, s.piv.id);
             },
             function (s) {
                H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, piv.dates);
@@ -2326,11 +2311,10 @@ var routes = [
             multi.sadd ('tag:' + rq.user.username + ':all', piv.id);
 
             dale.go (tags.concat (new Date (piv.date).getUTCFullYear ()).concat (geotags), function (tag) {
-               multi.sadd ('pivt:' + piv.id,                       tag);
-               multi.sadd ('tags:' + rq.user.username,             tag);
+               multi.sadd ('pivt:' + piv.id, tag);
+               multi.sadd ('tags:' + rq.user.username, tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
-
             if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', piv.id);
 
             multi.hmset ('piv:' + piv.id, piv);
