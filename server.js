@@ -2036,7 +2036,7 @@ var routes = [
                ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
                ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
                [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error}],
-               [reply, rs, 400, {error: 'Invalid ' + (piv.vid ? 'vid' : 'pic'), data: error, name: piv.name}],
+               [reply, rs, 400, {error: 'Invalid piv', data: error, name: piv.name}],
             ]);
          }
          // If input is an async sequence, we return another async sequence

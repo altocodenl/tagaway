@@ -6,6 +6,7 @@ var toRun = process.argv [2];
 process.argv [2] = undefined;
 
 var hash   = require ('murmurhash').v3;
+var mime   = require ('mime');
 
 var CONFIG = require ('./config.js');
 var dale   = require ('dale');
@@ -1306,18 +1307,43 @@ suites.upload.piv = function () {
          // TODO: do all pivs
          if (! piv.invalid && piv.mimetype.match ('video') && ! piv.format.match (/^mp4:/)) return [];
          if (piv.repeated) return [];
+
+         if (piv.invalid) return ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
+            {type: 'file',  name: 'piv', path: piv.path},
+            {type: 'field', name: 'id', value: s.uploadId},
+            {type: 'field',  name: 'lastModified', value: piv.mtime}
+         ]}}, 400, function (s, rq, rs) {
+            if (H.stop ('body.error', rs.body.error, 'Invalid piv')) return false;
+            return true;
+         }];
+
+         // Figure out which thumbnails (t200 & t900) are needed for the piv, if any
+         var t200, t900, max = Math.max (piv.dimw, piv.dimh);
+         if (piv.format === 'gif') t200 = true;
+         else if (piv.deg || ! inc (['jpeg', 'png'], piv.format)) {
+            // if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
+            // Also if piv is neither a jpeg or a png, we need to create a jpeg or png thumbnail to show in the browser.
+            t200 = true;
+            // If piv has a dimension larger than 200, we'll also need a 900 thumbnail.
+            if (max > 200) t900 = true;
+         }
+         else {
+            t200 = max > 200;
+            t900 = max > 900;
+         }
+
          return [
             ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
                {type: 'file',  name: 'piv', path: piv.path},
                {type: 'field', name: 'id', value: s.uploadId},
                {type: 'field',  name: 'lastModified', value: piv.mtime}
-            ]}}, piv.invalid ? 400 : 200, function (s, rq, rs) {
-               if (piv.invalid) return true;
+            ]}}, 200, function (s, rq, rs) {
                if (H.stop ('id type', type (rs.body.id), 'string'))  return false;
+               piv.id = rs.body.id;
                if (H.stop ('deg', rs.body.deg, piv.deg)) return false;
                return true;
             }],
-            piv.invalid ? [] : ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+            ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
                var upiv = rs.body.pivs [0];
                if (H.stop ('id type', type (upiv.id), 'string')) return false;
                if (H.stop ('dateup type', type (upiv.dateup), 'integer')) return false;
@@ -1333,14 +1359,47 @@ suites.upload.piv = function () {
                   deg:  upiv.deg,
                   format: upiv.format
                }, false, function (v, k) {
-                  if (H.stop (name + ' field ' + k, upiv [k], v)) return false;
+                  if (H.stop (name + ' - field ' + k, upiv [k], v)) return false;
                }) === false) return false;
+
+               if (  t200 &&  ! upiv.t200) return clog (name + ' - missing t200');
+               if (! t200   &&  upiv.t200) return clog (name + ' - unnecessary t200');
+               if (  t900 &&  ! upiv.t900) return clog (name + ' - missing t900');
+               if (! t900 &&    upiv.t900) return clog (name + ' - unnecessary t900');
+
                // TODO
-               // In test/pivdata: compute date. See if logic for getting dates can be encapsulated better in server.
                // if video, check that if mp4 it is a 1, otherwise a string (but pending check)
                // check thumbnails: gif only has small one, pics only have 200 or 900 if their largest dimension is over that, pics with rotation info should have the thumbnails (if < 200, only the 200 one)
+               // download thumbnails, check their dimensions
                return true;
             }],
+            // REFACTOR INTO t200/t900 loop
+            ! t200 ? [] : {tag: 'get t200 for ' + name, method: 'get', path: function (s) {return '/thumb/200/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
+               piv.t200size = Buffer.from (rs.body, 'binary').length;
+               a.stop ([
+                  [a.make (fs.writeFile), name + '-t200', Buffer.from (rs.body, 'binary'), {encoding: 'binary'}],
+                  [H.getMetadata, name + '-t200', false, piv.mtime, piv.name],
+                  function (s) {
+                     var percentage = Math.min (Math.round (200 / max * 100), 100);
+                     var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
+                     askanceThumb = false;
+                     if (H.stop ('t200 width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
+                     if (H.stop ('t200 height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
+                     s.next ();
+                  },
+                  [a.make (fs.unlink), name + '-t200'],
+                  function (s) {
+                     next ();
+                  },
+               ], function (s, error) {
+                  next (error);
+               });
+            }},
+            ! t900 ? [] : {tag: 'get t900 for ' + name, method: 'get', path: function (s) {return '/thumb/900/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs) {
+               clog ('DEBUG t900', name, Buffer.from (rs.body, 'binary').length);
+               piv.t900size = Buffer.from (rs.body, 'binary').length;
+               return true;
+            }},
             // TODO: check that account byfs/bys3 go up; general: check that vids/pics goes up by 1, check that format count goes by 1, check that byfs and bys3 go up, check that t200 and t900 counters go up
          ];
       }),
