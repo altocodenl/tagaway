@@ -1304,8 +1304,6 @@ suites.upload.piv = function () {
          return true;
       }],
       dale.go (tk.pivs, function (piv, name) {
-         // TODO: do all pivs
-         if (! piv.invalid && piv.mimetype.match ('video') && ! piv.format.match (/^mp4:/)) return [];
          if (piv.repeated) return [];
 
          if (piv.invalid) return ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
@@ -1343,11 +1341,11 @@ suites.upload.piv = function () {
                if (H.stop ('deg', rs.body.deg, piv.deg)) return false;
                return true;
             }],
-            ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+            ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
                var upiv = rs.body.pivs [0];
                if (H.stop ('id type', type (upiv.id), 'string')) return false;
                if (H.stop ('dateup type', type (upiv.dateup), 'integer')) return false;
-               if (Date.now () - upiv.dateup > 1000 || upiv.dateup - Date.now () < -1000) return clog ('dateup must be less than 100ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
+               if (Date.now () - upiv.dateup > 2000 || upiv.dateup - Date.now () < -2000) return clog ('dateup must be less than 2000ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
                if (dale.stop ({
                   owner: 'user1',
                   name: upiv.name,
@@ -1367,39 +1365,43 @@ suites.upload.piv = function () {
                if (  t900 &&  ! upiv.t900) return clog (name + ' - missing t900');
                if (! t900 &&    upiv.t900) return clog (name + ' - unnecessary t900');
 
-               // TODO
-               // if video, check that if mp4 it is a 1, otherwise a string (but pending check)
-               // check thumbnails: gif only has small one, pics only have 200 or 900 if their largest dimension is over that, pics with rotation info should have the thumbnails (if < 200, only the 200 one)
-               // download thumbnails, check their dimensions
-               return true;
-            }],
-            // REFACTOR INTO t200/t900 loop
-            ! t200 ? [] : {tag: 'get t200 for ' + name, method: 'get', path: function (s) {return '/thumb/200/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
-               piv.t200size = Buffer.from (rs.body, 'binary').length;
-               a.stop ([
-                  [a.make (fs.writeFile), name + '-t200', Buffer.from (rs.body, 'binary'), {encoding: 'binary'}],
-                  [H.getMetadata, name + '-t200', false, piv.mtime, piv.name],
-                  function (s) {
-                     var percentage = Math.min (Math.round (200 / max * 100), 100);
-                     var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
-                     askanceThumb = false;
-                     if (H.stop ('t200 width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
-                     if (H.stop ('t200 height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
-                     s.next ();
-                  },
-                  [a.make (fs.unlink), name + '-t200'],
-                  function (s) {
-                     next ();
-                  },
-               ], function (s, error) {
-                  next (error);
+               if (piv.invalid || ! piv.mimetype.match ('video')) return true;
+               if (piv.format.match (/^mp4:/)) {
+                  if (H.stop ('piv.vid', upiv.vid, true)) return false;
+                  return true;
+               }
+
+               H.tryTimeout (10, 1000, function (cb) {
+                  h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 200}, cb);
+               }, function (error) {
+                  // check that mp4 is eventually returned
+                  if (error) return next (error);
+                  next ();
                });
-            }},
-            ! t900 ? [] : {tag: 'get t900 for ' + name, method: 'get', path: function (s) {return '/thumb/900/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs) {
-               clog ('DEBUG t900', name, Buffer.from (rs.body, 'binary').length);
-               piv.t900size = Buffer.from (rs.body, 'binary').length;
-               return true;
-            }},
+            }],
+            dale.go ([200, 900], function (size, k) {
+               if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
+               return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return '/thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
+                  piv ['t' + size + 'size'] = Buffer.from (rs.body, 'binary').length;
+                  a.stop ([
+                     [a.make (fs.writeFile), name + '-t' + size, Buffer.from (rs.body, 'binary'), {encoding: 'binary'}],
+                     [H.getMetadata, name + '-t' + size, false, piv.mtime, piv.name],
+                     function (s) {
+                        var percentage = Math.min (Math.round (size / max * 100), 100);
+                        var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
+                        if (H.stop ('t' + size + ' width',   askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
+                        if (H.stop ('t ' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
+                        s.next ();
+                     },
+                     [a.make (fs.unlink), name + '-t' + size],
+                     function (s) {
+                        next ();
+                     },
+                  ], function (s, error) {
+                     next (error);
+                  });
+               }};
+            })
             // TODO: check that account byfs/bys3 go up; general: check that vids/pics goes up by 1, check that format count goes by 1, check that byfs and bys3 go up, check that t200 and t900 counters go up
          ];
       }),
@@ -1457,7 +1459,7 @@ var t = Date.now ();
 
 H.runServer ();
 
-H.tryTimeout (50, 500, function (cb) {
+H.tryTimeout (10, 1000, function (cb) {
    h.one ({}, {port: CONFIG.port, method: 'get', path: '/', code: 200}, cb);
 }, function (error) {
    if (error) return clog ('SERVER DID NOT START');
