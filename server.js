@@ -1754,8 +1754,8 @@ var routes = [
                created:  parseInt (rq.user.created),
                usage:    {
                   limit:  limit,
-                  fsused: parseInt (s.last [1]) || 0,
-                  s3used: parseInt (s.last [2]) || 0,
+                  byfs: parseInt (s.last [1]) || 0,
+                  bys3: parseInt (s.last [2]) || 0,
                },
                geo:           rq.user.geo ? true : undefined,
                geoInProgress: s.last [3]  ? true : undefined,

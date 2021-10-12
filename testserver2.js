@@ -104,6 +104,18 @@ var H = {
       }
       fn (retry);
    },
+   // The apres function in test, if present, must return true or false (it cannot be itself async).
+   testTimeout: function (interval, times, test) {
+      var apres = test.apres || function () {return true};
+      var tryTimeoutSet;
+      test.apres = function (s, rq, rs, next) {
+         if (apres (s, rq, rs, next)) return true;
+         if (tryTimeoutSet) return false;
+         tryTimeoutSet = true;
+         H.tryTimeout (interval, times, function (cb) {h.one (s, test, cb)}, next);
+      }
+      return test;
+   },
    stop: function (label, result, value) {
       if (eq (result, value)) return false;
       if (teishi.complex (result) && teishi.complex (value)) clog ('Invalid ' + label + ', expecting', value, 'got', result, 'in field', dale.stopNot (result, undefined, function (v, k) {if (! eq (v, value [k])) return k}));
@@ -615,7 +627,7 @@ suites.auth = {
             delete rs.body.logs;
             if (type (rs.body.created) !== 'integer' || Math.abs (Date.now () - rs.body.created) > 5000) return clog ('Invalid created field', rs.body.created);
             delete rs.body.created;
-            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, fsused: 0, s3used: 0}, suggestGeotagging: true, suggestSelection: true})) return false;
+            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true})) return false;
             return true;
          }],
          ['get CSRF token without being logged in', 'get', 'csrf', {cookie: ''}, '', 403, H.cBody ({error: 'nocookie'})],
@@ -1304,6 +1316,7 @@ suites.upload.piv = function () {
          return true;
       }],
       dale.go (tk.pivs, function (piv, name) {
+         piv = teishi.copy (piv);
          if (piv.repeated) return [];
 
          if (piv.invalid) return ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
@@ -1371,13 +1384,13 @@ suites.upload.piv = function () {
                   return true;
                }
 
+               // For non-mp4 videos, check that mp4 version of video is eventually returned.
                H.tryTimeout (10, 1000, function (cb) {
-                  h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 200}, cb);
-               }, function (error) {
-                  // check that mp4 is eventually returned
-                  if (error) return next (error);
-                  next ();
-               });
+                  h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
+                     piv.mp4size = Buffer.from (rs.body, 'binary').length;
+                     return true;
+                  }}, cb);
+               }, next);
             }],
             dale.go ([200, 900], function (size, k) {
                if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
@@ -1401,8 +1414,52 @@ suites.upload.piv = function () {
                      next (error);
                   });
                }};
-            })
-            // TODO: check that account byfs/bys3 go up; general: check that vids/pics goes up by 1, check that format count goes by 1, check that byfs and bys3 go up, check that t200 and t900 counters go up
+            }),
+            ['determine size of stored pivs & check byfs for ' + name, 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               dale.go (['byfs', 'bys3', 'pics', 'vids', 't200', 't900'], function (v) {
+                  if (! s [v]) s [v] = 0;
+               });
+
+               s.byfs += piv.size + (piv.mp4size || 0) + (piv.t200size || 0) + (piv.t900size || 0);
+               // In S3, for some reason, files are 32 bytes bigger.
+               s.bys3 += piv.size + 32;
+               if (H.stop ('byfs', rs.body.usage.byfs, s.byfs)) return false;
+
+               piv.isVid ? s.vids++ : s.pics++;
+               if (piv.t200size) s.t200++;
+               if (piv.t900size) s.t900++;
+               return true;
+            }],
+            H.testTimeout (10, 1000, {tag: 'determine of stored pivs & check bys3 for ' + name, method: 'get', path: 'account', code: 200, apres: function (s, rq, rs) {
+               // We avoid using H.stop to avoid printing temporary errors.
+               if (rs.body.usage.bys3 !== s.bys3) return false;
+               return true;
+            }}),
+            ['get public stats after uploading ' + name, 'get', 'stats', {}, '', 200, function (s, rq, rs) {
+               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, t200: s.t200, t900: s.t900, users: 1})) return false;
+               return true;
+            }],
+            ['delete piv ' + name, 'post', 'delete', {}, function (s) {return {ids: [piv.id]}}, 200, function (s, rq, rs) {
+               s.byfs -= piv.size + (piv.mp4size || 0) + (piv.t200size || 0) + (piv.t900size || 0);
+               // In S3, for some reason, files are 32 bytes bigger.
+               s.bys3 -= piv.size + 32;
+
+               piv.isVid ? s.vids-- : s.pics--;
+               if (piv.t200size) s.t200--;
+               if (piv.t900size) s.t900--;
+               return true;
+            }],
+            H.testTimeout (10, 1000, {tag: 'determine of stored pivs & check bys3 after deleting ' + name, method: 'get', path: 'account', code: 200, apres: function (s, rq, rs) {
+               if (H.stop ('byfs', rs.body.usage.byfs, s.byfs)) return false;
+               // We avoid using H.stop to avoid printing temporary errors.
+               if (rs.body.usage.bys3 !== s.bys3) return false;
+               return true;
+            }}),
+            ['get public stats after deleting ' + name, 'get', 'stats', {}, '', 200, function (s, rq, rs) {
+               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, t200: s.t200, t900: s.t900, users: 1})) return false;
+               return true;
+            }],
+            // TODO: check logs
          ];
       }),
       // TODO
