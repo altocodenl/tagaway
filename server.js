@@ -1964,13 +1964,13 @@ var routes = [
                },
                function (s) {
                   // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system. The second file, if any, is considered as repeated.
-                  var alreadyUploaded = s.alreadyUploaded = b.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
-                  if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
-                  else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, name: b.name, size: b.size, identical: true});
-               },
-               function (s) {
+                  s.alreadyUploaded = b.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
                   // Since the metadata of this piv is identical to that of an already uploaded piv, the only different date can be provided in the lastModified field.
                   H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, b.name, b.lastModified);
+               },
+               function (s) {
+                  if (s.alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified});
+                  else                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: b.id, pivId: s.piv.id, tags: b.tags && b.tags.length ? b.tags : undefined, lastModified: b.lastModified, name: b.name, size: b.size, identical: true});
                },
                [reply, rs, 200, {repeated: true}]
             ]
@@ -2130,13 +2130,13 @@ var routes = [
             function (s) {
                // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system, but not in the same upload. The second file, if any, is considered as repeated.
                // In the case of an import, any repetition is considered a repetition, not an alreadyUploaded, since the mechanism for bringing the piv is not an upload.
-               var alreadyUploaded = s.alreadyUploaded = ! importData && piv.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
-               if (alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
-               else                 H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
-            },
-            function (s) {
+               s.alreadyUploaded = ! importData && piv.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
                // Since the metadata of this piv is identical to that of an already uploaded piv, the only different date can be provided in the lastModified field.
                H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified);
+            },
+            function (s) {
+               if (s.alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
+               else                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
             },
             function (s) {
                reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});

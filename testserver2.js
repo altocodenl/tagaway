@@ -310,7 +310,8 @@ var H = {
    },
    loadPivData: function (s) {
       var invalid  = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
-      var repeated = ['medium-nometa.jpg', 'smalldup.png', 'smallmeta.png'];
+      // medium-nometa.jpg has no metadata; small-meta.png has an extra metadata field for date
+      var repeated = ['medium-nometa.jpg', 'smallmeta.png'];
       var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
          var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file), repeated: inc (repeated, file)};
@@ -1315,6 +1316,14 @@ suites.upload.piv = function () {
          s.uploadId = rs.body.id;
          return true;
       }],
+      ['upload file that is not a piv', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv', path: 'server.js', filename: 'server.png'},
+         {type: 'field', name: 'id', value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: new Date ().getTime ()}
+      ]}}, 400, function (s, rq, rs) {
+         if (H.stop ('body.error', rs.body.error, 'Invalid piv')) return false;
+         return true;
+      }],
       dale.go (tk.pivs, function (piv, name) {
          piv = teishi.copy (piv);
          if (piv.repeated) return [];
@@ -1322,7 +1331,7 @@ suites.upload.piv = function () {
          if (piv.invalid) return ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
             {type: 'file',  name: 'piv', path: piv.path},
             {type: 'field', name: 'id', value: s.uploadId},
-            {type: 'field',  name: 'lastModified', value: piv.mtime}
+            {type: 'field', name: 'lastModified', value: piv.mtime}
          ]}}, 400, function (s, rq, rs) {
             if (H.stop ('body.error', rs.body.error, 'Invalid piv')) return false;
             return true;
@@ -1347,11 +1356,21 @@ suites.upload.piv = function () {
             ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
                {type: 'file',  name: 'piv', path: piv.path},
                {type: 'field', name: 'id', value: s.uploadId},
-               {type: 'field',  name: 'lastModified', value: piv.mtime}
+               {type: 'field', name: 'lastModified', value: piv.mtime}
             ]}}, 200, function (s, rq, rs) {
                if (H.stop ('id type', type (rs.body.id), 'string'))  return false;
                piv.id = rs.body.id;
                if (H.stop ('deg', rs.body.deg, piv.deg)) return false;
+               return true;
+            }],
+            ['get log for upload of ' + name, 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               var log = teishi.last (rs.body.logs);
+               if (H.stop ('log.t type', type (log.t), 'integer')) return false;
+               delete log.t;
+               if (H.stop ('log.deg', log.deg, piv.deg)) return false;
+               delete log.deg;
+               if (H.stop ('log', log, {ev: 'upload', type: 'ok', id: s.uploadId, pivId: piv.id})) return false;
+               return true;
                return true;
             }],
             ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
@@ -1361,14 +1380,14 @@ suites.upload.piv = function () {
                if (Date.now () - upiv.dateup > 2000 || upiv.dateup - Date.now () < -2000) return clog ('dateup must be less than 2000ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
                if (dale.stop ({
                   owner: 'user1',
-                  name: upiv.name,
-                  tags: [new Date (upiv.date).getUTCFullYear () + ''],
-                  date: upiv.date,
-                  dates: upiv.dates,
-                  dimw: upiv.dimw,
-                  dimh: upiv.dimh,
-                  deg:  upiv.deg,
-                  format: upiv.format
+                  name: piv.name,
+                  tags: [new Date (piv.date).getUTCFullYear () + ''],
+                  date: piv.date,
+                  dates: piv.dates,
+                  dimw: piv.dimw,
+                  dimh: piv.dimh,
+                  deg:  piv.deg,
+                  format: piv.format
                }, false, function (v, k) {
                   if (H.stop (name + ' - field ' + k, upiv [k], v)) return false;
                }) === false) return false;
@@ -1384,13 +1403,17 @@ suites.upload.piv = function () {
                   return true;
                }
 
-               // For non-mp4 videos, check that mp4 version of video is eventually returned.
-               H.tryTimeout (10, 1000, function (cb) {
-                  h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
-                     piv.mp4size = Buffer.from (rs.body, 'binary').length;
-                     return true;
-                  }}, cb);
-               }, next);
+               // Get pending status on non-mp4 videos that are being converted.
+               h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 404, apres: function (s, rq, rs) {
+                  if (H.stop ('body', rs.body, 'pending')) return next (false);
+                  // For non-mp4 videos, check that mp4 version of video is eventually returned.
+                  H.tryTimeout (10, 1000, function (cb) {
+                     h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
+                        piv.mp4size = Buffer.from (rs.body, 'binary').length;
+                        return true;
+                     }}, cb);
+                  }, next);
+               }});
             }],
             dale.go ([200, 900], function (size, k) {
                if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
@@ -1459,17 +1482,49 @@ suites.upload.piv = function () {
                if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, t200: s.t200, t900: s.t900, users: 1})) return false;
                return true;
             }],
-            // TODO: check logs
+         ];
+      }),
+      dale.stopNot (tk.pivs, undefined, function (piv) {
+         if (piv.dateSource !== 'Date/Time Original') return;
+         var id;
+         return [
+            ['For piv with Date/Time original timestamp, upload with lower date in both name and lastModified, check that Date/Time Original timestamp is still used', 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv', path: piv.path, filename: 'PHOTO_2000-01-01'},
+               {type: 'field', name: 'id', value: s.uploadId},
+               {type: 'field', name: 'lastModified', value: new Date ('1995-01-01').getTime ()}
+            ]}}, 200, function (s, rq, rs) {
+               id = rs.body.id;
+               return true;
+            }],
+            ['get last piv uploaded and check date & dates', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
+               var upiv = rs.body.pivs [0];
+               var dates = dale.obj ({'upload:fromName': 'PHOTO_2000-01-01', 'upload:lastModified': new Date ('1995-01-01').getTime ()}, piv.dates, function (v, k) {return [k, v]});
+               if (H.stop ('uploaded piv date fields', {dates: upiv.dates, date: upiv.date, dateSource: upiv.dateSource}, {dates: dates, date: piv.date, dateSource: piv.dateSource})) return false;
+               return true;
+            }],
+            ['delete piv ' + piv.name, 'post', 'delete', {}, function (s) {return {ids: [id]}}, 200],
+         ];
+      }),
+      dale.go (tk.pivs, function (piv) {
+         if (piv.invalid || piv.repeated) return [];
+         var id;
+         clog ('DEBUG', piv.name.replace (/\.+/g, ''));
+         return [
+            ['upload ' + piv.name + ' with a name with a non-piv extension', 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv', path: piv.path, filename: piv.name.replace (/\.+/g, '') + '.pdf'},
+               {type: 'field', name: 'id', value: s.uploadId},
+               {type: 'field', name: 'lastModified', value: piv.mtime}
+            ]}}, 200, function (s, rq, rs) {
+               id = rs.body.id;
+               return true;
+            }],
+            ['delete piv ' + piv.name, 'post', 'delete', {}, function (s) {return {ids: [id]}}, 200],
          ];
       }),
       // TODO
-      // for files with date/time original, check it matches date, despite submitting a lower date
-      // for identical piv, add tags & dates (lastModified, fromName)
+      // add tags to each piv uploaded
+      // for identical piv (one pic and one vid), add tags & dates (lastModified, fromName)
       // for piv with different metadata, add tags & dates (also from different metadata)
-      // add rotation metadata to sub-200 and sub-900 picture, see that thumbnails are made
-      // get pending status on non mp4 videos, finally get it again
-      // upload images/videos without extension in name, make sure we pick them up anyway
-      // upload file that is not from a piv mimetype
       suites.auth.out (tk.users.user1),
    ];
 }
@@ -1509,6 +1564,9 @@ suites.query = function () {
       suites.auth.out (tk.users.user1),
    ];
 }
+
+// TODO geodata tests:
+// through post /piv, add piv with same content but geotag and see that it is added
 
 // *** RUN TESTS ***
 
