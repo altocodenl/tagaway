@@ -291,7 +291,7 @@ var H = {
             if (output.dateSource === 'upload:fromName') {
                var adjustedDate;
                dale.go (validDates, function (date, key) {
-                  if (date - piv.date < 1000 * 60 * 60 * 24) {
+                  if (date - output.date < 1000 * 60 * 60 * 24) {
                      if (! adjustedDate) adjustedDate = [key, date];
                      else {
                         if (date < adjustedDate [1]) adjustedDate = [key, date];
@@ -299,8 +299,8 @@ var H = {
                   }
                });
                if (adjustedDate) {
-                  piv.dateSource = adjustedDate [0];
-                  piv.date       = adjustedDate [1];
+                  output.dateSource = adjustedDate [0];
+                  output.date       = adjustedDate [1];
                }
             }
 
@@ -1352,10 +1352,14 @@ suites.upload.piv = function () {
             t900 = max > 900;
          }
 
+         // We add two arbitrary tags.
+         var tags = [piv.name, piv.hash + ''].sort ();
+
          return [
             ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
                {type: 'file',  name: 'piv', path: piv.path},
-               {type: 'field', name: 'id', value: s.uploadId},
+               {type: 'field', name: 'id',   value: s.uploadId},
+               {type: 'field', name: 'tags', value: JSON.stringify (tags)},
                {type: 'field', name: 'lastModified', value: piv.mtime}
             ]}}, 200, function (s, rq, rs) {
                if (H.stop ('id type', type (rs.body.id), 'string'))  return false;
@@ -1369,8 +1373,7 @@ suites.upload.piv = function () {
                delete log.t;
                if (H.stop ('log.deg', log.deg, piv.deg)) return false;
                delete log.deg;
-               if (H.stop ('log', log, {ev: 'upload', type: 'ok', id: s.uploadId, pivId: piv.id})) return false;
-               return true;
+               if (H.stop ('log', log, {ev: 'upload', type: 'ok', id: s.uploadId, pivId: piv.id, tags: tags})) return false;
                return true;
             }],
             ['get last piv uploaded (' + name + ')', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
@@ -1381,7 +1384,7 @@ suites.upload.piv = function () {
                if (dale.stop ({
                   owner: 'user1',
                   name: piv.name,
-                  tags: [new Date (piv.date).getUTCFullYear () + ''],
+                  tags: tags.concat ([new Date (piv.date).getUTCFullYear () + '']).sort (),
                   date: piv.date,
                   dates: piv.dates,
                   dimw: piv.dimw,
@@ -1508,7 +1511,6 @@ suites.upload.piv = function () {
       dale.go (tk.pivs, function (piv) {
          if (piv.invalid || piv.repeated) return [];
          var id;
-         clog ('DEBUG', piv.name.replace (/\.+/g, ''));
          return [
             ['upload ' + piv.name + ' with a name with a non-piv extension', 'post', 'piv', {}, function (s) {return {multipart: [
                {type: 'file',  name: 'piv', path: piv.path, filename: piv.name.replace (/\.+/g, '') + '.pdf'},
@@ -1521,10 +1523,39 @@ suites.upload.piv = function () {
             ['delete piv ' + piv.name, 'post', 'delete', {}, function (s) {return {ids: [id]}}, 200],
          ];
       }),
-      // TODO
-      // add tags to each piv uploaded
-      // for identical piv (one pic and one vid), add tags & dates (lastModified, fromName)
-      // for piv with different metadata, add tags & dates (also from different metadata)
+      ['upload small piv to test addition of tags & dates with repeated files', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv again with different lastModified, date from name and tags', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path, filename: 'PHOTO_1995-01-01.jpg'},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'tags', value: JSON.stringify (['foo'])},
+         {type: 'field', name: 'lastModified', value: new Date ('2000-01-01').getTime ()},
+      ]}}, 409, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {id: s.smallId, error: 'repeated'})) return false;
+         return true;
+      }],
+      ['get piv metadata after repeated picture with lastModified', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         var piv = rs.body.pivs [0];
+         if (H.stop ('piv.tags', piv.tags, ['1995', 'foo'])) return false;
+         var repeatedTimestamp = dale.stopNot (piv.dates, undefined, function (v, k) {
+            if (k.match ('repeated')) return k.split (':') [1];
+         });
+         if (! repeatedTimestamp) return clog ('Piv must have two repeated timestamps!');
+         if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':lastModified'], new Date ('2000-01-01').getTime ())) return false;
+         if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-01-01.jpg')) return false;
+         if (H.stop ('piv.tags', piv.tags, ['1995', 'foo'])) return false;
+         if (H.stop ('piv.date', piv.date, new Date ('1995-01-01').getTime ())) return false;
+         clog (rs.body.pivs [0]);
+         return true;
+      }],
+      // TODO get logs
+      // for piv with different metadata, add tags & dates (also from different metadata), including getting logs (small: different date; medium: no metadata)
       suites.auth.out (tk.users.user1),
    ];
 }

@@ -96,7 +96,9 @@ var Redis = function (s, action) {
 
 SECRET.ping.send = function (payload, CB) {
    CB = CB || clog;
+   var freshCookie;
    var login = function (cb) {
+      freshCookie = true;
       hitit.one ({}, {
          host:   SECRET.ping.host,
          port:   SECRET.ping.port,
@@ -110,7 +112,8 @@ SECRET.ping.send = function (payload, CB) {
          cb ();
       });
    }
-   var send = function (retry) {
+   var send = function () {
+      payload.cookie = SECRET.ping.cookie;
       hitit.one ({}, {
          host:   SECRET.ping.host,
          port:   SECRET.ping.port,
@@ -120,19 +123,13 @@ SECRET.ping.send = function (payload, CB) {
          headers: {cookie: SECRET.ping.cookie},
          body:    payload,
       }, function (error) {
-         if (error && error.code === 403 && ! retry) return login (function () {send (true)});
+         if (error && error.code === 403 && ! freshCookie) return login (send);
          if (error) return CB (error);
          CB ();
       });
    }
-   if (SECRET.ping.cookie) {
-      payload.cookie = SECRET.ping.cookie;
-      send ();
-   }
-   else login (function () {
-      payload.cookie = SECRET.ping.cookie;
-      send (true);
-   });
+   if (! SECRET.ping.cookie) login (send);
+   else                      send ();
 }
 
 var notify = function (s, message) {
@@ -743,7 +740,7 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
          if (output.dateSource === 'upload:fromName') {
             var adjustedDate;
             dale.go (validDates, function (date, key) {
-               if (date - piv.date < 1000 * 60 * 60 * 24) {
+               if (date - output.date < 1000 * 60 * 60 * 24) {
                   if (! adjustedDate) adjustedDate = [key, date];
                   else {
                      if (date < adjustedDate [1]) adjustedDate = [key, date];
@@ -751,8 +748,8 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
                }
             });
             if (adjustedDate) {
-               piv.dateSource = adjustedDate [0];
-               piv.date       = adjustedDate [1];
+               output.dateSource = adjustedDate [0];
+               output.date       = adjustedDate [1];
             }
          }
 
