@@ -311,7 +311,7 @@ var H = {
    loadPivData: function (s) {
       var invalid  = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
       // medium-nometa.jpg has no metadata; small-meta.png has an extra metadata field for date
-      var repeated = ['medium-nometa.jpg', 'smallmeta.png'];
+      var repeated = ['medium-nometa.jpg', 'small-meta.png'];
       var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
          var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file), repeated: inc (repeated, file)};
@@ -1324,6 +1324,7 @@ suites.upload.piv = function () {
          if (H.stop ('body.error', rs.body.error, 'Invalid piv')) return false;
          return true;
       }],
+      // *** UPLOAD ALL PIVS ***
       dale.go (tk.pivs, function (piv, name) {
          piv = teishi.copy (piv);
          if (piv.repeated) return [];
@@ -1487,6 +1488,7 @@ suites.upload.piv = function () {
             }],
          ];
       }),
+      // *** CHECK DATE/TIME ORIGINAL ***
       dale.stopNot (tk.pivs, undefined, function (piv) {
          if (piv.dateSource !== 'Date/Time Original') return;
          var id;
@@ -1508,6 +1510,7 @@ suites.upload.piv = function () {
             ['delete piv ' + piv.name, 'post', 'delete', {}, function (s) {return {ids: [id]}}, 200],
          ];
       }),
+      // *** CHECK NON-PIV EXTENSIONS ***
       dale.go (tk.pivs, function (piv) {
          if (piv.invalid || piv.repeated) return [];
          var id;
@@ -1523,6 +1526,7 @@ suites.upload.piv = function () {
             ['delete piv ' + piv.name, 'post', 'delete', {}, function (s) {return {ids: [id]}}, 200],
          ];
       }),
+      // *** CHECK IDENTICAL REPETITION ***
       ['upload small piv to test addition of tags & dates with repeated files', 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
          {type: 'field', name: 'id',           value: s.uploadId},
@@ -1551,20 +1555,75 @@ suites.upload.piv = function () {
          if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-01-01.jpg')) return false;
          if (H.stop ('piv.tags', piv.tags, ['1995', 'foo'])) return false;
          if (H.stop ('piv.date', piv.date, new Date ('1995-01-01').getTime ())) return false;
-         clog (rs.body.pivs [0]);
          return true;
       }],
-      // TODO get logs
-      // for piv with different metadata, add tags & dates (also from different metadata), including getting logs (small: different date; medium: no metadata)
+      ['get log for upload of identical repeated piv', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+
+         var log = teishi.last (rs.body.logs);
+         var expected = {ev: 'upload', type: 'repeated', id: s.uploadId, pivId: s.smallId, tags: ['foo'], lastModified: new Date ('2000-01-01').getTime (), name: 'PHOTO_1995-01-01.jpg', size: tk.pivs.small.size, identical: true};
+         if (H.stop ('log', dale.obj (log, function (v, k) {
+            if (expected [k] !== undefined) return [k, v];
+         }), expected)) return false;
+         return true;
+      }],
+      ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+
+      // *** CHECK REPETITION OF PIV WITH SAME BITMAP/STREAMS BUT DIFFERENT METADATA ***
+
+      dale.go ([['small', 'small-meta', 'Create Date'], ['medium', 'medium-nometa']], function (testCase) {
+         return [
+            ['upload ' + testCase [0] + ' piv to test upload of piv with same bitmap and different metadata', 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv',          path:  tk.pivs [testCase [0]].path},
+               {type: 'field', name: 'id',           value: s.uploadId},
+               {type: 'field', name: 'lastModified', value: tk.pivs [testCase [0]].mtime},
+            ]}}, 200, function (s, rq, rs) {
+               s.repeatedId = rs.body.id;
+               return true;
+            }],
+            ['upload ' + testCase [0] + ' piv with different metadata', 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv',          path:  tk.pivs [testCase [1]].path, filename: 'PHOTO_1995-01-01.jpg'},
+               {type: 'field', name: 'id',           value: s.uploadId},
+               {type: 'field', name: 'tags',         value: JSON.stringify (['foo'])},
+               {type: 'field', name: 'lastModified', value: new Date ('2000-01-01').getTime ()},
+            ]}}, 409, function (s, rq, rs) {
+               if (H.stop ('body', rs.body, {id: s.repeatedId, error: 'repeated'})) return false;
+               return true;
+            }],
+            ['get ' + testCase [0] + ' piv metadata after uploading piv with different metadata', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+               var piv = rs.body.pivs [0];
+               if (H.stop ('piv.tags', piv.tags, ['1995', 'foo'])) return false;
+               var repeatedTimestamp = dale.stopNot (piv.dates, undefined, function (v, k) {
+                  if (k.match ('repeated')) return k.split (':') [1];
+               });
+               if (! repeatedTimestamp) return clog ('Piv must have two repeated timestamps!');
+               if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':lastModified'], new Date ('2000-01-01').getTime ())) return false;
+               if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-01-01.jpg')) return false;
+               if (testCase [2] && H.stop ('piv.dates.repeated ' + testCase [2], piv.dates ['repeated:' + repeatedTimestamp + ':' + testCase [2]], tk.pivs [testCase [1]].dates [testCase [2]])) return false;
+               if (H.stop ('piv.tags', piv.tags, ['1995', 'foo'])) return false;
+               if (H.stop ('piv.date', piv.date, new Date ('1995-01-01').getTime ())) return false;
+               return true;
+            }],
+            ['get log for upload of repeated ' + testCase [0] + ' piv with different metadata', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+
+               var log = teishi.last (rs.body.logs);
+               var expected = {ev: 'upload', type: 'repeated', id: s.uploadId, pivId: s.repeatedId, tags: ['foo'], lastModified: new Date ('2000-01-01').getTime (), name: 'PHOTO_1995-01-01.jpg', size: tk.pivs [testCase [1]].size, identical: false};
+               if (H.stop ('log', dale.obj (log, function (v, k) {
+                  if (expected [k] !== undefined) return [k, v];
+               }), expected)) return false;
+               if (H.stop ('log.dates type', type (log.dates), 'object')) return false;
+               if (testCase [2] && H.stop ('log.dates ' + testCase [2], log.dates [testCase [2]], tk.pivs [testCase [1]].dates [testCase [2]])) return false;
+               return true;
+            }]
+         ];
+      }),
       suites.auth.out (tk.users.user1),
    ];
 }
 
 suites.upload.full = function () {
    return [
-      // TODO uncomment
-      //suites.upload.upload (),
-      //suites.upload.uploadCheck (),
+      suites.upload.upload (),
+      suites.upload.uploadCheck (),
       suites.upload.piv (),
    ];
 }

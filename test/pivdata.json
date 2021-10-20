@@ -303,6 +303,27 @@
       "humanReadableDate": "2017-03-22T17:35:20.000Z",
       "hash": 2864754819
    },
+   "small-meta": {
+      "name": "small-meta.png",
+      "path": "test/small-meta.png",
+      "size": 3413,
+      "mtime": 1631560309236,
+      "invalid": false,
+      "repeated": true,
+      "dates": {
+         "Modify Date": "2014:05:08 00:06:23",
+         "Create Date": "2013:05:08 00:06:23",
+         "upload:lastModified": 1631560309236
+      },
+      "mimetype": "image/png",
+      "format": "png",
+      "dimw": 149,
+      "dimh": 149,
+      "date": 1367971583000,
+      "dateSource": "Create Date",
+      "humanReadableDate": "2013-05-08T00:06:23.000Z",
+      "hash": 3659108096
+   },
    "small": {
       "name": "small.png",
       "path": "test/small.png",
@@ -322,27 +343,6 @@
       "dateSource": "Modify Date",
       "humanReadableDate": "2014-05-08T00:06:23.000Z",
       "hash": 2011409414
-   },
-   "smallmeta": {
-      "name": "smallmeta.png",
-      "path": "test/smallmeta.png",
-      "size": 3413,
-      "mtime": 1631560309236,
-      "invalid": false,
-      "repeated": true,
-      "dates": {
-         "Modify Date": "2014:05:08 00:06:23",
-         "Create Date": "2013:05:08 00:06:23",
-         "upload:lastModified": 1631560309236
-      },
-      "mimetype": "image/png",
-      "format": "png",
-      "dimw": 149,
-      "dimh": 149,
-      "date": 1367971583000,
-      "dateSource": "Create Date",
-      "humanReadableDate": "2013-05-08T00:06:23.000Z",
-      "hash": 3659108096
    },
    "sunrise": {
       "name": "sunrise.HEIC",

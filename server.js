@@ -1275,7 +1275,7 @@ var routes = [
 
       astop (rs, [
          ! ENV ? [] : [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
-         [reply, rs, 200],
+         [reply, rs, 200, {success: true}],
       ]);
    }],
 
@@ -2184,7 +2184,7 @@ var routes = [
                H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, piv.dates);
             },
             function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false});
+               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false, dates: piv.dates});
             },
             function (s) {
                reply (rs, 409, {error: 'repeated', id: s.piv.id});
