@@ -1089,14 +1089,16 @@ suites.upload.uploadCheck = function () {
          // Update tags
          s.originalSmall.tags = ['2005'];
          s.originalSmall.date = new Date ('2005-01-01').getTime ();
-         var newDates = [];
+         var newDates = [], timestamp;
          if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
             if (s.originalSmall.dates [k]) return;
+            timestamp = k.split (':') [1];
             if (! k.match (/^repeated:\d+:lastModified$/)) return clog ('Invalid new date field', k);
             newDates.push (v);
             s.originalSmall.dates [k] = v;
          }) === false) return false;
          if (H.stop ('new dates', newDates.sort (), dale.go (['2005-01-01', '2010-01-01'], function (v) {return new Date (v).getTime ()}))) return false;
+         s.originalSmall.dateSource = 'repeated:' + timestamp + ':lastModified';
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
       }],
@@ -1165,14 +1167,16 @@ suites.upload.uploadCheck = function () {
       ['get piv metadata after uploadCheck with dates from names', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          s.originalSmall.tags = ['2001'];
          s.originalSmall.date = new Date ('2001-03-21T16:26:52.000Z').getTime ();
-         var newDates = [];
+         var newDates = [], timestamp;
          if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
             if (s.originalSmall.dates [k]) return;
+            timestamp = k.split (':') [1];
             if (! k.match (/^repeated:\d+:fromName$/)) return clog ('Invalid new date field', k);
             newDates.push (v);
             s.originalSmall.dates [k] = v;
          }) === false) return false;
          if (H.stop ('new dates', newDates.sort (), ['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'].sort ())) return false;
+         s.originalSmall.dateSource = 'repeated:' + timestamp + ':fromName';
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
          return true;
       }],
@@ -1408,17 +1412,18 @@ suites.upload.piv = function () {
                }
 
                // Get pending status on non-mp4 videos that are being converted.
-               h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 404, apres: function (s, rq, rs) {
+               h.one (s, {method: 'get', path: 'piv/' + piv.id, code: 404, apres: function (s, rq, rs) {
                   if (H.stop ('body', rs.body, 'pending')) return next (false);
                   // For non-mp4 videos, check that mp4 version of video is eventually returned.
                   H.tryTimeout (10, 1000, function (cb) {
-                     h.one (s, {method: 'get', path: '/piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
+                     h.one (s, {method: 'get', path: 'piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
                         piv.mp4size = Buffer.from (rs.body, 'binary').length;
                         return true;
                      }}, cb);
                   }, next);
                }});
             }],
+            // TODO: get all pivs, as original and otherwise. if non-original and non-mp4 video, check it's a mp4. compare to originals.
             dale.go ([200, 900], function (size, k) {
                if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
                return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return '/thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
@@ -1650,13 +1655,25 @@ suites.query = function () {
          [['idsOnly'], ['undefined', 'boolean']],
       ]),
       ['get invalid range of pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
-      // TODO: add uploads for testing?
       suites.auth.out (tk.users.user1),
    ];
 }
 
-// TODO geodata tests:
-// through post /piv, add piv with same content but geotag and see that it is added
+// TODO remaining tests
+/*
+- download original pivs
+- additional delete tests: upload with tags, on deleting check that query returns not that
+- rotate
+- tag/untag
+- get tags (put together with query)
+- share/unshare
+- download (multiple)
+- dismiss suggestions
+- geo
+   - through post /piv, add piv with same content but geotag and see that it is added
+   - through geo endpoint
+- import
+*/
 
 // *** RUN TESTS ***
 
