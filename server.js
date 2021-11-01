@@ -550,6 +550,7 @@ H.deletePiv = function (s, id, username) {
       [H.unlink, Path.join (CONFIG.basepath, H.hash (username), id)],
       function (s) {
          if (! s.piv.vid || s.piv.vid === '1' || s.piv.vid.match (/^pending/) || s.piv.vid.match (/^error/)) return s.next ();
+         // Delete mp4 version of non-mp4 video
          H.unlink (s, Path.join (CONFIG.basepath, H.hash (username), s.piv.vid));
       },
       function (s) {
@@ -2352,7 +2353,7 @@ var routes = [
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
          ['body.ids', b.ids, 'array'],
-         ['body', b.ids, 'string', 'each'],
+         ['body.ids', b.ids, 'string', 'each'],
       ])) return;
 
       if (dale.keys (dale.obj (b.ids, function (id) {
@@ -2404,23 +2405,10 @@ var routes = [
                // We ignore rotation of videos
                if (piv.vid) return;
 
-               var deg = parseInt (piv.deg) || 0;
-               if (deg === 0) deg = b.deg;
-               else if (deg === -90) {
-                  if (b.deg === -90) deg = 180;
-                  if (b.deg === 90)  deg = 0;
-                  if (b.deg === 180) deg = 90;
-               }
-               else if (deg === 90) {
-                  if (b.deg === -90) deg = 0;
-                  if (b.deg === 90)  deg = 180;
-                  if (b.deg === 180) deg = -90;
-               }
-               else {
-                  if (b.deg === -90) deg = 90;
-                  if (b.deg === 90)  deg = -90;
-                  if (b.deg === 180) deg = 0;
-               }
+               var deg = (parseInt (piv.deg) || 0) + b.deg;
+               if (deg === -180) deg = 180;
+               if (deg === 270)  deg = -90;
+               if (deg === 360)  deg = 0;
 
                if (deg) multi.hset ('piv:' + piv.id, 'deg', deg);
                else     multi.hdel ('piv:' + piv.id, 'deg');

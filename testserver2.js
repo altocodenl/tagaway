@@ -347,7 +347,7 @@ var H = {
          }
       ]);
    },
-   testMaker: function (label, Path, rules) {
+   invalidTestMaker: function (label, Path, rules) {
       var error = function (error) {
          throw new Error (error);
       }
@@ -532,7 +532,7 @@ suites.auth = {
    full: function () {
       var user = tk.users.user1;
       return [
-         H.testMaker ('signup', 'auth/signup', [
+         H.invalidTestMaker ('signup', 'auth/signup', [
             [[], 'object'],
             [[], 'keys', ['username', 'password', 'email', 'token']],
             dale.go (['username', 'password', 'email', 'token'], function (key) {
@@ -545,7 +545,7 @@ suites.auth = {
             // Taken from https://help.xmatters.com/ondemand/trial/valid_email_format.htm
             [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
          ]),
-         H.testMaker ('login', 'auth/login', [
+         H.invalidTestMaker ('login', 'auth/login', [
             [[], 'object'],
             [[], 'keys', ['username', 'password', 'timezone']],
             [['username'], 'string'],
@@ -553,19 +553,19 @@ suites.auth = {
             [['timezone'], 'integer'],
             [['timezone'], 'range', {min: -840, max: 720}]
          ]),
-         H.testMaker ('recover', 'auth/recover', [
+         H.invalidTestMaker ('recover', 'auth/recover', [
             [[], 'object'],
             [[], 'keys', ['username']],
             [['username'], 'string'],
          ]),
-         H.testMaker ('reset', 'auth/reset', [
+         H.invalidTestMaker ('reset', 'auth/reset', [
             [[], 'object'],
             [[], 'keys', ['username', 'password', 'token']],
             [['username'], 'string'],
             [['password'], 'string'],
             [['token'],    'string'],
          ]),
-         H.testMaker ('create invite', 'admin/invites', [
+         H.invalidTestMaker ('create invite', 'admin/invites', [
             [[], 'object'],
             [[], 'keys', ['email', 'firstName']],
             [['email'], 'string'],
@@ -652,7 +652,7 @@ suites.auth = {
                return ['login with username with spaces', 'post', 'auth/login', {}, function () {return {username: spacedUsername, password: user.password, timezone: user.timezone}}, 200];
             });
          }),
-         H.testMaker ('change password', 'auth/changePassword', [
+         H.invalidTestMaker ('change password', 'auth/changePassword', [
             [[], 'object'],
             [[], 'keys', ['old', 'new']],
             [['old'], 'string'],
@@ -704,7 +704,7 @@ suites.auth = {
             return true;
          }],
          // /feedback is not really part of auth, but it goes here for lack of a better place to put it
-         H.testMaker ('feedback', 'feedback', [
+         H.invalidTestMaker ('feedback', 'feedback', [
             [[], 'object'],
             [[], 'keys', ['message']],
             [['message'], 'string'],
@@ -733,14 +733,14 @@ suites.public = function () {
       }),
       ['get app root', 'get', '/', {}, '', 200],
       ['get admin root', 'get', 'admin', {}, '', 200],
-      H.testMaker ('request invite', 'requestInvite', [
+      H.invalidTestMaker ('request invite', 'requestInvite', [
          [[], 'object'],
          [[], 'keys', ['email']],
          [['email'], 'string'],
          // Taken from https://help.xmatters.com/ondemand/trial/valid_email_format.htm
          [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
       ]),
-      H.testMaker ('submit error', 'requestInvite', [
+      H.invalidTestMaker ('submit error', 'requestInvite', [
          [[], ['object', 'array']],
       ]),
       ['submit error (array)', 'post', 'error', {}, [], 200],
@@ -769,7 +769,7 @@ suites.upload.upload = function () {
             keys = keys.concat (['id']);
             invalidKeys = ['tags', 'total', 'tooLarge', 'unsupported', 'alreadyImported'].concat ('error');
          }
-         return H.testMaker ('upload ' + op, 'upload', [
+         return H.invalidTestMaker ('upload ' + op, 'upload', [
             [[], 'object'],
             [['op'], 'values', [op]],
             [[], 'keys', keys],
@@ -894,7 +894,7 @@ suites.upload.uploadCheck = function () {
    var validBody = {id: 1, hash: 1, name: 'small.jpg', size: 1, lastModified: Date.now ()};
    return [
       suites.auth.in (tk.users.user1),
-      H.testMaker ('uploadCheck', 'uploadCheck', [
+      H.invalidTestMaker ('uploadCheck', 'uploadCheck', [
          [[], 'object'],
          [[], 'keys', ['id', 'hash', 'name', 'size', 'lastModified', 'tags']],
          [[], 'invalidKeys', ['foo']],
@@ -1331,6 +1331,7 @@ suites.upload.piv = function () {
       // *** UPLOAD ALL PIVS ***
       dale.go (tk.pivs, function (piv, name) {
          piv = teishi.copy (piv);
+         piv.nonmp4 = piv.isVid && ! piv.name.match ('mp4');
          if (piv.repeated) return [];
 
          if (piv.invalid) return ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
@@ -1423,7 +1424,6 @@ suites.upload.piv = function () {
                   }, next);
                }});
             }],
-            // TODO: get all pivs, as original and otherwise. if non-original and non-mp4 video, check it's a mp4. compare to originals.
             dale.go ([200, 900], function (size, k) {
                if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
                return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return '/thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
@@ -1471,6 +1471,14 @@ suites.upload.piv = function () {
                if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, t200: s.t200, t900: s.t900, users: 1})) return false;
                return true;
             }],
+            piv.nonmp4 ? [] : {tag: 'download piv ' + piv.name, method: 'get', path: function (s) {return '/piv/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
+               if (Buffer.compare (Buffer.from (rs.body, 'binary'), fs.readFileSync (piv.path)) !== 0) return clog ('Mismatch between original and uploaded file');
+               return true;
+            }},
+            {tag: 'download original piv from S3 - ' + piv.name, method: 'get', path: function (s) {return '/original/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
+               if (Buffer.compare (Buffer.from (rs.body, 'binary'), fs.readFileSync (piv.path)) !== 0) return clog ('Mismatch between original and uploaded file');
+               return true;
+            }},
             ['delete piv ' + name, 'post', 'delete', {}, function (s) {return {ids: [piv.id]}}, 200, function (s, rq, rs) {
                s.byfs -= piv.size + (piv.mp4size || 0) + (piv.t200size || 0) + (piv.t900size || 0);
                // In S3, for some reason, files are 32 bytes bigger.
@@ -1633,11 +1641,10 @@ suites.upload.full = function () {
    ];
 }
 
-
 suites.query = function () {
    return [
       suites.auth.in (tk.users.user1),
-      H.testMaker ('query pivs', 'query', [
+      H.invalidTestMaker ('query pivs', 'query', [
          [[], 'object'],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
@@ -1659,13 +1666,142 @@ suites.query = function () {
    ];
 }
 
+suites.delete = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('delete pivs', 'delete', [
+         [[], 'object'],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+         [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+      ]),
+      ['delete nonexisting picture', 'post', 'delete', {}, {ids: ['foo']}, 404],
+      ['delete pivs no-op', 'post', 'delete', {}, function (s) {return {ids: []}}, 200],
+      ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload large piv to test deletion', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.largeId = rs.body.id;
+         return true;
+      }],
+      ['query pivs before deletion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.largePiv = rs.body.pivs [0];
+         return true;
+      }],
+      ['tag large piv to test deletion', 'post', 'tag', {}, function (s) {return {ids: [s.largeId], tag: 'foo'}}, 200],
+      ['delete piv', 'post', 'delete', {}, function (s) {return {ids: [s.largeId]}}, 200],
+      ['get tags after deletion', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {all: 0})) return false;
+         return true;
+      }],
+      ['query pivs after deletion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (! eq (rs.body, {total: 0, pivs: [], tags: []})) return
+         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: []})) return false;
+         return true;
+      }],
+      ['get t200 after deletion', 'get', function (s) {return '/thumb/200/' + s.largePiv.id}, {}, '', 404],
+      ['get t900 after deletion', 'get', function (s) {return '/thumb/900/' + s.largePiv.id}, {}, '', 404],
+      ['get original piv after deletion', 'get', function (s) {return '/piv/' + s.largePiv.id}, {}, '', 404],
+      ['get logs after deletion', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('log', {ev: 'delete', ids: [s.largeId]}, {ev: log.ev, ids: log.ids})) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
+suites.rotate = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('rotate pivs', 'rotate', [
+         [[], 'object'],
+         [['deg'], 'invalidValues', [-180, 0, 270]],
+         [['deg'], 'values', [90, -90, 180]],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+         [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+      ]),
+      ['rotate nonexisting picture', 'post', 'rotate', {}, {deg: 90, ids: ['foo']}, 404],
+      ['rotate pivs no-op', 'post', 'rotate', {}, function (s) {return {deg: 90, ids: []}}, 400],
+      ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test rotation', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload vid to test rotation', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.bach.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.bach.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.vidId = rs.body.id;
+         return true;
+      }],
+      ['rotate pivs with non-existing piv', 'post', 'rotate', {}, function (s) {return {deg: 90, ids: [s.smallId, s.vidId, 'foo']}}, 404],
+      ['rotate pivs once to check that video ignores rotation', 'post', 'rotate', {}, function (s) {return {deg: 90, ids: [s.smallId, s.vidId]}}, 200],
+      ['get logs after rotation', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('log', {ev: 'rotate', ids: [s.smallId, s.vidId].sort ()}, {ev: log.ev, ids: log.ids.sort ()})) return false;
+         return true;
+      }],
+      ['get pivs after rotation', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('vid.deg', rs.body.pivs [0].deg, undefined)) return false;
+         if (H.stop ('pic.deg', rs.body.pivs [1].deg, 90))        return false;
+         return true;
+      }],
+      ['rotate pivs back', 'post', 'rotate', {}, function (s) {return {deg: -90, ids: [s.smallId, s.vidId]}}, 200],
+      ['get pivs after rotating them back', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('vid.deg', rs.body.pivs [0].deg, undefined)) return false;
+         if (H.stop ('pic.deg', rs.body.pivs [1].deg, undefined)) return false;
+         return true;
+      }],
+      dale.go ([0, 90, 180, -90], function (initial) {
+         return [
+            ! initial ? [] : ['rotate piv into initial position: ' + initial, 'post', 'rotate', {}, function (s) {return {deg: initial, ids: [s.smallId]}}, 200],
+            dale.go ([90, -90, 180], function (deg) {
+               return [
+                  ['get pic after initial rotation', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+                     if (H.stop ('pic.deg', rs.body.pivs [1].deg, initial || undefined)) return false;
+                     return true;
+                  }],
+                  ['rotate pic by ' + deg, 'post', 'rotate', {}, function (s) {return {deg: deg, ids: [s.smallId]}}, 200],
+                  ['get pic after second rotation', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+                     var expected = initial + deg;
+                     if (expected === -180) expected = 180;
+                     if (expected === 270)  expected = -90;
+                     if (expected === 360)  expected = undefined;
+                     if (H.stop ('pic.deg', rs.body.pivs [1].deg, expected || undefined)) return false;
+                     return true;
+                  }],
+                  ['restore pic rotation', 'post', 'rotate', {}, function (s) {return {deg: deg === 180 ? 180 : - deg, ids: [s.smallId]}}, 200],
+                  ['get pic after restoration', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+                     if (H.stop ('pic.deg', rs.body.pivs [1].deg, initial || undefined)) return false;
+                     return true;
+                  }],
+               ];
+            }),
+            ! initial ? [] : ['rotate piv into neutral position', 'post', 'rotate', {}, function (s) {return {deg: initial === 180 ? 180 : - initial, ids: [s.smallId]}}, 200],
+         ];
+      }),
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 // TODO remaining tests
 /*
-- download original pivs
-- additional delete tests: upload with tags, on deleting check that query returns not that
-- rotate
-- tag/untag
-- get tags (put together with query)
+- tag/untag: check query, get tags, logs
 - share/unshare
 - download (multiple)
 - dismiss suggestions
