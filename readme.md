@@ -421,7 +421,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /piv`
    - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`) (otherwise, 400 with body `{error: 'multipart'}`).
    - Must contain exactly one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
-   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `importData`; the last two are optional.
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `id`, `lastModified`, `tags` and `importData`; the last two are optional.
    - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /upload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
