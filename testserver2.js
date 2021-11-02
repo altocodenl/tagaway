@@ -1557,7 +1557,7 @@ suites.upload.piv = function () {
          if (H.stop ('body', rs.body, {id: s.smallId, error: 'repeated'})) return false;
          return true;
       }],
-      ['get piv metadata after repeated picture with lastModified', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+      ['get piv metadata after repeated piv with lastModified', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          var piv = rs.body.pivs [0];
          if (H.stop ('piv.tags', piv.tags, ['1995', 'foo'])) return false;
          var repeatedTimestamp = dale.stopNot (piv.dates, undefined, function (v, k) {
@@ -1641,31 +1641,6 @@ suites.upload.full = function () {
    ];
 }
 
-suites.query = function () {
-   return [
-      suites.auth.in (tk.users.user1),
-      H.invalidTestMaker ('query pivs', 'query', [
-         [[], 'object'],
-         [['tags'], 'array'],
-         [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
-         [['mindate'], ['undefined', 'integer']],
-         [['maxdate'], ['undefined', 'integer']],
-         [['sort'], 'values', ['newest', 'oldest', 'upload']],
-         [['sort'], 'invalidValues', ['foo']],
-         [['from'], 'integer'],
-         [['from'], 'values', [0]],
-         [['to'], 'integer'],
-         [['to'], 'values', [1]],
-         [['from'], 'range', {min: 1}],
-         [['recentlyTagged'], ['undefined', 'array']],
-         [['recentlyTagged', 0], 'type', 'string', 'each of the body.recentlyTagged should have as type string but one of .+ is .+ with type'],
-         [['idsOnly'], ['undefined', 'boolean']],
-      ]),
-      ['get invalid range of pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 3, to: 1}, 400],
-      suites.auth.out (tk.users.user1),
-   ];
-}
-
 suites.delete = function () {
    return [
       suites.auth.in (tk.users.user1),
@@ -1675,8 +1650,13 @@ suites.delete = function () {
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
          [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
       ]),
-      ['delete nonexisting picture', 'post', 'delete', {}, {ids: ['foo']}, 404],
-      ['delete pivs no-op', 'post', 'delete', {}, function (s) {return {ids: []}}, 200],
+      ['delete nonexisting piv', 'post', 'delete', {}, {ids: ['foo']}, 404],
+      ['get logs after no-ops', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log ev', log.ev, 'auth')) return false;
+         return true;
+      }],
+      ['delete pivs no-op', 'post', 'delete', {}, {ids: []}, 200],
       ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
@@ -1727,8 +1707,8 @@ suites.rotate = function () {
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
          [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
       ]),
-      ['rotate nonexisting picture', 'post', 'rotate', {}, {deg: 90, ids: ['foo']}, 404],
-      ['rotate pivs no-op', 'post', 'rotate', {}, function (s) {return {deg: 90, ids: []}}, 400],
+      ['rotate nonexisting piv', 'post', 'rotate', {}, {deg: 90, ids: ['foo']}, 404],
+      ['rotate pivs no-op', 'post', 'rotate', {}, {deg: 90, ids: []}, 400],
       ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
@@ -1750,6 +1730,11 @@ suites.rotate = function () {
          return true;
       }],
       ['rotate pivs with non-existing piv', 'post', 'rotate', {}, function (s) {return {deg: 90, ids: [s.smallId, s.vidId, 'foo']}}, 404],
+      ['get logs after no-ops', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log ev', log.ev, 'upload')) return false;
+         return true;
+      }],
       ['rotate pivs once to check that video ignores rotation', 'post', 'rotate', {}, function (s) {return {deg: 90, ids: [s.smallId, s.vidId]}}, 200],
       ['get logs after rotation', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          var log = teishi.last (rs.body.logs);
@@ -1799,10 +1784,186 @@ suites.rotate = function () {
    ];
 }
 
+suites.tag = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('tag pivs', 'tag', [
+         [[], 'object'],
+         [['tag'], 'string'],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+         [['del'], 'type', ['boolean', 'undefined'], 'body.del should be equal to one of \\[true,false,null\\] but instead is .+'],
+         [['tag'], 'invalidValues', ['all', 'ALL', ' all', 'untagged', 'UNTAGGED', 'untagged ', 'g::a', '2021'], 'tag'],
+         [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+      ]),
+      ['tag nonexisting piv', 'post', 'tag', {}, {tag: 'foo', ids: ['foo']}, 404],
+      ['tag pivs no-op', 'post', 'tag', {}, {deg: 'tag', ids: []}, 400],
+      ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test tagging', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload medium piv to test tagging', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['get 404 if tagging a nonexisting piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: ['bar']}}, 404],
+      ['get 404 if tagging a nonexisting piv together with an existing one', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId, 'bar']}}, 404],
+      ['get logs after no-ops', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log ev', log.ev, 'upload')) return false;
+         return true;
+      }],
+      ['get tags before tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
+         return true;
+      }],
+      ['query pivs before tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
+         return true;
+      }],
+      ['tag pivs', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
+      ['get tags after tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         return true;
+      }],
+      ['query pivs after tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         return true;
+      }],
+      ['get logs after tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'tag', ids: [s.smallId, s.mediumId], tag: 'tag1'})) return false;
+         return true;
+      }],
+      ['tag pivs with the same tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
+      ['get tags after repeated tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         return true;
+      }],
+      ['query pivs after repeated tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         return true;
+      }],
+      ['get logs after tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'tag', ids: [s.smallId, s.mediumId], tag: 'tag1'})) return false;
+         log = teishi.last (rs.body.logs, 2);
+         delete log.t;
+         if (H.stop ('next to last log', log, {ev: 'tag', type: 'tag', ids: [s.smallId, s.mediumId], tag: 'tag1'})) return false;
+         return true;
+      }],
+      ['untag a tag not on any piv', 'post', 'tag', {}, function (s) {return {tag: 'tag9', ids: [s.smallId, s.mediumId], del: true}}, 200],
+      ['get tags after no-op untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         return true;
+      }],
+      ['query pivs after no-op untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         return true;
+      }],
+      ['get logs after no-op untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'untag', ids: [s.smallId, s.mediumId], tag: 'tag9'})) return false;
+         return true;
+      }],
+      ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
+      ['get tags after second tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2, tag2: 1})) return false;
+         return true;
+      }],
+      ['query pivs after second tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1', 'tag2'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         return true;
+      }],
+      ['get logs after second tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'tag', ids: [s.mediumId], tag: 'tag2'})) return false;
+         return true;
+      }],
+      ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
+      ['get tags after untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         return true;
+      }],
+      ['query pivs after untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         return true;
+      }],
+      ['get logs after untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'untag', ids: [s.smallId, s.mediumId], tag: 'tag2'})) return false;
+         return true;
+      }],
+      ['untag first tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId], del: true}}, 200],
+      ['get tags after econd untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
+         return true;
+      }],
+      ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
+suites.query = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('query pivs', 'query', [
+         [[], 'object'],
+         [['tags'], 'array'],
+         [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
+         [['mindate'], ['undefined', 'integer']],
+         [['maxdate'], ['undefined', 'integer']],
+         [['sort'], 'values', ['newest', 'oldest', 'upload']],
+         [['sort'], 'invalidValues', ['foo']],
+         [['from'], 'integer'],
+         [['from'], 'values', [0]],
+         [['to'], 'integer'],
+         [['to'], 'values', [1]],
+         [['from'], 'range', {min: 1}],
+         [['from'], 'values', [2]],
+         [['to'], 'range', {min: 2}],
+         [['recentlyTagged'], ['undefined', 'array']],
+         [['recentlyTagged', 0], 'type', 'string', 'each of the body.recentlyTagged should have as type string but one of .+ is .+ with type'],
+         [['idsOnly'], ['undefined', 'boolean']],
+         [['tags'], 'invalidValues', [['all']], 'all'],
+         [['recentlyTagged'], 'values', [['foo']]],
+         [['tags'], 'invalidValues', [['foo']], 'recentlyTagged'],
+      ]),
+      // TODO: add remaining tests
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 // TODO remaining tests
 /*
-- tag/untag: check query, get tags, logs
-- share/unshare
+- share/unshare (try also tagging/rotating/deleting shared picture)
 - download (multiple)
 - dismiss suggestions
 - geo

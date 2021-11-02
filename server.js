@@ -982,7 +982,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       multi.sadd ('pivt:' + piv.id, newYearTag);
       multi.srem ('pivt:' + piv.id, oldYearTag);
       multi.sadd ('tags:' + piv.owner, newYearTag);
-      // The cleanup on /GET tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag
+      // The cleanup on /GET tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag.
       multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
    }
@@ -2460,17 +2460,15 @@ var routes = [
                   return true;
                }
 
-               var id = b.ids [k / 2];
-
-               var extags = dale.acc (s.last [k + 1], 0, function (a, b) {
-                  return a + ((H.isYear (b) || H.isGeo (b)) ? 0 : 1);
-               });
+               var id = b.ids [k / 2], tags = s.last [k + 1];
 
                if (b.del) {
                   if (! inc (s.last [k + 1], b.tag)) return;
                   multi.srem ('pivt:' + id, b.tag);
+                  // The cleanup on /GET tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag.
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
-                  if (extags === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
+                  // If the tag being removed is the last user tag on the piv, add the piv to the `untagged` set.
+                  if (dale.fil (tags, false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
                }
 
                else {
@@ -2478,6 +2476,7 @@ var routes = [
                   multi.sadd ('pivt:' + id, b.tag);
                   multi.sadd ('tags:' + rq.user.username, b.tag);
                   multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
+                  // If the piv already had a tag and wasn't on the `untagged` set, this will be a no-op.
                   multi.srem ('tag:'  + rq.user.username + ':untagged', id);
                }
             })) return;
@@ -2506,6 +2505,7 @@ var routes = [
                if (card || s.tags [k] === 'all') return [s.tags [k], card];
                else {
                   // We cleanup tags from tags:USERID if the tag set is empty.
+                  // We ignore the first two tags (`all` and `untagged`), since we always want entries for those tags.
                   if (k >= 2) multi.srem ('tags:' + rq.user.username, s.tags [k]);
                }
             });
