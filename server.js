@@ -2605,8 +2605,6 @@ var routes = [
 
             s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
 
-            if (b.idsOnly) return reply (rs, 200, dale.go (s.pivs, function (piv) {return piv.id}));
-
             if (s.pivs.length === 0) return reply (rs, 200, {total: 0, pivs: [], tags: []});
 
             var output = {pivs: []};
@@ -2641,6 +2639,8 @@ var routes = [
                var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
+
+            if (b.idsOnly) return reply (rs, 200, dale.go (output.pivs, function (piv) {return piv.id}));
 
             output.total = output.pivs.length;
 
@@ -2719,7 +2719,7 @@ var routes = [
          ['keys of body', dale.keys (b), ['tag', 'whom', 'del'], 'eachOf', teishi.test.equal],
          ['body.tag',  b.tag, 'string'],
          ['body.whom', b.whom, 'string'],
-         ['body.del', b.del, ['boolean', 'undefined'], 'oneOf']
+         ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
       ])) return;
 
       b.tag = H.trim (b.tag);
