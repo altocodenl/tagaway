@@ -505,6 +505,9 @@ var suites = {};
 // *** AUTH SUITES ***
 
 suites.auth = {
+   login: function (user) {
+      return ['login ' + user.username, 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password, timezone: user.timezone}}, 200, H.setCredentials]
+   },
    in: function (user) {
       return [
          ['create invite for ' + user.username, 'post', 'admin/invites', {}, {firstName: user.firstName, email: user.email}, 200, function (s, rq, rs) {
@@ -518,7 +521,7 @@ suites.auth = {
             return true;
          }],
          ['verify ' + user.username, 'get', function (s) {return 'auth/verify/' + s.validationToken}, {}, '', 302],
-         ['login ' + user.username, 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password, timezone: user.timezone}}, 200, H.setCredentials]
+         suites.auth.login (user),
       ];
    },
    out: function (user) {
@@ -1709,7 +1712,7 @@ suites.rotate = function () {
       ]),
       ['rotate nonexisting piv', 'post', 'rotate', {}, {deg: 90, ids: ['foo']}, 404],
       ['rotate pivs no-op', 'post', 'rotate', {}, {deg: 90, ids: []}, 400],
-      ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+      ['start upload to test rotation', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
       }],
@@ -1798,7 +1801,7 @@ suites.tag = function () {
       ]),
       ['tag nonexisting piv', 'post', 'tag', {}, {tag: 'foo', ids: ['foo']}, 404],
       ['tag pivs no-op', 'post', 'tag', {}, {deg: 'tag', ids: []}, 400],
-      ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+      ['start upload to test tagging', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
       }],
@@ -1956,14 +1959,206 @@ suites.query = function () {
          [['recentlyTagged'], 'values', [['foo']]],
          [['tags'], 'invalidValues', [['foo']], 'recentlyTagged'],
       ]),
-      // TODO: add remaining tests
+      ['start upload to test querying', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload medium piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['upload large piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.largeId = rs.body.id;
+         return true;
+      }],
+      ['query pivs with idsOnly', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3, idsOnly: true}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.largeId, s.mediumId, s.smallId])) return false;
+         return true;
+      }],
+      ['query pivs with idsOnly', 'post', 'query', {}, {tags: [], sort: 'oldest', from: 1, to: 3, idsOnly: true}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.smallId, s.largeId, s.mediumId])) return false;
+         return true;
+      }],
+      ['query pivs with idsOnly', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 3, idsOnly: true}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId, s.largeId, s.smallId])) return false;
+         return true;
+      }],
+      ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 3)) return false;
+         if (H.stop ('body.tags', rs.body.tags, ['2014', '2021'])) return false;
+         var ids = dale.go (rs.body.pivs, function (piv) {
+            return piv.id;
+         });
+         if (H.stop ('piv ids', ids, [s.largeId, s.mediumId, s.smallId])) return false;
+         return true;
+      }],
+      ['query pivs with recentlyTagged, including non-existing pivs', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: ['foo', s.largeId, s.mediumId, s.smallId, 'bar']}}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 3)) return false;
+         if (H.stop ('body.tags', rs.body.tags, ['2014', '2021'])) return false;
+         var ids = dale.go (rs.body.pivs, function (piv) {
+            return piv.id;
+         });
+         if (H.stop ('piv ids', ids, [s.largeId, s.mediumId, s.smallId])) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
+   ];
+}
+
+suites.share = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      suites.auth.in (tk.users.user2),
+      suites.auth.login (tk.users.user1),
+      H.invalidTestMaker ('share', 'share', [
+         [[], 'object'],
+         [['tag'], 'string'],
+         [['whom'], 'string'],
+         [['del'], 'type', ['boolean', 'undefined'], 'body.del should be equal to one of \\[true,false,null\\] but instead is .+'],
+         [['tag'], 'invalidValues', ['all', 'ALL', ' all', 'untagged', 'UNTAGGED', 'untagged ', 'g::a', '2021'], 'tag'],
+         [['whom'], 'invalidValues', [tk.users.user1.username], 'self'],
+      ]),
+      ['share with non-existing user', 'post', 'share', {}, {tag: 'foo', whom: 'user3'}, 404],
+      ['unshare with non-existing user', 'post', 'share', {}, {tag: 'foo', whom: 'user3', del: true}, 404],
+      ['get shares before sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user2),
+      ['get shares before being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user1),
+      ['start upload to test sharing', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload medium piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['upload large piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.largeId = rs.body.id;
+         return true;
+      }],
+      ['share tag with user', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
+      ['get shares after sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [['user2', 'foo']], shm: []})) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user2),
+      ['get shares after being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [], shm: [['user1', 'foo']]})) return false;
+         return true;
+      }],
+      ['query pivs after being shared empty tag', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user1),
+      ['tag two pivs', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId, s.mediumId]}}, 200],
+      suites.auth.login (tk.users.user2),
+      ['query pivs after tag having two pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 2)) return false;
+         var ids = dale.go (rs.body.pivs, function (piv) {
+            return piv.id;
+         });
+         if (H.stop ('piv ids', ids, [s.mediumId, s.smallId])) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user1),
+      ['untag two pivs', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId, s.mediumId], del: true}}, 200],
+      suites.auth.login (tk.users.user2),
+      ['query pivs after pivs being removed from shared tag', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user1),
+      ['tag two pivs', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId, s.mediumId]}}, 200],
+      ['unshare tag with user', 'post', 'share', {}, {tag: 'foo', whom: 'user2', del: true}, 200],
+      ['get shares after sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user2),
+      ['get shares after being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
+         return true;
+      }],
+      ['query pivs after being shared empty tag', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user1),
+      ['share tag with user again', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
+      ['share tag with user twice', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
+      ['get shares after sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [['user2', 'foo']], shm: []})) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user2),
+      ['get shares after being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {sho: [], shm: [['user1', 'foo']]})) return false;
+         return true;
+      }],
+      ['query pivs after tag having two pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 2)) return false;
+         var ids = dale.go (rs.body.pivs, function (piv) {
+            return piv.id;
+         });
+         if (H.stop ('piv ids', ids, [s.mediumId, s.smallId])) return false;
+         return true;
+      }],
+      dale.go (['small', 'medium', 'large'], function (v, k) {
+         var id = v + 'Id';
+         var sharedStatus = k === 2 ? 'unshared' : 'shared';
+         return [
+            ['try rotating ' + sharedStatus + ' piv: ' + v, 'post', 'rotate', {}, function (s) {return {deg: 90, ids: [s [id]]}}, 404],
+            ['try deleting ' + sharedStatus + ' piv: ' + v, 'post', 'delete', {}, function (s) {return {ids: [s [id]]}}, 404],
+            ['try tagging  ' + sharedStatus + ' piv: ' + v, 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s [id]]}}, 404],
+            // TODO: thumb, piv, download
+         ];
+      }),
+      // TODO: get tags as user 2
    ];
 }
 
 // TODO remaining tests
 /*
-- share/unshare (try also tagging/rotating/deleting shared picture)
+- share/unshare (try also tagging/rotating/deleting shared picture, try querying/downloading unshared picture or piv that wasn't shared)
 - download (multiple)
 - dismiss suggestions
 - geo
