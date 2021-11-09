@@ -571,6 +571,7 @@ H.deletePiv = function (s, id, username) {
          }
 
          dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
+            // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
             multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
 
@@ -981,8 +982,6 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    if (oldYearTag !== newYearTag) {
       multi.sadd ('pivt:' + piv.id, newYearTag);
       multi.srem ('pivt:' + piv.id, oldYearTag);
-      multi.sadd ('tags:' + piv.owner, newYearTag);
-      // The cleanup on /GET tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag.
       multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
    }
@@ -1657,14 +1656,12 @@ var routes = [
          }],
          function (s) {
             if (! s.last) return reply (rs, 404);
-            var multi = redis.multi (), user = s.last;
-            multi.smembers ('tag:'  + user.username + ':all');
-            multi.smembers ('tags:' + user.username);
+            var user = s.last;
             a.seq (s, [
-               [a.set, 'data', [mexec, multi]],
+               [a.set, 'allPivs', [Redis, 'smembers', 'tag:' + user.username + ':all']],
                [a.make (giz.destroy), user.username],
                function (s) {
-                  a.fork (s, s.data [0], function (piv) {
+                  a.fork (s, s.allPivs, function (piv) {
                      return [H.deletePiv, piv, user.username];
                   }, {max: os.cpus ().length});
                },
@@ -1674,10 +1671,7 @@ var routes = [
                   if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
                   multi.hdel ('emails',  user.email);
                   multi.hdel ('invites', user.email);
-                  dale.go (s.data [1].concat (['all', 'untagged']), function (tag) {
-                     multi.del ('tag:' + user.username + ':' + tag);
-                  });
-                  multi.del ('tags:'        + user.username);
+                  multi.del ('tags:' + user.username);
 
                   // hash and hashorig entries are deleted incrementally when deleting each piv.
                   multi.del ('hashdel:'     + user.username);
@@ -2310,9 +2304,9 @@ var routes = [
             }
             multi.sadd ('tag:' + rq.user.username + ':all', piv.id);
 
-            dale.go (tags.concat (new Date (piv.date).getUTCFullYear ()).concat (geotags), function (tag) {
+            dale.go (tags.concat (new Date (piv.date).getUTCFullYear () + '').concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
-               multi.sadd ('tags:' + rq.user.username, tag);;
+               if (H.isUserTag (tag)) multi.sadd ('tags:' + rq.user.username, tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
             if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', piv.id);
@@ -2465,7 +2459,7 @@ var routes = [
                if (b.del) {
                   if (! inc (s.last [k + 1], b.tag)) return;
                   multi.srem ('pivt:' + id, b.tag);
-                  // The cleanup on /GET tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME oldYearTag if this is the last picture that has that year tag.
+                  // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
                   // If the tag being removed is the last user tag on the piv, add the piv to the `untagged` set.
                   if (dale.fil (tags, false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
@@ -2490,25 +2484,23 @@ var routes = [
 
    ['get', 'tags', function (rq, rs) {
       astop (rs, [
-         [a.set, 'tags', [Redis, 'smembers', 'tags:' + rq.user.username]],
+         [Redis, 'smembers', 'tags:' + rq.user.username],
          function (s) {
             var multi = redis.multi ();
-            s.tags = ['all', 'untagged'].concat (s.tags);
-            dale.go (s.tags, function (tag) {
+            s.tags = s.last;
+            dale.go (s.last, function (tag) {
                multi.scard ('tag:' + rq.user.username + ':' + tag);
             });
             mexec (s, multi);
          },
          function (s) {
             var multi = redis.multi ();
-            s.output = dale.obj (s.last, function (card, k) {
-               if (card || s.tags [k] === 'all') return [s.tags [k], card];
-               else {
-                  // We cleanup tags from tags:USERID if the tag set is empty.
-                  // We ignore the first two tags (`all` and `untagged`), since we always want entries for those tags.
-                  if (k >= 2) multi.srem ('tags:' + rq.user.username, s.tags [k]);
-               }
-            });
+            s.output = dale.fil (s.last, undefined, function (n, k) {
+               if (n > 0) return s.tags [k];
+               // We cleanup tags from tags:USERID if the tag set is empty.
+               // The cleanup is done here because it would be cumbersome to have to do it in both POST /delete and POST /tag
+               else multi.srem ('tags:' + rq.user.username, s.last [k]);
+            }).sort ();
             mexec (s, multi);
          },
          [a.get, reply, rs, 200, '@output'],
@@ -2605,7 +2597,15 @@ var routes = [
 
             s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
 
-            if (s.pivs.length === 0) return reply (rs, 200, {total: 0, pivs: [], tags: []});
+            if (s.pivs.length === 0) {
+               var multi = redis.multi ();
+               multi.scard ('tag:' + rq.user.username + ':all');
+               multi.scard ('tag:' + rq.user.username + ':untagged');
+               return multi.exec (function (error, data) {
+                  if (error) return reply (rs, 500, {error: error});
+                  reply (rs, 200, {total: 0, pivs: [], tags: {all: data [0], untagged: data [1]}});
+               });
+            }
 
             var output = {pivs: []};
 
@@ -2645,20 +2645,26 @@ var routes = [
             output.total = output.pivs.length;
 
             output.pivs = output.pivs.slice (b.from - 1, b.to);
+            s.output = output;
 
             var multi = redis.multi ();
+            // Get the tags for each piv
             dale.go (output.pivs, function (piv) {
                multi.smembers ('pivt:' + piv.id);
             });
+            // Get an union of all tags for all queried pivs
             multi.sunion (dale.go (s.pivs, function (piv) {
                return 'pivt:' + piv.id;
             }));
-            s.output = output;
+            // Get the total amount of pivs and the total amount of untagged pivs
+            multi.scard ('tag:' + rq.user.username + ':all');
+            multi.scard ('tag:' + rq.user.username + ':untagged');
+
             multi.get ('geo:' + rq.user.username);
             mexec (s, multi);
          },
          function (s) {
-            // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads
+            // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
             if (teishi.last (s.last)) {
                s.refreshQuery = true;
                return s.next (s.last);
@@ -2676,7 +2682,10 @@ var routes = [
             ]);
          },
          function (s) {
-            s.output.tags = teishi.last (s.last, 2).sort ();
+            s.output.tags = dale.obj (teishi.last (s.last, 4), {all: teishi.last (s.last, 3), untagged: teishi.last (s.last, 2)}, function (tag) {
+               return [tag, 0];
+            });
+            if (s.refreshQuery) s.output.refreshQuery = true;
             dale.go (s.output.pivs, function (piv, k) {
                var vid = undefined;
                if (piv.vid) {
@@ -2702,10 +2711,12 @@ var routes = [
                   vid: vid,
                   loc: piv.loc ? teishi.parse (piv.loc) : undefined
                };
+               dale.go (s.last [k], function (tag) {
+                  s.output.tags [tag]++;
+               });
             });
-            if (s.refreshQuery) s.output.refreshQuery = true;
             reply (rs, 200, s.output);
-         },
+         }
       ]);
    }],
 
@@ -2759,7 +2770,7 @@ var routes = [
       ]);
    }],
 
-   // *** DOWNLOAD ***
+   // *** DOWNLOAD MULTIPLE PIVS ***
 
    ['get', 'download/(*)', function (rq, rs) {
 
@@ -2902,28 +2913,23 @@ var routes = [
             s.next ();
          },
          b.operation === 'disable' ? [
-            [a.set, 'allPivs', [Redis, 'smembers', 'tag:' + rq.user.username + ':all']],
-            [Redis, 'smembers', 'tags:' + rq.user.username],
+            [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
             function (s) {
                var multi = redis.multi ();
-               s.geotags = dale.fil (s.last, undefined, function (tag) {
-                  if (! H.isGeo (tag)) return;
-                  multi.smembers ('tag:' + rq.user.username + ':' + tag);
-                  return tag;
+               s.allPivs = s.last;
+               dale.go (s.last, function (pivId) {
+                  multi.hget ('piv:' + pivId, 'tags');
                });
                mexec (s, multi);
             },
             function (s) {
                var multi = redis.multi ();
-               dale.go (s.allPivs, function (piv) {
-                  multi.hdel ('piv:' + piv, 'loc');
-               });
-               dale.go (s.geotags, function (tag, k) {
-                  if (! H.isGeo (tag)) return;
-                  multi.srem ('tags:' + rq.user.username, tag);
-                  multi.del ('tag:' + rq.user.username + ':' + tag);
-                  dale.go (s.last [k], function (piv) {
-                     multi.srem ('pivt:' + piv, tag);
+               dale.go (s.last, function (tags, k) {
+                  multi.hdel ('piv:' + s.allPivs [k], 'loc');
+                  dale.go (JSON.parse (tags), function (tag) {
+                     if (H.isGeo (tag)) geotags [tag] = true;
+                     multi.srem ('pivt:' + s.allPivs [k], tag);
+                     multi.del ('tag:' + rq.user.username + ':' + tag);
                   });
                });
                multi.hdel ('users:' + rq.user.username, 'geo');
@@ -2977,7 +2983,6 @@ var routes = [
                         var multi = redis.multi ();
                         multi.hset ('piv:'  + piv, 'loc', loc);
                         dale.go (s.last, function (tag) {
-                           multi.sadd ('tags:' + rq.user.username,             tag);
                            multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv);
                            multi.sadd ('pivt:' + piv,                          tag);
                         });

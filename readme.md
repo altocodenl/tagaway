@@ -40,6 +40,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Tests refactor
+   - modify client after modifications to POST /query & GET /tags
+      - expect array of tags that don't have to be filtered
+      - Make initial view not load list of tags, to avoid redraw when doing GET /tags.
+      - Request list of tags when switching to edit mode. Don't filter any tags, they are all user tags.
+      - Filter `all` and `untagged` from Data.query.tags
 
 - Pivs
    - Suggest tags when inserting in tag view.
@@ -426,7 +431,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
    - Can contain a field `importData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
-   - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
+   - The file uploaded must be one of the allowed formats: `jpeg`, `png`, `bmp`, `heic`, `gif`, `tiff`, `webp`, `mp4`, `mov`, `3gp`, `avi`, `webm`, `wmv` and `m4v` (otherwise, 400 with body `{error: 'format'}`).
    - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
    - If the file is not a valid piv, a 400 is returned with body `{error: 'Invalid piv', data: {...}}`.
    - If a file exists for that user that is both identical to an existing one and also having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
@@ -460,7 +465,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an object of the form `{tag1: INT, tag2: INT, ...}`. Includes a field for `untagged` and one for `all`.
+   - Returns an array of the form `['tag1', 'tag2', ...]`, only including tags created by the user. This excludes `untagged`, `all`, year tags, geotags and tags shared with the user by other users.
 
 - `POST /query`
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
@@ -470,10 +475,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: [...], refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {all: INT, untagged: INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
-      - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
+      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `all` and `untagged`, which indicate the *total* amount of `all` and `untagged` pivs, irrespective of the query.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing (or both), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 

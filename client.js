@@ -2488,7 +2488,7 @@ B.mrespond ([
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
-      c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
+      c.ajax (x.verb, path, headers, body, function (error, rs) {
          B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
          var authPath = path === 'csrf' || path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;

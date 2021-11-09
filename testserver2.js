@@ -526,6 +526,7 @@ suites.auth = {
    },
    out: function (user) {
       return [
+         suites.auth.login (user),
          ['delete account', 'post', 'auth/delete', {}, {}, 200, function (s, rq, rs) {
             delete s.headers.cookie;
             return true;
@@ -1429,7 +1430,7 @@ suites.upload.piv = function () {
             }],
             dale.go ([200, 900], function (size, k) {
                if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
-               return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return '/thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
+               return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return 'thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
                   piv ['t' + size + 'size'] = Buffer.from (rs.body, 'binary').length;
                   a.stop ([
                      [a.make (fs.writeFile), name + '-t' + size, Buffer.from (rs.body, 'binary'), {encoding: 'binary'}],
@@ -1679,16 +1680,15 @@ suites.delete = function () {
       ['tag large piv to test deletion', 'post', 'tag', {}, function (s) {return {ids: [s.largeId], tag: 'foo'}}, 200],
       ['delete piv', 'post', 'delete', {}, function (s) {return {ids: [s.largeId]}}, 200],
       ['get tags after deletion', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {all: 0})) return false;
+         if (H.stop ('body', rs.body, [])) return false;
          return true;
       }],
       ['query pivs after deletion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-         if (! eq (rs.body, {total: 0, pivs: [], tags: []})) return
-         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: []})) return false;
+         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {all: 0, untagged: 0}})) return false;
          return true;
       }],
-      ['get t200 after deletion', 'get', function (s) {return '/thumb/200/' + s.largePiv.id}, {}, '', 404],
-      ['get t900 after deletion', 'get', function (s) {return '/thumb/900/' + s.largePiv.id}, {}, '', 404],
+      ['get t200 after deletion', 'get', function (s) {return 'thumb/200/' + s.largePiv.id}, {}, '', 404],
+      ['get t900 after deletion', 'get', function (s) {return 'thumb/900/' + s.largePiv.id}, {}, '', 404],
       ['get original piv after deletion', 'get', function (s) {return '/piv/' + s.largePiv.id}, {}, '', 404],
       ['get logs after deletion', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          var log = teishi.last (rs.body.logs);
@@ -1829,20 +1829,22 @@ suites.tag = function () {
          return true;
       }],
       ['get tags before tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
+         if (H.stop ('tags', rs.body, [])) return false;
          return true;
       }],
       ['query pivs before tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
          return true;
       }],
       ['tag pivs', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         if (H.stop ('tags', rs.body, ['tag1'])) return false;
          return true;
       }],
       ['query pivs after tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
          return true;
@@ -1855,10 +1857,11 @@ suites.tag = function () {
       }],
       ['tag pivs with the same tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after repeated tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         if (H.stop ('tags', rs.body, ['tag1'])) return false;
          return true;
       }],
       ['query pivs after repeated tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
          return true;
@@ -1874,10 +1877,11 @@ suites.tag = function () {
       }],
       ['untag a tag not on any piv', 'post', 'tag', {}, function (s) {return {tag: 'tag9', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after no-op untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         if (H.stop ('tags', rs.body, ['tag1'])) return false;
          return true;
       }],
       ['query pivs after no-op untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
          return true;
@@ -1890,10 +1894,11 @@ suites.tag = function () {
       }],
       ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
       ['get tags after second tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2, tag2: 1})) return false;
+         if (H.stop ('tags', rs.body, ['tag1', 'tag2'])) return false;
          return true;
       }],
       ['query pivs after second tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2, tag2: 1})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1', 'tag2'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
          return true;
@@ -1906,10 +1911,11 @@ suites.tag = function () {
       }],
       ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, tag1: 2})) return false;
+         if (H.stop ('tags', rs.body, ['tag1'])) return false;
          return true;
       }],
       ['query pivs after untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
          return true;
@@ -1922,10 +1928,11 @@ suites.tag = function () {
       }],
       ['untag first tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after econd untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
+         if (H.stop ('tags', rs.body, [])) return false;
          return true;
       }],
       ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
          return true;
@@ -2001,7 +2008,7 @@ suites.query = function () {
       }],
       ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, ['2014', '2021'])) return false;
+         if (H.stop ('body.tags', rs.body.tags, {2014: 2, 2021: 1, all: 3, untagged: 3})) return false;
          var ids = dale.go (rs.body.pivs, function (piv) {
             return piv.id;
          });
@@ -2010,7 +2017,7 @@ suites.query = function () {
       }],
       ['query pivs with recentlyTagged, including non-existing pivs', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: ['foo', s.largeId, s.mediumId, s.smallId, 'bar']}}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, ['2014', '2021'])) return false;
+         if (H.stop ('body.tags', rs.body.tags, {2014: 2, 2021: 1, all: 3, untagged: 3})) return false;
          var ids = dale.go (rs.body.pivs, function (piv) {
             return piv.id;
          });
@@ -2122,6 +2129,7 @@ suites.share = function () {
          if (H.stop ('body.total', rs.body.total, 0)) return false;
          return true;
       }],
+      ['get tags after being shared empty tag', 'get', 'tags', {}, '', 200, H.cBody ([])],
       suites.auth.login (tk.users.user1),
       ['share tag with user again', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
       ['share tag with user twice', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
@@ -2142,6 +2150,7 @@ suites.share = function () {
          if (H.stop ('piv ids', ids, [s.mediumId, s.smallId])) return false;
          return true;
       }],
+      ['get tags after being shared two pivs', 'get', 'tags', {}, '', 200, H.cBody ([])],
       dale.go (['small', 'medium', 'large'], function (v, k) {
          var id = v + 'Id';
          var sharedStatus = k === 2 ? 'unshared' : 'shared';
@@ -2149,16 +2158,27 @@ suites.share = function () {
             ['try rotating ' + sharedStatus + ' piv: ' + v, 'post', 'rotate', {}, function (s) {return {deg: 90, ids: [s [id]]}}, 404],
             ['try deleting ' + sharedStatus + ' piv: ' + v, 'post', 'delete', {}, function (s) {return {ids: [s [id]]}}, 404],
             ['try tagging  ' + sharedStatus + ' piv: ' + v, 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s [id]]}}, 404],
-            // TODO: thumb, piv, download
+            sharedStatus === 'shared' ? [
+               ['get small thumb of shared piv: ' + v, 'get', function (s) {return 'thumb/200/' + s [id]}, {}, '', 200],
+               ['get large thumb of shared piv: ' + v, 'get', function (s) {return 'thumb/900/' + s [id]}, {}, '', 200],
+               ['get shared piv: ' + v, 'get', function (s) {return 'piv/' + s [id]}, {}, '', 200],
+            ] : [
+               ['try getting small thumb of unshared piv: ' + v, 'get', function (s) {return 'thumb/200/' + s [id]}, {}, '', 404],
+               ['try getting large thumb of unshared piv: ' + v, 'get', function (s) {return 'thumb/900/' + s [id]}, {}, '', 404],
+               ['try getting unshared piv: ' + v, 'get', function (s) {return 'piv/' + s [id]}, {}, '', 404],
+            ]
          ];
       }),
-      // TODO: get tags as user 2
+      ['download shared pivs', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId]}}, 200],
+      ['download shared and unshared pivs', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId, s.largeId]}}, 404],
+      suites.auth.out (tk.users.user1),
+      suites.auth.out (tk.users.user2),
+      // TODO add user3 tests to share
    ];
 }
 
 // TODO remaining tests
 /*
-- share/unshare (try also tagging/rotating/deleting shared picture, try querying/downloading unshared picture or piv that wasn't shared)
 - download (multiple)
 - dismiss suggestions
 - geo
@@ -2189,13 +2209,37 @@ H.tryTimeout (10, 1000, function (cb) {
       return suite.full ();
    }) ();
 
-   h.seq ({port: CONFIG.port}, suitesToRun, function (error) {
+   h.seq ({port: CONFIG.port}, suitesToRun, function (error, tests) {
       if (error) {
          if (error.request && error.request.body && type (error.request.body) === 'string') error.request.body = error.request.body.slice (0, 1000) + (error.request.body.length > 1000 ? '... OMITTING REMAINDER' : '');
          H.server.kill ();
          return clog ('FINISHED WITH AN ERROR', error);
       }
       clog ('ALL TESTS FINISHED SUCCESSFULLY', 'Server start: ' + serverStart + 'ms', 'Tests: ' + (Date.now () - t - serverStart) + 'ms');
+
+      // We sort group tests by endpoint and report their performance
+      var grouped = {};
+      dale.go (tests, function (test, k) {
+         // the H.tryTimeout tests are stored as undefineds in the history of all tests, so we ignore them.
+         if (! test) return;
+         var path = test.request.path.split ('/').slice (0, test.request.path.match (/\/(piv|original)/) ? 2 : 3).join ('/');
+         var key = test.request.method + ':' + path;
+         var time = test.time [1] - test.time [0];
+         if (! grouped [key]) grouped [key] = {method: test.request.method, path: path, c: 0, total: 0, slowest: 0};
+         grouped [key].c++;
+         grouped [key].total += time;
+         if (grouped [key].slowest < time) grouped [key].slowest = time;
+      });
+      grouped = dale.go (grouped, function (v) {
+         v.avg = Math.round (v.total / v.c);
+         return v;
+      }).sort (function (a, b) {
+         return b.avg - a.avg;
+      });
+      dale.go (grouped, function (v) {
+         clog (v.method.toUpperCase () + ' ' + v.path, 'avg ' + v.avg + 'ms', 'slowest ' + v.slowest + 'ms');
+      });
+
       H.testsDone = true;
       H.server.kill ();
    }, function (test) {
