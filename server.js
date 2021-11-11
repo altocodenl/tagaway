@@ -2747,6 +2747,7 @@ var routes = [
             mexec (s, multi);
          },
          [H.log, rq.user.username, {ev: 'share', type: b.del ? 'unshare' : 'share', tag: b.tag, whom: b.whom}],
+         [H.log, b.whom,           {ev: 'share', type: b.del ? 'unshare' : 'share', tag: b.tag, who:  rq.user.username}],
          [reply, rs, 200],
       ]);
    }],
@@ -2889,7 +2890,7 @@ var routes = [
 
       var suggest = 'suggest' + b.operation.charAt (0).toUpperCase () + b.operation.slice (1);
 
-      if (b.operation === 'geotagging' && ! rq.user [suggest]) return reply (rs, 200);
+      if (! rq.user [suggest]) return reply (rs, 200);
 
       return astop (rs, [
          [Redis, 'hdel', 'users:' + rq.user.username, suggest],

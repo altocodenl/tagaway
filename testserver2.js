@@ -460,7 +460,6 @@ var H = {
                   var match = new RegExp (last (rule [0]) + ' length should be in range ' + cicek.escape (teishi.str (rule [2])) + ' but instead is ' + invalidValue);
                   var customMatch;
                   if (rule [3]) customMatch = new RegExp (rule [3]);
-                  //console.log ('debug length', body.error, match, customMatch);
                   return body && teishi.type (body.error) === 'string' && (customMatch ? body.error.match (customMatch) : body.error.match (match));
                });
             });
@@ -1651,6 +1650,8 @@ suites.delete = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('delete pivs', 'delete', [
          [[], 'object'],
+         [[], 'keys', ['ids']],
+         [[], 'invalidKeys', ['foo']],
          [['ids'], 'array'],
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
          [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
@@ -1705,6 +1706,8 @@ suites.rotate = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('rotate pivs', 'rotate', [
          [[], 'object'],
+         [[], 'keys', ['ids', 'deg']],
+         [[], 'invalidKeys', ['foo']],
          [['deg'], 'invalidValues', [-180, 0, 270]],
          [['deg'], 'values', [90, -90, 180]],
          [['ids'], 'array'],
@@ -1793,6 +1796,8 @@ suites.tag = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('tag pivs', 'tag', [
          [[], 'object'],
+         [[], 'keys', ['ids', 'tag', 'del']],
+         [[], 'invalidKeys', ['foo']],
          [['tag'], 'string'],
          [['ids'], 'array'],
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
@@ -1947,6 +1952,8 @@ suites.query = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('query pivs', 'query', [
          [[], 'object'],
+         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly']],
+         [[], 'invalidKeys', ['foo']],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
          [['mindate'], ['undefined', 'integer']],
@@ -2037,6 +2044,8 @@ suites.share = function () {
       suites.auth.login (tk.users.user1),
       H.invalidTestMaker ('share', 'share', [
          [[], 'object'],
+         [[], 'keys', ['tag', 'whom', 'del']],
+         [[], 'invalidKeys', ['foo']],
          [['tag'], 'string'],
          [['whom'], 'string'],
          [['del'], 'type', ['boolean', 'undefined'], 'body.del should be equal to one of \\[true,false,null\\] but instead is .+'],
@@ -2049,9 +2058,19 @@ suites.share = function () {
          if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
          return true;
       }],
+      ['get logs after no-ops', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log.ev', log.ev, 'auth')) return false;
+         return true;
+      }],
       suites.auth.login (tk.users.user2),
       ['get shares before being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
+         return true;
+      }],
+      ['get logs after no-ops', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log.ev', log.ev, 'auth')) return false;
          return true;
       }],
       suites.auth.login (tk.users.user1),
@@ -2088,9 +2107,21 @@ suites.share = function () {
          if (H.stop ('body', rs.body, {sho: [['user2', 'foo']], shm: []})) return false;
          return true;
       }],
+      ['get logs after sharing', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'share', type: 'share', tag: 'foo', whom: 'user2'})) return false;
+         return true;
+      }],
       suites.auth.login (tk.users.user2),
       ['get shares after being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: [['user1', 'foo']]})) return false;
+         return true;
+      }],
+      ['get logs after being shared', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs, 2);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'share', type: 'share', tag: 'foo', who: 'user1'})) return false;
          return true;
       }],
       ['query pivs after being shared empty tag', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
@@ -2118,20 +2149,32 @@ suites.share = function () {
       suites.auth.login (tk.users.user1),
       ['tag two pivs', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId, s.mediumId]}}, 200],
       ['unshare tag with user', 'post', 'share', {}, {tag: 'foo', whom: 'user2', del: true}, 200],
-      ['get shares after sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+      ['get logs after unsharing', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'share', type: 'unshare', tag: 'foo', whom: 'user2'})) return false;
+         return true;
+      }],
+      ['get shares after unsharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
          return true;
       }],
       suites.auth.login (tk.users.user2),
-      ['get shares after being shared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
+      ['get shares after being unshared', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
          return true;
       }],
-      ['query pivs after being shared empty tag', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+      ['query pivs after being unshared', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 0)) return false;
          return true;
       }],
-      ['get tags after being shared empty tag', 'get', 'tags', {}, '', 200, H.cBody ([])],
+      ['get tags after being unshared', 'get', 'tags', {}, '', 200, H.cBody ([])],
+      ['get logs after being unshared', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var log = teishi.last (rs.body.logs, 2);
+         delete log.t;
+         if (H.stop ('last log', log, {ev: 'share', type: 'unshare', tag: 'foo', who: 'user1'})) return false;
+         return true;
+      }],
       suites.auth.login (tk.users.user1),
       ['share tag with user again', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
       ['share tag with user twice', 'post', 'share', {}, {tag: 'foo', whom: 'user2'}, 200],
@@ -2198,6 +2241,8 @@ suites.download = function () {
       ['get no such download', 'get', 'download/foo', {}, '', 404],
       H.invalidTestMaker ('download', 'download', [
          [[], 'object'],
+         [[], 'keys', ['ids']],
+         [[], 'invalidKeys', ['foo']],
          [['ids'], 'array'],
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
          [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
@@ -2231,9 +2276,17 @@ suites.download = function () {
          s.largeId = rs.body.id;
          return true;
       }],
+      ['upload another piv with repeated name', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.bach.path, filename: tk.pivs.small.name},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.bach.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.bachId = rs.body.id;
+         return true;
+      }],
       ['request download with non-existing piv #1', 'post', 'download', {}, {ids: ['foo', 'bar']}, 404],
       ['request download with non-existing piv #2', 'post', 'download', {}, function (s) {return {ids: [s.largeId, 'foo']}}, 404],
-      ['request download', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId, s.largeId]}}, 200, function (s, rq, rs) {
+      ['request download', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId, s.largeId, s.bachId]}}, 200, function (s, rq, rs) {
          if (H.stop ('body.id', type (rs.body.id), 'string')) return false;
          if (! rs.body.id.match (/\.zip$/)) return clog ('Download id must end in .zip');
          s.downloadId = rs.body.id;
@@ -2248,12 +2301,13 @@ suites.download = function () {
          a.stop ([
             [k, 'unzip', '-o', 'download.zip'],
             function () {
-               var error = dale.stopNot (['small', 'medium', 'large'], undefined, function (file) {
+               var error = dale.stopNot (['small', 'medium', 'large', 'bach'], undefined, function (file) {
                   var downloadedFile = tk.pivs [file].name;
+                  if (file === 'bach') downloadedFile = tk.pivs.small.name + ' (copy)';
                   if (Buffer.compare (fs.readFileSync (downloadedFile), fs.readFileSync (tk.pivs [file].path)) !== 0) return 'Mismatch between expected and actual download: ' + file;
                   // For some reason, sometimes there are ~1 second mismatches between the expected modified time of the downloaded files.
                   if (Math.abs (fs.statSync (downloadedFile).mtime.getTime () !== tk.pivs [file].mtime) > 2000) return 'Invalid mtime on zip file';
-                  fs.unlinkSync (tk.pivs [file].name);
+                  fs.unlinkSync (downloadedFile);
                });
                if (error) return clog (error);
                fs.unlinkSync ('download.zip');
@@ -2261,24 +2315,62 @@ suites.download = function () {
             }
          ], clog);
       }},
-      // TODO Untested case: two different files with the same name
-      ['upload another piv with repeated name', 'post', 'piv', {}, function (s) {return {multipart: [
-         {type: 'file',  name: 'piv',          path:  tk.pivs.bach.path, filename: tk.pivs.small.name},
-         {type: 'field', name: 'id',           value: s.uploadId},
-         {type: 'field', name: 'lastModified', value: tk.pivs.bach.mtime},
-      ]}}, 200, function (s, rq, rs) {
-         s.bachId = rs.body.id;
-         return true;
-      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.out (tk.users.user2),
+   ];
+}
+
+suites.dismiss = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('dismiss', 'dismiss', [
+         [[], 'object'],
+         [[], 'keys', ['operation']],
+         [['operation'], 'invalidValues', ['foo', 'bar', 'geo']],
+         [['operation'], 'values', ['geotagging', 'selection']],
+      ]),
+      dale.go (['geotagging', 'selection'], function (op) {
+         return [
+            ['get account before dismissing suggestion', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               var fieldName = 'suggest' + op [0].toUpperCase () + op.slice (1);
+               if (H.stop ('account.' + fieldName, rs.body [fieldName], true)) return false;
+               return true;
+            }],
+            ['dismiss ' + op, 'post', 'dismiss', {}, {operation: op}, 200],
+            ['get account after dismissing suggestion', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               var fieldName = 'suggest' + op [0].toUpperCase () + op.slice (1);
+               if (H.stop ('account.' + fieldName, rs.body [fieldName], undefined)) return false;
+               return true;
+            }],
+            ['get logs after dismissing ' + op, 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               var log = teishi.last (rs.body.logs);
+               delete log.t;
+               if (H.stop ('last log', log, {ev: 'dismiss', type: op})) return false;
+               s.amountLogs = rs.body.logs.length;
+               return true;
+            }],
+            ['dismiss ' + op + ' again', 'post', 'dismiss', {}, {operation: op}, 200],
+            ['get account after dismissing suggestion again', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               var fieldName = 'suggest' + op [0].toUpperCase () + op.slice (1);
+               if (H.stop ('account.' + fieldName, rs.body [fieldName], undefined)) return false;
+               return true;
+            }],
+            ['get logs after dismissing again ' + op, 'get', 'account', {}, '', 200, function (s, rq, rs) {
+               if (H.stop ('logs length', rs.body.logs.length, s.amountLogs)) return false;
+               return true;
+            }],
+         ];
+      }),
+      suites.auth.out (tk.users.user1),
    ];
 }
 
 // TODO remaining tests
 /*
-- dismiss suggestions
 - geo
    - through post /piv, add piv with same content but geotag and see that it is added
    - through geo endpoint
+- revise old tests
 - import
 */
 

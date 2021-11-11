@@ -752,7 +752,7 @@ All the routes below require an admin user to be logged in.
    - For deletes:         {t: INT, ev: 'delete', ids: [STRING, ...]}
    - For rotates:         {t: INT, ev: 'rotate', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, ev: 'tag',        type: tag|untag, ids: [STRING, ...], tag: STRING}
-   - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID}
+   - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID|UNDEFINED, who: ID|UNDEFINED} (if `whom` is present, `who` is absent and the operation is done by the user; if `who` is present, `whom` is absent and the operation is done to the user).
    - For dismiss:         {t: INT, ev: 'dismiss',    type: 'geotagging|selection'}
    - For geotagging:      {t: INT, ev: 'geotagging', type: 'enable|disable'}
    - Import:
