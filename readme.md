@@ -40,13 +40,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Tests refactor
-   - modify client after modifications to POST /query & GET /tags
-      - expect array of tags that don't have to be filtered
-      - Make initial view not load list of tags, to avoid redraw when doing GET /tags.
-      - Request list of tags when switching to edit mode. Don't filter any tags, they are all user tags.
-      - Filter `all` and `untagged` from Data.query.tags
 
 - Pivs
+   - Check that tags refactor works in client (empty, list of existing tags, list of tags to add, list of tags to add in upload)
+   - Show n of pivs for each tag in main view.
    - Suggest tags when inserting in tag view.
    - Move year tags to d::, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
    - Months:
@@ -54,22 +51,24 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - If selected a month, don't show other years.
       - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
       - unforbid years by using y::?
-   - Increase thumbnail size
-   - In which order to show tags:
+   - Specify in which order to show tags:
       - By piv number
       - latest tagged
       - latest queried
-      - pinned (manual solution)
+      - pinned (manual solution)?
       - compress years and geo? also other categories to compress (with overlap): latest queried, latest tagged, pinned, all
    - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
+   - [incognito FF] Review fonts not loading
+   - Increase thumbnail size
    - Implement video streaming.
    - [To be specified] Arcade mode when browsing:
       - changes in query/position are reflected in url, back button works
       - remember position by the piv at a certain position (top/left), not the number, so it works while uploads are happening in the background
       - top bar showing position
       - fixed piv separators as milestones
+
 
 - Backend improvements:
    - Route logging
@@ -111,8 +110,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Mobile
    - Login & signup.
    - Upload files & folders.
-
-- [incognito FF] Review fonts not loading
 
 ### Already implemented
 
@@ -495,12 +492,14 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /download`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
-   - `body.ids` must have at least a length of 2.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - `body.ids` must have at least a length of 2 (otherwise, 400 with body `{error: 'single'}`. To download a single piv you can use `GET /piv/ID?original=1` instead.
    - All pivs must exist and user must be owner of the pivs or have the pivs shared with them, otherwise a 404 is returned.
    - If successful, returns a 200 with body `{id: STRING}`. The `id` corresponds to a temporary download file that lasts 5 seconds and is only valid for the user that requested the download.
 
 - `GET /download/ID`
    - `ID` is an id returned by `POST /download`.
+   - If there's no such download, or if the user doesn't requested that download, a 404 is returned.
    - If successful, the user will receive a zip file with the specified pivs.
 
 - `POST /dismiss`
@@ -1107,9 +1106,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pivs`: `[...]`; comes from `body.pivs` from `query pivs`.
    - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
-   - `queryTags`: `[...]`; comes from `body.tags` from `query pivs`.
+   - `queryTags`: `{all: INTEGER, untagged: INTEGER, tag1: ..., ...}`; comes from `body.tags` from `query pivs`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
-   - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
+   - `tags`: `[TAG1, TAG2, ...]`. Only includes tags created by the user.
    - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin

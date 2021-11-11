@@ -25,6 +25,7 @@ var tk = {
    users: {
       user1: {username: 'user1', password: Math.random () + '', firstName: 'name1', email: 'user1@example.com', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
+      user3: {username: 'user3', password: Math.random () + '', firstName: 'name3', email: 'user3@example.com', timezone: 0},
    },
    geodataPath: '/home/hq/Desktop/cities500.txt'
 }
@@ -2032,6 +2033,7 @@ suites.share = function () {
    return [
       suites.auth.in (tk.users.user1),
       suites.auth.in (tk.users.user2),
+      suites.auth.in (tk.users.user3),
       suites.auth.login (tk.users.user1),
       H.invalidTestMaker ('share', 'share', [
          [[], 'object'],
@@ -2041,8 +2043,8 @@ suites.share = function () {
          [['tag'], 'invalidValues', ['all', 'ALL', ' all', 'untagged', 'UNTAGGED', 'untagged ', 'g::a', '2021'], 'tag'],
          [['whom'], 'invalidValues', [tk.users.user1.username], 'self'],
       ]),
-      ['share with non-existing user', 'post', 'share', {}, {tag: 'foo', whom: 'user3'}, 404],
-      ['unshare with non-existing user', 'post', 'share', {}, {tag: 'foo', whom: 'user3', del: true}, 404],
+      ['share with non-existing user', 'post', 'share', {}, {tag: 'foo', whom: 'user0'}, 404],
+      ['unshare with non-existing user', 'post', 'share', {}, {tag: 'foo', whom: 'user0', del: true}, 404],
       ['get shares before sharing', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: []})) return false;
          return true;
@@ -2171,15 +2173,108 @@ suites.share = function () {
       }),
       ['download shared pivs', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId]}}, 200],
       ['download shared and unshared pivs', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId, s.largeId]}}, 404],
+      ['share tag as second user with third user', 'post', 'share', {}, {tag: 'foo', whom: 'user3'}, 200],
+      suites.auth.login (tk.users.user3),
+      ['check that shared tag from second user doesn\'t contain pivs from the first user', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         if (H.stop ('body.pivs',  rs.body.pivs, [])) return false;
+         return true;
+      }],
+      ['check that shared tag from second user doesn\'t contain pivs from the first user (tags)', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [])) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
       suites.auth.out (tk.users.user2),
-      // TODO add user3 tests to share
+      suites.auth.out (tk.users.user3),
+   ];
+}
+
+suites.download = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      suites.auth.in (tk.users.user2),
+      suites.auth.login (tk.users.user1),
+      ['get no such download', 'get', 'download/foo', {}, '', 404],
+      H.invalidTestMaker ('download', 'download', [
+         [[], 'object'],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+         [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+         [['ids'], 'invalidValues', [['foo']], 'single'],
+      ]),
+      ['start upload to test downloading', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test downloading', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload medium piv to test downloading', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['upload large piv to test downloading', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.largeId = rs.body.id;
+         return true;
+      }],
+      ['request download with non-existing piv #1', 'post', 'download', {}, {ids: ['foo', 'bar']}, 404],
+      ['request download with non-existing piv #2', 'post', 'download', {}, function (s) {return {ids: [s.largeId, 'foo']}}, 404],
+      ['request download', 'post', 'download', {}, function (s) {return {ids: [s.smallId, s.mediumId, s.largeId]}}, 200, function (s, rq, rs) {
+         if (H.stop ('body.id', type (rs.body.id), 'string')) return false;
+         if (! rs.body.id.match (/\.zip$/)) return clog ('Download id must end in .zip');
+         s.downloadId = rs.body.id;
+         return true;
+      }],
+      suites.auth.login (tk.users.user2),
+      ['get download not owned by user', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
+      suites.auth.login (tk.users.user1),
+      ['get download', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 200],
+      {raw: true, tag: 'download multiple pivs', method: 'get', path: function (s) {return 'download/' + s.downloadId}, code: 200, apres: function (s, rq, rs, next) {
+         fs.writeFileSync ('download.zip', rs.body);
+         a.stop ([
+            [k, 'unzip', '-o', 'download.zip'],
+            function () {
+               var error = dale.stopNot (['small', 'medium', 'large'], undefined, function (file) {
+                  var downloadedFile = tk.pivs [file].name;
+                  if (Buffer.compare (fs.readFileSync (downloadedFile), fs.readFileSync (tk.pivs [file].path)) !== 0) return 'Mismatch between expected and actual download: ' + file;
+                  // For some reason, sometimes there are ~1 second mismatches between the expected modified time of the downloaded files.
+                  if (Math.abs (fs.statSync (downloadedFile).mtime.getTime () !== tk.pivs [file].mtime) > 2000) return 'Invalid mtime on zip file';
+                  fs.unlinkSync (tk.pivs [file].name);
+               });
+               if (error) return clog (error);
+               fs.unlinkSync ('download.zip');
+               next ();
+            }
+         ], clog);
+      }},
+      // TODO Untested case: two different files with the same name
+      ['upload another piv with repeated name', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.bach.path, filename: tk.pivs.small.name},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.bach.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.bachId = rs.body.id;
+         return true;
+      }],
    ];
 }
 
 // TODO remaining tests
 /*
-- download (multiple)
 - dismiss suggestions
 - geo
    - through post /piv, add piv with same content but geotag and see that it is added
@@ -2222,7 +2317,7 @@ H.tryTimeout (10, 1000, function (cb) {
       dale.go (tests, function (test, k) {
          // the H.tryTimeout tests are stored as undefineds in the history of all tests, so we ignore them.
          if (! test) return;
-         var path = test.request.path.split ('/').slice (0, test.request.path.match (/\/(piv|original)/) ? 2 : 3).join ('/');
+         var path = test.request.path.split ('/').slice (0, test.request.path.match (/\/(piv|original|download)/) ? 2 : 3).join ('/');
          var key = test.request.method + ':' + path;
          var time = test.time [1] - test.time [0];
          if (! grouped [key]) grouped [key] = {method: test.request.method, path: path, c: 0, total: 0, slowest: 0};

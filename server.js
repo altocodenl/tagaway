@@ -2779,7 +2779,7 @@ var routes = [
          if (! download) return reply (rs, 404);
          download = JSON.parse (download);
 
-         if (download.username !== rq.user.username) return reply (rs, 403);
+         if (download.username !== rq.user.username) return reply (rs, 404);
 
          var archive = archiver ('zip');
          archive.on ('error', function (error) {
@@ -2829,7 +2829,12 @@ var routes = [
          ['body.ids', b.ids, 'string', 'each'],
       ])) return;
 
-      if (b.ids.length < 2) return reply (rs, 400);
+      var ids = dale.obj (b.ids, function (id) {
+         return [id, true];
+      });
+
+      if (dale.keys (ids).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+      if (b.ids.length < 2) return reply (rs, 400, {error: 'single'});
 
       astop (rs, [
          [function (s) {

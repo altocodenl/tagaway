@@ -2684,6 +2684,7 @@ B.mrespond ([
          }));
 
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
+         B.call (x, 'set', ['Data', 'pivTotal'],  rs.body.total);
 
          var selected = B.get ('State', 'selected') || {};
          var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pivs, function (piv) {
@@ -2691,9 +2692,7 @@ B.mrespond ([
          });
          B.set (['State', 'selected'], updatedSelection);
 
-         B.call (x, 'set', ['Data', 'pivTotal'], rs.body.total);
-
-         // Set timeout for refreshing query
+         // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
             B.call (x, 'query', 'pivs');
          }, 1500));
@@ -3841,9 +3840,9 @@ views.pics = function () {
    return ['div', {class: 'pics-target app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
       views.header (true, true),
       views.open (),
-      B.view ([['Data', 'pivs'], ['Data', 'tags']], function (pivs, tags) {
-         if (! pivs || ! tags) return ['div'];
-         if (tags.all === 0) return views.empty ();
+      B.view (['Data', 'pivs'], function (pivs) {
+         if (! pivs) return ['div'];
+         if (B.get ('Data', 'queryTags', 'all') === 0) return views.empty ();
          return ['div', [
             ['style', [
                ['.tag-list__item--time', {width: 0.33, float: 'left'}],
@@ -3863,7 +3862,7 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, tags, account, showNTags) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, account, showNTags) {
                         if (! account || ! selected) return ['ul'];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
@@ -3871,15 +3870,15 @@ views.pics = function () {
                         var geotagSelected = dale.stop (selected, true, H.isGeo);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
-                        var yearlist = dale.fil (tags, undefined, function (tag) {
+                        var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (! H.isYear (tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {return a - b});
 
-                        var taglist = dale.fil (tags, undefined, function (tag) {
-                           if (H.isYear (tag)) return;
+                        var taglist = dale.fil (queryTags, undefined, function (n, tag) {
+                           if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
@@ -4024,9 +4023,8 @@ views.pics = function () {
                            ]];
                         }),
                      ]],
-                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags']], function (untag, filter, selected, showNSelectedTags) {
-
-                        filter = H.trim (filter || '');
+                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (untag, filter, selected, showNSelectedTags, userTags) {
+                        filter = H.trim (filter === undefined ? '' : filter);
                         showNSelectedTags = showNSelectedTags || 75;
                         var selectedTags = {}, filterRegex = H.makeRegex (filter);
                         if (selected) dale.go (B.get ('Data', 'pivs'), function (piv) {
@@ -4036,11 +4034,8 @@ views.pics = function () {
                               selectedTags [tag]++;
                            });
                         });
-                        var editTags = dale.fil (tags, undefined, function (number, tag) {
-                           if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
-                           if (filter) {
-                              if (! tag.match (filterRegex)) return;
-                           }
+                        var editTags = dale.fil (userTags, undefined, function (number, tag) {
+                           if (filter && ! tag.match (filterRegex)) return;
                            if (! selectedTags [tag]) selectedTags [tag] = 0;
                            return tag;
                         }).sort (function (a, b) {
@@ -4445,16 +4440,16 @@ views.upload = function () {
                                        return ['div', {class: 'upload-box__section'}, [
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
-                                             var maxTags = 10, showTags = [];
-                                             dale.stop (tags, true, function (v, tag) {
-                                                if (! H.isUserTag (tag)) return;
+                                             filter = H.trim (filter === undefined ? '' : filter);
+                                             var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
+                                             dale.stop (tags, true, function (tag) {
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (H.makeRegex (filter))) {
+                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
                                                    showTags.push (tag);
                                                    if (showTags.length === maxTags) return true;
                                                 }
                                              });
-                                             if (filter && ! inc (dale.keys (tags), filter)) {
+                                             if (filter && ! inc (tags, filter)) {
                                                 if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
                                              }
                                              return ['div', {class: 'upload-box__search'}, [
