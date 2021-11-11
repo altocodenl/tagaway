@@ -2365,11 +2365,48 @@ suites.dismiss = function () {
    ];
 }
 
+suites.geo = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('geo', 'geo', [
+         [[], 'object'],
+         [[], 'keys', ['operation']],
+         [['operation'], 'invalidValues', ['foo', 'bar']],
+         [['operation'], 'values', ['enable', 'disable']],
+      ]),
+      ['start upload to test geo', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test geo', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload piv with geodata to test geo', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.dunkerque.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.dunkerque.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.dunquerkeId = rs.body.id;
+         return true;
+      }],
+      // TODO
+      // disable no-op, check logs & piv
+      // enable, check logs
+      // enable again, check conflict, check no log
+      // wait and see piv with geotag (also geotag in query), see other piv unaffected
+      // disable, check logs, check geotag gone
+      // enable again, delete and see that it gets added when uploading with geo enabled
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 // TODO remaining tests
 /*
-- geo
-   - through post /piv, add piv with same content but geotag and see that it is added
-   - through geo endpoint
 - revise old tests
 - import
 */
