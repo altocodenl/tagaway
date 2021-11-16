@@ -2483,7 +2483,7 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/signup', 'auth/logout', 'auth/delete', 'auth/changePassword'], path));
+      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/login', 'auth/signup'], path));
       if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
@@ -4034,7 +4034,7 @@ views.pics = function () {
                               selectedTags [tag]++;
                            });
                         });
-                        var editTags = dale.fil (userTags, undefined, function (number, tag) {
+                        var editTags = dale.fil (userTags, undefined, function (tag) {
                            if (filter && ! tag.match (filterRegex)) return;
                            if (! selectedTags [tag]) selectedTags [tag] = 0;
                            return tag;
