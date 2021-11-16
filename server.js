@@ -2003,6 +2003,7 @@ var routes = [
       }
 
       if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
+      if (type (rq.data.files.piv) !== 'string') return reply (rs, 400, {error: 'invalidFile'});
 
       var path     = importData ? importData.path : rq.data.files.piv;
 
