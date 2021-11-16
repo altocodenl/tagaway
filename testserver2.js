@@ -27,7 +27,7 @@ var tk = {
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
       user3: {username: 'user3', password: Math.random () + '', firstName: 'name3', email: 'user3@example.com', timezone: 0},
    },
-   geodataPath: '/home/hq/Desktop/cities500.txt'
+   geodataPath: '../cities500.txt'
 }
 
 // *** HELPER FUNCTIONS ***
@@ -80,6 +80,7 @@ var H = {
       return true;
    },
    runServer: function () {
+      var requiresGeo = ! toRun || toRun === 'geo';
       a.seq ([
          [a.stop, [
             [a.make (fs.readFile), tk.pivDataPath],
@@ -89,9 +90,9 @@ var H = {
             }
          ], H.loadPivData],
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
-         [k, 'node', 'server', 'local', 'geodata', tk.geodataPath],
+         requiresGeo ? [k, 'node', 'server', 'local', 'geodata', tk.geodataPath] : [k, 'node', 'server', 'local'],
          function (s) {
-            if (s.error && ! H.testsDone) process.stdout.write (s.error.stdout.slice (-2500));
+            if (s.error && ! H.testsDone) process.stdout.write (s.error.stdout.slice (-4500));
          }
       ]);
    },
@@ -2391,21 +2392,84 @@ suites.geo = function () {
          {type: 'field', name: 'id',           value: s.uploadId},
          {type: 'field', name: 'lastModified', value: tk.pivs.dunkerque.mtime},
       ]}}, 200, function (s, rq, rs) {
+         s.dunkerqueId = rs.body.id;
+         return true;
+      }],
+      ['disable geo, no-op', 'post', 'geo', {}, {operation: 'disable'}, 200],
+      ['get logs after no-op disable geo', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log', {ev: log.ev, type: log.type}, {ev: 'upload', type: 'ok'})) return false;
+         // Wait for geo to be set
+         H.tryTimeout (10, 1000, function (cb) {
+            a.stop ([
+               [k, 'redis-cli', '-n', CONFIG.redisdb, 'exists', 'geo'],
+               function (s) {
+                  if (s.last) return cb ();
+                  else return cb (true);
+               }
+            ]);
+         }, next);
+      }],
+      ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
+      ['enable geo again and get conflict', 'post', 'geo', {}, {operation: 'enable'}, 409],
+      ['get logs after enable geo', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
+         var log = teishi.last (rs.body.logs);
+         if (H.stop ('last log', {ev: log.ev, type: log.type}, {ev: 'geotagging', type: 'enable'})) return false;
+         var nlog = teishi.last (rs.body.logs, 2);
+         if (H.stop ('next to last log', {ev: nlog.ev, type: nlog.type}, {ev: 'upload', type: 'ok'})) return false;
+         // Wait for location to be set in piv
+         H.tryTimeout (10, 1000, function (cb) {
+            h.one (s, {method: 'post', path: 'query', body: {csrf: s.csrf, tags: [], sort: 'upload', from: 1, to: 2}, code: 200, apres: function (s, rq, rs) {
+               if (! rs.body.pivs [0].loc) return false;
+               return true;
+            }}, cb);
+         }, next);
+      }],
+      ['get location & tags of geotagged pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
+         if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, tk.pivs.small.loc))     return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
+         if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
+         return true;
+      }],
+      ['enable geo, no-op', 'post', 'geo', {}, {operation: 'enable'}, 200],
+      ['get logs after no-op enable geo', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var nlog = teishi.last (rs.body.logs, 2);
+         if (H.stop ('next to last log', {ev: nlog.ev, type: nlog.type}, {ev: 'upload', type: 'ok'})) return false;
+         return true;
+      }],
+      ['disable geo', 'post', 'geo', {}, {operation: 'disable'}, 200],
+      ['get location & tags of geotagged pivs after disabling geo', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, undefined)) return false;
+         if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, undefined))     return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018'])) return false;
+         if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], undefined)) return false;
+         if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], undefined)) return false;
+         return true;
+      }],
+      ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
+      ['delete pivs', 'post', 'delete', {}, function (s) {return {ids: [s.smallId, s.dunkerqueId]}}, 200],
+      ['upload piv with geodata while geo is enabled', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.dunkerque.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.dunkerque.mtime},
+      ]}}, 200, function (s, rq, rs) {
          s.dunquerkeId = rs.body.id;
          return true;
       }],
-      // TODO
-      // disable no-op, check logs & piv
-      // enable, check logs
-      // enable again, check conflict, check no log
-      // wait and see piv with geotag (also geotag in query), see other piv unaffected
-      // disable, check logs, check geotag gone
-      // enable again, delete and see that it gets added when uploading with geo enabled
+      ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
+         if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }
 
-// TODO remaining tests
+// TODO
 /*
 - revise old tests
 - import
