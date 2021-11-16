@@ -309,7 +309,7 @@ B.mrespond ([
    }],
    ['goto', 'page', function (x, page) {
       var pages = {
-         logged:   ['invites', 'users', 'logs', 'deploy'],
+         logged:   ['dashboard', 'invites', 'users', 'logs', 'deploy'],
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
