@@ -1,7 +1,7 @@
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style;
+var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
 
 window.addEventListener ('keydown', function (ev) {
    ev = ev || document.event;
@@ -2360,7 +2360,7 @@ H.if = function (condition, then, Else) {
    return condition ? then : Else;
 }
 
-H.email = /^(([_\da-zA-Z+\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/;
+H.email = /^(?=[A-Z0-9][A-Z0-9@._%+-]{5,253}$)[A-Z0-9._%+-]{1,64}@(?:(?=[A-Z0-9-]{1,63}\.)[A-Z0-9]+(?:-[A-Z0-9]+)*\.){1,8}[A-Z]{2,63}$/i
 
 H.stopPropagation = ['stop', 'propagation', {raw: 'event'}];
 
@@ -2483,12 +2483,12 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && ['auth/logout', 'auth/delete', 'auth/changePassword'].indexOf (path) === -1);
+      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/logout', 'auth/delete', 'auth/changePassword'], path));
       if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
-      c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
+      c.ajax (x.verb, path, headers, body, function (error, rs) {
          B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
          var authPath = path === 'csrf' || path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
@@ -2525,17 +2525,17 @@ B.mrespond ([
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
-      if (pages.logged.indexOf (page) === -1 && pages.unlogged.indexOf (page) === -1) {
+      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) {
          page = pages.logged [0];
       }
 
       var logged = B.get ('Data', 'csrf');
 
-      if (! logged && pages.logged.indexOf (page) > -1) {
+      if (! logged && inc (pages.logged, page)) {
          B.call (x, 'set', ['State', 'redirect'], page);
          return B.call (x, 'goto', 'page', pages.unlogged [0]);
       }
-      if (logged && pages.unlogged.indexOf (page) > -1) {
+      if (logged && inc (pages.unlogged, page)) {
          return B.call (x, 'goto', 'page', pages.logged [0]);
       }
       if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
@@ -2684,6 +2684,7 @@ B.mrespond ([
          }));
 
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
+         B.call (x, 'set', ['Data', 'pivTotal'],  rs.body.total);
 
          var selected = B.get ('State', 'selected') || {};
          var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pivs, function (piv) {
@@ -2691,9 +2692,7 @@ B.mrespond ([
          });
          B.set (['State', 'selected'], updatedSelection);
 
-         B.call (x, 'set', ['Data', 'pivTotal'], rs.body.total);
-
-         // Set timeout for refreshing query
+         // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
             B.call (x, 'query', 'pivs');
          }, 1500));
@@ -2805,9 +2804,9 @@ B.mrespond ([
       if (ids.length === 0) return;
 
       var query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
-      if (! del && query.tags.indexOf ('untagged') > -1) {
+      if (! del && inc (query.tags, 'untagged')) {
          dale.go (ids, function (id) {
-            if ((query.recentlyTagged || []).indexOf (id) === -1) B.add (['State', 'query', 'recentlyTagged'], id);
+            if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
          });
       }
       var payload = {tag: tag, ids: ids, del: del}
@@ -2974,7 +2973,7 @@ B.mrespond ([
       if (ev.changedTouches [0].pageX > lastTouch.x) B.call (x, 'open', 'prev');
       else                                           B.call (x, 'open', 'next');
    }],
-   ['goto', 'location', function (x, piv) {
+   ['open', 'location', function (x, piv) {
       var url = 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
       var loc = window.open (url, '_blank');
       loc.focus ();
@@ -2993,9 +2992,9 @@ B.mrespond ([
       dale.go (ev.dataTransfer.files, function (file) {
          var fileType = file.type;
          if (! fileType && file.name.match (/\.heic$/i)) fileType = 'image/heic';
-         if (file.size && file.size > window.maxFileSize)          B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
-         else if (window.allowedFormats.indexOf (fileType) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
-         else                                                      B.add (['State', 'upload', 'new', 'files'], file);
+         if (file.size && file.size > window.maxFileSize)  B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         else if (! inc (window.allowedFormats, fileType)) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
+         else                                              B.add (['State', 'upload', 'new', 'files'],       file);
       });
       B.call (x, 'change', ['State', 'upload', 'new']);
    }],
@@ -3004,9 +3003,9 @@ B.mrespond ([
       dale.go (input.files, function (file) {
          var fileType = file.type;
          if (! fileType && file.name.match (/\.heic$/i)) fileType = 'image/heic';
-         if (file.size && file.size > window.maxFileSize)          B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
-         else if (window.allowedFormats.indexOf (fileType) === -1) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
-         else                                                      B.add (['State', 'upload', 'new', 'files'], file);
+         if (file.size && file.size > window.maxFileSize)  B.add (['State', 'upload', 'new', 'tooLarge'],    file.name);
+         else if (! inc (window.allowedFormats, fileType)) B.add (['State', 'upload', 'new', 'unsupported'], file.name);
+         else                                              B.add (['State', 'upload', 'new', 'files'],       file);
       });
       if (x.path [0] === 'folder') B.call (x, 'clear', 'snackbar');
       B.call (x, 'change', ['State', 'upload', 'new']);
@@ -3014,7 +3013,7 @@ B.mrespond ([
    }],
    ['upload', 'start', function (x) {
       var files = B.get ('State', 'upload', 'new', 'files');
-      B.call (x, 'post', 'metaupload', {}, {op: 'start', total: files.length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
+      B.call (x, 'post', 'upload', {}, {op: 'start', total: files.length, tooLarge: B.get ('State', 'upload', 'new', 'tooLarge'), unsupported: B.get ('State', 'upload', 'new', 'unsupported'), tags: B.get ('State', 'upload', 'new', 'tags')}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error starting the upload.');
 
          B.call (x, 'set', ['State', 'upload', 'wait', rs.body.id + ''], {
@@ -3045,7 +3044,7 @@ B.mrespond ([
    }],
    ['upload', /cancel|complete|wait|error/, function (x, id, noSnackbar, error) {
       var op = x.path [0];
-      B.call (x, 'post', 'metaupload', {}, {op: op, id: id, error: error}, function (x, error, rs) {
+      B.call (x, 'post', 'upload', {}, {op: op, id: id, error: error}, function (x, error, rs) {
          if (op === 'wait') return B.call (x, 'set', ['State', 'upload', 'wait', id + '', 'lastActivity'], Date.now ());
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'complete' ? 'completing' : 'cancelling') + ' the upload.');
          // If we cancel or error the upload, we clear files belonging to the upload from the queue.
@@ -3102,7 +3101,7 @@ B.mrespond ([
             f.append ('id', file.id);
             f.append ('piv', file.file);
             if (file.tags) f.append ('tags', JSON.stringify (file.tags));
-            B.call (x, 'post', 'upload', {}, f, function (x, error, rs) {
+            B.call (x, 'post', 'piv', {}, f, function (x, error, rs) {
 
                B.call (x, 'set', ['State', 'upload', 'wait', file.id + '', 'lastActivity'], Date.now ());
 
@@ -3138,10 +3137,10 @@ B.mrespond ([
 
          H.hash (file.file, function (error, hash) {
             if (error) return B.call (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
-            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, filename: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
+            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
                // If the upload was just cancelled or errored by another file, don't do anything.
                if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
-               if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Metaupload error', error: error.responseText});
+               if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'upload error', error: error.responseText});
 
                if (! rs.body.repeated) return uploadFile ();
                // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.
@@ -3841,9 +3840,9 @@ views.pics = function () {
    return ['div', {class: 'pics-target app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
       views.header (true, true),
       views.open (),
-      B.view ([['Data', 'pivs'], ['Data', 'tags']], function (pivs, tags) {
-         if (! pivs || ! tags) return ['div'];
-         if (tags.all === 0) return views.empty ();
+      B.view (['Data', 'pivs'], function (pivs) {
+         if (! pivs) return ['div'];
+         if (B.get ('Data', 'queryTags', 'all') === 0) return views.empty ();
          return ['div', [
             ['style', [
                ['.tag-list__item--time', {width: 0.33, float: 'left'}],
@@ -3863,7 +3862,7 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, tags, account, showNTags) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, account, showNTags) {
                         if (! account || ! selected) return ['ul'];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
@@ -3871,16 +3870,16 @@ views.pics = function () {
                         var geotagSelected = dale.stop (selected, true, H.isGeo);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
-                        var yearlist = dale.fil (tags, undefined, function (tag) {
+                        var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (! H.isYear (tag)) return;
-                           if (selected.indexOf (tag) > -1) return tag;
+                           if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {return a - b});
 
-                        var taglist = dale.fil (tags, undefined, function (tag) {
-                           if (H.isYear (tag)) return;
-                           if (selected.indexOf (tag) > -1) return tag;
+                        var taglist = dale.fil (queryTags, undefined, function (n, tag) {
+                           if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
+                           if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
@@ -3894,14 +3893,14 @@ views.pics = function () {
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
 
-                           var aSelected = selected.indexOf (a) > -1;
-                           var bSelected = selected.indexOf (b) > -1;
+                           var aSelected = inc (selected, a);
+                           var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
                            return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                         });
 
                         var all      = teishi.eq (selected, []);
-                        var untagged = selected.indexOf ('untagged') > -1;
+                        var untagged = inc (selected, 'untagged');
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.
                            if (H.isGeo (which) && ! H.isCountry (which) && ! geotagSelected) return;
@@ -3920,13 +3919,13 @@ views.pics = function () {
                               var action = ['toggle', 'tag', 'untagged'];
                            }
                            else if (H.isYear (which)) {
-                              var Class = 'tag-list__item tag tag-list__item--time' + (selected.indexOf (which) > -1 ? ' tag--bolded' : '');
+                              var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
                            }
                            else if (H.isGeo (which)) {
                               var isCountry = H.isCountry (which);
                               if (isCountry) {
                                  var Class = 'tag-list__item tag tag-list__item--geo-country';
-                                 if (selected.indexOf (which) > -1) Class += ' tag--bolded';
+                                 if (inc (selected, which)) Class += ' tag--bolded';
                                  if (firstGeo) {
                                     Class += ' clear-both';
                                     firstGeo = false;
@@ -3934,12 +3933,12 @@ views.pics = function () {
                               }
                               else {
                                  var Class = 'tag-list__item tag tag-list__item--geo-city';
-                                 if (selected.indexOf (which) > -1) Class += ' tag--selected';
+                                 if (inc (selected, which)) Class += ' tag--selected';
                               }
                            }
                            else {
                               colorTag = true;
-                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (selected.indexOf (which) > -1 ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            return ['li', {class: Class, onclick: B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'all', H.putSvg ('tagAll')),
@@ -4024,9 +4023,8 @@ views.pics = function () {
                            ]];
                         }),
                      ]],
-                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags']], function (untag, filter, selected, showNSelectedTags) {
-
-                        filter = H.trim (filter || '');
+                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (untag, filter, selected, showNSelectedTags, userTags) {
+                        filter = H.trim (filter === undefined ? '' : filter);
                         showNSelectedTags = showNSelectedTags || 75;
                         var selectedTags = {}, filterRegex = H.makeRegex (filter);
                         if (selected) dale.go (B.get ('Data', 'pivs'), function (piv) {
@@ -4036,11 +4034,8 @@ views.pics = function () {
                               selectedTags [tag]++;
                            });
                         });
-                        var editTags = dale.fil (tags, undefined, function (number, tag) {
-                           if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
-                           if (filter) {
-                              if (! tag.match (filterRegex)) return;
-                           }
+                        var editTags = dale.fil (userTags, undefined, function (number, tag) {
+                           if (filter && ! tag.match (filterRegex)) return;
                            if (! selectedTags [tag]) selectedTags [tag] = 0;
                            return tag;
                         }).sort (function (a, b) {
@@ -4083,7 +4078,7 @@ views.pics = function () {
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
-                     H.if (tags.indexOf ('untagged') > -1 && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
+                     H.if (inc (tags, 'untagged') && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
                   ]];
                }),
             ]],
@@ -4353,7 +4348,7 @@ views.open = function () {
                ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
                ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
             ]]),
-            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', onclick: B.ev ('goto', 'location', piv)}, [
+            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', onclick: B.ev ('open', 'location', piv)}, [
                ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],
@@ -4445,17 +4440,17 @@ views.upload = function () {
                                        return ['div', {class: 'upload-box__section'}, [
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
-                                             var maxTags = 10, showTags = [];
-                                             dale.stop (tags, true, function (v, tag) {
-                                                if (H.isYear (tag) || H.isGeo (tag) || tag === 'all' || tag === 'untagged') return;
-                                                if ((B.get ('State', 'upload', 'new', 'tags') || []).indexOf (tag) > -1) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (H.makeRegex (filter))) {
+                                             filter = H.trim (filter === undefined ? '' : filter);
+                                             var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
+                                             dale.stop (tags, true, function (tag) {
+                                                if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
+                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
                                                    showTags.push (tag);
                                                    if (showTags.length === maxTags) return true;
                                                 }
                                              });
-                                             if (filter && dale.keys (tags).indexOf (filter) === -1) {
-                                                if (! H.isYear (filter) && ! H.isGeo (filter) && filter !== 'all' && filter !== 'untagged') showTags.unshift (filter + ' (new tag)');
+                                             if (filter && ! inc (tags, filter)) {
+                                                if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
                                              }
                                              return ['div', {class: 'upload-box__search'}, [
                                                 // SEARCH FORM
@@ -4824,7 +4819,7 @@ views.import = function () {
                                     if (providerData.status === 'uploading') return ['div', attrs (['snackbar', 'yellow', 'Files being uploaded, please wait.']), provider.svg];
 
                                     // If there no list or the last import is finished, trigger listing.
-                                    if ([undefined, 'cancelled', 'complete'].indexOf (providerData.status) > -1) return ['div', attrs (['import', 'list', provider.provider]), provider.svg];
+                                    if (inc ([undefined, 'cancelled', 'complete'], providerData.status)) return ['div', attrs (['import', 'list', provider.provider]), provider.svg];
 
                                     // If we are currently listing, print a warning on click.
                                     if (providerData.status === 'listing') return ['div', attrs (['snackbar', 'yellow', 'Files being listed, please wait.']), provider.svg];
@@ -4848,7 +4843,7 @@ views.import = function () {
             B.view (['Data', 'imports'], function (providers) {
                return ['div', dale.go (providers, function (v, provider) {
                   return dale.go (v, function (v2) {
-                     if (['complete', 'error'].indexOf (v2.status) === -1) return;
+                     if (! inc (['complete', 'error'], v2.status)) return;
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
                         ['div', {class: 'space-alert__image'}, [

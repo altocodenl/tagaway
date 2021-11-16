@@ -18,8 +18,8 @@ The author wishes to thank [Browserstack](https://browserstack.com) for providin
 
 ### Core functions
 
-1. **Upload**. Converse operation is **delete**.
-2. **Tag**. Converse operation is **untag**. Complementary operation is **rotate**.
+1. **Upload**. Converse operation are **delete** and **import**.
+2. **Tag**. Converse operation is **untag**. Complementary operation are **rotate** and **enable/disable geotagging**.
 3. **Share**. Converse operation is **unshare**. Complementary operations are **accepting a shared tag** and **deleting a shared tag**.
 4. **See**. No converse operation. Complementary operation is **download**.
 
@@ -39,9 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- document responder changes (prevent ajax, lastLogout, navigation, shift)
+- Tests refactor
 
 - Pivs
+   - Check that tags refactor works in client (empty, list of existing tags, list of tags to add, list of tags to add in upload)
+   - Show n of pivs for each tag in main view.
    - Suggest tags when inserting in tag view.
    - Move year tags to d::, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
    - Months:
@@ -49,16 +51,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - If selected a month, don't show other years.
       - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
       - unforbid years by using y::?
-   - Increase thumbnail size
-   - In which order to show tags:
+   - Specify in which order to show tags:
       - By piv number
       - latest tagged
       - latest queried
-      - pinned (manual solution)
+      - pinned (manual solution)?
       - compress years and geo? also other categories to compress (with overlap): latest queried, latest tagged, pinned, all
    - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
+   - [incognito FF] Review fonts not loading
+   - Increase thumbnail size
    - Implement video streaming.
    - [To be specified] Arcade mode when browsing:
       - changes in query/position are reflected in url, back button works
@@ -66,7 +69,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - top bar showing position
       - fixed piv separators as milestones
 
+
 - Backend improvements:
+   - Route logging
+      - Log all non-admin routes in terms of performance
+      - Distinguish 4xx from 5xx
+      - Tighter 4xx ignoring rules for endpoints
    - Check if we're leaving behind temporary files from import.
    - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
 
@@ -83,8 +91,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
-   - On double click, images fail to open in most cases
-   - When opening thumbnail, big image is superimposed to the same piv (it's like a piv is opened on top of another)
+   - On double click, pivs fail to open in most cases
+   - When opening thumbnail, big picture is superimposed to the same piv (it's like a piv is opened on top of another)
    - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
 
 - Refactor UI with unified terminology for pivs: Pics&Vids?
@@ -102,8 +110,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Mobile
    - Login & signup.
    - Upload files & folders.
-
-- [incognito FF] Review fonts not loading
 
 ### Already implemented
 
@@ -160,13 +166,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Warn of leaving page if upload is ongoing.
 
 - Upload
-   - Allow only valid images and videos of certain formats.
+   - Allow only valid pivs of certain formats.
    - Auto thumbnail generation.
    - Server-side encryption (onto S3).
    - Store original pivs in S3 and pivs + thumbnails locally.
-   - Ignore images that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
+   - Ignore pivs that already were uploaded (by hash check, ignoring metadata), but add their tags to the already existing files.
    - Upload files from folder selection, files selection & drop.
-   - If uploading from folder, use folder name (and optional subfolders) as tags for the images contained in them.
+   - If uploading from folder, use folder name (and optional subfolders) as tags for the pivs contained in them.
    - See progress when uploading files, using a progress bar.
    - Add one or more tags to the upcoming upload batch.
    - See previous uploads.
@@ -298,7 +304,7 @@ General server approach outlined [here](https://github.com/fpereiro/backendlore)
 
 If any route fails with an internal error, a 500 code will be returned with body `{error: ...}`.
 
-All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /upload`, which must be of type `multipart/form-data`.
+All `POST` requests must have a `content-type` header of `application/json` and their bodies must be valid JSON objects. The only exception is `POST /piv`, which must be of type `multipart/form-data`.
 
 All non-auth routes (unless marked otherwise) will respond with a 403 error with body `{error: 'nocookie'}` if the user is not logged in.
 
@@ -306,7 +312,7 @@ If a cookie with invalid signature is sent along, the application will respond w
 
 If a cookie with valid signature but that has already expired is sent along, the application will respond with a 403 error with body `{error: 'session'}`.
 
-All POST requests (unless marked otherwise) must contain a `csrf` field equivalent to the `csrf` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /upload`, the `csrf` field must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
+All POST requests (unless marked otherwise) must contain a `csrf` field equivalent to the `csrf` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /piv`, the `csrf` field must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
 
 #### Request invite
 
@@ -392,7 +398,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
-- `POST /metaupload`
+- `POST /upload`
    - Body can have one of five forms:
       - `{op: 'start', tags: UNDEFINED|[STRING, ...], total: INTEGER, tooLarge: UNDEFINED|{STRING, ...], unsupported: UNDEFINED|[STRING, ...]}}`
       - `{op: 'complete', id: INTEGER}`
@@ -401,34 +407,33 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `{op: 'error',    id: INTEGER, error: OBJECT}`
    - The body can contain a field `provider` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
-   - If an `id` is provided in the case of `complete`, `cancel`, `wait` or `error`, it must correspond to that of an existing upload, otherwise the endpoint returns 404.
+   - If an `id` is provided in the case of `complete`, `cancel`, `wait` or `error`, it must correspond to that of an existing upload, otherwise the endpoint returns 404 with body `{error: 'upload'}`.
    - In the case of `complete`, `cancel` or `wait`, the existing upload must have a status of `uploading`, otherwise the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
    - If successful, the endpoint returns a body of the form `{id: INTEGER}`. In the case of a `start` operation, this id should be used for an ulterior `end` or `cancel`.
 
 - `POST /uploadCheck`
    - This route is used to see if a piv has already been uploaded.
-   - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, filename: STRING, fileSize: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
+   - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, name: STRING, size: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
    - If `tags` are included, after being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
-   - `body.fileSize` must be the size in bytes of the file being checked.
-   - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
+   - `body.size` must be the size in bytes of the file being checked.
+   - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404 with body `{error: 'upload'}`; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
    - If there's already a piv with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
-   - If the piv matches another one already present and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
+   - If the piv matches another one already present and `lastModified` and/or a date parsed from the `name` is a date not held by the metadata of the piv already present, those dates will be added to it.
 
-- `POST /upload`
-   - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`).
-   - Must contain fields (otherwise, 400 with body `{error: 'field'}`).
-   - Must contain one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
-   - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
-   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /metaupload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
-   - Can contain a field `providerData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
-   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `uid`, `lastModified`, `tags` and `providerData`; the last two are optional.
-   - Must contain no extraneous files (otherwise, 400 with body `{error: 'invalidFile'}`). The only allowed file is `piv`.
+- `POST /piv`
+   - Must be a multipart request (and it should include a `content-type` header with value `multipart/form-data`) (otherwise, 400 with body `{error: 'multipart'}`).
+   - Must contain exactly one file with name `piv` (otherwise, 400 with body `{error: 'file'}`).
+   - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `id`, `lastModified`, `tags` and `importData`; the last two are optional.
+   - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /upload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
    - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
-   - The file uploaded must be `.png`, `.jpg` or `.mp4` (otherwise, 400 with body `{error: 'format'}`).
-   - If a file exists for that user that is both identical to an existing one and aso having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - Can contain a field `importData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
+   - The file uploaded must be one of the allowed formats: `jpeg`, `png`, `bmp`, `heic`, `gif`, `tiff`, `webp`, `mp4`, `mov`, `3gp`, `avi`, `webm`, `wmv` and `m4v` (otherwise, 400 with body `{error: 'format'}`).
+   - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
+   - If the file is not a valid piv, a 400 is returned with body `{error: 'Invalid piv', data: {...}}`.
+   - If a file exists for that user that is both identical to an existing one and also having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
    - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
-   - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `filename` is a date not held by the metadata of the piv already present, those dates will be added to it.
+   - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `name` is a date not held by the metadata of the piv already present, those dates will be added to it.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the piv just uploaded and `deg` is the rotation automatically applied to the piv based on its metadata.
 
@@ -457,7 +462,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an object of the form `{tag1: INT, tag2: INT, ...}`. Includes a field for `untagged` and one for `all`.
+   - Returns an array of the form `['tag1', 'tag2', ...]`, only including tags created by the user. This excludes `untagged`, `all`, year tags, geotags and tags shared with the user by other users.
 
 - `POST /query`
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
@@ -467,11 +472,11 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: [...], refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {all: INT, untagged: INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
-      - `body.tags` contains all the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty.
-      - `body.refreshQuery`, if set, indicates that there's either at least an upload ongoing or a geotagging process ongoing, in which case it makes sense to repeat the query after a short amount of time to update the results.
+      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `all` and `untagged`, which indicate the *total* amount of `all` and `untagged` pivs, irrespective of the query.
+      - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing (or both), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
 - `POST /share`
@@ -487,12 +492,14 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /download`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
-   - `body.ids` must have at least a length of 2.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - `body.ids` must have at least a length of 2 (otherwise, 400 with body `{error: 'single'}`. To download a single piv you can use `GET /piv/ID?original=1` instead.
    - All pivs must exist and user must be owner of the pivs or have the pivs shared with them, otherwise a 404 is returned.
    - If successful, returns a 200 with body `{id: STRING}`. The `id` corresponds to a temporary download file that lasts 5 seconds and is only valid for the user that requested the download.
 
 - `GET /download/ID`
    - `ID` is an id returned by `POST /download`.
+   - If there's no such download, or if the user doesn't requested that download, a 404 is returned.
    - If successful, the user will receive a zip file with the specified pivs.
 
 - `POST /dismiss`
@@ -512,7 +519,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200 with an array as body. Each of the elements is either an upload corresponding to the import (with the same shape of those returned by `GET /uploads`); if there's an import process that has not reached the upload stage yet, it will be the first element of the array and have the shape `{id: INTEGER, provider: PROVIDER, status: listing|ready|error, fileCount: INTEGER|UNDEFINED, folderCount: INTEGER|UNDEFINED, error: STRING|OBJECT|UNDEFINED, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: ..., count: INTEGER, parent: ID, children: [ID, ...]}]}}`. If oauth access hasn't been provided yet, the reply will be of the form `[{redirect: URL, provider: PROVIDER}]`, where `URL` is the URL to start the OAuth authorization process for that provider.
 
 - `GET /account`
-   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, fsused: INTEGER, s3used: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
+   - If successful, returns a 200 with body `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, byfs: INTEGER, bys3: INTEGER}, geo: true|UNDEFINED , geoInProgress: true|UNDEFINED, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
 
 - `GET /import/oauth/PROVIDER`
    - Receives the redirection from the oauth provider containing a temporary authorization code.
@@ -611,7 +618,7 @@ All the routes below require an admin user to be logged in.
    - ms-auth:   maximum ms for successful requests for POST /auth
    - ms-piv:    maximum ms for successful requests for GET /piv
    - ms-thumb:  maximum ms for successful requests for GET /thumb
-   - ms-upload: maximum ms for successful requests for POST /upload
+   - ms-pivup:  maximum ms for successful requests for POST /piv
    - ms-delete: maximum ms for successful requests for POST /delete
    - ms-rotate: maximum ms for successful requests for POST /rotate
    - ms-tag:    maximum ms for successful requests for POST /tag
@@ -629,7 +636,7 @@ All the routes below require an admin user to be logged in.
    - rq-auth:   total successful requests for POST /auth
    - rq-piv:    total successful requests for GET /piv
    - rq-thumb:  total successful requests for GET /thumb
-   - rq-upload: total successful requests for POST /upload
+   - rq-pivup:  total successful requests for POST /piv
    - rq-delete: total successful requests for POST /delete
    - rq-rotate: total successful requests for POST /rotate
    - rq-tag:    total successful requests for POST /tag and /tags
@@ -640,22 +647,21 @@ All the routes below require an admin user to be logged in.
    - ms-auth:   total ms for successful requests for POST /auth
    - ms-piv:    total ms for successful requests for GET /piv
    - ms-thumb:  total ms for successful requests for GET /thumb
-   - ms-upload: total ms for successful requests for POST /upload
+   - ms-pivup:  total ms for successful requests for POST /piv
    - ms-delete: total ms for successful requests for POST /delete
    - ms-rotate: total ms for successful requests for POST /rotate
    - ms-tag:    total ms for successful requests for POST /tag
    - ms-query:  total ms for successful requests for POST /query
    - ms-share:  total ms for successful requests for POST /share
    - ms-geo:    total ms for successful requests for POST /geo
-   - ms-upload-initial:  total ms for initial checks in POST /upload
-   - ms-upload-format:    total ms for format check in POST /upload
-   - ms-upload-hash:      total ms for hash check in POST /upload
-   - ms-upload-fs:        total ms for FS operations in POST /upload
-   - ms-upload-resize200: total ms for 200 resize operation in POST /upload
-   - ms-upload-resize900: total ms for 900 resize operation in POST /upload
-   - ms-upload-db:        total ms for info storage & DB processing in POST /upload
-   - ms-video-convert:    total ms for non-mp4 to mp4 video conversion
-   - ms-video-convert:FORMAT:  total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
+   - ms-pivup-initial:   total ms for initial checks in POST /piv
+   - ms-pivup-metadata:  total ms for metadata check in POST /piv
+   - ms-pivup-hash:      total ms for hash check in POST /piv
+   - ms-pivup-fs:        total ms for FS operations in POST /piv
+   - ms-pivup-thumb:     total ms for thumbnail creation in POST /piv
+   - ms-pivup-db:        total ms for info storage & DB processing in POST /piv
+   - ms-video-convert:   total ms for non-mp4 to mp4 video conversion
+   - ms-video-convert:FORMAT: total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
 
 ### Redis structure
 
@@ -707,7 +713,7 @@ All the routes below require an admin user to be logged in.
    hash: STRING
    originalHash: STRING
    providerHash: STRING (provider hash if piv was imported, which comes from combining `FILE_ID:MODIFIED_TIME`; has the shape PROVIDER:HASH)
-   dates: STRING (stringified array of dates belonging to the piv, normalized and sorted by earliest first)
+   dates: STRING (stringified object of dates belonging to the piv)
    deg: INT 90|-90|180 or absent
    date: INT (latest date within dates)
    dateSource: STRING (metadata field used to get date)
@@ -721,7 +727,7 @@ All the routes below require an admin user to be logged in.
    xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
    xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pivs downloaded (also includes cached hits)
-   loc: [INT, INT} or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner.
+   loc: [INT, INT] or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner and the piv has valid geodata.
 
 - pivt:ID (set): list of all the tags belonging to a piv.
 
@@ -741,12 +747,12 @@ All the routes below require an admin user to be logged in.
    - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING}
    - For recover:         {t: INT, ev: 'auth', type: 'recover',        ip: STRING, userAgent: STRING}
    - For reset:           {t: INT, ev: 'auth', type: 'reset',          ip: STRING, userAgent: STRING}
-   - For destroy:         {t: INT, ev: 'auth', type: 'destroy',        ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
    - For password change: {t: INT, ev: 'auth', type: 'passwordChange', ip: STRING, userAgent: STRING}
+   - For account delete:  {t: INT, ev: 'auth', type: 'delete',         ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
    - For deletes:         {t: INT, ev: 'delete', ids: [STRING, ...]}
    - For rotates:         {t: INT, ev: 'rotate', ids: [STRING, ...], deg: 90|180|-90}
    - For (un)tags:        {t: INT, ev: 'tag',        type: tag|untag, ids: [STRING, ...], tag: STRING}
-   - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID}
+   - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID|UNDEFINED, who: ID|UNDEFINED} (if `whom` is present, `who` is absent and the operation is done by the user; if `who` is present, `whom` is absent and the operation is done to the user).
    - For dismiss:         {t: INT, ev: 'dismiss',    type: 'geotagging|selection'}
    - For geotagging:      {t: INT, ev: 'geotagging', type: 'enable|disable'}
    - Import:
@@ -765,15 +771,15 @@ All the routes below require an admin user to be logged in.
       - For complete:           {t: INT, ev: 'upload', type: 'complete', id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For cancel:             {t: INT, ev: 'upload', type: 'cancel',   id: INTEGER, provider: UNDEFINED|PROVIDER}
       - For wait for long file: {t: INT, ev: 'upload', type: 'wait',     id: INTEGER, provider: UNDEFINED|PROVIDER}
-      - For uploaded file:         {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
-      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated',        id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], lastModified: INTEGER, filename: STRING (name of file being uploaded), fileSize: INTEGER (size of file being uploaded), identical: true|false (if true, the file was an exact duplicate; if not, its detection was after comparing a version stripped from metadata)}
-      - For already uploaded file: {t: INT, ev: 'upload', type: 'alreadyUploaded', id: INTEGER, provider: UNDEFINED|PROVIDER, fileId: ID (id of file already existing), tags: UNDEFINED|[STRING, ...], lastModified: INTEGER}
-      - For invalid file:          {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, error: STRING|OBJECT}
-      - For too large file:        {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
-      - For unsupported file:      {t: INT, ev: 'upload', type: 'unsupported', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For uploaded file:         {t: INT, ev: 'upload', type: 'ok',       id: INTEGER, provider: UNDEFINED|PROVIDER, pivId: ID (id of newly created file),    tags: UNDEFINED|[STRING, ...], deg:90|-90|180|UNDEFINED}
+      - For repeated file:         {t: INT, ev: 'upload', type: 'repeated',        id: INTEGER, provider: UNDEFINED|PROVIDER, pivId: ID (id of piv already existing), tags: UNDEFINED|[STRING, ...], lastModified: INTEGER, name: STRING (name of file being uploaded), size: INTEGER (size of file being uploaded), identical: true|false (if true, the file was an exact duplicate; if not, its detection was after comparing a version stripped from metadata), dates: UNDEFINED|{...} (if identical: false, shows the dates found in the piv)}
+      - For already uploaded file: {t: INT, ev: 'upload', type: 'alreadyUploaded', id: INTEGER, provider: UNDEFINED|PROVIDER, pivId: ID (id of piv already existing), tags: UNDEFINED|[STRING, ...], lastModified: INTEGER}
+      - For invalid file:          {t: INT, ev: 'upload', type: 'invalid',  id: INTEGER, provider: UNDEFINED|PROVIDER, name: STRING, error: STRING|OBJECT}
+      - For too large file:        {t: INT, ev: 'upload', type: 'tooLarge', id: INTEGER, provider: UNDEFINED|PROVIDER, name: STRING, size: INTEGER} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
+      - For unsupported file:      {t: INT, ev: 'upload', type: 'unsupported', id: INTEGER, provider: UNDEFINED|PROVIDER, name: STRING} - This should be prevented by the client or the import process (and added within the `start` log) but we create a separate entry in case the API is used directly to make an upload.
       - For provider error:         {t: INT, ev: 'upload', type: 'providerError', id: INTEGER, provider: PROVIDER, error: STRING|OBJECT} - Note: this is only possible for an upload triggered by an import.
       - For no more space:          {t: INT, ev: 'upload', type: 'noCapacity', id: INTEGER, provider: UNDEFINED|PROVIDER, error: STRING|OBJECT}
-      - For unexpected error:       {t: INT, ev: 'upload', type: 'error', id: INTEGER, provider: UNDEFINED|PROVIDER, filename: STRING|UNDEFINED (will be UNDEFINED if it happens on the upload of an import within the import logic), error: STRING|OBJECT, fromClient: true|UNDEFINED (if error is reported by the client)}
+      - For unexpected error:       {t: INT, ev: 'upload', type: 'error', id: INTEGER, provider: UNDEFINED|PROVIDER, name: STRING|UNDEFINED (will be UNDEFINED if it happens on the upload of an import within the import logic), error: STRING|OBJECT, fromClient: true|UNDEFINED (if error is reported by the client)}
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
@@ -891,7 +897,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 6. `views.open`
    - Contained by: `views.pivs`.
    - Depends on `State.open` and `Data.pivTotal`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `goto location PIV`.
+   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
 7. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
@@ -979,11 +985,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pivs`:  if `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument, it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
-   8. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pictures, it invokes `delete pivs`.
+   8. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
    9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it. If the tag is added and it is an user tag, we invoke `rem State.filter`.
    10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
-   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pictures that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
+   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
    13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    14. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs true`. In case of error, invokes `snackbar`.
    15. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
@@ -1003,21 +1009,21 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first piv or when going forward on the last piv. If `State.open` is equal to `State.nPivs` and the `next` piv is requested, it invokes `increment nPivs`.
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
-   8. `goto location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
+   8. `open location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
 
 6. Upload
    1. `change State.page`: if `State.page` is `upload` or `pivs`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
-   4. `upload start`: invokes `post metaupload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
-   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post metaupload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post metaupload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
+   4. `upload start`: invokes `post upload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
+   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post upload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post upload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
    8. `change State.upload.queue`:
       - Hashes the file; if there is an error, invokes `upload error` and returns.
       - Invokes `post uploadCheck` to check if an identical file already exists; if there is an error, invokes `upload error` and returns.
       - If a file with the same hash already exists, the responder removes it from `State.upload.queue` and conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`). It then returns.
-      - Invokes `post upload` to upload the file.
+      - Invokes `post piv` to upload the file.
       - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
       - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
@@ -1100,9 +1106,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pivs`: `[...]`; comes from `body.pivs` from `query pivs`.
    - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
-   - `queryTags`: `[...]`; comes from `body.tags` from `query pivs`.
+   - `queryTags`: `{all: INTEGER, untagged: INTEGER, tag1: ..., ...}`; comes from `body.tags` from `query pivs`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
-   - `tags`: `{TAGNAME: INT, ...}`. Also includes keys for `all` and `untagged`.
+   - `tags`: `[TAG1, TAG2, ...]`. Only includes tags created by the user.
    - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
 ## Admin
