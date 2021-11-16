@@ -2483,7 +2483,7 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/logout', 'auth/delete', 'auth/changePassword'], path));
+      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/signup', 'auth/logout', 'auth/delete', 'auth/changePassword'], path));
       if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
@@ -3791,7 +3791,7 @@ views.header = function (showUpload, showImport) {
 // *** EMPTY VIEW ***
 
 views.empty = function () {
-   return [
+   return ['div', [
       // SIDEBAR
       ['div', {class: 'sidebar'}, [
          ['div', {class: 'sidebar__header'}, [
@@ -3831,7 +3831,7 @@ views.empty = function () {
             ]],
          ]],
       ]],
-   ];
+   ]];
 }
 
 // *** PICS VIEW ***

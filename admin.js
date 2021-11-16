@@ -280,7 +280,7 @@ B.mrespond ([
       var timeout = setTimeout (function () {
          B.call (x, 'rem', 'State', 'snackbar');
       }, 4000);
-      B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: message, timeout: timeout});
+      B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
       var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && ['auth/logout', 'auth/delete', 'auth/changePassword'].indexOf (path) === -1);
@@ -309,7 +309,7 @@ B.mrespond ([
    }],
    ['goto', 'page', function (x, page) {
       var pages = {
-         logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
+         logged:   ['invites', 'users', 'logs', 'deploy'],
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
@@ -749,7 +749,7 @@ views.invites = function () {
          ['br'],
          B.view (['State', 'newInvite'], function (newInvite) {
             if (! newInvite) return ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('set', ['State', 'newInvite'], {email: '', firstName: ''})}, 'Create invite'];
-            return [
+            return ['div', [
                ['input', {placeholder: 'email', value: newInvite.email, onchange: B.ev ('set', ['State', 'newInvite', 'email'])}],
                ['br'],
                ['br'],
@@ -760,7 +760,7 @@ views.invites = function () {
                ['br'],
                ['br'],
                ['span', {class: 'action', onclick: B.ev ('rem', 'State', 'newInvite')}, 'Cancel'],
-            ];
+            ]];
          }),
       ]];
    });
