@@ -2269,8 +2269,9 @@ var routes = [
                // We remove piv.loc if geotagging is disabled
                if (! s.last) delete piv.loc;
                else {
+                  var loc = piv.loc;
                   piv.loc = JSON.stringify (piv.loc);
-                  return H.getGeotags (s, piv.loc [0], piv.loc [1]);
+                  return H.getGeotags (s, loc [0], loc [1]);
                }
             }
             return s.next ([]);
@@ -2925,7 +2926,7 @@ var routes = [
                var multi = redis.multi ();
                s.allPivs = s.last;
                dale.go (s.last, function (pivId) {
-                  multi.hget ('piv:' + pivId, 'tags');
+                  multi.smembers ('pivt:' + pivId);
                });
                mexec (s, multi);
             },
@@ -2933,8 +2934,8 @@ var routes = [
                var multi = redis.multi ();
                dale.go (s.last, function (tags, k) {
                   multi.hdel ('piv:' + s.allPivs [k], 'loc');
-                  dale.go (JSON.parse (tags), function (tag) {
-                     if (H.isGeo (tag)) geotags [tag] = true;
+                  dale.go (tags, function (tag) {
+                     if (! H.isGeo (tag)) return;
                      multi.srem ('pivt:' + s.allPivs [k], tag);
                      multi.del ('tag:' + rq.user.username + ':' + tag);
                   });
