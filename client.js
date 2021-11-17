@@ -2664,6 +2664,7 @@ B.mrespond ([
    ['query', 'pivs', function (x, updateSelected) {
       var query = B.get ('State', 'query');
       if (! query) return;
+      if (B.get ('State', 'querying')) return;
       B.call (x, 'set', ['State', 'querying'], true);
 
       var timeout = B.get ('State', 'queryRefresh');
@@ -2787,7 +2788,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'tags'], rs.body);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (rs.body [tag]) return tag;
+            if (rs.body.indexOf (tag) > -1) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);

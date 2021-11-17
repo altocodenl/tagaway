@@ -1400,7 +1400,7 @@ suites.upload.piv = function () {
                   dates: piv.dates,
                   dimw: piv.dimw,
                   dimh: piv.dimh,
-                  deg:  piv.deg,
+                  deg:  piv.isVid ? undefined : piv.deg,
                   format: piv.format
                }, false, function (v, k) {
                   if (H.stop (name + ' - field ' + k, upiv [k], v)) return false;

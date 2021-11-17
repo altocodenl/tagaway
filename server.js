@@ -2709,7 +2709,7 @@ var routes = [
                   dateup: parseInt (piv.dateup),
                   dimh: parseInt (piv.dimh),
                   dimw: parseInt (piv.dimw),
-                  deg: parseInt (piv.deg) || undefined,
+                  deg: vid ? undefined : (parseInt (piv.deg) || undefined),
                   vid: vid,
                   loc: piv.loc ? teishi.parse (piv.loc) : undefined
                };
