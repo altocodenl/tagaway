@@ -4391,7 +4391,7 @@ views.upload = function () {
                            ['div', {class: 'upload-box__main'}, [
                               // UPLOAD BOX SECTION
                               B.view (['Data', 'account'], function (account) {
-                                 var noSpace = account && account.usage.fsused >= account.usage.limit;
+                                 var noSpace = account && account.usage.byfs >= account.usage.limit;
                                  return ['div', {class: 'upload-box__section'}, [
                                     ['h3', {class: 'upload-box__section-title'}, 'Upload files'],
                                     // DRAG & DROP
@@ -4637,7 +4637,7 @@ views.upload = function () {
 
 views.noSpace = function () {
    return B.view (['Data', 'account'], function (account) {
-      var noSpace = account && account.usage.fsused >= account.usage.limit;
+      var noSpace = account && account.usage.byfs >= account.usage.limit;
       if (! noSpace) return ['div'];
       return ['div', {class: 'boxed-alert'}, [
          ['div', {class: 'space-alert__image'}, [
@@ -4790,7 +4790,7 @@ views.import = function () {
                      ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')],
                      ['div', {class: 'upload-box__main'}, [
                         B.view (['Data', 'account'], function (account) {
-                           var noSpace = account && account.usage.fsused >= account.usage.limit;
+                           var noSpace = account && account.usage.byfs >= account.usage.limit;
                            return ['div', {class: 'upload-box__section'}, [
                               ['h3', {class: 'upload-box__section-title'}, 'Import files'],
                               ['div', {class: 'drag-and-drop-import'}, [
@@ -5068,8 +5068,8 @@ views.account = function () {
       views.header (true, true),
       B.view (['Data', 'account'], function (account) {
          if (! account) return ['div'];
-         var percUsed = Math.round ((account.usage.fsused / account.usage.limit) * 100);
-         var gbUsed = Math.round (account.usage.fsused * 10 / 1000000000) / 10;
+         var percUsed = Math.round ((account.usage.byfs / account.usage.limit) * 100);
+         var gbUsed = Math.round (account.usage.byfs * 10 / 1000000000) / 10;
          var free   = true;
          return ['div', {class: 'main-centered'}, [
             ['div', {class: 'main-centered__inner max-width--m'}, [
