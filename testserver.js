@@ -1430,9 +1430,8 @@ suites.upload.piv = function () {
                }});
             }],
             dale.go ([200, 900], function (size, k) {
-               if ((size === 200 && ! t200) || (size === 900 && ! t900)) return [];
                return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return 'thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
-                  piv ['t' + size + 'size'] = Buffer.from (rs.body, 'binary').length;
+                  if (size === 200 && t200 || size === 900 && t900) piv ['t' + size + 'size'] = Buffer.from (rs.body, 'binary').length;
                   a.stop ([
                      [a.make (fs.writeFile), name + '-t' + size, Buffer.from (rs.body, 'binary'), {encoding: 'binary'}],
                      [H.getMetadata, name + '-t' + size, false, piv.mtime, piv.name],

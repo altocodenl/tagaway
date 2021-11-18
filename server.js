@@ -1832,8 +1832,8 @@ var routes = [
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
          function (s) {
-            // If there's no thumbnail of the specified size, we return the small thumbnail (this will default to 200 if asking for a 900 thumb of a piv smaller than 200); if there's no small thumbnail, we return the original piv instead.
-            var id = s.piv ['t' + rq.data.params.size] || s.piv.t200 || s.piv.id;
+            // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
+            var id = s.piv ['t' + rq.data.params.size] || s.piv.id;
             var format = s.piv.format === 'png' ? 'png' : 'jpeg';
             if (rq.data.params.size === '900' && s.piv.format === 'gif') format = 'gif';
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
