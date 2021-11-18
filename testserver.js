@@ -2395,6 +2395,11 @@ suites.geo = function () {
          return true;
       }],
       ['disable geo, no-op', 'post', 'geo', {}, {operation: 'disable'}, 200],
+      ['get account after geo disable no-op', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.geo', rs.body.geo, undefined)) return false;
+         return true;
+      }],
+
       ['get logs after no-op disable geo', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
          var log = teishi.last (rs.body.logs);
          if (H.stop ('last log', {ev: log.ev, type: log.type}, {ev: 'upload', type: 'ok'})) return false;
@@ -2410,6 +2415,11 @@ suites.geo = function () {
          }, next);
       }],
       ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
+      ['get account after geo enable', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.geo', rs.body.geo, true)) return false;
+         if (H.stop ('account.geoInProgress', rs.body.geoInProgress, true)) return false;
+         return true;
+      }],
       ['enable geo again and get conflict', 'post', 'geo', {}, {operation: 'enable'}, 409],
       ['get logs after enable geo', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
          var log = teishi.last (rs.body.logs);
@@ -2423,6 +2433,11 @@ suites.geo = function () {
                return true;
             }}, cb);
          }, next);
+      }],
+      ['get account after geo enable is complete', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.geo', rs.body.geo, true)) return false;
+         if (H.stop ('account.geoInProgress', rs.body.geoInProgress, undefined)) return false;
+         return true;
       }],
       ['get location & tags of geotagged pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
@@ -2439,6 +2454,11 @@ suites.geo = function () {
          return true;
       }],
       ['disable geo', 'post', 'geo', {}, {operation: 'disable'}, 200],
+      ['get account after geo enable is complete', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.geo', rs.body.geo, undefined)) return false;
+         if (H.stop ('account.geoInProgress', rs.body.geoInProgress, undefined)) return false;
+         return true;
+      }],
       ['get location & tags of geotagged pivs after disabling geo', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, undefined)) return false;
          if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, undefined))     return false;
