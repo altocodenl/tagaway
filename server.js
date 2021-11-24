@@ -2599,16 +2599,6 @@ var routes = [
 
             s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
 
-            if (s.pivs.length === 0) {
-               var multi = redis.multi ();
-               multi.scard ('tag:' + rq.user.username + ':all');
-               multi.scard ('tag:' + rq.user.username + ':untagged');
-               return multi.exec (function (error, data) {
-                  if (error) return reply (rs, 500, {error: error});
-                  reply (rs, 200, {total: 0, pivs: [], tags: {all: data [0], untagged: data [1]}});
-               });
-            }
-
             var output = {pivs: []};
 
             // Range is years 1970-2100
@@ -2655,7 +2645,7 @@ var routes = [
                multi.smembers ('pivt:' + piv.id);
             });
             // Get an union of all tags for all queried pivs
-            multi.sunion (dale.go (s.pivs, function (piv) {
+            if (output.total) multi.sunion (dale.go (s.pivs, function (piv) {
                return 'pivt:' + piv.id;
             }));
             // Get the total amount of pivs and the total amount of untagged pivs

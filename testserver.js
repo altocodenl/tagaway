@@ -643,6 +643,8 @@ suites.auth = {
             if (H.stop ('body', rs.body, {csrf: s.csrf})) return false;
             return true;
          }],
+         {tag: 'query pivs without csrf token', method: 'post', path: 'query', code: 403, body: {tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: H.cBody ({error: 'csrf'})},
+         {tag: 'query pivs with invalid csrf token', method: 'post', path: 'query', code: 403, body: {csrf: 'foobar', tags: ['all'], sort: 'newest', from: 1, to: 10}, apres: H.cBody ({error: 'csrf'})},
          ['logout', 'post', 'auth/logout', {}, {}, 200, function (s, rq, rs) {
             if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age=0/i)) return clog ('Invalid set-cookie header', res.headers ['set-cookie']);
             return true;
@@ -722,7 +724,6 @@ suites.auth = {
          ['get CSRF token after account deletion with expired credentials', 'post', 'auth/logout', {}, {}, 403],
          ['get CSRF token after account deletion with expired credentials', 'post', 'auth/logout', {}, {}, 403],
          ['login after account deletion', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 403],
-         ['get public stats at the end of the auth suite', 'get', 'stats', {}, '', 200, H.cBody ({byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})],
       ];
    }
 }
@@ -751,6 +752,7 @@ suites.public = function () {
       ['submit error (array)', 'post', 'error', {}, [], 200],
       ['submit error (object)', 'post', 'error', {}, {}, 200],
       ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})],
+      ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ];
 }
 
@@ -1686,7 +1688,7 @@ suites.delete = function () {
          return true;
       }],
       ['query pivs after deletion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {all: 0, untagged: 0}})) return false;
+         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {all: 0, untagged: 0}, refreshQuery: true})) return false;
          return true;
       }],
       ['get t200 after deletion', 'get', function (s) {return 'thumb/200/' + s.largePiv.id}, {}, '', 404],
@@ -1974,8 +1976,16 @@ suites.query = function () {
          [['recentlyTagged'], 'values', [['foo']]],
          [['tags'], 'invalidValues', [['foo']], 'recentlyTagged'],
       ]),
+      ['query pivs with refreshQuery not activated', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body.refreshQuery', rs.body.refreshQuery, undefined)) return false;
+         return true;
+      }],
       ['start upload to test querying', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['query pivs with refreshQuery activated by ongoing upload', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body.refreshQuery', rs.body.refreshQuery, true)) return false;
          return true;
       }],
       ['upload small piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
@@ -2030,6 +2040,31 @@ suites.query = function () {
             return piv.id;
          });
          if (H.stop ('piv ids', ids, [s.largeId, s.mediumId, s.smallId])) return false;
+         return true;
+      }],
+      ['upload piv with geodata', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.dunkerque.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.dunkerque.mtime},
+      ]}}, 200],
+      ['finish upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'complete'}}, 200],
+      ['query pivs with refreshQuery not activated after upload is complete', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body.refreshQuery', rs.body.refreshQuery, undefined)) return false;
+         return true;
+      }],
+      ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
+      ['query pivs with refreshQuery activated by geotagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body', rs.body.refreshQuery, true)) return false;
+         // Wait for location to be set in piv
+         H.tryTimeout (10, 1000, function (cb) {
+            h.one (s, {method: 'post', path: 'query', body: {csrf: s.csrf, tags: [], sort: 'upload', from: 1, to: 2}, code: 200, apres: function (s, rq, rs) {
+               if (! rs.body.pivs [0].loc) return false;
+               return true;
+            }}, cb);
+         }, next);
+      }],
+      ['query pivs with refreshQuery deactivated after geotagging is complete', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body.refreshQuery, undefined)) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2246,7 +2281,7 @@ suites.download = function () {
          [['ids'], 'array'],
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
          [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
-         [['ids'], 'invalidValues', [['foo']], 'single'],
+         [['ids'], 'invalidValues', [[], ['foo']], 'single'],
       ]),
       ['start upload to test downloading', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
@@ -2311,10 +2346,12 @@ suites.download = function () {
                });
                if (error) return clog (error);
                fs.unlinkSync ('download.zip');
-               next ();
+               // Wait five seconds until download expires
+               setTimeout (next, 5000);
             }
          ], clog);
       }},
+      ['download multiple pivs after link expired', 'get', function (s) {return 'download/' + s.downloadId}, {}, '', 404],
       suites.auth.out (tk.users.user1),
       suites.auth.out (tk.users.user2),
    ];
@@ -2399,7 +2436,6 @@ suites.geo = function () {
          if (H.stop ('account.geo', rs.body.geo, undefined)) return false;
          return true;
       }],
-
       ['get logs after no-op disable geo', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
          var log = teishi.last (rs.body.logs);
          if (H.stop ('last log', {ev: log.ev, type: log.type}, {ev: 'upload', type: 'ok'})) return false;
@@ -2489,10 +2525,7 @@ suites.geo = function () {
 }
 
 // TODO
-/*
-- revise old tests
-- import
-*/
+// - import
 
 // *** RUN TESTS ***
 
