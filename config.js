@@ -3,7 +3,7 @@ var ENV = process.argv [2] === 'local' ? undefined : process.argv [2];
 var DOMAIN = {
    dev:  'https://altocode.nl/picdev/',
    prod: 'https://altocode.nl/pic/app/',
-} [ENV];
+} [ENV || 'dev'];
 
 var TEMPLATE = function (content) {
    return [
