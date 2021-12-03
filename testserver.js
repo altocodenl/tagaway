@@ -9,6 +9,8 @@ var hash   = require ('murmurhash').v3;
 var mime   = require ('mime');
 
 var CONFIG = require ('./config.js');
+var SECRET = require ('./secret.js');
+
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var cicek  = require ('cicek');
@@ -1559,8 +1561,8 @@ suites.upload.piv = function () {
          {type: 'field', name: 'id',           value: s.uploadId},
          {type: 'field', name: 'tags', value: JSON.stringify (['foo'])},
          {type: 'field', name: 'lastModified', value: new Date ('2000-01-01').getTime ()},
-      ]}}, 409, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {id: s.smallId, error: 'repeated'})) return false;
+      ]}}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {id: s.smallId, repeated: true})) return false;
          return true;
       }],
       ['get piv metadata after repeated piv with lastModified', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -1604,8 +1606,8 @@ suites.upload.piv = function () {
                {type: 'field', name: 'id',           value: s.uploadId},
                {type: 'field', name: 'tags',         value: JSON.stringify (['foo'])},
                {type: 'field', name: 'lastModified', value: new Date ('2000-01-01').getTime ()},
-            ]}}, 409, function (s, rq, rs) {
-               if (H.stop ('body', rs.body, {id: s.repeatedId, error: 'repeated'})) return false;
+            ]}}, 200, function (s, rq, rs) {
+               if (H.stop ('body', rs.body, {id: s.repeatedId, repeated: true})) return false;
                return true;
             }],
             ['get ' + testCase [0] + ' piv metadata after uploading piv with different metadata', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -2520,6 +2522,27 @@ suites.geo = function () {
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
       }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
+suites.import = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      /*
+      {host: 'https://www.accounts.google.com', tag: 'start oauth flow', method: 'get', path: function (s) {return [
+         'o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+         'prompt=consent',
+         'response_type=code',
+         //'client_id=' + SECRET.google.oauth.client,
+         '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+         'access_type=offline',
+         'state=' + s.csrf
+      ].join ('&')}, code: 200, apres: function (s, rq, rs) {
+         clog (rs.body);
+         return true;
+      }}
+      */
       suites.auth.out (tk.users.user1),
    ];
 }

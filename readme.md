@@ -431,8 +431,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - The file uploaded must be one of the allowed formats: `jpeg`, `png`, `bmp`, `heic`, `gif`, `tiff`, `webp`, `mp4`, `mov`, `3gp`, `avi`, `webm`, `wmv` and `m4v` (otherwise, 400 with body `{error: 'format'}`).
    - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
    - If the file is not a valid piv, a 400 is returned with body `{error: 'Invalid piv', data: {...}}`.
-   - If a file exists for that user that is both identical to an existing one and also having the same name, a 409 is returned with body `{error: 'alreadyUploaded', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
-   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 409 is returned with body `{error: 'repeated', id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - If a file exists for that user that is both identical to an existing one and also having the same name, a 200 is returned with body `{alreadyUploaded: true, id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 200 is returned with body `{repeated: true, id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
    - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `name` is a date not held by the metadata of the piv already present, those dates will be added to it.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
    - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the piv just uploaded and `deg` is the rotation automatically applied to the piv based on its metadata.
@@ -1027,7 +1027,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
       - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
-      - If there's an unexpected error (not a 400 or not a 409 of type `alreadyUploaded` or `imported`) it invokes `upload error`.
+      - If there's an unexpected error (not a 400) it invokes `upload error`.
       - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
 
 7. Import

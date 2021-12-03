@@ -2132,7 +2132,7 @@ var routes = [
                else                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
             },
             function (s) {
-               reply (rs, 409, {error: s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', id: s.piv.id});
+               reply (rs, 200, {id: s.piv.id, alreadyUploaded: s.alreadyUploaded ? true : undefined, repeated: s.alreadyUploaded ? undefined : true});
             }
          ]}],
          function (s) {
@@ -2183,7 +2183,7 @@ var routes = [
                H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false, dates: piv.dates});
             },
             function (s) {
-               reply (rs, 409, {error: 'repeated', id: s.piv.id});
+               reply (rs, 200, {id: s.piv.id, repeated: true});
             }
          ]}],
          [perfTrack, 'hash'],
@@ -3552,11 +3552,11 @@ var routes = [
                               clearInterval (waitInterval);
 
                               // UNEXPECTED ERROR
-                              if (RS.code !== 200 && RS.code !== 400 && RS.code !== 409) return s.next (null, {error: RS.body, code: RS.code, file: file});
+                              if (RS.code !== 200 && RS.code !== 400) return s.next (null, {error: RS.body, code: RS.code, file: file});
 
                               // NO MORE SPACE
                               // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
-                              if (RS.code === 409 && eq (RS.body, {error: 'capacity'})) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
+                              if (RS.code === 409) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
 
                               // INVALID FILE (CANNOT BE TOO LARGE OR INVALID FORMAT BECAUSE WE PREFILTER THEM ABOVE)
                               // OR

@@ -3114,16 +3114,18 @@ B.mrespond ([
                });
 
                // Space has run out, cancel the upload if it hasn't been cancelled already.
-               if (error && error.status === 409 && error.responseText.match ('capacity')) {
+               if (error.status === 409 && error.responseText.match (/capacity/)) {
                   dale.go (B.get ('Data', 'uploads'), function (upload) {
                      if (upload.id === file.id && upload.status === 'uploading') B.call (x, 'upload', 'cancel', upload.id, true);
                   });
                   return B.call (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
                }
 
-               // If file is invalid, repeated or already uploaded, or if the upload was cancelled, do nothing.
-               else if (error && (error.status === 400 || (error.status === 409 && error.responseText.match (/alreadyUploaded|repeated|status/)))) {
-                  // Do nothing.
+               // If file is invalid or if the upload was cancelled, do nothing.
+               else if (error && (error.status === 400 || (error.status === 409 && error.responseText.match (/status/)))) {
+               }
+               // If file is repeated or already uploaded, do nothing.
+               else if (! error && (rs.body.alreadyUploaded || rs.body.repeeated)) {
                }
 
                // Report unexpected error.
