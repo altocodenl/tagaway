@@ -3092,7 +3092,14 @@ var routes = [
 
                      hitit.one ({}, {timeout: 30, https: true, method: 'get', host: 'www.googleapis.com', path: path, headers: {authorization: 'Bearer ' + s.token, 'content-type': 'application/x-www-form-urlencoded'}, body: '', code: '*', apres: function (S, RQ, RS) {
 
-                        if (RS.code !== 200) return s.next (null, RS.body);
+                        if (RS.code !== 200) {
+                           // If we hit a rate limit error, wait 0.5 seconds and try again.
+                           if (RS.body.code === 403 && type (RS.body.message) === 'string' && RS.body.message.match ('User Rate Limit Exceeded')) return setTimeout (function () {
+                              getFilePage (s, nextPageToken);
+                           }, 500);
+
+                           return s.next (null, RS.body);
+                        }
 
                         a.seq (s, [
                            [Redis, 'exists', 'imp:g:' + rq.user.username],
@@ -3146,9 +3153,9 @@ var routes = [
                   function (s) {
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
-                     // We lower it to 4 requests every seconds to avoid hitting rate limits.
+                     // We lower it to 5 requests every second to avoid hitting rate limits.
                      // Dashboard: https://console.developers.google.com/apis/dashboard
-                     var requestLimit = 4, timeWindow = 1;
+                     var requestLimit = 5, timeWindow = 1;
 
                      var boundary = Math.floor (Math.random () * Math.pow (10, 16));
                      var batch = parentsToRetrieve.splice (0, maxRequests || requestLimit);
@@ -3170,7 +3177,16 @@ var routes = [
 
                      setLimit (batch.length);
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
-                        if (RS.code !== 200) return s.next (null, RS.body);
+                        if (RS.code !== 200) {
+                           // If we hit a rate limit error, wait 0.5 seconds and try again.
+                           if (RS.body.code === 403 && type (RS.body.message) === 'string' && RS.body.message.match ('User Rate Limit Exceeded')) {
+                              dale.go (batch, function (id) {
+                                 parentsToRetrieve.unshift (id);
+                              });
+                              return getParentBatch (s, maxRequests);
+                           }
+                           return s.next (null, RS.body);
+                        }
 
                         if (! RS.headers ['content-type'] || ! RS.headers ['content-type'].match ('boundary')) return s.next (null, 'No boundary in request: ' + JSON.stringify (RS.headers));
                         var boundary = RS.headers ['content-type'].match (/boundary=.+$/g) [0].replace ('boundary=', '');
@@ -3189,7 +3205,15 @@ var routes = [
                               if (! folders [id] && ! inc (parentsToRetrieve, id)) parentsToRetrieve.push (id);
                            });
                         });
-                        if (error) return s.next (null, error);
+                        if (error) {
+                           if (error.code === 403 && type (error.message) === 'string' && error.message.match ('User Rate Limit Exceeded')) {
+                              dale.go (batch, function (id) {
+                                 parentsToRetrieve.unshift (id);
+                              });
+                              return getParentBatch (s, maxRequests);
+                           }
+                           return s.next (null, error);
+                        }
 
                         a.seq (s, [
                            [Redis, 'exists', 'imp:g:' + rq.user.username],
@@ -3275,7 +3299,7 @@ var routes = [
                         Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', unsupported: JSON.stringify (unsupported), data: JSON.stringify (data)});
                      },
                      [H.log, rq.user.username, {ev: 'import', type: 'listEnd', provider: 'google', id: s.id, data: data}],
-                     function (s) {
+                     ! ENV ? [] : function (s) {
                         var email = CONFIG.etemplates.importList ('Google', rq.user.username);
                         sendmail (s, {
                            to1:     rq.user.username,
@@ -3290,9 +3314,15 @@ var routes = [
          }
       ], function (s, error) {
          a.stop (s, [
+            [Redis, 'exists', 'imp:g:' + rq.user.username],
+            [function (s) {
+               // If key was deleted, process was cancelled. The process stops.
+               if (! s.last) return;
+               Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error});
+            }],
             [H.log, rq.user.username, {ev: 'import', type: 'listError', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
-            function (s) {
+            ! ENV ? [] : function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
                   to1:     rq.user.username,
@@ -3301,12 +3331,6 @@ var routes = [
                   message: email.message
                });
             },
-            [Redis, 'exists', 'imp:g:' + rq.user.username],
-            function (s) {
-               // If key was deleted, process was cancelled. The process stops.
-               if (! s.last) return;
-               Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error});
-            }
          ], function (s, error) {
             notify (a.creat (), {priority: 'critical', type: 'import list error reporting error', provider: 'google', user: rq.user.username, error: error});
          });
@@ -3477,7 +3501,7 @@ var routes = [
                      if (index === s.ids.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
                         [H.log, rq.user.username, {ev: 'upload', type: 'complete', id: parseInt (s.import.id), provider: 'google'}],
-                        function (s) {
+                        ! ENV ? [] : function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
                               to1:     rq.user.username,
@@ -3582,7 +3606,7 @@ var routes = [
             }],
             [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
-            function (s) {
+            ! ENV ? [] : function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
                   to1:     rq.user.username,

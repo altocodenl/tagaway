@@ -40,6 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Tests refactor
+- fix unsupported bug in import
+- benin.tif thumbnail not generated properly
 
 - Pivs
    - Check that tags refactor works in client (empty, list of existing tags, list of tags to add, list of tags to add in upload)

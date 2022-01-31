@@ -3,7 +3,8 @@ var ENV = process.argv [2] === 'local' ? undefined : process.argv [2];
 var DOMAIN = {
    dev:  'https://altocode.nl/picdev/',
    prod: 'https://altocode.nl/pic/app/',
-} [ENV || 'dev'];
+   test: 'http://localhost:8000/'
+} [ENV || 'test'];
 
 var TEMPLATE = function (content) {
    return [
@@ -214,6 +215,7 @@ module.exports = {
       password: 'CRYPTOSTRONGPASSWORD'
    },
    google: {
+      credentials: {username: 'USERNAME', password: 'PASSWORD'},
       api: {
          key:    'KEY'
       },
@@ -223,6 +225,10 @@ module.exports = {
             secret: 'SECRET'
          },
          prod: {
+            client: 'CLIENTID',
+            secret: 'SECRET'
+         },
+         test: {
             client: 'CLIENTID',
             secret: 'SECRET'
          }

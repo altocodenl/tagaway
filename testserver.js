@@ -14,6 +14,7 @@ var SECRET = require ('./secret.js');
 var dale   = require ('dale');
 var teishi = require ('teishi');
 var cicek  = require ('cicek');
+var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
@@ -25,7 +26,7 @@ var tk = {
    pivPath: 'test/',
    pivDataPath: 'test/pivdata.json',
    users: {
-      user1: {username: 'user1', password: Math.random () + '', firstName: 'name1', email: 'user1@example.com', timezone:  240},
+      user1: {username: 'user1', password: 'foobar', firstName: 'name1', email: 'user1@example.com', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
       user3: {username: 'user3', password: Math.random () + '', firstName: 'name3', email: 'user3@example.com', timezone: 0},
    },
@@ -99,7 +100,8 @@ var H = {
       ]);
    },
    tryTimeout: function (interval, times, fn, cb) {
-      var retry = function (error) {
+      var retry = function (error, data, breakingError) {
+         if (breakingError) return cb (breakingError);
          if (! error)   return cb ();
          if (! --times) return cb (error);
          setTimeout (function () {
@@ -2529,26 +2531,120 @@ suites.geo = function () {
 suites.import = function () {
    return [
       suites.auth.in (tk.users.user1),
-      /*
-      {host: 'https://www.accounts.google.com', tag: 'start oauth flow', method: 'get', path: function (s) {return [
-         'o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
-         'prompt=consent',
-         'response_type=code',
-         //'client_id=' + SECRET.google.oauth.client,
-         '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
-         'access_type=offline',
-         'state=' + s.csrf
-      ].join ('&')}, code: 200, apres: function (s, rq, rs) {
-         clog (rs.body);
+      H.invalidTestMaker ('import selection', 'import/select/google', [
+         [[], 'object'],
+         [[], 'keys', ['ids']],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+      ]),
+      ['attempt import selection before import started', 'post', 'import/select/google', {}, {ids: ['foo']}, 404],
+      ['dummy request before starting OAuth flow requiring manual input', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+         clog ('LOGIN NOW AND START GOOGLE IMPORT', 'http://localhost:8000/#/import', tk.users.user1.username, tk.users.user1.password);
+         // Try for 90 seconds every second to see if the oauth flow is complete and the import list is in process
+         H.tryTimeout (10, 9000, function (cb) {
+            h.one (s, {method: 'get', path: 'imports/google', code: 200, apres: function (s, rq, rs, next) {
+               var entry = rs.body [0];
+               if (! entry || entry.status !== 'listing') return false;
+               if (H.stop ('entry.id', type (entry.id), 'integer')) return false;
+               if (H.stop ('entry', {id: entry.id, provider: 'google', status: 'listing', fileCount: 0, folderCount: 0}, entry)) return false;
+               return true;
+            }}, cb);
+         }, next);
+      }],
+      ['cancel google import while listing process is ongoing', 'post', 'import/cancel/google', {}, {}, 200],
+      ['attempt import upload before import started', 'post', 'import/upload/google', {}, {}, 404],
+      ['get imports after cancel', 'get', 'imports/google', {}, '', 200, H.cBody ([])],
+      ['cancel google import again (should be idempotent)', 'post', 'import/cancel/google', {}, {}, 200],
+      ['get imports after idempotent cancel', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+         // Delete oauth token to test the use of the refresh token
+         redis.del ('oa:g:acc:' + tk.users.user1, function (error) {
+            if (error) return next (error);
+            next ();
+         });
+      }],
+      ['trigger listing for google import using the refresh token', 'post', 'import/list/google', {}, {}, 200],
+      ['trigger listing again for google', 'post', 'import/list/google', {}, {}, 409],
+      ['attempt import selection when import is listing', 'post', 'import/select/google', {}, {ids: ['foo']}, 409],
+      ['attempt import upload when import is listing', 'post', 'import/upload/google', {}, {}, 409],
+      ['get imports after starting listing (wait for listing to be done)', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+         var entry = rs.body [0];
+         if (! entry || entry.status !== 'listing') return false;
+         // Wait for up to an hour for the listing to finish
+         H.tryTimeout (10, 60 * 60 * 100, function (cb) {
+            h.one (s, {method: 'get', path: 'imports/google', code: 200, apres: function (s, rq, rs) {
+               var entry = rs.body [0];
+               if (! entry) return false;
+               if (entry.status === 'error') return cb (null, null, 'Import ended in error');
+               if (entry.status !== 'ready') return false;
+               return true;
+            }}, cb);
+         }, next);
+      }],
+      ['get google imports when listing process is done', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+         var entry = rs.body [0];
+         if (H.stop ('entry.status', entry.status, 'ready')) return false;
+         if (H.stop ('entry.provider', entry.provider , 'google')) return false;
+         if (H.stop ('type of entry.fileCount', type (entry.fileCount), 'integer')) return false;
+         if (H.stop ('type of entry.folderCount', type (entry.folderCount), 'integer')) return false;
+         if (H.stop ('type of entry.data', type (entry.data), 'object')) return false;
+         if (H.stop ('type of entry.data.roots', type (entry.data.roots), 'array')) return false;
+         if (H.stop ('type of entry.data.folders', type (entry.data.folders), 'object')) return false;
+         s.importFolders = dale.fil (entry.data.folders, undefined, function (folder, id) {
+            if (folder.name === 'ac;pic import pivs') return id;
+         });
          return true;
-      }}
-      */
+      }],
+      ['perform import selection', 'post', 'import/select/google', {}, function (s) {return {ids: s.importFolders}}, 200],
+      ['get google imports after selection is done', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+         var entry = rs.body [0];
+         if (H.stop ('entry.selection', entry.selection, s.importFolders)) return false;
+         return true;
+      }],
+      ['perform import upload', 'post', 'import/upload/google', {}, {}, 200],
+      ['get imports after upload started', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+         var entry = rs.body [0];
+         if (H.stop ('entry.status', entry.status, 'uploading')) return false;
+         // Wait for up to ten minutes for the upload to finish
+         H.tryTimeout (10, 10 * 60 * 100, function (cb) {
+            h.one (s, {method: 'get', path: 'imports/google', code: 200, apres: function (s, rq, rs) {
+               var entry = rs.body [0];
+               if (! entry) return cb (null, null, 'No entry present');
+               if (entry.status !== 'complete') return false;
+               return true;
+            }}, cb);
+         }, next);
+      }],
+      ['get imports after upload was completed', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+         var entry = rs.body [0];
+         if (H.stop ('entry.status', entry.status, 'complete')) return false;
+         if (H.stop ('type of entry.end', type (entry.end), 'integer')) return false;
+         if (H.stop ('entry.ok', entry.ok, 16)) return false;
+         if (H.stop ('entry.total', entry.total, 21)) return false;
+         if (H.stop ('entry.alreadyImported', entry.alreadyImported, 0)) return false;
+         if (H.stop ('entry.repeated', entry.repeated, ['medium.jpg', 'small-meta.png'])) return false;
+         if (H.stop ('entry.invalid', entry.invalid, ['empty.jpg', 'invalid.mp4', 'invalid.jpg'])) return false;
+         if (H.stop ('entry.repeatedSize',  entry.repeatedSize, tk.pivs.medium.size + tk.pivs ['small-meta'].size)) return false;
+         // TODO: re-add test after bugfix
+         // if (H.stop ('entry.unsupported',  entry.unsupported, undefined)) return false;
+         return true;
+      }],
+      ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1000}, 200, function (s, rq, rs) {
+         if (H.stop ('number of pivs', rs.body.pivs.length, 16)) return false;
+         return true;
+      }],
+      ['get logs after no-op enable geo', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         var filteredLogs = dale.fil (rs.body.logs, undefined, function (log) {
+            // We ignore all the requests we do waiting for the oauth process to be complete.
+            if (log.ev === 'import' && log.type === 'request') return;
+            console.log (log);
+            return log;
+         });
+         // TODO add checks
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }
-
-// TODO
-// - import
 
 // *** RUN TESTS ***
 
@@ -2559,7 +2655,7 @@ H.runServer ();
 H.tryTimeout (10, 1000, function (cb) {
    h.one ({}, {port: CONFIG.port, method: 'get', path: '/', code: 200}, cb);
 }, function (error) {
-   if (error) return clog ('SERVER DID NOT START');
+   if (error) return clog ('SERVER DID NOT START', error);
    var serverStart = Date.now () - t;
 
    var suitesToRun = (function () {
@@ -2584,7 +2680,7 @@ H.tryTimeout (10, 1000, function (cb) {
       var grouped = {};
       dale.go (tests, function (test, k) {
          // the H.tryTimeout tests are stored as undefineds in the history of all tests, so we ignore them.
-         if (! test) return;
+         if (! test || ! test.request) return;
          var path = test.request.path.split ('/').slice (0, test.request.path.match (/\/(piv|original|download)/) ? 2 : 3).join ('/');
          var key = test.request.method + ':' + path;
          var time = test.time [1] - test.time [0];
@@ -2625,6 +2721,86 @@ H.tryTimeout (10, 1000, function (cb) {
       return h.stdmap (test);
    });
 });
+
+H.googleOAuthFlow = function (csrf, cookie, cb) {
+   var phantom = require ('phantomjs-prebuilt');
+   var childProcess = require ('child_process');
+
+   var host = 'https://accounts.google.com'
+   var path = [
+      'o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+      'prompt=consent',
+      'response_type=code',
+      'client_id=' + SECRET.google.oauth.client,
+      '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+      'access_type=offline',
+      'state=' + csrf
+   ].join ('&');
+   var hpath = Path.join (host, path);
+   console.log ('DEBUG hpath', hpath);
+
+   var script = [
+      "var page = require ('webpage').create ();",
+      "page.open ('" + hpath + "', function (status) {",
+      "   if (status !== 'success') return console.log ('ERROR - STATUS', status);",
+      "   page.render ('login1.png');",
+      "   page.evaluate (function () {",
+      "      document.getElementById ('Email').value = '" + SECRET.google.credentials.username + "';",
+      "      document.getElementById ('next').click ();",
+      "   })",
+      "   setTimeout (function () {",
+      "      page.render ('login2.png');",
+      "      page.evaluate (function () {",
+      "         document.getElementById ('password').value = '" + SECRET.google.credentials.password + "';",
+      "         document.getElementById ('next').click ();",
+      "      });",
+      "   }, 2000);",
+      "   setTimeout (function () {",
+      "      page.render ('login3.png');",
+      "      page.evaluate (function () {",
+      "         document.getElementById ('submit').click ();",
+      "      });",
+      "   }, 4000);",
+      "   setTimeout (function () {",
+      "      page.render ('login4.png');",
+      "      page.evaluate (function () {",
+      "         document.getElementById ('submit_approve_access').click ();",
+      "      });",
+      "   }, 8000);",
+      "   setTimeout (function () {",
+      "      page.render ('login5.png');",
+      "      var inputs = page.evaluate (function () {",
+      "         function getElements (tag) {",
+      "            var elements = document.getElementsByTagName (tag); output = '';",
+      "            for (var k in elements) {",
+      "               output += 'id: ' + elements [k].id + ' - placeholder: ' + elements [k].placeholder + ' - value: ' + elements [k].value + '\\n';",
+      "            }",
+      "            return output;",
+      "         }",
+      "         return getElements ('button');",
+      "      });",
+      "      console.log ('INPUTS', inputs);",
+      "      phantom.addCookie ({name: 'acpic', value: '" + cookie + "'});",
+      "      page.evaluate (function () {",
+      "         location.reload ();",
+      "      });",
+      "   }, 10000);",
+      "   setTimeout (function () {phantom.exit ();}, 12000);",
+      "})"
+   ].join ('\n');
+
+   fs.writeFileSync ('phantom-import-script.js', script, 'utf8');
+   var args = [
+      Path.join(__dirname, 'phantom-import-script.js'),
+      'some other argument'
+   ];
+   childProcess.execFile (phantom.path, args, function (error, stdout, stderr) {
+      fs.unlinkSync ('phantom-import-script.js');
+      console.log (error, stdout, stderr);
+      cb (error, stdout, stderr);
+   });
+   return;
+}
 
 process.on ('exit', function () {
    if (H.server && H.server.kill) H.server.kill ();
