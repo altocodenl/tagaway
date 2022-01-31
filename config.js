@@ -215,7 +215,6 @@ module.exports = {
       password: 'CRYPTOSTRONGPASSWORD'
    },
    google: {
-      credentials: {username: 'USERNAME', password: 'PASSWORD'},
       api: {
          key:    'KEY'
       },
