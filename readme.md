@@ -761,9 +761,7 @@ All the routes below require an admin user to be logged in.
       - For oauth request:     {t: INT, ev: 'import', type: 'request',    provider: PROVIDER}
       - For oauth grant:       {t: INT, ev: 'import', type: 'grant',      provider: PROVIDER}
       - For start listing:     {t: INT, ev: 'import', type: 'listStart',  provider: PROVIDER, id: INTEGER}
-      - For file page:         {t: INT, ev: 'import', type: 'filePage',   provider: PROVIDER, id: INTEGER, nFiles:   INTEGER}
-      - For folder page:       {t: INT, ev: 'import', type: 'folderPage', provider: PROVIDER, id: INTEGER, nFolders: INTEGER}
-      - For listing ended:     {t: INT, ev: 'import', type: 'listEnd',    provider: PROVIDER, id: INTEGER, unsupported: [STRING, ...], data: {roots: [ID, ...], folders: {ID: {id: ID, name: STRING, count: INTEGER, parent: STRING, children: [ID, ...]}, ...}, files: {ID: {...}, ...}}}
+      - For listing ended:     {t: INT, ev: 'import', type: 'listEnd',    provider: PROVIDER, id: INTEGER}
       - For cancel:            {t: INT, ev: 'import', type: 'cancel',     provider: PROVIDER, id: INTEGER, status: 'listing|ready|error'} - Note: if cancel happens during upload, it is registered as an upload cancel event.
       - For listing error:     {t: INT, ev: 'import', type: 'listError', provider: PROVIDER, id: INTEGER, error: STRING|OBJECT}
       - For folder selection:  {t: INT, ev: 'import', type: 'selection', provider: PROVIDER, id: INTEGER, folders: [ID, ...]}

@@ -3102,13 +3102,12 @@ var routes = [
                         }
 
                         a.seq (s, [
-                           [Redis, 'exists', 'imp:g:' + rq.user.username],
+                           [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                            function (s) {
-                              // If key was deleted, process was cancelled. The process stops.
-                              if (! s.last) return;
+                              // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
+                              if (s.last !== s.id + '') return;
                               Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'fileCount', RS.body.files.length);
                            },
-                           [H.log, rq.user.username, {ev: 'import', type: 'filePage', provider: 'google', id: s.id, nFiles: RS.body.files.length}],
                            function (s) {
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
                                  file.size = parseInt (file.size);
@@ -3216,13 +3215,12 @@ var routes = [
                         }
 
                         a.seq (s, [
-                           [Redis, 'exists', 'imp:g:' + rq.user.username],
+                           [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                            function (s) {
-                              // If key was deleted, process was cancelled. The process stops.
-                              if (! s.last) return;
+                              // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
+                              if (s.last !== s.id + '') return;
                               Redis (s, 'hincrby', 'imp:g:' + rq.user.username, 'folderCount', batch.length);
                            },
-                           [H.log, rq.user.username, {ev: 'import', type: 'folderPage', provider: 'google', id: s.id, nFolders: batch.length}],
                            function (s) {
                               if (parentsToRetrieve.length === 0) return s.next ();
 
@@ -3292,13 +3290,13 @@ var routes = [
                   */
 
                   a.seq (s, [
-                     [Redis, 'exists', 'imp:g:' + rq.user.username],
+                     [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                      function (s) {
-                        // If key was deleted, process was cancelled. The process stops.
-                        if (! s.last) return;
+                        // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
+                        if (s.last !== s.id + '') return;
                         Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', unsupported: JSON.stringify (unsupported), data: JSON.stringify (data)});
                      },
-                     [H.log, rq.user.username, {ev: 'import', type: 'listEnd', provider: 'google', id: s.id, data: data}],
+                     [H.log, rq.user.username, {ev: 'import', type: 'listEnd', provider: 'google', id: s.id}],
                      ! ENV ? [] : function (s) {
                         var email = CONFIG.etemplates.importList ('Google', rq.user.username);
                         sendmail (s, {
@@ -3314,10 +3312,10 @@ var routes = [
          }
       ], function (s, error) {
          a.stop (s, [
-            [Redis, 'exists', 'imp:g:' + rq.user.username],
+            [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
             [function (s) {
-               // If key was deleted, process was cancelled. The process stops.
-               if (! s.last) return;
+               // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
+               if (s.last !== s.id + '') return;
                Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error});
             }],
             [H.log, rq.user.username, {ev: 'import', type: 'listError', provider: 'google', id: s.id, error: error}],
@@ -3493,8 +3491,12 @@ var routes = [
                }, 1000 * 15);
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
-                  // If the import was cancelled, we interrupt the async chain to stop the process.
-                  [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'0': function () {}}],
+                  [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
+                  [function (s) {
+                     // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
+                     if (s.last !== s.import.id) return;
+                     s.next ();
+                  }],
                   function (s) {
                      currentStatus = 'auth-ok';
                      // If we reached the end of the list, we're done.

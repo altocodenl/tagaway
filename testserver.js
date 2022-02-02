@@ -2601,7 +2601,7 @@ suites.import = function () {
          return true;
       }],
       ['perform import upload', 'post', 'import/upload/google', {}, {}, 200],
-      ['get imports after upload started', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
+      ['get imports after upload started (wait for imports to be uploaded)', 'get', 'imports/google', {}, '', 200, function (s, rq, rs, next) {
          var entry = rs.body [0];
          if (H.stop ('entry.status', entry.status, 'uploading')) return false;
          // Wait for up to ten minutes for the upload to finish
@@ -2639,7 +2639,23 @@ suites.import = function () {
             console.log (log);
             return log;
          });
-         // TODO add checks
+         if (dale.stop ({
+            3: {ev: 'import', type: 'grant'},
+            4: {ev: 'import', type: 'listStart'},
+            5: {ev: 'import', type: 'cancel', status: 'listing'},
+            6: {ev: 'import', type: 'listStart'},
+            7: {ev: 'import', type: 'listEnd'},
+            8: {ev: 'import', type: 'selection', folders: s.importFolders},
+            // TODO: change assertion after bugfix
+            9: {ev: 'upload', type: 'start', unsupported: ['noun_Location_1788444.svg', 'noun_Location_582861.svg', 'noun_Pin_3363039.svg', 'noun_Location_1772506.svg', 'noun_Location_1755662.svg'], total: 21, alreadyImported: 0},
+            10: {ev: 'upload', provider: 'google'},
+            last: {ev: 'upload', type: 'complete', provider: 'google'}
+         }, false, function (v, k) {
+            var comparisonObject = dale.obj (filteredLogs [k === 'last' ? filteredLogs.length - 1 : k], function (v2, k2) {
+               if (v [k2] !== undefined) return [k2, v2];
+            });
+            if (H.stop ('log entry #' + (parseInt (k) + 1), comparisonObject, v)) return false;
+         }) === false) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
