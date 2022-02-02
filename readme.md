@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Tests refactor
 - fix unsupported bug in import
 - benin.tif thumbnail not generated properly
 
