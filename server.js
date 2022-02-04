@@ -3061,7 +3061,7 @@ var routes = [
 
             var PAGESIZE = 1000, PAGES = 10000;
 
-            var files = [], unsupported = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
+            var files = [], page = 1, folders = {}, roots = {}, children = {}, parentsToRetrieve = [];
             var limits = [], setLimit = function (n) {
                var d = Date.now ();
                limits.unshift ([d - d % 1000, n || 1]);
@@ -3115,10 +3115,6 @@ var routes = [
                                  file.size = parseInt (file.size);
                                  // Ignore trashed files!
                                  if (file.trashed) return;
-                                 if (! inc (CONFIG.allowedFormats, mime.getType (file.originalFilename))) {
-                                    unsupported.push (file.originalFilename);
-                                    return;
-                                 }
                                  return file;
                               });
 
@@ -3296,7 +3292,7 @@ var routes = [
                      function (s) {
                         // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
                         if (s.last !== s.id + '') return;
-                        Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', unsupported: JSON.stringify (unsupported), data: JSON.stringify (data)});
+                        Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', data: JSON.stringify (data)});
                      },
                      [H.log, rq.user.username, {ev: 'import', type: 'listEnd', provider: 'google', id: s.id}],
                      ! ENV ? [] : function (s) {
@@ -3406,7 +3402,7 @@ var routes = [
 
             // filesToUpload: keys are file ids, values is the file plus a list of folder names to be used as tags (direct parent and parent of parents all the way to the root).
             // alreadyImported is a counter of already imported files. There's no need to store their names, just how many of them there are.
-            var filesToUpload = {}, alreadyImported = 0, tooLarge = [], unsupported = JSON.parse (s.import.unsupported);
+            var filesToUpload = {}, alreadyImported = 0, tooLarge = [], unsupported = [];
 
             var recurseUp = function (childId, folderId) {
                var folder = data.folders [folderId];
@@ -3425,6 +3421,8 @@ var routes = [
                   var file = data.files [childId];
                   if (hashes [H.hash (childId + ':' + file.modifiedTime)]) return alreadyImported++;
                   if (file.size > CONFIG.maxFileSize)                      return tooLarge.push (file.originalFilename);
+                  if (! inc (CONFIG.allowedFormats, mime.getType (file.originalFilename))) return unsupported.push (file.originalFilename);
+
                   file.tags = [];
                   filesToUpload [childId] = file;
                   recurseUp (childId, folderId);
