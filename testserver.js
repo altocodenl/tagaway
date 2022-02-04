@@ -2544,7 +2544,7 @@ suites.import = function () {
       ]),
       ['attempt import selection before import started', 'post', 'import/select/google', {}, {ids: ['foo']}, 404],
       ['dummy request before starting OAuth flow requiring manual input', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
-         clog ('LOGIN NOW AND START GOOGLE IMPORT', 'http://localhost:8000/#/import', tk.users.user1.username, tk.users.user1.password);
+         clog ('LOGIN NOW AND START GOOGLE IMPORT', CONFIG.DOMAIN.test + '#/import', tk.users.user1.username, tk.users.user1.password);
          // Try for 90 seconds every second to see if the oauth flow is complete and the import list is in process
          H.tryTimeout (10, 9000, function (cb) {
             h.one (s, {method: 'get', path: 'imports/google', code: 200, apres: function (s, rq, rs, next) {
@@ -2651,7 +2651,7 @@ suites.import = function () {
             7: {ev: 'import', type: 'listEnd'},
             8: {ev: 'import', type: 'selection', folders: s.importFolders},
             // TODO: change assertion after bugfix
-            9: {ev: 'upload', type: 'start', unsupported: ['noun_Location_1788444.svg', 'noun_Location_582861.svg', 'noun_Pin_3363039.svg', 'noun_Location_1772506.svg', 'noun_Location_1755662.svg'], total: 21, alreadyImported: 0},
+            9: {ev: 'upload', type: 'start', unsupported: ['noun_Location_1788444.svg', 'noun_Location_582861.svg', 'noun_Pin_3363039.svg', 'noun_Location_1772506.svg', 'noun_Location_1755662.svg', 'location.svg'], total: 21, alreadyImported: 0},
             10: {ev: 'upload', provider: 'google'},
             last: {ev: 'upload', type: 'complete', provider: 'google'}
          }, false, function (v, k) {
