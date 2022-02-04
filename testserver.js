@@ -180,7 +180,7 @@ var H = {
       a.seq (s, [
          [k, 'exiftool', path],
          function (s) {
-            dale.stop (s.last.stdout.split ('\n'), true, function (line) {
+            dale.stop ((s.last || s.error).stdout.split ('\n'), true, function (line) {
                if (! line.match (/^GPS Position\s+:/)) return;
                var originalLine = line;
                line = (line.split (':') [1]).split (',');
@@ -196,7 +196,7 @@ var H = {
             });
 
             if (onlyLocation) s.next ();
-            else              s.next (s.last.stdout.split ('\n'));
+            else              s.next ((s.last || s.error).stdout.split ('\n'));
          },
          function (s) {
             if (onlyLocation) return s.next ();
@@ -318,14 +318,15 @@ var H = {
       var invalid  = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
       // medium-nometa.jpg has no metadata; small-meta.png has an extra metadata field for date
       var repeated = ['medium-nometa.jpg', 'small-meta.png'];
+      var unsupported = ['location.svg'];
       var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
-         var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file), repeated: inc (repeated, file)};
+         var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file) || undefined, repeated: inc (repeated, file) || undefined, unsupported: inc (unsupported, file) || undefined};
          return [data.name.split ('.') [0], data];
       });
       a.seq (s, [
          [a.fork, pivs, function (piv) {
-            if (piv.invalid) return [];
+            if (piv.invalid || piv.unsupported) return [];
             return [
                [H.getMetadata, piv.path, false, piv.mtime, piv.name],
                function (s) {
@@ -1354,6 +1355,12 @@ suites.upload.piv = function () {
             return true;
          }];
 
+         if (piv.unsupported) return ['upload ' + piv.name, 'post', 'piv', {}, function (s) {return {multipart: [
+            {type: 'file',  name: 'piv', path: piv.path},
+            {type: 'field', name: 'id', value: s.uploadId},
+            {type: 'field', name: 'lastModified', value: piv.mtime}
+         ]}}, 400, H.cBody ({error: 'format'})];
+
          // Figure out which thumbnails (t200 & t900) are needed for the piv, if any
          var t200, t900, max = Math.max (piv.dimw, piv.dimh);
          if (piv.format === 'gif') t200 = true;
@@ -1397,7 +1404,7 @@ suites.upload.piv = function () {
                var upiv = rs.body.pivs [0];
                if (H.stop ('id type', type (upiv.id), 'string')) return false;
                if (H.stop ('dateup type', type (upiv.dateup), 'integer')) return false;
-               if (Date.now () - upiv.dateup > 2000 || upiv.dateup - Date.now () < -2000) return clog ('dateup must be less than 2000ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
+               if (upiv.dateup > Date.now () || Date.now () - upiv.dateup > 4000) return clog ('dateup must be less than 4000ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
                if (dale.stop ({
                   owner: 'user1',
                   name: piv.name,
@@ -1417,7 +1424,7 @@ suites.upload.piv = function () {
                if (  t900 &&  ! upiv.t900) return clog (name + ' - missing t900');
                if (! t900 &&    upiv.t900) return clog (name + ' - unnecessary t900');
 
-               if (piv.invalid || ! piv.mimetype.match ('video')) return true;
+               if (piv.invalid || piv.unsupported || ! piv.mimetype.match ('video')) return true;
                if (piv.format.match (/^mp4:/)) {
                   if (H.stop ('piv.vid', upiv.vid, true)) return false;
                   return true;
@@ -1427,7 +1434,7 @@ suites.upload.piv = function () {
                h.one (s, {method: 'get', path: 'piv/' + piv.id, code: 404, apres: function (s, rq, rs) {
                   if (H.stop ('body', rs.body, 'pending')) return next (false);
                   // For non-mp4 videos, check that mp4 version of video is eventually returned.
-                  H.tryTimeout (10, 1000, function (cb) {
+                  H.tryTimeout (10, 3000, function (cb) {
                      h.one (s, {method: 'get', path: 'piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
                         piv.mp4size = Buffer.from (rs.body, 'binary').length;
                         return true;
