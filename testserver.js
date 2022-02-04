@@ -2641,7 +2641,6 @@ suites.import = function () {
          var filteredLogs = dale.fil (rs.body.logs, undefined, function (log) {
             // We ignore all the requests we do waiting for the oauth process to be complete.
             if (log.ev === 'import' && log.type === 'request') return;
-            console.log (log);
             return log;
          });
          if (dale.stop ({

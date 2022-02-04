@@ -3,7 +3,10 @@ var ENV = process.argv [2] === 'local' ? undefined : process.argv [2];
 var DOMAIN = {
    dev:  'https://altocode.nl/picdev/',
    prod: 'https://altocode.nl/pic/app/',
-   test: 'http://localhost:8000/'
+   // For local testing
+   //test: 'http://localhost:8000/'
+   // For testing on dev server
+   test: 'https://altocode.nl/pictest/'
 } [ENV || 'test'];
 
 var TEMPLATE = function (content) {
