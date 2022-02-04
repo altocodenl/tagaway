@@ -706,11 +706,13 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
       function (s) {
          if (onlyLocation) return s.next (output);
 
-         // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present
-         if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
-         if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
          if (! output.format)   return s.next (null, {error: 'Missing format'});
          if (! output.mimetype) return s.next (null, {error: 'Missing mimetype'});
+         // Despite our trust in exiftool and ffprobe, we make sure that the required output fields are present, but only for files that belong to supported formats
+         if (inc (CONFIG.allowedFormats, output.mimetype)) {
+            if (type (output.dimw) !== 'integer' || output.dimw < 1) return s.next (null, {error: 'Invalid width: '  + output.dimw});
+            if (type (output.dimh) !== 'integer' || output.dimh < 1) return s.next (null, {error: 'Invalid height: ' + output.dimh});
+         }
 
          // All dates are considered to be UTC, unless they explicitly specify a timezone.
          // The underlying server must be in UTC to not add a timezone offset to dates that specify no timezone.

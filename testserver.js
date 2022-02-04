@@ -1336,10 +1336,8 @@ suites.upload.piv = function () {
          {type: 'file',  name: 'piv', path: 'server.js', filename: 'server.png'},
          {type: 'field', name: 'id', value: s.uploadId},
          {type: 'field', name: 'lastModified', value: new Date ().getTime ()}
-      ]}}, 400, function (s, rq, rs) {
-         if (H.stop ('body.error', rs.body.error, 'Invalid piv')) return false;
-         return true;
-      }],
+      ]}}, 400, H.cBody ({error: 'format'})],
+
       // *** UPLOAD ALL PIVS ***
       dale.go (tk.pivs, function (piv, name) {
          piv = teishi.copy (piv);
@@ -1542,7 +1540,7 @@ suites.upload.piv = function () {
       }),
       // *** CHECK NON-PIV EXTENSIONS ***
       dale.go (tk.pivs, function (piv) {
-         if (piv.invalid || piv.repeated) return [];
+         if (piv.invalid || piv.unsupported || piv.repeated) return [];
          var id;
          return [
             ['upload ' + piv.name + ' with a name with a non-piv extension', 'post', 'piv', {}, function (s) {return {multipart: [
