@@ -2618,7 +2618,10 @@ B.mrespond ([
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
-      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.call (x, 'set', ['State', 'nPivs'], 20);
+      // If the State object itself changes, don't respond to that.
+      if (x.path.length < 2) return;
+      // We use `B.set` directly instead of `B.call ('set', ...)` to avoid querying pivs twice
+      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], 20);
       B.call (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
@@ -2688,6 +2691,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'pivTotal'],  rs.body.total);
 
          var selected = B.get ('State', 'selected') || {};
+         // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
          var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pivs, function (piv) {
             if (selected [piv.id]) return [piv.id, true];
          });
@@ -2901,7 +2905,7 @@ B.mrespond ([
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
       B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 20, B.get ('Data', 'pivTotal')));
    }],
-   ['change', ['State', 'nPivs'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'nPivs'], function (x) {
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs') + 100) return;
       B.call (x, 'query', 'pivs');
    }],
@@ -3140,7 +3144,7 @@ B.mrespond ([
 
          H.hash (file.file, function (error, hash) {
             if (error) return B.call (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
-            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, fileSize: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
+            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
                // If the upload was just cancelled or errored by another file, don't do anything.
                if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
                if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'upload error', error: error.responseText});
