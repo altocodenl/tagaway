@@ -2629,8 +2629,7 @@ suites.import = function () {
          if (H.stop ('entry.repeated', entry.repeated, ['medium.jpg', 'small-meta.png'])) return false;
          if (H.stop ('entry.invalid', entry.invalid, ['empty.jpg', 'invalid.mp4', 'invalid.jpg'])) return false;
          if (H.stop ('entry.repeatedSize',  entry.repeatedSize, tk.pivs.medium.size + tk.pivs ['small-meta'].size)) return false;
-         // TODO: re-add test after bugfix
-         // if (H.stop ('entry.unsupported',  entry.unsupported, undefined)) return false;
+          if (H.stop ('entry.unsupported',  entry.unsupported, ['location.svg'])) return false;
          return true;
       }],
       ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1000}, 200, function (s, rq, rs) {
@@ -2650,7 +2649,6 @@ suites.import = function () {
             6: {ev: 'import', type: 'listStart'},
             7: {ev: 'import', type: 'listEnd'},
             8: {ev: 'import', type: 'selection', folders: s.importFolders},
-            // TODO: change assertion after bugfix
             9: {ev: 'upload', type: 'start', unsupported: ['location.svg'], total: 21, alreadyImported: 0},
             10: {ev: 'upload', provider: 'google'},
             last: {ev: 'upload', type: 'complete', provider: 'google'}
