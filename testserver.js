@@ -1362,9 +1362,9 @@ suites.upload.piv = function () {
          // Figure out which thumbnails (t200 & t900) are needed for the piv, if any
          var t200, t900, max = Math.max (piv.dimw, piv.dimh);
          if (piv.format === 'gif') t200 = true;
-         else if (piv.deg || ! inc (['jpeg', 'png'], piv.format)) {
-            // if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
-            // Also if piv is neither a jpeg or a png, we need to create a jpeg or png thumbnail to show in the browser.
+         else if (piv.format !== 'jpeg' || piv.deg) {
+            // If piv is not a jpeg, we need to create a jpeg thumbnail to show in the browser.
+            // Also, if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
             t200 = true;
             // If piv has a dimension larger than 200, we'll also need a 900 thumbnail.
             if (max > 200) t900 = true;
@@ -1449,8 +1449,13 @@ suites.upload.piv = function () {
                      function (s) {
                         var percentage = Math.min (Math.round (size / max * 100), 100);
                         var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
-                        if (H.stop ('t' + size + ' width',   askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
-                        if (H.stop ('t ' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
+                        if (H.stop ('t' + size + ' width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
+                        if (H.stop ('t' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
+                        var targetFormat = 'jpeg';
+                        if (piv.format === 'gif' && size === 900) targetFormat = 'gif';
+
+                        if (H.stop ('t' + size + ' format', s.last.format, targetFormat)) return next (true);
+
                         s.next ();
                      },
                      [a.make (fs.unlink), name + '-t' + size],

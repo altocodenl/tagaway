@@ -307,9 +307,9 @@ H.thumbPic = function (s, invalidHandler, piv, path, heic_path) {
    var max = Math.max (piv.dimw, piv.dimh);
    // If we have a gif, we only make a small thumbnail, since we'll show the full gif when opening the piv.
    if (piv.format === 'gif') s.t200 = uuid ();
-   else if (piv.deg || ! inc (['jpeg', 'png'], piv.format)) {
-      // if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
-      // Also if piv is neither a jpeg or a png, we need to create a jpeg or png thumbnail to show in the browser.
+   else if (piv.format !== 'jpeg' || piv.deg) {
+      // If piv is not a jpeg, we need to create a jpeg thumbnail to show in the browser.
+      // Also, if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
       s.t200 = uuid ();
       // If piv has a dimension larger than 200, we'll also need a 900 thumbnail.
       if (max > 200) s.t900 = uuid ();
@@ -323,9 +323,13 @@ H.thumbPic = function (s, invalidHandler, piv, path, heic_path) {
       if (! s ['t' + size]) return [];
       // In the case of thumbnails done for stripping rotation metadata or non jpeg/png formats, we don't go over 100% if the piv is smaller than the desired thumbnail size.
       var percentage = Math.min (Math.round (size / max * 100), 100);
+
+      var targetFormat = 'jpeg';
+      if (piv.format === 'gif' && size === 900) targetFormat = 'gif';
+
       return [
-         [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', percentage + '%', Path.join (Path.dirname (path), s ['t' + size] + '.' + piv.format)]],
-         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.' + piv.format), Path.join (Path.dirname (path), s ['t' + size])],
+         [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', percentage + '%', Path.join (Path.dirname (path), s ['t' + size] + '.' + targetFormat)]],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.' + targetFormat), Path.join (Path.dirname (path), s ['t' + size])],
          [a.make (fs.stat), Path.join (Path.dirname (path), s ['t' + size])],
          function (s) {
             s ['t' + size + 'size'] = s.last.size;
@@ -349,8 +353,8 @@ H.thumbVid = function (s, invalidHandler, piv, path) {
       var height = Math.round (piv.dimh * percentage / 100);
       return [
          // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
-         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', (askance ? height : width) + 'x' + (askance ? width : height), Path.join (Path.dirname (path), s ['t' + size] + '.png')]],
-         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.png'), Path.join (Path.dirname (path), s ['t' + size])],
+         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', (askance ? height : width) + 'x' + (askance ? width : height), Path.join (Path.dirname (path), s ['t' + size] + '.jpg')]],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.jpg'), Path.join (Path.dirname (path), s ['t' + size])],
          [a.make (fs.stat), Path.join (Path.dirname (path), s ['t' + size])],
          function (s) {
             s ['t' + size + 'size'] = s.last.size;
@@ -1835,9 +1839,17 @@ var routes = [
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
          function (s) {
             // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
-            var id = s.piv ['t' + rq.data.params.size] || s.piv.id;
-            var format = s.piv.format === 'png' ? 'png' : 'jpeg';
+            var id;
+            // If the piv is a jpeg, serve the requested thumbnail; if it's not present, serve the original file.
+            if (s.piv.format === 'jpeg') id = s.piv ['t' + rq.data.params.size] || s.piv.id;
+            // If the piv is a gif and we request the large one (900), serve the original file.
+            else if (s.piv.format === 'gif' && rq.data.params.size === '900') id = s.piv.id;
+            // Else, serve the requested thumbnail, and if there's none, the small thumbnail.
+            else id = s.piv ['t' + rq.data.params.size] || s.piv.t200;
+
+            var format = 'jpeg';
             if (rq.data.params.size === '900' && s.piv.format === 'gif') format = 'gif';
+
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.getType (format)};
             if (rq.headers ['if-none-match'] === etag) return reply (rs, 304, '', headers);
