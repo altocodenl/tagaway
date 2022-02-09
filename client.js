@@ -3118,7 +3118,7 @@ B.mrespond ([
                });
 
                // Space has run out, cancel the upload if it hasn't been cancelled already.
-               if (error.status === 409 && error.responseText.match (/capacity/)) {
+               if (error && error.status === 409 && error.responseText.match (/capacity/)) {
                   dale.go (B.get ('Data', 'uploads'), function (upload) {
                      if (upload.id === file.id && upload.status === 'uploading') B.call (x, 'upload', 'cancel', upload.id, true);
                   });
@@ -3954,6 +3954,7 @@ views.pics = function () {
                               H.if (H.isYear (which), H.putSvg ('itemTime')),
                               H.if (H.isGeo (which) && ! H.isCountry (which), H.putSvg ('geoCity')),
                               H.if (H.isCountry (which), H.putSvg ('geoCountry')),
+                              // TODO: add numbers
                               ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
