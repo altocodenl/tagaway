@@ -39,11 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- fix code & tests to enforce jpg thumbnails on non-jpg/png pivs
-- fix client bug after upload is complete
+- Implement "revive" in uploads
+- Fix client bug when selecting a year tag.
 
 - Pivs
-   - Check that tags refactor works in client (empty, list of existing tags, list of tags to add, list of tags to add in upload)
    - Show n of pivs for each tag in main view.
    - Suggest tags when inserting in tag view.
    - Move year tags to d::, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
@@ -979,7 +978,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 4. Pivs
    1. `change []`: stopgap responder to add svg elements to the page until gotoB v2 (with `LITERAL` support) is available.
    2. `change State.page`: if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
-   3. `change State.query`: sets `State.nPivs` (without triggering a `change` event) and invokes `query pivs true`, but only if the change is not to `State.query.recentlyTagged`.
+   3. `change State.query`: if the path to the change is just `State` object (which only happens during initialization or logout), we ignore it. if the change is not to `State.query.recentlyTagged`, we directly set `State.nPivs` to 20 (we don't do it through an event because we want to avoid that call also invoking `query pivs`). We then invokes `query pivs true`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    6. `query pivs`:  if `State.query` is not set, does nothing. If `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument (`updateSelected`), it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.

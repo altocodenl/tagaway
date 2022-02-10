@@ -2613,14 +2613,16 @@ B.mrespond ([
    ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
+
       if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.call (x, 'query', 'pivs', true);
+
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
-      // We use `B.set` directly instead of `B.call ('set', ...)` to avoid querying pivs twice
+      // We modify State.nPivs directly to avoid triggering two calls to `query pivs`, one from here and another one from the responder to a change in State.nPivs
       if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], 20);
       B.call (x, 'query', 'pivs', true);
    }],
