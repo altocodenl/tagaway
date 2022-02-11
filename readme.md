@@ -462,7 +462,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an array of the form `['tag1', 'tag2', ...]`, only including tags created by the user. This excludes `untagged`, `all`, year tags, geotags and tags shared with the user by other users.
+   - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `untagged`, `all`, or tags shared with the user by other users.
 
 - `POST /query`
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.

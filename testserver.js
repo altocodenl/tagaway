@@ -1851,7 +1851,7 @@ suites.tag = function () {
          return true;
       }],
       ['get tags before tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, [])) return false;
+         if (H.stop ('tags', rs.body, ['2014', '2021'])) return false;
          return true;
       }],
       ['query pivs before tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
@@ -1862,7 +1862,7 @@ suites.tag = function () {
       }],
       ['tag pivs', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['tag1'])) return false;
+         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
          return true;
       }],
       ['query pivs after tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
@@ -1879,7 +1879,7 @@ suites.tag = function () {
       }],
       ['tag pivs with the same tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after repeated tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['tag1'])) return false;
+         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
          return true;
       }],
       ['query pivs after repeated tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
@@ -1899,7 +1899,7 @@ suites.tag = function () {
       }],
       ['untag a tag not on any piv', 'post', 'tag', {}, function (s) {return {tag: 'tag9', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after no-op untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['tag1'])) return false;
+         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
          return true;
       }],
       ['query pivs after no-op untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
@@ -1916,7 +1916,7 @@ suites.tag = function () {
       }],
       ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
       ['get tags after second tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['tag1', 'tag2'])) return false;
+         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1', 'tag2'])) return false;
          return true;
       }],
       ['query pivs after second tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
@@ -1933,7 +1933,7 @@ suites.tag = function () {
       }],
       ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['tag1'])) return false;
+         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
          return true;
       }],
       ['query pivs after untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
@@ -1949,8 +1949,8 @@ suites.tag = function () {
          return true;
       }],
       ['untag first tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId], del: true}}, 200],
-      ['get tags after econd untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, [])) return false;
+      ['get tags after second untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, ['2014', '2021'])) return false;
          return true;
       }],
       ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {

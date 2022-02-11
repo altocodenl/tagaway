@@ -2322,7 +2322,7 @@ var routes = [
 
             dale.go (tags.concat (new Date (piv.date).getUTCFullYear () + '').concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
-               if (H.isUserTag (tag)) multi.sadd ('tags:' + rq.user.username, tag);;
+               multi.sadd ('tags:' + rq.user.username, tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
             if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', piv.id);

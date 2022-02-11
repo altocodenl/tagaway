@@ -2794,6 +2794,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'tags'], rs.body);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
+            if (tag === 'untagged') return tag;
             if (rs.body.indexOf (tag) > -1) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
@@ -4033,7 +4034,7 @@ views.pics = function () {
                            ]];
                         }),
                      ]],
-                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (untag, filter, selected, showNSelectedTags, userTags) {
+                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (untag, filter, selected, showNSelectedTags, tags) {
                         filter = H.trim (filter === undefined ? '' : filter);
                         showNSelectedTags = showNSelectedTags || 75;
                         var selectedTags = {}, filterRegex = H.makeRegex (filter);
@@ -4044,7 +4045,8 @@ views.pics = function () {
                               selectedTags [tag]++;
                            });
                         });
-                        var editTags = dale.fil (userTags, undefined, function (tag) {
+                        var editTags = dale.fil (tags, undefined, function (tag) {
+                           if (! H.isUserTag (tag)) return;
                            if (filter && ! tag.match (filterRegex)) return;
                            if (! selectedTags [tag]) selectedTags [tag] = 0;
                            return tag;
@@ -4453,6 +4455,7 @@ views.upload = function () {
                                              filter = H.trim (filter === undefined ? '' : filter);
                                              var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
                                              dale.stop (tags, true, function (tag) {
+                                                if (! H.isUserTag (tag)) return;
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
                                                 if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
                                                    showTags.push (tag);
