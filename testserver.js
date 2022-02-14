@@ -888,7 +888,7 @@ suites.upload.upload = function () {
       }],
       ['send wait operation to upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
       ['send second wait operation to upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
-      ['get upload logs after double wait', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+      ['get upload logs after double wait (wait until upload gets stalled)', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
          if (H.stop ('logs length', rs.body.logs.length, 5)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
@@ -896,6 +896,15 @@ suites.upload.upload = function () {
             if (H.stop ('ev', log.ev, 'upload')) return false;
             if (H.stop ('type', log.type, k === 2 ? 'start' : 'wait')) return false;
          }) === false) return false;
+         setTimeout (next, 10000);
+      }],
+      ['get stalled upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('upload.status', rs.body [0].status, 'stalled')) return false;
+         return true;
+      }],
+      ['send wait operation to revive upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
+      ['get unstalled upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('upload.status', rs.body [0].status, 'uploading')) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2361,7 +2370,7 @@ suites.download = function () {
                if (error) return clog (error);
                fs.unlinkSync ('download.zip');
                // Wait five seconds until download expires
-               setTimeout (next, 5000);
+               setTimeout (next, 10000);
             }
          ], clog);
       }},
@@ -2723,7 +2732,7 @@ H.tryTimeout (10, 1000, function (cb) {
       });
 
       H.testsDone = true;
-      H.server.kill ();
+      process.exit (0);
    }, function (test) {
       if (type (test) === 'object') return test;
       if (test [1] === 'post' && test [4]) {

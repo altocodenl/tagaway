@@ -807,12 +807,13 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                if (! upload.lastActivity) upload.lastActivity = log.t;
             }
             else if (log.type === 'start') {
-               // If current upload has had no activity in over ten minutes, we consider it stalled.
                if (! upload.status) {
+                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait ten seconds.
+                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 10;
                   // We use log.t instead of log.id in case this is an import, because the id of the import might be quite older than the start of its upload process.
-                  if (Date.now () > 1000 * 60 * 10 + (upload.lastActivity || log.t)) {
+                  if (Date.now () > maxInactivity + (upload.lastActivity || log.t)) {
                      upload.status = 'stalled';
-                     upload.end    = (upload.lastActivity || log.t) + 1000 * 60 * 10;
+                     upload.end    = (upload.lastActivity || log.t) + maxInactivity;
                   }
                   else upload.status = 'uploading';
                }
@@ -1907,7 +1908,11 @@ var routes = [
       astop (rs, [
          [H.getUploads, rq.user.username, {id: b.id}],
          function (s) {
-            if (b.op !== 'start' && b.op !== 'error') {
+            if (b.op === 'wait') {
+               if (! s.last.length)                                     return reply (rs, 404, {error: 'upload'});
+               if (! inc (['uploading', 'stalled'], s.last [0].status)) return reply (rs, 409, {error: 'status'});
+            }
+            else if (inc (['complete', 'cancel'], b.op)) {
                if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
                if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
             }
