@@ -3950,6 +3950,8 @@ views.pics = function () {
                               colorTag = true;
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
+                           var numberOfPivs;
+                           if (! H.isYear (which)) numberOfPivs = ' (' + B.get ('Data', 'queryTags', which) + ')';
                            return ['li', {class: Class, onclick: B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'all', H.putSvg ('tagAll')),
                               H.if (which === 'untagged', H.putSvg ('itemUntagged')),
@@ -3958,7 +3960,7 @@ views.pics = function () {
                               H.if (H.isGeo (which) && ! H.isCountry (which), H.putSvg ('geoCity')),
                               H.if (H.isCountry (which), H.putSvg ('geoCountry')),
                               // TODO: add numbers
-                              ['span', {class: 'tag__title'}, tag.replace (/^g::/, '')],
+                              ['span', {class: 'tag__title'}, [tag.replace (/^g::/, ''), numberOfPivs]],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],

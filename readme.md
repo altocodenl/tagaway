@@ -39,10 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- Fix: When uploading repeated with lastModified that sets date, check that year tag is added to tags:USER
+
 - Pivs
    - Show n of pivs for each tag in main view.
+   - Make untagged not clicklable if current query has no untagged pivs
    - Suggest tags when inserting in tag view.
-   - Move year tags to d::, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
+   - Move year tags to d::2004, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.
       - If selected a month, don't show other years.
@@ -465,7 +468,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
    - `all` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
-   - `untagged` can be included on `body.tags` to retrieve untagged pivs.
+   - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.

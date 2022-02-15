@@ -991,6 +991,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       multi.srem ('pivt:' + piv.id, oldYearTag);
       multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
+      // TODO: fix bug with tags:
    }
    mexec (s, multi);
 }
@@ -2651,11 +2652,10 @@ var routes = [
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
 
-            if (b.idsOnly) return reply (rs, 200, dale.go (output.pivs, function (piv) {return piv.id}));
+            if (b.idsOnly) return reply (rs, 200, dale.go (output.pivs.slice (b.from - 1, b.to), function (piv) {return piv.id}));
 
             output.total = output.pivs.length;
 
-            output.pivs = output.pivs.slice (b.from - 1, b.to);
             s.output = output;
 
             var multi = redis.multi ();
@@ -2667,9 +2667,8 @@ var routes = [
             if (output.total) multi.sunion (dale.go (s.pivs, function (piv) {
                return 'pivt:' + piv.id;
             }));
-            // Get the total amount of pivs and the total amount of untagged pivs
+            // Get the total amount of pivs
             multi.scard ('tag:' + rq.user.username + ':all');
-            multi.scard ('tag:' + rq.user.username + ':untagged');
 
             multi.get ('geo:' + rq.user.username);
             mexec (s, multi);
@@ -2693,7 +2692,7 @@ var routes = [
             ]);
          },
          function (s) {
-            s.output.tags = dale.obj (teishi.last (s.last, 4), {all: teishi.last (s.last, 3), untagged: teishi.last (s.last, 2)}, function (tag) {
+            s.output.tags = dale.obj (teishi.last (s.last, 3), {all: teishi.last (s.last, 2), untagged: 0}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
@@ -2722,10 +2721,14 @@ var routes = [
                   vid: vid,
                   loc: piv.loc ? teishi.parse (piv.loc) : undefined
                };
+               var untagged = true;
                dale.go (s.last [k], function (tag) {
+                  if (untagged && H.isUserTag (tag)) untagged = false;
                   s.output.tags [tag]++;
                });
+               if (untagged) s.output.tags.untagged++;
             });
+            s.output.pivs = s.output.pivs.slice (b.from - 1, b.to);
             reply (rs, 200, s.output);
          }
       ]);

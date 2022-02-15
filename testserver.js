@@ -2,8 +2,10 @@
 
 var Path = require ('path');
 
+var noImport = process.argv [2] === 'noImport';
 var toRun = process.argv [2];
 process.argv [2] = undefined;
+if (toRun === 'noImport') toRun = undefined;
 
 var hash   = require ('murmurhash').v3;
 var mime   = require ('mime');
@@ -1869,6 +1871,12 @@ suites.tag = function () {
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
          return true;
       }],
+      ['query pivs before tagging using year', 'post', 'query', {}, {tags: ['2014'], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         // `all` always returns the total count; the amount of `untagged` pivs is query dependent, as is that of all other tags.
+         if (H.stop ('tags', rs.body.tags, {2014: 1, all: 2, untagged: 1})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2014'])) return false;
+         return true;
+      }],
       ['tag pivs', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
@@ -1878,6 +1886,10 @@ suites.tag = function () {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         return true;
+      }],
+      ['query pivs after tagging, check that query that is cutoff still shows the right amount of pivs per tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
          return true;
       }],
       ['get logs after tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -2045,6 +2057,10 @@ suites.query = function () {
       }],
       ['query pivs with idsOnly', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 3, idsOnly: true}, 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, [s.mediumId, s.largeId, s.smallId])) return false;
+         return true;
+      }],
+      ['query pivs with idsOnly cutting off the amount returned', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 2, idsOnly: true}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId, s.largeId])) return false;
          return true;
       }],
       ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {
@@ -2548,6 +2564,7 @@ suites.geo = function () {
 }
 
 suites.import = function () {
+   if (noImport) return [];
    return [
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('import selection', 'import/select/google', [
