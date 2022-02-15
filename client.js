@@ -3959,8 +3959,8 @@ views.pics = function () {
                               H.if (H.isYear (which), H.putSvg ('itemTime')),
                               H.if (H.isGeo (which) && ! H.isCountry (which), H.putSvg ('geoCity')),
                               H.if (H.isCountry (which), H.putSvg ('geoCountry')),
-                              // TODO: add numbers
-                              ['span', {class: 'tag__title'}, [tag.replace (/^g::/, ''), numberOfPivs]],
+                              // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
+                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^g::/, ''), numberOfPivs]],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
