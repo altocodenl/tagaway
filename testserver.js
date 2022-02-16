@@ -338,6 +338,7 @@ var H = {
                   });
                   // humanReadableDate is there just for manual checking purposes, to see that the date indeed makes sense at a glance compared to the dates contained in the metadata
                   piv.humanReadableDate = new Date (piv.date).toISOString ();
+                  piv.yearTag = new Date (piv.date).getFullYear () + '';
                   s.next ();
                },
                function (s) {
@@ -1863,30 +1864,30 @@ suites.tag = function () {
          return true;
       }],
       ['get tags before tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag])) return false;
          return true;
       }],
       ['query pivs before tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag])) return false;
          return true;
       }],
-      ['query pivs before tagging using year', 'post', 'query', {}, {tags: ['2014'], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query pivs before tagging using year', 'post', 'query', {}, {tags: [tk.pivs.small.yearTag], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          // `all` always returns the total count; the amount of `untagged` pivs is query dependent, as is that of all other tags.
          if (H.stop ('tags', rs.body.tags, {2014: 1, all: 2, untagged: 1})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2014'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.small.yearTag])) return false;
          return true;
       }],
       ['tag pivs', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['query pivs after tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag, 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['query pivs after tagging, check that query that is cutoff still shows the right amount of pivs per tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -1901,13 +1902,13 @@ suites.tag = function () {
       }],
       ['tag pivs with the same tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after repeated tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['query pivs after repeated tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag, 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['get logs after tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -1921,13 +1922,13 @@ suites.tag = function () {
       }],
       ['untag a tag not on any piv', 'post', 'tag', {}, function (s) {return {tag: 'tag9', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after no-op untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['query pivs after no-op untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag, 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['get logs after no-op untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -1938,13 +1939,13 @@ suites.tag = function () {
       }],
       ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
       ['get tags after second tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1', 'tag2'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag, 'tag1', 'tag2'])) return false;
          return true;
       }],
       ['query pivs after second tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2, tag2: 1})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1', 'tag2'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag, 'tag1', 'tag2'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['get logs after second tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -1955,13 +1956,13 @@ suites.tag = function () {
       }],
       ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021', 'tag1'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['query pivs after untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021', 'tag1'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014', 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag, 'tag1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag, 'tag1'])) return false;
          return true;
       }],
       ['get logs after untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -1972,13 +1973,13 @@ suites.tag = function () {
       }],
       ['untag first tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after second untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2021'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.medium.yearTag])) return false;
          return true;
       }],
       ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {2014: 1, 2021: 1, all: 2, untagged: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['2021'])) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, ['2014'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, [tk.pivs.medium.yearTag])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, [tk.pivs.small.yearTag])) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2064,7 +2065,7 @@ suites.query = function () {
          if (H.stop ('body', rs.body, [s.mediumId, s.largeId])) return false;
          return true;
       }],
-      ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {
+      ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['untagged', 'foobar'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 3)) return false;
          if (H.stop ('body.tags', rs.body.tags, {2014: 2, 2021: 1, all: 3, untagged: 3})) return false;
          var ids = dale.go (rs.body.pivs, function (piv) {
@@ -2073,7 +2074,7 @@ suites.query = function () {
          if (H.stop ('piv ids', ids, [s.largeId, s.mediumId, s.smallId])) return false;
          return true;
       }],
-      ['query pivs with recentlyTagged, including non-existing pivs', 'post', 'query', {}, function (s) {return {tags: ['untagged', '2009'], sort: 'upload', from: 1, to: 3, recentlyTagged: ['foo', s.largeId, s.mediumId, s.smallId, 'bar']}}, 200, function (s, rq, rs) {
+      ['query pivs with recentlyTagged, including non-existing pivs', 'post', 'query', {}, function (s) {return {tags: ['untagged', 'foobar'], sort: 'upload', from: 1, to: 3, recentlyTagged: ['foo', s.largeId, s.mediumId, s.smallId, 'bar']}}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 3)) return false;
          if (H.stop ('body.tags', rs.body.tags, {2014: 2, 2021: 1, all: 3, untagged: 3})) return false;
          var ids = dale.go (rs.body.pivs, function (piv) {
@@ -2518,13 +2519,13 @@ suites.geo = function () {
       ['get location & tags of geotagged pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
          if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, tk.pivs.small.loc))     return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), [tk.pivs.dunkerque.yearTag, 'g::Dunkerque', 'g::FR'])) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
       }],
       ['get tags after geotagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.dunkerque.yearTag, 'g::Dunkerque', 'g::FR'])) return false;
          return true;
       }],
       ['enable geo, no-op', 'post', 'geo', {}, {operation: 'enable'}, 200],
@@ -2542,13 +2543,13 @@ suites.geo = function () {
       ['get location & tags of geotagged pivs after disabling geo', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, undefined)) return false;
          if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, undefined))     return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018'])) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), [tk.pivs.dunkerque.yearTag])) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], undefined)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], undefined)) return false;
          return true;
       }],
       ['get tags after disabling geo', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2014', '2018'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag, tk.pivs.dunkerque.yearTag])) return false;
          return true;
       }],
       ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
@@ -2563,7 +2564,7 @@ suites.geo = function () {
       }],
       ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), [tk.pivs.dunkerque.yearTag, 'g::Dunkerque', 'g::FR'])) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
@@ -2585,13 +2586,13 @@ suites.geo = function () {
       }],
       ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), ['2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), [tk.pivs.dunkerque.yearTag, 'g::Dunkerque', 'g::FR'])) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
       }],
       ['get tags after geotagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['2018', 'g::Dunkerque', 'g::FR'])) return false;
+         if (H.stop ('tags', rs.body, [tk.pivs.dunkerque.yearTag, 'g::Dunkerque', 'g::FR'])) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),

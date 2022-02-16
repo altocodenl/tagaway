@@ -21,6 +21,7 @@
       "date": 1538154339000,
       "dateSource": "Create Date",
       "humanReadableDate": "2018-09-28T17:05:39.000Z",
+      "yearTag": "2018",
       "hash": 2989754675
    },
    "benin": {
@@ -39,6 +40,7 @@
       "date": 918811982000,
       "dateSource": "Modify Date",
       "humanReadableDate": "1999-02-12T09:33:02.000Z",
+      "yearTag": "1999",
       "hash": 743013579
    },
    "boat": {
@@ -57,6 +59,7 @@
       "date": 1637097787000,
       "dateSource": "upload:lastModified",
       "humanReadableDate": "2021-11-16T21:23:07.000Z",
+      "yearTag": "2021",
       "hash": 3748825687
    },
    "circus": {
@@ -83,6 +86,7 @@
       "date": 1567299206000,
       "dateSource": "Creation Date",
       "humanReadableDate": "2019-09-01T00:53:26.000Z",
+      "yearTag": "2019",
       "hash": 3086668155
    },
    "deer": {
@@ -100,6 +104,7 @@
       "date": 1637097787000,
       "dateSource": "upload:lastModified",
       "humanReadableDate": "2021-11-16T21:23:07.000Z",
+      "yearTag": "2021",
       "hash": 2383897131
    },
    "drumming": {
@@ -118,6 +123,7 @@
       "date": 1637097787000,
       "dateSource": "upload:lastModified",
       "humanReadableDate": "2021-11-16T21:23:07.000Z",
+      "yearTag": "2021",
       "hash": 113721823
    },
    "dunkerque": {
@@ -142,6 +148,7 @@
       "date": 1522070614805,
       "dateSource": "Date/Time Original",
       "humanReadableDate": "2018-03-26T13:23:34.805Z",
+      "yearTag": "2018",
       "hash": 245638445
    },
    "empty": {
@@ -176,6 +183,7 @@
       "date": 1405880431000,
       "dateSource": "Date/Time Original",
       "humanReadableDate": "2014-07-20T18:20:31.000Z",
+      "yearTag": "2014",
       "hash": 2526606026
    },
    "location": {
@@ -201,6 +209,7 @@
       "date": 1637097787000,
       "dateSource": "upload:lastModified",
       "humanReadableDate": "2021-11-16T21:23:07.000Z",
+      "yearTag": "2021",
       "hash": 3972466237
    },
    "medium": {
@@ -218,6 +227,7 @@
       "date": 1637097787000,
       "dateSource": "upload:lastModified",
       "humanReadableDate": "2021-11-16T21:23:07.000Z",
+      "yearTag": "2021",
       "hash": 194393043
    },
    "rotate": {
@@ -239,6 +249,7 @@
       "date": 1490204120000,
       "dateSource": "Date/Time Original",
       "humanReadableDate": "2017-03-22T17:35:20.000Z",
+      "yearTag": "2017",
       "hash": 1001643281
    },
    "rotatemedium": {
@@ -260,6 +271,7 @@
       "date": 1490204120000,
       "dateSource": "Date/Time Original",
       "humanReadableDate": "2017-03-22T17:35:20.000Z",
+      "yearTag": "2017",
       "hash": 1441551623
    },
    "rotatesmall": {
@@ -281,6 +293,7 @@
       "date": 1490204120000,
       "dateSource": "Date/Time Original",
       "humanReadableDate": "2017-03-22T17:35:20.000Z",
+      "yearTag": "2017",
       "hash": 2864754819
    },
    "small-meta": {
@@ -301,6 +314,7 @@
       "date": 1367971583000,
       "dateSource": "Create Date",
       "humanReadableDate": "2013-05-08T00:06:23.000Z",
+      "yearTag": "2013",
       "hash": 3659108096
    },
    "small": {
@@ -319,6 +333,7 @@
       "date": 1399507583000,
       "dateSource": "Modify Date",
       "humanReadableDate": "2014-05-08T00:06:23.000Z",
+      "yearTag": "2014",
       "hash": 2011409414
    },
    "sunrise": {
@@ -340,6 +355,7 @@
       "date": 1598697821254,
       "dateSource": "Date/Time Original",
       "humanReadableDate": "2020-08-29T10:43:41.254Z",
+      "yearTag": "2020",
       "hash": 581334427
    },
    "tram": {
@@ -365,6 +381,7 @@
       "date": 1544889597000,
       "dateSource": "Create Date",
       "humanReadableDate": "2018-12-15T15:59:57.000Z",
+      "yearTag": "2018",
       "hash": 3173476963
    },
    "tumbleweed": {
@@ -382,6 +399,7 @@
       "date": 1637097787000,
       "dateSource": "upload:lastModified",
       "humanReadableDate": "2021-11-16T21:23:07.000Z",
+      "yearTag": "2021",
       "hash": 3943946902
    }
 }
