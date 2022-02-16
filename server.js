@@ -4258,3 +4258,12 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Geodata load error', error: error});
 });
+
+if (cicek.isMaster && process.argv [3] !== 'geodata') a.stop ([
+   [Redis, 'exists', 'geo'],
+   function (s) {
+      if (! s.last) notify (s, {priority: 'critical', type: 'Geodata missing.'});
+   }
+], function (s, error) {
+   notify (s, {priority: 'critical', type: 'Geodata check error', error: error});
+});

@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Fix: When uploading repeated with lastModified that sets date, check that year tag is added to tags:USER
-- Fix: warn if no geodata at start.
 - Test: Change year tags to variables based on tk rather than constants.
 
 - Pivs
