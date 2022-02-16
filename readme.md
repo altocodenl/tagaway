@@ -40,9 +40,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Fix: When uploading repeated with lastModified that sets date, check that year tag is added to tags:USER
+- Fix: warn if no geodata at start.
+- Test: Change year tags to variables based on tk rather than constants.
 
 - Pivs
-   - Show n of pivs for each tag in main view.
    - Make untagged not clicklable if current query has no untagged pivs
    - Suggest tags when inserting in tag view.
    - Move year tags to d::2004, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
@@ -78,6 +79,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
 
 - Upload/import:
+   - Stop losing scroll when view is updated.
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Improve display of errors in upload & import:

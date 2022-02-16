@@ -991,7 +991,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       multi.srem ('pivt:' + piv.id, oldYearTag);
       multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
-      // TODO: fix bug with tags:
+      // TODO NOW: fix bug with tags:
    }
    mexec (s, multi);
 }
@@ -2520,7 +2520,7 @@ var routes = [
             s.output = dale.fil (s.last, undefined, function (n, k) {
                if (n > 0) return s.tags [k];
                // We cleanup tags from tags:USERID if the tag set is empty.
-               // The cleanup is done here because it would be cumbersome to have to do it in both POST /delete and POST /tag
+               // The cleanup is done here because it would be cumbersome to have to do it in POST /delete, POST /tag and POST /geo
                else multi.srem ('tags:' + rq.user.username, s.last [k]);
             }).sort ();
             mexec (s, multi);
@@ -2948,6 +2948,7 @@ var routes = [
                   multi.hdel ('piv:' + s.allPivs [k], 'loc');
                   dale.go (tags, function (tag) {
                      if (! H.isGeo (tag)) return;
+                     // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
                      multi.srem ('pivt:' + s.allPivs [k], tag);
                      multi.del ('tag:' + rq.user.username + ':' + tag);
                   });
@@ -3005,6 +3006,7 @@ var routes = [
                         dale.go (s.last, function (tag) {
                            multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv);
                            multi.sadd ('pivt:' + piv,                          tag);
+                           multi.sadd ('tags:' + rq.user.username, tag);
                         });
                         multi.exec (cb);
                      }
