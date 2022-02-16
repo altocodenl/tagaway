@@ -1108,8 +1108,20 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
+      ['get tags before uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag])) return false;
+         return true;
+      }],
       ['uploadCheck piv with match, same name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name, size: tk.pivs.small.size, lastModified: new Date ('2010-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
+      ['get tags after first uploadCheck modification', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, ['2010'])) return false;
+         return true;
+      }],
       ['uploadCheck piv with match, different name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name + 'foo', size: tk.pivs.small.size, lastModified: new Date ('2005-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
+      ['get tags after second uploadCheck modification', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, ['2005'])) return false;
+         return true;
+      }],
       ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          // Update tags
          s.originalSmall.tags = ['2005'];
@@ -1186,6 +1198,10 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
+      ['get tags before uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, [tk.pivs.small.yearTag])) return false;
+         return true;
+      }],
       dale.go (['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'], function (nameWithDate, k) {
          return ['uploadCheck piv with match, same name, same upload, with another date from name #' + (k + 1), 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: nameWithDate, size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})];
       }),
@@ -1203,6 +1219,10 @@ suites.upload.uploadCheck = function () {
          if (H.stop ('new dates', newDates.sort (), ['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'].sort ())) return false;
          s.originalSmall.dateSource = 'repeated:' + timestamp + ':fromName';
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
+         return true;
+      }],
+      ['get tags after uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, ['2001'])) return false;
          return true;
       }],
       ['get upload after uploadCheck with dates from names', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
@@ -1258,6 +1278,10 @@ suites.upload.uploadCheck = function () {
             s.originalSmall.dates [k] = v;
          }) === false) return false;
          if (H.stop ('piv metadata', rs.body.pivs [0], s.originalSmall)) return false;
+         return true;
+      }],
+      ['get tags after uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, [tk.pivs.rotate.yearTag])) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),

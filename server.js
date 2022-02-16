@@ -991,6 +991,8 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       multi.srem ('pivt:' + piv.id, oldYearTag);
       multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
+      multi.sadd ('tags:' + piv.owner, newYearTag);
+      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
       // TODO NOW: fix bug with tags:
    }
    mexec (s, multi);

@@ -39,8 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Fix: When uploading repeated with lastModified that sets date, check that year tag is added to tags:USER
-- Test: Change year tags to variables based on tk rather than constants.
+- Fix: When uploading repeated/alreadyModified with lastModified that sets date, ensure that year tag is added to tags:USER.
 
 - Pivs
    - Make untagged not clicklable if current query has no untagged pivs
