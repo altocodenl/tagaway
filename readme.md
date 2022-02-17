@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Make untagged not clickable if current query has no untagged pivs
    - Suggest tags when inserting in tag view.
    - Move year tags to d::2004, all to a::, untagged to u::, g:: to ::g, forbid tags that start [a-z]::
    - Months:

@@ -3951,8 +3951,9 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isYear (which)) numberOfPivs = ' (' + B.get ('Data', 'queryTags', which) + ')';
-                           return ['li', {class: Class, onclick: B.ev (H.stopPropagation, action)}, [
+                           if (! H.isYear (which)) numberOfPivs = ' (' + queryTags [which] + ')';
+                           var disabledUntagged = which === 'untagged' && queryTags.untagged === 0;
+                           return ['li', {class: Class, style: disabledUntagged ? 'cursor: default' : undefined, onclick: disabledUntagged ? undefined : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'all', H.putSvg ('tagAll')),
                               H.if (which === 'untagged', H.putSvg ('itemUntagged')),
                               H.if (colorTag, H.putSvg ('tagItem' + H.tagColor (which))),
