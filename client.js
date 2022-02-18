@@ -407,7 +407,21 @@ CSS.litc = [
    ['.sidebar__header', {'padding-top, padding-bottom': CSS.typography.spaceVer (1.5)}],
    // Sidebar title
    ['.sidebar__section-title', {'margin-bottom': CSS.typography.spaceVer (0.5), 'padding-left': CSS.vars ['padding--xs']}],
-   ['.sidebar__attach-form', {'margin-top, margin-bottom': CSS.typography.spaceVer (1)}],
+   ['.sidebar__attach-form', {'margin-top, margin-bottom': CSS.typography.spaceVer (1), position: 'relative'}],
+   ['.attach-form__dropdown', {
+      // Note: these numbers are badly hardcoded until we get back our saucier
+      position: 'absolute',
+      'z-index': '1',
+      left: 0.07,
+      top: 78, // height input
+      width: 0.86,
+      height: 'auto',
+      'max-height': 120,
+      'overflow-y': 'auto',
+      'box-shadow': '0 0 10px rgba(0, 0, 0, 0.15)',
+      //display: 'none',
+   }],
+   ['.attach-form:hover .attach-form__dropdown', {display: 'block'}],
    // Sidebar switch
    ['.sidebar__switch', {'margin-bottom': CSS.typography.spaceVer (1)}],
    // Sidebar footer
@@ -4029,11 +4043,45 @@ views.pics = function () {
                         ]],
                      ]],
                      ['div', {class: 'sidebar__attach-form', onclick: B.ev ('stop', 'propagation', {raw: 'event'})}, [
-                        B.view (['State', 'newTag'], function (newTag) {
+                        B.view ([['State', 'newTag'], ['Data', 'tags'], ['State', 'selected']], function (newTag, tags, selected) {
+                           if (! selected) return ['div'];
+                           // We filter out tags that are already in all of the pivs of the current selection.
+                           // We might have to move this to a responder so we calculate it less often, since it can be expensive.
+                           tags = dale.fil (tags, undefined, function (tag) {
+                              if (! H.isUserTag (tag)) return;
+                              var tagAbsent = ! dale.stop (pivs, false, function (piv) {
+                                 if (! selected [piv.id]) return true;
+                                 return inc (piv.tags, tag);
+                              });
+                              if (tagAbsent) return tag;
+                           });
+
+                           newTag = H.trim (newTag === undefined ? '' : newTag);
+                           var maxTags = 5, showTags = [], filterRegex = H.makeRegex (newTag);
+                           dale.stop (tags, true, function (tag) {
+                              if (newTag === undefined || newTag.length === 0) return;
+                              if (tag.match (filterRegex)) {
+                                 showTags.push (tag);
+                                 if (showTags.length === maxTags) return true;
+                              }
+                           });
+                           if (newTag && ! inc (tags, newTag) && H.isUserTag (newTag)) showTags.unshift (newTag + ' (new tag)');
+
                            return ['div', {class: 'attach-form'}, [
+
                               ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
                               ['input', {id: 'newTag', class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name', value: newTag, oninput: B.ev ('set', ['State', 'newTag'])}],
-                              ['div', {style: style ({cursor: 'pointer', 'margin-left': 0.48, 'margin-top': 10}), class: 'button button--one', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', true])}, 'Add new tag']
+                              ['div', {class: 'attach-form__dropdown'}, [
+                                 // TAG LIST DROPDOWN
+                                 ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
+                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', true])}, [
+                                       ['div', {class: 'tag tag-list__item--' + H.tagColor (tag)}, [
+                                          H.putSvg ('tagItem' + H.tagColor (tag)),
+                                          ['span', {class: 'tag__title'}, tag]
+                                       ]],
+                                    ]];
+                                 })],
+                              ]],
                            ]];
                         }),
                      ]],
