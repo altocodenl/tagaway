@@ -2520,7 +2520,7 @@ var routes = [
                if (n > 0) return s.tags [k];
                // We cleanup tags from tags:USERID if the tag set is empty.
                // The cleanup is done here because it would be cumbersome to have to do it in POST /delete, POST /tag and POST /geo
-               else multi.srem ('tags:' + rq.user.username, s.last [k]);
+               else multi.srem ('tags:' + rq.user.username, s.tags [k]);
             }).sort ();
             mexec (s, multi);
          },
