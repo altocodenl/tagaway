@@ -2330,23 +2330,23 @@ H.dateFormat = function (d) {
 }
 
 H.tagColor = function (tag, a) {
-   if (tag.match (/^untagged$/i)) return 'untagged';
-   if (H.isYear (tag)) return 'time';
+   if (tag === 'u::') return 'untagged';
+   if (H.isDateTag (tag)) return 'time';
    var r = dale.acc (tag.split (''), tag [0].charCodeAt (), function (a, b) {
       return a + b.charCodeAt ();
    });
    return CSS.vars.tagColors [r % CSS.vars.tagColors.length];
 }
 
-H.isYear = function (tag) {
-   return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
+H.isDateTag = function (tag) {
+   return !! tag.match (/^d::/);
 }
 
-H.isGeo = function (tag) {
+H.isGeoTag = function (tag) {
    return !! tag.match (/^g::/);
 }
 
-H.isCountry = function (tag) {
+H.isCountryTag = function (tag) {
    return !! tag.match (/^g::[A-Z]{2}$/);
 }
 
@@ -2355,10 +2355,8 @@ H.trim = function (string) {
 }
 
 H.isUserTag = function (tag) {
-   tag = H.trim (tag.toLowerCase ());
-   if (tag.length === 0) return false;
-   if (tag === 'all' || tag === 'untagged') return false;
-   return ! H.isYear (tag) && ! H.isGeo (tag);
+   tag = H.trim (tag);
+   return tag.length > 0 && ! tag.match (/^[a-z]::/);
 }
 
 H.makeRegex = function (filter) {
@@ -2782,14 +2780,14 @@ B.mrespond ([
       if (B.get ('State', 'querying')) return;
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
       if (index > -1) {
-         if (tag === 'untagged' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
+         if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
          return B.call (x, 'rem', ['State', 'query', 'tags'], index);
       }
 
-      var isNormalTag = ! H.isYear (tag) && ! H.isGeo (tag);
+      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
-         if (existingTag === 'untagged' && isNormalTag) return;
-         if (tag === 'untagged' && ! H.isYear (existingTag) && ! H.isGeo (existingTag)) return;
+         if (existingTag === 'u::' && isNormalTag) return;
+         if (tag === 'u::' && ! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag)) return;
          return existingTag;
       }).concat (tag));
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
@@ -2808,7 +2806,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'tags'], rs.body);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (tag === 'untagged') return tag;
+            if (tag === 'u::') return tag;
             if (rs.body.indexOf (tag) > -1) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
@@ -2826,7 +2824,7 @@ B.mrespond ([
       if (ids.length === 0) return;
 
       var query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
-      if (! del && inc (query.tags, 'untagged')) {
+      if (! del && inc (query.tags, 'u::')) {
          dale.go (ids, function (id) {
             if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
          });
@@ -3866,7 +3864,7 @@ views.pics = function () {
       views.open (),
       B.view (['Data', 'pivs'], function (pivs) {
          if (! pivs) return ['div'];
-         if (B.get ('Data', 'queryTags', 'all') === 0) return views.empty ();
+         if (B.get ('Data', 'queryTags', 'a::') === 0) return views.empty ();
          return ['div', [
             ['style', [
                ['.tag-list__item--time', {width: 0.33, float: 'left'}],
@@ -3891,28 +3889,28 @@ views.pics = function () {
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
 
-                        var geotagSelected = dale.stop (selected, true, H.isGeo);
+                        var geotagSelected = dale.stop (selected, true, H.isGeoTag);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (! H.isYear (tag)) return;
+                           if (! H.isDateTag (tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {return a - b});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (H.isYear (tag) || tag === 'all' || tag === 'untagged') return;
+                           if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
-                           var ac = H.isCountry (a), bc = H.isCountry (b);
+                           var ac = H.isCountryTag (a), bc = H.isCountryTag (b);
                            if (ac && bc) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                            if (ac && ! bc) return -1;
                            if (! ac && bc) return 1;
 
-                           var ag = H.isGeo (a), bg = H.isGeo (b);
+                           var ag = H.isGeoTag (a), bg = H.isGeoTag (b);
                            if (ag && bg) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
@@ -3924,30 +3922,30 @@ views.pics = function () {
                         });
 
                         var all      = teishi.eq (selected, []);
-                        var untagged = inc (selected, 'untagged');
+                        var untagged = inc (selected, 'u::');
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.
-                           if (H.isGeo (which) && ! H.isCountry (which) && ! geotagSelected) return;
+                           if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
 
                            var tag = which;
                            var colorTag;
                            var action = ['toggle', 'tag', tag];
-                           if (which === 'all') {
+                           if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
                               tag = 'All pictures';
                               action = ['set', ['State', 'query', 'tags'], []];
                            }
-                           else if (which === 'untagged') {
+                           else if (which === 'u::') {
                               var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
                               var tag = 'Untagged';
-                              var action = ['toggle', 'tag', 'untagged'];
+                              var action = ['toggle', 'tag', 'u::'];
                            }
-                           else if (H.isYear (which)) {
+                           else if (H.isDateTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
                            }
-                           else if (H.isGeo (which)) {
-                              var isCountry = H.isCountry (which);
-                              if (isCountry) {
+                           else if (H.isGeoTag (which)) {
+                              var isCountryTag = H.isCountryTag (which);
+                              if (isCountryTag) {
                                  var Class = 'tag-list__item tag tag-list__item--geo-country';
                                  if (inc (selected, which)) Class += ' tag--bolded';
                                  if (firstGeo) {
@@ -3965,17 +3963,17 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isYear (which)) numberOfPivs = ' (' + queryTags [which] + ')';
-                           var disabledUntagged = which === 'untagged' && queryTags.untagged === 0;
+                           if (! H.isDateTag (which)) numberOfPivs = ' (' + queryTags [which] + ')';
+                           var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
                            return ['li', {class: Class, style: disabledUntagged ? 'cursor: default' : undefined, onclick: disabledUntagged ? undefined : B.ev (H.stopPropagation, action)}, [
-                              H.if (which === 'all', H.putSvg ('tagAll')),
-                              H.if (which === 'untagged', H.putSvg ('itemUntagged')),
+                              H.if (which === 'a::', H.putSvg ('tagAll')),
+                              H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (colorTag, H.putSvg ('tagItem' + H.tagColor (which))),
-                              H.if (H.isYear (which), H.putSvg ('itemTime')),
-                              H.if (H.isGeo (which) && ! H.isCountry (which), H.putSvg ('geoCity')),
-                              H.if (H.isCountry (which), H.putSvg ('geoCountry')),
+                              H.if (H.isDateTag (which), H.putSvg ('itemTime')),
+                              H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
+                              H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^g::/, ''), numberOfPivs]],
+                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, ''), numberOfPivs]],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
@@ -3989,8 +3987,8 @@ views.pics = function () {
                         }
 
                         return ['div', {class: 'sidebar__tags'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
-                           makeTag ('all'),
-                           makeTag ('untagged'),
+                           makeTag ('a::'),
+                           makeTag ('u::'),
                            dale.go (yearlist, makeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
@@ -4141,7 +4139,7 @@ views.pics = function () {
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
-                     H.if (inc (tags, 'untagged') && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
+                     H.if (inc (tags, 'u::') && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
                   ]];
                }),
             ]],
@@ -4193,12 +4191,12 @@ views.pics = function () {
                               B.view (['State', 'query', 'tags'], function (tags) {
                                  return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
                                     var Class = 'tag tag-list-horizontal__item ';
-                                    if (H.isGeo (tag)) Class += H.isCountry (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
+                                    if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
                                     else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
                                     return ['li', {class: Class}, [
-                                       H.if (H.isCountry (tag), H.putSvg ('geoCountry')),
-                                       H.if (! H.isCountry (tag) && H.isGeo (tag), H.putSvg ('geoCity')),
-                                       ['span', {class: 'tag__title'}, tag === 'untagged' ? 'Untagged' : tag.replace (/^g::/, '')],
+                                       H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
+                                       H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
+                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : tag.replace (/^g::/, '')],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
                                              ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],

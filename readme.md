@@ -45,7 +45,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Show months only if one year is selected. If 0 or >2, don't show.
       - If selected a month, don't show other years.
       - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
-      - unforbid years by using y::?
+   - How to serve lastPiv if lastPiv is deleted?
    - Specify in which order to show tags:
       - By piv number
       - latest tagged
@@ -65,6 +65,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - fixed piv separators as milestones
 
 - Backend improvements:
+   - Avoid logs of invalid signature in cookie
    - Route logging
       - Log all non-admin routes in terms of performance
       - Distinguish 4xx from 5xx
@@ -401,7 +402,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `{op: 'wait',     id: INTEGER}`
       - `{op: 'error',    id: INTEGER, error: OBJECT}`
    - The body can contain a field `provider` with value `'google'|'dropbox'` and a field `alreadyImported` that should be an integer larger than 0. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
-   - If `tags` are present, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - If `tags` are present, none of them should start with `[a-z]::`. These tags are reserved for internal use of the app. Note that because tags are trimmed, if a tag starts with whitespace and then `[a-z]::`, the tag will still be considered as a tag for internal use, therefore invalid in this context.
    - If an `id` is provided in the case of `complete`, `cancel`, `wait` or `error`, it must correspond to that of an existing upload, otherwise the endpoint returns 404 with body `{error: 'upload'}`.
    - In the case of `complete` or `cancel`, the existing upload must have a status of `uploading`, otherwise the endpoint returns 409. The same happens with a `start` on an upload that already has the same `id`.
    - In the case of `wait`, the existing upload must have a status of `uploading` or `stalled, otherwise the endpoint returns 409. This operation is used to warn the server not to consider the upload stalled in the case a file is taking more than ten minutes to be uploaded; it can also be used to revive a stalled upload.
@@ -410,7 +411,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /uploadCheck`
    - This route is used to see if a piv has already been uploaded.
    - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, name: STRING, size: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
-   - If `tags` are included, after being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - If `tags` are included, after being trimmed, none of them should start with `[a-z]::` (otherwise, 400 with body `{error: 'invalid tag'}`).
    - `body.size` must be the size in bytes of the file being checked.
    - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404 with body `{error: 'upload'}`; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status'}`.
    - If there's already a piv with the same bytes (whether with the same name or not), the endpoint will reply `{repeated: true}`, otherwise it will return `{repeated: false}`.
@@ -422,7 +423,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Must contain no extraneous fields (otherwise, 400 with body `{error: 'invalidField'}`). The only allowed fields are `id`, `lastModified`, `tags` and `importData`; the last two are optional.
    - Must contain a field `id` with an upload id (otherwise, 400 with body `{error: 'id'}`. The `id` groups different uploaded files into an upload unit, for UI purposes. The `id` should be a timestamp in milliseconds returned by a previous call to `POST /upload`. If no upload with such `id` exists, the endpoint returns 404. The upload with that `id` should have a `status` of `uploading`; if it is not, a 409 is returned with body `{error: 'status'}`.
    - Must include a `lastModified` field that's parseable to an integer (otherwise, 400 with body `{error: 'lastModified'}`).
-   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being lowercased and trimmed, none of them should be `'all`', `'untagged'` or a four digit string that when parsed to an integer is between 1900 to 2100 or start with `g::` (otherwise, 400 with body `{error: 'invalid tag: TAGNAME'}`).
+   - If it includes a `tag` field, it must be an array (otherwise, 400 with body `{error: 'tags'}`). After being trimmed, none of them should start with `[a-z]::` (otherwise, 400 with body `{error: 'invalid tag'}`).
    - Can contain a field `importData` with value `{provider: 'google'|'dropbox', id: FILE_ID, name: STRING, modificationTime: FILE_MODIFICATION_TIME, path: STRING}`. This can only happen if the request comes from the server itself as part of an import process; if the IP is not from the server itself, 403 is returned.
    - The file uploaded must be one of the allowed formats: `jpeg`, `png`, `bmp`, `heic`, `gif`, `tiff`, `webp`, `mp4`, `mov`, `3gp`, `avi`, `webm`, `wmv` and `m4v` (otherwise, 400 with body `{error: 'format'}`).
    - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
@@ -450,35 +451,34 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 - `POST /tag`
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
    - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated; space-like characters in the middle will be replaced with a single space).
-   - `tag` cannot be a stringified integer between 1900 and 2100 inclusive. It also cannot be `all` or `untagged`, or any tag that when lowercased equals `all` or `untagged`.
-   - `tag` cannot start with `g::`.
+   - After trimmed, `tag` cannot start with `[a-z]::`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
    - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `untagged`, `all`, or tags shared with the user by other users.
+   - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `a::`, `d::`, or tags shared with the user by other users.
 
 - `POST /query`
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
-   - `all` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
+   - `a::` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
    - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {all: INT, untagged: INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
-      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `all` and `untagged`, which indicate the *total* amount of `all` and `untagged` pivs, irrespective of the query.
+      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `a::` and `untagged`, which indicate the *total* amount of all and untagged pivs, irrespective of the query.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing (or both), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
 - `POST /share`
    - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`.
    - The target user (`body.whom`) must exist, otherwise a 404 is returned.
-   - If the tag being shared is `all` or `untagged`, a 400 is returned with body `{error: 'tag'}`.
+   - If the tag being shared, after being trimmed, starts with `[a-z]::`, a 400 is returned with body `{error: 'tag'}`.
    - If try to share with yourself, a 400 is returned with body `{error: 'self'}`.
    - If successful, returns a 200.
 
@@ -1100,7 +1100,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pivs`: `[...]`; comes from `body.pivs` from `query pivs`.
    - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
-   - `queryTags`: `{all: INTEGER, untagged: INTEGER, tag1: ..., ...}`; comes from `body.tags` from `query pivs`.
+   - `queryTags`: `{'a::': INTEGER, 'u::': INTEGER, tag1: ..., ...}`; comes from `body.tags` from `query pivs`.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `[TAG1, TAG2, ...]`. Only includes tags created by the user.
    - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
@@ -1198,10 +1198,10 @@ If the user sent no tags, we set a variable `allMode` to denote that we want all
             var allMode = b.tags.length === 0;
 ```
 
-If we're in `allMode`, we create an entry for the `all` tag inside `tags`, with the same shape of the entries already there.
+If we're in `allMode`, we create an entry for the `a::` tag inside `tags`, with the same shape of the entries already there.
 
 ```javascript
-            if (allMode) tags.all = [rq.user.username];
+            if (allMode) tags ['a::'] = [rq.user.username];
 ```
 
 We iterate the list of tags shared with the user, retrieved on the call to the database we just did.

@@ -235,12 +235,17 @@ H.hash = function (string) {
    return hash (string) + '';
 }
 
-H.isYear = function (tag) {
-   return tag.match (/^[0-9]{4}$/) && parseInt (tag) >= 1900 && parseInt (tag) <= 2100;
+H.isDateTag = function (tag) {
+   return !! tag.match (/^d::/);
 }
 
-H.isGeo = function (tag) {
+H.isGeoTag = function (tag) {
    return !! tag.match (/^g::/);
+}
+
+H.isUserTag = function (tag) {
+   tag = H.trim (tag);
+   return tag.length > 0 && ! tag.match (/^[a-z]::/);
 }
 
 H.shuffleArray = function (array) {
@@ -251,13 +256,6 @@ H.shuffleArray = function (array) {
       array [randomIndex] = temp;
    });
    return array;
-}
-
-H.isUserTag = function (tag) {
-   tag = H.trim (tag.toLowerCase ());
-   if (tag.length === 0) return false;
-   if (tag === 'all' || tag === 'untagged') return false;
-   return ! H.isYear (tag) && ! H.isGeo (tag);
 }
 
 H.getGeotags = function (s, lat, lon) {
@@ -574,7 +572,7 @@ H.deletePiv = function (s, id, username) {
             multi.sadd ('hashdel:' + s.piv.owner + ':' + providerHash [0], providerHash [1]);
          }
 
-         dale.go (s.tags.concat (['all', 'untagged']), function (tag) {
+         dale.go (s.tags.concat (['a::', 'u::']), function (tag) {
             // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
             multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
@@ -935,7 +933,7 @@ H.addTags = function (s, tags, username, id) {
       multi.sadd ('tags:' + username, tag);;
       multi.sadd ('tag:'  + username + ':' + tag, id);
    });
-   if (tags.length > 0) multi.srem ('tag:' + username + ':untagged', id);
+   if (tags.length > 0) multi.srem ('tag:' + username + ':u::', id);
    mexec (s, multi);
 }
 
@@ -974,7 +972,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    // If the picture has a valid Date/Time Original date, keep the date and move on.
    if (piv.dateSource === 'Date/Time Original') return mexec (s, multi);
 
-   var oldYearTag = new Date (date).getUTCFullYear ();
+   var oldYearTag = 'd::' + new Date (date).getUTCFullYear ();
 
    if (minDate [1] < date) {
       // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.
@@ -985,7 +983,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
          multi.hset ('piv:' + piv.id, 'dateSource', piv.dateSource);
       }
    }
-   var newYearTag = new Date (parseInt (piv.date)).getUTCFullYear ();
+   var newYearTag = 'd::' + new Date (parseInt (piv.date)).getUTCFullYear ();
    if (oldYearTag !== newYearTag) {
       multi.sadd ('pivt:' + piv.id, newYearTag);
       multi.srem ('pivt:' + piv.id, oldYearTag);
@@ -1667,7 +1665,7 @@ var routes = [
             if (! s.last) return reply (rs, 404);
             var user = s.last;
             a.seq (s, [
-               [a.set, 'allPivs', [Redis, 'smembers', 'tag:' + user.username + ':all']],
+               [a.set, 'allPivs', [Redis, 'smembers', 'tag:' + user.username + ':a::']],
                [a.make (giz.destroy), user.username],
                function (s) {
                   a.fork (s, s.allPivs, function (piv) {
@@ -1899,11 +1897,11 @@ var routes = [
 
       var invalidTag;
       if (b.tags && b.tags.length) b.tags = dale.go (b.tags, function (tag) {
-         if (! H.isUserTag (tag)) return invalidTag = H.trim (tag).toLowerCase ();
+         if (! H.isUserTag (tag)) return invalidTag = true;
          return H.trim (tag);
       });
 
-      if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
+      if (invalidTag) return reply (rs, 400, {error: 'invalid tag'});
 
       if (b.op === 'start') b.id = t;
 
@@ -1951,11 +1949,11 @@ var routes = [
       var invalidTag;
 
       b.tags = dale.go (b.tags, function (tag) {
-         if (! H.isUserTag (tag)) invalidTag = H.trim (tag).toLowerCase ();
+         if (! H.isUserTag (tag)) invalidTag = true;
          return H.trim (tag);
       });
 
-      if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
+      if (invalidTag) return reply (rs, 400, {error: 'invalid tag'});
 
       astop (rs, [
          [H.getUploads, rq.user.username, {id: b.id}, null, true],
@@ -2010,12 +2008,12 @@ var routes = [
       if (type (tags) !== 'array') return reply (rs, 400, {error: 'tags'});
       tags = dale.go (tags, function (tag) {
          if (type (tag) !== 'string' || ! H.isUserTag (tag)) {
-            invalidTag = tag;
+            invalidTag = true;
             return;
          }
          return H.trim (tag);
       });
-      if (invalidTag) return reply (rs, 400, {error: 'invalid tag: ' + invalidTag});
+      if (invalidTag) return reply (rs, 400, {error: 'invalid tag'});
 
       var importData;
       if (rq.data.fields.importData !== undefined) {
@@ -2325,14 +2323,14 @@ var routes = [
                multi.srem ('hashdel:' + rq.user.username  + ':' + providerKey, providerHash);
                piv.providerHash = providerKey + ':' + providerHash;
             }
-            multi.sadd ('tag:' + rq.user.username + ':all', piv.id);
+            multi.sadd ('tag:' + rq.user.username + ':a::', piv.id);
 
-            dale.go (tags.concat (new Date (piv.date).getUTCFullYear () + '').concat (geotags), function (tag) {
+            dale.go (tags.concat ('d::' + new Date (piv.date).getUTCFullYear ()).concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
                multi.sadd ('tags:' + rq.user.username, tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
-            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':untagged', piv.id);
+            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
 
             multi.hmset ('piv:' + piv.id, piv);
             mexec (s, multi);
@@ -2485,7 +2483,7 @@ var routes = [
                   // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
                   // If the tag being removed is the last user tag on the piv, add the piv to the `untagged` set.
-                  if (dale.fil (tags, false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':untagged', id);
+                  if (dale.fil (tags, false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':u::', id);
                }
 
                else {
@@ -2494,7 +2492,7 @@ var routes = [
                   multi.sadd ('tags:' + rq.user.username, b.tag);
                   multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
                   // If the piv already had a tag and wasn't on the `untagged` set, this will be a no-op.
-                  multi.srem ('tag:'  + rq.user.username + ':untagged', id);
+                  multi.srem ('tag:'  + rq.user.username + ':u::', id);
                }
             })) return;
 
@@ -2552,13 +2550,13 @@ var routes = [
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
       ])) return;
 
-      if (inc (b.tags, 'all')) return reply (rs, 400, {error: 'all'});
-      if (b.recentlyTagged && ! inc (b.tags, 'untagged')) return reply (rs, 400, {error: 'recentlyTagged'});
+      if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
+      if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 
       var ytags = [];
 
       var tags = dale.obj (b.tags, function (tag) {
-         if (! H.isYear (tag)) return [tag, [rq.user.username]];
+         if (! H.isDateTag (tag)) return [tag, [rq.user.username]];
          ytags.push (tag);
       });
 
@@ -2567,7 +2565,7 @@ var routes = [
          function (s) {
             var allMode = b.tags.length === 0;
 
-            if (allMode) tags.all = [rq.user.username];
+            if (allMode) tags ['a::'] = [rq.user.username];
 
             dale.go (s.last, function (sharedTag) {
                var tag = sharedTag.replace (/[^:]+:/, '');
@@ -2669,7 +2667,7 @@ var routes = [
                return 'pivt:' + piv.id;
             }));
             // Get the total amount of pivs
-            multi.scard ('tag:' + rq.user.username + ':all');
+            multi.scard ('tag:' + rq.user.username + ':a::');
 
             multi.get ('geo:' + rq.user.username);
             mexec (s, multi);
@@ -2693,7 +2691,7 @@ var routes = [
             ]);
          },
          function (s) {
-            s.output.tags = dale.obj (teishi.last (s.last, 3), {all: teishi.last (s.last, 2), untagged: 0}, function (tag) {
+            s.output.tags = dale.obj (teishi.last (s.last, 3), {'a::': teishi.last (s.last, 2), 'u::': 0}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
@@ -2727,7 +2725,7 @@ var routes = [
                   if (untagged && H.isUserTag (tag)) untagged = false;
                   s.output.tags [tag]++;
                });
-               if (untagged) s.output.tags.untagged++;
+               if (untagged) s.output.tags ['u::']++;
             });
             s.output.pivs = s.output.pivs.slice (b.from - 1, b.to);
             reply (rs, 200, s.output);
@@ -2934,7 +2932,7 @@ var routes = [
             s.next ();
          },
          b.operation === 'disable' ? [
-            [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
+            [Redis, 'smembers', 'tag:' + rq.user.username + ':a::'],
             function (s) {
                var multi = redis.multi ();
                s.allPivs = s.last;
@@ -2948,7 +2946,7 @@ var routes = [
                dale.go (s.last, function (tags, k) {
                   multi.hdel ('piv:' + s.allPivs [k], 'loc');
                   dale.go (tags, function (tag) {
-                     if (! H.isGeo (tag)) return;
+                     if (! H.isGeoTag (tag)) return;
                      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
                      multi.srem ('pivt:' + s.allPivs [k], tag);
                      multi.del ('tag:' + rq.user.username + ':' + tag);
@@ -2968,7 +2966,7 @@ var routes = [
                reply (rs, 200);
                s.next ();
             },
-            [Redis, 'smembers', 'tag:' + rq.user.username + ':all'],
+            [Redis, 'smembers', 'tag:' + rq.user.username + ':a::'],
             function (s) {
                var pivs = s.last;
                // TODO: replace by a.fork when bug is fixed: f7cdb4f4381c85dae1e6282d39348e260c3cafce
