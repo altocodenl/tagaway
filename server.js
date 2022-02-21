@@ -137,7 +137,7 @@ var notify = function (s, message) {
    message = dale.obj (message, function (v, k) {
       var sv = type (v) === 'string' ? v : JSON.stringify (v);
       var length = (sv || '').length;
-      if (length > 50000) v = sv.slice (0, 25000) + ' [' + (length - 50000) + ' CHARACTERS OMITTED ' + '] ' + sv.slice (-25000);
+      if (length > 5000) v = sv.slice (0, 2500) + ' [' + (length - 5000) + ' CHARACTERS OMITTED ' + '] ' + sv.slice (-2500);
       return [k, v];
    });
    if (! ENV) {
