@@ -4196,7 +4196,7 @@ views.pics = function () {
                                     return ['li', {class: Class}, [
                                        H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                        H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
-                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : tag.replace (/^g::/, '')],
+                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : tag.replace (/^[a-z]::/, '')],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
                                              ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
