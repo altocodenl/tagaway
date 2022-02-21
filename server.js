@@ -134,7 +134,12 @@ SECRET.ping.send = function (payload, CB) {
 
 var notify = function (s, message) {
    if (type (message) !== 'object') return s.next (undefined, 'Notify error - Message must be an object but instead is ' + message);
-   if (JSON.stringify (message).length > 50000) return s.next (undefined, 'Notify error - Message is too big: ' + JSON.stringify (message).slice (0, 50000));
+   message = dale.obj (message, function (v, k) {
+      var sv = type (v) === 'string' ? v : JSON.stringify (v);
+      var length = (sv || '').length;
+      if (length > 50000) v = sv.slice (0, 25000) + ' [' + (length - 50000) + ' CHARACTERS OMITTED ' + '] ' + sv.slice (-25000);
+      return [k, v];
+   });
    if (! ENV) {
       clog (new Date ().toUTCString (), message);
       return s.next ();

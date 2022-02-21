@@ -2459,6 +2459,9 @@ B.r.addLog = function (log) {
    B.log.push (log);
 }
 
+// We forget gotoB's error responder.
+B.forget ('error');
+
 B.mrespond ([
 
    // *** GENERAL RESPONDERS ***
@@ -2512,8 +2515,10 @@ B.mrespond ([
          if (cb) cb (x, error, rs);
       });
    }],
-   ['error', [], function (x) {
+   ['error', [], {match: function (ev) {return ev.verb === 'error'}}, function (x) {
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
+      // We report the ResizeObserver error, but we don't show the eventlog table.
+      if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
    }],
    ['read', 'hash', function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];

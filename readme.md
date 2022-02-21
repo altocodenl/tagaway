@@ -65,7 +65,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - fixed piv separators as milestones
 
 - Backend improvements:
-   - Avoid logs of invalid signature in cookie
    - Route logging
       - Log all non-admin routes in terms of performance
       - Distinguish 4xx from 5xx
