@@ -1915,11 +1915,11 @@ var routes = [
          function (s) {
             if (b.op === 'wait') {
                if (! s.last.length)                                     return reply (rs, 404, {error: 'upload'});
-               if (! inc (['uploading', 'stalled'], s.last [0].status)) return reply (rs, 409, {error: 'status'});
+               if (! inc (['uploading', 'stalled'], s.last [0].status)) return reply (rs, 409, {error: 'status: ' + s.last [0].status});
             }
             else if (inc (['complete', 'cancel'], b.op)) {
                if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
-               if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
+               if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status: ' + s.last [0].status});
             }
             if (b.op === 'start') b.id = t;
             if (b.op === 'error') b.fromClient = true;
@@ -1964,7 +1964,7 @@ var routes = [
          [H.getUploads, rq.user.username, {id: b.id}, null, true],
          function (s) {
             if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
-            if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
+            if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status: ' + s.last [0].status});
             s.upload = s.last [0];
             s.next ();
          },
@@ -2068,7 +2068,7 @@ var routes = [
          [H.getUploads, rq.user.username, {id: rq.data.fields.id}, null, true],
          function (s) {
             if (! s.last.length)                   return reply (rs, 404, {error: 'upload'});
-            if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status'});
+            if (s.last [0].status !== 'uploading') return reply (rs, 409, {error: 'status: ' + s.last [0].status});
             s.upload = s.last [0];
             s.next ();
          },

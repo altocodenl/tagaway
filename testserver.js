@@ -823,7 +823,7 @@ suites.upload.upload = function () {
             [firstOp + ' upload', 'post', 'upload', {}, function (s) {return {op: firstOp, id: s.uploadId, error: error}}, 200],
             dale.fil (['complete', 'cancel', 'wait'], undefined, function (secondOp) {
                if (secondOp === firstOp) return;
-               return ['upload conflict ' + firstOp + ' + ' + secondOp, 'post', 'upload', {}, function (s) {return {op: secondOp, id: s.uploadId}}, 409, H.cBody ({error: 'status'})];
+               return ['upload conflict ' + firstOp + ' + ' + secondOp, 'post', 'upload', {}, function (s) {return {op: secondOp, id: s.uploadId}}, 409, H.cBody ({error: 'status: ' + {complete: 'complete', cancel: 'cancelled', error: 'error'} [firstOp]})];
             })
          ];
       }),
@@ -947,7 +947,7 @@ suites.upload.uploadCheck = function () {
                var body = teishi.copy (validBody);
                body.id = s.uploadId;
                return body;
-            }, 409, H.cBody ({error: 'status'})]
+            }, 409, H.cBody ({error: 'status: ' + {complete: 'complete', cancel: 'cancelled', error: 'error'} [op]})]
          ];
       }),
       ['get three finished uploads, check that uploadCheck didn\'t perform any modifications', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
@@ -1358,7 +1358,7 @@ suites.upload.piv = function () {
                {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
                {type: 'field', name: 'id',           value: s.uploadId},
                {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
-            ]}}, 409, H.cBody ({error: 'status'})],
+            ]}}, 409, H.cBody ({error: 'status: ' + {complete: 'complete', cancel: 'cancelled', error: 'error'} [firstOp]})],
          ];
       }),
       suites.auth.out (tk.users.user1),
