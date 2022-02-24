@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Don't show nPivs on country geotags when none is selected.
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.
       - If selected a month, don't show other years.

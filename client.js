@@ -3975,6 +3975,8 @@ views.pics = function () {
                            }
                            var numberOfPivs;
                            if (! H.isDateTag (which)) numberOfPivs = ' (' + queryTags [which] + ')';
+                           // Don't show nPivs for country tags if the tag itself is not selected.
+                           if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
                            return ['li', {class: Class, style: disabledUntagged ? 'cursor: default' : undefined, onclick: disabledUntagged ? undefined : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll')),
