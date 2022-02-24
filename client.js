@@ -2515,7 +2515,7 @@ B.mrespond ([
          if (cb) cb (x, error, rs);
       });
    }],
-   ['error', [], {match: function (ev) {return ev.verb === 'error'}}, function (x) {
+   ['error', [], {match: H.matchVerb}, function (x) {
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
@@ -3067,11 +3067,12 @@ B.mrespond ([
          B.call (x, 'change', ['State', 'upload', 'queue']);
       });
    }],
-   ['upload', /cancel|complete|wait|error/, function (x, id, noSnackbar, error) {
+   ['upload', /cancel|complete|wait|error/, function (x, id, noAjax, noSnackbar, error) {
       var op = x.path [0];
-      B.call (x, 'post', 'upload', {}, {op: op, id: id, error: error}, function (x, error, rs) {
+      var cb = function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error with the ' + op + ' operation in the upload');
          if (op === 'wait') return B.call (x, 'set', ['State', 'upload', 'wait', id + '', 'lastActivity'], Date.now ());
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (x.path [0] === 'complete' ? 'completing' : 'cancelling') + ' the upload.');
+
          // If we cancel or error the upload, we clear files belonging to the upload from the queue.
          if (op === 'cancel' || op === 'error') B.call (x, 'set', ['State', 'upload', 'queue'], dale.fil (B.get ('State', 'upload', 'queue'), undefined, function (file) {
             if (file.id !== id) return file;
@@ -3079,13 +3080,16 @@ B.mrespond ([
 
          clearInterval (B.get ('State', 'upload', 'wait', id + '', 'interval'));
          B.call (x, 'rem', ['State', 'upload', 'wait'], id + '');
-
          B.call (x, 'query', 'uploads');
-         if (op === 'error') return B.call (x, 'snackbar', 'red', 'There was an error uploading your pictures.');
+
          if (noSnackbar) return;
-         if (op === 'cancel') B.call (x, 'snackbar', 'green', 'Upload cancelled successfully.');
-         else                 B.call (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
-      });
+         if      (op === 'error')    B.call (x, 'snackbar', 'red',   'There was an error uploading your pictures.');
+         else if (op === 'cancel')   B.call (x, 'snackbar', 'green', 'Upload cancelled successfully.');
+         else if (op === 'complete') B.call (x, 'snackbar', 'green', 'Upload completed successfully. You can see the pictures in the "View Pictures" section.');
+      }
+
+      if (noAjax) cb (x);
+      else        B.call (x, 'post', 'upload', {}, {op: op, id: id, error: error}, cb);
    }],
    ['upload', 'tag', function (x, tag) {
       if (tag === true) tag = c ('#uploadTag').value;
@@ -3137,23 +3141,23 @@ B.mrespond ([
                   return true;
                });
 
-               // Space has run out, cancel the upload if it hasn't been cancelled already.
-               if (error && error.status === 409 && error.responseText.match (/capacity/)) {
-                  dale.go (B.get ('Data', 'uploads'), function (upload) {
-                     if (upload.id === file.id && upload.status === 'uploading') B.call (x, 'upload', 'cancel', upload.id, true);
-                  });
-                  return B.call (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
+               if (error) {
+                  // If file is invalid, do nothing.
+                  if (error.status === 409) {
+                     // If space has run out, cancel the upload locally and report the error to the user.
+                     if (error.responseText.match (/capacity/)) {
+                        dale.go (B.get ('Data', 'uploads'), function (upload) {
+                           if (upload.id === file.id && upload.status === 'uploading') B.call (x, 'upload', 'cancel', upload.id, true, true);
+                        });
+                        return B.call (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
+                     }
+                     // If the upload was already cancelled or errored by another file, cancel the upload on the client but don't report it to the server.
+                     if (error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', upload.id, true);
+                  }
+                  // If there's an unexpected error from the server, only report the error to the user.
+                  else if (error.status !== 400) return B.call (x, 'upload', 'error', file.id, true);
+                  // If piv is invalid and we get a 400, carry on.
                }
-
-               // If file is invalid or if the upload was cancelled, do nothing.
-               else if (error && (error.status === 400 || (error.status === 409 && error.responseText.match (/status/)))) {
-               }
-               // If file is repeated or already uploaded, do nothing.
-               else if (! error && (rs.body.alreadyUploaded || rs.body.repeeated)) {
-               }
-
-               // Report unexpected error.
-               else if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'Upload error', error: error.responseText});
 
                // If file is the last in the upload, complete the upload.
                if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
@@ -3163,11 +3167,13 @@ B.mrespond ([
          }
 
          H.hash (file.file, function (error, hash) {
-            if (error) return B.call (x, 'upload', 'error', file.id, false, {type: 'Hash error', error: error.toString ()});
+            if (error) return B.call (x, 'upload', 'error', file.id, false, false, {type: 'Hash error', error: error.toString ()});
             B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
-               // If the upload was just cancelled or errored by another file, don't do anything.
-               if (error && error.status === 409 && error.responseText === JSON.stringify ({error: 'status'})) return;
-               if (error) return B.call (x, 'upload', 'error', file.id, false, {status: error.status, type: 'upload error', error: error.responseText});
+
+               // If the upload was already cancelled or errored by another file, cancel the upload on the client but don't report it to the server.
+               if (error && error.status === 409 && error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', upload.id, true);
+               // If there's an unexpected error from the server, only report the error to the user.
+               if (error) return B.call (x, 'upload', 'error', file.id, true);
 
                if (! rs.body.repeated) return uploadFile ();
                // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.
@@ -3184,9 +3190,9 @@ B.mrespond ([
                      var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
                         if (upload.id === file.id) return upload;
                      });
-                     if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id, true);
+                     if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
                   }, 2000);
-                  else if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id, true);
+                  else if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
                   return true;
                });
             });

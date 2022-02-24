@@ -39,36 +39,27 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- notification 500
 - error reporting upload changes
-   - fix server tests for status:
-   - don't send cancels if status: cancelled
-   - don't send errors unless it's a client error
-   - uploadCheck?
+- [bug] Figure out absence of notifications on 500 in dev
 
 - Pivs
+   - Don't show nPivs on country geotags when none is selected.
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.
       - If selected a month, don't show other years.
       - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
+      - show all months but gray out those that have no pivs for the current query.
    - How to serve lastPiv if lastPiv is deleted?
-   - Specify in which order to show tags:
-      - By piv number
-      - latest tagged
-      - latest queried
-      - pinned (manual solution)?
-      - compress years and geo? also other categories to compress (with overlap): latest queried, latest tagged, pinned, all
-   - Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
-   - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
-   - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
-   - [incognito FF] Review fonts not loading
+   - Sort tags by nPivs, and add arrow to switch order
+   - Implement chunking and linear scroll.
    - Increase thumbnail size
    - Implement video streaming.
-   - [To be specified] Arcade mode when browsing:
-      - changes in query/position are reflected in url, back button works
-      - remember position by the piv at a certain position (top/left), not the number, so it works while uploads are happening in the background
-      - top bar showing position
-      - fixed piv separators as milestones
+   - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
+   - [markup] Move edit bar to bottom and write new blue bar on top.
+   - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
+   - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
+   - [bug] Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
+   - [bug incognito FF] Review fonts not loading
 
 - Backend improvements:
    - Route logging
@@ -1015,19 +1006,19 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    2. `drop files`: if `State.page` is `upload`, access dropped files or folders and put them on the upload file input. `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`.
    3. `upload files|folder`: `add` (without event) items to `State.upload.new.tooLarge`, `State.upload.new.unsupported` and `State.upload.new.files`, then `change State.upload.new`. Clear up the value of either `#files-upload` or `#folder-upload`. If it's a folder upload, it clears the snackbar warning about possible delays with `clear snackbar`.
    4. `upload start`: invokes `post upload` using `State.upload.new.files`, `State.upload.new.tooLarge`, `State.upload.new.unsupported`, and `State.upload.new.tags`; if there's an error, invokes `snackbar`. Otherwise sets `State.upload.wait.ID`, invokes `query uploads`, adds items from `State.upload.new.files` onto `State.upload.queue`, then deletes `State.upload.new` and invokes `change State.upload.queue`.
-   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noSnackbar` flag as the second argument, plus an optional `error` as the third argument; invokes `post upload`; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if `post upload` receives an error, invokes `snackbar`; otherwise, if it's the `cancel` or `error` operation, finds all the files on `State.upload.queue` with `id`, filters them out and updates `State.upload.queue`. For both `cancel` and `complete`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if operation is `error`, it invokes `snackbar red` and returns; if `noSnackbar` is present, it finally invokes `snackbar` to report success.
+   5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noAjax` flag as the second argument, an optional `noSnackbar` as the third argument and an optional `error` as a fourth argument. If `noAjax` is not `true`, it invokes `post upload` and if there's a server error during this ajax call, it will only invoke `snackbar red` and do nothing else; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if we're performing the `cancel` or `error` operation, it finds all the files on `State.upload.queue` belonging to the upload with id `id`, filters them out and updates `State.upload.queue`. For all operations except `wait`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if `noSnackbar` is not `true`, it invokes `snackbar` with a relevant message depending on the operation.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
    8. `change State.upload.queue`:
-      - Hashes the file; if there is an error, invokes `upload error` and returns.
+      - Hashes the file; if there is an error, invokes `upload error` and returns. The call to `upload error` will report the error to the server.
       - Invokes `post uploadCheck` to check if an identical file already exists; if there is an error, invokes `upload error` and returns.
       - If a file with the same hash already exists, the responder removes it from `State.upload.queue` and conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`). It then returns.
       - Invokes `post piv` to upload the file.
       - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
-      - If space runs out, it invokes `upload cancel` on all pending uploads, passing a `true` flag as the second argument.
-      - If there's an unexpected error (not a 400) it invokes `upload error`.
-      - Conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
+      - If space runs out, it invokes `snackbar` and `upload cancel` - the call to `upload cancel` will perform neither an ajax call nor show a snackbar.
+      - If there's an unexpected error (not a 400) it invokes `upload error` but it will not perform an ajax call to report it to the server.
+      - Conditionally invokes `upload complete` if there was no unexpected error and this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
 
 7. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
