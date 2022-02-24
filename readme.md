@@ -39,9 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- error reporting upload changes
-- [bug] Figure out absence of notifications on 500 in dev
-
 - Pivs
    - Don't show nPivs on country geotags when none is selected.
    - Months:
