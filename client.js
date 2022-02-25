@@ -3152,7 +3152,7 @@ B.mrespond ([
                         return B.call (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pictures.');
                      }
                      // If the upload was already cancelled or errored by another file, cancel the upload on the client but don't report it to the server.
-                     if (error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', upload.id, true);
+                     if (error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', file.id, true);
                   }
                   // If there's an unexpected error from the server, only report the error to the user.
                   else if (error.status !== 400) return B.call (x, 'upload', 'error', file.id, true);
@@ -3171,7 +3171,7 @@ B.mrespond ([
             B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
 
                // If the upload was already cancelled or errored by another file, cancel the upload on the client but don't report it to the server.
-               if (error && error.status === 409 && error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', upload.id, true);
+               if (error && error.status === 409 && error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', file.id, true);
                // If there's an unexpected error from the server, only report the error to the user.
                if (error) return B.call (x, 'upload', 'error', file.id, true);
 
