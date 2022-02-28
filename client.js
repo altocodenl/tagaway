@@ -3986,7 +3986,9 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, ''), numberOfPivs]],
+                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, ''), [
+                                 ['span',{class: 'number_of_pivs'},numberOfPivs]]
+                                    ]],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
