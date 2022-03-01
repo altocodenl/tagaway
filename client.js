@@ -833,6 +833,7 @@ CSS.litc = [
    ['.tag__title', {
       mixin1: CSS.vars.fontPrimaryMedium,
       'margin-right': CSS.vars ['padding--xs'],
+      width: 'inherit'
    }],
    // Tag title - amount
    ['.tag__title-amount', {
@@ -845,6 +846,12 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 24,
    }, ['path', {fill: CSS.vars ['grey--darker']}]],
+   ['.number_of_pivs', {
+      color: CSS.vars ['color--one'],
+      // float: 'right',
+      'margin-right': 40,
+      'text-align': 'right'
+   }],
    // *** tag-actions.scss ***
    // Tag actions
    ['.tag-actions', {
@@ -3974,7 +3981,7 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which)) numberOfPivs = ' (' + queryTags [which] + ')';
+                           if (! H.isDateTag (which)) numberOfPivs = ' '+queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
@@ -3986,9 +3993,10 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, ''), [
-                                 ['span',{class: 'number_of_pivs'},numberOfPivs]]
-                                    ]],
+                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, '')]],
+                              ['span', {class: 'number_of_pivs'}, numberOfPivs],
+                              
+                              
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
