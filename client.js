@@ -168,10 +168,12 @@ CSS.litc = [
    ['p, a, li',   {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
    // Global typographic styles
    ['.page-title', {
-      'font-size':   CSS.typography.fontSize (7),
-      'line-height': CSS.typography.spaceVer (1.75),
-      'margin-bottom': CSS.typography.spaceVer (0.25),
+      'font-size':   CSS.typography.fontSize (5),
+      'line-height': CSS.typography.spaceVer (2),
+      // 'margin-bottom': CSS.typography.spaceVer (0.25),
       mixin1: CSS.vars.fontPrimaryRegular,
+      color: 'white',
+      'padding-left': CSS.vars ['padding--xs'],
    }],
    ['.page-subtitle', {
       'font-size':   CSS.typography.fontSize (1),
@@ -734,7 +736,9 @@ CSS.litc = [
       'margin-right': CSS.vars ['padding--m'],
       display: 'inline-flex',
       'white-space': 'nowrap',
-      'margin-top': CSS.typography.spaceVer (0.25),
+      // 'margin-top': CSS.typography.spaceVer (0.25),
+      color: 'white',
+      'margin-left': CSS.vars ['padding--xs']
    }],
    // *** tag-list-extended.scss ***
    // Tag list extended
@@ -1002,7 +1006,8 @@ CSS.litc = [
       mixin1: CSS.vars.fontPrimaryMedium,
       position: 'relative',
       'padding-right': 20,
-      color: CSS.vars.grey,
+      // color: CSS.vars.grey,
+      color: 'white',
       cursor: 'pointer',
       transition: CSS.vars.easeOutQuart,
    }, ['&::after', {
@@ -1013,7 +1018,10 @@ CSS.litc = [
       'margin-top': -2,
       'border-style': 'solid',
       'border-width': '4px 4px 0 4px',
-      'border-color': CSS.vars.grey + ' transparent transparent transparent',
+      'border-color': 
+      // CSS.vars.grey 
+      'white'
+      + ' transparent transparent transparent',
       transition: CSS.vars.easeOutQuart,
    }]],
    ['.dropdown__button:hover', {color: CSS.vars ['grey--darker']}, ['&::after', {
@@ -1837,10 +1845,15 @@ CSS.litc = [
    }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
+      'background-color': CSS.vars ['color--one'],
+      'border-radius': 12,
+      'margin-right': 22,
       'margin-bottom': CSS.typography.spaceVer (2),
       'padding-right': CSS.vars ['padding--m'],
+      'padding-top': CSS.vars ['padding--xs'],
       position: 'relative',
-      'z-index': '10'
+      'z-index': '10',
+      height: CSS.typography.spaceVer (4),
    }],
    ['.pictures-header__action-bar', {
       'margin-top': CSS.typography.spaceVer (0.5),
@@ -4208,6 +4221,7 @@ views.pics = function () {
                      return ['div', {class: 'pictures-header'}, [
                         B.view (['Data', 'pivTotal'], function (total) {
                            return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
+                           
                         }),
                         ['div', {class: 'pictures-header__action-bar'}, [
                            ['div', {class: 'pictures-header__selected-tags'}, [
