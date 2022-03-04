@@ -168,12 +168,12 @@ CSS.litc = [
    ['p, a, li',   {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
    // Global typographic styles
    ['.page-title', {
-      'font-size':   CSS.typography.fontSize (5),
-      'line-height': CSS.typography.spaceVer (2),
-      // 'margin-bottom': CSS.typography.spaceVer (0.25),
+      'font-size':   CSS.typography.fontSize (7),
+      'line-height': CSS.typography.spaceVer (1.75),
+      'margin-bottom': CSS.typography.spaceVer (0.25),
       mixin1: CSS.vars.fontPrimaryRegular,
-      color: 'white',
-      'padding-left': CSS.vars ['padding--xs'],
+      // color: 'white',
+      // 'padding-left': CSS.vars ['padding--xs'],
    }],
    ['.page-subtitle', {
       'font-size':   CSS.typography.fontSize (1),
@@ -1857,6 +1857,24 @@ CSS.litc = [
       position: 'relative',
       'z-index': '10',
       height: CSS.typography.spaceVer (4),
+   }],
+   ['.pictures-grid-title-container', {
+   'text-align': 'center',
+   
+   }],
+   ['.pictures-header__title',{
+      color: 'white',
+      display: 'inline-block',
+      'float': 'left',
+   }],
+   ['.previous-and-next-month',{
+      display: 'inline-block',
+   }],
+   ['.previous-month-div',{
+      display: 'inline-block',
+   }],
+   ['.next-month-div',{
+      display: 'inline-block',
    }],
    ['.pictures-header__action-bar', {
       'margin-top': CSS.typography.spaceVer (0.5),
@@ -4222,10 +4240,26 @@ views.pics = function () {
                   B.view (['State', 'selected'], function (selected) {
                      selected = dale.keys (selected).length;
                      return ['div', {class: 'pictures-header'}, [
-                        B.view (['Data', 'pivTotal'], function (total) {
-                           return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
-                           
+                        ['div', {class: 'pictures-grid-title-container'},[
+                           B.view (['Data', 'pivTotal'], function (total) {
+                           return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];                           
                         }),
+                        ['div', {class: 'previous-and-next-month'}, [
+                           ['div', {class:'previous-month-div'},[
+                              ['span', {class: 'previous-month-span'}, 'Previous month'],
+                              ['div', {class: 'chevron-container'}, [
+                                 ['span', {class:'chevron-previous-month'}]
+                                 ]]
+                              ]],
+                              ['div', {class:'next-month-div'},[
+                              ['span', {class: 'next-month-span'}, 'Next month'],
+                              ['div', {class: 'chevron-container'}, [
+                                 ['span', {class:'chevron-next-month'}]
+                                 ]]
+                              ]]
+                           ]]
+                        ]],
+                        
                         ['div', {class: 'pictures-header__action-bar'}, [
                            ['div', {class: 'pictures-header__selected-tags'}, [
                               B.view (['State', 'query', 'tags'], function (tags) {
