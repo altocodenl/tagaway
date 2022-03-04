@@ -905,6 +905,9 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 24,
    }],
+   ['.svg-container', {
+      height: 24
+   }],
    // Tag actions -- View pictures
    ['.app-pictures', [
       // Selected tag
@@ -2335,7 +2338,7 @@ dale.go (CSS.vars.tagColors, function (color) {
 var H = {};
 
 H.putSvg = function (which) {
-   return ['span', {opaque: true}, ['LITERAL', svg [which]]];
+   return ['span', {class: 'svg-container', opaque: true}, ['LITERAL', svg [which]]];
 }
 
 H.matchVerb = function (ev, responder) {
