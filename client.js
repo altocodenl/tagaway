@@ -1004,6 +1004,7 @@ CSS.litc = [
    // *** dropdown.scss ***
    ['.dropdown', {
       position: 'relative',
+      margin:'auto'
    }],
    ['.dropdown__button', {
       mixin1: CSS.vars.fontPrimaryMedium,
@@ -1027,14 +1028,19 @@ CSS.litc = [
       + ' transparent transparent transparent',
       transition: CSS.vars.easeOutQuart,
    }]],
-   ['.dropdown__button:hover', {color: CSS.vars ['grey--darker']}, ['&::after', {
+   ['.dropdown__button:hover', {
+      // 'font-weight': CSS.vars['fontPrimarySemiBold'],
+      // color: CSS.vars ['grey--darker']
+   },
+
+      ['&::after', {
       'border-color': CSS.vars ['grey--darker'] + ' transparent transparent transparent',
    }]],
    ['.dropdown:hover .dropdown__list', {display: 'block'}],
    ['.dropdown__list', {
       display: 'none',
       position: 'absolute',
-      top: 20,
+      top: 40,
       right: 0,
       background: '#fff',
       'border-radius': CSS.vars ['border-radius--m'],
@@ -1863,18 +1869,36 @@ CSS.litc = [
    
    }],
    ['.pictures-header__title',{
+      width: .6,
       color: 'white',
       display: 'inline-block',
+      'text-align': 'left',
       'float': 'left',
+      'margin-left': CSS.vars ['padding--xs'],
+      'line-height': CSS.typography.spaceVer (2),
    }],
    ['.previous-and-next-month',{
       display: 'inline-block',
+      color: 'white',
+      width: .3,
+      'text-align': 'right',
    }],
-   ['.previous-month-div',{
+   ['.previous-month-div, .next-month-div',{
       display: 'inline-block',
+      'margin-right': CSS.vars ['padding--xl'],
    }],
-   ['.next-month-div',{
+   // ['.next-month-div',{
+   //    display: 'inline-block',
+   // }],
+   
+   ['.pictures-header__sort', {
+      // display: 'inline-flex',
+      // 'margin-left': 'auto',
       display: 'inline-block',
+      float: 'right',
+      // 'line-height': CSS.typography.spaceVer (3.33),
+      width: .09,
+
    }],
    ['.pictures-header__action-bar', {
       'margin-top': CSS.typography.spaceVer (0.5),
@@ -1882,11 +1906,8 @@ CSS.litc = [
       width: 1,
       'align-items': 'center',
    }],
-   ['.pictures-header__selected-tags', {display: 'inline-flex'}],
-   ['.pictures-header__sort', {
-      display: 'inline-flex',
-      'margin-left': 'auto',
-   }],
+   ['.pictures-header__selected-tags', {
+      display: 'inline-flex'}],
    // *** pictures-grid.scss ***
    ['.pictures-grid', {
       display: 'flex',
@@ -4257,7 +4278,20 @@ views.pics = function () {
                                  ['span', {class:'chevron-next-month'}]
                                  ]]
                               ]]
-                           ]]
+                           ]],
+                           ['div', {class: 'pictures-header__sort'}, [
+                              B.view (['State', 'query'], function (query) {
+                                 if (! query) return ['div'];
+                                 return ['div', {class: 'dropdown'}, [
+                                    ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
+                                    ['ul', {class: 'dropdown__list'}, [
+                                       dale.go (['newest', 'oldest', 'upload'], function (sort) {
+                                          return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
+                                       })
+                                    ]],
+                                 ]];
+                              }),
+                           ]],
                         ]],
                         
                         ['div', {class: 'pictures-header__action-bar'}, [
@@ -4280,19 +4314,19 @@ views.pics = function () {
                                  })];
                               }),
                            ]],
-                           ['div', {class: 'pictures-header__sort'}, [
-                              B.view (['State', 'query'], function (query) {
-                                 if (! query) return ['div'];
-                                 return ['div', {class: 'dropdown'}, [
-                                    ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
-                                    ['ul', {class: 'dropdown__list'}, [
-                                       dale.go (['newest', 'oldest', 'upload'], function (sort) {
-                                          return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
-                                       })
-                                    ]],
-                                 ]];
-                              }),
-                           ]],
+                           // ['div', {class: 'pictures-header__sort'}, [
+                           //    B.view (['State', 'query'], function (query) {
+                           //       if (! query) return ['div'];
+                           //       return ['div', {class: 'dropdown'}, [
+                           //          ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
+                           //          ['ul', {class: 'dropdown__list'}, [
+                           //             dale.go (['newest', 'oldest', 'upload'], function (sort) {
+                           //                return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
+                           //             })
+                           //          ]],
+                           //       ]];
+                           //    }),
+                           // ]],
                         ]],
                         // CLICK AND DOUBLE CLICK NOTICE
                         B.view (['Data', 'account'], function (account) {
