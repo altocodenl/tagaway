@@ -35,6 +35,7 @@ module.exports = {
    port: ENV ? 1427 : 8000,
    basepath: ENV ? '/root/files' : '/tmp',
    redisdb: ENV ? 15 : 13,
+   geodataPath: 'utils/cities500.txt',
    maxFileSize: 2 * 1000 * 1000 * 1000,
    crypto: {
       algorithm: 'aes-256-gcm',

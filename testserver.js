@@ -31,8 +31,7 @@ var tk = {
       user1: {username: 'user1', password: 'foobar', firstName: 'name1', email: 'user1@example.com', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
       user3: {username: 'user3', password: Math.random () + '', firstName: 'name3', email: 'user3@example.com', timezone: 0},
-   },
-   geodataPath: '../cities500.txt'
+   }
 }
 
 // *** HELPER FUNCTIONS ***
@@ -95,7 +94,7 @@ var H = {
             }
          ], H.loadPivData],
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
-         requiresGeo ? [k, 'node', 'server', 'local', 'geodata', tk.geodataPath] : [k, 'node', 'server', 'local'],
+         requiresGeo ? [k, 'node', 'server', 'local', 'geodata', CONFIG.geodataPath] : [k, 'node', 'server', 'local'],
          function (s) {
             if (s.error && ! H.testsDone) process.stdout.write (s.error.stdout.slice (-4500));
             process.exit (0);

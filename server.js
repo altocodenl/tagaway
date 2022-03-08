@@ -4260,11 +4260,15 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** LOAD GEODATA ***
 
-if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
-   [Redis, 'del', 'geo'],
+if (cicek.isMaster) a.stop ([
+   [Redis, 'exists', 'geo'],
    function (s) {
+      if (! s.last) return s.next ();
+   },
+   function (s) {
+      s.t = Date.now ();
       try {
-         var lines = fs.readFileSync (process.argv [4], 'utf8').split ('\n');
+         var lines = fs.readFileSync (CONFIG.geodataPath, 'utf8').split ('\n');
       }
       catch (error) {
          s.next (null, 'Geodata file error: ' + error.toString ());
@@ -4273,22 +4277,15 @@ if (cicek.isMaster && process.argv [3] === 'geodata') a.stop ([
       dale.go (lines, function (line) {
          line = line.split ('\t');
          // name 1, lat 4, lon 5, country 8, pop 14
-         // https://redis.io/commands/geoadd - latitudes close to the pole cannot be added.
+         // https://redis.io/commands/geoadd - latitudes close to the pole cannot be added, so we ignore them.
          if (Math.abs (parseFloat (line [4])) > 85.05112878) return;
          multi.geoadd ('geo', line [5], line [4], line [8] + ':' + line [14] + ':' + line [1]);
       });
       mexec (s, multi);
    },
-   [notify, {priority: 'critical', type: 'Geodata loaded correctly.'}],
-], function (s, error) {
-   notify (s, {priority: 'critical', type: 'Geodata load error', error: error});
-});
-
-if (cicek.isMaster && process.argv [3] !== 'geodata') a.stop ([
-   [Redis, 'exists', 'geo'],
    function (s) {
-      if (! s.last) notify (s, {priority: 'critical', type: 'Geodata missing.'});
+      notify (s, {priority: 'critical', type: 'Geodata loaded correctly in ' + (Date.now () - s.t) + 'ms.'});
    }
 ], function (s, error) {
-   notify (s, {priority: 'critical', type: 'Geodata check error', error: error});
+   notify (s, {priority: 'critical', type: 'Geodata load error', error: error});
 });

@@ -1366,3 +1366,5 @@ If there are no pivs, we return an object representing an empty query. The field
 ## License
 
 ac;pic is written by [Altocode](https://altocode.nl) and released into the public domain.
+
+The geographical information data file at `utils/cities500.txt` comes straight from the [GeoNames geographical database](http://www.geonames.org/), more precisely, [this file](http://download.geonames.org/export/dump/cities500.zip). We're very grateful to the GeoNames team for making this information available.
