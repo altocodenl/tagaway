@@ -4258,6 +4258,19 @@ if (cicek.isMaster && ENV) a.stop ([
    notify (s, {priority: 'critical', type: 'Non-empty S3 queue DB error.', error: error});
 });
 
+// *** CHECK INTERRUPTED GEOTAGGING PROCESSES ON STARTUP ***
+
+if (cicek.isMaster && ENV) a.stop ([
+   [redis.keyscan, 'geo:*'],
+   function (s) {
+      if (s.last.length > 0) return notify (s, {priority: 'critical', type: 'Interrupted geotagging processes found on startup.', users: dale.go (s.last, function (key) {
+         return key.replace ('geo:', '');
+      })});
+   }
+], function (error) {
+   notify (s, {priority: 'critical', type: 'Interrupted geotagging processes check DB error.', error: error});
+});
+
 // *** LOAD GEODATA ***
 
 if (cicek.isMaster) a.stop ([
