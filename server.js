@@ -2049,12 +2049,12 @@ var routes = [
       if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
       if (type (rq.data.files.piv) !== 'string') return reply (rs, 400, {error: 'invalidFile'});
 
-      var path     = importData ? importData.path : rq.data.files.piv;
+      var path = importData ? importData.path : rq.data.files.piv;
 
       var piv = {
          id:     uuid (),
          owner:  rq.user.username,
-         name:   importData ? importData.name : path.slice (path.indexOf ('_') + 1),
+         name:   importData ? importData.name : Path.basename (path).slice (Path.basename (path).indexOf ('_') + 1),
          dateup: Date.now (),
       };
 
