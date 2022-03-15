@@ -39,6 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- finish code consistency changes:
+   - deploy to old prod, create altocode-prod user, update nginx path in test and test in old prod
+   - copy code changes to other apps: functions, secret.js
+- reset servers with latest config
+
 - Pivs
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.

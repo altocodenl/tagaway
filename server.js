@@ -30,24 +30,16 @@ var giz    = require ('giz');
 var hitit  = require ('hitit');
 var a      = require ('./assets/astack.js');
 
-var uuid     = require ('uuid/v4');
+var uuid     = require ('uuid').v4;
 var mailer   = require ('nodemailer').createTransport (require ('nodemailer-ses-transport') (SECRET.ses));
 var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
 var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, reply = function () {
-   var rs = dale.stopNot (arguments, undefined, function (arg) {
-      if (arg && type (arg.log) === 'object') return arg;
-   });
-   // TODO remove this when fixed in cicek
-   if (! rs.connection || ! rs.connection.writable) {
-      return notify (a.creat (), {type: 'client dropped connection', method: rs.log.method, url: rs.log.url, headers: rs.log.requestHeaders});
-   }
    cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
       // We ignore the astack stack if it's there. Note that this means that reply will also interrupt the asynchronous sequences. This is on purpose, since replying is usually the last thing to be done.
-      if (k === 0 && v && v.path && v.last && v.vars) return;
-      return v;
+      if (! (k === 0 && v && v.path && v.last && v.vars)) return v;
    }));
 }, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
@@ -94,58 +86,66 @@ var Redis = function (s, action) {
 
 // *** NOTIFICATIONS ***
 
-SECRET.ping.send = function (payload, CB) {
-   CB = CB || clog;
-   var freshCookie;
-   var login = function (cb) {
-      freshCookie = true;
-      hitit.one ({}, {
-         host:   SECRET.ping.host,
-         port:   SECRET.ping.port,
-         https:  SECRET.ping.https,
-         method: 'post',
-         path:   require ('path').join (SECRET.ping.path || '', 'auth/login'),
-         body: {username: SECRET.ping.username, password: SECRET.ping.password, tz: new Date ().getTimezoneOffset ()}
-      }, function (error, data) {
-         if (error) return CB (error);
-         SECRET.ping.cookie = data.headers ['set-cookie'] [0];
-         cb ();
-      });
+var aclog = {
+   initialize: function (logProcessingFunction) {
+      aclog.send = function (log, CB) {
+         var server = {host: 'altocode.nl', https: true, basepath: '/tools/log'};
+         CB = CB || clog;
+         var freshCookie;
+         var login = function (cb) {
+            freshCookie = true;
+            hitit.one ({}, {
+               host:   server.host,
+               https:  server.https,
+               method: 'post',
+               path:   server.basepath + '/auth/login',
+               body: {username: SECRET.aclog.username, password: SECRET.aclog.password, timezone: new Date ().getTimezoneOffset ()}
+            }, function (error, data) {
+               if (error) return CB (error);
+               aclog.cookie = data.headers ['set-cookie'] [0];
+               aclog.csrf   = data.body.csrf;
+               cb ();
+            });
+         }
+         var send = function () {
+            if (type (log) !== 'object') return CB ({error: 'Log must be an object but instead is of type ' + type (log), log: log});
+            hitit.one ({}, {
+               host:   server.host,
+               https:  server.https,
+               method: 'post',
+               path:   server.basepath + '/data',
+               headers: {cookie: aclog.cookie},
+               body:    {csrf: aclog.csrf, log: logProcessingFunction ? logProcessingFunction (log) : log}
+            }, function (error) {
+               if (error && error.code === 403 && ! freshCookie) return login (send);
+               if (error) return CB (error);
+               CB ();
+            });
+         }
+         if (! aclog.cookie) login (send);
+         else                send ();
+      }
    }
-   var send = function () {
-      payload.cookie = SECRET.ping.cookie;
-      hitit.one ({}, {
-         host:   SECRET.ping.host,
-         port:   SECRET.ping.port,
-         https:  SECRET.ping.https,
-         method: 'post',
-         path: require ('path').join (SECRET.ping.path || '', 'data'),
-         headers: {cookie: SECRET.ping.cookie},
-         body:    payload,
-      }, function (error) {
-         if (error && error.code === 403 && ! freshCookie) return login (send);
-         if (error) return CB (error);
-         CB ();
-      });
-   }
-   if (! SECRET.ping.cookie) login (send);
-   else                      send ();
 }
 
-var notify = function (s, message) {
-   if (type (message) !== 'object') return s.next (undefined, 'Notify error - Message must be an object but instead is ' + message);
-   message = dale.obj (message, function (v, k) {
+aclog.initialize (function (log) {
+   log = dale.obj (log, function (v, k) {
       var sv = type (v) === 'string' ? v : JSON.stringify (v);
       var length = (sv || '').length;
       if (length > 5000) v = sv.slice (0, 2500) + ' [' + (length - 5000) + ' CHARACTERS OMITTED ' + '] ' + sv.slice (-2500);
       return [k, v];
    });
-   if (! ENV) {
+   log.application = 'ac;pic';
+   log.environment = ENV;
+   return log;
+});
+
+var notify = function (s, message) {
+   if (! ENV || ! SECRET.aclog.username) {
       clog (new Date ().toUTCString (), message);
       return s.next ();
    }
-   message.environment = ENV;
-   SECRET.ping.send (message, function (error) {
+   aclog.send (message, function (error) {
       if (error) return s.next (null, error);
       else s.next ();
    });
@@ -153,18 +153,22 @@ var notify = function (s, message) {
 
 // *** SENDMAIL ***
 
+var lastEmailSent = 0;
+
 var sendmail = function (s, o) {
-   o.from1 = o.from1 || CONFIG.email.name;
-   o.from2 = o.from2 || CONFIG.email.address;
+   if ((Date.now () - lastEmailSent) < 500) return notify (a.creat (), {type: 'mailer error', error: 'Rate limited sendmail after ' + (Date.now () - lastEmailSent) + 'ms', options: o});
+   lastEmailSent = Date.now ();
+   o.from1 = o.from1;
+   o.from2 = o.from2;
    mailer.sendMail ({
-      from:    o.from1 + ' <' + CONFIG.email.address + '>',
+      from:    o.from1 + ' <' + SECRET.emailAddress + '>',
       to:      o.to1   + ' <' + o.to2 + '>',
       replyTo: o.from2,
       subject: o.subject,
       html:    lith.g (o.message),
    }, function (error, rs) {
-      if (! error) notify (s, {type: 'email sent', to: o.to2, subject: o.subject});
-      else         notify (s, {priority: 'critical', type: 'mailer error', error: error, options: o});
+      if (! error) return s.next ();
+      a.stop (s, [notify, {type: 'mailer error', error: error, options: o}]);
    });
 }
 
@@ -877,7 +881,7 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
                   'client_id=' + SECRET.google.oauth.client,
                   '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
                   'access_type=offline',
-                  'state=' + rq.csrf
+                  'state=' + rq.user.csrf
                ].join ('&'),
                provider: 'google'
             }]],
@@ -1374,20 +1378,15 @@ var routes = [
          }],
          [a.cond, [a.get, Redis, 'hget', 'users:@username', 'verificationPending'], {
             true: [reply, rs, 403, {error: 'verify'}],
-            else: function (s) {a.seq (s, [
-               [function (s) {
-                  require ('bcryptjs').genSalt (20, function (error, csrf) {
-                     if (error) return s.next (null, error);
-                     s.csrf = csrf;
-                     a.seq (s, [Redis, 'setex', 'csrf:' + s.session, giz.config.expires, csrf]);
-                  });
-               }],
-               [H.log, s.username, {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent'], timezone: b.timezone}],
-               function (s) {
-                  reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
-               }
-            ])}
          }],
+         [a.set, 'csrf', [a.make (require ('bcryptjs').genSalt), 20]],
+         function (s) {
+            Redis (s, 'setex', 'csrf:' + s.session, giz.config.expires, s.csrf);
+         },
+         [a.get, H.log, '@username', {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent'], timezone: b.timezone}],
+         function (s) {
+            reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+         }
       ]);
    }],
 
@@ -1430,6 +1429,7 @@ var routes = [
          // logs are deleted in case a deleted user with the same username existed, in which case there will be a `destroy` log.
          [Redis, 'del', 'ulog:' + b.username],
          [a.set, 'emailtoken', [a.make (require ('bcryptjs').genSalt), 20]],
+         // TODO: don't do check to users:, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
             var multi = redis.multi ();
@@ -1449,9 +1449,9 @@ var routes = [
             multi.hset  ('invites', b.email, JSON.stringify (s.invite));
             mexec (s, multi);
          },
-         [H.stat.w, 'stock', 'users', 1],
-         [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
          ! ENV ? [
+            [H.stat.w, 'stock', 'users', 1],
+            [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
             [a.get, reply, rs, 200, {token: '@emailtoken'}],
          ] : [
             [sendmail, {
@@ -1461,13 +1461,12 @@ var routes = [
                message: CONFIG.etemplates.welcome.message (b.username)
             }],
             [a.set, 'session', [a.make (giz.login), b.username, b.password]],
-            [function (s) {
-               require ('bcryptjs').genSalt (20, function (error, csrf) {
-                  if (error) return s.next (null, error);
-                  s.csrf = csrf;
-                  a.seq (s, [Redis, 'setex', 'csrf:' + s.session, giz.config.expires, csrf]);
-               });
-            }],
+            [a.set, 'csrf', [a.make (require ('bcryptjs').genSalt), 20]],
+            function (s) {
+               Redis (s, 'setex', 'csrf:' + s.session, giz.config.expires, s.csrf);
+            },
+            [H.stat.w, 'stock', 'users', 1],
+            [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
             function (s) {
                reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
             },
@@ -1625,7 +1624,7 @@ var routes = [
             [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookieName], giz.config.expires],
             [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookieName]],
             function (s) {
-               rq.csrf = s.last;
+               rq.user.csrf = s.last;
                rs.next ();
             }
          ]);
@@ -1635,7 +1634,7 @@ var routes = [
    // *** CSRF PROTECTION ***
 
    ['get', 'csrf', function (rq, rs) {
-      reply (rs, 200, {csrf: rq.csrf});
+      reply (rs, 200, {csrf: rq.user.csrf});
    }],
 
    ['post', '*', function (rq, rs) {
@@ -1645,12 +1644,12 @@ var routes = [
 
       var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
-         if (rq.data.fields.csrf !== rq.csrf) return reply (rs, 403, {error: 'csrf'});
+         if (rq.data.fields.csrf !== rq.user.csrf) return reply (rs, 403, {error: 'csrf'});
          delete rq.data.fields.csrf;
       }
       else {
          if (type (rq.body) !== 'object') return reply (rs, 400, {error: 'body should have as type object but instead is ' + JSON.stringify (rq.body) + ' with type ' + type (rq.body)});
-         if (rq.body.csrf !== rq.csrf)    return reply (rs, 403, {error: 'csrf'});
+         if (rq.body.csrf !== rq.user.csrf)    return reply (rs, 403, {error: 'csrf'});
          delete rq.body.csrf;
       }
       rs.next ();
@@ -3064,7 +3063,7 @@ var routes = [
    ['get', 'import/oauth/google', function (rq, rs) {
       if (! rq.data.query) return reply (rs, 400, {error: 'No query parameters.'});
       if (! rq.data.query.code) return reply (rs, 403, {error: 'No code parameter.'});
-      if (rq.data.query.state !== rq.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
+      if (rq.data.query.state !== rq.user.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
       var body = [
          'code='          + rq.data.query.code,
          'client_id='     + SECRET.google.oauth.client,
@@ -3678,8 +3677,8 @@ var routes = [
    ['get', 'redmin', reply, redmin.html ()],
    ['post', 'redmin', function (rq, rs) {
       redmin.api (rq.body, function (error, data) {
-         if (error) return cicek.reply (rs, 500, {error: error});
-         cicek.reply (rs, 200, data);
+         if (error) return reply (rs, 500, {error: error});
+         reply (rs, 200, data);
       });
    }],
    ['get', 'redmin/client.js',    cicek.file, 'node_modules/redmin/client.js'],
@@ -3890,7 +3889,6 @@ cicek.options.cookieSecret = SECRET.cookieSecret;
 cicek.options.log.console  = false;
 
 cicek.apres = function (rs) {
-
    var t = Date.now ();
    if (rs.log.url.match (/^\/auth/)) {
       if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
@@ -3902,13 +3900,8 @@ cicek.apres = function (rs) {
 
    if (rs.log.code >= 400) {
       logs.push (['flow', 'rq-bad', 1]);
-      var report = function () {
-         if (inc (['/assets/normalize.min.css.map', '/csrf'], rs.log.url)) return false;
-         return true;
-      }
-      if (report ()) {
-         notify (a.creat (), {priority: rs.log.code >= 500 ? 'critical' : 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, userAgent: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, data: rs.log.data, user: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
-      }
+      var report = ! inc (['/assets/normalize.min.css.map', '/csrf'], rs.log.url);
+      if (report) notify (a.creat (), {priority: rs.log.code >= 500 ? 'critical' : 'important', type: 'response error', code: rs.log.code, method: rs.log.method, url: rs.log.url, ip: rs.log.origin, userAgent: rs.log.requestHeaders ['user-agent'], headers: rs.log.requestHeaders, body: rs.log.requestBody, data: rs.log.data, user: rs.request.user ? rs.request.user.username : null, rbody: teishi.parse (rs.log.responseBody) || rs.log.responseBody});
    }
    else {
       logs.push (['flow', 'rq-all', 1]);
@@ -3935,16 +3928,16 @@ cicek.log = function (message) {
    if (message [1] === 'client error') {
       if (message [2] === 'Error: read ECONNRESET') return;
       if (message [2].match ('Error: Parse Error:')) return;
+      notification = {
+         priority: 'important',
+         type:    'client error in server',
+         from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+         error:   message [2]
+      }
    }
-   if (message [1] === 'Invalid signature in cookie') notification = {
+   else if (message [1] === 'Invalid signature in cookie') notification = {
       priority: 'important',
       type: 'invalid signature in cookie',
-      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
-      error:   message [2]
-   }
-   else if (message [1] === 'client error') notification = {
-      priority: 'important',
-      type:    'client error in server',
       from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
       error:   message [2]
    }

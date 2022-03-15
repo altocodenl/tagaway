@@ -194,13 +194,13 @@ module.exports = {
    }
 }
 
-// Below is a template for creating secret.js . All UPPERCASE strings must be replaced by proper values.
+// Below is a template for creating secret.js. All UPPERCASE strings must be replaced by proper values.
 /*
 module.exports = {
    cookieSecret: 'COOKIESECRET',
-   admins: ['EMAIL1', 'EMAIL2', ...],
+   admins: ['EMAIL1', ...],
    s3: {
-      accessKeyId:     'KEY',
+      accessKeyId:     'ACCESSKEY',
       secretAccessKey: 'SECRETKEY',
       region: 'REGION',
       piv: {
@@ -220,24 +220,14 @@ module.exports = {
    },
    google: {
       api: {
-         key:    'KEY'
+         key: 'KEY'
       },
       oauth: {
-         dev: {
-            client: 'CLIENTID',
-            secret: 'SECRET'
-         },
-         prod: {
-            client: 'CLIENTID',
-            secret: 'SECRET'
-         },
-         test: {
-            client: 'CLIENTID',
-            secret: 'SECRET'
-         }
-      } [process.argv [2] === 'local' ? 'dev' : process.argv [2]]
+         client: 'CLIENTID',
+         secret: 'SECRET'
+      }
    },
-   ping: {
+   aclog: {
       // Your ac;log credentials here. ac;log hasn't been published yet, so you can use an empty object instead.
    }
 }
