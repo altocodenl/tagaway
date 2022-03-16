@@ -2,10 +2,12 @@ if [ "$2" != "confirm" ] ; then
    echo "Must add 'confirm'"
    exit 1
 fi
-if [ "$1" == "prod" ] ; then
+if [ "$1" == "dev" ] ; then
    HOST="root@136.243.174.166"
-elif [ "$1" == "dev" ] ; then
+   HOSTNAME="acdev"
+elif [ "$1" == "prod" ] ; then
    HOST="root@95.216.118.115"
+   HOSTNAME="acprod"
 else
    echo "Must specify environment (dev|prod)"
    exit 1
@@ -46,7 +48,6 @@ ssh $HOST 'cd /root/libheif && make -j $(getconf _NPROCESSORS_ONLN)'
 ssh $HOST 'cd /root/libheif && make install'
 ssh $HOST rm -rf /root/libheif
 # The build-dep command is required for png support in ImageMagick
-ssh $HOST apt-get build-dep imagemagick
 ssh $HOST 'cd /root && git clone https://github.com/imagemagick/imagemagick'
 ssh $HOST 'cd /root/imagemagick && ./configure --with-webp=yes'
 ssh $HOST 'cd /root/imagemagick && make -j $(getconf _NPROCESSORS_ONLN)'
@@ -54,8 +55,8 @@ ssh $HOST 'cd /root/imagemagick && make install'
 ssh $HOST rm -rf /root/imagemagick
 ssh $HOST ldconfig /usr/local/lib
 # Allow ImageMagick to process pivs of up to 100k pixels of width & height.
-ssh $HOST 'find /etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="width"/c\  <policy domain="resource" name="width" value="100KP"\/>'\'' {} \;'
-ssh $HOST 'find /etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="height"/c\  <policy domain="resource" name="height" value="100KP"\/>'\'' {} \;'
+ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="width"/c\  <policy domain="resource" name="width" value="100KP"\/>'\'' {} \;'
+ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="height"/c\  <policy domain="resource" name="height" value="100KP"\/>'\'' {} \;'
 
 ssh $HOST mkdir /root/files
 ssh $HOST git clone https://github.com/altocodenl/acpic
@@ -97,6 +98,8 @@ ssh $HOST chmod 777 /root/refresh.sh
 # Add crontab entries (change the second entry's time as needed)
 ssh $HOST '(crontab -l ; echo "@reboot ~/start.sh") | sort - | uniq - | crontab -'
 ssh $HOST '(crontab -l ; echo "15 5 * * 1 /root/refresh.sh") | sort - | uniq - | crontab -'
+
+ssh $HOST 'echo "'$HOSTNAME'" > /etc/hostname'
 
 ssh $HOST apt-get autoremove -y
 ssh $HOST apt-get clean
