@@ -89,16 +89,15 @@ var Redis = function (s, action) {
 var aclog = {
    initialize: function (logProcessingFunction) {
       aclog.send = function (log, CB) {
-         var server = {host: 'altocode.nl', https: true, basepath: '/tools/log'};
          CB = CB || clog;
          var freshCookie;
          var login = function (cb) {
             freshCookie = true;
             hitit.one ({}, {
-               host:   server.host,
-               https:  server.https,
+               host:   SECRET.aclog.host,
+               https:  SECRET.aclog.https,
                method: 'post',
-               path:   server.basepath + '/auth/login',
+               path:   SECRET.aclog.basepath + '/auth/login',
                body: {username: SECRET.aclog.username, password: SECRET.aclog.password, timezone: new Date ().getTimezoneOffset ()}
             }, function (error, data) {
                if (error) return CB (error);
@@ -110,10 +109,10 @@ var aclog = {
          var send = function () {
             if (type (log) !== 'object') return CB ({error: 'Log must be an object but instead is of type ' + type (log), log: log});
             hitit.one ({}, {
-               host:   server.host,
-               https:  server.https,
+               host:   SECRET.aclog.host,
+               https:  SECRET.aclog.https,
                method: 'post',
-               path:   server.basepath + '/data',
+               path:   SECRET.aclog.basepath + '/data',
                headers: {cookie: aclog.cookie},
                body:    {csrf: aclog.csrf, log: logProcessingFunction ? logProcessingFunction (log) : log}
             }, function (error) {
@@ -3935,11 +3934,17 @@ cicek.log = function (message) {
          error:   message [2]
       }
    }
-   else if (message [1] === 'Invalid signature in cookie') notification = {
-      priority: 'important',
-      type: 'invalid signature in cookie',
-      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
-      error:   message [2]
+   else if (message [1] === 'Invalid signature in cookie') {
+      return;
+      // TODO: re-add notification once cicek ignores attributes in cookies
+      /*
+      notification = {
+         priority: 'important',
+         type: 'invalid signature in cookie',
+         from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+         error:   message [2]
+      }
+      */
    }
    else if (message [1] === 'worker error') notification = {
       priority: 'critical',

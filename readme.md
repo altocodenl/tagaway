@@ -39,10 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- finish code consistency changes:
-   - deploy to old prod, create altocode-prod user, test communication
+- Finish code consistency changes:
+   - deploy all three to dev, check communication
+   - update nginx config
    - copy code changes to other apps: functions, secret.js
    - reset servers with latest config
+
+- webp tests
 
 - Pivs
    - Months:
@@ -50,7 +53,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - If selected a month, don't show other years.
       - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
       - show all months but gray out those that have no pivs for the current query.
-   - How to serve lastPiv if lastPiv is deleted?
    - Sort tags by nPivs, and add arrow to switch order
    - Implement chunking and linear scroll.
    - Increase thumbnail size
@@ -62,15 +64,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - [bug] Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
    - [bug incognito FF] Review fonts not loading
 
-- Backend improvements:
-   - Route logging
-      - Log all non-admin routes in terms of performance
-      - Distinguish 4xx from 5xx
-      - Tighter 4xx ignoring rules for endpoints
-   - Check if we're leaving behind temporary files from import.
-   - On shutdown, if there are S3 uploads, re-add it to the queue and send notification before shutting down.
-
 - Upload/import:
+   - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
@@ -81,6 +76,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - If there's a provider error, give a "try again" option with the same list?
       - If there's another type of error, mark "ac;pic/server error".
    - Import from Dropbox.
+
+- Backend improvements:
+   - Check if we're leaving behind temporary files from import.
+   - On shutdown, close all connections and wait for background processes: S3 uploads, mp4 conversions and geotagging
 
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
@@ -100,9 +99,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Downgrade my account alert.
    - Family plan.
 
-- Mobile
-   - Login & signup.
-   - Upload files & folders.
+- Mobile uploader
 
 ### Already implemented
 
