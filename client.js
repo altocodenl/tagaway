@@ -2873,8 +2873,8 @@ B.mrespond ([
       });
    }],
    ['goto', 'tag', function (x, tag) {
-      B.call ('set', ['State', 'selected'], {});
-      B.call ('set', ['State', 'query', 'tags'], [tag]);
+      B.call (x, 'set', ['State', 'selected'], {});
+      B.call (x, 'set', ['State', 'query', 'tags'], [tag]);
    }],
    ['scroll', [], function (x, e) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -3264,7 +3264,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
          if (! start) return B.call (x, 'query', 'imports', provider);
          // We create a placeholder data object to immediately put a box to show import progress without waiting for the server's reply.
-         B.call ('set', ['Data', 'imports', provider], [{id: Date.now (), ok: 0, total: 0}]);
+         B.call (x, 'set', ['Data', 'imports', provider], [{id: Date.now (), ok: 0, total: 0}]);
          B.call (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
             if (error) return B.call (x, 'snackbar', 'red', 'There was an error starting the import of pictures from ' + H.upper (provider));
             B.call (x, 'query', 'imports', provider);
