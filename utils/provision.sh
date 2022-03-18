@@ -59,6 +59,7 @@ ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\'
 ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="height"/c\  <policy domain="resource" name="height" value="100KP"\/>'\'' {} \;'
 
 ssh $HOST mkdir /root/files
+ssh $HOST mkdir /root/files/acpic
 ssh $HOST git clone https://github.com/altocodenl/acpic
 ssh $HOST 'cd acpic && npm i --no-save --production'
 
