@@ -3954,7 +3954,7 @@ cicek.log = function (message) {
       error:   message [2]
    }
    else notification = {
-      priority: 'important',
+      priority: 'critical',
       type:    'server error',
       subtype: message [1],
       from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
@@ -3977,12 +3977,14 @@ if (cicek.isMaster) a.seq ([
 ]);
 
 process.on ('uncaughtException', function (error, origin) {
-   a.seq ([
-      [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
-      function () {
-         process.exit (1);
-      }
-   ]);
+   server.close (function () {
+      a.seq ([
+         [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
+         function () {
+            process.exit (1);
+         }
+      ]);
+   });
 });
 
 // *** REDIS ERROR HANDLER ***
