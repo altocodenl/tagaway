@@ -4258,7 +4258,7 @@ if (cicek.isMaster && ENV) a.stop ([
       if (s.last) notify (s, {priority: 'critical', type: 'Non-empty S3 queue on startup.', n: s.last});
    }
 ], function (error) {
-   notify (s, {priority: 'critical', type: 'Non-empty S3 queue DB error.', error: error});
+   notify (s, {priority: 'critical', type: 'Non-empty S3 queue DB check error.', error: error});
 });
 
 // *** CHECK INTERRUPTED GEOTAGGING PROCESSES ON STARTUP ***
@@ -4273,6 +4273,18 @@ if (cicek.isMaster && ENV) a.stop ([
 ], function (error) {
    notify (s, {priority: 'critical', type: 'Interrupted geotagging processes check DB error.', error: error});
 });
+
+// *** CHECK INTERRUPTED MP4 CONVERSIONS ON STARTUP ***
+
+if (cicek.isMaster && ENV) a.stop ([
+   [Redis, 'hkeys', 'proc:vid'],
+   function (s) {
+      if (s.last.length) notify (s, {priority: 'critical', type: 'Incomplete mp4 conversions', n: s.last.length});
+   }
+], function (error) {
+   notify (s, {priority: 'critical', type: 'Incomplete mp4 conversions check error.', error: error});
+});
+
 
 // *** LOAD GEODATA ***
 

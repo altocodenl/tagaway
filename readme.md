@@ -40,9 +40,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Finish code consistency changes:
-   - deploy all three to dev, check communication
    - update nginx config
-   - copy code changes to other apps: functions, secret.js
    - reset servers with latest config
 
 - webp tests
