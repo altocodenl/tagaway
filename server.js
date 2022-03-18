@@ -155,10 +155,10 @@ var notify = function (s, message) {
 var lastEmailSent = 0;
 
 var sendmail = function (s, o) {
-   if ((Date.now () - lastEmailSent) < 500) return notify (a.creat (), {type: 'mailer error', error: 'Rate limited sendmail after ' + (Date.now () - lastEmailSent) + 'ms', options: o});
+   if ((Date.now () - lastEmailSent) < 500) return notify (a.creat (), {priority: 'critical', type: 'mailer error', error: 'Rate limited sendmail after ' + (Date.now () - lastEmailSent) + 'ms', options: o});
    lastEmailSent = Date.now ();
-   o.from1 = o.from1;
-   o.from2 = o.from2;
+   o.from1 = o.from1 || CONFIG.email.name;
+   o.from2 = o.from2 || CONFIG.email.address;
    mailer.sendMail ({
       from:    o.from1 + ' <' + SECRET.emailAddress + '>',
       to:      o.to1   + ' <' + o.to2 + '>',
@@ -167,7 +167,7 @@ var sendmail = function (s, o) {
       html:    lith.g (o.message),
    }, function (error, rs) {
       if (! error) return s.next ();
-      a.stop (s, [notify, {type: 'mailer error', error: error, options: o}]);
+      a.stop (s, [notify, {priority: 'critical', type: 'mailer error', error: error, options: o}]);
    });
 }
 
@@ -1639,7 +1639,10 @@ var routes = [
    ['post', '*', function (rq, rs) {
 
       if (rq.url.match (/^\/redmin/)) return rs.next ();
-      if (rq.method === 'post' && rq.url === '/admin/invites' && ! ENV) return rs.next ();
+      if (rq.method === 'post' && rq.url === '/admin/invites') {
+         if (! ENV)                                                        return rs.next ();
+         if (eq (rq.body, {email: SECRET.admins [0], firstName: 'admin'})) return rs.next ();
+      }
 
       var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
