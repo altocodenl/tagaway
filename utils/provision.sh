@@ -4,10 +4,10 @@ if [ "$2" != "confirm" ] ; then
 fi
 if [ "$1" == "dev" ] ; then
    HOST="root@136.243.174.166"
-   HOSTNAME="acdev"
+   HOSTNAME="ac-dev"
 elif [ "$1" == "prod" ] ; then
    HOST="root@95.216.118.115"
-   HOSTNAME="acprod"
+   HOSTNAME="ac-prod"
 else
    echo "Must specify environment (dev|prod)"
    exit 1
