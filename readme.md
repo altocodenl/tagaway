@@ -39,11 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Finish code consistency changes:
-   - update nginx config
-   - reset servers with latest config
-
 - webp tests
+- Also log response code in ajax event in client
 
 - Pivs
    - Months:
@@ -77,7 +74,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Backend improvements:
    - Check if we're leaving behind temporary files from import.
-   - On shutdown, close all connections and wait for background processes: S3 uploads, mp4 conversions and geotagging
+   - On shutdown, wait for background processes: S3 uploads, mp4 conversions and geotagging
 
 - Safari bugs
    - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
