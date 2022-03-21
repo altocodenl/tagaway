@@ -49,7 +49,7 @@ module.exports = {
    },
    email: {
       address: 'info@altocode.nl',
-      name:    'ac;pic'
+      name:    'acpic'
    },
    etemplates: {
       feedback: {
