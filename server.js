@@ -4013,7 +4013,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
    a.stop ([
       [a.make (H.encrypt), CONFIG.backup.path],
-      [a.get, a.make (s3.upload, s3), {Key: new Date ().toUTCString () + '-dump.rdb', Body: '@last'}],
+      [a.get, a.make (s3.upload, s3), {Key: new Date ().toISOString () + '-dump.rdb', Body: '@last'}],
    ], function (s, error) {
       notify (s, {priority: 'critical', type: 'backup error', error: error});
    });
