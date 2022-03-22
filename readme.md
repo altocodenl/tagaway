@@ -39,9 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- webp tests
-- Also log response code in ajax event in client
-
 - Pivs
    - Months:
       - Show months only if one year is selected. If 0 or >2, don't show.
