@@ -3,7 +3,7 @@
       "name": "bach.mp4",
       "path": "test/bach.mp4",
       "size": 892698,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Create Date": "2018:09:28 17:05:39",
          "Modify Date": "2018:09:28 17:05:59",
@@ -11,7 +11,7 @@
          "Track Modify Date": "2018:09:28 17:05:59",
          "Media Create Date": "2018:09:28 17:05:39",
          "Media Modify Date": "2018:09:28 17:05:59",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "video/mp4",
       "isVid": true,
@@ -28,10 +28,10 @@
       "name": "benin.tif",
       "path": "test/benin.tif",
       "size": 2694281,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "1999:02:12 09:33:02",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/tiff",
       "format": "tiff",
@@ -47,26 +47,26 @@
       "name": "boat.3gp",
       "path": "test/boat.3gp",
       "size": 1271681,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "video/3gpp",
       "isVid": true,
       "format": "3gp:amr_nb/h263",
       "dimw": 352,
       "dimh": 288,
-      "date": 1637097787000,
+      "date": 1647462085000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2021-11-16T21:23:07.000Z",
-      "yearTag": "d::2021",
+      "humanReadableDate": "2022-03-16T20:21:25.000Z",
+      "yearTag": "d::2022",
       "hash": 3748825687
    },
    "circus": {
       "name": "circus.MOV",
       "path": "test/circus.MOV",
       "size": 12829011,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Create Date": "2020:10:06 21:59:01",
          "Modify Date": "2020:10:06 21:59:01",
@@ -75,7 +75,7 @@
          "Media Create Date": "2020:10:06 21:59:01",
          "Media Modify Date": "2020:10:06 21:59:01",
          "Creation Date": "2019:08:31 20:53:26-04:00",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "video/quicktime",
       "isVid": true,
@@ -93,44 +93,44 @@
       "name": "deer.bmp",
       "path": "test/deer.bmp",
       "size": 124986,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/bmp",
       "format": "bmp",
       "dimw": 153,
       "dimh": 204,
-      "date": 1637097787000,
+      "date": 1647462085000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2021-11-16T21:23:07.000Z",
-      "yearTag": "d::2021",
+      "humanReadableDate": "2022-03-16T20:21:25.000Z",
+      "yearTag": "d::2022",
       "hash": 2383897131
    },
    "drumming": {
       "name": "drumming.avi",
       "path": "test/drumming.avi",
       "size": 3843158,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "video/x-msvideo",
       "isVid": true,
       "format": "avi:aac/h264",
       "dimw": 1080,
       "dimh": 1920,
-      "date": 1637097787000,
+      "date": 1647462085000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2021-11-16T21:23:07.000Z",
-      "yearTag": "d::2021",
+      "humanReadableDate": "2022-03-16T20:21:25.000Z",
+      "yearTag": "d::2022",
       "hash": 113721823
    },
    "dunkerque": {
       "name": "dunkerque.jpg",
       "path": "test/dunkerque.jpg",
       "size": 1731981,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "loc": [
          51.051094444444445,
          2.3877611111111112
@@ -139,7 +139,7 @@
          "Modify Date": "2018:03:26 13:23:34",
          "Date/Time Original": "2018:03:26 13:23:34.805",
          "Create Date": "2018:03:26 13:23:34.805",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
@@ -155,26 +155,44 @@
       "name": "empty.jpg",
       "path": "test/empty.jpg",
       "size": 0,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "invalid": true
+   },
+   "house": {
+      "name": "house.webp",
+      "path": "test/house.webp",
+      "size": 644986,
+      "mtime": 1647873293248,
+      "dates": {
+         "upload:lastModified": 1647873293248
+      },
+      "mimetype": "image/webp",
+      "format": "webp",
+      "dimw": 1536,
+      "dimh": 1024,
+      "date": 1647873293248,
+      "dateSource": "upload:lastModified",
+      "humanReadableDate": "2022-03-21T14:34:53.248Z",
+      "yearTag": "d::2022",
+      "hash": 1696501751
    },
    "invalid": {
       "name": "invalid.mp4",
       "path": "test/invalid.mp4",
       "size": 1000,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "invalid": true
    },
    "large": {
       "name": "large.jpeg",
       "path": "test/large.jpeg",
       "size": 3495794,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "2014:07:20 18:20:31",
          "Date/Time Original": "2014:07:20 18:20:31",
          "Create Date": "2014:07:20 18:20:31",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
@@ -190,56 +208,56 @@
       "name": "location.svg",
       "path": "test/location.svg",
       "size": 1391,
-      "mtime": 1643986788021,
+      "mtime": 1647462085000,
       "unsupported": true
    },
    "medium-nometa": {
       "name": "medium-nometa.jpg",
       "path": "test/medium-nometa.jpg",
       "size": 10160,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "repeated": true,
       "dates": {
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
       "dimw": 248,
       "dimh": 204,
-      "date": 1637097787000,
+      "date": 1647462085000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2021-11-16T21:23:07.000Z",
-      "yearTag": "d::2021",
+      "humanReadableDate": "2022-03-16T20:21:25.000Z",
+      "yearTag": "d::2022",
       "hash": 3972466237
    },
    "medium": {
       "name": "medium.jpg",
       "path": "test/medium.jpg",
       "size": 22644,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
       "dimw": 248,
       "dimh": 204,
-      "date": 1637097787000,
+      "date": 1647462085000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2021-11-16T21:23:07.000Z",
-      "yearTag": "d::2021",
+      "humanReadableDate": "2022-03-16T20:21:25.000Z",
+      "yearTag": "d::2022",
       "hash": 194393043
    },
    "rotate": {
       "name": "rotate.jpg",
       "path": "test/rotate.jpg",
       "size": 874494,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
          "Create Date": "2017:03:22 17:35:20",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
@@ -256,12 +274,12 @@
       "name": "rotatemedium.jpg",
       "path": "test/rotatemedium.jpg",
       "size": 208948,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
          "Create Date": "2017:03:22 17:35:20",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
@@ -278,12 +296,12 @@
       "name": "rotatesmall.jpg",
       "path": "test/rotatesmall.jpg",
       "size": 23171,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "2017:03:22 17:35:20",
          "Date/Time Original": "2017:03:22 17:35:20",
          "Create Date": "2017:03:22 17:35:20",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/jpeg",
       "format": "jpeg",
@@ -300,12 +318,12 @@
       "name": "small-meta.png",
       "path": "test/small-meta.png",
       "size": 3413,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "repeated": true,
       "dates": {
          "Modify Date": "2014:05:08 00:06:23",
          "Create Date": "2013:05:08 00:06:23",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/png",
       "format": "png",
@@ -321,10 +339,10 @@
       "name": "small.png",
       "path": "test/small.png",
       "size": 3370,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "2014:05:08 00:06:23",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/png",
       "format": "png",
@@ -340,12 +358,12 @@
       "name": "sunrise.HEIC",
       "path": "test/sunrise.HEIC",
       "size": 915319,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
          "Modify Date": "2020:08:29 06:43:41-04:00",
          "Date/Time Original": "2020:08:29 06:43:41.254-04:00",
          "Create Date": "2020:08:29 06:43:41.254-04:00",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/heic",
       "format": "heic",
@@ -362,7 +380,7 @@
       "name": "tram.mp4",
       "path": "test/tram.mp4",
       "size": 13062990,
-      "mtime": 1637097787000,
+      "mtime": 1647462085047,
       "dates": {
          "Create Date": "2018:12:15 15:59:57",
          "Modify Date": "2018:12:15 15:59:57",
@@ -370,7 +388,7 @@
          "Track Modify Date": "2018:12:15 15:59:57",
          "Media Create Date": "2018:12:15 15:59:57",
          "Media Modify Date": "2018:12:15 15:59:57",
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085047
       },
       "mimetype": "video/mp4",
       "isVid": true,
@@ -388,18 +406,18 @@
       "name": "tumbleweed.GIF",
       "path": "test/tumbleweed.GIF",
       "size": 405166,
-      "mtime": 1637097787000,
+      "mtime": 1647462085000,
       "dates": {
-         "upload:lastModified": 1637097787000
+         "upload:lastModified": 1647462085000
       },
       "mimetype": "image/gif",
       "format": "gif",
       "dimw": 180,
       "dimh": 180,
-      "date": 1637097787000,
+      "date": 1647462085000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2021-11-16T21:23:07.000Z",
-      "yearTag": "d::2021",
+      "humanReadableDate": "2022-03-16T20:21:25.000Z",
+      "yearTag": "d::2022",
       "hash": 3943946902
    }
 }
