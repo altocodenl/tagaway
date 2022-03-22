@@ -54,14 +54,14 @@ ssh $HOST 'cd /root/imagemagick && make -j $(getconf _NPROCESSORS_ONLN)'
 ssh $HOST 'cd /root/imagemagick && make install'
 ssh $HOST rm -rf /root/imagemagick
 ssh $HOST ldconfig /usr/local/lib
-# Allow ImageMagick to process pivs of up to 100k pixels of width & height.
+# Allow ImageMagick to process pivs of up to 100k pixels of width & height
 ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="width"/c\  <policy domain="resource" name="width" value="100KP"\/>'\'' {} \;'
 ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\''/name="height"/c\  <policy domain="resource" name="height" value="100KP"\/>'\'' {} \;'
 
 ssh $HOST mkdir /root/files
 ssh $HOST mkdir /root/files/acpic
-ssh $HOST git clone https://github.com/altocodenl/acpic
-ssh $HOST 'cd acpic && npm i --no-save --production'
+# Note: this command is for using ac;log, but can ignored in a standalone ac;pic server
+ssh $HOST mkdir /root/files/aclog
 
 # Allow up to 1024 simultaneous connection requests
 ssh $HOST 'echo "net.core.somaxconn=1024" >> /etc/sysctl.conf'
@@ -70,6 +70,7 @@ ssh $HOST 'echo "vm.overcommit_memory=1"  >> /etc/sysctl.conf'
 
 # Place start.sh script
 # Many thanks to https://thornelabs.net/posts/remotely-execute-multi-line-commands-with-ssh.html
+# Note: also includes commands for using ac;log and ac;web, but these can be ignored in a standalone ac;pic server
 ssh $HOST -T << EOF
 cat << "EOT" >> ~/start.sh
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
@@ -78,18 +79,24 @@ echo madvise > /sys/kernel/mm/transparent_hugepage/enabled
 service redis-server restart
 # Wait 5 seconds until DNS can be properly resolved
 sleep 5
+cd /root/aclog && mg restart
+sleep 2
 cd /root/acpic && mg restart
+cd /root/acweb && mg restart
 EOT
 EOF
 ssh $HOST chmod 777 /root/start.sh
 
 # Place refresh.sh script
+# Note: also includes commands for using ac;log and ac;web, but these can be ignored in a standalone ac;pic server.
 ssh $HOST -T << EOF
 cat << "EOT" >> ~/refresh.sh
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
 apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --with-new-pkgs
 apt-get autoremove -y && apt-get clean
 cd /root/acpic && mg stop
+cd /root/acweb && mg stop
+cd /root/aclog && mg stop
 service redis-server stop
 shutdown -r now
 EOT
@@ -105,5 +112,3 @@ ssh $HOST 'echo "'$HOSTNAME'" > /etc/hostname'
 ssh $HOST apt-get autoremove -y
 ssh $HOST apt-get clean
 ssh $HOST shutdown -r now
-
-# MANUAL STEP: add secret.js to /root/acpic

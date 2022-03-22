@@ -152,11 +152,7 @@ var notify = function (s, message) {
 
 // *** SENDMAIL ***
 
-var lastEmailSent = 0;
-
 var sendmail = function (s, o) {
-   if ((Date.now () - lastEmailSent) < 500) return notify (a.creat (), {priority: 'critical', type: 'mailer error', error: 'Rate limited sendmail after ' + (Date.now () - lastEmailSent) + 'ms', options: o});
-   lastEmailSent = Date.now ();
    o.from1 = o.from1 || CONFIG.email.name;
    o.from2 = o.from2 || CONFIG.email.address;
    mailer.sendMail ({
@@ -165,9 +161,9 @@ var sendmail = function (s, o) {
       replyTo: o.from2,
       subject: o.subject,
       html:    lith.g (o.message),
-   }, function (error, rs) {
-      if (! error) return s.next ();
-      a.stop (s, [notify, {priority: 'critical', type: 'mailer error', error: error, options: o}]);
+   }, function (error) {
+      if (error) notify (s, {priority: 'critical', type: 'mailer error', error: error, options: o});
+      else       s.next ();
    });
 }
 
