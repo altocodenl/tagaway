@@ -976,8 +976,6 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    // If the picture has a valid Date/Time Original date, keep the date and move on.
    if (piv.dateSource === 'Date/Time Original') return mexec (s, multi);
 
-   var oldYearTag = 'd::' + new Date (date).getUTCFullYear ();
-
    if (minDate [1] < date) {
       // If minDate is midnight of the same day of the current date, we ignore it. Otherwise, we set it.
       if (minDate [1] !== (date - date % (1000 * 60 * 60 * 24))) {
@@ -987,15 +985,21 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
          multi.hset ('piv:' + piv.id, 'dateSource', piv.dateSource);
       }
    }
-   var newYearTag = 'd::' + new Date (parseInt (piv.date)).getUTCFullYear ();
-   if (oldYearTag !== newYearTag) {
-      multi.sadd ('pivt:' + piv.id, newYearTag);
-      multi.srem ('pivt:' + piv.id, oldYearTag);
-      multi.sadd ('tag:'  + piv.owner + ':' + newYearTag, piv.id);
-      multi.srem ('tag:'  + piv.owner + ':' + oldYearTag, piv.id);
-      multi.sadd ('tags:' + piv.owner, newYearTag);
-      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
-   }
+
+   var oldYearTag  = 'd::'  + new Date (date).getUTCFullYear ();
+   var oldMonthTag = 'd::M' + (new Date (date).getUTCMonth () + 1);
+   var newYearTag  = 'd::'  + new Date (parseInt (piv.date)).getUTCFullYear ();
+   var newMonthTag = 'd::M' + (new Date (parseInt (piv.date)).getUTCMonth () + 1);
+
+   dale.go ([[oldYearTag, newYearTag], [oldMonthTag, newMonthTag]], function (pair) {
+      if (pair [0] === pair [1]) return;
+      multi.sadd ('pivt:' + piv.id, pair [1]);
+      multi.srem ('pivt:' + piv.id, pair [0]);
+      multi.sadd ('tag:'  + piv.owner + ':' + pair [1], piv.id);
+      multi.srem ('tag:'  + piv.owner + ':' + pair [0], piv.id);
+      multi.sadd ('tags:' + piv.owner, pair [1]);
+      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has the old year or month tag.
+   });
    mexec (s, multi);
 }
 
@@ -2348,7 +2352,7 @@ var routes = [
             }
             multi.sadd ('tag:' + rq.user.username + ':a::', piv.id);
 
-            dale.go (tags.concat ('d::' + new Date (piv.date).getUTCFullYear ()).concat (geotags), function (tag) {
+            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
                multi.sadd ('tags:' + rq.user.username, tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
