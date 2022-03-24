@@ -3614,7 +3614,7 @@ var routes = [
                            // UPLOAD THE FILE
                            hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', headers: {cookie: s.Cookie}, body: {multipart: [
                               // This `file` field is a dummy one to pass validation. The actual file information goes inside importData
-                              {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar.' + Path.extname (file.name)},
+                              {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar' + Path.extname (file.name)},
                               {type: 'field', name: 'id', value: parseInt (s.import.id)},
                               // Use oldest date, whether createdTime or updatedTime
                               {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
