@@ -2051,7 +2051,7 @@ var routes = [
       if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
       if (type (rq.data.files.piv) !== 'string') return reply (rs, 400, {error: 'invalidFile'});
 
-      var path = importData ? importData.path : rq.data.files.piv;
+      var path = rq.data.files.piv;
 
       var piv = {
          id:     uuid (),
@@ -2094,6 +2094,11 @@ var routes = [
             s.upload = s.last [0];
             s.next ();
          },
+         // In case of an import, overwrite the dummy file with the actual piv
+         ! importData ? [] : [
+            [k, 'cp', importData.path, path],
+            [H.unlink, importData.path]
+         ],
          [a.set, 'byfs', [a.make (fs.stat), path]],
          function (s) {
             if (s.byfs.size <= CONFIG.maxFileSize) return s.next ();
