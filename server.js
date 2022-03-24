@@ -239,8 +239,8 @@ H.hash = function (string) {
    return hash (string) + '';
 }
 
-H.isDateTag = function (tag) {
-   return !! tag.match (/^d::/);
+H.isYearTag = function (tag) {
+   return !! tag.match (/^d::\d+/);
 }
 
 H.isGeoTag = function (tag) {
@@ -2580,11 +2580,11 @@ var routes = [
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
       if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 
-      var ytags = [];
+      var yeartags = [];
 
       var tags = dale.obj (b.tags, function (tag) {
-         if (! H.isDateTag (tag)) return [tag, [rq.user.username]];
-         ytags.push (tag);
+         if (! H.isYearTag (tag)) return [tag, [rq.user.username]];
+         yeartags.push (tag);
       });
 
       astop (rs, [
@@ -2602,7 +2602,8 @@ var routes = [
             });
 
             var multi = redis.multi (), qid = 'query:' + uuid ();
-            if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
+            // We perform an union rather than an intersection for year tags.
+            if (yeartags.length) multi.sunionstore (qid, dale.go (yeartags, function (ytag) {
                return 'tag:' + rq.user.username + ':' + ytag;
             }));
 
@@ -2614,7 +2615,7 @@ var routes = [
 
             multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
                return qid + ':' + tag;
-            }).concat (ytags.length ? qid : []));
+            }).concat (yeartags.length ? qid : []));
 
             multi.del (qid);
             dale.go (tags, function (users, tag) {
@@ -2624,7 +2625,7 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            s.pivs = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
+            s.pivs = s.last [(yeartags.length ? 1 : 0) + dale.keys (tags).length];
             var multi = redis.multi (), ids = {};
             dale.go (s.pivs, function (id) {
                multi.hgetall ('piv:' + id);
