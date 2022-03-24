@@ -2342,6 +2342,14 @@ H.isDateTag = function (tag) {
    return !! tag.match (/^d::/);
 }
 
+H.isYearTag = function (tag) {
+   return !! tag.match (/^d::\d/);
+}
+
+H.isMonthTag = function (tag) {
+   return !! tag.match (/^d::M/);
+}
+
 H.isGeoTag = function (tag) {
    return !! tag.match (/^g::/);
 }
@@ -2716,6 +2724,18 @@ B.mrespond ([
          });
          B.set (['State', 'selected'], updatedSelection);
 
+         if (dale.stop (query.tags, true, H.isYearTag)) {
+            B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {
+               if (! H.isMonthTag (tag)) return tag;
+            }), sort: query.sort, from: 1, to: 1}, function (x, error, rs) {
+               if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+               B.call (x, 'set', ['Data', 'monthTags'], dale.fil (Object.keys (rs.body.tags), undefined, function (tag) {
+                  if (H.isMonthTag (tag)) return tag;
+               }));
+            });
+         }
+         else B.call (x, 'rem', 'Data', 'monthTags');
+
          // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
             B.call (x, 'query', 'pivs');
@@ -2784,15 +2804,24 @@ B.mrespond ([
    ['toggle', 'tag', function (x, tag) {
       if (B.get ('State', 'querying')) return;
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
+
+      // Tag is removed
       if (index > -1) {
          if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
-         return B.call (x, 'rem', ['State', 'query', 'tags'], index);
+         if (! H.isYearTag (tag)) return B.call (x, 'rem', ['State', 'query', 'tags'], index);
+         return B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+            if (existingTag === tag) return;
+            if (H.isMonthTag (existingTag)) return;
+            return existingTag;
+         }));
       }
 
+      // Tag is added
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::' && ! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag)) return;
+         if (tag === 'u::'         && isNormalTag) return;
+         if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
          return existingTag;
       }).concat (tag));
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
@@ -3882,6 +3911,9 @@ views.pics = function () {
                ['.tag-list__item--geo-country', {width: 0.33, float: 'left'}],
                ['.tag--bolded .tag__title', {color: CSS.vars ['color--one'], 'font-weight': 'bold'}],
                ['.tag--bolded svg', {stroke: CSS.vars ['color--one'], 'stroke-width': 4}],
+               ['.tag--bolded-grey .tag__title', {color: CSS.vars ['grey'], 'font-weight': 'bold'}],
+               ['.tag--light-grey svg', {stroke: CSS.vars ['grey--light']}],
+               ['.tag--light-grey .tag__title', {color: CSS.vars ['grey--light'], 'font-weight': 'bold'}],
                ['.clear-both', {clear: 'both'}],
             ]],
             ['div', {class: 'sidebar'}, [
@@ -3895,8 +3927,9 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, account, showNTags) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, monthTags, account, showNTags) {
                         if (! account || ! selected) return ['ul'];
+                        monthTags = monthTags || [];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
 
@@ -3904,7 +3937,7 @@ views.pics = function () {
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (! H.isDateTag (tag)) return;
+                           if (! H.isYearTag (tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
@@ -3951,8 +3984,11 @@ views.pics = function () {
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
                            }
-                           else if (H.isDateTag (which)) {
+                           else if (H.isYearTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
+                           }
+                           else if (H.isMonthTag (which)) {
+                              var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : (inc (monthTags, which) ? ' tag--bolded-grey' : ' tag--light-grey'));
                            }
                            else if (H.isGeoTag (which)) {
                               var isCountryTag = H.isCountryTag (which);
@@ -3978,7 +4014,13 @@ views.pics = function () {
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
-                           return ['li', {class: Class, style: disabledUntagged ? 'cursor: default' : undefined, onclick: disabledUntagged ? undefined : B.ev (H.stopPropagation, action)}, [
+                           var blankMonth = H.isMonthTag (which) && ! inc (monthTags, which);
+                           var disabledTag = disabledUntagged || blankMonth;
+
+                           var showName = tag.replace (/^[a-z]::/, '');
+                           if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
+
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll')),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (colorTag, H.putSvg ('tagItem' + H.tagColor (which))),
@@ -3986,7 +4028,7 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, ''), numberOfPivs]],
+                              ['span', {class: 'tag__title'}, [' ', showName, numberOfPivs]],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
@@ -4003,6 +4045,8 @@ views.pics = function () {
                            makeTag ('a::'),
                            makeTag ('u::'),
                            dale.go (yearlist, makeTag),
+                           ['br'], ['br'],
+                           yearlist.length !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
                                  ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
@@ -4206,10 +4250,13 @@ views.pics = function () {
                                     var Class = 'tag tag-list-horizontal__item ';
                                     if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
                                     else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
+
+                                    var showName = tag.replace (/^[a-z]::/, '');
+                                    if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                     return ['li', {class: Class}, [
                                        H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                        H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
-                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : tag.replace (/^[a-z]::/, '')],
+                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
                                              ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],

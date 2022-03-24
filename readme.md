@@ -40,15 +40,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Months:
-      - Show months only if one year is selected. If 0 or >2, don't show.
-      - If selected a month, don't show other years.
-      - month is a pseudo-tag, set in a particular part of the state. when doing that, set the from/to in the query.
-      - show all months but gray out those that have no pivs for the current query.
    - Sort tags by nPivs, and add arrow to switch order
-   - Implement chunking and linear scroll.
    - Increase thumbnail size
    - Implement video streaming.
+   - Implement chunking and linear scroll.
    - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
    - [markup] Move edit bar to bottom and write new blue bar on top.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
@@ -70,7 +65,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Import from Dropbox.
 
 - Backend improvements:
-   - Check if we're leaving behind temporary files from import.
+   - Import lets behind temporary invalid piv.
    - On shutdown, wait for background processes: S3 uploads, mp4 conversions and geotagging
 
 - Safari bugs
@@ -106,6 +101,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When selecting pivs, see selection bar.
    - Hover on piv and see date.
    - Show untagged pivs.
+   - Show year tags.
+   - Show only one year tag if one is selected.
+   - Show month tags only when a year tag is selected. When a month tag is selected, show the other available months as selectable and remove the current month if another month is selected.
    - When querying untagged tag, remove non-year and non-geo tags. When querying normal tag, remove untagged tag.
    - When modifying pivs with `untagged` in the query, add button for confirming operation; show alert if user navigates away.
    - See list of tags.
@@ -451,6 +449,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
    - `a::` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
    - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
+   - Each of the returned pivs will have all the tags present in `body.tags`. The only exception to this rule are year tags, on which the query returns pivs that contain at least one of the given date tags. For example, the query `['d::2018', 'd::2019']` will return pivs from both 2018 and 2019.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
@@ -801,7 +800,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pivs`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -963,10 +962,10 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    3. `change State.query`: if the path to the change is just `State` object (which only happens during initialization or logout), we ignore it. if the change is not to `State.query.recentlyTagged`, we directly set `State.nPivs` to 20 (we don't do it through an event because we want to avoid that call also invoking `query pivs`). We then invokes `query pivs true`.
    4. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    5. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   6. `query pivs`:  if `State.query` is not set, does nothing. If `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument (`updateSelected`), it updates `State.selected`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
+   6. `query pivs`:  if `State.query` is not set, does nothing. If `State.querying` is true, does nothing; otherwise it sets it `State.querying` to `true`; if `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it; invokes `post query`, using `State.query` and `State.nPivs + 100` (the reason for the `+ 100` is that we hold the metadata of up to 100 pivs more than we display to increase the responsiveness of the scroll). Once the query is done, it sets again `State.querying` to `false` and invokes `query tags`. It also sets `Data.pendingConversions` to `true|false`, depending if the returned list of pivs contains a non-mp4 video currently being converted. If `State.nPivs` is set to 20, it scrolls the view back to the top. If it receives a truthy first argument (`updateSelected`), it updates `State.selected`. If the query contains a year tag, a second query equal to the current query minus the month tags will be performed to the server and the returned `queryTags` will be set in `Data.monthTags` (just the tags, not the number of pivs for each); if there's no year tag on the query, it will remove `Data.monthTags`. It sets `Data.pivs` and `Data.pivTotal` (and optionally `State.open` if it's already present) after invoking `post query`. If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms. Also sets `Data.queryTags`. If `State.open` is not present, it will also invoke `fill screen`.
    7. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
    8. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
-   9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it. If the tag is added and it is an user tag, we invoke `rem State.filter`.
+   9. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove it. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed.
    10. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
    12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
@@ -1083,6 +1082,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       data: UNDEFINED|{roots: [ID, ...], folders: [{id: ID, name: STRING, count: INTEGER, parent: ID, children: [ID, ...]}]},
    }
 ```
+   - `monthTags`: either `undefined` or an array with month tags that correspond to the current query. If a month is on the current query, it will be on the list but other months may be there too.
    - `pendingConversions`: if truthy, indicates that one or more videos in the current query are non-mp4 videos being converted.
    - `pivs`: `[...]`; comes from `body.pivs` from `query pivs`.
    - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
