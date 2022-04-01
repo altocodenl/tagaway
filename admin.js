@@ -282,7 +282,7 @@ B.mrespond ([
       }, 4000);
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
-   [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
+   [/^(get|post)$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
       var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && ['auth/logout', 'auth/delete', 'auth/changePassword'].indexOf (path) === -1);
       if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
