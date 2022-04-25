@@ -40,10 +40,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
+   - Implement chunking and linear scroll.
+      - logarithm to distance of previous; then ratio them from third to second onwards; as the chunk grows, add pressure semi-exponentially.
+      - do we need to backtrack? no, do it in one go, but kick to a possible previous chunk those that are too far
+      - binding pressure vs weight of the drop. while binding pressure is higher than the weight.
+      - is surface tension variable? surface tension keeps things together. adding mass breaks it into two.
+      - an arrival of a new piv has a certain kinetic energy, or must be considered as such, because it is perceived as an extra weight by the brain
+      - bindings are absolute as in the inverse of the log of time between them? no, the previous numbers also impact. maintain an average? that goes against scales. what if it's an order-of-magnitude average?
    - Sort tags by nPivs, and add arrow to switch order
    - Increase thumbnail size
-   - Implement video streaming.
-   - Implement chunking and linear scroll.
+   - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
    - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
    - [markup] Move edit bar to bottom and write new blue bar on top.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
@@ -54,37 +60,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Upload/import:
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
-   - See if there's a way to detect whatsapp videos that look the same but are slightly different.
-   - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
-   - Improve display of errors in upload & import:
-      - Show foldable list of repeated|invalid|too large pivs.
-      - When adding many files to upload, put a "loading, please wait" snackbar.
-      - Show provider errors in import.
-      - If there's a provider error, give a "try again" option with the same list?
-      - If there's another type of error, mark "ac;pic/server error".
-   - Import from Dropbox.
+   - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Backend improvements:
-   - Import lets behind temporary invalid piv.
-   - On shutdown, wait for background processes: S3 uploads, mp4 conversions and geotagging
-
-- Safari bugs
-   - Videos do not play in Safari Version 13.1.2 (15609.3.5.1.3): implement streaming (https://blog.logrocket.com/streaming-video-in-safari/)
-   - On double click, pivs fail to open in most cases
-   - When opening thumbnail, big picture is superimposed to the same piv (it's like a piv is opened on top of another)
-   - photo slider Error sound when pressing arrow keys to navigate gallery. This exact same problem https://stackoverflow.com/questions/57726300/safari-error-sound-when-pressing-arrow-keys-to-navigate-gallery#:~:text=1%20Answer&text=It%20seems%20that%20Safari%20browser,no%20input%20element%20in%20focus.
-
-- Refactor UI with unified terminology for pivs: Pics&Vids?
+   - Add user log on verify.
 
 - Accounts
    - Recover/reset password.
-   - Set account space limit.
    - Delete my account with confirmation.
-   - Show/hide paid space in account.
-   - Retrieve data on payment cycle.
-   - Retrieve used space so far (stats).
-   - Downgrade my account alert.
-   - Family plan.
 
 - Mobile uploader
 
@@ -201,12 +184,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo post-launch
+### Todo v1
 
 - Open
    - Show tags.
 
 - Upload
+   - See if there's a way to detect whatsapp videos that look the same but are slightly different.
+   - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Retry on error.
    - Show estimated time remaining in ongoing uploads.
    - Ignore deleted pivs flag for both upload & import.
@@ -214,13 +199,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Starting state: area from dropdown & button for files & button for folder upload.
       - Uploading state: button for starting new upload and button for starting tagging state.
       - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
-
-- Account & payment
-   - Change email.
-   - Export/import all data.
-   - Log me out of all sessions.
-   - Freeze me out (includes log me out of all sessions).
-   - Payment late flow: freeze uploads, email, auto-delete by size.
+   - Improve display of errors in upload & import: show foldable list of repeated|invalid|too large pivs.
+   - Import from Dropbox.
 
 - Share & manage
    - Rename tag.
@@ -229,6 +209,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Mark tags shared with me.
    - If two shared tags from different users have the same name, put "@username".
    - Authorization to see or ignore share.
+
+- Account & payment
+   - Set account space limit.
+   - Change email.
+   - Export/import all data.
+   - Log me out of all sessions.
+   - Freeze me out (includes log me out of all sessions).
+   - Show/hide paid space in account.
+   - Retrieve data on payment cycle.
+   - Downgrade my account alert.
+   - Family plan.
+   - Payment late flow: freeze uploads, email, auto-delete by size.
 
 - Admin
    - Retrieve stats & test endpoint.
@@ -240,8 +232,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Select sorting order.
 
 - Other
-   - Check lifecycle of pivs bucket in S3.
-   - Disable THP for redis.
+   - Refactor UI with unified terminology for pivs: Pics&Vids, pivs.
+   - Import lets behind temporary invalid piv.
+   - On shutdown, wait for background processes: S3 uploads, mp4 conversions and geotagging
    - Check graceful app shutdown on mg restart: wait for S3 uploads and ongoing uploads
    - Downgrade read ECONNRESET errors priority?
    - Test for maximum capacity.
