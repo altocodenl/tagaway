@@ -64,10 +64,8 @@ ssh $HOST mkdir /root/files/acpic
 ssh $HOST mkdir /root/files/aclog
 
 ssh $HOST git clone https://github.com/altocodenl/acpic
-ssh $HOST chown -R root /root/acpic
-# Note: these commands are for using ac;web, but can ignored in a standalone ac;pic server
+# Note: this command is for using ac;web, but can ignored in a standalone ac;pic server
 ssh $HOST git clone https://github.com/altocodenl/acweb
-ssh $HOST chown -R root /root/acweb
 
 # Allow up to 1024 simultaneous connection requests
 ssh $HOST 'echo "net.core.somaxconn=1024" >> /etc/sysctl.conf'
