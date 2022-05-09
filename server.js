@@ -36,12 +36,7 @@ var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
-var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, reply = function () {
-   cicek.reply.apply (null, dale.fil (arguments, undefined, function (v, k) {
-      // We ignore the astack stack if it's there. Note that this means that reply will also interrupt the asynchronous sequences. This is on purpose, since replying is usually the last thing to be done.
-      if (! (k === 0 && v && v.path && v.last && v.vars)) return v;
-   }));
-}, stop = function (rs, rules) {
+var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    }, true);
@@ -3944,8 +3939,8 @@ cicek.log = function (message) {
       }
    }
    else if (message [1] === 'Invalid signature in cookie') {
-      return;
       // TODO: re-add notification once cicek ignores attributes in cookies
+      return;
       /*
       notification = {
          priority: 'important',
@@ -3954,6 +3949,13 @@ cicek.log = function (message) {
          error:   message [2]
       }
       */
+   }
+   else if (message [1] === 'cicek.reply validation error' && message [2].match ('response.connection.writable passed to cicek.reply should be equal to true but instead is false')) notification = {
+      priority: 'normal',
+      type:    'client error',
+      subtype: message [1],
+      from:    cicek.isMaster ? 'master' : 'worker' + require ('cluster').worker.id,
+      error:   message [2]
    }
    else if (message [1] === 'worker error') notification = {
       priority: 'critical',
@@ -4146,7 +4148,7 @@ if (cicek.isMaster && ENV) a.stop ([
       if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing.slice (0, 100)});
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
 
-      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'important', type: 'File consistency check done.'});
+      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'normal', type: 'File consistency check done.'});
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
       if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
@@ -4236,7 +4238,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
       if (mismatch.length !== 0)           notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
 
-      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'important', type: 'Stored sizes consistency check done.'});
+      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'normal', type: 'Stored sizes consistency check done.'});
 
       a.seq (s, [
          [H.stat.w, dale.go (mismatch, function (v) {
