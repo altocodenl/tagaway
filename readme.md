@@ -41,16 +41,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pivs
    - Implement chunking and linear scroll.
-      - logarithm to distance of previous; then ratio them from third to second onwards; as the chunk grows, add pressure semi-exponentially.
-      - do we need to backtrack? no, do it in one go, but kick to a possible previous chunk those that are too far
-      - binding pressure vs weight of the drop. while binding pressure is higher than the weight.
-      - is surface tension variable? surface tension keeps things together. adding mass breaks it into two.
-      - an arrival of a new piv has a certain kinetic energy, or must be considered as such, because it is perceived as an extra weight by the brain
-      - bindings are absolute as in the inverse of the log of time between them? no, the previous numbers also impact. maintain an average? that goes against scales. what if it's an order-of-magnitude average?
-   - Sort tags by nPivs, and add arrow to switch order
-   - Increase thumbnail size
-   - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
+      - Chunking.
+      - Internal representation of space used.
+      - Proper calculation of indexes.
+      - Smooth, linear scrolling.
+      - Increase thumbnail size
    - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
+   - Open: add frame to images; use more space with a ratio that doesn't damage quality too much.
+   - Sort tags by nPivs, and add arrow to switch order
+   - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
    - [markup] Move edit bar to bottom and write new blue bar on top.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.

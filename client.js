@@ -2405,6 +2405,70 @@ H.hash = function (file, cb) {
    }
 }
 
+H.computeChunks = function (x, pivs) {
+   var t = Date.now (), chunks = [];
+
+   var computeRepulsion = function (chunkSize) {
+      var chunkSizes = [10, 20, 40];
+
+      // Map points after the second chunk to the points between the first and second chunk
+      // chunkSize > 50 = REPULSION: 1
+      if (chunkSize > chunkSizes [2] + (chunkSizes [2] - chunkSizes [1]) / 2) return 1;
+      // chunkSize between 21-50: 21 is 19.5, 30 is 15, 40 is 20, 50 is 15
+      if (chunkSize > chunkSizes [1]) {
+         if (chunkSize > chunkSizes [2]) chunkSize = chunkSizes [2] - (chunkSize - chunkSizes [2]);
+         var midPoint = chunkSizes [1] + (chunkSizes [2] - chunkSizes [1]) / 2;
+         if (chunkSize > midPoint) chunkSize = midPoint - (chunkSize - midPoint);
+         chunkSize = chunkSizes [1] - (chunkSize - chunkSizes [1]) * (chunkSizes [1] - chunkSizes [0]) / (chunkSizes [2] - chunkSizes [1]);
+         // 21: 19.5 -> 20 - 0.5 -> 20 - (21 - 20) * 0.5 // (40 - 20) / (20
+      }
+
+      // Map points after the first chunk to the curve from 0 to the first chunk.
+      // chunkSize between 11 and 20: 11 is 8, 12 is 6, 15 is 0, 16 is 2, 19 is 8
+      if (chunkSize > chunkSizes [0] && chunkSize <= chunkSizes [1]) {
+         var midPoint = chunkSizes [0] + (chunkSizes [1] - chunkSizes [0]) / 2;
+         if (chunkSize > midPoint) chunkSize = midPoint - (chunkSize - midPoint);
+
+         chunkSize = chunkSizes [0] - (chunkSize - chunkSizes [0]) * (chunkSizes [0] / ((chunkSizes [1] - chunkSizes [0]) / 2));
+      }
+
+      // https://www.desmos.com/calculator
+      // \frac{1}{\log\ \left(x+5\right)}-\frac{1}{\log\ \left(15\right)}
+      return 1 / Math.log10 (chunkSize + 5) - 1 / Math.log10 (15);
+   }
+   var computeAttraction = function (ms) {
+      var baseUnit = 10;
+      if (ms < baseUnit) return 1;
+      var multipliers = [100, 60, 30, 2, 8, 3, 7, 2.15, 2, 6];
+      var boundaries = [];
+      dale.go (multipliers, function (multiplier) {
+         if (! boundaries.length) boundaries.push (baseUnit * multiplier);
+         else                     boundaries.push (teishi.last (boundaries) * multiplier);
+      });
+      if (ms >= teishi.last (boundaries)) return 0;
+      boundaries.reverse ();
+      // Base level: 0.5?
+      var jump = 0.4 / boundaries.length;
+      return dale.stopNot (boundaries, undefined, function (boundary, k) {
+         if (ms >= boundary) return 1 - jump * (boundaries.length - k);
+      });
+      // return 1 / Math.log10 (ms);
+   }
+
+   dale.go (pivs, function (piv, k) {
+      piv.index = k;
+      if (k === 0) return chunks.push ([piv]);
+      var gap = Math.abs (piv.date - pivs [k - 1].date);
+      var repulsionForce  = computeRepulsion (teishi.last (chunks).length);
+      var attractionForce = computeAttraction (gap);
+      // clog ('DEBUG REPULSION', teishi.last (chunks).length, repulsionForce, 'ATTRACTION', H.ago (gap), attractionForce);
+      if (repulsionForce > attractionForce) chunks.push ([]);
+      teishi.last (chunks).push (piv);
+   });
+   B.call ('split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t});
+   return chunks;
+}
+
 // *** VIEWS ***
 
 var views = {};
@@ -2740,6 +2804,8 @@ B.mrespond ([
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
             B.call (x, 'query', 'pivs');
          }, 1500));
+
+         B.call (x, 'set', ['Data', 'chunks'], H.computeChunks (x, rs.body.pivs));
 
          if (B.get ('State', 'open') === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
@@ -4362,10 +4428,17 @@ views.grid = function () {
             'top, left': 'calc(50% - 25px)',
          }],
       ]],
+      // TODO: remove & update docs
+      /*
       B.view ([['State', 'nPivs'], ['Data', 'pivs']], function (nPivs, pivs) {
          if (! nPivs) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (pivs.slice (0, nPivs), function (piv, k) {
+               */
+      B.view (['Data', 'chunks'], function (chunks) {
+         if (! chunks) return ['div'];
+         return ['div', {style: style ({'min-height': window.innerHeight})}, [
+            dale.go (chunks, function (chunk) {return [['br'], ['br'], ['br'], ['h3', [new Date (chunk [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk).date).toUTCString ()]], dale.go (chunk, function (piv, k) {
                var askance = piv.deg === 90 || piv.deg === -90;
                var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
                   return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + piv.deg + 'deg)'];
@@ -4404,7 +4477,7 @@ views.grid = function () {
                   ['div', {
                      class: 'pictures-grid__item-picture',
                      id: piv.id,
-                     onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, k, {raw: 'event'}])
+                     onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
                   }, [
                      ['div', {
                         class: 'inner',
@@ -4428,7 +4501,7 @@ views.grid = function () {
                      ]],
                   ]],
                ]];
-            })
+            })]})
          ]];
       })
    ];
@@ -4459,7 +4532,7 @@ views.open = function () {
             ['.fullscreen__image-container', {padding: 0}],
          ])],
          ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
-            if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/900/' + piv.id, alt: 'picture'}];
+            if (! piv.vid) return ['img', {style: 'border: solid 12px black;', class: 'fullscreen__image', src: 'thumb/900/' + piv.id, alt: 'picture'}];
             if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
             if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
             return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/900/' + piv.id, loop: true}];
