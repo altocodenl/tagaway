@@ -43,14 +43,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Implement chunking and linear scroll.
       - Chunking.
       - Internal representation of space used.
-      - Proper calculation of indexes.
-      - Smooth, linear scrolling.
+      - Smooth, linear scrolling: replace unseen chunks by div with the right height.
+      - Don't lose scroll position when recomputing chunks: set nPivs to function of window height, fill when needed
+      - When query is updated in a deep scroll, update chunk visibility
       - Increase thumbnail size
+      - Document client changes from ab21b88d7ce3bb142c1eb15dc1394ffc24c863da
    - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
-   - Open: add frame to images; use more space with a ratio that doesn't damage quality too much.
    - Sort tags by nPivs, and add arrow to switch order
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
-   - [markup] Move edit bar to bottom and write new blue bar on top.
+   - [markup] Move edit bar to bottom and write new blue bar on top. Make sure that chunk headers are shown properly.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
    - [bug] Stop losing state of left scrollbar and sort by scrollbar when query refreshes.

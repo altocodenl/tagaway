@@ -17,6 +17,20 @@ window.addEventListener ('keydown', function (ev) {
       c ('.evlog-resp', function (element) {element.style.display = window.getComputedStyle (element).display === 'table-row' ? 'none' : 'table-row'});
    }
    if (ev.keyCode === 80) {
+      var output = {DOM: 0, js: 0, n: 0};
+      var redraws = dale.fil (B.log, undefined, function (log) {
+         if (log.verb !== 'redraw') return;
+         output.n++;
+         output.DOM += log.args [0].ms.DOM;
+         output.js  += log.args [0].ms.total - log.args [0].ms.DOM;
+         return [log.path.join (':'), log.args [0].ms.total];
+      }).sort (function (a, b) {
+         return b [1] - a [1];
+      }).slice (0, 3);
+      console.log (output);
+      dale.go (redraws, console.log);
+   }
+   if (ev.keyCode === 84) {
       ev.preventDefault ();
       B.call ('test', []);
    }
@@ -2405,14 +2419,64 @@ H.hash = function (file, cb) {
    }
 }
 
+H.computeBaseNPivs = function () {
+   // Sidebar is 300px, then there's also a padding.
+   var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
+   // gridHeight is actually smaller, but we don't bother computing it now.
+   var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 50;
+
+   // piv frame height is always 140px, width ranges between 100 and 240, hence an average.
+   var nPivs = Math.ceil (gridHeight / 140) * (Math.ceil (gridWidth / 170));
+   // We duplicate nPivs to make sure we have enough.
+   nPivs = nPivs * 2;
+   return nPivs;
+}
+
+H.computePivFrame = function (piv) {
+   if (piv.frame) return piv.frame;
+   var askance = piv.deg === 90 || piv.deg === -90;
+   var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
+   var pivRatio = pivWidth / pivHeight;
+   // .pictures-grid__item: padding-bottom: 18px, padding right: 16px
+   var height = 140 - 18, width, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
+   if      (pivRatio <= (sizes [0] / height)) width = sizes [0];
+   else if (pivRatio <= (sizes [1] / height)) width = sizes [1];
+   else if (pivRatio <= (sizes [2] / height)) width = sizes [2];
+   else                                       width = sizes [3];
+   piv.frame = {askance: askance, height: height, width: width};
+   return piv.frame;
+}
+
 H.computeChunks = function (x, pivs) {
+   clog ('debug computing chunks');
    var t = Date.now (), chunks = [];
+
+   var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
+
+   var computeHeight = function (chunk) {
+
+      var rows = 1, width = 0;
+
+      dale.go (chunk.pivs, function (piv) {
+         H.computePivFrame (piv);
+         // 16px is padding-right for each piv
+         if ((width + piv.frame.width + 16) > gridWidth) {
+            width = piv.frame.width + 16;
+            rows++;
+         }
+         else width += piv.frame.width + 16;
+      });
+
+      // Chunk header has 20px height and chunk has 30px padding top
+      // Each row is always 140px high
+      return 50 + rows * 140;
+   };
 
    var computeRepulsion = function (chunkSize) {
       var chunkSizes = [10, 20, 40];
 
       // Map points after the second chunk to the points between the first and second chunk
-      // chunkSize > 50 = REPULSION: 1
+      // chunkSize > 50 -> REPULSION: 1
       if (chunkSize > chunkSizes [2] + (chunkSizes [2] - chunkSizes [1]) / 2) return 1;
       // chunkSize between 21-50: 21 is 19.5, 30 is 15, 40 is 20, 50 is 15
       if (chunkSize > chunkSizes [1]) {
@@ -2457,16 +2521,30 @@ H.computeChunks = function (x, pivs) {
 
    dale.go (pivs, function (piv, k) {
       piv.index = k;
-      if (k === 0) return chunks.push ([piv]);
+      if (k === 0) return chunks.push ({pivs: [piv]});
       var gap = Math.abs (piv.date - pivs [k - 1].date);
-      var repulsionForce  = computeRepulsion (teishi.last (chunks).length);
+      var repulsionForce  = computeRepulsion (teishi.last (chunks).pivs.length);
       var attractionForce = computeAttraction (gap);
       // clog ('DEBUG REPULSION', teishi.last (chunks).length, repulsionForce, 'ATTRACTION', H.ago (gap), attractionForce);
-      if (repulsionForce > attractionForce) chunks.push ([]);
-      teishi.last (chunks).push (piv);
+      if (repulsionForce > attractionForce) chunks.push ({pivs: [piv]});
+      teishi.last (chunks).pivs.push (piv);
    });
-   B.call ('split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t});
+   dale.go (chunks, function (chunk, k) {
+      chunk.start = k === 0 ? 0 : chunks [k - 1].end;
+      chunk.end   = chunk.start + computeHeight (chunk);
+      // TODO: do this properly
+      chunk.visible = k < 2;
+   });
+   B.call ('split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t, bytes: JSON.stringify (pivs).length});
    return chunks;
+}
+
+// TODO: remove
+window.verify = function () {
+   var baseHeight = c ('.pictures-grid') [0].getBoundingClientRect ().top;
+   dale.go (B.get ('Data', 'chunks'), function (chunk, k) {
+      if (chunk.end - chunk.start !== c ('.chunk') [k].getBoundingClientRect ().height) clog ('Mismatch in chunk', k + 1);
+   });
 }
 
 // *** VIEWS ***
@@ -2700,6 +2778,8 @@ B.mrespond ([
    // *** PICS RESPONDERS ***
 
    ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
+      // If the State object itself changes, don't respond to that.
+      if (x.path.length < 2) return;
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
@@ -2712,10 +2792,12 @@ B.mrespond ([
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
       // We modify State.nPivs directly to avoid triggering two calls to `query pivs`, one from here and another one from the responder to a change in State.nPivs
-      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], 20);
+      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], H.computeBaseNPivs ());
       B.call (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
+      // If the State object itself changes, don't respond to that.
+      if (x.path.length < 2) return;
       var selected = B.get ('State', 'selected') || {};
       var pivs = document.getElementsByClassName ('pictures-grid__item-picture');
       dale.go (pivs, function (piv) {
@@ -2767,12 +2849,12 @@ B.mrespond ([
          clearTimeout (timeout);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs'), recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          B.call (x, 'set', ['State', 'querying'], false);
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          B.call (x, 'query', 'tags');
 
-         if (B.get ('State', 'nPivs') === 20) window.scrollTo (0, 0);
+         if (B.get ('State', 'nPivs') === H.computeBaseNPivs ()) window.scrollTo (0, 0);
 
          B.call (x, 'set', ['Data', 'pendingConversions'], dale.stop (rs.body.pivs, true, function (piv) {
             return piv.vid === 'pending';
@@ -2806,11 +2888,11 @@ B.mrespond ([
          }, 1500));
 
          B.call (x, 'set', ['Data', 'chunks'], H.computeChunks (x, rs.body.pivs));
+         B.call (x, 'scroll', []);
 
          if (B.get ('State', 'open') === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
             B.call (x, 'change', ['State', 'selected'], updatedSelection);
-            B.call (x, 'fill', 'screen');
             return;
          }
 
@@ -2976,24 +3058,21 @@ B.mrespond ([
       var lastScroll = B.get ('State', 'lastScroll');
       if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
       B.call (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
-      if (lastScroll && lastScroll.y > window.scrollY) return;
 
-      var lastPiv = teishi.last (c ('.pictures-grid__item-picture'));
-      if (! lastPiv) return;
-
-      if (window.innerHeight < lastPiv.getBoundingClientRect ().top) return;
-
-      B.call (x, 'increment', 'nPivs');
+      var bufferSize = window.innerHeight * 2;
+      var minVisible = Math.max (0, window.scrollY - bufferSize);
+      var maxVisible = window.scrollY + window.innerHeight + bufferSize;
+      dale.go (B.get (['Data', 'chunks']), function (chunk, k) {
+         var oldVisibility = chunk.visible;
+         if (chunk.end < minVisible || chunk.start > maxVisible) chunk.visible = false;
+         else chunk.visible = true;
+         if (oldVisibility !== chunk.visible) clog ('setting chunk #' + (k + 1) + ' visibility to', chunk.visible);
+      });
+      B.call (x, 'change', ['Data', 'chunks']);
       B.call (x, 'change', ['State', 'selected']);
-   }],
-   ['fill', 'screen', function (x) {
-      if (B.get ('State', 'page') !== 'pics') return;
-      // We fill the screen with pivs.
-      var lastPiv = teishi.last (c ('.pictures-grid__item-picture'));
-      if (! lastPiv) return;
-      if (window.innerHeight < lastPiv.getBoundingClientRect ().top) return;
-      // If there are not enough images to fill the grid, increment the amount of images to show.
-      B.call (x, 'increment', 'nPivs');
+
+      var lastChunk = teishi.last (B.get ('Data', 'chunks'));
+      if (lastChunk && lastChunk.visible) B.call (x, 'increment', 'nPivs');
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -3018,7 +3097,7 @@ B.mrespond ([
    }],
    ['increment', 'nPivs', function (x) {
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
-      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 20, B.get ('Data', 'pivTotal')));
+      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 50, B.get ('Data', 'pivTotal')));
    }],
    ['change', ['State', 'nPivs'], function (x) {
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs') + 100) return;
@@ -4435,73 +4514,56 @@ views.grid = function () {
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (pivs.slice (0, nPivs), function (piv, k) {
                */
-      B.view (['Data', 'chunks'], function (chunks) {
+      B.view ([['Data', 'chunks'], ['State', 'yIndex']], function (chunks, yIndex) {
          if (! chunks) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
-            dale.go (chunks, function (chunk) {return [['br'], ['br'], ['br'], ['h3', [new Date (chunk [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk).date).toUTCString ()]], dale.go (chunk, function (piv, k) {
-               var askance = piv.deg === 90 || piv.deg === -90;
-               var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + piv.deg + 'deg)'];
-               });
-               rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
-                  if (piv.deg === 90)  return [v + 'transform-origin', 'left bottom'];
-                  if (piv.deg === -90) return [v + 'transform-origin', 'right bottom'];
-               });
-               // 122w 224h 102m-left
+            dale.go (chunks, function (chunk) {
+               if (! chunk.visible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
+               return ['div', {class: 'chunk', style: style ({'padding-top': 30})}, [
+                  ['h3', {style: style ({height: 20})}, [new Date (chunk.pivs [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs).date).toUTCString ()]],
+                  dale.go (chunk.pivs, function (piv, k) {
+                     H.computePivFrame (piv);
 
-               // If following the CSS rules only:
-               // 140: 6, 11, 16, 21, 26
-               // 180: 2, 5, 8, 14, 17, 20, 23
-               // 240: 15, 19, 27
-               // 100: rest
-               //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
-               //if (((k + 1) % 3) === 0)           frameWidth = 180;
-               //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
+                     var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+                        return [v + 'transform', (piv.frame.askance ? 'translateY(-100%) ' : '') + 'rotate(' + piv.deg + 'deg)'];
+                     });
+                     rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+                        if (piv.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+                        if (piv.deg === -90) return [v + 'transform-origin', 'right bottom'];
+                     });
 
-               var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
-               var pivRatio = pivWidth / pivHeight;
-
-               // padding right: 16px, padding left: 18px
-               var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
-               if      (pivRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
-               else if (pivRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
-               else if (pivRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
-               else    frameWidth = sizes [3];
-
-               // TODO: understand this magic number.
-               if (piv.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
-                  return [v [0], v [1]];
-               });
-
-               return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
-                  ['div', {
-                     class: 'pictures-grid__item-picture',
-                     id: piv.id,
-                     onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
-                  }, [
-                     ['div', {
-                        class: 'inner',
-                        style: style ({
-                           'border-radius': 'inherit',
-                           width: askance ? frameHeight : frameWidth,
-                           height: askance ? frameWidth : frameHeight,
-                           'background-image': 'url(thumb/200/' + piv.id + ')',
-                           'background-position': 'center',
-                           'background-repeat': 'no-repeat',
-                           'background-size': 'cover',
-                           'margin-left': piv.deg !== -90 ? 0 : margin [frameWidth],
-                           rotation: rotation,
-                        }),
-                     }],
-                     piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
-                     ['div', {class: 'mask'}],
-                     ['div', {class: 'caption'}, [
-                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + piv.tags.length]],
-                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
-                     ]],
-                  ]],
+                     // 16px is the margin-right
+                     return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: piv.frame.width + 16})}, [
+                        ['div', {
+                           class: 'pictures-grid__item-picture',
+                           id: piv.id,
+                           onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
+                        }, [
+                           ['div', {
+                              class: 'inner',
+                              style: style ({
+                                 'border-radius': 'inherit',
+                                 width:  piv.frame.askance ? piv.frame.height : piv.frame.width,
+                                 height: piv.frame.askance ? piv.frame.width  : piv.frame.height,
+                                 'background-image': 'url(thumb/200/' + piv.id + ')',
+                                 'background-position': 'center',
+                                 'background-repeat': 'no-repeat',
+                                 'background-size': 'cover',
+                                 // For pivs rotated -90 degrees, margin-left is frameWidth - 124 (since 124 is the standard frame width (140px - 16 of margin-right).
+                                 'margin-left': piv.deg !== -90 ? 0 : {84: -40, 124: 0, 164: 40, 224: 100} [piv.frame.width],
+                                 rotation: rotation,
+                              }),
+                           }],
+                           piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
+                           ['div', {class: 'mask'}],
+                           ['div', {class: 'caption'}, [
+                              ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
+                           ]],
+                        ]],
+                     ]];
+                  })
                ]];
-            })]})
+            })
          ]];
       })
    ];
@@ -4532,7 +4594,7 @@ views.open = function () {
             ['.fullscreen__image-container', {padding: 0}],
          ])],
          ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
-            if (! piv.vid) return ['img', {style: 'border: solid 12px black;', class: 'fullscreen__image', src: 'thumb/900/' + piv.id, alt: 'picture'}];
+            if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/900/' + piv.id, alt: 'picture'}];
             if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
             if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
             return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/900/' + piv.id, loop: true}];
