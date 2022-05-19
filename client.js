@@ -6,17 +6,21 @@ var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith
 window.addEventListener ('keydown', function (ev) {
    ev = ev || document.event;
    if (! ev.ctrlKey) return;
+   // CTRL+K: search the eventlog
    if (ev.keyCode === 75) {
       ev.preventDefault ();
       var query = prompt ('Search the eventlog');
       if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
       B.eventlog (query);
    }
+   // CTRL+L: hide/show responder entries in the eventlog
    if (ev.keyCode === 76) {
       ev.preventDefault ();
       c ('.evlog-resp', function (element) {element.style.display = window.getComputedStyle (element).display === 'table-row' ? 'none' : 'table-row'});
    }
+   // CTRL+P: compute performance for all redraws so far
    if (ev.keyCode === 80) {
+      ev.preventDefault ();
       var output = {DOM: 0, js: 0, n: 0};
       var redraws = dale.fil (B.log, undefined, function (log) {
          if (log.verb !== 'redraw') return;
@@ -26,10 +30,19 @@ window.addEventListener ('keydown', function (ev) {
          return [log.path.join (':'), log.args [0].ms.total];
       }).sort (function (a, b) {
          return b [1] - a [1];
-      }).slice (0, 3);
-      console.log (output);
-      dale.go (redraws, console.log);
+      })
+      dale.go ([200, 100], function (ms) {
+         var c = 0;
+         dale.go (redraws, function (redraw) {
+            if (redraw [1] < ms) return;
+            c++;
+         });
+         output [ms + 'ms'] = c;
+      });
+      output.avg = Math.ceil ((output.DOM + output.js) / output.n);
+      console.log (JSON.stringify (output).replace (/"/g, ''), redraws.slice (0, 4).join (' '));
    }
+   // CTRL+T: run client test suite
    if (ev.keyCode === 84) {
       ev.preventDefault ();
       B.call ('test', []);
@@ -2448,7 +2461,6 @@ H.computePivFrame = function (piv) {
 }
 
 H.computeChunks = function (x, pivs) {
-   clog ('debug computing chunks');
    var t = Date.now (), chunks = [];
 
    var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
@@ -2532,19 +2544,9 @@ H.computeChunks = function (x, pivs) {
    dale.go (chunks, function (chunk, k) {
       chunk.start = k === 0 ? 0 : chunks [k - 1].end;
       chunk.end   = chunk.start + computeHeight (chunk);
-      // TODO: do this properly
-      chunk.visible = k < 2;
    });
    B.call ('split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t, bytes: JSON.stringify (pivs).length});
    return chunks;
-}
-
-// TODO: remove
-window.verify = function () {
-   var baseHeight = c ('.pictures-grid') [0].getBoundingClientRect ().top;
-   dale.go (B.get ('Data', 'chunks'), function (chunk, k) {
-      if (chunk.end - chunk.start !== c ('.chunk') [k].getBoundingClientRect ().height) clog ('Mismatch in chunk', k + 1);
-   });
 }
 
 // *** VIEWS ***
@@ -3063,16 +3065,16 @@ B.mrespond ([
       var minVisible = Math.max (0, window.scrollY - bufferSize);
       var maxVisible = window.scrollY + window.innerHeight + bufferSize;
       dale.go (B.get (['Data', 'chunks']), function (chunk, k) {
-         var oldVisibility = chunk.visible;
          if (chunk.end < minVisible || chunk.start > maxVisible) chunk.visible = false;
          else chunk.visible = true;
-         if (oldVisibility !== chunk.visible) clog ('setting chunk #' + (k + 1) + ' visibility to', chunk.visible);
       });
       B.call (x, 'change', ['Data', 'chunks']);
       B.call (x, 'change', ['State', 'selected']);
 
       var lastChunk = teishi.last (B.get ('Data', 'chunks'));
-      if (lastChunk && lastChunk.visible) B.call (x, 'increment', 'nPivs');
+      if (! B.get ('State', 'querying') && lastChunk && lastChunk.visible) {
+         B.call (x, 'increment', 'nPivs');
+      }
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -3097,10 +3099,10 @@ B.mrespond ([
    }],
    ['increment', 'nPivs', function (x) {
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
-      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 50, B.get ('Data', 'pivTotal')));
+      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + H.computeBaseNPivs (), B.get ('Data', 'pivTotal')));
    }],
    ['change', ['State', 'nPivs'], function (x) {
-      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs') + 100) return;
+      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
       B.call (x, 'query', 'pivs');
    }],
    ['change', ['Data', 'pendingConversions'], {match: B.changeResponder}, function (x) {
@@ -3153,7 +3155,7 @@ B.mrespond ([
       var open = B.get ('State', 'open');
       if (x.path [0] === 'prev' && open === 0) return;
       if (x.path [0] === 'next') {
-         if ((open + 1) >= B.get ('State', 'nPivs')) B.call (x, 'increment', 'nPivs');
+         if (open + H.computeBaseNPivs () > B.get ('State', 'nPivs')) B.call (x, 'increment', 'nPivs');
          B.call (x, 'set', ['State', 'open'], B.get ('Data', 'pivs', open + 1) ? open + 1 : 0);
       }
       else                       B.call (x, 'set', ['State', 'open'], open - 1);
