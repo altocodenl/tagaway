@@ -4509,14 +4509,7 @@ views.grid = function () {
             'top, left': 'calc(50% - 25px)',
          }],
       ]],
-      // TODO: remove & update docs
-      /*
-      B.view ([['State', 'nPivs'], ['Data', 'pivs']], function (nPivs, pivs) {
-         if (! nPivs) return ['div'];
-         return ['div', {style: style ({'min-height': window.innerHeight})}, [
-            dale.go (pivs.slice (0, nPivs), function (piv, k) {
-               */
-      B.view ([['Data', 'chunks'], ['State', 'yIndex']], function (chunks, yIndex) {
+      B.view (['Data', 'chunks'], function (chunks) {
          if (! chunks) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (chunks, function (chunk) {
