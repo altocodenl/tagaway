@@ -2432,6 +2432,7 @@ H.hash = function (file, cb) {
    }
 }
 
+// Roughly computes the number of pivs required to fill the screen of the device
 H.computeBaseNPivs = function () {
    // Sidebar is 300px, then there's also a padding.
    var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
@@ -2445,6 +2446,7 @@ H.computeBaseNPivs = function () {
    return nPivs;
 }
 
+// Computes the width and height of the thumbnail of a piv
 H.computePivFrame = function (piv) {
    if (piv.frame) return piv.frame;
    var askance = piv.deg === 90 || piv.deg === -90;
@@ -2460,6 +2462,7 @@ H.computePivFrame = function (piv) {
    return piv.frame;
 }
 
+// Computes the chunks into which to split the pivs currently displayed
 H.computeChunks = function (x, pivs) {
    var t = Date.now (), chunks = [];
 
@@ -2538,6 +2541,7 @@ H.computeChunks = function (x, pivs) {
       var repulsionForce  = computeRepulsion (teishi.last (chunks).pivs.length);
       var attractionForce = computeAttraction (gap);
       // clog ('DEBUG REPULSION', teishi.last (chunks).length, repulsionForce, 'ATTRACTION', H.ago (gap), attractionForce);
+      // If repulsion > attraction, create a new chunk
       if (repulsionForce > attractionForce) chunks.push ({pivs: [piv]});
       teishi.last (chunks).pivs.push (piv);
    });
@@ -2545,7 +2549,7 @@ H.computeChunks = function (x, pivs) {
       chunk.start = k === 0 ? 0 : chunks [k - 1].end;
       chunk.end   = chunk.start + computeHeight (chunk);
    });
-   B.call ('split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t, bytes: JSON.stringify (pivs).length});
+   B.call (x, 'split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t, bytes: JSON.stringify (pivs).length});
    return chunks;
 }
 
@@ -2856,21 +2860,8 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          B.call (x, 'query', 'tags');
 
-         if (B.get ('State', 'nPivs') === H.computeBaseNPivs ()) window.scrollTo (0, 0);
-
-         B.call (x, 'set', ['Data', 'pendingConversions'], dale.stop (rs.body.pivs, true, function (piv) {
-            return piv.vid === 'pending';
-         }));
-
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
          B.call (x, 'set', ['Data', 'pivTotal'],  rs.body.total);
-
-         var selected = B.get ('State', 'selected') || {};
-         // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
-         var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pivs, function (piv) {
-            if (selected [piv.id]) return [piv.id, true];
-         });
-         B.set (['State', 'selected'], updatedSelection);
 
          if (dale.stop (query.tags, true, H.isYearTag)) {
             B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {
@@ -2889,12 +2880,22 @@ B.mrespond ([
             B.call (x, 'query', 'pivs');
          }, 1500));
 
-         B.call (x, 'set', ['Data', 'chunks'], H.computeChunks (x, rs.body.pivs));
+         if (B.get ('State', 'nPivs') === H.computeBaseNPivs ()) window.scrollTo (0, 0);
+
+         if (updateSelected) {
+            var selected = B.get ('State', 'selected') || {};
+            // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
+            B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
+               if (selected [piv.id]) return [piv.id, true];
+            }));
+         }
+
+         B.call (x, 'set', ['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
          B.call (x, 'scroll', []);
 
          if (B.get ('State', 'open') === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            B.call (x, 'change', ['State', 'selected'], updatedSelection);
+            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
             return;
          }
 
@@ -2905,6 +2906,7 @@ B.mrespond ([
          // If opened piv is no longer in query, exit open.
          if (newOpen === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
+            if (updateSelected) B.call (x, 'change', ['State', 'selected'], updatedSelection);
             B.call (x, 'exit', 'fullscreen');
             return;
          }
@@ -2914,8 +2916,7 @@ B.mrespond ([
          B.set (['Data', 'pivs'], rs.body.pivs);
          B.call (x, 'change', ['State', 'open']);
          B.call (x, 'change', ['Data', 'pivs']);
-         B.call (x, 'change', ['State', 'selected'], updatedSelection);
-
+         if (updateSelected) B.call (x, 'change', ['State', 'selected'], updatedSelection);
       });
    }],
    ['click', 'piv', function (x, id, k, ev) {
@@ -3064,14 +3065,14 @@ B.mrespond ([
       var bufferSize = window.innerHeight * 2;
       var minVisible = Math.max (0, window.scrollY - bufferSize);
       var maxVisible = window.scrollY + window.innerHeight + bufferSize;
-      dale.go (B.get (['Data', 'chunks']), function (chunk, k) {
+      dale.go (B.get (['State', 'chunks']), function (chunk, k) {
          if (chunk.end < minVisible || chunk.start > maxVisible) chunk.visible = false;
          else chunk.visible = true;
       });
-      B.call (x, 'change', ['Data', 'chunks']);
+      B.call (x, 'change', ['State', 'chunks']);
       B.call (x, 'change', ['State', 'selected']);
 
-      var lastChunk = teishi.last (B.get ('Data', 'chunks'));
+      var lastChunk = teishi.last (B.get ('State', 'chunks'));
       if (! B.get ('State', 'querying') && lastChunk && lastChunk.visible) {
          B.call (x, 'increment', 'nPivs');
       }
@@ -3098,23 +3099,12 @@ B.mrespond ([
       ev.stopPropagation ();
    }],
    ['increment', 'nPivs', function (x) {
-      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
+      if (B.get ('State', 'nPivs') === B.get ('Data', 'pivTotal')) return;
       B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + H.computeBaseNPivs (), B.get ('Data', 'pivTotal')));
    }],
    ['change', ['State', 'nPivs'], function (x) {
       if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
       B.call (x, 'query', 'pivs');
-   }],
-   ['change', ['Data', 'pendingConversions'], {match: B.changeResponder}, function (x) {
-      var pending = B.get ('Data', 'pendingConversions'), interval = B.get ('State', 'pendingConversions');
-      if ((pending && interval) || (! pending && ! interval)) return;
-      if (! pending) {
-         B.call (x, 'rem', 'State', 'pendingConversions');
-         return clearInterval (interval);
-      }
-      B.call (x, 'set', ['State', 'pendingConversions'], setInterval (function () {
-         B.call (x, 'query', 'pivs');
-      }, 2000));
    }],
 
    // *** OPEN RESPONDERS ***
@@ -4509,7 +4499,7 @@ views.grid = function () {
             'top, left': 'calc(50% - 25px)',
          }],
       ]],
-      B.view (['Data', 'chunks'], function (chunks) {
+      B.view (['State', 'chunks'], function (chunks) {
          if (! chunks) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (chunks, function (chunk) {
