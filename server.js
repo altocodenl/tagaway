@@ -2726,7 +2726,11 @@ var routes = [
             dale.go (s.output.pivs, function (piv, k) {
                var vid = undefined;
                if (piv.vid) {
-                  if (piv.vid.match ('pending'))    vid = 'pending';
+                  if (piv.vid.match ('pending'))    {
+                     vid = 'pending';
+                     // If there are pending conversions, the query also needs refreshing.
+                     s.output.refreshQuery = true;
+                  }
                   else if (piv.vid.match ('error')) vid = 'error';
                   else                              vid = true;
                }

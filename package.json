@@ -3,7 +3,7 @@
    "version": "0.1.0",
    "description": "A home for your pictures",
    "dependencies": {
-      "cicek":   "3.4.2",
+      "cicek":   "3.4.3",
       "dale":    "6.0.2",
       "gotob":   "2.1.1",
       "giz":     "0.3.1",

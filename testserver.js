@@ -2132,6 +2132,30 @@ suites.query = function () {
          if (H.stop ('body', rs.body.refreshQuery, undefined)) return false;
          return true;
       }],
+      ['start upload to test querying', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload video that requires conversion to test that refreshQuery is returned while conversions are going on', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.circus.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.circus.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.pivId = rs.body.id;
+         return true;
+      }],
+      ['finish upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'complete'}}, 200],
+      ['query pivs with refreshQuery activated by mp4 conversion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body', rs.body.refreshQuery, true)) return false;
+         // Wait for conversion to finish.
+         H.tryTimeout (10, 3000, function (cb) {
+            h.one (s, {method: 'get', path: 'piv/' + s.pivId, code: 200, raw: true}, cb);
+         }, next);
+      }],
+      ['query pivs with no refreshQuery after conversion to mp4 is finished', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body', rs.body.refreshQuery, undefined)) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }
