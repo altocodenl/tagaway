@@ -3950,7 +3950,7 @@ cicek.log = function (message) {
       }
       */
    }
-   else if (message [1] === 'cicek.reply validation error' && message [2].match ('response.connection.writable passed to cicek.reply should be equal to true but instead is false')) notification = {
+   else if (message [1] === 'cicek.reply validation error' && message [2].match (/response.connection.writable passed to cicek.(reply|file) should be equal to true but instead is false/)) notification = {
       priority: 'normal',
       type:    'client error',
       subtype: message [1],
