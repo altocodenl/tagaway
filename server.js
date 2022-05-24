@@ -3992,21 +3992,15 @@ if (cicek.isMaster) a.seq ([
 ]);
 
 process.on ('uncaughtException', function (error, origin) {
-   // If a job done before the server starts errors, there might be no `server` yet.
-   if (! server) a.seq ([
+   a.seq ([
       [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
-      function () {
-         process.exit (1);
+      function (s) {
+         if (! server) process.exit (1);
+         else server.close (function () {
+            process.exit (1);
+         });
       }
    ]);
-   else server.close (function () {
-      a.seq ([
-         [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
-         function () {
-            process.exit (1);
-         }
-      ]);
-   });
 });
 
 // *** REDIS ERROR HANDLER ***
