@@ -1,4 +1,4 @@
-# ac;pic :: a home for your pictures
+# ac;pic :: a home for your digital memories
 
 ## About
 
@@ -41,8 +41,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pivs
    - Increase thumbnail size
-   - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
    - Sort tags by nPivs, and add arrow to switch order
+   - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
+      - Parse query url function, pit in hash responder. Sets query and Desired date. Query responder executes query, then scrolls to chunk. Scrollto chunk responder. Onscroll, move Desired date on query. Also set current query on url on the change responder.
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
    - [markup] Move edit bar to bottom and write new blue bar on top. Make sure that chunk headers are shown properly.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
@@ -69,7 +70,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pivs
    - Show dialog that indicates that a click selects a piv and that a double click opens it. The dialog should be permanently dismissable.
    - Show all pivs.
+   - Show pivs split in meaningful chunks.
    - Load more pivs on scroll.
+   - Hide unseen chunks so that performance remains the same no matter how deeply you scroll.
    - Sort by newest, oldest & upload date.
    - Select/unselect piv by clicking on it.
    - Multiple selection with shift.
@@ -197,11 +200,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Share & manage
    - Rename tag.
-   - Share/unshare with email: signup, login, or go straight if there's a session.
-   - Mark tags shared with others.
-   - Mark tags shared with me.
+   - Share/unshare with email: signup, login, or go straight if there's a session. On signup, resolve shares.
+   - Save email addresses of previous shares and allow to delete them.
+   - Authorize/deauthorize shares done with me.
+   - In main view, mark tags shared with others and tags shared with me.
    - If two shared tags from different users have the same name, put "@username".
    - Authorization to see or ignore share.
+   - Allow to share from main editing view with dropdown of emails. If tag is shared already, nothing is done.
+   - Can you tag or share or copy pivs shared with you?
 
 - Account & payment
    - Set account space limit.
@@ -220,9 +226,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - User management.
 
 - Mobile
-   - See pivs.
-   - Select tags & sort order to see pivs.
-   - Select sorting order.
+   - Functionality of main view (including editing) as a fullscreen web app.
 
 - Other
    - Refactor UI with unified terminology for pivs: Pics&Vids, pivs.

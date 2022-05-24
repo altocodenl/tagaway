@@ -2543,7 +2543,7 @@ H.computeChunks = function (x, pivs) {
       // clog ('DEBUG REPULSION', teishi.last (chunks).length, repulsionForce, 'ATTRACTION', H.ago (gap), attractionForce);
       // If repulsion > attraction, create a new chunk
       if (repulsionForce > attractionForce) chunks.push ({pivs: [piv]});
-      teishi.last (chunks).pivs.push (piv);
+      else teishi.last (chunks).pivs.push (piv);
    });
    dale.go (chunks, function (chunk, k) {
       chunk.start = k === 0 ? 0 : chunks [k - 1].end;
@@ -4078,7 +4078,7 @@ views.pics = function () {
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
-                        }).sort (function (a, b) {return a - b});
+                        }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
