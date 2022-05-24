@@ -52,6 +52,8 @@ window.addEventListener ('keydown', function (ev) {
 // *** CSS ***
 
 var CSS = {
+   //pivSizes: [100, 140, 180, 240],
+   pivSizes: [150, 210, 240, 360],
    toRGBA: function (hex) {
       hex = hex.slice (1);
       return parseInt (hex.slice (0, 2), 16) + ', ' + parseInt (hex.slice (2, 4), 16) + ', ' + parseInt (hex.slice (4, 6), 16);
@@ -1883,15 +1885,15 @@ CSS.litc = [
    }],
    ['.pictures-grid__item', {
       display: 'inline-flex',
-      height: 140,
+      height: CSS.pivSizes [1],
       'padding-right': 16,
       'padding-bottom': 18,
       position: 'relative',
    }],
-   ['.pictures-grid__item', {width: 100}],
-   ['.pictures-grid__item:nth-child(4n+12)', {width: 240}],
-   ['.pictures-grid__item:nth-child(3n+0)', {width: 180}],
-   ['.pictures-grid__item:nth-child(5n+7)', {width: 140}],
+   ['.pictures-grid__item', {width: CSS.pivSizes [0]}],
+   ['.pictures-grid__item:nth-child(4n+12)', {width: CSS.pivSizes [3]}],
+   ['.pictures-grid__item:nth-child(3n+0)', {width: CSS.pivSizes [2]}],
+   ['.pictures-grid__item:nth-child(5n+7)', {width: CSS.pivSizes [1]}],
    ['.pictures-grid__item-picture', {
       background: CSS.vars ['grey--light'],
       'width, height': 1,
@@ -2439,8 +2441,8 @@ H.computeBaseNPivs = function () {
    // gridHeight is actually smaller, but we don't bother computing it now.
    var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 50;
 
-   // piv frame height is always 140px, width ranges between 100 and 240, hence an average.
-   var nPivs = Math.ceil (gridHeight / 140) * (Math.ceil (gridWidth / 170));
+   // piv frame height is between CSS.pivSizes [1] and CSS.pivSizes [2], hence an average.
+   var nPivs = Math.ceil (gridHeight / ((CSS.pivSizes [1] + CSS.pivSizes [2]) / 2)) * (Math.ceil (gridWidth / 170));
    // We duplicate nPivs to make sure we have enough.
    nPivs = nPivs * 2;
    return nPivs;
@@ -2453,7 +2455,7 @@ H.computePivFrame = function (piv) {
    var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
    var pivRatio = pivWidth / pivHeight;
    // .pictures-grid__item: padding-bottom: 18px, padding right: 16px
-   var height = 140 - 18, width, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
+   var height = CSS.pivSizes [1] - 18, width, sizes = [CSS.pivSizes [0] - 16, CSS.pivSizes [1] - 16, CSS.pivSizes [2] - 16, CSS.pivSizes [3] - 16];
    if      (pivRatio <= (sizes [0] / height)) width = sizes [0];
    else if (pivRatio <= (sizes [1] / height)) width = sizes [1];
    else if (pivRatio <= (sizes [2] / height)) width = sizes [2];
@@ -2483,8 +2485,8 @@ H.computeChunks = function (x, pivs) {
       });
 
       // Chunk header has 20px height and chunk has 30px padding top
-      // Each row is always 140px high
-      return 50 + rows * 140;
+      // Each row is always CSS.pivSizes [1] high
+      return 50 + rows * CSS.pivSizes [1];
    };
 
    var computeRepulsion = function (chunkSize) {
@@ -4534,8 +4536,10 @@ views.grid = function () {
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',
-                                 // For pivs rotated -90 degrees, margin-left is frameWidth - 124 (since 124 is the standard frame width (140px - 16 of margin-right).
-                                 'margin-left': piv.deg !== -90 ? 0 : {84: -40, 124: 0, 164: 40, 224: 100} [piv.frame.width],
+                                 // For pivs rotated -90 degrees, margin-left is frameWidth - CSS.pivSizes [1] - 16px of margin-right
+                                 'margin-left': piv.deg !== -90 ? 0 : dale.obj (CSS.pivSizes, function (v) {
+                                    return [v - 16, v - 16 - 164];
+                                 }) [piv.frame.width],
                                  rotation: rotation,
                               }),
                            }],
