@@ -41,6 +41,12 @@ if [ "$2" == "server" ] ; then
    exit 0
 fi
 
+if [ "$2" == "makeConsistent" ] ; then
+   ssh $HOST "cd $FOLDER && mg stop"
+   ssh $HOST "cd $FOLDER && node server $1 makeConsistent"
+   exit 0
+fi
+
 if [ "$2" == "fast" ] ; then
    cd .. && tar --exclude="$FOLDER/*.swp" --exclude="$FOLDER/node_modules" --exclude="$FOLDER/.git" --exclude="$FOLDER/test" -czvf $TAR $FOLDER
 else

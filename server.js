@@ -3992,7 +3992,14 @@ if (cicek.isMaster) a.seq ([
 ]);
 
 process.on ('uncaughtException', function (error, origin) {
-   server.close (function () {
+   // If a job done before the server starts errors, there might be no `server` yet.
+   if (! server) a.seq ([
+      [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
+      function () {
+         process.exit (1);
+      }
+   ]);
+   else server.close (function () {
       a.seq ([
          [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
          function () {
@@ -4068,6 +4075,8 @@ if (cicek.isMaster && ENV) setTimeout (function () {
 }, 3000);
 
 // *** CHECK CONSISTENCY OF FILES BETWEEN DB, FS AND S3 ***
+
+if (cicek.isMaster && process.argv [3] === 'makeConsistent') var doneChecks = 0;
 
 if (cicek.isMaster && ENV) a.stop ([
    // Get list of files from S3
@@ -4155,10 +4164,10 @@ if (cicek.isMaster && ENV) a.stop ([
       if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'normal', type: 'File consistency check done.'});
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
-      if (s.s3extra.length || s.fsextra.length || s.s3missing.length || s.fsmissing.length) s.next ();
+      s.next ();
    },
    // Extraneous S3 files: delete. Don't update the statistics.
-   // s3:files entries should be deleted manually if needed.
+   // TODO: currently s3:files entries should be deleted manually. Make this automatic.
    function (s) {
       H.s3del (s, s.s3extra);
    },
@@ -4168,13 +4177,21 @@ if (cicek.isMaster && ENV) a.stop ([
          return [H.unlink, Path.join (CONFIG.basepath, v)];
       }, {max: os.cpus ().length});
    },
-   // Missing FS files: nothing to do but report.
+   // TODO: Missing S3 files: upload them to S3 if they are in the FS.
+   // TODO: Missing FS files: download them from S3 if they are there.
    function (s) {
-      var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: 'File consistency check success.'}, function (k) {
+      var messageType = (s.s3missing.length === 0 && s.fsmissing.length === 0) ? 'File consistency check success.' : 'File consistency check failure: missing S3 and/or FS files.';
+      var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: messageType}, function (k) {
          if (s [k]) return [k, s [k]];
       });
       notify (s, message);
    },
+   function () {
+      console.log ('Done with file consistency check.');
+      if (++doneChecks === 2) setTimeout (function () {
+         process.exit (0);
+      }, 100);
+   }
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'File consistency check error.', error: error});
 });
@@ -4255,7 +4272,13 @@ if (cicek.isMaster && ENV) a.stop ([
          }
       ]);
    },
-   [notify, {priority: 'critical', type: 'Stored sizes consistency check success.'}]
+   [notify, {priority: 'critical', type: 'Stored sizes consistency check success.'}],
+   function () {
+      console.log ('Done with sizes consistency check.');
+      if (++doneChecks === 2) setTimeout (function () {
+         process.exit (0);
+      }, 100);
+   }
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
