@@ -2847,11 +2847,13 @@ B.mrespond ([
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
-   ['query', 'pivs', function (x, updateSelected) {
-      var query = B.get ('State', 'query');
+   ['query', 'pivs', function (x, updateSelected, retry) {
+      var query = teishi.copy (B.get ('State', 'query'));
       if (! query) return;
-      if (B.get ('State', 'querying')) return;
-      B.call (x, 'set', ['State', 'querying'], true);
+      if (! retry) {
+         if (B.get ('State', 'querying')) return;
+         B.call (x, 'set', ['State', 'querying'], true);
+      }
 
       var timeout = B.get ('State', 'queryRefresh');
       if (timeout) {
@@ -2860,6 +2862,7 @@ B.mrespond ([
       }
 
       B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs'), recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+         if (! teishi.eq (query, B.get ('State', 'query'))) return B.call (x, 'query', 'pivs', updateSelected, true);
          B.call (x, 'set', ['State', 'querying'], false);
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          B.call (x, 'query', 'tags');
@@ -2975,7 +2978,7 @@ B.mrespond ([
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::'         && isNormalTag) return;
+         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag))) return;
          if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
          return existingTag;
       }).concat (tag));
