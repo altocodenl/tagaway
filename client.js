@@ -2614,6 +2614,8 @@ document.body.addEventListener ('touchend', function (ev) {
 
 B.r.addLog = function (log) {
    if (log.args && log.args [1] && log.args [1].password) log.args [1].password = 'REDACTED';
+   // Store up to 2000 items in the log.
+   if (B.log.length >= 2000) B.log.shift ();
    B.log.push (log);
 }
 
@@ -4101,6 +4103,8 @@ views.pics = function () {
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
+                           var aN = queryTags [a], bN = queryTags [b];
+                           if (aN !== bN) return bN - aN;
                            return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                         });
 

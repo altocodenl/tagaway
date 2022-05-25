@@ -40,8 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Increase thumbnail size
-   - Sort tags by nPivs, and add arrow to switch order
+   - If chunk has dateup, use still normal dates?
+   - Add arrow to switch order of tags?
    - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
       - Parse query url function, pit in hash responder. Sets query and Desired date. Query responder executes query, then scrolls to chunk. Scrollto chunk responder. Onscroll, move Desired date on query. Also set current query on url on the change responder.
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
