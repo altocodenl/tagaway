@@ -6,17 +6,44 @@ var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith
 window.addEventListener ('keydown', function (ev) {
    ev = ev || document.event;
    if (! ev.ctrlKey) return;
+   // CTRL+K: search the eventlog
    if (ev.keyCode === 75) {
       ev.preventDefault ();
       var query = prompt ('Search the eventlog');
       if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
       B.eventlog (query);
    }
+   // CTRL+L: hide/show responder entries in the eventlog
    if (ev.keyCode === 76) {
       ev.preventDefault ();
       c ('.evlog-resp', function (element) {element.style.display = window.getComputedStyle (element).display === 'table-row' ? 'none' : 'table-row'});
    }
+   // CTRL+P: compute performance for all redraws so far
    if (ev.keyCode === 80) {
+      ev.preventDefault ();
+      var output = {DOM: 0, js: 0, n: 0};
+      var redraws = dale.fil (B.log, undefined, function (log) {
+         if (log.verb !== 'redraw') return;
+         output.n++;
+         output.DOM += log.args [0].ms.DOM;
+         output.js  += log.args [0].ms.total - log.args [0].ms.DOM;
+         return [log.path.join (':'), log.args [0].ms.total];
+      }).sort (function (a, b) {
+         return b [1] - a [1];
+      })
+      dale.go ([200, 100], function (ms) {
+         var c = 0;
+         dale.go (redraws, function (redraw) {
+            if (redraw [1] < ms) return;
+            c++;
+         });
+         output [ms + 'ms'] = c;
+      });
+      output.avg = Math.ceil ((output.DOM + output.js) / output.n);
+      console.log (JSON.stringify (output).replace (/"/g, ''), redraws.slice (0, 4).join (' '));
+   }
+   // CTRL+T: run client test suite
+   if (ev.keyCode === 84) {
       ev.preventDefault ();
       B.call ('test', []);
    }
@@ -25,6 +52,8 @@ window.addEventListener ('keydown', function (ev) {
 // *** CSS ***
 
 var CSS = {
+   //pivSizes: [100, 140, 180, 240],
+   pivSizes: [150, 210, 240, 360],
    toRGBA: function (hex) {
       hex = hex.slice (1);
       return parseInt (hex.slice (0, 2), 16) + ', ' + parseInt (hex.slice (2, 4), 16) + ', ' + parseInt (hex.slice (4, 6), 16);
@@ -168,7 +197,7 @@ CSS.litc = [
    ['p, a, li',   {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
    // Global typographic styles
    ['.page-title', {
-      'font-size':   CSS.typography.fontSize (7),
+     'font-size':   CSS.typography.fontSize (7),
       'line-height': CSS.typography.spaceVer (1.75),
       'margin-bottom': CSS.typography.spaceVer (0.25),
       mixin1: CSS.vars.fontPrimaryRegular,
@@ -639,6 +668,13 @@ CSS.litc = [
       'flex-direction': 'column',
       width: 1,
    }],
+   ['.chunk_title', {
+      'font-weight': CSS.vars.fontPrimaryRegular,
+      color: CSS.vars.grey,
+      height: 25,
+      'font-size':   CSS.typography.fontSize (4),
+      'text-align': 'center',
+   }],
    // *** guide.scss ***
    ['.guide', {
       display: 'flex',
@@ -905,9 +941,6 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 24,
    }],
-   ['.svg-container', {
-      height: 24
-   }],
    // Tag actions -- View pictures
    ['.app-pictures', [
       // Selected tag
@@ -1032,8 +1065,7 @@ CSS.litc = [
       // 'font-weight': CSS.vars['fontPrimarySemiBold'],
       // color: CSS.vars ['grey--darker']
    },
-
-      ['&::after', {
+   ['&::after', {
       'border-color': CSS.vars ['grey--darker'] + ' transparent transparent transparent',
    }]],
    ['.dropdown:hover .dropdown__list', {display: 'block'}],
@@ -1866,7 +1898,6 @@ CSS.litc = [
    }],
    ['.pictures-grid-title-container', {
    'text-align': 'center',
-   
    }],
    ['.pictures-header__title',{
       width: .6,
@@ -1906,8 +1937,11 @@ CSS.litc = [
       width: 1,
       'align-items': 'center',
    }],
-   ['.pictures-header__selected-tags', {
-      display: 'inline-flex'}],
+   ['.pictures-header__selected-tags', {display: 'inline-flex'}],
+   ['.pictures-header__sort', {
+      display: 'inline-flex',
+      'margin-left': 'auto',
+   }],
    // *** pictures-grid.scss ***
    ['.pictures-grid', {
       display: 'flex',
@@ -1918,15 +1952,15 @@ CSS.litc = [
    }],
    ['.pictures-grid__item', {
       display: 'inline-flex',
-      height: 140,
+      height: CSS.pivSizes [1],
       'padding-right': 16,
       'padding-bottom': 18,
       position: 'relative',
    }],
-   ['.pictures-grid__item', {width: 100}],
-   ['.pictures-grid__item:nth-child(4n+12)', {width: 240}],
-   ['.pictures-grid__item:nth-child(3n+0)', {width: 180}],
-   ['.pictures-grid__item:nth-child(5n+7)', {width: 140}],
+   ['.pictures-grid__item', {width: CSS.pivSizes [0]}],
+   ['.pictures-grid__item:nth-child(4n+12)', {width: CSS.pivSizes [3]}],
+   ['.pictures-grid__item:nth-child(3n+0)', {width: CSS.pivSizes [2]}],
+   ['.pictures-grid__item:nth-child(5n+7)', {width: CSS.pivSizes [1]}],
    ['.pictures-grid__item-picture', {
       background: CSS.vars ['grey--light'],
       'width, height': 1,
@@ -2377,7 +2411,7 @@ dale.go (CSS.vars.tagColors, function (color) {
 var H = {};
 
 H.putSvg = function (which) {
-   return ['span', {class: 'svg-container', opaque: true}, ['LITERAL', svg [which]]];
+   return ['span', {opaque: true}, ['LITERAL', svg [which]]];
 }
 
 H.matchVerb = function (ev, responder) {
@@ -2402,6 +2436,14 @@ H.tagColor = function (tag, a) {
 
 H.isDateTag = function (tag) {
    return !! tag.match (/^d::/);
+}
+
+H.isYearTag = function (tag) {
+   return !! tag.match (/^d::\d/);
+}
+
+H.isMonthTag = function (tag) {
+   return !! tag.match (/^d::M/);
 }
 
 H.isGeoTag = function (tag) {
@@ -2457,6 +2499,127 @@ H.hash = function (file, cb) {
    freader.onload = function () {
       cb (null, murmur.v3 (new Uint8Array (freader.result)));
    }
+}
+
+// Roughly computes the number of pivs required to fill the screen of the device
+H.computeBaseNPivs = function () {
+   // Sidebar is 300px, then there's also a padding.
+   var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
+   // gridHeight is actually smaller, but we don't bother computing it now.
+   var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 50;
+
+   // piv frame height is between CSS.pivSizes [1] and CSS.pivSizes [2], hence an average.
+   var nPivs = Math.ceil (gridHeight / ((CSS.pivSizes [1] + CSS.pivSizes [2]) / 2)) * (Math.ceil (gridWidth / 170));
+   // We duplicate nPivs to make sure we have enough.
+   nPivs = nPivs * 2;
+   return nPivs;
+}
+
+// Computes the width and height of the thumbnail of a piv
+H.computePivFrame = function (piv) {
+   if (piv.frame) return piv.frame;
+   var askance = piv.deg === 90 || piv.deg === -90;
+   var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
+   var pivRatio = pivWidth / pivHeight;
+   // .pictures-grid__item: padding-bottom: 18px, padding right: 16px
+   var height = CSS.pivSizes [1] - 18, width, sizes = [CSS.pivSizes [0] - 16, CSS.pivSizes [1] - 16, CSS.pivSizes [2] - 16, CSS.pivSizes [3] - 16];
+   if      (pivRatio <= (sizes [0] / height)) width = sizes [0];
+   else if (pivRatio <= (sizes [1] / height)) width = sizes [1];
+   else if (pivRatio <= (sizes [2] / height)) width = sizes [2];
+   else                                       width = sizes [3];
+   piv.frame = {askance: askance, height: height, width: width};
+   return piv.frame;
+}
+
+// Computes the chunks into which to split the pivs currently displayed
+H.computeChunks = function (x, pivs) {
+   var t = Date.now (), chunks = [];
+
+   var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
+
+   var computeHeight = function (chunk) {
+
+      var rows = 1, width = 0;
+
+      dale.go (chunk.pivs, function (piv) {
+         H.computePivFrame (piv);
+         // 16px is padding-right for each piv
+         if ((width + piv.frame.width + 16) > gridWidth) {
+            width = piv.frame.width + 16;
+            rows++;
+         }
+         else width += piv.frame.width + 16;
+      });
+
+      // Chunk header has 20px height and chunk has 30px padding top
+      // Each row is always CSS.pivSizes [1] high
+      return 50 + rows * CSS.pivSizes [1];
+   };
+
+   var computeRepulsion = function (chunkSize) {
+      var chunkSizes = [10, 20, 40];
+
+      // Map points after the second chunk to the points between the first and second chunk
+      // chunkSize > 50 -> REPULSION: 1
+      if (chunkSize > chunkSizes [2] + (chunkSizes [2] - chunkSizes [1]) / 2) return 1;
+      // chunkSize between 21-50: 21 is 19.5, 30 is 15, 40 is 20, 50 is 15
+      if (chunkSize > chunkSizes [1]) {
+         if (chunkSize > chunkSizes [2]) chunkSize = chunkSizes [2] - (chunkSize - chunkSizes [2]);
+         var midPoint = chunkSizes [1] + (chunkSizes [2] - chunkSizes [1]) / 2;
+         if (chunkSize > midPoint) chunkSize = midPoint - (chunkSize - midPoint);
+         chunkSize = chunkSizes [1] - (chunkSize - chunkSizes [1]) * (chunkSizes [1] - chunkSizes [0]) / (chunkSizes [2] - chunkSizes [1]);
+         // 21: 19.5 -> 20 - 0.5 -> 20 - (21 - 20) * 0.5 // (40 - 20) / (20
+      }
+
+      // Map points after the first chunk to the curve from 0 to the first chunk.
+      // chunkSize between 11 and 20: 11 is 8, 12 is 6, 15 is 0, 16 is 2, 19 is 8
+      if (chunkSize > chunkSizes [0] && chunkSize <= chunkSizes [1]) {
+         var midPoint = chunkSizes [0] + (chunkSizes [1] - chunkSizes [0]) / 2;
+         if (chunkSize > midPoint) chunkSize = midPoint - (chunkSize - midPoint);
+
+         chunkSize = chunkSizes [0] - (chunkSize - chunkSizes [0]) * (chunkSizes [0] / ((chunkSizes [1] - chunkSizes [0]) / 2));
+      }
+
+      // https://www.desmos.com/calculator
+      // \frac{1}{\log\ \left(x+5\right)}-\frac{1}{\log\ \left(15\right)}
+      return 1 / Math.log10 (chunkSize + 5) - 1 / Math.log10 (15);
+   }
+   var computeAttraction = function (ms) {
+      var baseUnit = 10;
+      if (ms < baseUnit) return 1;
+      var multipliers = [100, 60, 30, 2, 8, 3, 7, 2.15, 2, 6];
+      var boundaries = [];
+      dale.go (multipliers, function (multiplier) {
+         if (! boundaries.length) boundaries.push (baseUnit * multiplier);
+         else                     boundaries.push (teishi.last (boundaries) * multiplier);
+      });
+      if (ms >= teishi.last (boundaries)) return 0;
+      boundaries.reverse ();
+      // Base level: 0.5?
+      var jump = 0.4 / boundaries.length;
+      return dale.stopNot (boundaries, undefined, function (boundary, k) {
+         if (ms >= boundary) return 1 - jump * (boundaries.length - k);
+      });
+      // return 1 / Math.log10 (ms);
+   }
+
+   dale.go (pivs, function (piv, k) {
+      piv.index = k;
+      if (k === 0) return chunks.push ({pivs: [piv]});
+      var gap = Math.abs (piv.date - pivs [k - 1].date);
+      var repulsionForce  = computeRepulsion (teishi.last (chunks).pivs.length);
+      var attractionForce = computeAttraction (gap);
+      // clog ('DEBUG REPULSION', teishi.last (chunks).length, repulsionForce, 'ATTRACTION', H.ago (gap), attractionForce);
+      // If repulsion > attraction, create a new chunk
+      if (repulsionForce > attractionForce) chunks.push ({pivs: [piv]});
+      else teishi.last (chunks).pivs.push (piv);
+   });
+   dale.go (chunks, function (chunk, k) {
+      chunk.start = k === 0 ? 0 : chunks [k - 1].end;
+      chunk.end   = chunk.start + computeHeight (chunk);
+   });
+   B.call (x, 'split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t, bytes: JSON.stringify (pivs).length});
+   return chunks;
 }
 
 // *** VIEWS ***
@@ -2518,6 +2681,8 @@ document.body.addEventListener ('touchend', function (ev) {
 
 B.r.addLog = function (log) {
    if (log.args && log.args [1] && log.args [1].password) log.args [1].password = 'REDACTED';
+   // Store up to 2000 items in the log.
+   if (B.log.length >= 2000) B.log.shift ();
    B.log.push (log);
 }
 
@@ -2559,14 +2724,14 @@ B.mrespond ([
       }, 4000);
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
-   [/^get|post$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
+   [/^(get|post)$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
       var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/login', 'auth/signup'], path));
       if (x.verb === 'post' && ! noCSRF) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
       c.ajax (x.verb, path, headers, body, function (error, rs) {
-         B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
+         B.call (x, 'ajax ' + x.verb, path, {t: Date.now () - t, code: error ? error.status : rs.xhr.status});
          var authPath = path === 'csrf' || path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
          if (! authPath && error && error.status === 403) {
@@ -2690,6 +2855,8 @@ B.mrespond ([
    // *** PICS RESPONDERS ***
 
    ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
+      // If the State object itself changes, don't respond to that.
+      if (x.path.length < 2) return;
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
@@ -2702,10 +2869,12 @@ B.mrespond ([
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
       // We modify State.nPivs directly to avoid triggering two calls to `query pivs`, one from here and another one from the responder to a change in State.nPivs
-      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], 20);
+      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], H.computeBaseNPivs ());
       B.call (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
+      // If the State object itself changes, don't respond to that.
+      if (x.path.length < 2) return;
       var selected = B.get ('State', 'selected') || {};
       var pivs = document.getElementsByClassName ('pictures-grid__item-picture');
       dale.go (pivs, function (piv) {
@@ -2745,11 +2914,13 @@ B.mrespond ([
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
-   ['query', 'pivs', function (x, updateSelected) {
-      var query = B.get ('State', 'query');
+   ['query', 'pivs', function (x, updateSelected, retry) {
+      var query = teishi.copy (B.get ('State', 'query'));
       if (! query) return;
-      if (B.get ('State', 'querying')) return;
-      B.call (x, 'set', ['State', 'querying'], true);
+      if (! retry) {
+         if (B.get ('State', 'querying')) return;
+         B.call (x, 'set', ['State', 'querying'], true);
+      }
 
       var timeout = B.get ('State', 'queryRefresh');
       if (timeout) {
@@ -2757,36 +2928,48 @@ B.mrespond ([
          clearTimeout (timeout);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs') + 100, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs'), recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+         if (! teishi.eq (query, B.get ('State', 'query'))) return B.call (x, 'query', 'pivs', updateSelected, true);
          B.call (x, 'set', ['State', 'querying'], false);
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          B.call (x, 'query', 'tags');
 
-         if (B.get ('State', 'nPivs') === 20) window.scrollTo (0, 0);
-
-         B.call (x, 'set', ['Data', 'pendingConversions'], dale.stop (rs.body.pivs, true, function (piv) {
-            return piv.vid === 'pending';
-         }));
-
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
          B.call (x, 'set', ['Data', 'pivTotal'],  rs.body.total);
 
-         var selected = B.get ('State', 'selected') || {};
-         // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
-         var updatedSelection = ! updateSelected ? selected : dale.obj (rs.body.pivs, function (piv) {
-            if (selected [piv.id]) return [piv.id, true];
-         });
-         B.set (['State', 'selected'], updatedSelection);
+         if (dale.stop (query.tags, true, H.isYearTag)) {
+            B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {
+               if (! H.isMonthTag (tag)) return tag;
+            }), sort: query.sort, from: 1, to: 1}, function (x, error, rs) {
+               if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+               B.call (x, 'set', ['Data', 'monthTags'], dale.fil (Object.keys (rs.body.tags), undefined, function (tag) {
+                  if (H.isMonthTag (tag)) return tag;
+               }));
+            });
+         }
+         else B.call (x, 'rem', 'Data', 'monthTags');
 
          // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
             B.call (x, 'query', 'pivs');
          }, 1500));
 
+         if (B.get ('State', 'nPivs') === H.computeBaseNPivs ()) window.scrollTo (0, 0);
+
+         if (updateSelected) {
+            var selected = B.get ('State', 'selected') || {};
+            // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
+            B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
+               if (selected [piv.id]) return [piv.id, true];
+            }));
+         }
+
+         B.call (x, 'set', ['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
+         B.call (x, 'scroll', []);
+
          if (B.get ('State', 'open') === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            B.call (x, 'change', ['State', 'selected'], updatedSelection);
-            B.call (x, 'fill', 'screen');
+            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
             return;
          }
 
@@ -2797,6 +2980,7 @@ B.mrespond ([
          // If opened piv is no longer in query, exit open.
          if (newOpen === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
+            if (updateSelected) B.call (x, 'change', ['State', 'selected'], updatedSelection);
             B.call (x, 'exit', 'fullscreen');
             return;
          }
@@ -2806,8 +2990,7 @@ B.mrespond ([
          B.set (['Data', 'pivs'], rs.body.pivs);
          B.call (x, 'change', ['State', 'open']);
          B.call (x, 'change', ['Data', 'pivs']);
-         B.call (x, 'change', ['State', 'selected'], updatedSelection);
-
+         if (updateSelected) B.call (x, 'change', ['State', 'selected'], updatedSelection);
       });
    }],
    ['click', 'piv', function (x, id, k, ev) {
@@ -2846,15 +3029,24 @@ B.mrespond ([
    ['toggle', 'tag', function (x, tag) {
       if (B.get ('State', 'querying')) return;
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
+
+      // Tag is removed
       if (index > -1) {
          if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
-         return B.call (x, 'rem', ['State', 'query', 'tags'], index);
+         if (! H.isYearTag (tag)) return B.call (x, 'rem', ['State', 'query', 'tags'], index);
+         return B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+            if (existingTag === tag) return;
+            if (H.isMonthTag (existingTag)) return;
+            return existingTag;
+         }));
       }
 
+      // Tag is added
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::' && ! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag)) return;
+         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag))) return;
+         if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
          return existingTag;
       }).concat (tag));
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
@@ -2935,32 +3127,29 @@ B.mrespond ([
       });
    }],
    ['goto', 'tag', function (x, tag) {
-      B.call ('set', ['State', 'selected'], {});
-      B.call ('set', ['State', 'query', 'tags'], [tag]);
+      B.call (x, 'set', ['State', 'selected'], {});
+      B.call (x, 'set', ['State', 'query', 'tags'], [tag]);
    }],
    ['scroll', [], function (x, e) {
       if (B.get ('State', 'page') !== 'pics') return;
       var lastScroll = B.get ('State', 'lastScroll');
       if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
       B.call (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
-      if (lastScroll && lastScroll.y > window.scrollY) return;
 
-      var lastPiv = teishi.last (c ('.pictures-grid__item-picture'));
-      if (! lastPiv) return;
-
-      if (window.innerHeight < lastPiv.getBoundingClientRect ().top) return;
-
-      B.call (x, 'increment', 'nPivs');
+      var bufferSize = window.innerHeight * 2;
+      var minVisible = Math.max (0, window.scrollY - bufferSize);
+      var maxVisible = window.scrollY + window.innerHeight + bufferSize;
+      dale.go (B.get (['State', 'chunks']), function (chunk, k) {
+         if (chunk.end < minVisible || chunk.start > maxVisible) chunk.visible = false;
+         else chunk.visible = true;
+      });
+      B.call (x, 'change', ['State', 'chunks']);
       B.call (x, 'change', ['State', 'selected']);
-   }],
-   ['fill', 'screen', function (x) {
-      if (B.get ('State', 'page') !== 'pics') return;
-      // We fill the screen with pivs.
-      var lastPiv = teishi.last (c ('.pictures-grid__item-picture'));
-      if (! lastPiv) return;
-      if (window.innerHeight < lastPiv.getBoundingClientRect ().top) return;
-      // If there are not enough images to fill the grid, increment the amount of images to show.
-      B.call (x, 'increment', 'nPivs');
+
+      var lastChunk = teishi.last (B.get ('State', 'chunks'));
+      if (! B.get ('State', 'querying') && lastChunk && lastChunk.visible) {
+         B.call (x, 'increment', 'nPivs');
+      }
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -2984,23 +3173,12 @@ B.mrespond ([
       ev.stopPropagation ();
    }],
    ['increment', 'nPivs', function (x) {
-      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
-      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + 20, B.get ('Data', 'pivTotal')));
+      if (B.get ('State', 'nPivs') === B.get ('Data', 'pivTotal')) return;
+      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + H.computeBaseNPivs (), B.get ('Data', 'pivTotal')));
    }],
    ['change', ['State', 'nPivs'], function (x) {
-      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs') + 100) return;
+      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
       B.call (x, 'query', 'pivs');
-   }],
-   ['change', ['Data', 'pendingConversions'], {match: B.changeResponder}, function (x) {
-      var pending = B.get ('Data', 'pendingConversions'), interval = B.get ('State', 'pendingConversions');
-      if ((pending && interval) || (! pending && ! interval)) return;
-      if (! pending) {
-         B.call (x, 'rem', 'State', 'pendingConversions');
-         return clearInterval (interval);
-      }
-      B.call (x, 'set', ['State', 'pendingConversions'], setInterval (function () {
-         B.call (x, 'query', 'pivs');
-      }, 2000));
    }],
 
    // *** OPEN RESPONDERS ***
@@ -3041,7 +3219,7 @@ B.mrespond ([
       var open = B.get ('State', 'open');
       if (x.path [0] === 'prev' && open === 0) return;
       if (x.path [0] === 'next') {
-         if ((open + 1) >= B.get ('State', 'nPivs')) B.call (x, 'increment', 'nPivs');
+         if (open + H.computeBaseNPivs () > B.get ('State', 'nPivs')) B.call (x, 'increment', 'nPivs');
          B.call (x, 'set', ['State', 'open'], B.get ('Data', 'pivs', open + 1) ? open + 1 : 0);
       }
       else                       B.call (x, 'set', ['State', 'open'], open - 1);
@@ -3326,7 +3504,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating the list of selected folders.');
          if (! start) return B.call (x, 'query', 'imports', provider);
          // We create a placeholder data object to immediately put a box to show import progress without waiting for the server's reply.
-         B.call ('set', ['Data', 'imports', provider], [{id: Date.now (), ok: 0, total: 0}]);
+         B.call (x, 'set', ['Data', 'imports', provider], [{id: Date.now (), ok: 0, total: 0}]);
          B.call (x, 'post', 'import/upload/' + provider, {}, {}, function (x, error, rs) {
             if (error) return B.call (x, 'snackbar', 'red', 'There was an error starting the import of pictures from ' + H.upper (provider));
             B.call (x, 'query', 'imports', provider);
@@ -3944,6 +4122,9 @@ views.pics = function () {
                ['.tag-list__item--geo-country', {width: 0.33, float: 'left'}],
                ['.tag--bolded .tag__title', {color: CSS.vars ['color--one'], 'font-weight': 'bold'}],
                ['.tag--bolded svg', {stroke: CSS.vars ['color--one'], 'stroke-width': 4}],
+               ['.tag--bolded-grey .tag__title', {color: CSS.vars ['grey'], 'font-weight': 'bold'}],
+               ['.tag--light-grey svg', {stroke: CSS.vars ['grey--light']}],
+               ['.tag--light-grey .tag__title', {color: CSS.vars ['grey--light'], 'font-weight': 'bold'}],
                ['.clear-both', {clear: 'both'}],
             ]],
             ['div', {class: 'sidebar'}, [
@@ -3957,8 +4138,9 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, account, showNTags) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, monthTags, account, showNTags) {
                         if (! account || ! selected) return ['ul'];
+                        monthTags = monthTags || [];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
 
@@ -3966,11 +4148,11 @@ views.pics = function () {
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (! H.isDateTag (tag)) return;
+                           if (! H.isYearTag (tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
-                        }).sort (function (a, b) {return a - b});
+                        }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
@@ -3991,6 +4173,8 @@ views.pics = function () {
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
+                           var aN = queryTags [a], bN = queryTags [b];
+                           if (aN !== bN) return bN - aN;
                            return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                         });
 
@@ -4013,8 +4197,11 @@ views.pics = function () {
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
                            }
-                           else if (H.isDateTag (which)) {
+                           else if (H.isYearTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
+                           }
+                           else if (H.isMonthTag (which)) {
+                              var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : (inc (monthTags, which) ? ' tag--bolded-grey' : ' tag--light-grey'));
                            }
                            else if (H.isGeoTag (which)) {
                               var isCountryTag = H.isCountryTag (which);
@@ -4040,7 +4227,13 @@ views.pics = function () {
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
-                           return ['li', {class: Class, style: disabledUntagged ? 'cursor: default' : undefined, onclick: disabledUntagged ? undefined : B.ev (H.stopPropagation, action)}, [
+                           var blankMonth = H.isMonthTag (which) && ! inc (monthTags, which);
+                           var disabledTag = disabledUntagged || blankMonth;
+
+                           var showName = tag.replace (/^[a-z]::/, '');
+                           if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
+
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll')),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (colorTag, H.putSvg ('tagItem' + H.tagColor (which))),
@@ -4048,10 +4241,8 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', tag.replace (/^[a-z]::/, '')]],
+                              ['span', {class: 'tag__title'}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
-                              
-                              
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
@@ -4068,6 +4259,8 @@ views.pics = function () {
                            makeTag ('a::'),
                            makeTag ('u::'),
                            dale.go (yearlist, makeTag),
+                           ['br'], ['br'],
+                           yearlist.length !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
                                  ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
@@ -4263,7 +4456,7 @@ views.pics = function () {
                      return ['div', {class: 'pictures-header'}, [
                         ['div', {class: 'pictures-grid-title-container'},[
                            B.view (['Data', 'pivTotal'], function (total) {
-                           return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];                           
+                           return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
                         }),
                         ['div', {class: 'previous-and-next-month'}, [
                            ['div', {class:'previous-month-div'},[
@@ -4278,8 +4471,8 @@ views.pics = function () {
                                  ['span', {class:'chevron-next-month'}]
                                  ]]
                               ]]
-                           ]],
-                           ['div', {class: 'pictures-header__sort'}, [
+                        ]],
+                        ['div', {class: 'pictures-header__sort'}, [
                               B.view (['State', 'query'], function (query) {
                                  if (! query) return ['div'];
                                  return ['div', {class: 'dropdown'}, [
@@ -4293,7 +4486,6 @@ views.pics = function () {
                               }),
                            ]],
                         ]],
-                        
                         ['div', {class: 'pictures-header__action-bar'}, [
                            ['div', {class: 'pictures-header__selected-tags'}, [
                               B.view (['State', 'query', 'tags'], function (tags) {
@@ -4301,10 +4493,13 @@ views.pics = function () {
                                     var Class = 'tag tag-list-horizontal__item ';
                                     if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
                                     else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
+
+                                    var showName = tag.replace (/^[a-z]::/, '');
+                                    if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                     return ['li', {class: Class}, [
                                        H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                        H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
-                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : tag.replace (/^[a-z]::/, '')],
+                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
                                              ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
@@ -4314,19 +4509,7 @@ views.pics = function () {
                                  })];
                               }),
                            ]],
-                           // ['div', {class: 'pictures-header__sort'}, [
-                           //    B.view (['State', 'query'], function (query) {
-                           //       if (! query) return ['div'];
-                           //       return ['div', {class: 'dropdown'}, [
-                           //          ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
-                           //          ['ul', {class: 'dropdown__list'}, [
-                           //             dale.go (['newest', 'oldest', 'upload'], function (sort) {
-                           //                return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
-                           //             })
-                           //          ]],
-                           //       ]];
-                           //    }),
-                           // ]],
+                           
                         ]],
                         // CLICK AND DOUBLE CLICK NOTICE
                         B.view (['Data', 'account'], function (account) {
@@ -4410,71 +4593,56 @@ views.grid = function () {
             'top, left': 'calc(50% - 25px)',
          }],
       ]],
-      B.view ([['State', 'nPivs'], ['Data', 'pivs']], function (nPivs, pivs) {
-         if (! nPivs) return ['div'];
+      B.view (['State', 'chunks'], function (chunks) {
+         if (! chunks) return ['div'];
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
-            dale.go (pivs.slice (0, nPivs), function (piv, k) {
-               var askance = piv.deg === 90 || piv.deg === -90;
-               var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
-                  return [v + 'transform', (askance ? 'translateY(-100%) ' : '') + 'rotate(' + piv.deg + 'deg)'];
-               });
-               rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
-                  if (piv.deg === 90)  return [v + 'transform-origin', 'left bottom'];
-                  if (piv.deg === -90) return [v + 'transform-origin', 'right bottom'];
-               });
-               // 122w 224h 102m-left
+            dale.go (chunks, function (chunk) {
+               if (! chunk.visible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
+               return ['div', {class: 'chunk', style: style ({'padding-top': 30})}, [
+                  ['h3', {class: 'chunk_title'}, [new Date (chunk.pivs [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs).date).toUTCString ()]],
+                  dale.go (chunk.pivs, function (piv, k) {
+                     H.computePivFrame (piv);
 
-               // If following the CSS rules only:
-               // 140: 6, 11, 16, 21, 26
-               // 180: 2, 5, 8, 14, 17, 20, 23
-               // 240: 15, 19, 27
-               // 100: rest
-               //if (k > 10 && ((k - 7) % 4) === 0) frameWidth = 240;
-               //if (((k + 1) % 3) === 0)           frameWidth = 180;
-               //if (k > 5 && ((k - 1) % 5) === 0)  frameWidth = 140;
+                     var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
+                        return [v + 'transform', (piv.frame.askance ? 'translateY(-100%) ' : '') + 'rotate(' + piv.deg + 'deg)'];
+                     });
+                     rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
+                        if (piv.deg === 90)  return [v + 'transform-origin', 'left bottom'];
+                        if (piv.deg === -90) return [v + 'transform-origin', 'right bottom'];
+                     });
 
-               var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
-               var pivRatio = pivWidth / pivHeight;
-
-               // padding right: 16px, padding left: 18px
-               var frameHeight = 140 - 18, frameWidth, sizes = [100 - 16, 140 - 16, 180 - 16, 240 - 16];
-               if      (pivRatio <= (sizes [0] / frameHeight)) frameWidth = sizes [0];
-               else if (pivRatio <= (sizes [1] / frameHeight)) frameWidth = sizes [1];
-               else if (pivRatio <= (sizes [2] / frameHeight)) frameWidth = sizes [2];
-               else    frameWidth = sizes [3];
-
-               // TODO: understand this magic number.
-               if (piv.deg === -90) var margin = dale.obj ([[sizes [0], -36], [sizes [1], 0], [sizes [2], 42], [sizes [3], 102]], function (v) {
-                  return [v [0], v [1]];
-               });
-
-               return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: frameWidth + 16})}, [
-                  ['div', {
-                     class: 'pictures-grid__item-picture',
-                     id: piv.id,
-                     onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, k, {raw: 'event'}])
-                  }, [
-                     ['div', {
-                        class: 'inner',
-                        style: style ({
-                           'border-radius': 'inherit',
-                           width: askance ? frameHeight : frameWidth,
-                           height: askance ? frameWidth : frameHeight,
-                           'background-image': 'url(thumb/200/' + piv.id + ')',
-                           'background-position': 'center',
-                           'background-repeat': 'no-repeat',
-                           'background-size': 'cover',
-                           'margin-left': piv.deg !== -90 ? 0 : margin [frameWidth],
-                           rotation: rotation,
-                        }),
-                     }],
-                     piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
-                     ['div', {class: 'mask'}],
-                     ['div', {class: 'caption'}, [
-                        //['span', [['i', {class: 'icon ion-pricetag'}], ' ' + piv.tags.length]],
-                        ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
-                     ]],
-                  ]],
+                     // 16px is the margin-right
+                     return ['div', {class: 'pictures-grid__item', style: style ({'z-index': '1', width: piv.frame.width + 16})}, [
+                        ['div', {
+                           class: 'pictures-grid__item-picture',
+                           id: piv.id,
+                           onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
+                        }, [
+                           ['div', {
+                              class: 'inner',
+                              style: style ({
+                                 'border-radius': 'inherit',
+                                 width:  piv.frame.askance ? piv.frame.height : piv.frame.width,
+                                 height: piv.frame.askance ? piv.frame.width  : piv.frame.height,
+                                 'background-image': 'url(thumb/200/' + piv.id + ')',
+                                 'background-position': 'center',
+                                 'background-repeat': 'no-repeat',
+                                 'background-size': 'cover',
+                                 // For pivs rotated -90 degrees, margin-left is frameWidth - CSS.pivSizes [1] - 16px of margin-right
+                                 'margin-left': piv.deg !== -90 ? 0 : dale.obj (CSS.pivSizes, function (v) {
+                                    return [v - 16, v - 16 - 164];
+                                 }) [piv.frame.width],
+                                 rotation: rotation,
+                              }),
+                           }],
+                           piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
+                           ['div', {class: 'mask'}],
+                           ['div', {class: 'caption'}, [
+                              ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
+                           ]],
+                        ]],
+                     ]];
+                  })
                ]];
             })
          ]];
