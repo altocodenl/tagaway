@@ -52,6 +52,7 @@ window.addEventListener ('keydown', function (ev) {
 // *** CSS ***
 
 var CSS = {
+   // old piv sizes
    //pivSizes: [100, 140, 180, 240],
    pivSizes: [150, 210, 240, 360],
    toRGBA: function (hex) {
@@ -2443,8 +2444,8 @@ H.computeBaseNPivs = function () {
 
    // piv frame height is between CSS.pivSizes [1] and CSS.pivSizes [2], hence an average.
    var nPivs = Math.ceil (gridHeight / ((CSS.pivSizes [1] + CSS.pivSizes [2]) / 2)) * (Math.ceil (gridWidth / 170));
-   // We duplicate nPivs to make sure we have enough.
-   nPivs = nPivs * 2;
+   // We triplicate nPivs to make sure we have enough.
+   nPivs = nPivs * 3;
    return nPivs;
 }
 
@@ -2536,10 +2537,12 @@ H.computeChunks = function (x, pivs) {
       // return 1 / Math.log10 (ms);
    }
 
+   var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
+
    dale.go (pivs, function (piv, k) {
       piv.index = k;
       if (k === 0) return chunks.push ({pivs: [piv]});
-      var gap = Math.abs (piv.date - pivs [k - 1].date);
+      var gap = Math.abs (piv [dateField] - pivs [k - 1] [dateField]);
       var repulsionForce  = computeRepulsion (teishi.last (chunks).pivs.length);
       var attractionForce = computeAttraction (gap);
       // clog ('DEBUG REPULSION', teishi.last (chunks).length, repulsionForce, 'ATTRACTION', H.ago (gap), attractionForce);
@@ -2562,11 +2565,11 @@ var views = {};
 // *** NATIVE RESPONDERS ***
 
 window.onerror = function () {
-   B.call.apply (null, ['error', []].concat (dale.go (arguments, function (v) {return v})));
+   B.call.apply (null, ['error', [], arguments [0], arguments [1], arguments [2], arguments [3], arguments [4]]);
 }
 
 window.addEventListener ('hashchange', function () {
-   B.call ('read', 'hash');
+   B.call ('read', 'hash', window.location.hash);
 });
 
 window.addEventListener ('keydown', function (ev) {
@@ -2694,6 +2697,8 @@ B.mrespond ([
          }
       }
 
+      if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
+
       B.call (x, 'goto', 'page', page);
    }],
    ['goto', 'page', function (x, page) {
@@ -2719,7 +2724,10 @@ B.mrespond ([
 
       document.title = ['ac;pic', page].join (' - ');
 
-      if (page !== B.get ('State', 'page'))     B.call (x, 'set', ['State', 'page'], page);
+      if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
+
+      if (page === 'pics' && B.get ('State', 'queryURL')) page = 'pics/' + B.get ('State', 'queryURL');
+
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
    ['test', [], function (x) {
@@ -2793,7 +2801,7 @@ B.mrespond ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
+      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', nPivs: H.computeBaseNPivs ()});
       else B.call (x, 'query', 'pivs', true);
 
       B.call (x, 'change', ['State', 'selected']);
@@ -2801,8 +2809,12 @@ B.mrespond ([
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
-      // We modify State.nPivs directly to avoid triggering two calls to `query pivs`, one from here and another one from the responder to a change in State.nPivs
-      if (! teishi.eq (x.path, ['State', 'query', 'recentlyTagged'])) B.set (['State', 'nPivs'], H.computeBaseNPivs ());
+
+      // If State.query.tags or State.query.sort changed, we modify State.query.nPivs directly to avoid triggering two calls to `query pivs`.
+      if (! inc (['nPivs', 'recentlyTagged'], x.path [2])) {
+         B.set (['State', 'query', 'nPivs'], H.computeBaseNPivs ());
+         B.call (x, 'update', 'queryURL');
+      }
       B.call (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
@@ -2848,6 +2860,7 @@ B.mrespond ([
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
    ['query', 'pivs', function (x, updateSelected, retry) {
+      // We copy the query onto a new object so that we can check whether State.query changed after the ajax call returns.
       var query = teishi.copy (B.get ('State', 'query'));
       if (! query) return;
       if (! retry) {
@@ -2861,7 +2874,7 @@ B.mrespond ([
          clearTimeout (timeout);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: B.get ('State', 'nPivs'), recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: query.nPivs, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          if (! teishi.eq (query, B.get ('State', 'query'))) return B.call (x, 'query', 'pivs', updateSelected, true);
          B.call (x, 'set', ['State', 'querying'], false);
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
@@ -2887,7 +2900,7 @@ B.mrespond ([
             B.call (x, 'query', 'pivs');
          }, 1500));
 
-         if (B.get ('State', 'nPivs') === H.computeBaseNPivs ()) window.scrollTo (0, 0);
+         if (query.nPivs <= H.computeBaseNPivs ()) window.scrollTo (0, 0);
 
          if (updateSelected) {
             var selected = B.get ('State', 'selected') || {};
@@ -2913,7 +2926,7 @@ B.mrespond ([
          // If opened piv is no longer in query, exit open.
          if (newOpen === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            if (updateSelected) B.call (x, 'change', ['State', 'selected'], updatedSelection);
+            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
             B.call (x, 'exit', 'fullscreen');
             return;
          }
@@ -2923,7 +2936,7 @@ B.mrespond ([
          B.set (['Data', 'pivs'], rs.body.pivs);
          B.call (x, 'change', ['State', 'open']);
          B.call (x, 'change', ['Data', 'pivs']);
-         if (updateSelected) B.call (x, 'change', ['State', 'selected'], updatedSelection);
+         if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
       });
    }],
    ['click', 'piv', function (x, id, k, ev) {
@@ -3106,12 +3119,37 @@ B.mrespond ([
       ev.stopPropagation ();
    }],
    ['increment', 'nPivs', function (x) {
-      if (B.get ('State', 'nPivs') === B.get ('Data', 'pivTotal')) return;
-      B.call (x, 'set', ['State', 'nPivs'], Math.min (B.get ('State', 'nPivs') + H.computeBaseNPivs (), B.get ('Data', 'pivTotal')));
+      if (B.get ('State', 'query', 'nPivs') >= B.get ('Data', 'pivTotal')) return;
+      B.call (x, 'set', ['State', 'query', 'nPivs'], Math.min (B.get ('State', 'query', 'nPivs') + H.computeBaseNPivs (), B.get ('Data', 'pivTotal')));
    }],
-   ['change', ['State', 'nPivs'], function (x) {
-      if (B.get ('Data', 'pivTotal') <= B.get ('State', 'nPivs')) return;
-      B.call (x, 'query', 'pivs');
+   ['update', 'queryURL', function (x) {
+      var query = teishi.copy (B.get ('State', 'query'));
+      if (! query) return;
+      // We don't add recentlyTagged to avoid going over 2k characters
+      delete query.recentlyTagged;
+      // We don't add nPivs since we don't want the same query with multiple scrolls to generate multiple locations to which to go back to with the back button.
+      delete query.nPivs;
+      try {
+         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
+         setTimeout (function () {
+            window.location.hash = '#/pics/' + hash;
+         }, 0);
+      }
+      catch (error) {
+         B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
+      }
+   }],
+   ['change', ['State', 'queryURL'], function (x) {
+      if (! B.get ('State', 'queryURL')) return;
+      try {
+         var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
+         query.nPivs = H.computeBaseNPivs ();
+         if (B.get ('State', 'query', 'recentlyTagged')) query.recentlyTagged = B.get ('State', 'query', 'recentlyTagged');
+         B.call (x, 'set', ['State', 'query'], query);
+      }
+      catch (error) {
+         B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
+      }
    }],
 
    // *** OPEN RESPONDERS ***
@@ -3152,7 +3190,7 @@ B.mrespond ([
       var open = B.get ('State', 'open');
       if (x.path [0] === 'prev' && open === 0) return;
       if (x.path [0] === 'next') {
-         if (open + H.computeBaseNPivs () > B.get ('State', 'nPivs')) B.call (x, 'increment', 'nPivs');
+         if (open + H.computeBaseNPivs () > B.get ('State', 'query', 'nPivs')) B.call (x, 'increment', 'nPivs');
          B.call (x, 'set', ['State', 'open'], B.get ('Data', 'pivs', open + 1) ? open + 1 : 0);
       }
       else                       B.call (x, 'set', ['State', 'open'], open - 1);
@@ -3966,12 +4004,12 @@ views.signup = function () {
 views.header = function (showUpload, showImport) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {href: '#/pics'}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
-            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#/pics', class: 'main-menu__item-link'}, 'View pictures']],
+            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'main-menu__item-link'}, 'View pictures']],
             ['li', {class: 'main-menu__item'},                           ['a', {class: 'main-menu__item-link', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Manage tags']],
          ]]
       ]],
@@ -4510,11 +4548,12 @@ views.grid = function () {
       ]],
       B.view (['State', 'chunks'], function (chunks) {
          if (! chunks) return ['div'];
+         var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (chunks, function (chunk) {
                if (! chunk.visible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
                return ['div', {class: 'chunk', style: style ({'padding-top': 30})}, [
-                  ['h3', {style: style ({height: 20})}, [new Date (chunk.pivs [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs).date).toUTCString ()]],
+                  ['h3', {style: style ({height: 20})}, [new Date (chunk.pivs [0] [dateField] ).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs) [dateField]).toUTCString ()]],
                   dale.go (chunk.pivs, function (piv, k) {
                      H.computePivFrame (piv);
 
@@ -4839,13 +4878,13 @@ views.upload = function () {
                                        ['span', {class: 'upload-progress__amount-uploaded'}, (function () {
                                           var texts = [done + ' pics uploaded'];
                                           if (upload.alreadyUploaded) texts.push (upload.alreadyUploaded + ' already uploaded');
-                                          if (upload.repeated) texts.push (upload.repeated.length + ' repeated,');
-                                          if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid,');
-                                          if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large,');
+                                          if (upload.repeated) texts.push (upload.repeated.length + ' repeated');
+                                          if (upload.invalid)  texts.push (upload.invalid.length  + ' invalid');
+                                          if (upload.tooLarge) texts.push (upload.tooLarge.length + ' too large');
                                           return texts.join (', ');
                                        }) ()],
                                        ['LITERAL', '&nbsp'],
-                                       ['span', {class: 'upload-progress__default-text'}, '(' + upload.status + '. ' + H.ago (Date.now () - upload.end) + ' ago)'],
+                                       ['span', {class: 'upload-progress__default-text'}, '(' + upload.status + ', ' + H.ago (Date.now () - upload.end) + ' ago)'],
                                        ['br'],
                                     ]],
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
@@ -4874,7 +4913,7 @@ views.upload = function () {
             ['div', {class: 'page-section'}, [
                // BACK LINK
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', href: '#/pics'}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -4904,7 +4943,7 @@ views.noSpace = function () {
                ['div', {class: 'progress-bar'}],
             ]],
             ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-               ['div', {class: 'boxed-alert-button-left button'}, ['a', {href: '#/pics'}, 'Delete some files']],
+               ['div', {class: 'boxed-alert-button-left button'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, 'Delete some files']],
                ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']],
             ]],
          ]],
@@ -5151,7 +5190,7 @@ views.import = function () {
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', href: '#/pics'}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],

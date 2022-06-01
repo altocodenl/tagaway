@@ -40,18 +40,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - If chunk has dateup, use still normal dates?
-   - Add arrow to switch order of tags?
-   - Establish URL <-> query relationship, so that an URL takes you to a query and viceversa.
-      - Parse query url function, pit in hash responder. Sets query and Desired date. Query responder executes query, then scrolls to chunk. Scrollto chunk responder. Onscroll, move Desired date on query. Also set current query on url on the change responder.
+   - Scroll to relevant chunk when loading queryURL
+   - Add arrow to switch order of tags
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
    - [markup] Move edit bar to bottom and write new blue bar on top. Make sure that chunk headers are shown properly.
    - [markup] Search box height is incorrect. Must match to original design markup. When 'Done tagging' button appear in 'Untagged', bottom border of tag navigation moves. It shouldn't do that.
    - [markup] Adjust height of sidebar__inner-section when switching from main tag view to selected tags view. They should have different heights.
-   - [bug] Stop losing state of left scrollbar and sort by scrollbar when query refreshes.
    - [bug incognito FF] Review fonts not loading
 
 - Upload/import:
+   - Increase thumb quality.
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
@@ -820,6 +818,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `onclick -> rem State.upload.new.tags.INDEX`
       - `onclick -> upload start`
       - `onclick -> upload cancel`
+      - `onclick -> goto page pics`
 3. `views.share`
 4. `views.tags`
 5. `views.import`
@@ -832,6 +831,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `onclick -> set/rem State.imports.PROVIDER.showFolders`
       - `onclick -> set/rem State.imports.PROVIDER.currentFolder`
       - `onclick -> set/rem State.imports.PROVIDER.selection`
+      - `onclick -> goto page pics`
 6. `views.account`
    - Depends on: `Data.account`.
    - Events:
@@ -846,27 +846,27 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7.3 `views.recover`
    7.4 `views.reset`
 
-**Other**:
+**Other views**:
 
 1. `views.logo`
    - Contained by: `views.header`.
 2. `views.snackbar`
    - Depends on: `State.snackbar`.
-   - Events: `click -> clear snackbar`.
+   - Events: `onclick -> clear snackbar`.
    - Contained by: `views.base`.
 3. `views.header`
-   - Events: `click -> logout`
+   - Events: `onclick -> logout`, `onclick -> goto page pics`.
    - Contained by: `views.pivs`, `views.upload`, `views.share`, `views.tags`.
 4. `views.empty`
    - Contained by: `views.pivs`.
 5. `views.grid`
    - Contained by: `views.pivs`.
    - Depends on `State.chunks`.
-   - Events: `click -> click piv`.
+   - Events: `onclick -> click piv`.
 6. `views.open`
    - Contained by: `views.pivs`.
    - Depends on `State.open` and `Data.pivTotal`.
-   - Events: `click -> open prev`, `click -> open next`, `click -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
+   - Events: `onclick -> open prev`, `onclick -> open next`, `onclick -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
 7. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
@@ -885,7 +885,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 1. Native
    1. `error` -> `error`
-   2. `hashchange` -> `read hash`
+   2. `hashchange` -> `read hash window.location.hash`
    3. `keydown` -> `key down KEYCODE`
    4. `keyup` -> `key up KEYCODE`
    5. `scroll` -> `scroll [] EVENT`
@@ -912,6 +912,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7. `read hash`:
       - If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
       - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `State.import.PROVIDER.authOK` to `true`.
+      - If the page is `pics` and there's a second part to the hash, it sets `State.queryURL` to the second part of the hash.
       - Invokes `goto page PAGE`, where `PAGE` is the first part of the hash.
    8. `goto page PAGE`: this is the main navigation responder, which decides whether a change in the hash should take the app to a new page.
       - Before explaining the implementation, it is useful to understand the requirements of navigation in the application.
@@ -936,6 +937,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
          - If we're logged and `State.redirect` is set, we invoke `rem State.redirect`.
          - We update the document's title using `PAGE`.
          - If `State.page` is different from `PAGE`, we set it.
+         - If `State.queryURL` is set, we add it to page like this: `PAGE/QUERYURL`.
          - If `window.location.hash` doesn't match `PAGE`, we update it.
    8. `test`: loads the test suite.
 
@@ -947,8 +949,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pics
-   1. `change State.page`: if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
-   2. `change State.query`: if the path to the change is just `State` object (which only happens during initialization or logout), we ignore it. if the change is not to `State.query.recentlyTagged`, we directly set `State.nPivs` to the number of pivs returned by `H.computeBaseNPivs` (we don't do it through an event because we want to avoid that call also invoking `query pivs`). We then invokes `query pivs true`.
+   1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest', nPivs: H.computeBaseNPivs ()}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
+   2. `change State.query`: if the path to the change is just `State` object (which only happens during initialization or logout), we ignore it. if the change is not to `State.query.recentlyTagged` or `State.query.nPivs`, we directly set `State.query.nPivs` to the number of pivs returned by `H.computeBaseNPivs` (we don't do it through an event because we want to avoid that call also invoking `query pivs`) and invoke `update queryURL`. We then invoke `query pivs true`.
    3. `change State.selected`: adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    4. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    5. `query pivs`:
@@ -963,7 +965,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If the query contains a year tag, a second query equal to the current query minus the month tags will be performed to the server and the returned `queryTags` field will be set in `Data.monthTags` (just the tags, not the number of pivs for each); if the query does not contain a year tag, it will remove `Data.monthTags`. If this query fails, an error will be printed, but the responder will continue executing the rest of the logic.
       - It sets `Data.queryTags`and `Data.pivTotal` based on the result of the query.
       - If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms.
-      - If `State.nPivs` is set to the number of pivs required by `H.computeBaseNPivs`, the latest query is a new one, so it will scroll the screen back to the top.
+      - If `State.query.nPivs` is set to the number of pivs required by `H.computeBaseNPivs` or less (it will be less if the query only returns less than what's returned by H.computeBaseNPivs), the latest query is a new one, so the responder will scroll the screen back to the top.
       - If it receives a truthy first argument (`updateSelected`), it updates `State.selected` to filter out those pivs that are no longer returned by the current query. If it updates `State.selected`, it does so directly without an event; the `change` event will be fired afterwards in the responder logic.
       - It sets `State.chunks` to the output of `H.computeChunks`.
       - It invokes `scroll` since that will match a responder that calculates chunk visibility.
@@ -982,15 +984,25 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    15. `scroll`: only will perform actions if `State.page` is `pivs`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. Depending on the height of the window, it will directly set the `visible` property of some chunks within `State.chunks`, without an event being fired. It will then fire the `change` event on both `State.chunks` and `State.selected`. Finally, if the last chunk is not visible and there's not a query going on, it will invoke `increment nPivs`.
    16. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
    17. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   18. `increment nPivs`: if `State.nPivs` is equal to `Data.pivTotal`, the responder will do nothing.  Otherwise, it will increment `State.nPivs` by the output of `H.computeBaseNPivs` or up to `Data.pivTotal`, whatever is smaller.
-   19. `change State.nPivs`: if `State.nPivs + 100` is more than `Data.pivTotal`, the responder will invoke `State.query`.
+   18. `increment nPivs`: if `State.query.nPivs` is larger or equal than `Data.pivTotal`, the responder will do nothing (it can be larger if H.computeBaseNPivs is larger than the pivs returned by the query).  Otherwise, it will increment `State.query.nPivs` by the output of `H.computeBaseNPivs` or up to `Data.pivTotal`, whatever is smaller.
+   19. `update queryURL`:
+      - If `State.query` is not set, it does nothing.
+      - Takes the fields `tags` and `sort` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
+      - Sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
+      - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
+   20. `change State.queryURL`:
+      - If `State.queryURL` is not set, it does nothing.
+      - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., nPivs: H.computeBaseNPivs (), recentlyTagged: ...}`. The `recentlyTagged` parameter will be taken from `State.query.recentlyTagged`.
+      - It will set `State.query` to that object. Note that all the fields, except for `recentlyTagged` will be overwritten.
+      - If an error is thrown when decoding the hash, `post error` is invoked.
+
 
 5. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
    2. `enter fullscreen`: enter fullscreen using the native browser methods and set the `<body>` `overflow` to `hidden`.
    3. `exit fullscreen`: if `State.open` is present, remove it. Depending on the `exited` flag passed to the invocation, exit fullscreen using the native browser methods. Also remove the `<body>` `overflow` property so it reverts to the defaut.
    4. `change State.open`: remove or add `app-fullscreen` class from `#pics`, depending on whether `State.open` is defined. If `State.open` is defined, it invokes `enter fullscreen`.
-   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first piv or when going forward on the last piv. If `State.open` plus `H.computeBaseNPivs` is larger than `State.nPivs` and the `next` piv is requested, it invokes `increment nPivs`.
+   5. `open prev|next`: decrements or increments `State.open`, with wraparound if going back when on the first piv or when going forward on the last piv. If `State.open` plus `H.computeBaseNPivs` is larger than `State.query.nPivs` and the `next` piv is requested, it invokes `increment nPivs`.
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
    8. `open location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
@@ -1048,15 +1060,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 ```
   `list` determines whether the list of folders for import from the indicated provider is visible; `current` marks the current folder being inspected; and `selected` is a list of folders to be imported; if present, `update` is a javascript interval that updates the list.
    - `lastClick`: if present, has the shape `{id: PIVID, time: INT}`. Used to determine 1) a double-click (which would open the piv in full); 2) range selection with shift.
-   - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to increase `State.nPivs`.
+   - `lastScroll`: if present, has the shape `{y: INT, time: INT}`. Used to determine when to change the visibility of the chunks in `State.chunks` and to potentially invoke `increment nPivs`.
    - `lastTouch`: if present, has the shape `{x: INT, time: INT}`. Used to detect a swipe within `views.open`.
    - `newTag`: the name of a new tag to be posted.
-   - `nPivs`: the number of pivs to show.
    - `open`: index of the piv to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
-   - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload'}`.
+   - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', nPivs: INTEGER, recentlyUploaded: UNDEFINED|[ID, ...]}`.
    - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
+   - `queryURL`: if set, has the form `{tags: [...], sort: 'newest|oldest|upload'}`. When updated, its data will be used to update `State.query`.
    - `querying`: BOOLEAN|UNDEFINED, set if `query pivs` is currently querying the server.
    - `selected`: an object where each key is a piv id and every value is either `true` or `false`. If a certain piv key has a corresponding `true` value, the piv is selected.
    - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pivs are selected.
