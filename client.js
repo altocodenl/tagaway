@@ -623,7 +623,8 @@ CSS.litc = [
    // *** main.scss **
    // Main (where all the content comes)
    ['.main', {
-      'padding-top': 58, // header height
+      // 'padding-top': 58, // header height
+      'padding-top': 130, // header height
       'padding-left': CSS.vars ['sidebar-width'], // sidebar width
       display: 'flex',
       'flex-direction': 'column',
@@ -674,6 +675,7 @@ CSS.litc = [
       height: 25,
       'font-size':   CSS.typography.fontSize (4),
       'text-align': 'center',
+      cursor: 'pointer'
    }],
    // *** guide.scss ***
    ['.guide', {
@@ -1043,6 +1045,8 @@ CSS.litc = [
       mixin1: CSS.vars.fontPrimaryMedium,
       position: 'relative',
       'padding-right': 20,
+      width: 100,
+      'text-align': 'right',
       // color: CSS.vars.grey,
       color: 'white',
       cursor: 'pointer',
@@ -1072,7 +1076,7 @@ CSS.litc = [
    ['.dropdown__list', {
       display: 'none',
       position: 'absolute',
-      top: 40,
+      top: 20,
       right: 0,
       background: '#fff',
       'border-radius': CSS.vars ['border-radius--m'],
@@ -1892,7 +1896,9 @@ CSS.litc = [
       'margin-bottom': CSS.typography.spaceVer (2),
       'padding-right': CSS.vars ['padding--m'],
       'padding-top': CSS.vars ['padding--xs'],
-      position: 'relative',
+      // position: 'relative',
+      position: 'sticky',
+      top: CSS.typography.spaceVer (3),
       'z-index': '10',
       height: CSS.typography.spaceVer (4),
    }],
@@ -1919,7 +1925,7 @@ CSS.litc = [
       'margin-right': CSS.vars ['padding--xl'],
    }],
    ['.chevron-container-previous-month, .chevron-container-next-month', {
-      height: 24,
+      height: 20,
       width: 24,
       'margin-left, margin-right': 'auto',
       cursor: 'pointer'
@@ -2404,7 +2410,7 @@ var svg = {
    upIcon: '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>',
    backIcon: '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
    folderDeselect: '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
-   chevron: '<svg class="chevron_svg" <svg version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.34908137 17.786089l11.968504 -11.968504" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.34908137 17.786089l11.968504 -11.968504" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m23.658792 17.716536l-11.937008 -11.937008" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m23.658792 17.716536l-11.937008 -11.937008" fill-rule="evenodd"/></g></svg>'
+   chevron: '<svg class="chevron_svg" version="1.1" viewBox="0.0 0.0 24.0 12.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 12.0l-24.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 12.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.42519686 11.590551l11.968504 -11.244095" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.42519686 11.590551l11.968504 -11.244095" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m23.530184 11.590551l-11.653543 -11.0236225" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m23.530184 11.590551l-11.653543 -11.0236225" fill-rule="evenodd"/></g></svg>'
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
