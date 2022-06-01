@@ -1918,10 +1918,15 @@ CSS.litc = [
       display: 'inline-block',
       'margin-right': CSS.vars ['padding--xl'],
    }],
-   // ['.next-month-div',{
-   //    display: 'inline-block',
-   // }],
-   
+   ['.chevron-container-previous-month, .chevron-container-next-month', {
+      height: 24,
+      width: 24,
+      'margin-left, margin-right': 'auto',
+      cursor: 'pointer'
+   }],
+   ['.chevron-container-next-month', {
+      transform: 'rotate(180deg)',
+   }],
    ['.pictures-header__sort', {
       // display: 'inline-flex',
       // 'margin-left': 'auto',
@@ -2399,6 +2404,7 @@ var svg = {
    upIcon: '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>',
    backIcon: '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
    folderDeselect: '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
+   chevron: '<svg class="chevron_svg" <svg version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.34908137 17.786089l11.968504 -11.968504" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.34908137 17.786089l11.968504 -11.968504" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m23.658792 17.716536l-11.937008 -11.937008" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m23.658792 17.716536l-11.937008 -11.937008" fill-rule="evenodd"/></g></svg>'
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
@@ -4460,15 +4466,15 @@ views.pics = function () {
                         }),
                         ['div', {class: 'previous-and-next-month'}, [
                            ['div', {class:'previous-month-div'},[
-                              ['span', {class: 'previous-month-span'}, 'Previous month'],
-                              ['div', {class: 'chevron-container'}, [
-                                 ['span', {class:'chevron-previous-month'}]
-                                 ]]
+                              ['div', {class: 'chevron-container-previous-month'}, [
+                                 ['span', H.putSvg ('chevron')] 
                               ]],
-                              ['div', {class:'next-month-div'},[
-                              ['span', {class: 'next-month-span'}, 'Next month'],
-                              ['div', {class: 'chevron-container'}, [
-                                 ['span', {class:'chevron-next-month'}]
+                              ['span', {class: 'previous-month-span'}, 'Previous month'],
+                           ]],
+                              ['div', {class:'next-month-div'}, [
+                                 ['span', {class: 'next-month-span'}, 'Next month'],
+                                 ['div', {class: 'chevron-container-next-month'}, [
+                                    ['span', H.putSvg ('chevron')]
                                  ]]
                               ]]
                         ]],
