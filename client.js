@@ -197,7 +197,7 @@ CSS.litc = [
    ['p, a, li',   {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
    // Global typographic styles
    ['.page-title', {
-     'font-size':   CSS.typography.fontSize (7),
+     'font-size':   CSS.typography.fontSize (4.5),
       'line-height': CSS.typography.spaceVer (1.75),
       'margin-bottom': CSS.typography.spaceVer (0.25),
       mixin1: CSS.vars.fontPrimaryRegular,
@@ -1042,6 +1042,7 @@ CSS.litc = [
       margin:'auto'
    }],
    ['.dropdown__button', {
+
       mixin1: CSS.vars.fontPrimaryMedium,
       position: 'relative',
       'padding-right': 20,
@@ -1915,6 +1916,7 @@ CSS.litc = [
       'line-height': CSS.typography.spaceVer (2),
    }],
    ['.previous-and-next-month',{
+      'margin-top': CSS.vars ['padding--s'],
       display: 'inline-block',
       color: 'white',
       width: .3,
@@ -1936,6 +1938,7 @@ CSS.litc = [
    ['.pictures-header__sort', {
       // display: 'inline-flex',
       // 'margin-left': 'auto',
+      'margin-top': CSS.vars ['padding--m'],
       display: 'inline-block',
       float: 'right',
       // 'line-height': CSS.typography.spaceVer (3.33),
@@ -4467,9 +4470,10 @@ views.pics = function () {
                      selected = dale.keys (selected).length;
                      return ['div', {class: 'pictures-header'}, [
                         ['div', {class: 'pictures-grid-title-container'},[
-                           B.view (['Data', 'pivTotal'], function (total) {
-                           return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
-                        }),
+                           ['h2', {class: 'pictures-header__title page-title'}, 'You’re looking at: 29 Sep ‘19 to 03 Dec ‘20'],
+                        //    B.view (['Data', 'pivTotal'], function (total) {
+                        //    return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
+                        // }),
                         ['div', {class: 'previous-and-next-month'}, [
                            ['div', {class:'previous-month-div'},[
                               ['div', {class: 'chevron-container-previous-month'}, [
