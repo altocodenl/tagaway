@@ -2565,7 +2565,7 @@ var views = {};
 // *** NATIVE RESPONDERS ***
 
 window.onerror = function () {
-   B.call.apply (null, ['error', [], arguments [0], arguments [1], arguments [2], arguments [3], arguments [4]]);
+   B.call ('error', [], arguments [0], arguments [1], arguments [2], arguments [3], arguments [4]);
 }
 
 window.addEventListener ('hashchange', function () {
