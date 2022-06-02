@@ -2679,6 +2679,11 @@ B.mrespond ([
       });
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
+      // We ignore this strange error thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it.
+      if (arguments [1] === 'Uncaught SyntaxError: Unexpected end of input' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      // Same goes for this error.
+      if (arguments [1] === 'Uncaught EvalError: Possible side-effect in debug-evaluate' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();

@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Fix evaluation error when entering commands on the console.
    - Scroll to relevant chunk when loading queryURL
    - Add arrow to switch order of tags
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
