@@ -2818,8 +2818,9 @@ B.mrespond ([
       B.call (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
-      // If the State object itself changes, don't respond to that.
-      if (x.path.length < 2) return;
+      if (B.get ('State', 'page') !== 'pics') return;
+
+      // Since `rem State selected` has a path of length 1 only, we need to listen to changes on `State` as well (unlike the responders that listen to changes in State.page and State.query)
       var selected = B.get ('State', 'selected') || {};
       var pivs = document.getElementsByClassName ('pictures-grid__item-picture');
       dale.go (pivs, function (piv) {
