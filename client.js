@@ -2679,7 +2679,7 @@ B.mrespond ([
       });
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
-      // We ignore this strange error thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it.
+      // We ignore this strange error thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
       if (arguments [1] === 'Uncaught SyntaxError: Unexpected end of input' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
       // Same goes for this error.
       if (arguments [1] === 'Uncaught EvalError: Possible side-effect in debug-evaluate' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
