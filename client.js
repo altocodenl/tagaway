@@ -624,7 +624,7 @@ CSS.litc = [
    // Main (where all the content comes)
    ['.main', {
       // 'padding-top': 58, // header height
-      'padding-top': 130, // header height
+      'padding-top': 40, // header height
       'padding-left': CSS.vars ['sidebar-width'], // sidebar width
       display: 'flex',
       'flex-direction': 'column',
@@ -768,6 +768,7 @@ CSS.litc = [
       display: 'flex',
       width: 1,
       'align-items': 'center',
+      'margin-top': CSS.vars['padding--xs'],
    }],
    ['.tag-list-horizontal .tag-list-horizontal__item', {
       width: 'auto',
@@ -775,7 +776,7 @@ CSS.litc = [
       display: 'inline-flex',
       'white-space': 'nowrap',
       // 'margin-top': CSS.typography.spaceVer (0.25),
-      color: 'white',
+      // color: 'white',
       'margin-left': CSS.vars ['padding--xs']
    }],
    // *** tag-list-extended.scss ***
@@ -889,8 +890,9 @@ CSS.litc = [
       'width, height': 24,
    }, ['path', {fill: CSS.vars ['grey--darker']}]],
    ['.number_of_pivs', {
-      color: CSS.vars ['color--one'],
+      // color: CSS.vars ['color--one'],
       // float: 'right',
+      mixin1: CSS.vars.fontPrimaryMedium,
       'margin-right': 40,
       'text-align': 'right'
    }],
@@ -1048,8 +1050,8 @@ CSS.litc = [
       'padding-right': 20,
       width: 100,
       'text-align': 'right',
-      // color: CSS.vars.grey,
-      color: 'white',
+      color: CSS.vars.grey,
+      // color: 'white',
       cursor: 'pointer',
       transition: CSS.vars.easeOutQuart,
    }, ['&::after', {
@@ -1061,8 +1063,8 @@ CSS.litc = [
       'border-style': 'solid',
       'border-width': '4px 4px 0 4px',
       'border-color': 
-      // CSS.vars.grey 
-      'white'
+      CSS.vars.grey 
+      // 'white'
       + ' transparent transparent transparent',
       transition: CSS.vars.easeOutQuart,
    }]],
@@ -1891,40 +1893,52 @@ CSS.litc = [
    }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
-      'background-color': CSS.vars ['color--one'],
-      'border-radius': 12,
+      'background-color': 'white',
+      // 'border-radius': 12,
       'margin-right': 22,
       'margin-bottom': CSS.typography.spaceVer (2),
       'padding-right': CSS.vars ['padding--m'],
-      'padding-top': CSS.vars ['padding--xs'],
+      'padding-top': CSS.vars ['padding--s'],
       // position: 'relative',
       position: 'sticky',
-      top: CSS.typography.spaceVer (3),
+      top: CSS.typography.spaceVer (2.95),
       'z-index': '10',
-      height: CSS.typography.spaceVer (4.65),
+      height: CSS.typography.spaceVer (7),
    }],
    ['.pictures-grid-title-container', {
    'text-align': 'center',
+   height: 60, 
+   'margin-top': CSS.vars['padding--m'],
    }],
    ['.pictures-header__title',{
       width: .6,
-      color: 'white',
+      // color: 'white',
       display: 'inline-block',
       'text-align': 'left',
       'float': 'left',
       'margin-left': CSS.vars ['padding--xs'],
       'line-height': CSS.typography.spaceVer (2),
+      'margin-top': CSS.vars ['padding--s'],
    }],
    ['.previous-and-next-month',{
-      'margin-top': CSS.vars ['padding--s'],
-      display: 'inline-block',
-      color: 'white',
-      width: .3,
-      'text-align': 'right',
+      // 'margin-top': CSS.vars ['padding--s'],
+      display: 'inline-flex',
+      'margin-top': '-10px',
+      // color: 'white',
+      // width: .3,
+      // 'text-align': 'right',
    }],
-   ['.previous-month-div, .next-month-div',{
-      display: 'inline-block',
-      'margin-right': CSS.vars ['padding--xl'],
+   ['.chevron-container-previous-month, .next-month-filler-td', {
+      // 'border': 'solid 1px blue',
+   }],
+   ['.previous-month-td, .next-month-td',{
+      // display: 'inline-block',
+      // 'margin-right': CSS.vars ['padding--xl'],
+      width: 120,
+      // 'border': 'solid 1px black',
+   }],
+   ['.previous-month-filler-td, .chevron-container-next-month', {
+      // 'border': 'solid 1px red',
    }],
    ['.chevron-container-previous-month, .chevron-container-next-month', {
       height: 20,
@@ -1938,7 +1952,7 @@ CSS.litc = [
    ['.pictures-header__sort', {
       // display: 'inline-flex',
       // 'margin-left': 'auto',
-      'margin-top': CSS.vars ['padding--m'],
+      'margin-top': 19,
       display: 'inline-block',
       float: 'right',
       // 'line-height': CSS.typography.spaceVer (3.33),
@@ -2405,9 +2419,7 @@ var svg = {
    dropboxLogo: '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 324 63.8" style="enable-background:new 0 0 324 63.8;" xml:space="preserve"> <style type="text/css"> .st0{fill:#0061FF;} .st1{display:none;} .st2{display:inline;} .st3{fill:none;} </style> <path class="st0" d="M37.6,12L18.8,24l18.8,12L18.8,48L0,35.9l18.8-12L0,12L18.8,0L37.6,12z M18.7,51.8l18.8-12l18.8,12l-18.8,12 L18.7,51.8z M37.6,35.9l18.8-12L37.6,12L56.3,0l18.8,12L56.3,24l18.8,12L56.3,48L37.6,35.9z"/> <path d="M89.8,12H105c9.7,0,17.7,5.6,17.7,18.4v2.7c0,12.9-7.5,18.7-17.4,18.7H89.8V12z M98.3,19.2v25.3h6.5c5.5,0,9.2-3.6,9.2-11.6 v-2.1c0-8-3.9-11.6-9.5-11.6H98.3z M127.2,19.6h6.8l1.1,7.5c1.3-5.1,4.6-7.8,10.6-7.8h2.1v8.6h-3.5c-6.9,0-8.6,2.4-8.6,9.2v14.8 h-8.4V19.6H127.2z M149.5,36.4v-0.9c0-10.8,6.9-16.7,16.3-16.7c9.6,0,16.3,5.9,16.3,16.7v0.9c0,10.6-6.5,16.3-16.3,16.3 C155.4,52.6,149.5,47,149.5,36.4z M173.5,36.3v-0.8c0-6-3-9.6-7.8-9.6c-4.7,0-7.8,3.3-7.8,9.6v0.8c0,5.8,3,9.1,7.8,9.1 C170.5,45.3,173.5,42.1,173.5,36.3z M186.5,19.6h7l0.8,6.1c1.7-4.1,5.3-6.9,10.6-6.9c8.2,0,13.6,5.9,13.6,16.8v0.9 c0,10.6-6,16.2-13.6,16.2c-5.1,0-8.6-2.3-10.3-6V63h-8.2L186.5,19.6L186.5,19.6z M210,36.3v-0.7c0-6.4-3.3-9.6-7.7-9.6 c-4.7,0-7.8,3.6-7.8,9.6v0.6c0,5.7,3,9.3,7.7,9.3C207,45.4,210,42.3,210,36.3z M230.9,45.9l-0.7,5.9H223v-43h8.2v16.5 c1.8-4.2,5.4-6.5,10.5-6.5c7.7,0.1,13.4,5.4,13.4,16.1v1c0,10.7-5.4,16.8-13.6,16.8C236.1,52.6,232.6,50.1,230.9,45.9z M246.5,35.9 v-0.8c0-5.9-3.2-9.2-7.7-9.2c-4.6,0-7.8,3.7-7.8,9.3v0.7c0,6,3.1,9.5,7.7,9.5C243.6,45.4,246.5,42.3,246.5,35.9z M258.7,36.4v-0.9 c0-10.8,6.9-16.7,16.3-16.7c9.6,0,16.3,5.9,16.3,16.7v0.9c0,10.6-6.6,16.3-16.3,16.3C264.6,52.6,258.7,47,258.7,36.4z M282.8,36.3 v-0.8c0-6-3-9.6-7.8-9.6c-4.7,0-7.8,3.3-7.8,9.6v0.8c0,5.8,3,9.1,7.8,9.1C279.8,45.3,282.8,42.1,282.8,36.3z M302.3,35.1L291,19.6 h9.7l6.5,9.7l6.6-9.7h9.6L311.9,35L324,51.8h-9.5l-7.4-10.7l-7.2,10.7H290L302.3,35.1z"/> <g id="Editble" class="st1"> <g class="st2"> <rect x="-105" y="5" class="st3" width="506" height="71.8"/> <path d="M0.2,13.6h16.3c10.4,0,19,6.1,19,19.8v2.9c0,13.8-8,20-18.7,20H0.2V13.6z M9.4,21.3v27.2h7c5.9,0,9.9-3.9,9.9-12.5v-2.2 c0-8.6-4.1-12.5-10.2-12.5H9.4z M40.4,21.8h7.3l1.1,8c1.4-5.5,4.9-8.3,11.3-8.3h2.2v9.2h-3.7c-7.4,0-9.2,2.6-9.2,9.9v15.8h-9 C40.4,56.4,40.4,21.8,40.4,21.8z M64.3,39.8v-1c0-11.6,7.4-17.9,17.5-17.9c10.3,0,17.5,6.4,17.5,17.9v1c0,11.4-7,17.5-17.5,17.5 C70.6,57.3,64.3,51.2,64.3,39.8z M90.1,39.7v-0.8c0-6.5-3.2-10.3-8.3-10.3c-5,0-8.4,3.5-8.4,10.3v0.8c0,6.2,3.2,9.7,8.3,9.7 C86.9,49.4,90.1,46,90.1,39.7z M104,21.8h7.6l0.9,6.6c1.9-4.4,5.7-7.4,11.4-7.4c8.8,0,14.6,6.4,14.6,18v1 c0,11.4-6.4,17.3-14.6,17.3c-5.5,0-9.2-2.5-11-6.5v17.5H104V21.8z M129.3,39.8V39c0-6.9-3.5-10.3-8.3-10.3c-5,0-8.4,3.8-8.4,10.3 v0.7c0,6.1,3.2,10,8.2,10C126,49.5,129.3,46.1,129.3,39.8z M151.7,50.1l-0.7,6.3h-7.8V10.2h8.8V28c1.9-4.5,5.8-7,11.2-7 c8.2,0.1,14.3,5.8,14.3,17.3v1c0,11.5-5.8,18-14.6,18C157.3,57.3,153.5,54.5,151.7,50.1z M168.5,39.3v-0.8c0-6.4-3.5-9.8-8.3-9.8 c-5,0-8.4,4-8.4,10v0.7c0,6.5,3.3,10.2,8.3,10.2C165.3,49.5,168.5,46.1,168.5,39.3z M181.6,39.8v-1c0-11.6,7.4-17.9,17.5-17.9 c10.3,0,17.5,6.4,17.5,17.9v1c0,11.4-7.1,17.5-17.5,17.5C187.9,57.3,181.6,51.2,181.6,39.8z M207.4,39.7v-0.8 c0-6.5-3.2-10.3-8.3-10.3c-5,0-8.4,3.5-8.4,10.3v0.8c0,6.2,3.2,9.7,8.3,9.7C204.2,49.4,207.4,46,207.4,39.7z M228.3,38.4 l-12.1-16.7h10.4l7,10.4l7.1-10.4H251l-12.3,16.6l13,18h-10.2l-8-11.5l-7.7,11.5h-10.6L228.3,38.4z"/> </g> </g> </svg>',
    geotagOpen: '<svg class="fullscreen__action-icon" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#ffffff" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>',
    geoCity: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;" xml:space="preserve"><path d="M56.4,5.8C53.6,5,48.9,4.8,46,5.3C28.6,8.5,17.2,26.2,24,42.2c7.7,18,17.4,35.2,26,52.8  c8.6-17.6,18.3-34.7,26-52.7C82.5,27,72.5,10.3,56.4,5.8z M50,49.2c-8.4,0-15.2-6.9-15.2-15.4S41.6,18.5,50,18.5s15.2,6.9,15.2,15.4  S58.4,49.2,50,49.2z"/></svg>',
-   geoCityHeaderBar: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" width="16" height="16" style="margin-right: 3px;margin-top: 1px;stroke: white;stroke-width: 1.5;margin-left: -2px;" xml:space="preserve"><path d="M56.4,5.8C53.6,5,48.9,4.8,46,5.3C28.6,8.5,17.2,26.2,24,42.2c7.7,18,17.4,35.2,26,52.8  c8.6-17.6,18.3-34.7,26-52.7C82.5,27,72.5,10.3,56.4,5.8z M50,49.2c-8.4,0-15.2-6.9-15.2-15.4S41.6,18.5,50,18.5s15.2,6.9,15.2,15.4  S58.4,49.2,50,49.2z" fill="#ffffff"/></svg>',
    geoCountry: '<svg width="16" height="16" style="margin-right: 3px;stroke: black;margin-left: -2px;stroke-width: 1.5;" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#000000" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>',
-   geoCountryHeaderBar: '<svg width="16" height="16" style="margin-right: 3px;stroke: white;margin-left: -2px;stroke-width: 1.5;" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" x="0px" y="0px" viewBox="0 0 100 100"><g transform="translate(0,-952.36218)"><path style="text-indent:0;text-transform:none;direction:ltr;block-progression:tb;baseline-shift:baseline;color:#000000;enable-background:accumulate;" d="m 50,963.37594 c -15.9926,0 -29,13.0074 -29,29 0,5.6716 1.3987,9.74026 4.3438,14.09376 l 23,34 a 2.0002,2.0002 0 0 0 3.3124,0 l 23,-34 C 77.6013,1002.1161 79,998.04754 79,992.37594 c 0,-15.9926 -13.0074,-29 -29,-29 z m 0,4 c 13.8308,0 25,11.1692 25,25 0,5.077 -0.998,7.94526 -3.6562,11.87496 L 50,1035.8134 28.6562,1004.2509 C 25.9981,1000.3213 25,997.45294 25,992.37594 c 0,-13.8308 11.1692,-25 25,-25 z m 0,10 c -7.7083,0 -14,6.2917 -14,14 0,7.7082 6.2917,13.99996 14,13.99996 7.7083,0 14,-6.29176 14,-13.99996 0,-7.7083 -6.2917,-14 -14,-14 z m 0,4 c 5.5465,0 10,4.4535 10,10 0,5.5464 -4.4535,9.99996 -10,9.99996 -5.5465,0 -10,-4.45356 -10,-9.99996 0,-5.5465 4.4535,-10 10,-10 z" fill="#ffffff" fill-opacity="1" marker="none" visibility="visible" display="inline" overflow="visible"/></g></svg>',
    spaceAlert: '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 100 100" x="0px" y="0px"><title>A</title><path d="M58.31932,14.55819a9.60634,9.60634,0,0,0-16.63864,0L6.30209,75.836A9.606,9.606,0,0,0,14.62141,90.245H85.37859A9.606,9.606,0,0,0,93.69791,75.836Zm30.18292,67.884a3.54274,3.54274,0,0,1-3.12365,1.8035H14.62141a3.60675,3.60675,0,0,1-3.12365-5.41L46.87635,17.55783a3.60682,3.60682,0,0,1,6.2473,0L88.50224,78.83567A3.54271,3.54271,0,0,1,88.50224,82.44217Z"/><path d="M50,63.88433a2.99979,2.99979,0,0,0,2.99964-2.99964V34.42886a2.99964,2.99964,0,0,0-5.99928,0V60.88469A2.99979,2.99979,0,0,0,50,63.88433Z"/><path d="M50,69.917a3.1747,3.1747,0,1,0,3.17473,3.17467A3.17465,3.17465,0,0,0,50,69.917Z"/></svg>',
    googleDriveIcon: '<svg viewBox="0 0 94 94" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="94" height="94"/><path d="M10.7219 73.2906L14.4917 79.8021C15.275 81.1729 16.401 82.25 17.7229 83.0333L31.1865 59.7292H4.25937C4.25937 61.2469 4.65104 62.7646 5.43437 64.1354L10.7219 73.2906Z" fill="#0066DA"/><path d="M47 32.3125L33.5365 9.00833C32.2146 9.79166 31.0885 10.8687 30.3052 12.2396L5.43437 55.3229C4.65104 56.6938 4.25937 58.2115 4.25937 59.7292H31.1865L47 32.3125Z" fill="#00AC47"/><path d="M47 32.3125L60.4635 9.00833C59.1416 8.22499 57.6239 7.83333 56.0573 7.83333H37.9427C36.376 7.83333 34.8583 8.27395 33.5364 9.00833L47 32.3125Z" fill="#00832D"/><path d="M62.8135 59.7292H31.1864L17.7229 83.0333C19.0448 83.8167 20.5625 84.2083 22.1292 84.2083H71.8708C73.4375 84.2083 74.9552 83.7677 76.2771 83.0333L62.8135 59.7292Z" fill="#2684FC"/><path d="M76.2771 83.0333C77.599 82.25 78.725 81.1729 79.5083 79.8021L81.075 77.1094L88.5656 64.1354C89.3489 62.7646 89.7406 61.2469 89.7406 59.7292H62.8625L76.2771 83.0333Z" fill="#2684FC"/><path d="M76.1302 33.7813L63.6948 12.2396C62.9115 10.8687 61.7854 9.79166 60.4635 9.00833L47 32.3125L62.8135 59.7292H89.6917C89.6917 58.2115 89.3 56.6938 88.5167 55.3229L76.1302 33.7813Z" fill="#FFBA00"/></svg>',
    dropboxIcon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" style="fill: rgb(0, 97, 255);"><title></title><path d="M8 2.4l8 5.1-8 5.1-8-5.1 8-5.1zm16 0l8 5.1-8 5.1-8-5.1 8-5.1zM0 17.7l8-5.1 8 5.1-8 5.1-8-5.1zm24-5.1l8 5.1-8 5.1-8-5.1 8-5.1zM8 24.5l8-5.1 8 5.1-8 5.1-8-5.1z"></path></svg>',
@@ -2415,7 +2427,7 @@ var svg = {
    upIcon: '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>',
    backIcon: '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
    folderDeselect: '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
-   chevron: '<svg class="chevron_svg" version="1.1" viewBox="0.0 0.0 24.0 12.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 12.0l-24.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 12.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.42519686 11.590551l11.968504 -11.244095" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.42519686 11.590551l11.968504 -11.244095" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m23.530184 11.590551l-11.653543 -11.0236225" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m23.530184 11.590551l-11.653543 -11.0236225" fill-rule="evenodd"/></g></svg>'
+   chevron: '<svg class="chevron_svg" version="1.1" viewBox="0.0 0.0 24.0 12.0" width="24" height="20" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 12.0l-24.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 12.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.42519686 11.590551l11.968504 -11.244095" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.42519686 11.590551l11.968504 -11.244095" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m23.530184 11.590551l-11.653543 -11.0236225" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m23.530184 11.590551l-11.653543 -11.0236225" fill-rule="evenodd"/></g></svg>'
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
@@ -4476,19 +4488,24 @@ views.pics = function () {
                         //    B.view (['Data', 'pivTotal'], function (total) {
                         //    return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
                         // }),
-                        ['div', {class: 'previous-and-next-month'}, [
-                           ['div', {class:'previous-month-div'},[
-                              ['div', {class: 'chevron-container-previous-month'}, [
-                                 ['span', H.putSvg ('chevron')] 
+                        // THIS HAS TO BE A TABLE
+                        ['table', {class: 'previous-and-next-month'}, [
+                           ['tr', {class: 'previous-and-next-month-first-row'}, [
+                              ['td', {class: 'chevron-container-previous-month'}, [
+                                 ['span', H.putSvg ('chevron')]
                               ]],
-                              ['span', {class: 'previous-month-span'}, 'Previous month'],
+                              ['td', {class: 'next-month-filler-td'}]
                            ]],
-                              ['div', {class:'next-month-div'}, [
-                                 ['span', {class: 'next-month-span'}, 'Next month'],
-                                 ['div', {class: 'chevron-container-next-month'}, [
-                                    ['span', H.putSvg ('chevron')]
-                                 ]]
-                              ]]
+                           ['tr', {class: 'previous-and-next-month-second-row'}, [
+                              ['td', {class: 'previous-month-td'}, 'Previous month'],
+                              ['td', {class: 'next-month-td'}, 'Next month']
+                           ]],
+                           ['tr', {class: 'previous-and-next-month-third-row'}, [
+                              ['td', {class: 'previous-month-filler-td'}],
+                              ['td', {class: 'chevron-container-next-month'}, [
+                                 ['span', H.putSvg ('chevron')]
+                              ]],
+                           ]],
                         ]],
                         ['div', {class: 'pictures-header__sort'}, [
                               B.view (['State', 'query'], function (query) {
@@ -4515,8 +4532,8 @@ views.pics = function () {
                                     var showName = tag.replace (/^[a-z]::/, '');
                                     if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                     return ['li', {class: Class}, [
-                                       H.if (H.isCountryTag (tag), H.putSvg ('geoCountryHeaderBar')),
-                                       H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCityHeaderBar')),
+                                       H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
+                                       H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
                                        ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
                                        ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                           ['div', {class: 'tag-actions'}, [
