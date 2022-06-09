@@ -1062,8 +1062,8 @@ CSS.litc = [
       'margin-top': -2,
       'border-style': 'solid',
       'border-width': '4px 4px 0 4px',
-      'border-color': 
-      CSS.vars.grey 
+      'border-color':
+      CSS.vars.grey
       // 'white'
       + ' transparent transparent transparent',
       transition: CSS.vars.easeOutQuart,
@@ -1907,7 +1907,7 @@ CSS.litc = [
    }],
    ['.pictures-grid-title-container', {
    'text-align': 'center',
-   height: 60, 
+   height: 60,
    'margin-top': CSS.vars['padding--m'],
    }],
    ['.pictures-header__title',{
@@ -4178,6 +4178,10 @@ views.pics = function () {
                         var geotagSelected = dale.stop (selected, true, H.isGeoTag);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
+                        // Pseudo-tag `f::` for arrow to switch sorting order.
+                        queryTags = teishi.copy (queryTags);
+                        queryTags ['f::'] = 0;
+
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (! H.isYearTag (tag)) return;
                            if (inc (selected, tag)) return tag;
@@ -4200,6 +4204,9 @@ views.pics = function () {
                            if (ag && bg) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
+
+                           if (a === 'f::') return -1;
+                           if (b === 'f::') return 1;
 
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
@@ -4249,12 +4256,16 @@ views.pics = function () {
                                  if (inc (selected, which)) Class += ' tag--selected';
                               }
                            }
+                           else if (which === 'f::') {
+                              var Class = 'tag-list__item tag sort-arrow';
+                              var action = ['toggle', 'tagOrder'];
+                           }
                            else {
                               colorTag = true;
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which)) numberOfPivs = ' '+queryTags [which];
+                           if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
@@ -4271,6 +4282,7 @@ views.pics = function () {
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
+                              H.if (which === 'f::', H.putSvg ('upAndDownArrows')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
                               ['span', {class: 'tag__title'}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
@@ -4546,7 +4558,7 @@ views.pics = function () {
                                  })];
                               }),
                            ]],
-                           
+
                         ]],
                         // CLICK AND DOUBLE CLICK NOTICE
                         B.view (['Data', 'account'], function (account) {
