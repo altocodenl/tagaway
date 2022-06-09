@@ -52,9 +52,10 @@ window.addEventListener ('keydown', function (ev) {
 // *** CSS ***
 
 var CSS = {
-   // old piv sizes
-   //pivSizes: [100, 140, 180, 240],
-   pivSizes: [150, 210, 240, 360],
+   // old piv widths
+   //pivWidths: [100, 140, 180, 240],
+   pivWidths: [150, 210, 240, 360],
+   // All thumbs for pivs have the same height, which is equivalent to pivWidths [1] - 18px of margin-top
    toRGBA: function (hex) {
       hex = hex.slice (1);
       return parseInt (hex.slice (0, 2), 16) + ', ' + parseInt (hex.slice (2, 4), 16) + ', ' + parseInt (hex.slice (4, 6), 16);
@@ -1886,15 +1887,15 @@ CSS.litc = [
    }],
    ['.pictures-grid__item', {
       display: 'inline-flex',
-      height: CSS.pivSizes [1],
+      height: CSS.pivWidths [1],
       'padding-right': 16,
       'padding-bottom': 18,
       position: 'relative',
    }],
-   ['.pictures-grid__item', {width: CSS.pivSizes [0]}],
-   ['.pictures-grid__item:nth-child(4n+12)', {width: CSS.pivSizes [3]}],
-   ['.pictures-grid__item:nth-child(3n+0)', {width: CSS.pivSizes [2]}],
-   ['.pictures-grid__item:nth-child(5n+7)', {width: CSS.pivSizes [1]}],
+   ['.pictures-grid__item', {width: CSS.pivWidths [0]}],
+   ['.pictures-grid__item:nth-child(4n+12)', {width: CSS.pivWidths [3]}],
+   ['.pictures-grid__item:nth-child(3n+0)', {width: CSS.pivWidths [2]}],
+   ['.pictures-grid__item:nth-child(5n+7)', {width: CSS.pivWidths [1]}],
    ['.pictures-grid__item-picture', {
       background: CSS.vars ['grey--light'],
       'width, height': 1,
@@ -2442,8 +2443,8 @@ H.computeBaseNPivs = function () {
    // gridHeight is actually smaller, but we don't bother computing it now.
    var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 50;
 
-   // piv frame height is between CSS.pivSizes [1] and CSS.pivSizes [2], hence an average.
-   var nPivs = Math.ceil (gridHeight / ((CSS.pivSizes [1] + CSS.pivSizes [2]) / 2)) * (Math.ceil (gridWidth / 170));
+   // piv frame height is between CSS.pivWidths [1] and CSS.pivWidths [2], hence an average.
+   var nPivs = Math.ceil (gridHeight / ((CSS.pivWidths [1] + CSS.pivWidths [2]) / 2)) * (Math.ceil (gridWidth / 170));
    // We triplicate nPivs to make sure we have enough.
    nPivs = nPivs * 3;
    return nPivs;
@@ -2456,7 +2457,7 @@ H.computePivFrame = function (piv) {
    var pivWidth = askance ? piv.dimh : piv.dimw, pivHeight = askance ? piv.dimw : piv.dimh;
    var pivRatio = pivWidth / pivHeight;
    // .pictures-grid__item: padding-bottom: 18px, padding right: 16px
-   var height = CSS.pivSizes [1] - 18, width, sizes = [CSS.pivSizes [0] - 16, CSS.pivSizes [1] - 16, CSS.pivSizes [2] - 16, CSS.pivSizes [3] - 16];
+   var height = CSS.pivWidths [1] - 18, width, sizes = [CSS.pivWidths [0] - 16, CSS.pivWidths [1] - 16, CSS.pivWidths [2] - 16, CSS.pivWidths [3] - 16];
    if      (pivRatio <= (sizes [0] / height)) width = sizes [0];
    else if (pivRatio <= (sizes [1] / height)) width = sizes [1];
    else if (pivRatio <= (sizes [2] / height)) width = sizes [2];
@@ -2486,8 +2487,8 @@ H.computeChunks = function (x, pivs) {
       });
 
       // Chunk header has 20px height and chunk has 30px padding top
-      // Each row is always CSS.pivSizes [1] high
-      return 50 + rows * CSS.pivSizes [1];
+      // Each row is always CSS.pivWidths [1] high
+      return 50 + rows * CSS.pivWidths [1];
    };
 
    var computeRepulsion = function (chunkSize) {
@@ -2814,9 +2815,9 @@ B.mrespond ([
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
+      if (x.path [2] === 'recentlyTagged') return;
 
-      // If State.query.tags or State.query.sort changed, we modify State.query.nPivs directly to avoid triggering two calls to `query pivs`.
-      if (! inc (['nPivs', 'recentlyTagged'], x.path [2])) {
+      if (x.path.length === 2 || inc (['tags', 'sort'], x.path [2])) {
          B.set (['State', 'query', 'nPivs'], H.computeBaseNPivs ());
          B.call (x, 'update', 'queryURL');
       }
@@ -4588,9 +4589,10 @@ views.grid = function () {
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',
-                                 // For pivs rotated -90 degrees, margin-left is frameWidth - CSS.pivSizes [1] - 16px of margin-right
-                                 'margin-left': piv.deg !== -90 ? 0 : dale.obj (CSS.pivSizes, function (v) {
-                                    return [v - 16, v - 16 - 164];
+                                 'margin-left': 0,
+                                 // For pivs rotated -90 degrees, margin-left is frameWidth - CSS.pivWidths [1] + 2px (the 2px are needed, otherwise a sliver of the gray frame can be seen to the right). The -16px on the frame width are from the margin-right.
+                                 'margin-left': piv.deg !== -90 ? 0 : dale.obj (CSS.pivWidths, function (v) {
+                                    return [v - 16, v - CSS.pivWidths [1] + 2];
                                  }) [piv.frame.width],
                                  rotation: rotation,
                               }),

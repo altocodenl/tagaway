@@ -41,6 +41,21 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pivs
    - Scroll to relevant chunk when loading queryURL
+      - change State.query:
+         - If change is to recentlyTagged, don't query pivs or update State.queryURL, just return.
+         - If change is to tags or sort, reset fromDate and query pivs.
+         - If change is to fromDate, check thickness of buffer. If it's too thin, query pivs.
+         - Always update State.queryURL.
+         - How to determine thickness of buffer? We could add the top coordinate to each piv while doing the chunk calculation.
+      - query pivs
+         - Use from if no fromDate, otherwise use fromDate. to is fixed to the upper end of the buffer.
+         - Detect if you need to do scrollUp by looking at last query's tags and sort.
+         - Scroll to the right position, either resetted or the fromDate one
+      - read hash
+         - If change to State.queryURL is just a matter of fromDate, modify history
+      - open next
+         - Increase fromDate
+      - Remove all references to nPivs
    - Add arrow to switch order of tags
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
    - [markup] Move edit bar to bottom and write new blue bar on top. Make sure that chunk headers are shown properly.
@@ -54,10 +69,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
-- Backend improvements:
-   - Add user log on verify.
-
 - Accounts
+   - Add user log on verify.
    - Recover/reset password.
    - Delete my account with confirmation.
 
@@ -950,7 +963,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 4. Pics
    1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest', nPivs: H.computeBaseNPivs ()}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
-   2. `change State.query`: if the path to the change is just `State` object (which only happens during initialization or logout), we ignore it. if the change is not to `State.query.recentlyTagged` or `State.query.nPivs`, we directly set `State.query.nPivs` to the number of pivs returned by `H.computeBaseNPivs` (we don't do it through an event because we want to avoid that call also invoking `query pivs`) and invoke `update queryURL`. We then invoke `query pivs true`.
+   2. `change State.query`: if the path to the change is just `State` object (which only happens during initialization or logout), or `State.query.recentlyTagged`, we ignore it. if the change is to either `State.query`, `State.query.tags` or `State.query.sort`, we directly set `State.query.nPivs` to the number of pivs returned by `H.computeBaseNPivs` (we don't do it through an event because we want to avoid that call also invoking `query pivs`) and invoke `update queryURL`. We then invoke `query pivs true`. If the change is on `State.query.nPivs`, the only thing that will happen is that `query pivs true` will be invoked.
    3. `change State.selected`: if current page is not `pivs`, it does nothing. Adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    4. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    5. `query pivs`:
