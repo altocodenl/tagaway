@@ -639,10 +639,16 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-29px)' // header height / 2
    }],
-   ['.app-show-organise-bar .pictures-grid__item', {
+   // ** PARTIAL SOLUTION, THIS CAUSES PORPOISING
+   // ['.app-show-organise-bar .pictures-grid__item', {
+   //    transition: CSS.vars.easeOutQuart,
+   //    transform: 'translateY(-58px)' // header height
+   // }],
+   ['.app-show-organise-bar .pictures-grid', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-58px)' // header height
    }],
+// **
    ['.app-pictures .pictures-header', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(0px)'
@@ -654,6 +660,7 @@ CSS.litc = [
    ['.main__inner', {
       'margin-top': CSS.typography.spaceVer (1.5),
       'padding-left, padding-right': CSS.vars ['padding--l'],
+      'background-color': 'white',
    }],
    ['.main--pictures .main__inner', {'padding-right': 0}],
    // *** main-centered.scss ***
