@@ -639,7 +639,6 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-29px)' // header height / 2
    }],
-   // ** PARTIAL SOLUTION, THIS CAUSES PORPOISING
    // ['.app-show-organise-bar .pictures-grid__item', {
    //    transition: CSS.vars.easeOutQuart,
    //    transform: 'translateY(-58px)' // header height
@@ -648,7 +647,10 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-58px)' // header height
    }],
-// **
+   ['.app-pictures .pictures-grid', {
+      transition: CSS.vars.easeOutQuart,
+      transform: 'translateY(0px)'
+   }],
    ['.app-pictures .pictures-header', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(0px)'
