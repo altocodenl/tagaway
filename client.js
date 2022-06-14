@@ -639,6 +639,7 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-29px)' // header height / 2
    }],
+   // ** PARTIAL SOLUTION, THIS CAUSES PORPOISING
    // ['.app-show-organise-bar .pictures-grid__item', {
    //    transition: CSS.vars.easeOutQuart,
    //    transform: 'translateY(-58px)' // header height
@@ -651,6 +652,7 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(0px)'
    }],
+// **
    ['.app-pictures .pictures-header', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(0px)'
@@ -2456,6 +2458,9 @@ var H = {};
 H.putSvg = function (which) {
    return ['span', {opaque: true}, ['LITERAL', svg [which]]];
 }
+H.putRoundSvg = function (which) {
+   return ['span', {opaque: true, style:'height: 24px;'}, ['LITERAL', svg [which]]];
+}
 
 H.matchVerb = function (ev, responder) {
    return B.r.compare (ev.verb, responder.verb);
@@ -2786,9 +2791,9 @@ B.mrespond ([
       });
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
-      B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
+      //B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
-      if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
+      // if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
    }],
    ['read', 'hash', function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
@@ -4299,18 +4304,18 @@ views.pics = function () {
                               ['span', {class: 'tag__title'}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 ['div', {class: 'tag-actions'}, [
-                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag')],
+                                 which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putRoundSvg ('itemSelected')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putRoundSvg ('itemDeselect')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putRoundSvg ('itemAttach')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putRoundSvg ('itemAttached')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putRoundSvg ('itemUntag')],
                                  ]]
                               ]]
                            ]];
                         }
 
-                        return ['div', {class: 'sidebar__tags'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
+                        return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
                            dale.go (yearlist, makeTag),
@@ -4430,7 +4435,7 @@ views.pics = function () {
                            return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                         });
 
-                        return ['div', {class: 'sidebar__tags'}, [
+                        return ['div', {class: 'sidebar__tags active-selection'}, [
                            ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
@@ -4440,11 +4445,11 @@ views.pics = function () {
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
                                     ['div', {class: 'tag-actions'}, [
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putRoundSvg ('itemSelected')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putRoundSvg ('itemDeselect')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putRoundSvg ('itemAttach')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putRoundSvg ('itemAttached')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putRoundSvg ('itemUntag')],
                                     ]],
                                  ]],
                               ]];
