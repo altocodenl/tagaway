@@ -481,7 +481,8 @@ CSS.litc = [
    ['.sidebar__footer', {
       position: 'fixed',
       'bottom, left': 0,
-      height: 114,
+      // height: 114,
+      height: 54,
       width: 300, // sidebar width
       display: 'flex',
       'flex-direction': 'column-reverse', // FIX FOR '.done-tagging-button'
