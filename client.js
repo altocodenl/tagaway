@@ -240,6 +240,19 @@ CSS.litc = [
       color: '#fff',
       cursor: 'pointer',
    }],
+   ['.button--green', {
+      border: '1px solid ' + CSS.vars ['color--attach'],
+      'background-color': CSS.vars ['color--attach'],
+      color: '#fff',
+      cursor: 'pointer',
+   }],
+   ['.button--feedback', {
+      border: '1px solid ' + CSS.vars ['color--one'],
+      // 'background-color': CSS.vars ['color--one'],
+      color: CSS.vars ['color--one'],
+      cursor: 'pointer',
+      'border-radius': 12,
+   }],
    media ('screen and (min-width: 1025px)', ['.button--one:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--one'],
@@ -252,6 +265,14 @@ CSS.litc = [
    media ('screen and (min-width: 1025px)', ['.button--two:hover', {
       color: CSS.vars.grey,
       background: '#fff',
+   }]),
+   media ('screen and (min-width: 1025px)', ['.button--green:hover', {
+      'background-color': '#fff',
+      color: CSS.vars ['color--attach'],
+   }]),
+   media ('screen and (min-width: 1025px)', ['.button--feedback:hover', {
+      'background-color': CSS.vars ['color--one'],
+      color: '#fff',
    }]),
    // Buttons icon
    ['.button__icon', {
@@ -299,6 +320,7 @@ CSS.litc = [
    }],
    ['.header__menu', {'padding-left': CSS.vars ['padding--l']}],
    ['.header__user', {'margin-left': 'auto'}],
+   ['.header__feedback-button', {'margin-left': 'auto'}],
    ['.header__upload-button', {'margin-left, margin-right': CSS.vars ['padding--m']}],
    ['.header__import-button', {'margin-left': 22, 'margin-right': -12}],
    // *** logo.scss ***
@@ -4087,9 +4109,11 @@ views.header = function (showUpload, showImport) {
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {href: '#/pics', class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item'},                           ['a', {class: 'main-menu__item-link', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Manage tags']],
+            ['li', {class: 'main-menu__item', style:'display: none;'},                           ['a', {class: 'main-menu__item-link', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Manage tags']],
          ]]
       ]],
+      //FEEDBACK BUTTON
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'IMPLEMENT BOX'])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4102,6 +4126,8 @@ views.header = function (showUpload, showImport) {
             ]],
          ]],
       ]],
+      //SHARE BUTTON
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Share']],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
       // UPLOAD BUTTON
@@ -5589,8 +5615,11 @@ views.account = function () {
                               ]],
                            ]
                         ]],
-                        free ? [] : ['div', {class: 'cancel-account'}, [
-                           ['a', {href: ''}, 'Downgrade your subscription']
+                        free ? ['div', {class: 'cancel-account'}, [
+                                 ['a', {href: ''}, 'Cancel your account']
+                              ]] : 
+                              ['div', {class: 'cancel-account'}, [
+                                 ['a', {href: ''}, 'Downgrade your subscription']
                         ]]
                      ]]
                   ]],
