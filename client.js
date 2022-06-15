@@ -4830,8 +4830,7 @@ views.upload = function () {
                                           ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
                                        ] : [
                                           'Drag and drop photos here or ',
-                                          ['br'], ['br'],
-                                          ['div', [
+                                          ['div', {style: 'margin-top: 22px;'},[
                                              ['div', {style: style ({float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#files-upload").click ()'}, 'Upload files'],
                                              ['div', {style: style ({float: 'left', display: 'inline-block'}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#folder-upload").click ()'}, 'Upload folder'],
                                           ]],
