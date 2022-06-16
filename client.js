@@ -199,10 +199,12 @@ CSS.litc = [
    ['p, a, li',   {'line-height': CSS.typography.spaceVer (1), mixin1: CSS.vars.fontPrimaryRegular}],
    // Global typographic styles
    ['.page-title', {
-      'font-size':   CSS.typography.fontSize (7),
+     'font-size':   CSS.typography.fontSize (4.5),
       'line-height': CSS.typography.spaceVer (1.75),
       'margin-bottom': CSS.typography.spaceVer (0.25),
       mixin1: CSS.vars.fontPrimaryRegular,
+      // color: 'white',
+      // 'padding-left': CSS.vars ['padding--xs'],
    }],
    ['.page-subtitle', {
       'font-size':   CSS.typography.fontSize (1),
@@ -240,6 +242,19 @@ CSS.litc = [
       color: '#fff',
       cursor: 'pointer',
    }],
+   ['.button--green', {
+      border: '1px solid ' + CSS.vars ['color--attach'],
+      'background-color': CSS.vars ['color--attach'],
+      color: '#fff',
+      cursor: 'pointer',
+   }],
+   ['.button--feedback', {
+      border: '1px solid ' + CSS.vars ['color--one'],
+      // 'background-color': CSS.vars ['color--one'],
+      color: CSS.vars ['color--one'],
+      cursor: 'pointer',
+      'border-radius': 12,
+   }],
    media ('screen and (min-width: 1025px)', ['.button--one:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--one'],
@@ -252,6 +267,14 @@ CSS.litc = [
    media ('screen and (min-width: 1025px)', ['.button--two:hover', {
       color: CSS.vars.grey,
       background: '#fff',
+   }]),
+   media ('screen and (min-width: 1025px)', ['.button--green:hover', {
+      'background-color': '#fff',
+      color: CSS.vars ['color--attach'],
+   }]),
+   media ('screen and (min-width: 1025px)', ['.button--feedback:hover', {
+      'background-color': CSS.vars ['color--one'],
+      color: '#fff',
    }]),
    // Buttons icon
    ['.button__icon', {
@@ -299,6 +322,7 @@ CSS.litc = [
    }],
    ['.header__menu', {'padding-left': CSS.vars ['padding--l']}],
    ['.header__user', {'margin-left': 'auto'}],
+   ['.header__feedback-button', {'margin-left': 'auto'}],
    ['.header__upload-button', {'margin-left, margin-right': CSS.vars ['padding--m']}],
    ['.header__import-button', {'margin-left': 22, 'margin-right': -12}],
    // *** logo.scss ***
@@ -459,7 +483,7 @@ CSS.litc = [
    ['.sidebar__footer', {
       position: 'fixed',
       'bottom, left': 0,
-      height: 114,
+      height: 54,
       width: 300, // sidebar width
       display: 'flex',
       'flex-direction': 'column-reverse', // FIX FOR '.done-tagging-button'
@@ -623,7 +647,8 @@ CSS.litc = [
    // *** main.scss **
    // Main (where all the content comes)
    ['.main', {
-      'padding-top': 58, // header height
+      // 'padding-top': 58, // header height
+      'padding-top': 40, // header height
       'padding-left': CSS.vars ['sidebar-width'], // sidebar width
       display: 'flex',
       'flex-direction': 'column',
@@ -638,10 +663,20 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-29px)' // header height / 2
    }],
-   ['.app-show-organise-bar .pictures-grid__item', {
+   // ** PARTIAL SOLUTION, THIS CAUSES PORPOISING
+   // ['.app-show-organise-bar .pictures-grid__item', {
+   //    transition: CSS.vars.easeOutQuart,
+   //    transform: 'translateY(-58px)' // header height
+   // }],
+   ['.app-show-organise-bar .pictures-grid', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-58px)' // header height
    }],
+   ['.app-pictures .pictures-grid', {
+      transition: CSS.vars.easeOutQuart,
+      transform: 'translateY(0px)'
+   }],
+// **
    ['.app-pictures .pictures-header', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(0px)'
@@ -653,6 +688,7 @@ CSS.litc = [
    ['.main__inner', {
       'margin-top': CSS.typography.spaceVer (1.5),
       'padding-left, padding-right': CSS.vars ['padding--l'],
+      'background-color': 'white',
    }],
    ['.main--pictures .main__inner', {'padding-right': 0}],
    // *** main-centered.scss ***
@@ -667,6 +703,14 @@ CSS.litc = [
       display: 'flex',
       'flex-direction': 'column',
       width: 1,
+   }],
+   ['.chunk_title', {
+      'font-weight': CSS.vars.fontPrimaryRegular,
+      color: CSS.vars.grey,
+      height: 25,
+      'font-size':   CSS.typography.fontSize (4),
+      'text-align': 'center',
+      cursor: 'pointer'
    }],
    // *** guide.scss ***
    ['.guide', {
@@ -759,13 +803,16 @@ CSS.litc = [
       display: 'flex',
       width: 1,
       'align-items': 'center',
+      'margin-top': CSS.vars['padding--xs'],
    }],
    ['.tag-list-horizontal .tag-list-horizontal__item', {
       width: 'auto',
       'margin-right': CSS.vars ['padding--m'],
       display: 'inline-flex',
       'white-space': 'nowrap',
-      'margin-top': CSS.typography.spaceVer (0.25),
+      // 'margin-top': CSS.typography.spaceVer (0.25),
+      // color: 'white',
+      'margin-left': CSS.vars ['padding--xs']
    }],
    // *** tag-list-extended.scss ***
    // Tag list extended
@@ -830,6 +877,9 @@ CSS.litc = [
       cursor: 'pointer',
       'margin-bottom': CSS.typography.spaceVer (0.5),
    }],
+   ['.sort-arrow', {
+      'margin-left': .8,
+   }],
    // Tag list -- Sidebar -- Only selected tags
    ['.app-selected-tags .tag-list--sidebar', [
       ['.tag', {display: 'none'}],
@@ -864,6 +914,7 @@ CSS.litc = [
    ['.tag__title', {
       mixin1: CSS.vars.fontPrimaryMedium,
       'margin-right': CSS.vars ['padding--xs'],
+      width: 'inherit'
    }],
    // Tag title - amount
    ['.tag__title-amount', {
@@ -876,6 +927,13 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 24,
    }, ['path', {fill: CSS.vars ['grey--darker']}]],
+   ['.number_of_pivs', {
+      // color: CSS.vars ['color--one'],
+      // float: 'right',
+      mixin1: CSS.vars.fontPrimaryMedium,
+      'margin-right': 40,
+      'text-align': 'right'
+   }],
    // *** tag-actions.scss ***
    // Tag actions
    ['.tag-actions', {
@@ -1021,12 +1079,17 @@ CSS.litc = [
    // *** dropdown.scss ***
    ['.dropdown', {
       position: 'relative',
+      margin:'auto'
    }],
    ['.dropdown__button', {
+
       mixin1: CSS.vars.fontPrimaryMedium,
       position: 'relative',
       'padding-right': 20,
+      width: 100,
+      'text-align': 'right',
       color: CSS.vars.grey,
+      // color: 'white',
       cursor: 'pointer',
       transition: CSS.vars.easeOutQuart,
    }, ['&::after', {
@@ -1037,10 +1100,17 @@ CSS.litc = [
       'margin-top': -2,
       'border-style': 'solid',
       'border-width': '4px 4px 0 4px',
-      'border-color': CSS.vars.grey + ' transparent transparent transparent',
+      'border-color':
+      CSS.vars.grey
+      // 'white'
+      + ' transparent transparent transparent',
       transition: CSS.vars.easeOutQuart,
    }]],
-   ['.dropdown__button:hover', {color: CSS.vars ['grey--darker']}, ['&::after', {
+   ['.dropdown__button:hover', {
+      // 'font-weight': CSS.vars['fontPrimarySemiBold'],
+      // color: CSS.vars ['grey--darker']
+   },
+   ['&::after', {
       'border-color': CSS.vars ['grey--darker'] + ' transparent transparent transparent',
    }]],
    ['.dropdown:hover .dropdown__list', {display: 'block'}],
@@ -1861,13 +1931,74 @@ CSS.litc = [
    }],
    // *** pictures-header.scss ***
    ['.pictures-header', {
+      'background-color': 'white',
+      // 'border-radius': 12,
+      'margin-right': 22,
       'margin-bottom': CSS.typography.spaceVer (2),
       'padding-right': CSS.vars ['padding--m'],
-      position: 'relative',
-      'z-index': '10'
+      'padding-top': CSS.vars ['padding--s'],
+      // position: 'relative',
+      position: 'sticky',
+      top: CSS.typography.spaceVer (2.95),
+      'z-index': '10',
+      height: CSS.typography.spaceVer (7),
+   }],
+   ['.pictures-grid-title-container', {
+   'text-align': 'center',
+   height: 60,
+   'margin-top': CSS.vars['padding--m'],
+   }],
+   ['.pictures-header__title',{
+      width: .6,
+      // color: 'white',
+      display: 'inline-block',
+      'text-align': 'left',
+      'float': 'left',
+      'margin-left': CSS.vars ['padding--xs'],
+      'line-height': CSS.typography.spaceVer (2),
+      'margin-top': CSS.vars ['padding--s'],
+   }],
+   ['.previous-and-next-month',{
+      // 'margin-top': CSS.vars ['padding--s'],
+      display: 'inline-flex',
+      'margin-top': '-10px',
+      // color: 'white',
+      // width: .3,
+      // 'text-align': 'right',
+   }],
+   ['.chevron-container-previous-month, .next-month-filler-td', {
+      // 'border': 'solid 1px blue',
+   }],
+   ['.previous-month-td, .next-month-td',{
+      // display: 'inline-block',
+      // 'margin-right': CSS.vars ['padding--xl'],
+      width: 120,
+      // 'border': 'solid 1px black',
+   }],
+   ['.chevron-svg', {
+      'margin-top': 3,
+   }],
+   ['.chevron-container-previous-month, .chevron-container-next-month', {
+      height: 20,
+      width: 24,
+      'margin-left, margin-right': 'auto',
+      cursor: 'pointer'
+   }],
+   ['.chevron-container-previous-month', {
+      transform: 'rotate(180deg)',
+   }],
+   ['.pictures-header__sort', {
+      // display: 'inline-flex',
+      // 'margin-left': 'auto',
+      'margin-top': 19,
+      display: 'inline-block',
+      float: 'right',
+      // 'line-height': CSS.typography.spaceVer (3.33),
+      width: .09,
+
    }],
    ['.pictures-header__action-bar', {
-      'margin-top': CSS.typography.spaceVer (0.5),
+      'margin-top': CSS.typography.spaceVer (0.3),
       display: 'flex',
       width: 1,
       'align-items': 'center',
@@ -2334,6 +2465,9 @@ var svg = {
    upIcon: '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>',
    backIcon: '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
    folderDeselect: '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
+   chevron: '<svg class="chevron-svg" height="20" width="24"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke:#484848;stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke:#484848;stroke-width:1.5" /></svg>',
+   selectedCircle: '<svg viewBox="0 0 100 100" fill="#5b6eff" width="12" height="12" style="margin-right: 6px; xmlns="http://www.w3.org/2000/svg"> <circle cx="50" cy="50" r="50"/></svg>',
+   upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>'
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
@@ -2347,6 +2481,9 @@ var H = {};
 
 H.putSvg = function (which) {
    return ['span', {opaque: true}, ['LITERAL', svg [which]]];
+}
+H.putRoundSvg = function (which) {
+   return ['span', {opaque: true, style:'height: 24px;'}, ['LITERAL', svg [which]]];
 }
 
 H.matchVerb = function (ev, responder) {
@@ -4017,9 +4154,10 @@ views.header = function (showUpload, showImport) {
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
             ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'main-menu__item-link'}, 'View pictures']],
-            ['li', {class: 'main-menu__item'},                           ['a', {class: 'main-menu__item-link', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Manage tags']],
          ]]
       ]],
+      //FEEDBACK BUTTON
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'IMPLEMENT BOX'])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4032,6 +4170,8 @@ views.header = function (showUpload, showImport) {
             ]],
          ]],
       ]],
+      //SHARE BUTTON
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Share']],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
       // UPLOAD BUTTON
@@ -4125,6 +4265,10 @@ views.pics = function () {
                         var geotagSelected = dale.stop (selected, true, H.isGeoTag);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
+                        // Pseudo-tag `f::` for arrow to switch sorting order.
+                        queryTags = teishi.copy (queryTags);
+                        queryTags ['f::'] = 0;
+
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (! H.isYearTag (tag)) return;
                            if (inc (selected, tag)) return tag;
@@ -4147,6 +4291,9 @@ views.pics = function () {
                            if (ag && bg) return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
+
+                           if (a === 'f::') return -1;
+                           if (b === 'f::') return 1;
 
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
@@ -4196,12 +4343,16 @@ views.pics = function () {
                                  if (inc (selected, which)) Class += ' tag--selected';
                               }
                            }
+                           else if (which === 'f::') {
+                              var Class = 'tag-list__item tag sort-arrow';
+                              var action = ['toggle', 'tagOrder'];
+                           }
                            else {
                               colorTag = true;
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which)) numberOfPivs = ' (' + queryTags [which] + ')';
+                           if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
@@ -4218,21 +4369,23 @@ views.pics = function () {
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
+                              H.if (which === 'f::', H.putSvg ('upAndDownArrows')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', showName, numberOfPivs]],
+                              ['span', {class: 'tag__title'}, [' ', showName]],
+                              ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 ['div', {class: 'tag-actions'}, [
-                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag')],
+                                 which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putRoundSvg ('itemSelected')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putRoundSvg ('itemDeselect')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putRoundSvg ('itemAttach')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putRoundSvg ('itemAttached')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putRoundSvg ('itemUntag')],
                                  ]]
                               ]]
                            ]];
                         }
 
-                        return ['div', {class: 'sidebar__tags'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
+                        return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
                            dale.go (yearlist, makeTag),
@@ -4352,7 +4505,7 @@ views.pics = function () {
                            return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                         });
 
-                        return ['div', {class: 'sidebar__tags'}, [
+                        return ['div', {class: 'sidebar__tags active-selection'}, [
                            ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
@@ -4362,11 +4515,11 @@ views.pics = function () {
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
                                     ['div', {class: 'tag-actions'}, [
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putRoundSvg ('itemSelected')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putRoundSvg ('itemDeselect')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putRoundSvg ('itemAttach')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putRoundSvg ('itemAttached')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putRoundSvg ('itemUntag')],
                                     ]],
                                  ]],
                               ]];
@@ -4381,6 +4534,7 @@ views.pics = function () {
                // SIDEBAR SEARCH
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
+                  // ** TODO: SET HEIGHT TO 114PX WHEN DONE TAGGING BUTTON IS PRESENT
                   return ['div', {class: 'sidebar__footer', onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
@@ -4431,45 +4585,66 @@ views.pics = function () {
                   B.view (['State', 'selected'], function (selected) {
                      selected = dale.keys (selected).length;
                      return ['div', {class: 'pictures-header'}, [
-                        B.view (['Data', 'pivTotal'], function (total) {
-                           return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
-                        }),
-                        ['div', {class: 'pictures-header__action-bar'}, [
-                           ['div', {class: 'pictures-header__selected-tags'}, [
-                              B.view (['State', 'query', 'tags'], function (tags) {
-                                 return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
-                                    var Class = 'tag tag-list-horizontal__item ';
-                                    if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
-                                    else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
+                        ['div', {class: 'pictures-grid-title-container'},[
+                           ['h2', {class: 'pictures-header__title page-title'}, 'You’re looking at: 29 Sep ‘19 to 03 Dec ‘20'],
+                           B.view (['Data', 'pivTotal'], function (total) {
+                              return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
+                           }),
+                           ['div', {class: 'pictures-header__action-bar'}, [
+                              ['div', {class: 'pictures-header__selected-tags'}, [
+                                 B.view (['State', 'query', 'tags'], function (tags) {
+                                    return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
+                                       var Class = 'tag tag-list-horizontal__item ';
+                                       if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
+                                       else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
 
-                                    var showName = tag.replace (/^[a-z]::/, '');
-                                    if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
-                                    return ['li', {class: Class}, [
-                                       H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
-                                       H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
-                                       ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
-                                       ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                          ['div', {class: 'tag-actions'}, [
-                                             ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
+                                       var showName = tag.replace (/^[a-z]::/, '');
+                                       if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
+                                       return ['li', {class: Class}, [
+                                          H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
+                                          H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
+                                          ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
+                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                             ['div', {class: 'tag-actions'}, [
+                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
+                                             ]],
                                           ]],
-                                       ]],
-                                    ]];
-                                 })];
-                              }),
+                                       ]];
+                                    })];
+                                 }),
+                              ]]
                            ]],
-                           ['div', {class: 'pictures-header__sort'}, [
-                              B.view (['State', 'query'], function (query) {
-                                 if (! query) return ['div'];
-                                 return ['div', {class: 'dropdown'}, [
-                                    ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
-                                    ['ul', {class: 'dropdown__list'}, [
-                                       dale.go (['newest', 'oldest', 'upload'], function (sort) {
-                                          return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
-                                       })
-                                    ]],
-                                 ]];
-                              }),
+                        ]],
+                        ['table', {class: 'previous-and-next-month'}, [
+                           ['tr', {class: 'previous-and-next-month-first-row'}, [
+                              ['td', {class: 'chevron-container-previous-month'}, [
+                                 ['span', H.putSvg ('chevron')]
+                              ]],
+                              ['td', {class: 'next-month-filler-td'}]
                            ]],
+                           ['tr', {class: 'previous-and-next-month-second-row'}, [
+                              ['td', {class: 'previous-month-td'}, 'Previous month'],
+                              ['td', {class: 'next-month-td'}, 'Next month']
+                           ]],
+                           ['tr', {class: 'previous-and-next-month-third-row'}, [
+                              ['td', {class: 'previous-month-filler-td'}],
+                              ['td', {class: 'chevron-container-next-month'}, [
+                                 ['span', H.putSvg ('chevron')]
+                              ]],
+                           ]],
+                        ]],
+                        ['div', {class: 'pictures-header__sort'}, [
+                           B.view (['State', 'query'], function (query) {
+                              if (! query) return ['div'];
+                              return ['div', {class: 'dropdown'}, [
+                                 ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
+                                 ['ul', {class: 'dropdown__list'}, [
+                                    dale.go (['newest', 'oldest', 'upload'], function (sort) {
+                                       return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
+                                    })
+                                 ]],
+                              ]];
+                           }),
                         ]],
                         // CLICK AND DOUBLE CLICK NOTICE
                         B.view (['Data', 'account'], function (account) {
@@ -4560,7 +4735,7 @@ views.grid = function () {
             dale.go (chunks, function (chunk) {
                if (! chunk.visible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
                return ['div', {class: 'chunk', style: style ({'padding-top': 30})}, [
-                  ['h3', {style: style ({height: 20})}, [new Date (chunk.pivs [0] [dateField] ).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs) [dateField]).toUTCString ()]],
+                  ['h3', {class: 'chunk_title'}, [new Date (chunk.pivs [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs).date).toUTCString ()]],
                   dale.go (chunk.pivs, function (piv, k) {
                      H.computePivFrame (piv);
 
@@ -4589,7 +4764,6 @@ views.grid = function () {
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',
-                                 'margin-left': 0,
                                  // For pivs rotated -90 degrees, margin-left is frameWidth - CSS.pivWidths [1] + 2px (the 2px are needed, otherwise a sliver of the gray frame can be seen to the right). The -16px on the frame width are from the margin-right.
                                  'margin-left': piv.deg !== -90 ? 0 : dale.obj (CSS.pivWidths, function (v) {
                                     return [v - 16, v - CSS.pivWidths [1] + 2];
@@ -4699,8 +4873,7 @@ views.upload = function () {
                                           ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
                                        ] : [
                                           'Drag and drop photos here or ',
-                                          ['br'], ['br'],
-                                          ['div', [
+                                          ['div', {style: 'margin-top: 22px;'},[
                                              ['div', {style: style ({float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#files-upload").click ()'}, 'Upload files'],
                                              ['div', {style: style ({float: 'left', display: 'inline-block'}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#folder-upload").click ()'}, 'Upload folder'],
                                           ]],
@@ -5485,7 +5658,9 @@ views.account = function () {
                               ]],
                            ]
                         ]],
-                        free ? [] : ['div', {class: 'cancel-account'}, [
+                        free ? ['div', {class: 'cancel-account'}, [
+                           ['a', {href: ''}, 'Delete your account']
+                        ]] : ['div', {class: 'cancel-account'}, [
                            ['a', {href: ''}, 'Downgrade your subscription']
                         ]]
                      ]]
