@@ -481,8 +481,7 @@ CSS.litc = [
    ['.sidebar__footer', {
       position: 'fixed',
       'bottom, left': 0,
-      height: 114,
-      // height: 54,
+      height: 54,
       width: 300, // sidebar width
       display: 'flex',
       'flex-direction': 'column-reverse', // FIX FOR '.done-tagging-button'
@@ -4491,6 +4490,7 @@ views.pics = function () {
                // SIDEBAR SEARCH
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
+                  // ** TODO: SET HEIGHT TO 114PX WHEN DONE TAGGING BUTTON IS PRESENT
                   return ['div', {class: 'sidebar__footer', onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
@@ -5616,10 +5616,9 @@ views.account = function () {
                            ]
                         ]],
                         free ? ['div', {class: 'cancel-account'}, [
-                                 ['a', {href: ''}, 'Cancel your account']
-                              ]] : 
-                              ['div', {class: 'cancel-account'}, [
-                                 ['a', {href: ''}, 'Downgrade your subscription']
+                           ['a', {href: ''}, 'Delete your account']
+                        ]] : ['div', {class: 'cancel-account'}, [
+                           ['a', {href: ''}, 'Downgrade your subscription']
                         ]]
                      ]]
                   ]],
