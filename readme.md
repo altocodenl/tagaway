@@ -40,22 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Scroll to relevant chunk when loading queryURL
-      - H.computeChunks: add start parameter to each piv to know its top height
-      - change State.query:
-         - If change is to tags or sort, reset fromDate.
-         - Always update State.queryURL.
-         - Determine thickness of buffer by getting last piv of last chunk, seeing its start; if it's start coordinate gives a buffer that's not too thin, don't do anything else.
-         - query pivs true
-      - query pivs
-         - Use from if no fromDate, otherwise use fromDate. to is fixed to twice the amount of the pivs to fill the screen
-         - If no fromDate, scroll to top. If there's fromDate, scroll to start of piv with fromDate
-      - open next
-         - Increase fromDate
-      - scroll
-         - Increase fromDate if scrolling down
-      - read hash
-         - If change to State.queryURL is just a matter of fromDate, modify history
    - Add arrow to switch order of tags
    - Search box height is incorrect when 'Done tagging' button appear in 'Untagged'.
    - Properly dynamize new top bar.
