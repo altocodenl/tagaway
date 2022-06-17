@@ -2439,15 +2439,15 @@ H.hash = function (file, cb) {
 // Roughly computes the number of pivs required to fill the screen of the device
 H.computeBaseNPivs = function () {
    // Sidebar is 300px, then there's also a padding.
-   var gridWidth = Math.max (document.documentElement.clientWidth || 0, window.innerWidth || 0) - 300 - CSS.vars ['padding--l'];
-   // gridHeight is actually smaller, but we don't bother computing it now.
-   var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 50;
+   var gridWidth  = Math.max (document.documentElement.clientWidth  || 0, window.innerWidth  || 0) - 300 - CSS.vars ['padding--l'];
+   var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 58;
 
-   // piv frame height is between CSS.pivWidths [1] and CSS.pivWidths [2], hence an average.
-   var nPivs = Math.ceil (gridHeight / ((CSS.pivWidths [1] + CSS.pivWidths [2]) / 2)) * (Math.ceil (gridWidth / 170));
-   // We triplicate nPivs to make sure we have enough.
-   nPivs = nPivs * 3;
-   return nPivs;
+   // piv frame height is between CSS.pivWidths [1] and CSS.pivWidths [2], so we take an average.
+   var averagePivWidth = Math.round ((CSS.pivWidths [1] + CSS.pivWidths [2]) / 2);
+   var pivsPerRow = gridWidth / averagePivWidth;
+   var rowsPerScreen = gridHeight / CSS.pivWidths [1];
+
+   return Math.round (rowsPerScreen * pivsPerRow);
 }
 
 // Computes the width and height of the thumbnail of a piv
@@ -2476,7 +2476,11 @@ H.computeChunks = function (x, pivs) {
 
       var rows = 1, width = 0;
 
-      dale.go (chunk.pivs, function (piv) {
+      // Chunk header has 20px height and chunk has 30px padding top, hence offset from top of the chunk is 50px
+      // Each row is always CSS.pivWidths [1] high
+
+      dale.go (chunk.pivs, function (piv, k) {
+         // We put a `start` field on the piv to know its position.
          H.computePivFrame (piv);
          // 16px is padding-right for each piv
          if ((width + piv.frame.width + 16) > gridWidth) {
@@ -2484,10 +2488,9 @@ H.computeChunks = function (x, pivs) {
             rows++;
          }
          else width += piv.frame.width + 16;
+         piv.start = chunk.start + 50 + (rows - 1) * CSS.pivWidths [1];
       });
 
-      // Chunk header has 20px height and chunk has 30px padding top
-      // Each row is always CSS.pivWidths [1] high
       return 50 + rows * CSS.pivWidths [1];
    };
 
@@ -2551,8 +2554,12 @@ H.computeChunks = function (x, pivs) {
       if (repulsionForce > attractionForce) chunks.push ({pivs: [piv]});
       else teishi.last (chunks).pivs.push (piv);
    });
+
+   // The first chunk starts at the top of the pictures-grid. What goes on top of it is the .main's padding-top (58px), the .main__inner's margin-top (about 29.25px) and the .pictures-header height (dynamic, if the element is not there we guesstimate 63px) + its margin-bottom (3rem, 39px).
+   var topOffset = Math.round (58 + 29.25 + (c ('.pictures-header') [0] ? c ('.pictures-header') [0].getBoundingClientRect ().height : 63) + CSS.typography.typeBase * 3);
+
    dale.go (chunks, function (chunk, k) {
-      chunk.start = k === 0 ? 0 : chunks [k - 1].end;
+      chunk.start = k === 0 ? topOffset : chunks [k - 1].end;
       chunk.end   = chunk.start + computeHeight (chunk);
    });
    B.call (x, 'split', 'chunks', {chunks: chunks.length, pivs: pivs.length, ms: Date.now () - t, bytes: JSON.stringify (pivs).length});
@@ -2582,7 +2589,7 @@ window.addEventListener ('keyup', function (ev) {
 });
 
 window.addEventListener ('scroll', function (ev) {
-   B.call ('scroll', [], ev);
+   B.call ('scroll', []);
 });
 
 window.onbeforeunload = function () {
@@ -2680,10 +2687,8 @@ B.mrespond ([
       });
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
-      // We ignore this strange error thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
-      if (arguments [1] === 'Uncaught SyntaxError: Unexpected end of input' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
-      // Same goes for this error.
-      if (arguments [1] === 'Uncaught EvalError: Possible side-effect in debug-evaluate' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
+      if (arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
 
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
@@ -2807,20 +2812,28 @@ B.mrespond ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', nPivs: H.computeBaseNPivs ()});
+      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.call (x, 'query', 'pivs', true);
 
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
-      // If the State object itself changes, don't respond to that.
-      if (x.path.length < 2) return;
-      if (x.path [2] === 'recentlyTagged') return;
+      // If the State object itself changes, or the path is State.query.recentlyTaggged, don't respond to that.
+      if (x.path.length < 2 || x.path [2] === 'recentlyTagged') return;
 
-      if (x.path.length === 2 || inc (['tags', 'sort'], x.path [2])) {
-         B.set (['State', 'query', 'nPivs'], H.computeBaseNPivs ());
-         B.call (x, 'update', 'queryURL');
+      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate');
+
+      B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
+
+      if (x.path [2] === 'fromDate') {
+         // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't do anything.
+         if (B.get ('Data', 'pivs').length === B.get ('Data', 'pivTotal')) return;
+         var lastPivStart = teishi.last (B.get ('Data', 'pivs')).start;
+         var minBufferSize = window.innerHeight * 2;
+         var bottomEnd = window.scrollY + window.innerHeight;
+         if (lastPivStart > bottomEnd + minBufferSize) return;
       }
+
       B.call (x, 'query', 'pivs', true);
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
@@ -2881,8 +2894,10 @@ B.mrespond ([
          clearTimeout (timeout);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: 1, to: query.nPivs, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
-         if (! teishi.eq (query, B.get ('State', 'query'))) return B.call (x, 'query', 'pivs', updateSelected, true);
+      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: H.computeBaseNPivs () * 3, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+         if (! teishi.eq ({tags: query.tags, sort: query.sort}, {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort')})) {
+            return B.call (x, 'query', 'pivs', updateSelected, true);
+         }
          B.call (x, 'set', ['State', 'querying'], false);
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          B.call (x, 'query', 'tags');
@@ -2907,8 +2922,6 @@ B.mrespond ([
             B.call (x, 'query', 'pivs');
          }, 1500));
 
-         if (query.nPivs <= H.computeBaseNPivs ()) window.scrollTo (0, 0);
-
          if (updateSelected) {
             var selected = B.get ('State', 'selected') || {};
             // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
@@ -2919,6 +2932,20 @@ B.mrespond ([
 
          B.call (x, 'set', ['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
          B.call (x, 'scroll', []);
+         if (! query.fromDate) window.scrollTo (0, 0);
+         else {
+            var dateField = query.sort === 'upload' ? 'dateup' : 'date';
+            dale.stop (rs.body.pivs, true, function (piv) {
+               if (query.fromDate === piv [dateField]) {
+                  if (piv.start > window.scrollY + window.innerHeight) {
+                     setTimeout (function () {
+                        window.scrollTo (0, piv.start);
+                     }, 0);
+                     return true;
+                  }
+               }
+            });
+         }
 
          if (B.get ('State', 'open') === undefined) {
             B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
@@ -3083,26 +3110,26 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'selected'], {});
       B.call (x, 'set', ['State', 'query', 'tags'], [tag]);
    }],
-   ['scroll', [], function (x, e) {
+   ['scroll', [], function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
       var lastScroll = B.get ('State', 'lastScroll');
       if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
       B.call (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
 
-      var bufferSize = window.innerHeight * 2;
+      var bufferSize = window.innerHeight * 3;
       var minVisible = Math.max (0, window.scrollY - bufferSize);
       var maxVisible = window.scrollY + window.innerHeight + bufferSize;
-      dale.go (B.get (['State', 'chunks']), function (chunk, k) {
+      dale.go (B.get ('State', 'chunks'), function (chunk, k) {
          if (chunk.end < minVisible || chunk.start > maxVisible) chunk.visible = false;
          else chunk.visible = true;
       });
       B.call (x, 'change', ['State', 'chunks']);
       B.call (x, 'change', ['State', 'selected']);
 
-      var lastChunk = teishi.last (B.get ('State', 'chunks'));
-      if (! B.get ('State', 'querying') && lastChunk && lastChunk.visible) {
-         B.call (x, 'increment', 'nPivs');
-      }
+      var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
+      dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
+         if (window.scrollY < piv.start) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
+      });
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -3125,21 +3152,19 @@ B.mrespond ([
    ['stop', 'propagation', function (x, ev) {
       ev.stopPropagation ();
    }],
-   ['increment', 'nPivs', function (x) {
-      if (B.get ('State', 'query', 'nPivs') >= B.get ('Data', 'pivTotal')) return;
-      B.call (x, 'set', ['State', 'query', 'nPivs'], Math.min (B.get ('State', 'query', 'nPivs') + H.computeBaseNPivs (), B.get ('Data', 'pivTotal')));
-   }],
-   ['update', 'queryURL', function (x) {
+   ['update', 'queryURL', function (x, dontAlterHistory) {
       var query = teishi.copy (B.get ('State', 'query'));
       if (! query) return;
       // We don't add recentlyTagged to avoid going over 2k characters
       delete query.recentlyTagged;
-      // We don't add nPivs since we don't want the same query with multiple scrolls to generate multiple locations to which to go back to with the back button.
-      delete query.nPivs;
       try {
          var hash = btoa (encodeURIComponent (JSON.stringify (query)));
          setTimeout (function () {
-            window.location.hash = '#/pics/' + hash;
+            if (dontAlterHistory) {
+               history.replaceState (undefined, undefined, '#/pics/' + hash);
+               B.set (['State', 'queryURL'], hash);
+            }
+            else window.location.hash = '#/pics/' + hash;
          }, 0);
       }
       catch (error) {
@@ -3150,7 +3175,6 @@ B.mrespond ([
       if (! B.get ('State', 'queryURL')) return;
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
-         query.nPivs = H.computeBaseNPivs ();
          if (B.get ('State', 'query', 'recentlyTagged')) query.recentlyTagged = B.get ('State', 'query', 'recentlyTagged');
          B.call (x, 'set', ['State', 'query'], query);
       }
@@ -3195,12 +3219,11 @@ B.mrespond ([
    }],
    ['open', /prev|next/, function (x) {
       var open = B.get ('State', 'open');
-      if (x.path [0] === 'prev' && open === 0) return;
-      if (x.path [0] === 'next') {
-         if (open + H.computeBaseNPivs () > B.get ('State', 'query', 'nPivs')) B.call (x, 'increment', 'nPivs');
-         B.call (x, 'set', ['State', 'open'], B.get ('Data', 'pivs', open + 1) ? open + 1 : 0);
-      }
-      else                       B.call (x, 'set', ['State', 'open'], open - 1);
+      var targetPiv = B.get ('Data', 'pivs', open + (x.path [0] === 'prev' ? -1 : 1));
+      if (! targetPiv) return;
+
+      B.call (x, 'set', ['State', 'open'], open + (x.path [0] === 'prev' ? -1 : 1));
+      window.scrollTo (0, targetPiv.start);
    }],
    ['touch', 'start', function (x, ev) {
       if (B.get ('State', 'open') === undefined) return;
