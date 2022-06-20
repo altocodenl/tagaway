@@ -28,7 +28,7 @@ var tk = {
    pivPath: 'test/',
    pivDataPath: 'test/pivdata.json',
    users: {
-      user1: {username: 'user1', password: 'foobar', firstName: 'name1', email: 'user1@example.com', timezone:  240},
+      user1: {username: 'user1', password: 'foobar',            firstName: 'name1', email: 'user1@example.com', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
       user3: {username: 'user3', password: Math.random () + '', firstName: 'name3', email: 'user3@example.com', timezone: 0},
    }
@@ -445,6 +445,7 @@ var H = {
          }
          // Values takes an array of possible values and defaults to the first one
          // This constraint doesn't generate tests, only updates the valid payload
+         // TODO: make it so that every variant is tested in a full run of the test suite, by creating a NxN list of combinations.
          else if (rule [1] === 'values') {
             updateValid (rule [0], rule [2] [0]);
          }
@@ -2015,7 +2016,7 @@ suites.query = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('query pivs', 'query', [
          [[], 'object'],
-         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly']],
+         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate']],
          [[], 'invalidKeys', ['foo']],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
@@ -2023,13 +2024,17 @@ suites.query = function () {
          [['maxdate'], ['undefined', 'integer']],
          [['sort'], 'values', ['newest', 'oldest', 'upload']],
          [['sort'], 'invalidValues', ['foo']],
-         [['from'], 'integer'],
+         [['from'], ['integer', 'undefined']],
          [['from'], 'values', [0]],
          [['to'], 'integer'],
          [['to'], 'values', [1]],
          [['from'], 'range', {min: 1}],
          [['from'], 'values', [2]],
          [['to'], 'range', {min: 2}],
+         [['fromDate'], 'undefined'],
+         [['from'], 'values', [undefined]],
+         [['fromDate'], 'values', 'integer'],
+         [['fromDate'], 'range', {min: 1}],
          [['recentlyTagged'], ['undefined', 'array']],
          [['recentlyTagged', 0], 'type', 'string', 'each of the body.recentlyTagged should have as type string but one of .+ is .+ with type'],
          [['idsOnly'], ['undefined', 'boolean']],
@@ -2087,6 +2092,26 @@ suites.query = function () {
       }],
       ['query pivs with idsOnly cutting off the amount returned', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 2, idsOnly: true}, 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, [s.mediumId, s.largeId])) return false;
+         return true;
+      }],
+      ['query pivs with newest & fromDate at present moment', 'post', 'query', {}, {tags: [], sort: 'newest', fromDate: Date.now (), to: 1, idsOnly: true}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId])) return false;
+         return true;
+      }],
+      ['query pivs with newest & fromDate at the same value as newest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', fromDate: tk.pivs.medium.date, to: 1, idsOnly: true}}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId])) return false;
+         return true;
+      }],
+      ['query pivs with newest & fromDate at the same value as middle piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', fromDate: tk.pivs.large.date, to: 1, idsOnly: true}}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId, s.largeId])) return false;
+         return true;
+      }],
+      ['query pivs with newest & fromDate at the same value as last piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', fromDate: tk.pivs.small.date, to: 1, idsOnly: true}}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId, s.largeId, s.smallId])) return false;
+         return true;
+      }],
+      ['query pivs with newest & fromDate at the same value after last piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', fromDate: tk.pivs.small.date + 1, to: 1, idsOnly: true}}, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, [s.mediumId, s.largeId, s.smallId])) return false;
          return true;
       }],
       ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['u::', 'foobar'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {

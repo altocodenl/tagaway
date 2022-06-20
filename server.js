@@ -2562,16 +2562,21 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
          ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
          ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
-         ['body.from',    b.from, 'integer'],
-         ['body.to',      b.to,   'integer'],
-         ['body.from',    b.from, {min: 1},      teishi.test.range],
-         ['body.to',      b.to,   {min: b.from}, teishi.test.range],
+         b.from === undefined ? [
+            ['body.fromDate', b.fromDate, 'integer'],
+         ] : [
+            ['body.from', b.from, ['integer', 'undefined'], 'oneOf'],
+            ['body.fromDate', b.fromDate, 'undefined'],
+         ],
+         ['body.to',      b.to, 'integer'],
+         b.from === undefined ? ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range] : ['body.from', b.from, {min: 1}, teishi.test.range],
+         ['body.to', b.to, {min: b.from}, teishi.test.range],
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
@@ -2678,6 +2683,17 @@ var routes = [
                var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
+
+            if (b.fromDate) {
+               b.from = 1;
+               var fromIndex = dale.stopNot (output.pivs, undefined, function (piv, k) {
+                  // The < and > are there in case the date requested is not held by any pivs that match the query
+                  if      (b.sort === 'oldest') return b.fromDate <= piv.date   ? k : undefined;
+                  else if (b.sort === 'newest') return b.fromDate >= piv.date   ? k : undefined;
+                  else                          return b.fromDate >= piv.dateup ? k : undefined;
+               });
+               b.to += fromIndex === undefined ? Infinity : fromIndex;
+            }
 
             if (b.idsOnly) return reply (rs, 200, dale.go (output.pivs.slice (b.from - 1, b.to), function (piv) {return piv.id}));
 

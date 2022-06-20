@@ -39,10 +39,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- csrf to csrf token!
+
 - Pivs
    - Add arrow to switch order of tags
    - Search box height is incorrect when 'Done tagging' button appear in 'Untagged'.
    - Properly dynamize new top bar.
+   - Feedback box
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
 
 - Upload/import:
@@ -55,6 +58,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Add user log on verify.
    - Recover/reset password.
    - Delete my account with confirmation.
+
+- Share & manage
+   - Rename tag.
+   - Share/unshare with email: signup, login, or go straight if there's a session. On signup, resolve shares.
+   - Save email addresses of previous shares and allow to delete them.
+   - Authorize/deauthorize shares done with me.
+   - In main view, mark tags shared with others and tags shared with me.
+   - If two shared tags from different users have the same name, put "@username".
+   - Authorization to see or ignore share.
+   - Allow to share from main editing view with dropdown of emails. If tag is shared already, nothing is done.
+   - Can you tag or share or copy pivs shared with you?
 
 - Mobile uploader
 
@@ -192,17 +206,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Tagging state: input with button to add tags, also dropdown to select existing tags to add to current upload.
    - Improve display of errors in upload & import: show foldable list of repeated|invalid|too large pivs.
    - Import from Dropbox.
-
-- Share & manage
-   - Rename tag.
-   - Share/unshare with email: signup, login, or go straight if there's a session. On signup, resolve shares.
-   - Save email addresses of previous shares and allow to delete them.
-   - Authorize/deauthorize shares done with me.
-   - In main view, mark tags shared with others and tags shared with me.
-   - If two shared tags from different users have the same name, put "@username".
-   - Authorization to see or ignore share.
-   - Allow to share from main editing view with dropdown of emails. If tag is shared already, nothing is done.
-   - Can you tag or share or copy pivs shared with you?
 
 - Account & payment
    - Set account space limit.
@@ -430,8 +433,9 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `a::`, `d::`, or tags shared with the user by other users.
 
 - `POST /query`
-   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
+   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT|UNDEFINED, fromDate: INT|UNDEFINED, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
+   - If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and it represents a timestamp. For the provided query, the server will find the index of the piv with the `date` (or `dateup` in the case of `sort` being `upload`) and use that as the `from` parameter. For example, if `fromDate` is `X`, `to` is 100 and `sort` is `newest`, the query will return the 100 pivs that match the query that were taken at `X` onwards.
    - `a::` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
    - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
    - Each of the returned pivs will have all the tags present in `body.tags`. The only exception to this rule are year tags, on which the query returns pivs that contain at least one of the given date tags. For example, the query `['d::2018', 'd::2019']` will return pivs from both 2018 and 2019.
