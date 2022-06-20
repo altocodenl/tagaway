@@ -4610,34 +4610,9 @@ views.pics = function () {
                      return ['div', {class: 'pictures-header'}, [
                         ['div', {class: 'pictures-grid-title-container'},[
                            ['h2', {class: 'pictures-header__title page-title'}, 'You’re looking at: 29 Sep ‘19 to 03 Dec ‘20'],
-                           B.view (['Data', 'pivTotal'], function (total) {
-                              return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
-                           }),
-                           ['div', {class: 'pictures-header__action-bar'}, [
-                              ['div', {class: 'pictures-header__selected-tags'}, [
-                                 B.view (['State', 'query', 'tags'], function (tags) {
-                                    return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
-                                       var Class = 'tag tag-list-horizontal__item ';
-                                       if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
-                                       else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
-
-                                       var showName = tag.replace (/^[a-z]::/, '');
-                                       if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
-                                       return ['li', {class: Class}, [
-                                          H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
-                                          H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
-                                          ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
-                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                             ['div', {class: 'tag-actions'}, [
-                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
-                                             ]],
-                                          ]],
-                                       ]];
-                                    })];
-                                 }),
-                              ]]
-                           ]],
-                        ]],
+                           // B.view (['Data', 'pivTotal'], function (total) {
+                           //    return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
+                           // }),       
                         ['table', {class: 'previous-and-next-month'}, [
                            ['tr', {class: 'previous-and-next-month-first-row'}, [
                               ['td', {class: 'chevron-container-previous-month'}, [
@@ -4668,6 +4643,31 @@ views.pics = function () {
                                  ]],
                               ]];
                            }),
+                        ]],
+                        ['div', {class: 'pictures-header__action-bar'}, [
+                              ['div', {class: 'pictures-header__selected-tags'}, [
+                                 B.view (['State', 'query', 'tags'], function (tags) {
+                                    return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
+                                       var Class = 'tag tag-list-horizontal__item ';
+                                       if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
+                                       else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
+
+                                       var showName = tag.replace (/^[a-z]::/, '');
+                                       if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
+                                       return ['li', {class: Class}, [
+                                          H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
+                                          H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
+                                          ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
+                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                             ['div', {class: 'tag-actions'}, [
+                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
+                                             ]],
+                                          ]],
+                                       ]];
+                                    })];
+                                 }),
+                              ]]
+                           ]],
                         ]],
                         // CLICK AND DOUBLE CLICK NOTICE
                         B.view (['Data', 'account'], function (account) {
