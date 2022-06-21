@@ -2825,7 +2825,7 @@ B.mrespond ([
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
-      if (arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      if (arguments [2] && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
 
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
@@ -4612,7 +4612,7 @@ views.pics = function () {
                            ['h2', {class: 'pictures-header__title page-title'}, 'You’re looking at: 29 Sep ‘19 to 03 Dec ‘20'],
                            // B.view (['Data', 'pivTotal'], function (total) {
                            //    return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
-                           // }),       
+                           // }),
                         ['table', {class: 'previous-and-next-month'}, [
                            ['tr', {class: 'previous-and-next-month-first-row'}, [
                               ['td', {class: 'chevron-container-previous-month'}, [
