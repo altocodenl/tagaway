@@ -4197,7 +4197,7 @@ views.header = function (showUpload, showImport) {
          ]],
       ]],
       //SHARE BUTTON
-      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Share']],
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/share', class: 'button button--green'}, 'Share']],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
       // UPLOAD BUTTON
@@ -4862,6 +4862,18 @@ views.open = function () {
       ]];
    });
 }
+
+// *** SHARE VIEW ***
+
+views.share = function () {
+   return ['div', [
+      views.header (true, true),
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}]
+      ]] 
+   ]]
+}
+
 
 // *** UPLOAD VIEW ***
 
