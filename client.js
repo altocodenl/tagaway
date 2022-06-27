@@ -2829,7 +2829,7 @@ B.mrespond ([
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
-      if (arguments [2] && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
 
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
@@ -4871,27 +4871,49 @@ views.share = function () {
       views.header (true, true),
       ['div', {class: 'main-centered'}, [
          ['div', {class: 'main-centered__inner max-width--m'}, [
-         // PAGE HEADER
-         ['div', {class: 'page-header'}, [
-            ['h1', {class: 'page-header__title page-title'}, 'Share'],
-            ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Share and manage your tags and pictures']
-         ]],
-         ['div', {class: 'tags-search-bar'}, [
-            H.putSvg ('searchTagIcon'),
-            ['input', {class: 'tags-search-bar__search-input', style: 'search', placeholder: 'Search tag or picture name'}],
-            ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
-               H.putSvg ('sharedWithMeSearchIcon'),
-               ['span', {class: 'tags-search-bar__shared-title'}, 'Shared with me']
-            ]]
-         ]],
-         ['ul', {class: 'tag-list-extended'}, [
-            ['li', {class: 'tag-list-extended__item'}, [
-               ['div', {class: 'tag tag--shared tag--hidden'}, [
-                  H.putSvg ('shareItemIcon'),
-                  // H.putSvg ('tagItem' + H.tagColor (tag)),
-                  ]]
+            // PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'Share'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Share and manage your tags and pictures']
+            ]],
+            ['div', {class: 'tags-search-bar'}, [
+               H.putSvg ('searchTagIcon'),
+               ['input', {class: 'tags-search-bar__search-input', style: 'search', placeholder: 'Search tag or picture name'}],
+               ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
+                  H.putSvg ('sharedWithMeSearchIcon'),
+                  ['span', {class: 'tags-search-bar__shared-title'}, 'Shared with me']
                ]]
-            ]]            
+            ]],
+            ['ul', {class: 'tag-list-extended'}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden'}, [
+                     H.putSvg ('tagItem' + H.tagColor ('a')),
+                     ['p', {class: 'tag__title'}, [
+                        'Whatsapp', 
+                        ['span', {class: 'tag__title-amount'}, [
+                           ' (',
+                           ['em', {class: 'tag__title-number'}, '524'],
+                           ')'
+                        ]],
+                     ]],
+                     ['div', {class: 'tag__status'}, [
+                        ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
+                     ]]
+                  ]],
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                     ['p', 'Shared with:'],
+                     ['ul', {class: 'tag-share'}, [
+                        ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
+                           H.putRoundSvg ('shareItemIcon')
+                        ]
+                     ]],
+                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                        ['a', {href: '', class: 'button button--one'}, 'See pictures'],
+                        ['a', {href: '', class: 'button button--two'}, 'Rename tag']
+                     ]]
+                  ]]                  
+               ]]                        
+            ]]
          ]]
       ]] 
    ]]
