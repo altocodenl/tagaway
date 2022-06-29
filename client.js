@@ -250,7 +250,6 @@ CSS.litc = [
    }],
    ['.button--feedback', {
       border: '1px solid ' + CSS.vars ['color--one'],
-      // 'background-color': CSS.vars ['color--one'],
       color: CSS.vars ['color--one'],
       cursor: 'pointer',
       'border-radius': 12,
@@ -267,6 +266,15 @@ CSS.litc = [
    media ('screen and (min-width: 1025px)', ['.button--two:hover', {
       color: CSS.vars.grey,
       background: '#fff',
+   }]),
+   ['.button--three', {
+      border: '1px solid ' + CSS.vars.grey,
+      color: CSS.vars.grey,
+      'background-color': '#fff',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--three:hover', {
+      color: '#fff',
+      background: CSS.vars.grey,
    }]),
    media ('screen and (min-width: 1025px)', ['.button--green:hover', {
       'background-color': '#fff',
@@ -1034,6 +1042,18 @@ CSS.litc = [
       'align-items, justify-content': 'center',
       'width, height': 36,
       'margin-right': 4,
+      'background-color': 'rgba(' + CSS.toRGBA (CSS.vars.grey) + ', 0.1)',
+      'border-radius': 100,
+      overflow: 'hidden',
+   }],
+   ['.tag-share__item-email', {
+      display: 'inline-flex',
+      'align-items, justify-content': 'center',
+      'height': 36,
+      'width': 'fit-content',
+      'margin-right': 4,
+      'padding-left': 10,
+      'padding-right': 10,
       'background-color': 'rgba(' + CSS.toRGBA (CSS.vars.grey) + ', 0.1)',
       'border-radius': 100,
       overflow: 'hidden',
@@ -4885,9 +4905,10 @@ views.share = function () {
                ]]
             ]],
             ['ul', {class: 'tag-list-extended'}, [
+               // SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
                   ['div', {class: 'tag tag--shared tag--hidden'}, [
-                     H.putSvg ('tagItem' + H.tagColor ('a')),
+                     H.putRoundSvg ('tagItem' + H.tagColor ('c')),
                      ['p', {class: 'tag__title'}, [
                         'Whatsapp', 
                         ['span', {class: 'tag__title-amount'}, [
@@ -4905,14 +4926,78 @@ views.share = function () {
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
                            H.putRoundSvg ('shareItemIcon')
-                        ]
+                        ],
+                        ['li', {class: 'tag-share__item-email'}, [ 
+                           ['p', 'loremipsum@dolor.com'],
+                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
+                           ]],
+                        ['li', {class: 'tag-share__item-email'}, [ 
+                           ['p', 'tester@test.com.uy'],
+                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
+                           ]],
                      ]],
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
                         ['a', {href: '', class: 'button button--one'}, 'See pictures'],
-                        ['a', {href: '', class: 'button button--two'}, 'Rename tag']
+                        ['a', {href: '', class: 'button button--three'}, 'Rename tag']
                      ]]
                   ]]                  
-               ]]                        
+               ]],
+               // SHARED WITH ME
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden'}, [
+                     ['span', {style: style({'margin-right': '3px', height: '24px'})}, 
+                     H.putRoundSvg ('sharedWithMeSharedIcon')
+                     ],
+                     ['p', {class: 'tag__title'}, [
+                        'Ulaanbaatar', 
+                        ['span', {class: 'tag__title-amount'}, [
+                           ' (',
+                           ['em', {class: 'tag__title-number'}, '520'],
+                           ')'
+                        ]],
+                     ]],
+                  ]],
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                     ['p', 'Shared by:'],
+                     ['ul', {class: 'tag-share'}, [
+                        ['li', {class: 'tag-share__item-email'}, [ 
+                           ['p', 'loremipsum@dolor.com'],
+                           ]],
+                     ]],
+                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                        ['a', {href: '', class: 'button button--one'}, 'See pictures'],
+                     ]]
+                  ]]                  
+               ]],
+               // SHARED PIV
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden'}, [
+                     H.putRoundSvg ('tagItem' + H.tagColor ('a')),
+                     ['p', {class: 'tag__title'}, '636025_39749827.jpg'],
+                     ['div', {class: 'tag__status'}, [
+                        ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
+                     ]]
+                  ]],
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                     ['p', 'Shared with:'],
+                     ['ul', {class: 'tag-share'}, [
+                        ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
+                           H.putRoundSvg ('shareItemIcon')
+                        ],
+                        ['li', {class: 'tag-share__item-email'}, [ 
+                           ['p', 'loremipsum@dolor.com'],
+                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
+                           ]],
+                        ['li', {class: 'tag-share__item-email'}, [ 
+                           ['p', 'tester@test.com.uy'],
+                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
+                           ]],
+                     ]],
+                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                        ['a', {href: '', class: 'button button--one'}, 'See pictures'],
+                     ]]
+                  ]]                  
+               ]],
             ]]
          ]]
       ]] 
