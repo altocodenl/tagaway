@@ -1071,6 +1071,15 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 36,
    }],
+   // Piv shared
+   ['.shared-box__image', {
+      display: 'flex',
+      'align-items, justify-content': 'center',
+      'width, height': 80,
+      'margin-right': CSS.vars ['padding--xs'],
+      'border-radius': 100,
+      background: CSS.vars ['grey--lighter'],
+   }],
    // *** back-link.scss
    // Back link
    ['.back-link--uploads', {
@@ -2491,7 +2500,7 @@ var svg = {
    upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>',
    sharedWithMeSearchIcon: '<svg  class="tags-search-bar__shared-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    sharedWithMeSharedIcon: '<svg class="tag__status-icon tag__status-icon--shared" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
-   shareItemIcon: '<svg class="tag-share__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m9.5 11.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm3.5 12h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5zm-5.5-5c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2zm13.5-4.5h-3v-3c0-.3-.2-.5-.5-.5s-.5.2-.5.5v3h-3c-.3 0-.5.2-.5.5s.2.5.5.5h3v3c0 .3.2.5.5.5s.5-.2.5-.5v-3h3c.3 0 .5-.2.5-.5s-.2-.5-.5-.5z"/></svg>'
+   shareItemIcon: '<svg class="tag-share__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m9.5 11.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm3.5 12h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5zm-5.5-5c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2zm13.5-4.5h-3v-3c0-.3-.2-.5-.5-.5s-.5.2-.5.5v3h-3c-.3 0-.5.2-.5.5s.2.5.5.5h3v3c0 .3.2.5.5.5s.5-.2.5-.5v-3h3c.3 0 .5-.2.5-.5s-.2-.5-.5-.5z"/></svg>',
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
@@ -4907,7 +4916,7 @@ views.share = function () {
             ['ul', {class: 'tag-list-extended'}, [
                // SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden'}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
                      H.putRoundSvg ('tagItem' + H.tagColor ('c')),
                      ['p', {class: 'tag__title'}, [
                         'Whatsapp', 
@@ -4944,9 +4953,9 @@ views.share = function () {
                ]],
                // SHARED WITH ME
                ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden'}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
                      ['span', {style: style({'margin-right': '3px', height: '24px'})}, 
-                     H.putRoundSvg ('sharedWithMeSharedIcon')
+                     H.putRoundSvg ('tagSharedWithMe'),
                      ],
                      ['p', {class: 'tag__title'}, [
                         'Ulaanbaatar', 
@@ -4970,15 +4979,18 @@ views.share = function () {
                   ]]                  
                ]],
                // SHARED PIV
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden'}, [
-                     H.putRoundSvg ('tagItem' + H.tagColor ('a')),
-                     ['p', {class: 'tag__title'}, '636025_39749827.jpg'],
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '260.5px'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+                     ['span', {class: 'shared-box__image'}, [
+                        H.putRoundSvg ('uploadImage')]],
+                     ['p', {class: 'tag__title'}, [
+                        '636025_39749827.jpg',
+                     ]],
                      ['div', {class: 'tag__status'}, [
                         ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
                      ]]
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '104.5px'})}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
