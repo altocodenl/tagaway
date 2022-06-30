@@ -39,16 +39,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- csrf to csrf token!
+- Other
+   - Rename csrf to auth/csrf, OMITTED to REDACTED
+   - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
+   - use expired cookie (after logout and after delete) in tests
+   - remove opaque elements in input, instead remove values from inputs
+   - remove dot after messages in snackbar
 
 - Pivs
+   - Properly dynamize new top bar: you're looking at (visible chunks, but in the viewport), previous/next, all pictures, selected, query (foteli con numero, tags), chunk header formatting
+   - Fix scroll + back bug
    - Add arrow to switch order of tags
-   - Search box height is incorrect when 'Done tagging' button appear in 'Untagged'.
-   - Properly dynamize new top bar.
    - Feedback box
+   - Search box height is incorrect when 'Done tagging' button appear in 'Untagged'.
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
 
 - Upload/import:
+   - Fix import bug
    - Increase thumb quality.
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
@@ -789,12 +796,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pivs`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
       - `click -> toggle tag`
       - `click -> select all`
+      - `click -> scroll`
       - `click -> rem State.untag`
       - `click -> set State.untag true`
       - `click -> tag TAG`
@@ -906,7 +914,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
-      - Adds `Data.csrf` to most `POST` requests.
+      - Adds `Data.csrf` to all `POST` requests except `/requestInvite`, `/auth/login` and `/auth/signup`.
       - If by the time the response from the server is received, the user has just logged out (judging by `lastLogout`), and the request is not an auth request, the callback will not be executed.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store true` (with truthy `logout` argument), `goto page login` and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
@@ -955,7 +963,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If the path to the change is just `State` object (which only happens during initialization or logout), or `State.query.recentlyTagged`, we don't do anything.
       - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`.
       - We invoke `update queryURL` or `update queryURL true` - the latter will only be the case if what changes is `State.query.fromDate`.
-      - If what changes is `State.query.fromDate`, we determine whether the amount of pivs in `Data.pivs` is enough or whether we need to invoke `query pivs`. If 1) there's already no more pivs in the query (as per `Data.pivTotal`) than we currently have loaded, or 2) the amount of pivs is enough to fill two entire screens below what's currently shown, then the responder will not do anything else.
+      - If what changes is `State.query.fromDate`, we determine whether the amount of pivs in `Data.pivs` is enough or whether we need to invoke `query pivs`. If 1) there's already no more pivs in the query (as per `Data.pivTotal`) than we currently have loaded, or 2) the last chunk that is currently visible is neither the last nor the next-to-last chunk loaded, then the responder will not do anything else (that is, it won't invoke `query pivs true`), since it is not necessary to load further pivs.
       - It invokes `query pivs true`.
    3. `change State.selected`: if current page is not `pivs`, it does nothing. Adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    4. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
@@ -963,7 +971,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.query` is not set, does nothing.
       - If `State.querying` is `true` and the second argument passed to the responder is not truthy, it does nothing (since there's a query already ongoing); otherwise it sets it `State.querying` to `true`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
-      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be `H.computeBaseNPivs () * 3`.
+      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`).
       - Once the query is done, if `State.query.tags` or `State.query.sort` changed while the query was being done (but not if `State.query.fromDate` changes), it retries the query by calling `query pivs updateSelected true`; in this case, the second argument, `retry`, will override the block to all other queries done by `State.querying`.
       - If we're here, the query didn't change, so there is no need to retry it. It sets again `State.querying` to `false`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
@@ -975,7 +983,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It sets `State.chunks` to the output of `H.computeChunks`.
       - It invokes `scroll` since that will match a responder that calculates chunk visibility.
       - If `State.query.fromDate` is absent from the original query, we scroll to the top.
-      - If `State.query.fromDate` is present, we find the first piv that has a `date` (or `dateup`, if `query.sort` is `upload`) that's the same as `query.fromDate`. Then, if its `start` coordinate is greater than the Y-coordinate currently displayed, we scroll down to it within a timeout set to 0ms (if we don't set the timeout, the scroll won't happen since the pivs have to first be placed in the DOM through `set Data.pivs`). The purpose of this scroll is to scroll down to the position detemrined by `fromDate`; this should only happen when the user enters to the app through a previous URL that contained a `fromDate` parameter.
+      - If `State.query.fromDate` is present, we find the first piv that has a `date` (or `dateup`, if `query.sort` is `upload`) that's the same or less as `query.fromDate` (the same or more if `query.sort` is `oldest`). If we find such a piv, and its `start` coordinate is greater than the Y-coordinate currently displayed plus the height of a thumbnail (`CSS.pivWidths [1]`), we scroll down to it within a timeout set to 0ms (if we don't set the timeout, the scroll won't happen since the pivs have to first be placed in the DOM through `set Data.pivs`). The purpose of this scroll is to scroll down to the position determined by `fromDate`; this should only happen when the user enters to the app through a previous URL that contained a `fromDate` parameter.
       - If `State.open` is not set, it will set `Data.pivs` to the pivs returned by the query and, if `updateSelected` is enabled, it will then invoke `change` on `State.selected`. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set. We check whether the piv previously opened is still on the list of pivs returned by the query. If it is no longer in the query, it invokes `Data.pivs` and if `updateSelected` is enabled, it will then invoke `change` on `State.selected`. It will also invoke `exit fullscreen`.,If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will first set `State.open` and `Data.pivs` directly, without using events; it will then fire `change` events on both `State.open` and `Data.pivs`. Finally, if `updateSelected` is enabled, it will then invoke `change` on `State.selected`.
@@ -988,7 +996,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    12. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs true`. In case of error, invokes `snackbar`.
    14. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
-   15. `scroll`: only will perform actions if `State.page` is `pivs`. Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms. Depending on the height of the window, it will directly set the `visible` property of some chunks within `State.chunks`, without an event being fired. It will then fire the `change` event on both `State.chunks` and `State.selected`. Finally, it will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's fully visible in the viewport.
+   15. `scroll`:
+      - Only will perform actions if `State.page` is `pivs`.
+      - Will set `State.lastScroll` if it doesn't exist, or if `State.lastScroll` is older than 10ms.
+      - Depending on the height of the window, it will directly set the `DOMVisible` and `userVisible` properties of the chunks within `State.chunks`, without an event being fired.
+      - It will then fire the `change` event on both `State.chunks` and `State.selected`.
+      - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's fully visible in the viewport.
+      - If a `to` parameter is passed, it will scroll to the Y position denoted by `to` after a timeout of 0ms.
    16. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
    17. `stop propagation`: stops propagation of the `ev` passed as an argument.
    18. `update queryURL`:

@@ -52,9 +52,9 @@ window.addEventListener ('keydown', function (ev) {
 // *** CSS ***
 
 var CSS = {
+   pivWidths: [150, 210, 240, 360],
    // old piv widths
    //pivWidths: [100, 140, 180, 240],
-   pivWidths: [150, 210, 240, 360],
    // All thumbs for pivs have the same height, which is equivalent to pivWidths [1] - 18px of margin-top
    toRGBA: function (hex) {
       hex = hex.slice (1);
@@ -138,6 +138,9 @@ var CSS = {
       },
       spaceVer: function (number, lineHeight) {
          return (Math.round (number * (lineHeight || CSS.typography.typeLineHeight) * 100000) / 100000) + 'rem';
+      },
+      spaceVerPx: function (number, lineHeight) {
+         return Math.round (parseFloat (CSS.typography.spaceVer (number, lineHeight).replace ('rem', '')) * CSS.typography.typeBase);
       },
    },
 };
@@ -803,7 +806,7 @@ CSS.litc = [
       display: 'flex',
       width: 1,
       'align-items': 'center',
-      'margin-top': CSS.vars['padding--xs'],
+      'margin-top': CSS.vars ['padding--xs'],
    }],
    ['.tag-list-horizontal .tag-list-horizontal__item', {
       width: 'auto',
@@ -1107,7 +1110,7 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
    }]],
    ['.dropdown__button:hover', {
-      // 'font-weight': CSS.vars['fontPrimarySemiBold'],
+      // 'font-weight': CSS.vars ['fontPrimarySemiBold'],
       // color: CSS.vars ['grey--darker']
    },
    ['&::after', {
@@ -1944,9 +1947,9 @@ CSS.litc = [
       height: CSS.typography.spaceVer (7),
    }],
    ['.pictures-grid-title-container', {
-   'text-align': 'center',
-   height: 60,
-   'margin-top': CSS.vars['padding--m'],
+      'text-align': 'center',
+      height: 60,
+      'margin-top': CSS.vars ['padding--m'],
    }],
    ['.pictures-header__title',{
       width: .6,
@@ -1958,18 +1961,19 @@ CSS.litc = [
       'line-height': CSS.typography.spaceVer (2),
       'margin-top': CSS.vars ['padding--s'],
    }],
-   ['.previous-and-next-month',{
+   ['.previous-and-next-chunk',{
       // 'margin-top': CSS.vars ['padding--s'],
       display: 'inline-flex',
       'margin-top': '-10px',
+      cursor: 'pointer',
       // color: 'white',
       // width: .3,
       // 'text-align': 'right',
    }],
-   ['.chevron-container-previous-month, .next-month-filler-td', {
+   ['.chevron-container-previous-chunk, .next-chunk-filler-td', {
       // 'border': 'solid 1px blue',
    }],
-   ['.previous-month-td, .next-month-td',{
+   ['.previous-chunk-td, .next-chunk-td',{
       // display: 'inline-block',
       // 'margin-right': CSS.vars ['padding--xl'],
       width: 120,
@@ -1978,13 +1982,12 @@ CSS.litc = [
    ['.chevron-svg', {
       'margin-top': 3,
    }],
-   ['.chevron-container-previous-month, .chevron-container-next-month', {
+   ['.chevron-container-previous-chunk, .chevron-container-next-chunk', {
       height: 20,
       width: 24,
       'margin-left, margin-right': 'auto',
-      cursor: 'pointer'
    }],
-   ['.chevron-container-previous-month', {
+   ['.chevron-container-previous-chunk', {
       transform: 'rotate(180deg)',
    }],
    ['.pictures-header__sort', {
@@ -2492,9 +2495,19 @@ H.matchVerb = function (ev, responder) {
 
 H.pad = function (v) {return v < 10 ? '0' + v : v}
 
-H.dateFormat = function (d) {
+H.formatDate = function (d) {
    d = new Date (d);
    return H.pad (d.getUTCDate ()) + '/' + H.pad (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
+}
+
+H.formatChunkDates = function (d1, d2) {
+   var m = new Date (Math.min (d1, d2)), M = new Date (Math.max (d1, d2));
+   var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+   // Formats: 1) m d, y ; 2) m d - d, y ; 3) m d - m d, y ; 4) m d, y - m d, y
+   if (m.getUTCFullYear () !== M.getUTCFullYear ()) return [months [m.getUTCMonth ()], m.getUTCDate () + ',', m.getUTCFullYear (), '-', months [M.getUTCMonth ()], M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
+   if (m.getUTCMonth () !== M.getUTCMonth ()) return [months [m.getUTCMonth ()], m.getUTCDate (), '-', months [M.getUTCMonth ()], M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
+   if (m.getUTCDate () !== M.getUTCDate ()) return [months [m.getUTCMonth ()], m.getUTCDate (), '-', M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
+   return [months [m.getUTCMonth ()], m.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
 }
 
 H.tagColor = function (tag, a) {
@@ -2573,20 +2586,6 @@ H.hash = function (file, cb) {
    }
 }
 
-// Roughly computes the number of pivs required to fill the screen of the device
-H.computeBaseNPivs = function () {
-   // Sidebar is 300px, then there's also a padding.
-   var gridWidth  = Math.max (document.documentElement.clientWidth  || 0, window.innerWidth  || 0) - 300 - CSS.vars ['padding--l'];
-   var gridHeight = Math.max (document.documentElement.clientHeight || 0, window.innerHeight || 0) - 58;
-
-   // piv frame height is between CSS.pivWidths [1] and CSS.pivWidths [2], so we take an average.
-   var averagePivWidth = Math.round ((CSS.pivWidths [1] + CSS.pivWidths [2]) / 2);
-   var pivsPerRow = gridWidth / averagePivWidth;
-   var rowsPerScreen = gridHeight / CSS.pivWidths [1];
-
-   return Math.round (rowsPerScreen * pivsPerRow);
-}
-
 // Computes the width and height of the thumbnail of a piv
 H.computePivFrame = function (piv) {
    if (piv.frame) return piv.frame;
@@ -2603,6 +2602,8 @@ H.computePivFrame = function (piv) {
    return piv.frame;
 }
 
+H.chunkSizes = [10, 20, 40];
+
 // Computes the chunks into which to split the pivs currently displayed
 H.computeChunks = function (x, pivs) {
    var t = Date.now (), chunks = [];
@@ -2613,7 +2614,7 @@ H.computeChunks = function (x, pivs) {
 
       var rows = 1, width = 0;
 
-      // Chunk header has 20px height and chunk has 30px padding top, hence offset from top of the chunk is 50px
+      // Chunk header has 25px height and chunk has 30px padding top, hence offset from top of the chunk is 55px
       // Each row is always CSS.pivWidths [1] high
 
       dale.go (chunk.pivs, function (piv, k) {
@@ -2625,34 +2626,33 @@ H.computeChunks = function (x, pivs) {
             rows++;
          }
          else width += piv.frame.width + 16;
-         piv.start = chunk.start + 50 + (rows - 1) * CSS.pivWidths [1];
+         piv.start = chunk.start + 55 + (rows - 1) * CSS.pivWidths [1];
       });
 
-      return 50 + rows * CSS.pivWidths [1];
+      return 55 + rows * CSS.pivWidths [1];
    };
 
    var computeRepulsion = function (chunkSize) {
-      var chunkSizes = [10, 20, 40];
 
       // Map points after the second chunk to the points between the first and second chunk
       // chunkSize > 50 -> REPULSION: 1
-      if (chunkSize > chunkSizes [2] + (chunkSizes [2] - chunkSizes [1]) / 2) return 1;
+      if (chunkSize > H.chunkSizes [2] + (H.chunkSizes [2] - H.chunkSizes [1]) / 2) return 1;
       // chunkSize between 21-50: 21 is 19.5, 30 is 15, 40 is 20, 50 is 15
-      if (chunkSize > chunkSizes [1]) {
-         if (chunkSize > chunkSizes [2]) chunkSize = chunkSizes [2] - (chunkSize - chunkSizes [2]);
-         var midPoint = chunkSizes [1] + (chunkSizes [2] - chunkSizes [1]) / 2;
+      if (chunkSize > H.chunkSizes [1]) {
+         if (chunkSize > H.chunkSizes [2]) chunkSize = H.chunkSizes [2] - (chunkSize - H.chunkSizes [2]);
+         var midPoint = H.chunkSizes [1] + (H.chunkSizes [2] - H.chunkSizes [1]) / 2;
          if (chunkSize > midPoint) chunkSize = midPoint - (chunkSize - midPoint);
-         chunkSize = chunkSizes [1] - (chunkSize - chunkSizes [1]) * (chunkSizes [1] - chunkSizes [0]) / (chunkSizes [2] - chunkSizes [1]);
+         chunkSize = H.chunkSizes [1] - (chunkSize - H.chunkSizes [1]) * (H.chunkSizes [1] - H.chunkSizes [0]) / (H.chunkSizes [2] - H.chunkSizes [1]);
          // 21: 19.5 -> 20 - 0.5 -> 20 - (21 - 20) * 0.5 // (40 - 20) / (20
       }
 
       // Map points after the first chunk to the curve from 0 to the first chunk.
       // chunkSize between 11 and 20: 11 is 8, 12 is 6, 15 is 0, 16 is 2, 19 is 8
-      if (chunkSize > chunkSizes [0] && chunkSize <= chunkSizes [1]) {
-         var midPoint = chunkSizes [0] + (chunkSizes [1] - chunkSizes [0]) / 2;
+      if (chunkSize > H.chunkSizes [0] && chunkSize <= H.chunkSizes [1]) {
+         var midPoint = H.chunkSizes [0] + (H.chunkSizes [1] - H.chunkSizes [0]) / 2;
          if (chunkSize > midPoint) chunkSize = midPoint - (chunkSize - midPoint);
 
-         chunkSize = chunkSizes [0] - (chunkSize - chunkSizes [0]) * (chunkSizes [0] / ((chunkSizes [1] - chunkSizes [0]) / 2));
+         chunkSize = H.chunkSizes [0] - (chunkSize - H.chunkSizes [0]) * (H.chunkSizes [0] / ((H.chunkSizes [1] - H.chunkSizes [0]) / 2));
       }
 
       // https://www.desmos.com/calculator
@@ -2692,8 +2692,8 @@ H.computeChunks = function (x, pivs) {
       else teishi.last (chunks).pivs.push (piv);
    });
 
-   // The first chunk starts at the top of the pictures-grid. What goes on top of it is the .main's padding-top (58px), the .main__inner's margin-top (about 29.25px) and the .pictures-header height (dynamic, if the element is not there we guesstimate 63px) + its margin-bottom (3rem, 39px).
-   var topOffset = Math.round (58 + 29.25 + (c ('.pictures-header') [0] ? c ('.pictures-header') [0].getBoundingClientRect ().height : 63) + CSS.typography.typeBase * 3);
+   // The first chunk starts at the top of .pictures-grid. However, many of the elements on top of it are not affected by scroll. The header is "compressible" when it scrolls down. The extent of this compressibility is the offset Y, at which, if we scroll to Y+1, the very top of the first chunk is already shaved from the top. This compressible area is the .pictures-header padding-top (CSS.vars ['padding--s']) and its margin-bottom (CSS.vars.spaceVer (2)), plus the margin-bottom of .header (1px)
+   var topOffset = CSS.vars ['padding--s'] + CSS.typography.spaceVerPx (2) + 1;
 
    dale.go (chunks, function (chunk, k) {
       chunk.start = k === 0 ? topOffset : chunks [k - 1].end;
@@ -2806,8 +2806,8 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^(get|post)$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && inc (['auth/login', 'auth/signup'], path));
-      if (x.verb === 'post' && ! noCSRF) {
+      var t = Date.now (), path = x.path [0];
+      if (x.verb === 'post' && ! inc (['requestInvite', 'auth/login', 'auth/signup'], path)) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
@@ -2825,7 +2825,7 @@ B.mrespond ([
    }],
    ['error', [], {match: H.matchVerb}, function (x) {
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
-      if (arguments [2] && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
 
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
       // We report the ResizeObserver error, but we don't show the eventlog table.
@@ -2965,10 +2965,15 @@ B.mrespond ([
       if (x.path [2] === 'fromDate') {
          // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't do anything.
          if (B.get ('Data', 'pivs').length === B.get ('Data', 'pivTotal')) return;
-         var lastPivStart = teishi.last (B.get ('Data', 'pivs')).start;
-         var minBufferSize = window.innerHeight * 2;
-         var bottomEnd = window.scrollY + window.innerHeight;
-         if (lastPivStart > bottomEnd + minBufferSize) return;
+         var chunks = B.get ('State', 'chunks');
+         if (chunks.length) {
+            var lastVisibleChunkIndex;
+            dale.go (chunks, function (chunk, k) {
+               if (chunk.userVisible) lastVisibleChunkIndex = k;
+            });
+            // If last visible chunk is the last or the next-to-last last chunk, we load more pivs. Otherwise, we don't.
+            if (lastVisibleChunkIndex + 1 < chunks.length - 1) return;
+         }
       }
 
       B.call (x, 'query', 'pivs', true);
@@ -3031,7 +3036,7 @@ B.mrespond ([
          clearTimeout (timeout);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: H.computeBaseNPivs () * 3, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
          if (! teishi.eq ({tags: query.tags, sort: query.sort}, {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort')})) {
             return B.call (x, 'query', 'pivs', updateSelected, true);
          }
@@ -3071,17 +3076,15 @@ B.mrespond ([
          B.call (x, 'scroll', []);
          if (! query.fromDate) window.scrollTo (0, 0);
          else {
-            var dateField = query.sort === 'upload' ? 'dateup' : 'date';
-            dale.stop (rs.body.pivs, true, function (piv) {
-               if (query.fromDate === piv [dateField]) {
-                  if (piv.start > window.scrollY + window.innerHeight) {
-                     setTimeout (function () {
-                        window.scrollTo (0, piv.start);
-                     }, 0);
-                     return true;
-                  }
-               }
+            var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
+               // The < and > are there in case the date requested is not held by any pivs that match the query
+               if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start : undefined;
+               else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start : undefined;
+               else                              return query.fromDate >= piv.dateup ? piv.start : undefined;
             });
+            if (scrollTo && scrollTo > window.scrollY + CSS.pivWidths [1]) setTimeout (function () {
+               window.scrollTo (0, scrollTo);
+            }, 0);
          }
 
          if (B.get ('State', 'open') === undefined) {
@@ -3247,26 +3250,35 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'selected'], {});
       B.call (x, 'set', ['State', 'query', 'tags'], [tag]);
    }],
-   ['scroll', [], function (x) {
+   ['scroll', [], function (x, to) {
       if (B.get ('State', 'page') !== 'pics') return;
       var lastScroll = B.get ('State', 'lastScroll');
       if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
-      B.call (x, 'set', ['State', 'lastScroll'], {y: window.scrollY, time: Date.now ()});
+      var y = to || window.scrollY;
+      B.call (x, 'set', ['State', 'lastScroll'], {y: y, time: Date.now ()});
 
-      var bufferSize = window.innerHeight * 3;
-      var minVisible = Math.max (0, window.scrollY - bufferSize);
-      var maxVisible = window.scrollY + window.innerHeight + bufferSize;
+      var visibleGridHeight = window.innerHeight - CSS.typography.spaceVerPx (3) + 1 + CSS.vars ['padding--s'] + CSS.typography.spaceVerPx (2) + CSS.typography.spaceVerPx (7);
+      var bufferSize     = visibleGridHeight * 3;
+      var minDOMVisible  = Math.max (0, y - bufferSize);
+      var maxDOMVisible  = y + visibleGridHeight + bufferSize;
+      var minUserVisible = y;
+      var maxUserVisible = y + visibleGridHeight;
       dale.go (B.get ('State', 'chunks'), function (chunk, k) {
-         if (chunk.end < minVisible || chunk.start > maxVisible) chunk.visible = false;
-         else chunk.visible = true;
+         if (chunk.end < minDOMVisible || chunk.start > maxDOMVisible) chunk.DOMVisible = false;
+         else chunk.DOMVisible = true;
+         if (chunk.end <= minUserVisible || chunk.start >= maxUserVisible) chunk.userVisible = false;
+         else chunk.userVisible = true;
       });
       B.call (x, 'change', ['State', 'chunks']);
       B.call (x, 'change', ['State', 'selected']);
 
       var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
       dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
-         if (window.scrollY < piv.start) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
+         if (y < piv.start) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
       });
+      if (to) setTimeout (function () {
+         window.scrollTo (0, to);
+      }, 0);
    }],
    ['download', [], function (x) {
       var ids = dale.keys (B.get ('State', 'selected'));
@@ -3984,7 +3996,7 @@ views.login = function () {
                   ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
                ]],
                // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
-               // By setting the form to be opaque, we prevent them being recycled.
+               // By setting the form to be opaque, we prevent them from being recycled.
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
@@ -4153,7 +4165,7 @@ views.signup = function () {
                   ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
                ]],
                // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
-               // By setting the form to be opaque, we prevent them being recycled.
+               // By setting the form to be opaque, we prevent them from being recycled.
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
@@ -4605,46 +4617,59 @@ views.pics = function () {
             // MAIN
             ['div', {class: 'main main--pictures'}, [
                ['div', {class: 'main__inner'}, [
-                  B.view (['State', 'selected'], function (selected) {
+                  B.view ([['State', 'selected'], ['State', 'chunks'], ['State', 'query', 'sort']], function (selected, chunks, sort) {
+                     if (! sort) return ['div'];
                      selected = dale.keys (selected).length;
+                     var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
+                     var d1, d2, firstUserVisible, prev, next;
+                     dale.go (chunks, function (chunk, k) {
+                        if (! chunk.userVisible) return;
+                        if (! firstUserVisible) {
+                           firstUserVisible = true;
+                           prev = (chunks [k - 1] ? chunks [k - 1] : chunk).start;
+                           next = (chunks [k + 1] ? chunks [k + 1] : chunk).start;
+                        }
+                        if (! d1) d1 = chunk.pivs [0] [dateField];
+                        d2 = teishi.last (chunk.pivs) [dateField];
+                     });
                      return ['div', {class: 'pictures-header'}, [
-                        ['div', {class: 'pictures-grid-title-container'},[
-                           ['h2', {class: 'pictures-header__title page-title'}, 'You’re looking at: 29 Sep ‘19 to 03 Dec ‘20'],
+                        ['div', {class: 'pictures-grid-title-container'}, [
+                           ['h2', {class: 'pictures-header__title page-title'}, 'You\'re looking at: ' + H.formatChunkDates (d1, d2)],
                            // B.view (['Data', 'pivTotal'], function (total) {
                            //    return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
                            // }),
-                        ['table', {class: 'previous-and-next-month'}, [
-                           ['tr', {class: 'previous-and-next-month-first-row'}, [
-                              ['td', {class: 'chevron-container-previous-month'}, [
-                                 ['span', H.putSvg ('chevron')]
-                              ]],
-                              ['td', {class: 'next-month-filler-td'}]
-                           ]],
-                           ['tr', {class: 'previous-and-next-month-second-row'}, [
-                              ['td', {class: 'previous-month-td'}, 'Previous month'],
-                              ['td', {class: 'next-month-td'}, 'Next month']
-                           ]],
-                           ['tr', {class: 'previous-and-next-month-third-row'}, [
-                              ['td', {class: 'previous-month-filler-td'}],
-                              ['td', {class: 'chevron-container-next-month'}, [
-                                 ['span', H.putSvg ('chevron')]
-                              ]],
-                           ]],
-                        ]],
-                        ['div', {class: 'pictures-header__sort'}, [
-                           B.view (['State', 'query'], function (query) {
-                              if (! query) return ['div'];
-                              return ['div', {class: 'dropdown'}, [
-                                 ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
-                                 ['ul', {class: 'dropdown__list'}, [
-                                    dale.go (['newest', 'oldest', 'upload'], function (sort) {
-                                       return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
-                                    })
+                           ['table', {class: 'previous-and-next-chunk'}, [
+                              ['tr', {class: 'previous-and-next-chunk-first-row'}, [
+                                 ['td', {class: 'chevron-container-previous-chunk', onclick: B.ev ('scroll', [], prev)}, [
+                                    ['span', H.putSvg ('chevron')]
                                  ]],
-                              ]];
-                           }),
-                        ]],
-                        ['div', {class: 'pictures-header__action-bar'}, [
+                                 ['td', {class: 'next-chunk-filler-td'}]
+                              ]],
+                              ['tr', {class: 'previous-and-next-chunk-second-row'}, [
+                                 ['td', {class: 'previous-chunk-td', onclick: B.ev ('scroll', [], prev)}, 'Previous'],
+                                 ['td', {class: 'next-chunk-td',     onclick: B.ev ('scroll', [], next)}, 'Next'],
+                              ]],
+                              ['tr', {class: 'previous-and-next-chunk-third-row'}, [
+                                 ['td', {class: 'previous-chunk-filler-td'}],
+                                 ['td', {class: 'chevron-container-next-chunk', onclick: B.ev ('scroll', [], next)}, [
+                                    ['span', H.putSvg ('chevron')]
+                                 ]],
+                              ]],
+                           ]],
+                           ['div', {class: 'pictures-header__sort'}, [
+                              B.view (['State', 'query'], function (query) {
+                                 if (! query) return ['div'];
+                                 return ['div', {class: 'dropdown'}, [
+                                    ['div', {class: 'dropdown__button'}, query.sort === 'upload' ? 'upload date' : query.sort],
+                                    ['ul', {class: 'dropdown__list'}, [
+                                       dale.go (['newest', 'oldest', 'upload'], function (sort) {
+                                          return ['li', {class: 'dropdown__list-item', onclick: B.ev (H.stopPropagation, ['set', ['State', 'query', 'sort'], sort])}, sort === 'upload' ? 'upload date' : sort];
+                                       })
+                                    ]],
+                                 ]];
+                              }),
+                           ]],
+                           ['div', {class: 'pictures-header__action-bar'}, [
                               ['div', {class: 'pictures-header__selected-tags'}, [
                                  B.view (['State', 'query', 'tags'], function (tags) {
                                     return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
@@ -4756,9 +4781,9 @@ views.grid = function () {
          var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (chunks, function (chunk) {
-               if (! chunk.visible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
+               if (! chunk.DOMVisible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
                return ['div', {class: 'chunk', style: style ({'padding-top': 30})}, [
-                  ['h3', {class: 'chunk_title'}, [new Date (chunk.pivs [0].date).toUTCString (), ' to ', new Date (teishi.last (chunk.pivs).date).toUTCString ()]],
+                  ['h3', {class: 'chunk_title'}, H.formatChunkDates (chunk.pivs [0] [dateField], teishi.last (chunk.pivs) [dateField])],
                   dale.go (chunk.pivs, function (piv, k) {
                      H.computePivFrame (piv);
 
@@ -4797,7 +4822,7 @@ views.grid = function () {
                            piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
                            ['div', {class: 'mask'}],
                            ['div', {class: 'caption'}, [
-                              ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
+                              ['span', {style: style ({position: 'absolute', right: 5})}, H.formatDate (piv.date)],
                            ]],
                         ]],
                      ]];
@@ -4828,7 +4853,7 @@ views.open = function () {
          ['div', {class: 'fullscreen__nav fullscreen__nav--left', onclick: B.ev ('open', 'prev')}, H.putSvg ('left')],
          ['div', {class: 'fullscreen__nav fullscreen__nav--right', onclick: B.ev ('open', 'next')}, H.putSvg ('right')],
          ['div', {class: 'fullscreen__date'}, [
-            ['span', {class: 'fullscreen__date-text'}, H.dateFormat (piv.date)],
+            ['span', {class: 'fullscreen__date-text'}, H.formatDate (piv.date)],
          ]],
          ['style', media ('screen and (max-width: 767px)', [
             ['.fullscreen__image-container', {padding: 0}],
@@ -4896,7 +4921,7 @@ views.upload = function () {
                                           ['div', {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one', onclick: 'c ("#files-upload").click ()'}, 'Upload files'],
                                        ] : [
                                           'Drag and drop photos here or ',
-                                          ['div', {style: 'margin-top: 22px;'},[
+                                          ['div', {style: 'margin-top: 22px;'}, [
                                              ['div', {style: style ({float: 'left', display: 'inline-block', 'margin-right': 10}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#files-upload").click ()'}, 'Upload files'],
                                              ['div', {style: style ({float: 'left', display: 'inline-block'}), class: 'button button--one' + (noSpace ? ' blocked-button' : ''), onclick: noSpace ? '' : 'c ("#folder-upload").click ()'}, 'Upload folder'],
                                           ]],
