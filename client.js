@@ -1054,6 +1054,7 @@ CSS.litc = [
       'margin-right': 4,
       'padding-left': 10,
       'padding-right': 10,
+      'margin-bottom': CSS.vars ['padding--xs'], 
       'background-color': 'rgba(' + CSS.toRGBA (CSS.vars.grey) + ', 0.1)',
       'border-radius': 100,
       overflow: 'hidden',
@@ -1070,6 +1071,19 @@ CSS.litc = [
    ['.tag-share__item-img', {
       display: 'inline-block',
       'width, height': 36,
+   }],
+   ['.email-input-share', {
+   }],
+   ['.email-input-share-textarea', {
+      mixin1: CSS.vars.fontPrimaryItalic,
+      width: 582,
+      height: 84,
+      resize: 'none',
+      'line-height': 20,
+      border: '1px solid ' + CSS.vars ['border-color--dark'],
+      'border-radius': 25,
+      'padding-left, padding-right': CSS.vars ['padding--s'],
+      'padding-top': CSS.vars ['padding--xs'],
    }],
    // Piv shared
    ['.shared-box__image', {
@@ -4910,21 +4924,105 @@ views.share = function () {
             ['div', {class: 'tags-search-bar'}, [
                H.putSvg ('searchTagIcon'),
                ['input', {class: 'tags-search-bar__search-input', style: 'search', placeholder: 'Search tag or picture name'}],
-               ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
-                  H.putSvg ('sharedWithMeSearchIcon'),
-                  ['span', {class: 'tags-search-bar__shared-title'}, 'Shared with me']
+               // ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
+               //    H.putSvg ('sharedWithMeSearchIcon'),
+               //    ['span', {class: 'tags-search-bar__shared-title'}, 'Shared with me'],
+               //    H.putSvg ('shareItemIcon'),
+               //    ['span', {class: 'tags-search-bar__shared-title'}, 'Shared by me'],
+               // ]]
+               ['table', {class: 'tags-search-bar__shared js_toggle-shared', style: style ({'text-align': 'center'})}, [
+                  ['tr', [
+                     ['td', H.putSvg ('sharedWithMeSearchIcon')],
+                     ['td', H.putSvg ('shareItemIcon')],
+                  ]],
+                  ['tr', [
+                     ['td', [
+                        ['span', {class: 'tags-search-bar__shared-title'}, 'Shared']
+                     ]],
+                     ['td', [
+                        ['span', {class: 'tags-search-bar__shared-title'}, 'Shared']
+                     ]]
+                  ]],
+                  ['tr', [
+                     ['td', [
+                        ['span', {class: 'tags-search-bar__shared-title'}, 'with me']
+                     ]],
+                     ['td', [
+                        ['span', {class: 'tags-search-bar__shared-title'}, 'by me']
+                     ]]
+                  ]],
                ]]
             ]],
             ['ul', {class: 'tag-list-extended'}, [
-               // SHARED TAG
+               // NOT SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+                     H.putRoundSvg ('tagItem' + H.tagColor ('b')),
+                     ['p', {class: 'tag__title'}, [
+                        'Tristan da Cunha', 
+                        ['span', {class: 'tag__title-amount'}, [
+                           ' (',
+                           ['em', {class: 'tag__title-number'}, '524'],
+                           ')'
+                        ]],
+                     ]],
+                  ]],
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                     ['p', 'Shared with:'],
+                     ['ul', {class: 'tag-share'}, [
+                        ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
+                           H.putRoundSvg ('shareItemIcon')
+                        ],
+                     ]],
+                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                        ['a', {href: '', class: 'button button--one'}, 'See pictures'],
+                        ['a', {href: '', class: 'button button--three'}, 'Rename tag']
+                     ]]
+                  ]]                  
+               ]],
+               // NOT SHARED TAG EMAIL TEXTAREA
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '260.5px'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+                     H.putRoundSvg ('tagItem' + H.tagColor ('b')),
+                     ['p', {class: 'tag__title'}, [
+                        'Greenland', 
+                        ['span', {class: 'tag__title-amount'}, [
+                           ' (',
+                           ['em', {class: 'tag__title-number'}, '240'],
+                           ')'
+                        ]],
+                     ]],
+                  ]],
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                     ['p', 'Shared with:'],
+                     ['ul', {class: 'tag-share'}, [
+                        ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
+                           H.putRoundSvg ('shareItemIcon')
+                        ],
+                        ['li', [
+                           ['div', {class: 'email-input-share'}, [
+                              ['textarea', {class: 'email-input-share-textarea', autocomplete: 'off', type: 'text', placeholder: 'Enter the email addresses of the people you want to share this tag with. If they don’t have an ac;pic account, they will be invited to join.'}]
+                           ]],
+                           ['div', {style: style ({'float': 'right'})}, [
+                              ['a', {href: '', class: 'button button--two', style: style ({'margin-right': '6px'})}, 'Cancel'],
+                              ['a', {href: '', class: 'button button--one'}, 'Share']
+                           ]]
+                        ]],
+                     ]],
+                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                        
+                     ]]
+                  ]]                  
+               ]],
+               // SHARED TAG
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '260.5px'})}, [
                   ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
                      H.putRoundSvg ('tagItem' + H.tagColor ('c')),
                      ['p', {class: 'tag__title'}, [
                         'Whatsapp', 
                         ['span', {class: 'tag__title-amount'}, [
                            ' (',
-                           ['em', {class: 'tag__title-number'}, '524'],
+                           ['em', {class: 'tag__title-number'}, '200'],
                            ')'
                         ]],
                      ]],
@@ -4938,42 +5036,33 @@ views.share = function () {
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
                            H.putRoundSvg ('shareItemIcon')
                         ],
-                        ['li', {class: 'tag-share__item-email'}, [ 
-                           ['p', 'loremipsum@dolor.com'],
-                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
-                           ]],
-                        ['li', {class: 'tag-share__item-email'}, [ 
-                           ['p', 'tester@test.com.uy'],
-                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
-                           ]],
-                     ]],
-                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
-                        ['a', {href: '', class: 'button button--one'}, 'See pictures'],
-                        ['a', {href: '', class: 'button button--three'}, 'Rename tag']
-                     ]]
-                  ]]                  
-               ]],
-               // NOT SHARED TAG
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
-                     H.putRoundSvg ('tagItem' + H.tagColor ('b')),
-                     ['p', {class: 'tag__title'}, [
-                        'Greenland', 
-                        ['span', {class: 'tag__title-amount'}, [
-                           ' (',
-                           ['em', {class: 'tag__title-number'}, '245'],
-                           ')'
-                        ]],
-                     ]],
-                  ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
-                     ['p', 'Shared with:'],
-                     ['ul', {class: 'tag-share'}, [
-                        ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
-                           H.putRoundSvg ('shareItemIcon')
-                        ],
                         ['li', [
-                           ['textarea', {style: style({width: '44rem', height: '3rem'})}]
+                           ['div', {class: 'emails-container', style: style({width: '582px', height: '84px'})}, [
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'loremipsum@dolor.com'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'sarasa@gmail.com'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'loremipsum@dolor.com'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                           ]],
                         ]],
                      ]],
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
