@@ -671,11 +671,6 @@ CSS.litc = [
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-29px)' // header height / 2
    }],
-   // ** PARTIAL SOLUTION, THIS CAUSES PORPOISING
-   // ['.app-show-organise-bar .pictures-grid__item', {
-   //    transition: CSS.vars.easeOutQuart,
-   //    transform: 'translateY(-58px)' // header height
-   // }],
    ['.app-show-organise-bar .pictures-grid', {
       transition: CSS.vars.easeOutQuart,
       transform: 'translateY(-58px)' // header height
@@ -1072,18 +1067,32 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 36,
    }],
-   ['.email-input-share', {
+   ['.email-input-share-div', {
+      'margin-bottom': CSS.typography.spaceVer (1),
+      width: 500,
    }],
-   ['.email-input-share-textarea', {
+   ['.email-input-share', {
       mixin1: CSS.vars.fontPrimaryItalic,
-      width: 582,
-      height: 84,
+      height: 36,
       resize: 'none',
-      'line-height': 20,
+      'line-height': 36,
       border: '1px solid ' + CSS.vars ['border-color--dark'],
-      'border-radius': 25,
+      'border-radius': 100,
       'padding-left, padding-right': CSS.vars ['padding--s'],
-      'padding-top': CSS.vars ['padding--xs'],
+   }],
+   ['.see-more-div', {
+      'margin-bottom': CSS.typography.spaceVer (1),
+      'margin-top': '-' + CSS.typography.spaceVer (1),
+   }],
+   ['.see-more-text', {
+      float: 'right',
+      mixin1: CSS.vars.fontPrimaryMedium,
+      cursor: 'pointer'
+   }],
+   ['.emails-container', {
+      width: 582, 
+      height: 84,
+      overflow: 'hidden'
    }],
    // Piv shared
    ['.shared-box__image', {
@@ -2002,21 +2011,11 @@ CSS.litc = [
       'margin-top': CSS.vars ['padding--s'],
    }],
    ['.previous-and-next-month',{
-      // 'margin-top': CSS.vars ['padding--s'],
       display: 'inline-flex',
       'margin-top': '-10px',
-      // color: 'white',
-      // width: .3,
-      // 'text-align': 'right',
-   }],
-   ['.chevron-container-previous-month, .next-month-filler-td', {
-      // 'border': 'solid 1px blue',
    }],
    ['.previous-month-td, .next-month-td',{
-      // display: 'inline-block',
-      // 'margin-right': CSS.vars ['padding--xl'],
       width: 120,
-      // 'border': 'solid 1px black',
    }],
    ['.chevron-svg', {
       'margin-top': 3,
@@ -2237,6 +2236,13 @@ CSS.litc = [
       display: 'flex',
       'align-items': 'center',
       cursor: 'pointer'
+   }],
+   ['.tags-search-bar-table-search-with-me, .tags-search-bar-table-search-by-me', {
+      'line-height': 12, 
+      'font-size': 12,
+   }],
+   ['.tags-search-bar-table-search-by-me', {
+      'margin-left': CSS.vars ['padding--s'],
    }],
    ['.app-shared-tags-filtered .tags-search-bar__shared', {
       opacity: '1',
@@ -2464,6 +2470,23 @@ CSS.litc = [
    }],
    ['.fullscreen__action:hover .fullscreen__action-text', {color: CSS.vars ['grey--lightest']}],
    ['.no-svg svg', {display: 'none'}],
+   // FEEDBACK BOX
+   ['.feedback-box', {      
+   }],
+   ['.feedback-input-box', {
+
+   }],
+   ['.feedback-input-textarea', {
+      mixin1: CSS.vars.fontPrimaryItalic,
+      width: 582,
+      height: 84,
+      resize: 'none',
+      'line-height': 20,
+      border: '1px solid ' + CSS.vars ['border-color--dark'],
+      'border-radius': 25,
+      'padding-left, padding-right': CSS.vars ['padding--s'],
+      'padding-top': CSS.vars ['padding--xs'],
+   }],
 ];
 
 // *** SVG ***
@@ -4229,7 +4252,7 @@ views.header = function (showUpload, showImport) {
          ]]
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'IMPLEMENT BOX'])}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href:'', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'IMPLEMENT BOX'])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4249,6 +4272,20 @@ views.header = function (showUpload, showImport) {
       // UPLOAD BUTTON
       ['div', {class: 'header__upload-button', style: style ({opacity: showUpload ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
    ]];
+}
+
+// *** FEEDBACK BOX VIEW ***
+
+views.feedback = function(){
+   return ['div', {class: 'feedback-box'} [
+      ['div', {class: 'feedback-input-box'}, [
+         ['textarea', {class: 'feedback-input-textarea', autocomplete: 'off', type: 'text', placeholder: 'What things would you like us to change or fix…?'}]
+      ]],
+      ['div', {style: style ({'float': 'right'})}, [
+         ['a', {href: '', class: 'button button--two', style: style ({'margin-right': '6px'})}, 'Cancel'],
+         ['a', {href: '', class: 'button button--one'}, 'Send']
+      ]]
+   ]]
 }
 
 // *** EMPTY VIEW ***
@@ -4924,33 +4961,27 @@ views.share = function () {
             ['div', {class: 'tags-search-bar'}, [
                H.putSvg ('searchTagIcon'),
                ['input', {class: 'tags-search-bar__search-input', style: 'search', placeholder: 'Search tag or picture name'}],
-               // ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
-               //    H.putSvg ('sharedWithMeSearchIcon'),
-               //    ['span', {class: 'tags-search-bar__shared-title'}, 'Shared with me'],
-               //    H.putSvg ('shareItemIcon'),
-               //    ['span', {class: 'tags-search-bar__shared-title'}, 'Shared by me'],
-               // ]]
-               ['table', {class: 'tags-search-bar__shared js_toggle-shared', style: style ({'text-align': 'center'})}, [
-                  ['tr', [
-                     ['td', H.putSvg ('sharedWithMeSearchIcon')],
-                     ['td', H.putSvg ('shareItemIcon')],
-                  ]],
-                  ['tr', [
-                     ['td', [
-                        ['span', {class: 'tags-search-bar__shared-title'}, 'Shared']
+               ['div', {class: 'tags-search-bar__shared js_toggle-shared', style: style ({'text-align': 'center'})}, [
+                  ['table', {class: 'tags-search-bar-table-search-with-me'}, [
+                     ['tr', [
+                        ['td', H.putSvg ('sharedWithMeSearchIcon')]
                      ]],
-                     ['td', [
-                        ['span', {class: 'tags-search-bar__shared-title'}, 'Shared']
+                     ['tr', [
+                        ['td', [
+                           ['span', {class: 'tags-search-bar__shared-title'}, 'Shared with me']
+                        ]]
                      ]]
                   ]],
-                  ['tr', [
-                     ['td', [
-                        ['span', {class: 'tags-search-bar__shared-title'}, 'with me']
+                  ['table', {class: 'tags-search-bar-table-search-by-me'}, [
+                     ['tr', [
+                        ['td', H.putSvg ('shareItemIcon')]
                      ]],
-                     ['td', [
-                        ['span', {class: 'tags-search-bar__shared-title'}, 'by me']
+                     ['tr', [
+                        ['td', [
+                           ['span', {class: 'tags-search-bar__shared-title'}, 'Shared by me']
+                        ]]
                      ]]
-                  ]],
+                  ]]
                ]]
             ]],
             ['ul', {class: 'tag-list-extended'}, [
@@ -4981,7 +5012,7 @@ views.share = function () {
                   ]]                  
                ]],
                // NOT SHARED TAG EMAIL TEXTAREA
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '260.5px'})}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
                   ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
                      H.putRoundSvg ('tagItem' + H.tagColor ('b')),
                      ['p', {class: 'tag__title'}, [
@@ -5000,8 +5031,8 @@ views.share = function () {
                            H.putRoundSvg ('shareItemIcon')
                         ],
                         ['li', [
-                           ['div', {class: 'email-input-share'}, [
-                              ['textarea', {class: 'email-input-share-textarea', autocomplete: 'off', type: 'text', placeholder: 'Enter the email addresses of the people you want to share this tag with. If they don’t have an ac;pic account, they will be invited to join.'}]
+                           ['div', {class: 'email-input-share-div'}, [
+                              ['input', {class: 'email-input-share', autocomplete: 'off', type: 'text', placeholder: 'Add the email address you want to share this with'}]
                            ]],
                            ['div', {style: style ({'float': 'right'})}, [
                               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': '6px'})}, 'Cancel'],
@@ -5037,7 +5068,7 @@ views.share = function () {
                            H.putRoundSvg ('shareItemIcon')
                         ],
                         ['li', [
-                           ['div', {class: 'emails-container', style: style({width: '582px', height: '84px'})}, [
+                           ['div', {class: 'emails-container'}, [
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'loremipsum@dolor.com'],
                                  ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
@@ -5062,8 +5093,31 @@ views.share = function () {
                                  ['p', 'tester@test.com.uy'],
                                  ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
                               ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'sarasa@gmail.com'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'loremipsum@dolor.com'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                              ]],
                            ]],
                         ]],
+                     ]],
+                     ['div', {class: 'see-more-div'}, [
+                        ['a', {class: 'see-more-text'}, 'See more...']
                      ]],
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
                         ['a', {href: '', class: 'button button--one'}, 'See pictures'],
