@@ -2485,6 +2485,7 @@ var H = {};
 H.putSvg = function (which) {
    return ['span', {opaque: true}, ['LITERAL', svg [which]]];
 }
+
 H.putRoundSvg = function (which) {
    return ['span', {opaque: true, style:'height: 24px;'}, ['LITERAL', svg [which]]];
 }
@@ -4345,7 +4346,6 @@ views.pics = function () {
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
 
                            var tag = which;
-                           var colorTag;
                            var action = ['toggle', 'tag', tag];
                            if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
@@ -4383,7 +4383,6 @@ views.pics = function () {
                               var action = ['toggle', 'tagOrder'];
                            }
                            else {
-                              colorTag = true;
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
@@ -4400,10 +4399,10 @@ views.pics = function () {
                            return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll')),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
-                              H.if (colorTag, H.putSvg ('tagItem' + H.tagColor (which))),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
+                              H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
                               H.if (which === 'f::', H.putSvg ('upAndDownArrows')),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
                               ['span', {class: 'tag__title'}, [' ', showName]],
@@ -4635,9 +4634,6 @@ views.pics = function () {
                      return ['div', {class: 'pictures-header'}, [
                         ['div', {class: 'pictures-grid-title-container'}, [
                            ['h2', {class: 'pictures-header__title page-title'}, 'You\'re looking at: ' + H.formatChunkDates (d1, d2)],
-                           // B.view (['Data', 'pivTotal'], function (total) {
-                           //    return ['h2', {class: 'pictures-header__title page-title'}, [total + ' pictures', H.if (selected, [', ', selected, ' selected'])]];
-                           // }),
                            ['table', {class: 'previous-and-next-chunk'}, [
                               ['tr', {class: 'previous-and-next-chunk-first-row'}, [
                                  ['td', {class: 'chevron-container-previous-chunk', onclick: B.ev ('scroll', [], prev)}, [
@@ -4671,21 +4667,31 @@ views.pics = function () {
                            ]],
                            ['div', {class: 'pictures-header__action-bar'}, [
                               ['div', {class: 'pictures-header__selected-tags'}, [
-                                 B.view (['State', 'query', 'tags'], function (tags) {
-                                    return ['ul', {class: 'tag-list-horizontal'}, dale.go (tags, function (tag) {
+                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal']], function (tags, pivTotal) {
+                                    return ['ul', {class: 'tag-list-horizontal'}, dale.go (['a::', 's::'].concat (tags), function (tag) {
+                                       if (B.get ('State', 'querying')) pivTotal = '...';
+                                       if (selected === 0 && tag === 's::') return;
                                        var Class = 'tag tag-list-horizontal__item ';
                                        if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
-                                       else               Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
+                                       else                  Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
 
                                        var showName = tag.replace (/^[a-z]::/, '');
+                                       if (tag === 'a::') showName = (tags.length === 0 ? 'All pictures ' : '') + '(' + pivTotal + ')';
+                                       if (tag === 'u::') showName = 'Untagged';
+                                       if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                        return ['li', {class: Class}, [
+                                          H.if (tag === 'a::', H.putSvg ('tagAll')),
+                                          H.if (tag === 'u::', H.putSvg ('itemUntagged')),
+                                          H.if (tag === 's::', H.putSvg ('selectedCircle')),
+                                          H.if (H.isDateTag (tag), H.putSvg ('itemTime')),
+                                          H.if (H.isGeoTag (tag) && ! H.isCountryTag (tag), H.putSvg ('geoCity')),
                                           H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
-                                          H.if (! H.isCountryTag (tag) && H.isGeoTag (tag), H.putSvg ('geoCity')),
-                                          ['span', {class: 'tag__title'}, tag === 'u::' ? 'Untagged' : showName],
-                                          ['div', {class: 'tag__actions', style: style ({height: 24})}, [
+                                          H.if (H.isUserTag (tag), H.putSvg ('tagItem' + H.tagColor (tag))),
+                                          ['span', {class: 'tag__title'}, showName],
+                                          tag === 'a::' ? [] : ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
-                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
+                                                ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, tag === 's::' ? ['rem', 'State', 'selected'] : ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
                                              ]],
                                           ]],
                                        ]];

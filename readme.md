@@ -41,13 +41,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Rename csrf to auth/csrf, OMITTED to REDACTED
+   - Refactor putRoundSvg to putSvg (svg, height)
    - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
    - use expired cookie (after logout and after delete) in tests
    - remove opaque elements in input, instead remove values from inputs
    - remove dot after messages in snackbar
 
 - Pivs
-   - Properly dynamize new top bar: you're looking at (visible chunks, but in the viewport), previous/next, all pictures, selected, query (foteli con numero, tags), chunk header formatting
    - Fix scroll + back bug
    - Add arrow to switch order of tags
    - Feedback box
@@ -55,7 +55,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
 
 - Upload/import:
-   - Fix import bug
+   - Fix import client bug
+   - Add race condition check when uploading two identical pivs
    - Increase thumb quality.
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
@@ -91,6 +92,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Select/unselect piv by clicking on it.
    - Multiple selection with shift.
    - Select/unselect all.
+   - On top, have an always visible bar that shows the dates of the pivs you are seeing, as well as the total number of pivs, the number of selected pivs (if any) and the selected tags (if any).
    - When selecting pivs, see selection bar.
    - Hover on piv and see date.
    - Show untagged pivs.
