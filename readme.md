@@ -41,17 +41,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Rename csrf to auth/csrf, OMITTED to REDACTED
-   - Refactor putRoundSvg to putSvg (svg, height)
    - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
    - use expired cookie (after logout and after delete) in tests
-   - remove opaque elements in input, instead remove values from inputs
    - remove dot after messages in snackbar
 
 - Pivs
    - Fix scroll + back bug
-   - Add arrow to switch order of tags
    - Feedback box
-   - Search box height is incorrect when 'Done tagging' button appear in 'Untagged'.
    - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
 
 - Upload/import:
@@ -126,6 +122,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - When querying untagged pivs AND pivs are selected, show "Done tagging" button. When tagging those pivs, they remain in selection until either 1) "Done tagging" button is clicked; 2) all pivs are unselected; or 3) "untagged" is removed from query.
    - Retain current query and scroll position in the URL, so it can be copied and opened into a new tab.
    - The back button takes you to the previous query (including its scroll position), but not to the same query with a different scroll position.
+   - Be able to invert the order in which tags on the left sidebar are shown.
 
 - Open
    - Open piv and trigger fullscreen.
@@ -798,7 +795,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pivs`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.reverseTagOrder`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -818,6 +815,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> rem State.showNSelectedTags`
       - `input -> set State.filter`
       - `click -> goto tag`
+      - `click -> set State.reverseTagOrder`
 2. `views.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
@@ -954,9 +952,10 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 3. Auth
    1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not.
-   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf` and invokes `goto page State.redirect`.
+   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf` and invokes `goto page State.redirect`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument) and invokes `goto page login`.
-   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it updates `Data.csrf` and invokes `goto page State.redirect`.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs` and, updates `Data.csrf` and invokes `goto page State.redirect`.
+   6. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`) to an empty string.
    6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pics
@@ -1088,6 +1087,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `open`: index of the piv to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
+   - `reverseTagOrder`: determines whether tags are shown in the default order or in reverse order
    - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER, recentlyUploaded: UNDEFINED|[ID, ...]}`.
    - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
    - `queryURL`: if set, has the form `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER}`. When updated, its data will be used to update `State.query`.

@@ -2482,12 +2482,8 @@ dale.go (CSS.vars.tagColors, function (color) {
 
 var H = {};
 
-H.putSvg = function (which) {
-   return ['span', {opaque: true}, ['LITERAL', svg [which]]];
-}
-
-H.putRoundSvg = function (which) {
-   return ['span', {opaque: true, style:'height: 24px;'}, ['LITERAL', svg [which]]];
+H.putSvg = function (which, height) {
+   return ['span', {opaque: true, style: ! height ? undefined : style ({height: height})}, ['LITERAL', svg [which]]];
 }
 
 H.matchVerb = function (ev, responder) {
@@ -2899,6 +2895,7 @@ B.mrespond ([
          timezone: new Date ().getTimezoneOffset ()
       }, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
+         B.call (x, 'clear', 'authInputs');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
@@ -2923,6 +2920,7 @@ B.mrespond ([
          username: username,
          password: password
       }, function (x, error, rs) {
+         B.call (x, 'clear', 'authInputs');
          if (error) {
             var parsedError = teishi.parse (error.responseText);
             if (parsedError && parsedError.error === 'email')    return B.call (x, 'snackbar', 'red', 'That email is already in use.');
@@ -2933,9 +2931,16 @@ B.mrespond ([
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
+   ['clear', 'authInputs', function (x) {
+      dale.go (['username', 'password', 'confirm'], function (v) {
+         var target = c ('#auth-' + v);
+         if (target) target.value = '';
+      });
+   }],
    ['request', 'invite', function (x) {
       var email = prompt ('Send us your email and we\'ll send you an invite link to create your account! We will *only* use your email to send you an invite.');
-      if (! email || ! email.match (/^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/)) return B.call (x, 'snackbar', 'red', 'Please enter a valid email address.');
+      if (! email) return;
+      if (! email.match (/^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/)) return B.call (x, 'snackbar', 'red', 'Please enter a valid email address.');
       B.call (x, 'post', 'requestInvite', {}, {email: email}, function (x, error) {
          if (error) B.call (x, 'snackbar', 'red', 'There was an error processing your request. Please write us to info@altocode.nl instead.');
          else       B.call (x, 'snackbar', 'green', 'We received your request successfully, hang tight!');
@@ -3996,9 +4001,7 @@ views.login = function () {
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
                   ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
                ]],
-               // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
-               // By setting the form to be opaque, we prevent them from being recycled.
-               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
+               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in', onclick: B.ev ('login', [])}],
@@ -4165,9 +4168,7 @@ views.signup = function () {
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
                   ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
                ]],
-               // Because the inputs' values are not controlled by gotoB, if they're recycled their values could appear in other inputs.
-               // By setting the form to be opaque, we prevent them from being recycled.
-               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form', opaque: true}, [
+               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {id: 'auth-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
@@ -4292,7 +4293,7 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags']], function (filter, selected, queryTags, monthTags, account, showNTags) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'reverseTagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, reverseTagOrder) {
                         if (! account || ! selected) return ['ul'];
                         monthTags = monthTags || [];
                         filter = H.trim (filter || '');
@@ -4335,8 +4336,10 @@ views.pics = function () {
                            var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
                            var aN = queryTags [a], bN = queryTags [b];
-                           if (aN !== bN) return bN - aN;
-                           return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           if (aN !== bN) return reverseTagOrder ? aN - bN : bN - aN;
+
+                           if (reverseTagOrder) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
+                           else                 return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
                         });
 
                         var all      = teishi.eq (selected, []);
@@ -4380,7 +4383,7 @@ views.pics = function () {
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
-                              var action = ['toggle', 'tagOrder'];
+                              var action = ['set', ['State', 'reverseTagOrder'], ! reverseTagOrder];
                            }
                            else {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
@@ -4409,11 +4412,11 @@ views.pics = function () {
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
-                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putRoundSvg ('itemSelected')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putRoundSvg ('itemDeselect')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putRoundSvg ('itemAttach')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putRoundSvg ('itemAttached')],
-                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putRoundSvg ('itemUntag')],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
+                                    ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag', 24)],
                                  ]]
                               ]]
                            ]];
@@ -4549,11 +4552,11 @@ views.pics = function () {
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
                                     ['div', {class: 'tag-actions'}, [
-                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putRoundSvg ('itemSelected')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putRoundSvg ('itemDeselect')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putRoundSvg ('itemAttach')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putRoundSvg ('itemAttached')],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putRoundSvg ('itemUntag')],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag', 24)],
                                     ]],
                                  ]],
                               ]];
@@ -4568,14 +4571,14 @@ views.pics = function () {
                // SIDEBAR SEARCH
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
-                  // ** TODO: SET HEIGHT TO 114PX WHEN DONE TAGGING BUTTON IS PRESENT
-                  return ['div', {class: 'sidebar__footer', onclick: B.ev (H.stopPropagation)}, [
+                  var doneTagging = inc (tags, 'u::') && dale.keys (selected).length;
+                  return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 114}), onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
-                     H.if (inc (tags, 'u::') && dale.keys (selected).length, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
+                     H.if (doneTagging, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
                   ]];
                }),
             ]],
