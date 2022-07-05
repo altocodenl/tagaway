@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Other
-   - use expired cookie (after logout and after delete) in tests
    - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
    - remove dot after messages in snackbar
 

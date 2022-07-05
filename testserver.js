@@ -659,9 +659,9 @@ suites.auth = {
             if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age=0/i)) return clog ('Invalid set-cookie header', res.headers ['set-cookie']);
             return true;
          }],
+         ['get CSRF token with deleted cookie', 'get', 'auth/csrf', {}, '', 403, H.cBody ({error: 'session'})],
          ['logout again', 'post', 'auth/logout', {}, {}, 403, H.cBody ({error: 'session'})],
          ['delete account without being logged in', 'get', 'auth/delete', {}, '', 403],
-         ['get CSRF token with expired credentials', 'post', 'auth/logout', {}, {}, 403, H.cBody ({error: 'session'})],
          ['logout with no credentials', 'post', 'auth/logout', {cookie: ''}, {}, 403, H.cBody ({error: 'nocookie'})],
          ['login with email', 'post', 'auth/login', {}, function () {return {username: user.email, password: user.password, timezone: user.timezone}}, 200, H.setCredentials],
          dale.go (['\t', ' ', ' \t '], function (space) {
@@ -731,8 +731,8 @@ suites.auth = {
             if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age=0/i)) return clog ('Invalid set-cookie header', res.headers ['set-cookie']);
             return true;
          }],
-         ['get CSRF token after account deletion with expired credentials', 'post', 'auth/logout', {}, {}, 403],
-         ['get CSRF token after account deletion with expired credentials', 'post', 'auth/logout', {}, {}, 403],
+         ['get CSRF token after account deletion', 'get', 'auth/csrf', {}, '', 403, H.cBody ({error: 'session'})],
+         ['logout after account deletion', 'post', 'auth/logout', {}, {}, 403, H.cBody ({error: 'session'})],
          ['login after account deletion', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 403],
       ];
    }
