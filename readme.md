@@ -39,10 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Other
-   - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
-   - remove dot after messages in snackbar
-
 - Pivs
    - Fix scroll + back bug
    - Feedback box

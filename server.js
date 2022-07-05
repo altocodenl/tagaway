@@ -1310,12 +1310,16 @@ var routes = [
       ]);
    }],
 
-   // *** CLIENT ERRORS ***
+   // *** CLIENT ERRORS (FROM NON-LOGGED IN USERS) ***
 
    ['post', 'error', function (rq, rs) {
+
+      if (rq.data.cookie && rq.data.cookie [CONFIG.cookieName]) return rs.next ();
+
+      var report = {priority: 'critical', type: 'client error in browser', ip: rq.origin, username: 'PUBLIC', userAgent: rq.headers ['user-agent'], error: rq.body};
       astop (rs, [
-         [notify, {priority: 'critical', type: 'client error in browser', ip: rq.origin, user: (rq.user || {}).username, error: rq.body, userAgent: rq.headers ['user-agent']}],
-         [reply, rs, 200],
+         [notify, report],
+         [reply, rs, 200, ENV ? {} : report],
       ]);
    }],
 
@@ -1589,7 +1593,6 @@ var routes = [
 
       if (rq.url.match (/^\/redmin/) && ! ENV) return rs.next ();
 
-      if (rq.method === 'post' && rq.url === '/error') return rs.next ();
       if (rq.method === 'get'  && rq.url === '/stats') return rs.next ();
       if (rq.method === 'post' && rq.url === '/admin/invites') {
          if (! ENV)                                                        return rs.next ();
@@ -1752,6 +1755,16 @@ var routes = [
             });
          });
       });
+   }],
+
+   // *** CLIENT ERRORS (FROM LOGGED-IN USERS) ***
+
+   ['post', 'error', function (rq, rs) {
+      var report = {priority: 'critical', type: 'client error in browser', ip: rq.origin, username: rq.user.username, userAgent: rq.headers ['user-agent'], error: rq.body};
+      astop (rs, [
+         [notify, report],
+         [reply, rs, 200, ENV ? {} : report],
+      ]);
    }],
 
    // *** ACCOUNT ***

@@ -759,8 +759,11 @@ suites.public = function () {
       H.invalidTestMaker ('submit error', 'requestInvite', [
          [[], ['object', 'array']],
       ]),
-      ['submit error (array)', 'post', 'error', {}, [], 200],
-      ['submit error (object)', 'post', 'error', {}, {}, 200],
+      ['submit error (array)', 'post', 'error', {}, [1], 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'PUBLIC', error: [1]})],
+      ['submit error (object)', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'PUBLIC', error: {sin: 'sobresaltos'}})],
+      suites.auth.in (tk.users.user1),
+      ['submit error as logged in user', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'user1', error: {sin: 'sobresaltos'}})],
+      suites.auth.out (tk.users.user1),
       ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})],
       ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ];
