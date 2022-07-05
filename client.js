@@ -2957,7 +2957,7 @@ B.mrespond ([
    // *** AUTH RESPONDERS ***
 
    ['retrieve', 'csrf', function (x) {
-      B.call (x, 'get', 'csrf', {}, '', function (x, error, rs) {
+      B.call (x, 'get', 'auth/csrf', {}, '', function (x, error, rs) {
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
          B.call (x, 'read', 'hash');
