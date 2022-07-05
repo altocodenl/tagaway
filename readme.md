@@ -53,7 +53,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Accounts
-   - Add user log on verify.
    - Recover/reset password.
    - Delete my account with confirmation.
 
@@ -715,6 +714,7 @@ All the routes below require an admin user to be logged in.
    - For login:           {t: INT, ev: 'auth', type: 'login',          ip: STRING, userAgent: STRING, timezone: INTEGER}
    - For logout:          {t: INT, ev: 'auth', type: 'logout',         ip: STRING, userAgent: STRING}
    - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING}
+   - For verify:          {t: INT, ev: 'auth', type: 'verify',         ip: STRING, userAgent: STRING}
    - For recover:         {t: INT, ev: 'auth', type: 'recover',        ip: STRING, userAgent: STRING}
    - For reset:           {t: INT, ev: 'auth', type: 'reset',          ip: STRING, userAgent: STRING}
    - For password change: {t: INT, ev: 'auth', type: 'passwordChange', ip: STRING, userAgent: STRING}

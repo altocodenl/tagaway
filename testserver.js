@@ -704,7 +704,7 @@ suites.auth = {
          ['login after password reset', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 200, H.setCredentials],
          ['get auth logs', 'get', 'account', {}, '', 200, function (s, rq, rs) {
 
-            var sequence = ['signup', 'login', 'logout', 'login'];
+            var sequence = ['signup', 'verify', 'login', 'logout', 'login'];
             dale.go (dale.times (24), function () {sequence.push ('login')});
             sequence = sequence.concat ('passwordChange', 'login', 'recover', 'recover');
             dale.go (dale.times (24), function () {sequence.push ('recover')});

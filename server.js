@@ -1428,7 +1428,7 @@ var routes = [
          // logs are deleted in case a deleted user with the same username existed, in which case there will be a `destroy` log.
          [Redis, 'del', 'ulog:' + b.username],
          [a.set, 'emailtoken', [a.make (require ('bcryptjs').genSalt), 20]],
-         // TODO: don't do check to users:, verify type of error returned by giz directly to distinguish 403 from 500
+         // TODO: don't do check to users, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
             var multi = redis.multi ();
@@ -1497,6 +1497,9 @@ var routes = [
             notify (s, {type: 'verify', user: s.username});
          },
          ! ENV ? [] : [sendmail, {to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}],
+         function (s) {
+            H.log (s, s.username, {ev: 'auth', type: 'verify', ip: rq.origin, userAgent: rq.headers ['user-agent']});
+         },
          [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/verified'}],
       ]);
    }],
