@@ -1404,7 +1404,8 @@ var routes = [
       ])) return;
 
       b.username = H.trim (b.username.toLowerCase ());
-      if (b.username.length < 3) return reply (rs, 400, {error: 'Trimmed username is less than three characters long.'});
+      if (b.username.length < 3)  return reply (rs, 400, {error: 'Trimmed username is less than three characters long.'});
+      if (b.username.length > 40) return reply (rs, 400, {error: 'Trimmed username is more than forty characters long.'});
       b.email = H.trim (b.email.toLowerCase ());
 
       var multi = redis.multi ();
@@ -1627,7 +1628,7 @@ var routes = [
 
    // *** CSRF PROTECTION ***
 
-   ['get', 'csrf', function (rq, rs) {
+   ['get', 'auth/csrf', function (rq, rs) {
       reply (rs, 200, {csrf: rq.user.csrf});
    }],
 
@@ -1843,6 +1844,16 @@ var routes = [
                headers ['content-disposition'] = 'attachment; filename=' + encodeURIComponent (s.piv.name);
                headers ['last-modified'] = new Date (JSON.parse (s.piv.dates) ['upload:lastModified']).toUTCString ();
             }
+
+            // TODO: finalize range logic
+            if (rq.headers.range && rq.headers.range.split ('-').length === 2) {
+               var range = rq.headers.range.replace ('bytes=', '').split ('-');
+               var start = parseInt (range [0]), end = parseInt (range [1]);
+               console.log ('DEBUG RANGE', start, end, range);
+               //if (type (start) !== 'integer' || start < 0)    return reply (rs, 400, {error: 'Invalid start range'});
+               //if (type (end)   !== 'integer' || end <= start) return reply (rs, 400, {error: 'Invalid end range'});
+            }
+
             // If the piv is not a video, or it is a mp4 video, or the original video is required, we serve the file.
             if (! s.piv.vid || s.piv.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.id), [CONFIG.basepath], headers);
 
@@ -3914,7 +3925,7 @@ cicek.options.log.console  = false;
 cicek.apres = function (rs) {
    var t = Date.now ();
    if (rs.log.url.match (/^\/auth/)) {
-      if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'OMITTED';
+      if (rs.log.requestBody && rs.log.requestBody.password) rs.log.requestBody.password = 'REDACTED';
    }
 
    var logs = [

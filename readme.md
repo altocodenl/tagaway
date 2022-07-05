@@ -40,9 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Other
-   - Rename csrf to auth/csrf, OMITTED to REDACTED
-   - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
    - use expired cookie (after logout and after delete) in tests
+   - put user that experienced error if user is logged in by moving route and leaving passthrough in gatekeeper
    - remove dot after messages in snackbar
 
 - Pivs
@@ -295,7 +294,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 #### Auth routes
 
-- `GET /csrf`.
+- `GET /auth/csrf`.
    - If the user is not logged in or the session expired, returns a 403.
    - Otherwise, returns a body `{csrf: STRING}`, where `STRING` is the CSRF token to be used in all requests.
 

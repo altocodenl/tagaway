@@ -555,6 +555,7 @@ suites.auth = {
             [['email'], 'values', [tk.users.user1.email]],
             [['username'], 'invalidValues', ['a@a', 'a:a']],
             [['username'], 'invalidValues', ['aa', '\taa\n', '   '], 'Trimmed username is less than three characters long.'],
+            [['username'], 'invalidValues', ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', ' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa '], 'Trimmed username is more than forty characters long.'],
             [['password'], 'length', {min: 6}],
             // Taken from https://help.xmatters.com/ondemand/trial/valid_email_format.htm
             [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
@@ -645,10 +646,10 @@ suites.auth = {
             if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true})) return false;
             return true;
          }],
-         ['get CSRF token without being logged in', 'get', 'csrf', {cookie: ''}, '', 403, H.cBody ({error: 'nocookie'})],
-         ['get CSRF token with tampered cookie', 'get', 'csrf', {cookie: CONFIG.cookieName + '=foo'}, '', 403, H.cBody ({error: 'tampered'})],
-         ['get CSRF token with extraneous cookie', 'get', 'csrf', {cookie: 'foo=bar'}, '', 403, H.cBody ({error: 'nocookie'})],
-         ['get CSRF', 'get', 'csrf', {}, '', 200, function (s, rq, rs) {
+         ['get CSRF token without being logged in', 'get', 'auth/csrf', {cookie: ''}, '', 403, H.cBody ({error: 'nocookie'})],
+         ['get CSRF token with tampered cookie', 'get', 'auth/csrf', {cookie: CONFIG.cookieName + '=foo'}, '', 403, H.cBody ({error: 'tampered'})],
+         ['get CSRF token with extraneous cookie', 'get', 'auth/csrf', {cookie: 'foo=bar'}, '', 403, H.cBody ({error: 'nocookie'})],
+         ['get CSRF', 'get', 'auth/csrf', {}, '', 200, function (s, rq, rs) {
             if (H.stop ('body', rs.body, {csrf: s.csrf})) return false;
             return true;
          }],
