@@ -823,7 +823,8 @@ CSS.litc = [
       width: 1,
       'list-style-type': 'none',
       display: 'flex',
-      'flex-direction': 'column'
+      'flex-direction': 'column',
+      'margin-bottom': CSS.typography.spaceVer (4),
    }],
    ['.tag-list-extended__item', {
       display: 'flex',
@@ -1067,6 +1068,13 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 36,
    }],
+   ['.tag-actions__item--deselect-email-shared', {
+      height: 24,
+      display: 'inline-flex', 
+      'background-color': '#8b8b8b', 
+      'fill': '#f2f2f2', 
+      'margin-left': '6px'
+   }],
    ['.email-input-share-div', {
       'margin-bottom': CSS.typography.spaceVer (1),
       width: 500,
@@ -1084,11 +1092,27 @@ CSS.litc = [
       'margin-bottom': CSS.typography.spaceVer (1),
       'margin-top': '-' + CSS.typography.spaceVer (1),
    }],
-   ['.see-more-text', {
-      float: 'right',
-      mixin1: CSS.vars.fontPrimaryMedium,
-      cursor: 'pointer'
+   ['.see-more-span', {
+      float: 'right', 
+      display: 'inline-flex',
+      'margin-right': CSS.vars ['padding--m'],
    }],
+   ['.see-more-text', {
+      'margin-left': 3,
+      mixin1: CSS.vars.fontPrimaryMedium,
+      cursor: 'pointer',
+      'text-decoration': 'underline'
+   }],
+   ['.see-more-icon', {
+      'margin-top': 2
+   }],
+   media ('screen and (min-width: 1025px)', [
+      ['.see-more-span:hover', {
+         color: CSS.vars ['color--one']}, [
+         ['.chevron-svg', {stroke: CSS.vars ['color--one']}], 
+      ]],
+   ]),
+   
    ['.emails-container', {
       width: 582, 
       height: 84,
@@ -2225,6 +2249,9 @@ CSS.litc = [
       'margin-top': -12,
       'pointer-events': 'none',
    }],
+   ['.tags-search-bar-table-search-by-me .tag-share__item-icon path', {
+      fill: CSS.vars ['grey--darker'],
+   }],
    ['.tags-search-bar__search-icon path', {fill: CSS.vars.grey}],
    ['.tags-search-bar__shared', {
       position: 'absolute',
@@ -2235,7 +2262,8 @@ CSS.litc = [
       opacity: '0.6',
       display: 'flex',
       'align-items': 'center',
-      cursor: 'pointer'
+      cursor: 'pointer', 
+      'text-align': 'center'
    }],
    ['.tags-search-bar-table-search-with-me, .tags-search-bar-table-search-by-me', {
       'line-height': 12, 
@@ -2532,7 +2560,7 @@ var svg = {
    upIcon: '<svg class="up-icon__svg" enable-background="new 0 0 23 33" viewBox="0 0 23 33" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m21.6 20.4h-5.2v-19.4c0-.6-.4-1-1-1h-7.8c-.6 0-1 .4-1 1v19.4h-5.2c-.3 0-.5.1-.7.3-.4.4-.4 1 0 1.4l10.1 10.1c.4.4 1 .4 1.4 0l10.1-10.1c.2-.2.3-.4.3-.7 0-.5-.5-1-1-1z" fill-rule="evenodd"/></svg>',
    backIcon: '<svg class="import-process-box-back-icon__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
    folderDeselect: '<svg class="selected-folder-deselect__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
-   chevron: '<svg class="chevron-svg" height="20" width="24"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke:#484848;stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke:#484848;stroke-width:1.5" /></svg>',
+   chevron: '<svg class="chevron-svg" height="20" width="24" stroke="#484848"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke-width:1.5" /></svg>',
    selectedCircle: '<svg viewBox="0 0 100 100" fill="#5b6eff" width="12" height="12" style="margin-right: 6px; xmlns="http://www.w3.org/2000/svg"> <circle cx="50" cy="50" r="50"/></svg>',
    upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>',
    sharedWithMeSearchIcon: '<svg  class="tags-search-bar__shared-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
@@ -4961,7 +4989,7 @@ views.share = function () {
             ['div', {class: 'tags-search-bar'}, [
                H.putSvg ('searchTagIcon'),
                ['input', {class: 'tags-search-bar__search-input', style: 'search', placeholder: 'Search tag or picture name'}],
-               ['div', {class: 'tags-search-bar__shared js_toggle-shared', style: style ({'text-align': 'center'})}, [
+               ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
                   ['table', {class: 'tags-search-bar-table-search-with-me'}, [
                      ['tr', [
                         ['td', H.putSvg ('sharedWithMeSearchIcon')]
@@ -5071,53 +5099,58 @@ views.share = function () {
                            ['div', {class: 'emails-container'}, [
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'loremipsum@dolor.com'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'tester@test.com.uy'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'sarasa@gmail.com'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'tester@test.com.uy'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'loremipsum@dolor.com'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'tester@test.com.uy'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'tester@test.com.uy'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'sarasa@gmail.com'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'tester@test.com.uy'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'loremipsum@dolor.com'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'tester@test.com.uy'],
-                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')]
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
                               ]],
                            ]],
                         ]],
                      ]],
                      ['div', {class: 'see-more-div'}, [
-                        ['a', {class: 'see-more-text'}, 'See more...']
+                        ['span', {class: 'see-more-span'}, [
+                           ['span', {class: 'see-more-icon'}, [
+                              H.putSvg ('chevron')
+                           ]],
+                           ['a', {class: 'see-more-text'}, 'See more']
+                        ]]
                      ]],
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
                         ['a', {href: '', class: 'button button--one'}, 'See pictures'],
@@ -5172,11 +5205,11 @@ views.share = function () {
                         ],
                         ['li', {class: 'tag-share__item-email'}, [ 
                            ['p', 'loremipsum@dolor.com'],
-                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
+                           ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')],
                            ]],
                         ['li', {class: 'tag-share__item-email'}, [ 
                            ['p', 'tester@test.com.uy'],
-                           ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24, display: 'inline-flex', 'background-color': '#8b8b8b', 'fill': '#f2f2f2', 'margin-left': '6px'})}, H.putSvg ('itemDeselect')],
+                           ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')],
                            ]],
                      ]],
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
@@ -5184,7 +5217,16 @@ views.share = function () {
                      ]]
                   ]]                  
                ]],
-            ]]
+            ]],
+            ['div', {class: 'page-section'}, [
+               // BACK LINK
+               ['div', {class: 'back-link back-link--uploads'}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                     H.putSvg ('backLink'),
+                     ['span', {class: 'back-link__link-text'}, 'See all photos'],
+                  ]],
+               ]],
+            ]],
          ]]
       ]] 
    ]]
