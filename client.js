@@ -1101,7 +1101,6 @@ CSS.litc = [
       'margin-left': 3,
       mixin1: CSS.vars.fontPrimaryMedium,
       cursor: 'pointer',
-      'text-decoration': 'underline'
    }],
    ['.see-more-icon', {
       'margin-top': 2
@@ -2259,7 +2258,6 @@ CSS.litc = [
       top: 0.5,
       transform: 'translateY(-50%)',
       color: CSS.vars ['grey--darker'],
-      opacity: '0.6',
       display: 'flex',
       'align-items': 'center',
       cursor: 'pointer', 
@@ -2268,20 +2266,23 @@ CSS.litc = [
    ['.tags-search-bar-table-search-with-me, .tags-search-bar-table-search-by-me', {
       'line-height': 12, 
       'font-size': 12,
+      opacity: '0.6',
    }],
    ['.tags-search-bar-table-search-by-me', {
       'margin-left': CSS.vars ['padding--s'],
-   }],
-   ['.app-shared-tags-filtered .tags-search-bar__shared', {
-      opacity: '1',
-      color: CSS.vars ['color--one'],
    }],
    ['.tags-search-bar__shared-icon', {
       'width, height': 24,
       display: 'inline-block',
       'margin-right': 4,
    }, ['path', {fill: CSS.vars ['grey--darker']}]],
+   ['.app-shared-tags-filtered', {
+      opacity: '1',
+      color: CSS.vars ['color--one'],
+   }],
    ['.app-shared-tags-filtered .tags-search-bar__shared-icon path', {fill: CSS.vars ['color--one']}],
+   ['.app-shared-tags-filtered .tag-share__item-icon path', {fill: CSS.vars ['color--one']}],
+
    // *** popup.scss ***
    ['.popup', {
       position: 'fixed',
@@ -4990,7 +4991,8 @@ views.share = function () {
                H.putSvg ('searchTagIcon'),
                ['input', {class: 'tags-search-bar__search-input', style: 'search', placeholder: 'Search tag or picture name'}],
                ['div', {class: 'tags-search-bar__shared js_toggle-shared'}, [
-                  ['table', {class: 'tags-search-bar-table-search-with-me'}, [
+                  // WHEN SELECTED ADD CLASS app-shared-tags-filtered TO TABLE
+                  ['table', {class: 'tags-search-bar-table-search-with-me app-shared-tags-filtered'}, [
                      ['tr', [
                         ['td', H.putSvg ('sharedWithMeSearchIcon')]
                      ]],
@@ -5000,7 +5002,8 @@ views.share = function () {
                         ]]
                      ]]
                   ]],
-                  ['table', {class: 'tags-search-bar-table-search-by-me'}, [
+                  // WHEN SELECTED ADD CLASS app-shared-tags-filtered TO TABLE
+                  ['table', {class: 'tags-search-bar-table-search-by-me app-shared-tags-filtered'}, [
                      ['tr', [
                         ['td', H.putSvg ('shareItemIcon')]
                      ]],
@@ -5161,7 +5164,7 @@ views.share = function () {
                // SHARED WITH ME
                ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
                   ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
-                     ['span', {style: style({'margin-right': '3px'})}, 
+                     ['span', {style: style({'margin-right, margin-left': '5px'})}, 
                      H.putRoundSvg ('tagSharedWithMe' + H.tagColor ('b')),
                      ],
                      ['p', {class: 'tag__title'}, [
