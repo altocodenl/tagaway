@@ -1063,6 +1063,11 @@ CSS.litc = [
       fill: 'rgba(' + CSS.toRGBA (CSS.vars ['grey--darker']) + ', 0.7)',
       transition: '250ms linear all',
    }]],
+   ['.share-icon', {
+      'width, height': 24,
+      'margin-top': 5, 
+      'margin-right': 2
+   }],
    ['.tag-share__item:hover path', {fill: CSS.vars ['grey--darker']}],
    ['.tag-share__item-img', {
       display: 'inline-block',
@@ -1111,7 +1116,6 @@ CSS.litc = [
          ['.chevron-svg', {stroke: CSS.vars ['color--one']}], 
       ]],
    ]),
-   
    ['.emails-container', {
       width: 582, 
       height: 84,
@@ -2491,6 +2495,7 @@ CSS.litc = [
    ['.fullscreen__action-icon', {
       display: 'inline-block',
       'width, height': 24,
+      'margin-top': 4, 
       fill: CSS.vars ['grey--lightest'],
    }],
    ['.fullscreen__action-text', {
@@ -2564,10 +2569,11 @@ var svg = {
    chevron: '<svg class="chevron-svg" height="20" width="24" stroke="#484848"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke-width:1.5" /></svg>',
    selectedCircle: '<svg viewBox="0 0 100 100" fill="#5b6eff" width="12" height="12" style="margin-right: 6px; xmlns="http://www.w3.org/2000/svg"> <circle cx="50" cy="50" r="50"/></svg>',
    upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>',
+   shareIcon: '<svg class="share-icon" fill="#fbfbfb" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="30px" height="30px"><path d="M 23 3 A 4 4 0 0 0 19 7 A 4 4 0 0 0 19.09375 7.8359375 L 10.011719 12.376953 A 4 4 0 0 0 7 11 A 4 4 0 0 0 3 15 A 4 4 0 0 0 7 19 A 4 4 0 0 0 10.013672 17.625 L 19.089844 22.164062 A 4 4 0 0 0 19 23 A 4 4 0 0 0 23 27 A 4 4 0 0 0 27 23 A 4 4 0 0 0 23 19 A 4 4 0 0 0 19.986328 20.375 L 10.910156 15.835938 A 4 4 0 0 0 11 15 A 4 4 0 0 0 10.90625 14.166016 L 19.988281 9.625 A 4 4 0 0 0 23 11 A 4 4 0 0 0 27 7 A 4 4 0 0 0 23 3 z"/></svg>',
    sharedWithMeSearchIcon: '<svg  class="tags-search-bar__shared-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    sharedWithMeSharedIcon: '<svg class="tag__status-icon tag__status-icon--shared" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    shareItemIcon: '<svg class="tag-share__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m9.5 11.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm3.5 12h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5zm-5.5-5c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2zm13.5-4.5h-3v-3c0-.3-.2-.5-.5-.5s-.5.2-.5.5v3h-3c-.3 0-.5.2-.5.5s.2.5.5.5h3v3c0 .3.2.5.5.5s.5-.2.5-.5v-3h3c.3 0 .5-.2.5-.5s-.2-.5-.5-.5z"/></svg>',
-   tagSharedWithMe: '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="#5b6eff" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="#5b6eff" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>',
+   tagSharedWithMe: '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="#5b6eff" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="#5b6eff" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>'
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
@@ -4955,11 +4961,15 @@ views.open = function () {
             return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/900/' + piv.id, loop: true}];
          }) ()],
          ['div', {class: 'fullscreen__actions'}, [
+               ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
+                  ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
+                  ['div', {class: 'fullscreen__action-text'}, 'Share'],
+               ]],   
             H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
                ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
                ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
             ]]),
-            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', onclick: B.ev ('open', 'location', piv)}, [
+            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('open', 'location', piv)}, [
                ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],
