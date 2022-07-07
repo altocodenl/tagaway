@@ -839,11 +839,11 @@ CSS.litc = [
       'font-size': CSS.typography.fontSize (1)
    }],
    ['.tag-list-extended__item-info', {
-      position: 'absolute',
+      // position: 'absolute',
       display: 'flex',
       'flex-direction': 'column',
       width: 1,
-      height: 'auto',
+      // height: 'auto',
       top: CSS.typography.spaceVer (1),
       'padding-left': 27,
       'padding-right': CSS.vars ['padding--m'],
@@ -923,6 +923,7 @@ CSS.litc = [
    // Tag title - amount
    ['.tag__title-amount', {
       'white-space': 'nowrap',
+      'margin-left, margin-right': 3,
       mixin1: CSS.vars.fontPrimaryRegular,
    }],
    // Tag info
@@ -1117,7 +1118,7 @@ CSS.litc = [
       ]],
    ]),
    ['.emails-container', {
-      width: 582, 
+      width: 571, 
       height: 84,
       overflow: 'hidden'
    }],
@@ -5027,10 +5028,10 @@ views.share = function () {
             ]],
             ['ul', {class: 'tag-list-extended'}, [
                // NOT SHARED TAG
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
                      H.putRoundSvg ('tagItem' + H.tagColor ('b')),
-                     ['p', {class: 'tag__title'}, [
+                     ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Tristan da Cunha', 
                         ['span', {class: 'tag__title-amount'}, [
                            ' (',
@@ -5039,7 +5040,7 @@ views.share = function () {
                         ]],
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
@@ -5053,10 +5054,10 @@ views.share = function () {
                   ]]                  
                ]],
                // NOT SHARED TAG EMAIL TEXTAREA
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
                      H.putRoundSvg ('tagItem' + H.tagColor ('b')),
-                     ['p', {class: 'tag__title'}, [
+                     ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Greenland', 
                         ['span', {class: 'tag__title-amount'}, [
                            ' (',
@@ -5065,7 +5066,7 @@ views.share = function () {
                         ]],
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
@@ -5087,22 +5088,22 @@ views.share = function () {
                   ]]                  
                ]],
                // SHARED TAG
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '260.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
                      H.putRoundSvg ('tagItem' + H.tagColor ('c')),
-                     ['p', {class: 'tag__title'}, [
+                     ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Whatsapp', 
                         ['span', {class: 'tag__title-amount'}, [
                            ' (',
                            ['em', {class: 'tag__title-number'}, '200'],
                            ')'
                         ]],
-                     ]],
-                     ['div', {class: 'tag__status'}, [
-                        ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
-                     ]]
+                        ['div', {class: 'tag__status'}, [
+                           ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
+                        ]],
+                     ]],                     
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
@@ -5172,12 +5173,12 @@ views.share = function () {
                   ]]                  
                ]],
                // SHARED WITH ME
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '200.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
                      ['span', {style: style({'margin-right, margin-left': '5px'})}, 
                      H.putRoundSvg ('tagSharedWithMe' + H.tagColor ('b')),
                      ],
-                     ['p', {class: 'tag__title'}, [
+                     ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Ulaanbaatar', 
                         ['span', {class: 'tag__title-amount'}, [
                            ' (',
@@ -5186,7 +5187,7 @@ views.share = function () {
                         ]],
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '44.5px'})}, [
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
                      ['p', 'Shared by:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item-email'}, [ 
@@ -5199,31 +5200,35 @@ views.share = function () {
                   ]]                  
                ]],
                // SHARED PIV
-               ['li', {class: 'tag-list-extended__item', style: style ({height: '260.5px'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 'fit-content'})}, [
+               ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
                      ['span', {class: 'shared-box__image'}, [
                         H.putRoundSvg ('uploadImage')]],
-                     ['p', {class: 'tag__title'}, [
+                     ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         '636025_39749827.jpg',
+                        ['div', {class: 'tag__status'}, [
+                           ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
+                        ]]
                      ]],
-                     ['div', {class: 'tag__status'}, [
-                        ['span', {class: 'tag__status-icon'}, H.putSvg ('shareItemIcon')]
-                     ]]
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({top: '104.5px'})}, [
+                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
                            H.putRoundSvg ('shareItemIcon')
                         ],
-                        ['li', {class: 'tag-share__item-email'}, [ 
-                           ['p', 'loremipsum@dolor.com'],
-                           ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')],
+                        ['li', [
+                           ['div', {class: 'emails-container'}, [
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'loremipsum@dolor.com'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
+                              ]],
+                              ['div', {class: 'tag-share__item-email'}, [
+                                 ['p', 'tester@test.com.uy'],
+                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
+                              ]],
                            ]],
-                        ['li', {class: 'tag-share__item-email'}, [ 
-                           ['p', 'tester@test.com.uy'],
-                           ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')],
-                           ]],
+                        ]],
                      ]],
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
                         ['a', {href: '', class: 'button button--one'}, 'See pictures'],
