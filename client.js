@@ -5081,8 +5081,9 @@ views.share = function () {
                            ]]
                         ]],
                      ]],
-                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
-                        
+                     ['div', {class: 'tag-list-extended__item-info-buttons', style: style({display: 'none'})}, [
+                        ['a', {href: '', class: 'button button--one'}, 'See pictures'],
+                        ['a', {href: '', class: 'button button--three'}, 'Rename tag']
                      ]]
                   ]]                  
                ]],
