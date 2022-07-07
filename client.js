@@ -839,14 +839,13 @@ CSS.litc = [
       'font-size': CSS.typography.fontSize (1)
    }],
    ['.tag-list-extended__item-info', {
-      // position: 'absolute',
       display: 'flex',
       'flex-direction': 'column',
       width: 1,
-      // height: 'auto',
       top: CSS.typography.spaceVer (1),
       'padding-left': 27,
       'padding-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--s'],
       'font-size': CSS.typography.fontSize (0),
    }],
    ['.tag-list-extended__item-info-buttons', {
@@ -1119,8 +1118,8 @@ CSS.litc = [
    ]),
    ['.emails-container', {
       width: 571, 
-      height: 84,
-      overflow: 'hidden'
+      // height: 84,
+      // overflow: 'hidden'
    }],
    // Piv shared
    ['.shared-box__image', {
@@ -5040,7 +5039,7 @@ views.share = function () {
                         ]],
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
+                  ['div', {class: 'tag-list-extended__item-info'}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
@@ -5066,7 +5065,7 @@ views.share = function () {
                         ]],
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
+                  ['div', {class: 'tag-list-extended__item-info'}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
@@ -5103,7 +5102,7 @@ views.share = function () {
                         ]],
                      ]],                     
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
+                  ['div', {class: 'tag-list-extended__item-info'}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
@@ -5187,7 +5186,7 @@ views.share = function () {
                         ]],
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
+                  ['div', {class: 'tag-list-extended__item-info'}, [
                      ['p', 'Shared by:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item-email'}, [ 
@@ -5211,7 +5210,7 @@ views.share = function () {
                         ]]
                      ]],
                   ]],
-                  ['div', {class: 'tag-list-extended__item-info', style: style ({width: 1})}, [
+                  ['div', {class: 'tag-list-extended__item-info'}, [
                      ['p', 'Shared with:'],
                      ['ul', {class: 'tag-share'}, [
                         ['li', {class: 'tag-share__item tag-share__item--add-person'}, 
