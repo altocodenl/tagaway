@@ -4851,6 +4851,22 @@ views.grid = function () {
             'font-size': CSS.typography.fontSize (-1),
             transition: 'opacity',
          }],
+         ['.share-icon-button', {
+            'width, height': 22,
+            outline: 0,
+            'border-radius': 100,
+            display: 'inline-flex',
+            'align-items': 'center',
+            'text-align': 'center',
+            transition: CSS.vars.easeOutQuart,
+            border: '1px solid #fbfbfb',
+            'margin-top': '-1px'
+         }],
+         ['.caption .share-icon', {
+            'width, height': 16,
+            'margin-top': 6,
+            'margin-left': '1px'
+         }],
          ['.pictures-grid__item-picture .mask', {
             'background-color': '#5b6eff',
             opacity: '0',
@@ -4918,6 +4934,11 @@ views.grid = function () {
                            piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
                            ['div', {class: 'mask'}],
                            ['div', {class: 'caption'}, [
+                              ['span', {style: style ({position: 'absolute', left: 5})}, [
+                                 ['span', {class: 'share-icon-button'}, [
+                                    H.putSvg ('shareIcon')
+                                 ]]
+                              ]],
                               ['span', {style: style ({position: 'absolute', right: 5})}, H.dateFormat (piv.date)],
                            ]],
                         ]],
