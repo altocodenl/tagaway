@@ -5131,7 +5131,7 @@ views.share = function () {
                            H.putRoundSvg ('shareItemIcon')
                         ],
                         ['li', [
-                           ['div', {class: 'emails-container'}, [
+                           ['div', {class: 'emails-container', style: style ({height: 84, overflow: 'hidden'})}, [
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'loremipsum@dolor.com'],
                                  ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
@@ -5239,7 +5239,7 @@ views.share = function () {
                            H.putRoundSvg ('shareItemIcon')
                         ],
                         ['li', [
-                           ['div', {class: 'emails-container'}, [
+                           ['div', {class: 'emails-container', style: style ({height: 84, overflow: 'hidden'})}, [
                               ['div', {class: 'tag-share__item-email'}, [
                                  ['p', 'loremipsum@dolor.com'],
                                  ['div', {class: 'tag-actions__item tag-actions__item--deselect-email-shared'}, H.putSvg ('itemDeselect')]
