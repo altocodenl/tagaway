@@ -1861,23 +1861,50 @@ var routes = [
                headers ['last-modified'] = new Date (JSON.parse (s.piv.dates) ['upload:lastModified']).toUTCString ();
             }
 
-            // TODO: finalize range logic
-            if (rq.headers.range && rq.headers.range.split ('-').length === 2) {
-               var range = rq.headers.range.replace ('bytes=', '').split ('-');
-               var start = parseInt (range [0]), end = parseInt (range [1]);
-               console.log ('DEBUG RANGE', start, end, range);
-               //if (type (start) !== 'integer' || start < 0)    return reply (rs, 400, {error: 'Invalid start range'});
-               //if (type (end)   !== 'integer' || end <= start) return reply (rs, 400, {error: 'Invalid end range'});
+            if (s.piv.vid && s.piv.vid.match (/pending/)) return reply (rs, 404, 'pending');
+            if (s.piv.vid && s.piv.vid.match (/error/))   return reply (rs, 500, 'error');
+
+            // If there are no range headers, we directly serve the piv.
+            if (! rq.headers.range) {
+               // If the piv is not a video, or it is a mp4 video, or the original video is required, and no valid range header is present is required, we serve the file.
+               if (! s.piv.vid || s.piv.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.id), [CONFIG.basepath], headers);
+
+               // We serve the mp4 version of the video.
+               headers ['content-type'] = mime.getType ('mp4');
+               return cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.vid), [CONFIG.basepath], headers);
             }
 
-            // If the piv is not a video, or it is a mp4 video, or the original video is required, we serve the file.
-            if (! s.piv.vid || s.piv.vid === '1' || (rq.data.query && rq.data.query.original)) return cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.id), [CONFIG.basepath], headers);
+            var rangeHeader = rq.headers.range.replace ('bytes=', '').split ('-');
+            if (rangeHeader.length !== 2) return reply (rs, 400, {error: 'Invalid range'});
+            var start = parseInt (rangeHeader [0]), end = parseInt (rangeHeader [1]);
+            if (type (start) !== 'integer' || start < 0 || (! isNaN (end) && end <= start)) return reply (rs, 400, {error: 'Invalid range'});
 
-            if (s.piv.vid.match (/pending/)) return reply (rs, 404, 'pending');
-            if (s.piv.vid.match (/error/))   return reply (rs, 500, 'error');
-            // We serve the mp4 version of the video.
-            headers ['content-type'] = mime.getType ('mp4');
-            cicek.file (rq, rs, Path.join (H.hash (s.piv.owner), s.piv.vid), [CONFIG.basepath], headers);
+            // If this is a non-mp4 video and the original is not requested, we serve the mp4 version
+            if (s.piv.vid && s.piv.vid !== '1' && ! (rq.data.query || {}).original) {
+               var path = Path.join (CONFIG.basepath, H.hash (s.piv.owner), s.piv.vid),  size = s.piv.bymp4;
+               headers ['content-type'] = mime.getType ('mp4');
+            }
+            else var path = Path.join (CONFIG.basepath, H.hash (s.piv.owner), s.piv.id), size = s.piv.byfs;
+
+            var defaultChunkSize = 3000000;
+            if (isNaN (end)) end = Math.min (size - 1, start + defaultChunkSize - 1);
+            if (end > size - 1)  end = size - 1;
+
+            headers ['content-length'] = end - start + 1;
+            headers ['accept-ranges']  = 'bytes';
+            headers ['content-range']  = 'bytes ' + start + '-' + end + '/' + size;
+
+            var stream = fs.createReadStream (path, {start: start, end: end}), error;
+            // TODO: pass stream to cicek.file when it adds support for it
+            stream.on ('error', function (error) {
+               error = true;
+               reply (rs, 500, {error: error});
+            });
+            rs.writeHead (206, headers);
+            stream.on ('end', function () {
+               if (! error) cicek.apres (rs);
+            });
+            stream.pipe (rs);
          }
       ]);
    }],
@@ -2778,22 +2805,23 @@ var routes = [
                   else                              vid = true;
                }
                s.output.pivs [k] = {
-                  id: piv.id,
-                  t200:       ! ENV ? piv.t200 : undefined,
-                  t900:       ! ENV ? piv.t900 : undefined,
+                  id:      piv.id,
+                  owner:   piv.owner,
+                  name:    piv.name,
+                  tags:    s.last [k].sort (),
+                  date:    parseInt (piv.date),
+                  dateup:  parseInt (piv.dateup),
+                  dimh:    parseInt (piv.dimh),
+                  dimw:    parseInt (piv.dimw),
+                  vid:     vid,
+                  deg:     vid ? undefined : (parseInt (piv.deg) || undefined),
+                  loc:     piv.loc ? teishi.parse (piv.loc) : undefined,
+                  // Fields returned only during tests
+                  t200:       ! ENV ? piv.t200               : undefined,
+                  t900:       ! ENV ? piv.t900               : undefined,
                   dates:      ! ENV ? JSON.parse (piv.dates) : undefined,
-                  dateSource: ! ENV ? piv.dateSource : undefined,
-                  format:     ! ENV ? piv.format : undefined,
-                  owner: piv.owner,
-                  name: piv.name,
-                  tags: s.last [k].sort (),
-                  date: parseInt (piv.date),
-                  dateup: parseInt (piv.dateup),
-                  dimh: parseInt (piv.dimh),
-                  dimw: parseInt (piv.dimw),
-                  deg: vid ? undefined : (parseInt (piv.deg) || undefined),
-                  vid: vid,
-                  loc: piv.loc ? teishi.parse (piv.loc) : undefined
+                  dateSource: ! ENV ? piv.dateSource         : undefined,
+                  format:     ! ENV ? piv.format             : undefined
                };
                var untagged = true;
                dale.go (s.last [k], function (tag) {
@@ -3788,6 +3816,7 @@ var routes = [
             Redis (s, 'hset', 'invites', b.email, JSON.stringify ({firstName: b.firstName, token: s.token, sent: Date.now ()}));
          },
          // When running locally, the token is returned instead of being sent to the associated email address. This also avoids the bootstrap invite being sent when running the server locally.
+         // Interestingly enough, when running node without cluster turned on, v8 throws an error when `a.get` processes `rs` (more precisely, `rs.onread`, which is `undefined` (not that that should generate any issues, but it does)
          ENV ? [] : [a.get, reply, rs, 200, {token: '@token'}],
          function (s) {
             sendmail (s, {

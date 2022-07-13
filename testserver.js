@@ -733,7 +733,10 @@ suites.auth = {
          }],
          ['get CSRF token after account deletion', 'get', 'auth/csrf', {}, '', 403, H.cBody ({error: 'session'})],
          ['logout after account deletion', 'post', 'auth/logout', {}, {}, 403, H.cBody ({error: 'session'})],
-         ['login after account deletion', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 403],
+         ['login after account deletion', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 403, function (s) {
+            s.headers = {};
+            return true;
+         }],
       ];
    }
 }
@@ -842,12 +845,12 @@ suites.upload.upload = function () {
          return true;
       }],
       ['get upload logs', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('logs length', rs.body.logs.length, 8)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 9)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
-            if (k < 2) return;
+            if (k < 3) return;
             if (H.stop ('ev', log.ev, 'upload')) return false;
-            if (H.stop ('type', log.type, ['start', 'complete', 'start', 'cancel', 'start', 'error'] [k - 2])) return false;
+            if (H.stop ('type', log.type, ['start', 'complete', 'start', 'cancel', 'start', 'error'] [k - 3])) return false;
             if (log.type === 'start' && H.stop ('total', log.total, 0)) return false;
             if (log.type === 'error') {
                if (H.stop ('error', log.error, {foo: 'bar'})) return false;
@@ -871,15 +874,15 @@ suites.upload.upload = function () {
          return true;
       }],
       ['get upload logs after double error', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('logs length', rs.body.logs.length, 4)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 5)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
-            if (k < 2) return;
+            if (k < 3) return;
             if (H.stop ('ev', log.ev, 'upload')) return false;
             if (H.stop ('type', log.type, 'error')) return false;
-            if (k === 2 && H.stop ('error', log.error, {status: 400, error: 'text of error 1'})) return false;
-            if (k === 3 && H.stop ('error', log.error, {status: 401, error: 'text of error 2'})) return false;
-            if (k === 3 && H.stop ('end', log.t, s.erroredUpload.end)) return false;
+            if (k === 3 && H.stop ('error', log.error, {status: 400, error: 'text of error 1'})) return false;
+            if (k === 4 && H.stop ('error', log.error, {status: 401, error: 'text of error 2'})) return false;
+            if (k === 4 && H.stop ('end', log.t, s.erroredUpload.end)) return false;
          }) === false) return false;
          return true;
       }],
@@ -897,12 +900,12 @@ suites.upload.upload = function () {
       ['send wait operation to upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
       ['send second wait operation to upload', 'post', 'upload', {}, function (s) {return {id: s.uploadId, op: 'wait'}}, 200],
       ['get upload logs after double wait (wait until upload gets stalled)', 'get', 'account', {}, '', 200, function (s, rq, rs, next) {
-         if (H.stop ('logs length', rs.body.logs.length, 5)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 6)) return false;
          if (dale.stop (rs.body.logs, false, function (log, k) {
             // We ignore the auth logs
-            if (k < 2) return;
+            if (k < 3) return;
             if (H.stop ('ev', log.ev, 'upload')) return false;
-            if (H.stop ('type', log.type, k === 2 ? 'start' : 'wait')) return false;
+            if (H.stop ('type', log.type, k === 3 ? 'start' : 'wait')) return false;
          }) === false) return false;
          setTimeout (next, 10000);
       }],
@@ -1004,7 +1007,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get uploadCheck logs after alreadyUploaded & repeated, different upload', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('logs length', rs.body.logs.length, 7)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 8)) return false;
          if (H.stop ('alreadyUploaded log', last (rs.body.logs, 2), {
             ev: 'upload',
             type: 'alreadyUploaded',
@@ -1068,7 +1071,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get uploadCheck logs after repeated, same upload, tags', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('logs length', rs.body.logs.length, 6)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 7)) return false;
          if (H.stop ('repeated #1 log', last (rs.body.logs, 2), {
             ev: 'upload',
             type: 'repeated',
@@ -1160,7 +1163,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get uploadCheck logs after repeated, same upload, with another date', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('logs length', rs.body.logs.length, 6)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 7)) return false;
          if (H.stop ('repeated #1 log', last (rs.body.logs, 2), {
             ev: 'upload',
             type: 'repeated',
@@ -1242,7 +1245,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get uploadCheck logs after dates from names', 'get', 'account', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('logs length', rs.body.logs.length, 8)) return false;
+         if (H.stop ('logs length', rs.body.logs.length, 9)) return false;
          if (dale.stop (['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'], false, function (v, k) {
             if (H.stop ('repeated #' + (k + 1) + ' log', last (rs.body.logs, 4 - k), {
                ev: 'upload',
@@ -1694,11 +1697,81 @@ suites.upload.piv = function () {
    ];
 }
 
+suites.upload.stream = function () {
+   return [
+      suites.auth.in  (tk.users.user1),
+      ['start upload to test querying', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      dale.go (['bach', 'drumming'], function (piv) {
+         return [
+            ['upload ' + piv + ' video for range test', 'post', 'piv', {}, function (s) {return {multipart: [
+               {type: 'file',  name: 'piv',          path:  tk.pivs [piv].path},
+               {type: 'field', name: 'id',           value: s.uploadId},
+               {type: 'field', name: 'lastModified', value: tk.pivs [piv].mtime},
+            ]}}, 200, function (s, rq, rs, next) {
+               s [piv] = rs.body;
+               if (piv === 'bach') return true;
+               // Wait until the non-mp4 video is converted and get the size of its mp4 version.
+               H.tryTimeout (10, 3000, function (cb) {
+                  h.one (s, {method: 'get', path: 'piv/' + s [piv].id, code: 200, raw: true, apres: function (s, rq, rs) {
+                     s.mp4size = Buffer.from (rs.body, 'binary').length;
+                     return true;
+                  }}, cb);
+               }, next);
+            }],
+            dale.go (['1', '1:2', '-1-0', '-2--1', '0-0', '1-1', '3-1', '0.1-0.5'], function (invalidRange) {
+               return ['request piv with invalid range header', 'get', function (s) {return 'piv/' + s [piv].id}, {range: 'bytes=' + invalidRange}, '', 400, H.cBody ({error: 'Invalid range'})];
+            }),
+            dale.go (['0-', '0-100000', '0-1000000', 'lastPart'], function (range, k) {
+               return ['request with range ' + range, 'get', function (s) {return 'piv/' + s [piv].id + (k === 0 ? '?original=1' : '')}, function (s) {
+                  if (range !== 'lastPart') return {range: 'bytes=' + range};
+                  var size = piv === 'bach' ? tk.pivs [piv].size : s.mp4size;
+                  return {range: 'bytes=' + (size - 99999) + '-' + (size + 1000)};
+               }, '', 206, function (s, rq, rs) {
+                  var size = tk.pivs [piv].size;
+                  if (piv === 'drumming' && k !== 0)  size = s.mp4size;
+                  if (H.stop ('headers.accept-ranges', rs.headers ['accept-ranges'], 'bytes')) return false;
+                  if (H.stop ('headers.content-type', rs.headers ['content-type'], k === 0 && piv === 'drumming' ? tk.pivs [piv].mimetype : mime.getType ('mp4'))) return false;
+                  var sizes = [Math.min (3000000, size), Math.min (100001, size), Math.min (1000001, size), 99999];
+                  if (H.stop ('headers.content-length', rs.headers ['content-length'], sizes [k] + '')) return false;
+                  var ranges = [
+                     '0-' + (sizes [k] - 1) + '/' + size,
+                     '0-' + (sizes [k] - 1) + '/' + size,
+                     '0-' + (sizes [k] - 1) + '/' + size,
+                     (size - 99999) + '-' + (size - 1) + '/' + size
+                  ];
+                  if (H.stop ('headers.content-range', rs.headers ['content-range'], 'bytes ' + ranges [k])) return false;
+                  return true;
+               }];
+            }),
+            piv !== 'bach' ? [] : [
+               {tag: 'download first part of piv with range request', method: 'get', path: function (s) {return '/piv/' + s [piv].id}, code: 206, headers: {range: '0-100000'}, raw: true, apres: function (s, rq, rs, next) {
+                  s.buffer = Buffer.from (rs.body, 'binary');
+                  return true;
+               }},
+               {tag: 'download second part of piv with range request', method: 'get', path: function (s) {return '/piv/' + s [piv].id}, code: 206, headers: {range: '100001-'}, raw: true, apres: function (s, rq, rs, next) {
+                  if (Buffer.compare (Buffer.concat ([s.buffer, Buffer.from (rs.body, 'binary')]), fs.readFileSync (tk.pivs [piv].path)) !== 0) return clog ('Mismatch between original file and streamed file');
+                  return true;
+               }},
+               {tag: 'download offsetted second part of piv with range request', method: 'get', path: function (s) {return '/piv/' + s [piv].id}, code: 206, headers: {range: '100002-'}, raw: true, apres: function (s, rq, rs, next) {
+                  if (Buffer.compare (Buffer.concat ([s.buffer, Buffer.from (rs.body, 'binary')]), fs.readFileSync (tk.pivs [piv].path)) !== -1) return clog ('No mismatch between original file and streamed file, ranges are being ignored');
+                  return true;
+               }},
+            ]
+         ];
+      }),
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 suites.upload.full = function () {
    return [
       suites.upload.upload (),
       suites.upload.uploadCheck (),
       suites.upload.piv (),
+      suites.upload.stream (),
    ];
 }
 
@@ -2833,6 +2906,7 @@ H.tryTimeout (10, 1000, function (cb) {
    h.seq ({port: CONFIG.port}, suitesToRun, function (error, tests) {
       if (error) {
          if (error.request && error.request.body && type (error.request.body) === 'string') error.request.body = error.request.body.slice (0, 1000) + (error.request.body.length > 1000 ? '... OMITTING REMAINDER' : '');
+         if (error.body && type (error.body) === 'string') error.body = error.body.slice (0, 1000) + (error.body.length > 1000 ? '... OMITTING REMAINDER' : '');
          H.server.kill ();
          return clog ('FINISHED WITH AN ERROR', error);
       }

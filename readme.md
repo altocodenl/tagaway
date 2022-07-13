@@ -42,15 +42,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pivs
    - Fix scroll + back bug
    - Feedback box
-   - Implement video streaming. Check that it works in Safari (https://blog.logrocket.com/streaming-video-in-safari/)
 
 - Upload/import:
-   - Fix import client bug
    - Add race condition check when uploading two identical pivs
    - Increase thumb quality.
+   - Fix import client bug
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
+
+- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
 - Accounts
    - Recover/reset password.
@@ -351,6 +352,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the file is a non-mp4 video:
       - If the `original` query parameter is truthy, the original video is served.
       - Otherwise, the mp4 version of the video is served. If the conversion is still ongoing, a 404 is returned with body `'pending'`. If the conversion ended up in an error, a 500 is returned with body `'error'`.
+   - If a valid `range` header is present, a 206 is returned along with the requested part of the file.
 
 - `GET /thumb/SIZE/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
