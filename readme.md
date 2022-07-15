@@ -42,20 +42,21 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pivs
    - Fix scroll + back bug
    - Feedback box
+   - Click on chunk to narrow down selection
 
 - Upload/import:
    - Add race condition check when uploading two identical pivs
    - Increase thumb quality.
-   - Fix import client bug
+   - Fix import client bug: clicking anywhere should not trigger a call to Google
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
-- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
-
 - Accounts
    - Recover/reset password.
    - Delete my account with confirmation.
+
+- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
 - Share & manage
    - Rename tag.
@@ -670,6 +671,10 @@ All the routes below require an admin user to be logged in.
 - hashorigdel:USERNAME (set): contains hashes of the pivs deleted by an user (without metadata stripped), to check for repetition when re-uploading files that were deleted. This field is not in use yet.
 
 - hashdel:USERNAME:PROVIDER (set): contains hashes of the pivs deleted by an user, to check for repetition when re-importing files that were deleted. The hashed quantity is `ID:MODIFIED_TIME`. This field is not in use yet.
+
+- raceConditionHash:USERNAME:HASH (string): contains the id of a piv currently being uploaded by the user, to serve as a check to avoid a race condition between simultaneous uploads of pivs with identical content.
+
+- raceConditionHashorig:USERNAME:HASHORIG (string): same as raceConditionHash, but for identical pivs.
 
 - thu:ID (string): id of the corresponding piv.
 

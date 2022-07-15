@@ -2115,7 +2115,6 @@ var routes = [
          perf.push ([label, Date.now ()]);
          s.next (s.last);
       }
-
       // input can be either an async sequence (array) or an error per se (object)
       var invalidHandler = function (s, input) {
          var cbError = function (error) {
@@ -2209,32 +2208,49 @@ var routes = [
                file = null;
             });
          }],
-         [a.cond, [a.get, Redis, 'hexists', 'hashorig:' + rq.user.username, '@hashorig'], {'1': [
-            // If we are here, this user already has an identical piv.
+         function (s) {
+            var multi = redis.multi ();
+            multi.hget  ('hashorig:' + rq.user.username, s.hashorig);
+            multi.get   ('raceConditionHashorig:' + rq.user.username + ':' + s.hashorig);
+            multi.setnx ('raceConditionHashorig:' + rq.user.username + ':' + s.hashorig, piv.id);
+            mexec (s, multi);
+         },
+         function (s) {
+            if (! s.last [0] && ! s.last [1]) return s.next ();
+
+            // If there's currently a piv being uploaded right now that is identical to this one, we consider this piv to be repeated. It could technically be alreadyUploaded instead of repeated if it came from a different simultaneous upload, but we can ignore this case because of how unlikely it is.
+            // In the very unlikely case that this piv belongs to a different upload, we would be losing the tags from this piv. A future improvement could leave those tags in Redis temporarily so they could be picked up by the other identical piv once its upload is finished.
+            if (! s.last [0] && s.last [1]) return a.seq (s, [
+               ! s.last [2] ? [] : [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
+               [H.log, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.last [1], tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true}],
+               [reply, rs, 200, {id: s.last [1], repeated: true}]
+            ]);
+
+            // If we are here, this user already has an identical piv already uploaded.
             // The two modifications possible to the original piv are tags and dates.
-            [a.get, Redis, 'hget', 'hashorig:' + rq.user.username, '@hashorig'],
-            function (s) {
-               Redis (s, 'hgetall', 'piv:' + s.last);
-            },
-            function (s) {
-               s.piv = s.last;
-               H.addTags (s, tags, rq.user.username, s.piv.id);
-            },
-            function (s) {
-               // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system, but not in the same upload. The second file, if any, is considered as repeated.
-               // In the case of an import, any repetition is considered a repetition, not an alreadyUploaded, since the mechanism for bringing the piv is not an upload.
-               s.alreadyUploaded = ! importData && piv.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
-               // Since the metadata of this piv is identical to that of an already uploaded piv, the only different date can be provided in the lastModified field.
-               H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified);
-            },
-            function (s) {
-               if (s.alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
-               else                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
-            },
-            function (s) {
-               reply (rs, 200, {id: s.piv.id, alreadyUploaded: s.alreadyUploaded ? true : undefined, repeated: s.alreadyUploaded ? undefined : true});
-            }
-         ]}],
+            a.seq (s, [
+               ! s.last [2] ? [] : [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
+               [Redis, 'hgetall', 'piv:' + s.last [0]],
+               function (s) {
+                  s.piv = s.last;
+                  H.addTags (s, tags, rq.user.username, s.piv.id);
+               },
+               function (s) {
+                  // An alreadyUploaded file is the first file in an upload for which the name and the original hash of an existing file is already in the system, but not in the same upload. The second file, if any, is considered as repeated.
+                  // In the case of an import, any repetition is considered a repetition, not an alreadyUploaded, since the mechanism for bringing the piv is not an upload.
+                  s.alreadyUploaded = ! importData && piv.name === s.piv.name && ! inc (s.upload.listAlreadyUploaded, s.piv.id);
+                  // Since the metadata of this piv is identical to that of an already uploaded piv, the only different date can be provided in the lastModified field.
+                  H.updateDates (s, s.alreadyUploaded ? 'alreadyUploaded' : 'repeated', s.piv, piv.name, lastModified);
+               },
+               function (s) {
+                  if (s.alreadyUploaded) H.log (s, rq.user.username, {ev: 'upload', type: 'alreadyUploaded', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified});
+                  else                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
+               },
+               function (s) {
+                  reply (rs, 200, {id: s.piv.id, alreadyUploaded: s.alreadyUploaded ? true : undefined, repeated: s.alreadyUploaded ? undefined : true});
+               }
+            ]);
+         },
          function (s) {
             // We compute the hash of the piv with stripped metadata
             if (piv.vid) a.stop (s, [k, 'ffmpeg', '-i', path, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', s.hashpath], function (s, error) {
@@ -2265,27 +2281,45 @@ var routes = [
             if (piv.format === 'bmp') return s.next ();
             H.unlink (s, s.hashpath);
          },
-         [a.cond, [a.get, Redis, 'hexists', 'hash:' + rq.user.username, '@hash'], {'1': [
+         function (s) {
+            var multi = redis.multi ();
+            multi.hget  ('hash:' + rq.user.username, s.hash);
+            multi.get   ('raceConditionHash:' + rq.user.username + ':' + s.hash);
+            multi.setnx ('raceConditionHash:' + rq.user.username + ':' + s.hash, piv.id);
+            mexec (s, multi);
+         },
+         function (s) {
+            if (! s.last [0] && ! s.last [1]) return s.next ();
+
+            // If there's currently a piv being uploaded right now that is identical to this one in its content but not its metadata, we consider this piv to be repeated.
+            // In the very unlikely case that this piv belongs to a different upload, we would be losing the tags from this piv. More importantly, we could be losing valuable date metadata. A future improvement could leave those dates in Redis temporarily so they could be picked up by the other content-identical piv once its upload is finished.
+            if (! s.last [0] && s.last [1]) return a.seq (s, [
+               ! s.last [2] ? [] : [Redis, 'del', 'raceConditionHash:' + rq.user.username + ':' + s.hash],
+               [H.log, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.last [1], tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true}],
+               [reply, rs, 200, {id: s.last [1], repeated: true}],
+
+            ]);
+
             // If we are here, this user already has a piv that is identical in its content, but not in its metadata.
             // As with identical pivs, the two modifications possible to the original piv are tags and dates.
-            [a.get, Redis, 'hget', 'hash:' + rq.user.username, '@hash'],
-            function (s) {
-               Redis (s, 'hgetall', 'piv:' + s.last);
-            },
-            function (s) {
-               s.piv = s.last;
-               H.addTags (s, tags, rq.user.username, s.piv.id);
-            },
-            function (s) {
-               H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, piv.dates);
-            },
-            function (s) {
-               H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false, dates: piv.dates});
-            },
-            function (s) {
-               reply (rs, 200, {id: s.piv.id, repeated: true});
-            }
-         ]}],
+            a.seq (s, [
+               ! s.last [2] ? [] : [Redis, 'del', 'raceConditionHash:' + rq.user.username + ':' + s.hash],
+               [Redis, 'hgetall', 'piv:' + s.last [0]],
+               function (s) {
+                  s.piv = s.last;
+                  H.addTags (s, tags, rq.user.username, s.piv.id);
+               },
+               function (s) {
+                  H.updateDates (s, 'repeated', s.piv, piv.name, lastModified, piv.dates);
+               },
+               function (s) {
+                  H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false, dates: piv.dates});
+               },
+               function (s) {
+                  reply (rs, 200, {id: s.piv.id, repeated: true});
+               }
+            ]);
+         },
          [perfTrack, 'hash'],
          [H.mkdirif, Path.dirname (newpath)],
          [k, 'cp', path, newpath],
@@ -2392,6 +2426,8 @@ var routes = [
             if (s.t200) multi.set ('thu:' + piv.t200, piv.id);
             if (s.t900) multi.set ('thu:' + piv.t900, piv.id);
 
+            multi.del  ('raceConditionHashorig:' + rq.user.username + ':' + piv.originalHash);
+            multi.del  ('raceConditionHash:'     + rq.user.username + ':' + piv.hash);
             multi.hset ('hash:'     + rq.user.username, piv.hash,         piv.id);
             multi.hset ('hashorig:' + rq.user.username, piv.originalHash, piv.id);
             multi.srem ('hashdel:'     + rq.user.username, piv.hash);
@@ -4386,6 +4422,16 @@ if (cicek.isMaster && ENV) a.stop ([
    notify (s, {priority: 'critical', type: 'Incomplete mp4 conversions check error.', error: error});
 });
 
+// *** CHECK LEFTOVER UPLOAD RACE CONDITION KEYS ON STARTUP ***
+
+if (cicek.isMaster && ENV) a.stop ([
+   [redis.keyscan, 'raceConditionHash*'],
+   function (s) {
+      if (s.last.length > 0) return notify (s, {priority: 'critical', type: 'Leftover upload race conditions found on startup.', keys: s.last});
+   }
+], function (error) {
+   notify (s, {priority: 'critical', type: 'Leftover upload race condition keys check check error.', error: error});
+});
 
 // *** LOAD GEODATA ***
 
