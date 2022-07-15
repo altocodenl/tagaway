@@ -45,7 +45,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Click on chunk to narrow down selection
 
 - Upload/import:
-   - Add race condition check when uploading two identical pivs
    - Increase thumb quality.
    - Fix import client bug: clicking anywhere should not trigger a call to Google
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
