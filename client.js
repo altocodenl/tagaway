@@ -5750,10 +5750,15 @@ views.import = function () {
                                     var providerData = (importData [provider.provider] || []) [0] || {};
 
                                     var attrs = function (ev) {
-                                       return {style: style ({cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: ev ? B.ev (ev) : undefined};
+                                       return {style: style ({position: 'relative', cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: ev ? B.ev (ev) : undefined};
                                     }
                                     // No space left, just show the bare div.
                                     if (noSpace) return ['div', attrs (), provider.svg];
+
+                                    // If there's no implemented OAuth flow yet, put a button to let the user know.
+                                    if (teishi.eq (providerData, {})) return ['div', attrs (['snackbar', 'green', 'Coming soon, hang tight!']), [
+                                       provider.svg
+                                    ]];
 
                                     // If the OAuth flow hasn't been started yet, offer a link to start it.
                                     if (providerData.redirect) return ['div', attrs (), [

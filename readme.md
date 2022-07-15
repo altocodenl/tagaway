@@ -46,7 +46,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upload/import:
    - Increase thumb quality.
-   - Fix import client bug: clicking anywhere should not trigger a call to Google
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
