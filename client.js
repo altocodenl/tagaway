@@ -2533,6 +2533,149 @@ CSS.litc = [
       'padding-left, padding-right': CSS.vars ['padding--s'],
       'padding-top': CSS.vars ['padding--xs'],
    }],
+   // *** AUTH VIEWS ***
+   ['.enter', {
+      display: 'flex',
+      'flex-direction': 'column',
+      'justify-content, align-items': 'center',
+      width: 1,
+      'padding-top': CSS.typography.spaceVer (4),
+      'padding-left, padding-right': CSS.vars ['padding--m'],
+      'padding-bottom': CSS.typography.spaceVer (6),
+   }, [
+      ['input', {'font-size': 24}],
+      // *** enter ***
+      media ('screen and (max-width: 767px)', ['.enter', {'padding-top': CSS.typography.spaceVer (3)}]),
+      ['.enter--signup', {'padding-top': CSS.typography.spaceVer (4)}],
+      ['.enter__header', {'margin-bottom': CSS.typography.spaceVer (2)}],
+      ['.enter__footer', {
+         'margin-top': CSS.typography.spaceVer (1.5),
+         'font-size': CSS.typography.fontSize (1),
+         'line-height': CSS.typography.spaceVer (1),
+         color: CSS.vars ['highlight-60'],
+         'text-align': 'center',
+      }],
+      ['.enter__footer-link', {
+         color: CSS.vars ['highlight-60'],
+         transition: CSS.vars.easeOutQuart,
+         'text-decoration': 'underline',
+      }],
+      media ('screen and (min-width: 1025px)', ['.enter__footer-link:hover', {color: CSS.vars ['color--one']}]),
+      // *** enter-form ***
+      ['.enter-form', {
+         display: 'flex',
+         'flex-direction': 'column',
+         'justify-content': 'center',
+      }],
+      ['.enter-form__input', {
+         'border, background': 'none',
+         'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
+         'font-size': 16,
+         width: 1,
+         'padding-top, padding-bottom': CSS.typography.spaceVer (1),
+         'padding-left, padding-right': 2,
+         color: CSS.vars ['highlight-100'],
+         'margin-bottom': CSS.typography.spaceVer (0.5),
+      }, ['&:focus', {'border-color': CSS.vars ['highlight-60']}]],
+      media ('screen and (max-width: 767px)', ['.enter-form__input', {'min-width': 0}]),
+      ['.enter-form__forgot-password', {
+         color: CSS.vars ['highlight-60'],
+         'font-size': CSS.typography.fontSize (1),
+         'text-decoration': 'underline',
+         transition: CSS.vars.easeOutQuart,
+         'text-align': 'center',
+         'margin-top': CSS.typography.spaceVer (1.5),
+         'margin-bottom': CSS.typography.spaceVer (1),
+      }],
+      media ('screen and (min-width: 1025px)', ['.enter-form__forgot-password:hover', {color: CSS.vars ['color--one']}]),
+      // Login form - Buttons
+      ['.enter-form__button', {
+         display: 'flex',
+         'align-items, justify-content': 'center',
+         height: 48,
+         'font-size': 16,
+         mixin1: CSS.vars.fontPrimaryMedium,
+         border: 'none',
+         outline: '0',
+         'background-color': 'transparent',
+         width: 1,
+         'border-radius': 100,
+         'margin-top': CSS.typography.spaceVer (1),
+         transition: CSS.vars.easeOutQuart,
+         cursor: 'pointer',
+      }],
+      media ('screen and (max-width: 767px)', ['.enter-form__button', {'font-size': CSS.typography.fontSize (2)}]),
+      ['.enter-form__button-icon', {
+         display: 'inline-block',
+         'height, width': 20,
+         'margin-right': CSS.vars ['padding--xs'],
+      }],
+      ['.enter-form__button--submit', {'margin-top': CSS.typography.spaceVer (1.5)}],
+      // Login form - Button 1
+      ['.enter-form__button--1', {
+         'background-color': CSS.vars ['color--one'],
+         color: '#fff'
+      }],
+      media ('screen and (min-width: 1025px)', [
+         ['.enter-form__button--1:hover',  {'background-color': CSS.vars ['color--one']}],
+         ['.enter-form__button--1:active', {'background-color': CSS.vars ['color--one'], opacity: '0.8'}],
+      ]),
+      // Login form - Button 2
+      ['.enter-form__button--2', {
+         border: CSS.vars ['color--one'] + ' 1px solid',
+         color: CSS.vars ['color--one'],
+      }],
+      media ('screen and (min-width: 1025px)', [
+         ['.enter-form__button--2:hover', {
+            'background-color': CSS.vars ['color--one'],
+            color: CSS.vars ['highlight-100'],
+         }],
+         ['.enter-form__button--2:active', {
+            background: CSS.vars ['color--one'],
+            opacity: '0.8',
+         }],
+      ]),
+      // *** auth-card ***
+      ['.auth-card', {
+         width: 1,
+         'max-width': 400,
+      }],
+      ['.auth-card__inner', {
+         display: 'flex',
+         'flex-direction': 'column',
+         'justify-content': 'center',
+         'background-color': CSS.vars ['highlight--selection'],
+         'padding-top': CSS.typography.spaceVer (3),
+         'padding-bottom': CSS.typography.spaceVer (3.5),
+         'padding-left, padding-right': 60,
+         'border-radius': CSS.vars ['border-radius--m'],
+      }],
+      media ('screen and (max-width: 767px)', ['.auth-card__inner', {
+         'padding-top': CSS.typography.spaceVer (2.25),
+         'padding-bottom': CSS.typography.spaceVer (2.5),
+         'padding-left, padding-right': CSS.vars ['padding--xl'],
+      }]),
+      ['.auth-card__header', {
+         width: 1,
+         display: 'flex',
+         'flex-direction': 'column',
+         'justify-content, align-items': 'center',
+         'margin-bottom': CSS.typography.spaceVer (2),
+      }],
+      ['.auth-card__header-logo', {
+         'text-align': 'center',
+         'margin-bottom': CSS.typography.spaceVer (1),
+         width: 200,
+         height: 'auto',
+      }],
+      ['.auth-card__header-text', {
+         'text-align': 'center',
+         'font-size': CSS.typography.fontSize (3),
+         'line-height': CSS.typography.spaceVer (1.5),
+         color: CSS.vars ['highlight-60'],
+         mixin1: CSS.vars.fontPrimaryRegular,
+      }],
+   ]]
 ];
 
 // *** SVG ***
@@ -2920,7 +3063,7 @@ B.mrespond ([
    }],
    [/^(get|post)$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
       var t = Date.now (), path = x.path [0];
-      if (x.verb === 'post' && ! inc (['requestInvite', 'auth/login', 'auth/signup'], path)) {
+      if (x.verb === 'post' && ! inc (['requestInvite', 'auth/login', 'auth/signup', 'auth/recover', 'auth/reset'], path)) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
@@ -2950,6 +3093,11 @@ B.mrespond ([
       if (page === 'signup') {
          if (hash [1]) {
             B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
+         }
+      }
+      if (page === 'reset') {
+         if (hash [1] && hash [2]) {
+            B.call (x, 'set', ['Data', 'reset'], {token: decodeURIComponent (hash [1]), username: decodeURIComponent (hash [2])});
          }
       }
       if (page === 'import') {
@@ -3045,6 +3193,33 @@ B.mrespond ([
          }
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
+      });
+   }],
+   ['recover', [], function (x) {
+      var username = H.trim (c ('#auth-username').value);
+      B.call (x, 'post', 'auth/recover', {}, {
+         username: c ('#auth-username').value
+      }, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error sending you instructions to reset your password.');
+         B.call (x, 'clear', 'authInputs');
+         B.call (x, 'goto', 'page', 'login');
+         B.call (x, 'snackbar', 'green', 'You will receive shortly an email with instructions on how to reset your password.');
+      });
+   }],
+   ['reset', [], function (x) {
+      var password = c ('#auth-password').value;
+      if (password.length < 6)  return B.call (x, 'snackbar', 'yellow', 'Your password must be at least 6 characters long.');
+      if (c ('#auth-password').value !== c ('#auth-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated password does not match.');
+      B.call (x, 'post', 'auth/reset', {}, {
+         username: B.get ('Data', 'reset', 'username'),
+         password: password,
+         token: B.get ('Data', 'reset', 'token'),
+      }, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your password.');
+         B.call (x, 'rem', 'Data', 'reset');
+         B.call (x, 'clear', 'authInputs');
+         B.call (x, 'goto', 'page', 'login');
+         B.call (x, 'snackbar', 'green', 'Your password has been updated successfully! Please log in.');
       });
    }],
    ['clear', 'authInputs', function (x) {
@@ -3966,150 +4141,6 @@ views.snackbar = function () {
 
 views.login = function () {
    return ['div', [
-      ['style', [
-         ['input', {'font-size': 24}],
-         // *** enter ***
-         ['.enter', {
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content, align-items': 'center',
-            width: 1,
-            'padding-top': CSS.typography.spaceVer (4),
-            'padding-left, padding-right': CSS.vars ['padding--m'],
-            'padding-bottom': CSS.typography.spaceVer (6),
-         }],
-         media ('screen and (max-width: 767px)', ['.enter', {'padding-top': CSS.typography.spaceVer (3)}]),
-         ['.enter--signup', {'padding-top': CSS.typography.spaceVer (4)}],
-         ['.enter__header', {'margin-bottom': CSS.typography.spaceVer (2)}],
-         ['.enter__footer', {
-            'margin-top': CSS.typography.spaceVer (1.5),
-            'font-size': CSS.typography.fontSize (1),
-            'line-height': CSS.typography.spaceVer (1),
-            color: CSS.vars ['highlight-60'],
-            'text-align': 'center',
-         }],
-         ['.enter__footer-link', {
-            color: CSS.vars ['highlight-60'],
-            transition: CSS.vars.easeOutQuart,
-            'text-decoration': 'underline',
-         }],
-         media ('screen and (min-width: 1025px)', ['.enter__footer-link:hover', {color: CSS.vars ['color--one']}]),
-         // *** enter-form ***
-         ['.enter-form', {
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content': 'center',
-         }],
-         ['.enter-form__input', {
-            'border, background': 'none',
-            'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
-            'font-size': 16,
-            width: 1,
-            'padding-top, padding-bottom': CSS.typography.spaceVer (1),
-            'padding-left, padding-right': 2,
-            color: CSS.vars ['highlight-100'],
-            'margin-bottom': CSS.typography.spaceVer (0.5),
-         }, ['&:focus', {'border-color': CSS.vars ['highlight-60']}]],
-         media ('screen and (max-width: 767px)', ['.enter-form__input', {'min-width': 0}]),
-         ['.enter-form__forgot-password', {
-            color: CSS.vars ['highlight-60'],
-            'font-size': CSS.typography.fontSize (1),
-            'text-decoration': 'underline',
-            transition: CSS.vars.easeOutQuart,
-            'text-align': 'center',
-            'margin-top': CSS.typography.spaceVer (1.5),
-            'margin-bottom': CSS.typography.spaceVer (1),
-         }],
-         media ('screen and (min-width: 1025px)', ['.enter-form__forgot-password:hover', {color: CSS.vars ['color--one']}]),
-         // Login form - Buttons
-         ['.enter-form__button', {
-            display: 'flex',
-            'align-items, justify-content': 'center',
-            height: 48,
-            'font-size': 16,
-            mixin1: CSS.vars.fontPrimaryMedium,
-            border: 'none',
-            outline: '0',
-            'background-color': 'transparent',
-            width: 1,
-            'border-radius': 100,
-            'margin-top': CSS.typography.spaceVer (1),
-            transition: CSS.vars.easeOutQuart,
-            cursor: 'pointer',
-         }],
-         media ('screen and (max-width: 767px)', ['.enter-form__button', {'font-size': CSS.typography.fontSize (2)}]),
-         ['.enter-form__button-icon', {
-            display: 'inline-block',
-            'height, width': 20,
-            'margin-right': CSS.vars ['padding--xs'],
-         }],
-         ['.enter-form__button--submit', {'margin-top': CSS.typography.spaceVer (1.5)}],
-         // Login form - Button 1
-         ['.enter-form__button--1', {
-            'background-color': CSS.vars ['color--one'],
-            //color: CSS.vars ['highlight-100'],
-            color: '#fff'
-         }],
-         media ('screen and (min-width: 1025px)', [
-            ['.enter-form__button--1:hover',  {'background-color': CSS.vars ['color--one']}],
-            ['.enter-form__button--1:active', {'background-color': CSS.vars ['color--one'], opacity: '0.8'}],
-         ]),
-         // Login form - Button 2
-         ['.enter-form__button--2', {
-            border: CSS.vars ['color--one'] + ' 1px solid',
-            color: CSS.vars ['color--one'],
-         }],
-         media ('screen and (min-width: 1025px)', [
-            ['.enter-form__button--2:hover', {
-               'background-color': CSS.vars ['color--one'],
-               color: CSS.vars ['highlight-100'],
-            }],
-            ['.enter-form__button--2:active', {
-               background: CSS.vars ['color--one'],
-               opacity: '0.8',
-            }],
-         ]),
-         // *** auth-card ***
-         ['.auth-card', {
-            width: 1,
-            'max-width': 400,
-         }],
-         ['.auth-card__inner', {
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content': 'center',
-            'background-color': CSS.vars ['highlight--selection'],
-            'padding-top': CSS.typography.spaceVer (3),
-            'padding-bottom': CSS.typography.spaceVer (3.5),
-            'padding-left, padding-right': 60,
-            'border-radius': CSS.vars ['border-radius--m'],
-         }],
-         media ('screen and (max-width: 767px)', ['.auth-card__inner', {
-            'padding-top': CSS.typography.spaceVer (2.25),
-            'padding-bottom': CSS.typography.spaceVer (2.5),
-            'padding-left, padding-right': CSS.vars ['padding--xl'],
-         }]),
-         ['.auth-card__header', {
-            width: 1,
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content, align-items': 'center',
-            'margin-bottom': CSS.typography.spaceVer (2),
-         }],
-         ['.auth-card__header-logo', {
-            'text-align': 'center',
-            'margin-bottom': CSS.typography.spaceVer (1),
-            width: 200,
-            height: 'auto',
-         }],
-         ['.auth-card__header-text', {
-            'text-align': 'center',
-            'font-size': CSS.typography.fontSize (3),
-            'line-height': CSS.typography.spaceVer (1.5),
-            color: CSS.vars ['highlight-60'],
-            mixin1: CSS.vars.fontPrimaryRegular,
-         }],
-      ]],
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
@@ -4121,8 +4152,7 @@ views.login = function () {
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in', onclick: B.ev ('login', [])}],
-                  //['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
-                  ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('snackbar', 'green', 'Coming soon, hang tight!')}, 'Forgot password?'],
+                  ['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
                   ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('request', 'invite')}, 'Don\'t have an account? Request an invite.'],
                ]]
             ]]
@@ -4135,148 +4165,6 @@ views.login = function () {
 
 views.signup = function () {
    return ['div', [
-      ['style', [
-         ['input', {'font-size': 24}],
-         // *** enter ***
-         ['.enter', {
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content, align-items': 'center',
-            width: 1,
-            'padding-top': CSS.typography.spaceVer (4),
-            'padding-left, padding-right': CSS.vars ['padding--m'],
-            'padding-bottom': CSS.typography.spaceVer (6),
-         }],
-         media ('screen and (max-width: 767px)', ['.enter', {'padding-top': CSS.typography.spaceVer (3)}]),
-         ['.enter--signup', {'padding-top': CSS.typography.spaceVer (4)}],
-         ['.enter__header', {'margin-bottom': CSS.typography.spaceVer (2)}],
-         ['.enter__footer', {
-            'margin-top': CSS.typography.spaceVer (1.5),
-            'font-size': CSS.typography.fontSize (1),
-            'line-height': CSS.typography.spaceVer (1),
-            color: CSS.vars ['highlight-60'],
-            'text-align': 'center',
-         }],
-         ['.enter__footer-link', {
-            color: CSS.vars ['highlight-60'],
-            transition: CSS.vars.easeOutQuart,
-            'text-decoration': 'underline',
-         }],
-         media ('screen and (min-width: 1025px)', ['.enter__footer-link:hover', {color: CSS.vars ['color--one']}]),
-         // *** enter-form ***
-         ['.enter-form', {
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content': 'center',
-         }],
-         ['.enter-form__input', {
-            'border, background': 'none',
-            'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
-            'font-size': 16,
-            width: 1,
-            'padding-top, padding-bottom': CSS.typography.spaceVer (1),
-            'padding-left, padding-right': 2,
-            color: CSS.vars ['highlight-100'],
-            'margin-bottom': CSS.typography.spaceVer (0.5),
-         }, ['&:focus', {'border-color': CSS.vars ['highlight-60']}]],
-         media ('screen and (max-width: 767px)', ['.enter-form__input', {'min-width': 0}]),
-         ['.enter-form__forgot-password', {
-            color: CSS.vars ['highlight-60'],
-            'font-size': CSS.typography.fontSize (1),
-            'text-decoration': 'underline',
-            transition: CSS.vars.easeOutQuart,
-            'text-align': 'center',
-            'margin-top': CSS.typography.spaceVer (1.5),
-            'margin-bottom': CSS.typography.spaceVer (1),
-         }],
-         media ('screen and (min-width: 1025px)', ['.enter-form__forgot-password:hover', {color: CSS.vars ['color--one']}]),
-         // Login form - Buttons
-         ['.enter-form__button', {
-            display: 'flex',
-            'align-items, justify-content': 'center',
-            height: 48,
-            'font-size': 16,
-            mixin1: CSS.vars.fontPrimaryMedium,
-            border: 'none',
-            outline: '0',
-            'background-color': 'transparent',
-            width: 1,
-            'border-radius': 100,
-            'margin-top': CSS.typography.spaceVer (1),
-            transition: CSS.vars.easeOutQuart,
-         }],
-         media ('screen and (max-width: 767px)', ['.enter-form__button', {'font-size': CSS.typography.fontSize (2)}]),
-         ['.enter-form__button-icon', {
-            display: 'inline-block',
-            'height, width': 20,
-            'margin-right': CSS.vars ['padding--xs'],
-         }],
-         ['.enter-form__button--submit', {'margin-top': CSS.typography.spaceVer (1.5)}],
-         // Login form - Button 1
-         ['.enter-form__button--1', {
-            'background-color': CSS.vars ['color--one'],
-            color: CSS.vars ['highlight-100'],
-         }],
-         media ('screen and (min-width: 1025px)', [
-            ['.enter-form__button--1:hover',  {'background-color': CSS.vars ['color--one']}],
-            ['.enter-form__button--1:active', {'background-color': CSS.vars ['color--one'], opacity: '0.8'}],
-         ]),
-         // Login form - Button 2
-         ['.enter-form__button--2', {
-            border: CSS.vars ['color--one'] + ' 1px solid',
-            color: CSS.vars ['color--one'],
-         }],
-         media ('screen and (min-width: 1025px)', [
-            ['.enter-form__button--2:hover', {
-               'background-color': CSS.vars ['color--one'],
-               color: CSS.vars ['highlight-100'],
-            }],
-            ['.enter-form__button--2:active', {
-               background: CSS.vars ['color--one'],
-               opacity: '0.8',
-            }],
-         ]),
-         // *** auth-card ***
-         ['.auth-card', {
-            width: 1,
-            'max-width': 400,
-         }],
-         ['.auth-card__inner', {
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content': 'center',
-            'background-color': CSS.vars ['highlight--selection'],
-            'padding-top': CSS.typography.spaceVer (3),
-            'padding-bottom': CSS.typography.spaceVer (3.5),
-            'padding-left, padding-right': 60,
-            'border-radius': CSS.vars ['border-radius--m'],
-         }],
-         media ('screen and (max-width: 767px)', ['.auth-card__inner', {
-            'padding-top': CSS.typography.spaceVer (2.25),
-            'padding-bottom': CSS.typography.spaceVer (2.5),
-            'padding-left, padding-right': CSS.vars ['padding--xl'],
-         }]),
-         ['.auth-card__header', {
-            width: 1,
-            display: 'flex',
-            'flex-direction': 'column',
-            'justify-content, align-items': 'center',
-            'margin-bottom': CSS.typography.spaceVer (2),
-         }],
-         ['.auth-card__header-logo', {
-            'text-align': 'center',
-            'margin-bottom': CSS.typography.spaceVer (1),
-            width: 200,
-            height: 'auto',
-         }],
-         ['.auth-card__header-text', {
-            'text-align': 'center',
-            'font-size': CSS.typography.fontSize (3),
-            'line-height': CSS.typography.spaceVer (1.5),
-            color: CSS.vars ['highlight-60'],
-            mixin1: CSS.vars.fontPrimaryRegular,
-         }],
-      ]],
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
             ['div', {class: 'auth-card__inner'}, [
@@ -4289,6 +4177,49 @@ views.signup = function () {
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {id: 'auth-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
+               ]]
+            ]]
+         ]],
+      ]],
+   ]];
+}
+
+// *** RECOVER VIEW ***
+
+views.recover = function () {
+   return ['div', [
+      ['div', {class: 'enter'}, [
+         ['div', {class: 'auth-card'}, [
+            ['div', {class: 'auth-card__inner'}, [
+               ['div', {class: 'auth-card__header'}, [
+                  ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
+                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+               ]],
+               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
+                  ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
+                  ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Request password reset', onclick: B.ev ('recover', [])}],
+               ]]
+            ]]
+         ]],
+      ]],
+   ]];
+};
+
+// *** RESET VIEW ***
+
+views.reset = function () {
+   return ['div', [
+      ['div', {class: 'enter'}, [
+         ['div', {class: 'auth-card'}, [
+            ['div', {class: 'auth-card__inner'}, [
+               ['div', {class: 'auth-card__header'}, [
+                  ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
+                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+               ]],
+               ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
+                  ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
+                  ['input', {id: 'auth-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
+                  ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Reset password', onclick: B.ev ('reset', [])}],
                ]]
             ]]
          ]],

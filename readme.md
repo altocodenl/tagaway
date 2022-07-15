@@ -51,7 +51,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Accounts
-   - Recover/reset password.
    - Delete my account with confirmation.
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
@@ -158,6 +157,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Store auth log.
    - Enable/disable geotagging.
    - Change password.
+   - Recover/reset password.
 
 - Import
    - List
@@ -849,10 +849,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7.1 `views.login`
       - Events: `click -> login`
    7.2 `views.signup`
-      - Depends on: `Data.signup.username`.
       - Events: `click -> signup`
    7.3 `views.recover`
+      - Events: `click -> recover`
    7.4 `views.reset`
+      - Events: `click -> reset`
 
 **Other views**:
 
@@ -953,9 +954,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not.
    3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf` and invokes `goto page State.redirect`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument) and invokes `goto page login`.
-   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs` and, updates `Data.csrf` and invokes `goto page State.redirect`.
-   6. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`) to an empty string.
-   6. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs` and updates `Data.csrf` and invokes `goto page State.redirect`.
+   6. `recover`: calls `post /auth/recover`. In case of error, only calls `snackbar`; otherwise, it calls `clear authInputs`, invokes `goto page login` and invokes `snackbar`.
+   7. `reset`: calls `post /auth/reset`. In case of error, only calls `snackbar`; otherwise it calls `rem Data.tokens`, `clear authInputs`, `goto page login` and `snackbar`.
+   8. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`) to an empty string.
+   9. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pics
    1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
@@ -1124,6 +1127,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `pivs`: `[...]`; comes from `body.pivs` from `query pivs`. A `start` parameter is added to each piv to compute its Y-coordinate.
    - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
    - `queryTags`: `{'a::': INTEGER, 'u::': INTEGER, tag1: ..., ...}`; comes from `body.tags` from `query pivs`.
+   - `reset`: if present, has the form `{token: STRING, username: STRING}`. Used to reset password.
    - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `[TAG1, TAG2, ...]`. Only includes tags created by the user.
    - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.

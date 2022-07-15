@@ -123,7 +123,7 @@ module.exports = {
             return TEMPLATE (['p', [
                GREETING (username),
                ['br'],
-               'Did you forget your password? If you did, all is well: please ', ['a', {href: DOMAIN + '#/auth/reset/' + encodeURIComponent (token) + '/' + encodeURIComponent (username)}, 'click on this link to set a new password.'],
+               'Did you forget your password? If you did, all is well: please ', ['a', {href: DOMAIN + '#/reset/' + encodeURIComponent (token) + '/' + encodeURIComponent (username)}, 'click on this link to set a new password.'],
                ['br'],
                'If you did not request a password reset, please do NOT click the link above. Instead reply immediately to this email and let us know.',
                ['br'], ['br'],
