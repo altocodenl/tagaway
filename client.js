@@ -4894,7 +4894,7 @@ views.grid = function () {
                                  'border-radius': 'inherit',
                                  width:  piv.frame.askance ? piv.frame.height : piv.frame.width,
                                  height: piv.frame.askance ? piv.frame.width  : piv.frame.height,
-                                 'background-image': 'url(thumb/200/' + piv.id + ')',
+                                 'background-image': 'url(thumb/S/' + piv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',
@@ -4950,10 +4950,10 @@ views.open = function () {
             ['.fullscreen__image-container', {padding: 0}],
          ])],
          ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
-            if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/900/' + piv.id, alt: 'picture'}];
+            if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/M/' + piv.id, alt: 'picture'}];
             if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
             if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
-            return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/900/' + piv.id, loop: true}];
+            return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true}];
          }) ()],
          ['div', {class: 'fullscreen__actions'}, [
                ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
@@ -4975,7 +4975,7 @@ views.open = function () {
             '/',
             ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pivTotal')],
          ]],
-         next ? ['img', {src: 'thumb/900/' + next.id, style: style ({display: 'none'})}] : [],
+         next ? ['img', {src: 'thumb/M/' + next.id, style: style ({display: 'none'})}] : [],
       ]];
    });
 }
@@ -5392,7 +5392,7 @@ views.upload = function () {
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                               ! upload.lastPiv ? ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
-                                 'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
+                                 'background-image': 'url(thumb/S/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',
@@ -5454,7 +5454,7 @@ views.upload = function () {
                            // UPLOAD BOX
                            ['div', {class: 'upload-box upload-box--recent-uploads'}, [
                               ! upload.lastPiv ? ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')] : ['div', {class: 'upload-box__image upload-box__image-pic', style: style ({
-                                 'background-image': 'url(thumb/200/' + upload.lastPiv.id + ')',
+                                 'background-image': 'url(thumb/S/' + upload.lastPiv.id + ')',
                                  'background-position': 'center',
                                  'background-repeat': 'no-repeat',
                                  'background-size': 'cover',

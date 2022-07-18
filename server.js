@@ -303,33 +303,33 @@ H.unlink = function (s, path, checkExistence) {
 H.thumbPic = function (s, invalidHandler, piv, path, heic_path) {
    var max = Math.max (piv.dimw, piv.dimh);
    // If we have a gif, we only make a small thumbnail, since we'll show the full gif when opening the piv.
-   if (piv.format === 'gif') s.t200 = uuid ();
+   if (piv.format === 'gif') s.thumbS = uuid ();
    else if (piv.format !== 'jpeg' || piv.deg) {
       // If piv is not a jpeg, we need to create a jpeg thumbnail to show in the browser.
       // Also, if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
-      s.t200 = uuid ();
-      // If piv has a dimension larger than 200, we'll also need a 900 thumbnail.
-      if (max > 200) s.t900 = uuid ();
+      s.thumbS = uuid ();
+      // If piv has a dimension larger than CONFIG.thumbSizes.S, we'll also need a config.thumbSizes.M thumbnail.
+      if (max > CONFIG.thumbSizes.S) s.thumbM = uuid ();
    }
    else {
-      if (max > 200) s.t200 = uuid ();
-      if (max > 900) s.t900 = uuid ();
+      if (max > CONFIG.thumbSizes.S) s.thumbS = uuid ();
+      if (max > CONFIG.thumbSizes.M) s.thumbM = uuid ();
    }
    var multiframeFormat = inc (['gif', 'tiff'], piv.format);
-   a.seq (s, dale.go ([200, 900], function (size) {
-      if (! s ['t' + size]) return [];
+   a.seq (s, dale.go (['S', 'M'], function (size) {
+      if (! s ['thumb' + size]) return [];
       // In the case of thumbnails done for stripping rotation metadata or non jpeg/png formats, we don't go over 100% if the piv is smaller than the desired thumbnail size.
-      var percentage = Math.min (Math.round (size / max * 100), 100);
+      var percentage = Math.min (Math.round (CONFIG.thumbSizes [size] / max * 100), 100);
 
       var targetFormat = 'jpeg';
-      if (piv.format === 'gif' && size === 900) targetFormat = 'gif';
+      if (piv.format === 'gif' && size === 'M') targetFormat = 'gif';
 
       return [
-         [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', percentage + '%', Path.join (Path.dirname (path), s ['t' + size] + '.' + targetFormat)]],
-         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.' + targetFormat), Path.join (Path.dirname (path), s ['t' + size])],
-         [a.make (fs.stat), Path.join (Path.dirname (path), s ['t' + size])],
+         [invalidHandler, [k, 'convert', (heic_path || path) + (multiframeFormat ? '[0]' : ''), '-quality', 90, '-thumbnail', percentage + '%', Path.join (Path.dirname (path), s ['thumb' + size] + '.' + targetFormat)]],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s ['thumb' + size] + '.' + targetFormat), Path.join (Path.dirname (path), s ['thumb' + size])],
+         [a.make (fs.stat), Path.join (Path.dirname (path), s ['thumb' + size])],
          function (s) {
-            s ['t' + size + 'size'] = s.last.size;
+            s ['bythumb' + size] = s.last.size;
             s.next ();
          }
       ];
@@ -339,22 +339,22 @@ H.thumbPic = function (s, invalidHandler, piv, path, heic_path) {
 H.thumbVid = function (s, invalidHandler, piv, path) {
    var askance = piv.deg === 90 || piv.deg === -90;
    var max = Math.max (piv.dimw, piv.dimh);
-   s.t200 = uuid ();
-   // If video has a dimension larger than 200, we'll also need a 900 thumbnail.
-   if (max > 200) s.t900 = uuid ();
-   a.seq (s, dale.go ([200, 900], function (size) {
-      if (! s ['t' + size]) return [];
+   s.thumbS = uuid ();
+   // If video has a dimension larger than CONFIG.thumbSizes.S, we'll also need a CONFIG.thumbSizes.M thumbnail.
+   if (max > CONFIG.thumbSizes.S) s.thumbM = uuid ();
+   a.seq (s, dale.go (['S', 'M'], function (size) {
+      if (! s ['thumb' + size]) return [];
       // In the case of thumbnails done for very small videos, do not go over 100%.
-      var percentage = Math.min (Math.round (size / max * 100), 100);
+      var percentage = Math.min (Math.round (CONFIG.thumbSizes [size] / max * 100), 100);
       var width  = Math.round (piv.dimw * percentage / 100);
       var height = Math.round (piv.dimh * percentage / 100);
       return [
          // If picture is askance, switch width and height, otherwise the thumbnail will be deformed.
-         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', (askance ? height : width) + 'x' + (askance ? width : height), Path.join (Path.dirname (path), s ['t' + size] + '.jpg')]],
-         [a.make (fs.rename), Path.join (Path.dirname (path), s ['t' + size] + '.jpg'), Path.join (Path.dirname (path), s ['t' + size])],
-         [a.make (fs.stat), Path.join (Path.dirname (path), s ['t' + size])],
+         [invalidHandler, [k, 'ffmpeg', '-i', path, '-vframes', '1', '-an', '-s', (askance ? height : width) + 'x' + (askance ? width : height), Path.join (Path.dirname (path), s ['thumb' + size] + '.jpg')]],
+         [a.make (fs.rename), Path.join (Path.dirname (path), s ['thumb' + size] + '.jpg'), Path.join (Path.dirname (path), s ['thumb' + size])],
+         [a.make (fs.stat), Path.join (Path.dirname (path), s ['thumb' + size])],
          function (s) {
-            s ['t' + size + 'size'] = s.last.size;
+            s ['bythumb' + size] = s.last.size;
             s.next ();
          }
       ];
@@ -542,8 +542,8 @@ H.deletePiv = function (s, id, username) {
       },
       function (s) {
          var thumbs = [];
-         if (s.piv.t200) thumbs.push (s.piv.t200);
-         if (s.piv.t900) thumbs.push (s.piv.t900);
+         if (s.piv.thumbS) thumbs.push (s.piv.thumbS);
+         if (s.piv.thumbM) thumbs.push (s.piv.thumbM);
          a.fork (s, thumbs, function (v) {
             return [H.unlink, Path.join (CONFIG.basepath, H.hash (username), v)];
          });
@@ -559,8 +559,8 @@ H.deletePiv = function (s, id, username) {
 
          multi.del  ('piv:'  + s.piv.id);
          multi.del  ('pivt:' + s.piv.id);
-         if (s.piv.t200) multi.del ('thu:' + s.piv.t200);
-         if (s.piv.t900) multi.del ('thu:' + s.piv.t900);
+         if (s.piv.thumbS) multi.del ('thu:' + s.piv.thumbS);
+         if (s.piv.thumbM) multi.del ('thu:' + s.piv.thumbM);
          multi.hdel ('hash:'        + s.piv.owner, s.piv.hash);
          multi.hdel ('hashorig:'    + s.piv.owner, s.piv.originalHash);
          multi.sadd ('hashdel:'     + s.piv.owner, s.piv.hash);
@@ -581,12 +581,12 @@ H.deletePiv = function (s, id, username) {
       function (s) {
          H.stat.w (s, [
             // The minus sign coerces the strings into numbers.
-            ['stock', 'byfs',             - s.piv.byfs - (s.piv.by200 || 0) - (s.piv.by900 || 0) - (s.piv.bymp4 || 0)],
-            ['stock', 'byfs-' + username, - s.piv.byfs - (s.piv.by200 || 0) - (s.piv.by900 || 0) - (s.piv.bymp4 || 0)],
+            ['stock', 'byfs',             - s.piv.byfs - (s.piv.bythumbS || 0) - (s.piv.bythumbM || 0) - (s.piv.bymp4 || 0)],
+            ['stock', 'byfs-' + username, - s.piv.byfs - (s.piv.bythumbS || 0) - (s.piv.bythumbM || 0) - (s.piv.bymp4 || 0)],
             ['stock', s.piv.vid ? 'vids' : 'pics', -1],
             ['stock', 'format-' + s.piv.format, -1],
-            s.piv.by200 ? ['stock', 't200', -1] : [],
-            s.piv.by900 ? ['stock', 't900', -1] : [],
+            s.piv.bythumbS ? ['stock', 'thumbS', -1] : [],
+            s.piv.bythumbM ? ['stock', 'thumbM', -1] : [],
          ]);
       }
    ]);
@@ -1328,7 +1328,7 @@ var routes = [
    ['get', 'stats', function (rq, rs) {
       // TODO: replace with H.stat.r
       var multi = redis.multi ();
-      var keys = ['byfs', 'bys3', 'pics', 'vids', 't200', 't900', 'users'];
+      var keys = ['byfs', 'bys3', 'pics', 'vids', 'thumbS', 'thumbM', 'users'];
       dale.go (keys, function (key) {
          multi.get ('stat:s:' + key);
       });
@@ -1910,22 +1910,22 @@ var routes = [
    }],
 
    ['get', 'thumb/:size/:id', function (rq, rs) {
-      if (! inc (['200', '900'], rq.data.params.size)) return reply (rs, 400);
+      if (! inc (['S', 'M'], rq.data.params.size)) return reply (rs, 400);
       astop (rs, [
          [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
-         [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === '200' ? 'xt2' : 'xt9', 1],
+         [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === 'S' ? 'xthumbS' : 'xthumbM', 1],
          function (s) {
             // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
             var id;
             // If the piv is a jpeg, serve the requested thumbnail; if it's not present, serve the original file.
-            if (s.piv.format === 'jpeg') id = s.piv ['t' + rq.data.params.size] || s.piv.id;
-            // If the piv is a gif and we request the large one (900), serve the original file.
-            else if (s.piv.format === 'gif' && rq.data.params.size === '900') id = s.piv.id;
+            if (s.piv.format === 'jpeg') id = s.piv ['thumb' + rq.data.params.size] || s.piv.id;
+            // If the piv is a gif and we request the medium one (M), serve the original file.
+            else if (s.piv.format === 'gif' && rq.data.params.size === 'M') id = s.piv.id;
             // Else, serve the requested thumbnail, and if there's none, the small thumbnail.
-            else id = s.piv ['t' + rq.data.params.size] || s.piv.t200;
+            else id = s.piv ['thumb' + rq.data.params.size] || s.piv.thumbS;
 
             var format = 'jpeg';
-            if (rq.data.params.size === '900' && s.piv.format === 'gif') format = 'gif';
+            if (rq.data.params.size === 'M' && s.piv.format === 'gif') format = 'gif';
 
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
             var etag = cicek.etag (id, true), headers = {etag: etag, 'content-type': mime.getType (format)};
@@ -2120,8 +2120,8 @@ var routes = [
          var cbError = function (error) {
             astop (rs, [
                [H.unlink, newpath, true],
-               ! s.t200 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t200), true],
-               ! s.t900 ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.t900), true],
+               ! s.thumbS ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.thumbS), true],
+               ! s.thumbM ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.thumbM), true],
                [H.log, rq.user.username, {ev: 'upload', type: 'invalid', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error}],
                [reply, rs, 400, {error: 'Invalid piv', data: error, name: piv.name}],
             ]);
@@ -2419,12 +2419,12 @@ var routes = [
             piv.originalHash = s.hashorig;
             piv.dates        = JSON.stringify (piv.dates);
 
-            if (s.t200) piv.t200  = s.t200;
-            if (s.t900) piv.t900  = s.t900;
-            if (s.t200) piv.by200 = s.t200size;
-            if (s.t900) piv.by900 = s.t900size;
-            if (s.t200) multi.set ('thu:' + piv.t200, piv.id);
-            if (s.t900) multi.set ('thu:' + piv.t900, piv.id);
+            if (s.thumbS) piv.thumbS  = s.thumbS;
+            if (s.thumbM) piv.thumbM  = s.thumbM;
+            if (s.thumbS) piv.bythumbS = s.bythumbS;
+            if (s.thumbM) piv.bythumbM = s.bythumbM;
+            if (s.thumbS) multi.set ('thu:' + piv.thumbS, piv.id);
+            if (s.thumbM) multi.set ('thu:' + piv.thumbM, piv.id);
 
             multi.del  ('raceConditionHashorig:' + rq.user.username + ':' + piv.originalHash);
             multi.del  ('raceConditionHash:'     + rq.user.username + ':' + piv.hash);
@@ -2458,12 +2458,12 @@ var routes = [
          [perfTrack, 'db'],
          function (s) {
             H.stat.w (s, [
-               ['stock', 'byfs',                     piv.byfs + (piv.by200 || 0) + (piv.by900 || 0)],
-               ['stock', 'byfs-' + rq.user.username, piv.byfs + (piv.by200 || 0) + (piv.by900 || 0)],
+               ['stock', 'byfs',                     piv.byfs + (piv.bythumbS || 0) + (piv.bythumbM || 0)],
+               ['stock', 'byfs-' + rq.user.username, piv.byfs + (piv.bythumbS || 0) + (piv.bythumbM || 0)],
                ['stock', piv.vid ? 'vids' : 'pics', 1],
                ['stock', 'format-' + piv.format.split (':') [0], 1],
-               piv.by200 ? ['stock', 't200', 1] : [],
-               piv.by900 ? ['stock', 't900', 1] : [],
+               piv.bythumbS ? ['stock', 'thumbS', 1] : [],
+               piv.bythumbM ? ['stock', 'thumbM', 1] : [],
             ].concat (dale.fil (perf, undefined, function (item, k) {
                if (k > 0) return ['flow', 'ms-upload-' + item [0], item [1] - perf [k - 1] [1]];
             })));
@@ -2853,8 +2853,8 @@ var routes = [
                   deg:     vid ? undefined : (parseInt (piv.deg) || undefined),
                   loc:     piv.loc ? teishi.parse (piv.loc) : undefined,
                   // Fields returned only during tests
-                  t200:       ! ENV ? piv.t200               : undefined,
-                  t900:       ! ENV ? piv.t900               : undefined,
+                  thumbS:     ! ENV ? piv.thumbS             : undefined,
+                  thumbM:     ! ENV ? piv.thumbM             : undefined,
                   dates:      ! ENV ? JSON.parse (piv.dates) : undefined,
                   dateSource: ! ENV ? piv.dateSource         : undefined,
                   format:     ! ENV ? piv.format             : undefined
@@ -3110,6 +3110,7 @@ var routes = [
                var pivs = s.last;
                // TODO: replace by a.fork when bug is fixed: f7cdb4f4381c85dae1e6282d39348e260c3cafce
                var asyncFork = function (data, simult, fun, cb) {
+                  if (data.length === 0) return cb (null, []);
                   var counter = 0, done = 0, results = [], fire = function () {
                      if (counter === false) return;
                      if (counter === data.length) return;
@@ -4229,8 +4230,8 @@ if (cicek.isMaster && ENV) a.stop ([
       dale.go (s.last, function (piv) {
          var prefix = H.hash (piv.owner) + '/';
          s.dbfiles [prefix + piv.id] = 'piv';
-         if (piv.t200) s.dbfiles [prefix + piv.t200] = 'thumb';
-         if (piv.t900) s.dbfiles [prefix + piv.t900] = 'thumb';
+         if (piv.thumbS) s.dbfiles [prefix + piv.thumbS] = 'thumb';
+         if (piv.thumbM) s.dbfiles [prefix + piv.thumbM] = 'thumb';
          if (piv.vid && piv.vid !== '1') s.dbfiles [prefix + piv.vid] = 'thumb';
       });
       s.next ();
@@ -4335,8 +4336,8 @@ if (cicek.isMaster && ENV) a.stop ([
       var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {};
       dale.go (s.last, function (piv) {
          if (! actual [piv.owner]) actual [piv.owner] = {s3: 0, fs: 0};
-         actual [piv.owner].fs += parseInt (piv.byfs) + parseInt (piv.by200 || 0) + parseInt (piv.by900 || 0) + parseInt (piv.bymp4 || 0);
-         actual.TOTAL.fs       += parseInt (piv.byfs) + parseInt (piv.by200 || 0) + parseInt (piv.by900 || 0) + parseInt (piv.bymp4 || 0);
+         actual [piv.owner].fs += parseInt (piv.byfs) + parseInt (piv.bythumbS || 0) + parseInt (piv.bythumbM || 0) + parseInt (piv.bymp4 || 0);
+         actual.TOTAL.fs       += parseInt (piv.byfs) + parseInt (piv.bythumbS || 0) + parseInt (piv.bythumbM || 0) + parseInt (piv.bymp4 || 0);
          var key = H.hash (piv.owner) + '/' + piv.id;
          var s3entry = s ['s3:files'] [key];
          delete extraneousS3 [key];

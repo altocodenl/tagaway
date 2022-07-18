@@ -45,13 +45,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Click on chunk to narrow down selection
 
 - Upload/import:
-   - Increase thumb quality.
    - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Accounts
    - Delete my account with confirmation.
+   - Change emailtoken from hash to string, same with emails and invites
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
@@ -538,7 +538,7 @@ All the routes below require an admin user to be logged in.
 
 `GET /stats`
    - Publicly accessible.
-   - Returns all public stats information, with the shape `{byfs: INT, bys3: INT, pivs: INT, t200: INT, t900: INT, users: INT}`.
+   - Returns all public stats information, with the shape `{byfs: INT, bys3: INT, pivs: INT, thumbS: INT, thumbM: INT, users: INT}`.
 
 #### Admin routes
 
@@ -579,8 +579,8 @@ All the routes below require an admin user to be logged in.
    - pics:          total pics
    - vids:          total vids
    - format-FORMAT: total pivs with the specified format
-   - t200:          total thumbnails of size 200
-   - t900:          total thumbnails of size 900
+   - thumbS:        total thumbnails of small size
+   - thumbM:        total thumbnails of medium size
    - users:         total users
 
 3. maximum:
@@ -692,14 +692,14 @@ All the routes below require an admin user to be logged in.
    date: INT (latest date within dates)
    dateSource: STRING (metadata field used to get date)
    format: STRING
-   t200: STRING or absent
-   by200: INT or absent (size of 200 thumbnail in FS)
-   t900: STRING or absent
-   by900: INT or absent (size of 900 thumbnail in FS)
+   thumbS: STRING or absent
+   bythumbS: INT or absent (size of small thumbnail in FS)
+   thumbM: STRING or absent
+   bythumbM: INT or absent (size of medium thumbnail in FS)
    vid: `1` if a mp4 video, absent if a piv, ID for a non-mp4 video (ID points to the mp4 version of the video), `pending:ID` for a pending mp4 conversion, `error:ID` for an errored conversion.
    bymp4: if a non-mp4 video, size of mp4 version of the video.
-   xt2: INT or absent, number of thumb200 downloaded (also includes cached hits)
-   xt9: INT or absent, number of thumb900 downloaded (also includes cached hits)
+   xthumbS: INT or absent, number of thumb200 downloaded (also includes cached hits)
+   xthumbM: INT or absent, number of thumb900 downloaded (also includes cached hits)
    xp:  INT or absent, number of pivs downloaded (also includes cached hits)
    loc: [INT, INT] or absent - latitude and longitude of piv taken from metadata, only if geotagging is enabled for the piv's owner and the piv has valid geodata.
 

@@ -767,7 +767,7 @@ suites.public = function () {
       suites.auth.in (tk.users.user1),
       ['submit error as logged in user', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'user1', error: {sin: 'sobresaltos'}})],
       suites.auth.out (tk.users.user1),
-      ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: 0, bys3: 0, pics: 0, vids: 0, t200: 0, t900: 0, users: 0})],
+      ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: 0, bys3: 0, pics: 0, vids: 0, thumbS: 0, thumbM: 0, users: 0})],
       ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ];
 }
@@ -1403,19 +1403,19 @@ suites.upload.piv = function () {
             {type: 'field', name: 'lastModified', value: piv.mtime}
          ]}}, 400, H.cBody ({error: 'format'})];
 
-         // Figure out which thumbnails (t200 & t900) are needed for the piv, if any
-         var t200, t900, max = Math.max (piv.dimw, piv.dimh);
-         if (piv.format === 'gif') t200 = true;
+         // Figure out which thumbnails (thumbS & thumbM) are needed for the piv, if any
+         var thumbS, thumbM, max = Math.max (piv.dimw, piv.dimh);
+         if (piv.format === 'gif') thumbS = true;
          else if (piv.format !== 'jpeg' || piv.deg) {
             // If piv is not a jpeg, we need to create a jpeg thumbnail to show in the browser.
             // Also, if piv has rotation metadata, we need to create a thumbnail with no rotation metadata, to have a thumbnail with no metadata and thus avoid some browsers doing double rotation (one done by the metadata, another one by our interpretation of it).
-            t200 = true;
-            // If piv has a dimension larger than 200, we'll also need a 900 thumbnail.
-            if (max > 200) t900 = true;
+            thumbS = true;
+            // If piv has a dimension larger than CONFIG.thumbSizes.S, we'll also need a CONFIG.thumbSizes.M thumbnail.
+            if (max > CONFIG.thumbSizes.S) thumbM = true;
          }
          else {
-            t200 = max > 200;
-            t900 = max > 900;
+            thumbS = max > CONFIG.thumbSizes.S;
+            thumbM = max > CONFIG.thumbSizes.M;
          }
 
          // We add two arbitrary tags.
@@ -1461,10 +1461,10 @@ suites.upload.piv = function () {
                   if (H.stop (name + ' - field ' + k, upiv [k], v)) return false;
                }) === false) return false;
 
-               if (  t200 &&  ! upiv.t200) return clog (name + ' - missing t200');
-               if (! t200   &&  upiv.t200) return clog (name + ' - unnecessary t200');
-               if (  t900 &&  ! upiv.t900) return clog (name + ' - missing t900');
-               if (! t900 &&    upiv.t900) return clog (name + ' - unnecessary t900');
+               if (  thumbS &&  ! upiv.thumbS) return clog (name + ' - missing thumbS');
+               if (! thumbS   &&  upiv.thumbS) return clog (name + ' - unnecessary thumbS');
+               if (  thumbM &&  ! upiv.thumbM) return clog (name + ' - missing thumbM');
+               if (! thumbM &&    upiv.thumbM) return clog (name + ' - unnecessary thumbM');
 
                if (piv.invalid || piv.unsupported || ! piv.mimetype.match ('video')) return true;
                if (piv.format.match (/^mp4:/)) {
@@ -1484,21 +1484,21 @@ suites.upload.piv = function () {
                   }, next);
                }});
             }],
-            dale.go ([200, 900], function (size, k) {
-               return {tag: 'get t' + size + ' for ' + name, method: 'get', path: function (s) {return 'thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
-                  if (size === 200 && t200 || size === 900 && t900) piv ['t' + size + 'size'] = Buffer.from (rs.body, 'binary').length;
+            dale.go (['S', 'M'], function (size, k) {
+               return {tag: 'get thumb' + size + ' for ' + name, method: 'get', path: function (s) {return 'thumb/' + size + '/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
+                  if (size === 'S' && thumbS || size === 'M' && thumbM) piv ['bythumb' + size] = Buffer.from (rs.body, 'binary').length;
                   a.stop ([
                      [a.make (fs.writeFile), name + '-t' + size, Buffer.from (rs.body, 'binary'), {encoding: 'binary'}],
                      [H.getMetadata, name + '-t' + size, false, piv.mtime, piv.name],
                      function (s) {
-                        var percentage = Math.min (Math.round (size / max * 100), 100);
+                        var percentage = Math.min (Math.round (CONFIG.thumbSizes [size] / max * 100), 100);
                         var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
-                        if (H.stop ('t' + size + ' width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
-                        if (H.stop ('t' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
+                        if (H.stop ('thumb' + size + ' width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
+                        if (H.stop ('thumb' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
                         var targetFormat = 'jpeg';
-                        if (piv.format === 'gif' && size === 900) targetFormat = 'gif';
+                        if (piv.format === 'gif' && size === 'M') targetFormat = 'gif';
 
-                        if (H.stop ('t' + size + ' format', s.last.format, targetFormat)) return next (true);
+                        if (H.stop ('thumb' + size + ' format', s.last.format, targetFormat)) return next (true);
 
                         s.next ();
                      },
@@ -1512,18 +1512,18 @@ suites.upload.piv = function () {
                }};
             }),
             ['determine size of stored pivs & check byfs for ' + name, 'get', 'account', {}, '', 200, function (s, rq, rs) {
-               dale.go (['byfs', 'bys3', 'pics', 'vids', 't200', 't900'], function (v) {
+               dale.go (['byfs', 'bys3', 'pics', 'vids', 'thumbS', 'thumbM'], function (v) {
                   if (! s [v]) s [v] = 0;
                });
 
-               s.byfs += piv.size + (piv.mp4size || 0) + (piv.t200size || 0) + (piv.t900size || 0);
+               s.byfs += piv.size + (piv.mp4size || 0) + (piv.bythumbS || 0) + (piv.bythumbM || 0);
                // In S3, for some reason, files are 32 bytes bigger.
                s.bys3 += piv.size + 32;
                if (H.stop ('byfs', rs.body.usage.byfs, s.byfs)) return false;
 
                piv.isVid ? s.vids++ : s.pics++;
-               if (piv.t200size) s.t200++;
-               if (piv.t900size) s.t900++;
+               if (piv.bythumbS) s.thumbS++;
+               if (piv.bythumbM) s.thumbM++;
                return true;
             }],
             H.testTimeout (10, 1000, {tag: 'determine of stored pivs & check bys3 for ' + name, method: 'get', path: 'account', code: 200, apres: function (s, rq, rs) {
@@ -1532,7 +1532,7 @@ suites.upload.piv = function () {
                return true;
             }}),
             ['get public stats after uploading ' + name, 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, t200: s.t200, t900: s.t900, users: 1})) return false;
+               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, thumbS: s.thumbS, thumbM: s.thumbM, users: 1})) return false;
                return true;
             }],
             piv.nonmp4 ? [] : {tag: 'download piv ' + piv.name, method: 'get', path: function (s) {return '/piv/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
@@ -1544,13 +1544,13 @@ suites.upload.piv = function () {
                return true;
             }},
             ['delete piv ' + name, 'post', 'delete', {}, function (s) {return {ids: [piv.id]}}, 200, function (s, rq, rs) {
-               s.byfs -= piv.size + (piv.mp4size || 0) + (piv.t200size || 0) + (piv.t900size || 0);
+               s.byfs -= piv.size + (piv.mp4size || 0) + (piv.bythumbS || 0) + (piv.bythumbM || 0);
                // In S3, for some reason, files are 32 bytes bigger.
                s.bys3 -= piv.size + 32;
 
                piv.isVid ? s.vids-- : s.pics--;
-               if (piv.t200size) s.t200--;
-               if (piv.t900size) s.t900--;
+               if (piv.bythumbS) s.thumbS--;
+               if (piv.bythumbM) s.thumbM--;
                return true;
             }],
             H.testTimeout (10, 1000, {tag: 'determine of stored pivs & check bys3 after deleting ' + name, method: 'get', path: 'account', code: 200, apres: function (s, rq, rs) {
@@ -1560,7 +1560,7 @@ suites.upload.piv = function () {
                return true;
             }}),
             ['get public stats after deleting ' + name, 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, t200: s.t200, t900: s.t900, users: 1})) return false;
+               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, thumbS: s.thumbS, thumbM: s.thumbM, users: 1})) return false;
                return true;
             }],
          ];
@@ -1878,8 +1878,8 @@ suites.delete = function () {
          if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {'a::': 0, 'u::': 0}, refreshQuery: true})) return false;
          return true;
       }],
-      ['get t200 after deletion', 'get', function (s) {return 'thumb/200/' + s.largePiv.id}, {}, '', 404],
-      ['get t900 after deletion', 'get', function (s) {return 'thumb/900/' + s.largePiv.id}, {}, '', 404],
+      ['get thumbS after deletion', 'get', function (s) {return 'thumb/S/' + s.largePiv.id}, {}, '', 404],
+      ['get thumbM after deletion', 'get', function (s) {return 'thumb/M/' + s.largePiv.id}, {}, '', 404],
       ['get original piv after deletion', 'get', function (s) {return '/piv/' + s.largePiv.id}, {}, '', 404],
       ['get logs after deletion', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          var log = teishi.last (rs.body.logs);
@@ -2489,12 +2489,12 @@ suites.share = function () {
             ['try deleting ' + sharedStatus + ' piv: ' + v, 'post', 'delete', {}, function (s) {return {ids: [s [id]]}}, 404],
             ['try tagging  ' + sharedStatus + ' piv: ' + v, 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s [id]]}}, 404],
             sharedStatus === 'shared' ? [
-               ['get small thumb of shared piv: ' + v, 'get', function (s) {return 'thumb/200/' + s [id]}, {}, '', 200],
-               ['get large thumb of shared piv: ' + v, 'get', function (s) {return 'thumb/900/' + s [id]}, {}, '', 200],
+               ['get small thumb of shared piv: ' + v, 'get', function (s) {return 'thumb/S/' + s [id]}, {}, '', 200],
+               ['get large thumb of shared piv: ' + v, 'get', function (s) {return 'thumb/M/' + s [id]}, {}, '', 200],
                ['get shared piv: ' + v, 'get', function (s) {return 'piv/' + s [id]}, {}, '', 200],
             ] : [
-               ['try getting small thumb of unshared piv: ' + v, 'get', function (s) {return 'thumb/200/' + s [id]}, {}, '', 404],
-               ['try getting large thumb of unshared piv: ' + v, 'get', function (s) {return 'thumb/900/' + s [id]}, {}, '', 404],
+               ['try getting small thumb of unshared piv: ' + v, 'get', function (s) {return 'thumb/S/' + s [id]}, {}, '', 404],
+               ['try getting large thumb of unshared piv: ' + v, 'get', function (s) {return 'thumb/M/' + s [id]}, {}, '', 404],
                ['try getting unshared piv: ' + v, 'get', function (s) {return 'piv/' + s [id]}, {}, '', 404],
             ]
          ];
@@ -2902,7 +2902,9 @@ suites.import = function () {
          if (H.stop ('entry.ok', entry.ok, 16)) return false;
          if (H.stop ('entry.total', entry.total, 21)) return false;
          if (H.stop ('entry.alreadyImported', entry.alreadyImported, 0)) return false;
-         if (H.stop ('entry.repeated', entry.repeated, ['medium.jpg', 'small-meta.png'])) return false;
+         if (! eq (entry.repeated, ['small-meta.png', 'medium-nometa.jpg']) && ! eq (entry.repeated, ['medium.jpg', 'small-meta.png'])) {
+            return clog ('Invalid entry.repeated, got', entry.repeated, ', expected one of:', ['small-meta.png', 'medium-nometa.jpg'], ['medium.jpg', 'small-meta.png']);
+         }
          if (H.stop ('entry.invalid', entry.invalid, ['empty.jpg', 'invalid.mp4', 'invalid.jpg'])) return false;
          if (H.stop ('entry.repeatedSize',  entry.repeatedSize, tk.pivs.medium.size + tk.pivs ['small-meta'].size)) return false;
           if (H.stop ('entry.unsupported',  entry.unsupported, ['location.svg'])) return false;
