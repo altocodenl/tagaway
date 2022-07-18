@@ -3110,6 +3110,7 @@ var routes = [
                var pivs = s.last;
                // TODO: replace by a.fork when bug is fixed: f7cdb4f4381c85dae1e6282d39348e260c3cafce
                var asyncFork = function (data, simult, fun, cb) {
+                  if (data.length === 0) return cb (null, []);
                   var counter = 0, done = 0, results = [], fire = function () {
                      if (counter === false) return;
                      if (counter === data.length) return;
