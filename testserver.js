@@ -2805,6 +2805,10 @@ suites.geo = function () {
          return true;
       }],
       suites.auth.out (tk.users.user1),
+      suites.auth.in (tk.users.user1),
+      ['enable geo on account with no pivs', 'post', 'geo', {}, {operation: 'enable'}, 200],
+      ['disable geo on account with no pivs', 'post', 'geo', {}, {operation: 'disable'}, 200],
+      suites.auth.out (tk.users.user1),
    ];
 }
 
@@ -2921,14 +2925,14 @@ suites.import = function () {
             return log;
          });
          if (dale.stop ({
-            3: {ev: 'import', type: 'grant'},
-            4: {ev: 'import', type: 'listStart'},
-            5: {ev: 'import', type: 'cancel', status: 'listing'},
-            6: {ev: 'import', type: 'listStart'},
-            7: {ev: 'import', type: 'listEnd'},
-            8: {ev: 'import', type: 'selection', folders: s.importFolders},
-            9: {ev: 'upload', type: 'start', unsupported: ['location.svg'], total: 21, alreadyImported: 0},
-            10: {ev: 'upload', provider: 'google'},
+            4: {ev: 'import', type: 'grant'},
+            5: {ev: 'import', type: 'listStart'},
+            6: {ev: 'import', type: 'cancel', status: 'listing'},
+            7: {ev: 'import', type: 'listStart'},
+            8: {ev: 'import', type: 'listEnd'},
+            9: {ev: 'import', type: 'selection', folders: s.importFolders},
+            10: {ev: 'upload', type: 'start', unsupported: ['location.svg'], total: 21, alreadyImported: 0},
+            11: {ev: 'upload', provider: 'google'},
             last: {ev: 'upload', type: 'complete', provider: 'google'}
          }, false, function (v, k) {
             var comparisonObject = dale.obj (filteredLogs [k === 'last' ? filteredLogs.length - 1 : k], function (v2, k2) {
