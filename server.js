@@ -1389,7 +1389,7 @@ var routes = [
       astop (rs, [
          [a.set, 'username', function (s) {
             if (! b.username.match ('@')) return s.next (b.username);
-            a.cond (s, [Redis, 'hget', 'emails', b.username], {
+            a.cond (s, [Redis, 'get', 'email:' + b.username], {
                null: [reply, rs, 403, {error: 'auth'}],
             });
          }],
@@ -1438,9 +1438,9 @@ var routes = [
       b.email = H.trim (b.email.toLowerCase ());
 
       var multi = redis.multi ();
-      multi.hget   ('invites', b.email);
-      multi.hget   ('emails',  b.email);
-      multi.exists ('users:' + b.username);
+      multi.get    ('invite:'  + b.email);
+      multi.get    ('email:'   + b.email);
+      multi.exists ('users:'   + b.username);
       astop (rs, [
          [mexec, multi],
          function (s) {
@@ -1452,13 +1452,13 @@ var routes = [
          },
          // logs are deleted in case a deleted user with the same username existed, in which case there will be a `destroy` log.
          [Redis, 'del', 'ulog:' + b.username],
-         [a.set, 'emailtoken', [a.make (require ('bcryptjs').genSalt), 20]],
+         [a.set, 'verifytoken', [a.make (require ('bcryptjs').genSalt), 20]],
          // TODO: don't do check to users, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
             var multi = redis.multi ();
-            multi.hset  ('emailtoken', s.emailtoken, b.email);
-            multi.hset  ('emails',  b.email, b.username);
+            multi.set  ('verifytoken:' + s.verifytoken, b.email);
+            multi.set  ('email:'       + b.email,       b.username);
             multi.hmset ('users:' + b.username, {
                username:            b.username,
                email:               b.email,
@@ -1470,13 +1470,13 @@ var routes = [
             // when this changes, the verificationPending flag should be set for all users
             if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
             s.invite.accepted = Date.now ();
-            multi.hset  ('invites', b.email, JSON.stringify (s.invite));
+            multi.set ('invite:' + b.email, JSON.stringify (s.invite));
             mexec (s, multi);
          },
          ! ENV ? [
             [H.stat.w, 'stock', 'users', 1],
             [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
-            [a.get, reply, rs, 200, {token: '@emailtoken'}],
+            [a.get, reply, rs, 200, {token: '@verifytoken'}],
          ] : [
             [sendmail, {
                to1:     b.username,
@@ -1505,17 +1505,17 @@ var routes = [
       var token = rq.data.params [0];
 
       astop (rs, [
-         [a.cond, [a.set, 'emailtoken', [Redis, 'hget', 'emailtoken', token], true], {
+         [a.cond, [a.set, 'verifytoken', [Redis, 'get', 'verifytoken:' + token], true], {
             null: [
-               [notify, {priority: 'important', type: 'bad emailtoken', token: token, ip: rq.origin, userAgent: rq.headers ['user-agent']}],
+               [notify, {priority: 'important', type: 'bad verify token', token: token, ip: rq.origin, userAgent: rq.headers ['user-agent']}],
                [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/badtoken'}],
             ],
          }],
-         [a.set, 'username', [a.get, Redis, 'hget', 'emails', '@emailtoken']],
+         [a.set, 'username', [a.get, Redis, 'get', 'email:@verifytoken']],
          function (s) {
             var multi = redis.multi ();
             multi.hdel ('users:' + s.username, 'verificationPending');
-            multi.hdel ('emailtoken', token);
+            multi.del ('verifytoken:' + token);
             mexec (s, multi);
          },
          function (s) {
@@ -1548,7 +1548,7 @@ var routes = [
       astop (rs, [
          [a.set, 'username', function (s) {
             if (! b.username.match ('@')) return s.next (b.username);
-            a.cond (s, [Redis, 'hget', 'emails', b.username], {
+            a.cond (s, [Redis, 'get', 'email:' + b.username], {
                null: [reply, rs, 403, {error: 'auth'}],
             });
          }],
@@ -1730,8 +1730,8 @@ var routes = [
                function (s) {
                   var multi = redis.multi ();
                   if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
-                  multi.hdel ('emails',  user.email);
-                  multi.hdel ('invites', user.email);
+                  multi.del ('email:'  + user.email);
+                  multi.del ('invite:' + user.email);
                   multi.del ('tags:' + user.username);
 
                   // hash and hashorig entries are deleted incrementally when deleting each piv.
@@ -3828,12 +3828,20 @@ var routes = [
 
    ['get', 'admin/invites', function (rq, rs) {
       astop (rs, [
-         [Redis, 'hgetall', 'invites'],
+         [redis.keyscan, 'invite:*'],
          function (s) {
-            reply (rs, 200, ! s.last ? [] : dale.obj (s.last, function (value, key) {
-               return [key, teishi.parse (value)];
-            }));
+            var multi = redis.multi ();
+            dale.go (s.last, function (invite) {
+               multi.get (invite);
+            });
+            mexec (s, multi);
          },
+         function (s) {
+            reply (rs, 200, dale.obj (s.last, function (invite) {
+               invite = JSON.parse (invite);
+               return [invite.email, invite];
+            }));
+         }
       ]);
    }],
 
@@ -3848,7 +3856,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [Redis, 'hdel', 'invites', rq.body.email],
+         [Redis, 'del', 'invite:' + rq.body.email],
          [reply, rs, 200],
       ]);
    }],
@@ -3868,14 +3876,14 @@ var routes = [
       b.email = H.trim (b.email.toLowerCase ());
 
       astop (rs, [
-         [a.set, 'user', [Redis, 'hget', 'emails', b.email]],
+         [a.set, 'user', [Redis, 'get', 'email:' + b.email]],
          function (s) {
             if (s.user) return reply (rs, 400, {error: 'User already exists'});
             s.next ();
          },
          [a.set, 'token', [a.make (require ('bcryptjs').genSalt), 20]],
          function (s) {
-            Redis (s, 'hset', 'invites', b.email, JSON.stringify ({firstName: b.firstName, token: s.token, sent: Date.now ()}));
+            Redis (s, 'set', 'invite:' + b.email, JSON.stringify ({email: b.email, firstName: b.firstName, token: s.token, sent: Date.now ()}));
          },
          // When running locally, the token is returned instead of being sent to the associated email address. This also avoids the bootstrap invite being sent when running the server locally.
          // Interestingly enough, when running node without cluster turned on, v8 throws an error when `a.get` processes `rs` (more precisely, `rs.onread`, which is `undefined` (not that that should generate any issues, but it does)
@@ -3894,11 +3902,11 @@ var routes = [
 
    ['get', 'admin/users', function (rq, rs) {
       astop (rs, [
-         [Redis, 'hgetall', 'emails'],
+         [redis.keyscan, 'users:*'],
          function (s) {
             var multi = redis.multi ();
             dale.go (s.last, function (username) {
-               multi.hgetall ('users:' + username);
+               multi.hgetall (username);
             });
             mexec (s, multi);
          },
@@ -3963,11 +3971,12 @@ var routes = [
    ['get', 'admin/logs', function (rq, rs) {
 
       astop (rs, [
-         [Redis, 'hgetall', 'emails'],
+         [redis.keyscan, 'users:*'],
          function (s) {
             var multi = redis.multi ();
             s.users = [];
             dale.go (s.last, function (username) {
+               username = username.replace ('users:', '');
                s.users.push (username);
                multi.lrange ('ulog:' + username, 0, -1);
             });
@@ -4192,7 +4201,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 if (cicek.isMaster && ENV) setTimeout (function () {
    a.stop ([
-      [Redis, 'hget', 'invites', SECRET.admins [0]],
+      [Redis, 'get', 'invite:' + SECRET.admins [0]],
       function (s) {
          if (s.last) return;
          a.make (hitit.one) (s, {}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0], firstName: 'admin'}});

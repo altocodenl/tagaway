@@ -50,7 +50,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Accounts
    - Delete my account with confirmation.
-   - Change emailtoken from hash to string, same with emails and invites
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
@@ -647,13 +646,11 @@ All the routes below require an admin user to be logged in.
 
 - geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
-- emails (hash): key is email, value is username
+- email:EMAIL (hash): key is email, value is username
 
-- emailtoken:TOKEN (hash): key is token, value is email. Used to verify email addresses.
+- invite:EMAIL (string): key is email, value is {email: STRING, firstName: STRING, token: STRING, sent: INT (date), accepted: UNDEFINED|INT (date)}
 
-- invites (hash): key is email, value is {firstName: STRING, token: ..., sent: INT (date), accepted: UNDEFINED|INT (date)}
-
-- verify (hash): key is token, value is email. Deleted after usage.
+- verifytoken:TOKEN (string): key is token, value is email. Used to verify email addresses after a signup. Deleted after usage.
 
 - csrf:SESSION (string): key is session, value is associated CSRF token.
 
