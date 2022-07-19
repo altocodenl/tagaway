@@ -1452,13 +1452,14 @@ var routes = [
          },
          // logs are deleted in case a deleted user with the same username existed, in which case there will be a `destroy` log.
          [Redis, 'del', 'ulog:' + b.username],
-         [a.set, 'verifytoken', [a.make (require ('bcryptjs').genSalt), 20]],
+         ! ENV ? [a.set, 'verifytoken', [a.make (require ('bcryptjs').genSalt), 20]] : [],
          // TODO: don't do check to users, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
             var multi = redis.multi ();
-            multi.set  ('verifytoken:' + s.verifytoken, b.email);
-            multi.set  ('email:'       + b.email,       b.username);
+            // email verification happens only when testing, since now all users come through invites.
+            if (! ENV) multi.set ('verifytoken:' + s.verifytoken, b.email);
+            multi.set ('email:' + b.email, b.username);
             multi.hmset ('users:' + b.username, {
                username:            b.username,
                email:               b.email,
