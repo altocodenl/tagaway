@@ -827,9 +827,8 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             }
             else if (log.type === 'ok') {
                if (! upload.lastActivity) upload.lastActivity = log.t;
-               if (! upload.ok) upload.ok = 0;
-               upload.ok++;
-               if (! upload.lastPiv) upload.lastPiv = {id: log.pivId, deg: log.deg};
+               if (! upload.ok) upload.ok = [];
+               upload.ok.push ({id: log.pivId, deg: log.deg});
                // Uploaded files go into the alreadyUploaded list to properly track repeated vs alreadyUploaded within the upload
                if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.pivId);
             }
@@ -854,6 +853,32 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             // We sort uploads by their end date. If they don't have an end date, they go to the top of the list.
             return (b.end || Infinity) - (a.end || Infinity);
          }));
+      },
+      function (s) {
+         var uploads = s.last, exists = {};
+         dale.go (uploads, function (upload) {
+            dale.go (upload.ok, function (piv) {
+               exists [piv.id] = false;
+            });
+         });
+         var existsArray = dale.keys (exists);
+         var multi = redis.multi ();
+         dale.go (existsArray, function (pivId) {
+            multi.exists ('piv:' + pivId);
+         });
+         multi.exec (function (error, data) {
+            if (error) return s.next (null, error);
+            dale.go (data, function (v, k) {
+               exists [existsArray [k]] = !! v;
+            });
+            dale.go (uploads, function (upload) {
+               upload.lastPiv = dale.stopNot (upload.ok, undefined, function (piv) {
+                  if (exists [piv.id]) return piv;
+               });
+               upload.ok = upload.ok ? upload.ok.length : undefined;
+            });
+            s.next (uploads);
+         });
       }
    ]);
 }

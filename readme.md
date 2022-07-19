@@ -45,11 +45,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Click on chunk to narrow down selection
 
 - Upload/import:
-   - Serve lastPiv correctly if piv is deleted, avoid 404s.
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Accounts
+   - Fix test for import
    - Delete my account with confirmation.
    - Change emailtoken from hash to string, same with emails and invites
 
@@ -145,7 +145,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Auto rotate based on metadata.
    - Allow to go back to browse while files are being uploaded in the background.
    - Refresh list of pivs periodically if there's an upload in the background.
-   - Show thumbnail of last piv on each upload.
+   - Show thumbnail of last piv on each upload. If said piv is deleted, then the latest uploaded piv that still exists is shown. If all pivs from the upload are deleted, no thumbnail is shown.
    - Cancel current upload. After cancelling, show snackbar that indicates how many pivs were uploaded for the given upload.
    - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Snackbar with success message when pivs are finished uploading.

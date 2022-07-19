@@ -1292,6 +1292,56 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       suites.auth.out (tk.users.user1),
+
+      // *** CHECK THAT UPLOAD.LASTPIV IS THE LAST PIV UPLOADED THAT WASN'T YET DELETED ***
+
+      suites.auth.in  (tk.users.user1),
+      ['start upload', 'post', 'upload', {}, {op: 'start', total: 2}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      dale.go (['small', 'rotate'], function (piv) {
+         return ['upload piv with Date/Time Original field to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+            {type: 'file',  name: 'piv',          path:  tk.pivs [piv].path},
+            {type: 'field', name: 'id',           value: s.uploadId},
+            {type: 'field', name: 'lastModified', value: tk.pivs [piv].mtime},
+         ]}}, 200, function (s, rq, rs) {
+            s [piv] = rs.body.id;
+            return true;
+         }];
+      }),
+      ['get uploads after uploading two pivs', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('upload', rs.body [0], {
+            id: s.uploadId,
+            ok: 2,
+            lastPiv: {id: s.rotate, deg: tk.pivs.rotate.deg},
+            status: 'uploading',
+            total: 2
+         })) return false;
+         return true;
+      }],
+      ['delete last piv from upload', 'post', 'delete', {}, function (s) {return {ids: [s.rotate]}}, 200],
+      ['get uploads after deleting the last piv', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('upload', rs.body [0], {
+            id: s.uploadId,
+            ok: 2,
+            lastPiv: {id: s.small},
+            status: 'uploading',
+            total: 2
+         })) return false;
+         return true;
+      }],
+      ['delete first piv from upload', 'post', 'delete', {}, function (s) {return {ids: [s.small]}}, 200],
+      ['get uploads after deleting the last piv', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('upload', rs.body [0], {
+            id: s.uploadId,
+            ok: 2,
+            status: 'uploading',
+            total: 2
+         })) return false;
+         return true;
+      }],
+      suites.auth.out  (tk.users.user1),
    ];
 }
 
