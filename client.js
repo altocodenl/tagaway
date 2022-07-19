@@ -4778,7 +4778,7 @@ views.pics = function () {
                         B.view (['Data', 'account'], function (account) {
                            if (! account || ! account.suggestSelection) return ['div'];
                            return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
-                              ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+                              ['div', {class: 'boxed-alert', style: style ({'background-color': 'white'})}, [
                                  ['div', {class: 'space-alert__image'}, [
                                     ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
                                  ]],
