@@ -2960,7 +2960,7 @@ suites.import = function () {
             return clog ('Invalid entry.repeated, got', entry.repeated, ', expected one of:', ['small-meta.png', 'medium-nometa.jpg'], ['medium.jpg', 'small-meta.png']);
          }
          if (H.stop ('entry.invalid', entry.invalid, ['empty.jpg', 'invalid.mp4', 'invalid.jpg'])) return false;
-         if (H.stop ('entry.repeatedSize',  entry.repeatedSize, tk.pivs.medium.size + tk.pivs ['small-meta'].size)) return false;
+         if (H.stop ('entry.repeatedSize',  entry.repeatedSize, tk.pivs [entry.repeated [0].replace (/\..+/, '')].size + tk.pivs [entry.repeated [1].replace (/\..+/, '')].size)) return false;
           if (H.stop ('entry.unsupported',  entry.unsupported, ['location.svg'])) return false;
          return true;
       }],

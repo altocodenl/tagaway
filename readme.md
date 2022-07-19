@@ -49,7 +49,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Accounts
-   - Fix test for import
    - Delete my account with confirmation.
    - Change emailtoken from hash to string, same with emails and invites
 
