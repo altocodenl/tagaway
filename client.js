@@ -3222,6 +3222,16 @@ B.mrespond ([
          B.call (x, 'snackbar', 'green', 'Your password has been updated successfully! Please log in.');
       });
    }],
+   ['delete', 'account', function (x) {
+      var conf = prompt ('Are you sure you want to delete your account? You cannot revert this action! If you wish to proceed, please enter the text "DELETE MY ACCOUNT"');
+      if (conf !== 'DELETE MY ACCOUNT') return B.call (x, 'snackbar', 'yellow', 'Invalid confirmation message.');
+      B.call (x, 'post', 'auth/delete', {}, {}, function (x, error) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting your account.');
+         B.call (x, 'reset', 'store', true);
+         B.call (x, 'goto', 'page', 'login');
+         B.call (x, 'snackbar', 'green', 'So long, and thank you for using ac;pic!');
+      });
+   }],
    ['clear', 'authInputs', function (x) {
       dale.go (['username', 'password', 'confirm'], function (v) {
          var target = c ('#auth-' + v);
@@ -6072,8 +6082,8 @@ views.account = function () {
                               ]],
                            ]
                         ]],
-                        free ? ['div', {class: 'cancel-account'}, [
-                           ['a', {href: ''}, 'Delete your account']
+                        free ? ['div', {class: 'cancel-account', onclick: B.ev ('delete', 'accounts')}, [
+                           ['a', {href: ''}, 'Delete my account']
                         ]] : ['div', {class: 'cancel-account'}, [
                            ['a', {href: ''}, 'Downgrade your subscription']
                         ]]

@@ -48,9 +48,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
-- Accounts
-   - Delete my account with confirmation.
-
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
 - Share & manage
@@ -841,6 +838,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Events:
       - `click -> clear changePassword`.
       - `click -> submit changePassword`.
+      - `click -> delete account`.
 7. Auth:
    7.1 `views.login`
       - Events: `click -> login`
@@ -953,8 +951,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs` and updates `Data.csrf` and invokes `goto page State.redirect`.
    6. `recover`: calls `post /auth/recover`. In case of error, only calls `snackbar`; otherwise, it calls `clear authInputs`, invokes `goto page login` and invokes `snackbar`.
    7. `reset`: calls `post /auth/reset`. In case of error, only calls `snackbar`; otherwise it calls `rem Data.tokens`, `clear authInputs`, `goto page login` and `snackbar`.
-   8. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`) to an empty string.
-   9. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
+   8. `delete account`: calls `post /auth/delete`. In case of error, only calls `snackbar`; otherwise it calls `reset store true`, `goto page login` and `snackbar`.
+   9. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`) to an empty string.
+   10. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pics
    1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs true`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.

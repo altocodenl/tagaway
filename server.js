@@ -1471,6 +1471,7 @@ var routes = [
             // when this changes, the verificationPending flag should be set for all users
             if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
             s.invite.accepted = Date.now ();
+            s.invite.token = undefined;
             multi.set ('invite:' + b.email, JSON.stringify (s.invite));
             mexec (s, multi);
          },
@@ -1704,9 +1705,6 @@ var routes = [
       var b = rq.body;
 
       if (b.username !== undefined && type (b.username) !== 'string') return reply (rs, 400, 'body.user must be either undefined or a string.');
-
-      // We temporarily disable own account deletions in non-local environments.
-      if (ENV && ! b.username) return reply (rs, 501);
 
       // Only admins can delete another user.
       if (b.username !== undefined && ! inc (SECRET.admins, rq.user.email)) return reply (rs, 403);
