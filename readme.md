@@ -10,7 +10,7 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-ac;pic is currently under development and has not been launched yet. We aim to launch it in 2020.
+ac;pic is currently under development and has not been launched yet. We aim to launch it in 2022.
 
 The author wishes to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
