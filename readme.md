@@ -42,10 +42,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Pivs
    - Fix scroll + back bug
    - Feedback box
-   - Click on chunk to narrow down selection
+   - Click on chunk to narrow down selection: expand range to be from midnight of first day to last ms of last day
 
 - Upload/import:
-   - Stop losing scroll when view is updated.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc

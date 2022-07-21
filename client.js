@@ -4498,7 +4498,7 @@ views.pics = function () {
                            makeTag ('u::'),
                            dale.go (yearlist, makeTag),
                            ['br'], ['br'],
-                           yearlist.length !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
+                           dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
                                  ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
