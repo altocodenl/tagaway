@@ -2392,7 +2392,7 @@ suites.query = function () {
          s.rangePivs = rs.body.pivs;
          return true;
       }],
-      ['query pivs with irrelevant range', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: Date.now ()}, 200, function (s, rq, rs, next) {
+      ['query pivs with irrelevant range', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 3, maxdate: Date.now ()}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 3)) return false;
          return true;
       }],
