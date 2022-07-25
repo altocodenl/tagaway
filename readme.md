@@ -41,15 +41,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pivs
    - Fix scroll + back bug
-   - Feedback box
-   - Click on chunk to narrow down selection: expand range to be from midnight of first day to last ms of last day
-
-- Upload/import:
-   - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
+   - Fix position moving around when uploads are happening in the background
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
 - Share & manage
+   - Feedback box
    - Rename tag.
    - Share/unshare with email: signup, login, or go straight if there's a session. On signup, resolve shares.
    - Save email addresses of previous shares and allow to delete them.
@@ -109,6 +106,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Retain current query and scroll position in the URL, so it can be copied and opened into a new tab.
    - The back button takes you to the previous query (including its scroll position), but not to the same query with a different scroll position.
    - Be able to invert the order in which tags on the left sidebar are shown.
+   - Click on chunk header to narrow down selection (range tag).
 
 - Open
    - Open piv and trigger fullscreen.
@@ -187,8 +185,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Open
    - Show tags.
 
-- Upload
+- Upload/import
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
+   - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Retry on error.
    - Show estimated time remaining in ongoing uploads.
@@ -968,7 +967,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.query` is not set, does nothing.
       - If `State.querying` is `true` and the second argument passed to the responder is not truthy, it does nothing (since there's a query already ongoing); otherwise it sets it `State.querying` to `true`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
-      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`).
+      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`). If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server.
       - Once the query is done, if `State.query.tags` or `State.query.sort` changed while the query was being done (but not if `State.query.fromDate` changes), it retries the query by calling `query pivs updateSelected true`; in this case, the second argument, `retry`, will override the block to all other queries done by `State.querying`.
       - If we're here, the query didn't change, so there is no need to retry it. It sets again `State.querying` to `false`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
@@ -988,7 +987,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
    8. `toggle tag`: if `State.querying` is `true`, it will do nothing. Otherwise, if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
    9. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
-   10. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there.
+   10. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
    11. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
    12. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs true`. In case of error, invokes `snackbar`.
