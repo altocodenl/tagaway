@@ -2821,7 +2821,7 @@ var routes = [
                multi.smembers ('pivt:' + piv.id);
             });
             // Get an union of all tags for all queried pivs
-            if (output.total) multi.sunion (dale.go (s.pivs, function (piv) {
+            if (output.total) multi.sunion (dale.go (output.pivs, function (piv) {
                return 'pivt:' + piv.id;
             }));
             // Get the total amount of pivs
@@ -2836,7 +2836,7 @@ var routes = [
                s.refreshQuery = true;
                return s.next (s.last);
             }
-            var tags = s.last;
+            var data = s.last;
             a.seq (s, [
                // We assume that any ongoing uploads must be found in the first 20
                [H.getUploads, rq.user.username, {}, 20],
@@ -2844,7 +2844,7 @@ var routes = [
                   s.refreshQuery = dale.stop (s.last, true, function (v) {
                      return v.status === 'uploading';
                   });
-                  s.next (tags);
+                  s.next (data);
                }
             ]);
          },

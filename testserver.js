@@ -2368,6 +2368,59 @@ suites.query = function () {
          return true;
       }],
       suites.auth.out (tk.users.user1),
+      suites.auth.in (tk.users.user1),
+      ['start upload to test querying', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200],
+      ['upload medium piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200],
+      ['upload large piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+      ]}}, 200],
+      ['query pivs with no date range', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 3}, 200, function (s, rq, rs, next) {
+         s.rangePivs = rs.body.pivs;
+         return true;
+      }],
+      ['query pivs with irrelevant range', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: Date.now ()}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body.pivs.length', rs.body.pivs.length, 3)) return false;
+         return true;
+      }],
+      ['query pivs with irrelevant range but right at the edges', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body.pivs.length', rs.body.pivs.length, 3)) return false;
+         return true;
+      }],
+      ['query pivs with range that shaves newest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date - 1}}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::M5': 1, 'd::2014': 2})) return false;
+         return true;
+      }],
+      ['query pivs with range that also shaves middle piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [1].date - 1}}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body.pivs.length', rs.body.pivs.length, 1)) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 1, 'd::M5': 1, 'd::2014': 1})) return false;
+         return true;
+      }],
+      ['query pivs with range that shaves oldest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date + 1, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::2014': 1, 'd::2022': 1, 'd::M3': 1})) return false;
+         return true;
+      }],
+      ['query pivs with range that shaves all pivs', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: s.rangePivs [2].date - 1}}, 200, function (s, rq, rs, next) {
+         if (H.stop ('body.pivs.length', rs.body.pivs.length, 0)) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 0})) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
    ];
 }
 
