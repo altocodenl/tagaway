@@ -45,19 +45,32 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
+- Feedback box
 - Share & manage
-   - Feedback box
-   - Rename tag.
-   - Share/unshare with email: signup, login, or go straight if there's a session. On signup, resolve shares.
-   - Save email addresses of previous shares and allow to delete them.
-   - Authorize/deauthorize shares done with me.
-   - In main view, mark tags shared with others and tags shared with me.
-   - If two shared tags from different users have the same name, put "@username".
-   - Authorization to see or ignore share.
-   - Allow to share from main editing view with dropdown of emails. If tag is shared already, nothing is done.
-   - Can you tag or share or copy pivs shared with you?
+   - Core implementation
+      - Both users exist
+      - User A shares tag X with user B
+      - User A sees the tag as shared with others in its Share view
+      - User B gets transactional email to accept tag X
+      - If user B doesn't click on the accept button, nothing else happens
+      - When user B clicks on the accept button, they are taken to the Share view and tag X appears on the list of tags shared with me
+      - If user B removes the shared tag from the list, it disappears from their shared with me view, but not from user A's shared with others view. It creates an equivalent scenario to user B not accepting the invitation.
+      - User B can re-accept the invitation to see tag X as long as user A doesn't delete or untag all the pivs on tag X.
+      - User B can see the pivs belonging to tag X but not download them, rotate nor delete.
+      - User B can tag pivs belonging to tag X.
+      - If user A unshares tag X with user B, the tag disappears from the Share view for both users A and B. If user B re-clicks on the old invitation, an error message will appear.
+      - If user A deletes or untags all the pivs from tag X, it is the same as if user A had unshared tag X with user B.
+      - When user B shares a tag Y with user C that contains pivs belonging to user A:
+         - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
+         - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
+      - Each user can see a list of email addresses of previous shares
+      - In main view, mark tags shared with me.
+      - Rename tag.
+   - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
 
-- Mobile uploader
+- Google Play submission
+- Google Drive validation
+- App Store submission
 
 ### Already implemented
 
@@ -199,6 +212,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Improve display of errors in upload & import: show foldable list of repeated|invalid|too large pivs.
    - Import from Dropbox.
 
+- Share & manage
+   - Share individual piv.
+   - Disambiguate a tag named X shared by two different users.
+   - Transitive share.
+   - Share ownership.
+
 - Account & payment
    - Set account space limit.
    - Change email.
@@ -216,6 +235,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - User management.
 
 - Mobile
+   - Background upload in iOS.
    - Functionality of main view (including editing) as a fullscreen web app.
 
 - Other
