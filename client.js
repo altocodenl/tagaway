@@ -3510,7 +3510,7 @@ B.mrespond ([
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
             if (tag === 'u::' || H.isRangeTag (tag)) return tag;
-            if (! inc (rs.body, tag)) return tag;
+            if (inc (rs.body, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
