@@ -2776,7 +2776,11 @@ H.tagColor = function (tag, a) {
 }
 
 H.isDateTag = function (tag) {
-   return !! tag.match (/^d::/);
+   return !! tag.match (/^(d|r)::/);
+}
+
+H.isRangeTag = function (tag) {
+   return !! tag.match (/^r::/);
 }
 
 H.isYearTag = function (tag) {
@@ -3331,6 +3335,7 @@ B.mrespond ([
    ['query', 'pivs', function (x, updateSelected, retry) {
       // We copy the query onto a new object so that we can check whether State.query changed after the ajax call returns.
       var query = teishi.copy (B.get ('State', 'query'));
+
       if (! query) return;
       if (! retry) {
          if (B.get ('State', 'querying')) return;
@@ -3343,7 +3348,18 @@ B.mrespond ([
          clearTimeout (timeout);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: query.tags, sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
+      var mindate, maxdate, rangeTag, rangeIndex = dale.stopNot (query.tags, undefined, function (tag, k) {
+         if (! H.isRangeTag (tag)) return;
+         rangeTag = tag;
+         return k;
+      });
+
+      if (rangeTag) {
+         mindate = parseInt (rangeTag.replace ('r::', '').split (':') [0]);
+         maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
+      }
+
+      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate}, function (x, error, rs) {
          if (! teishi.eq ({tags: query.tags, sort: query.sort}, {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort')})) {
             return B.call (x, 'query', 'pivs', updateSelected, true);
          }
@@ -3473,6 +3489,7 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
          if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag))) return;
+         if (H.isRangeTag (tag) && H.isDateTag (existingTag)) return;
          if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
          return existingTag;
       }).concat (tag));
@@ -3492,8 +3509,8 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'tags'], rs.body);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (tag === 'u::') return tag;
-            if (rs.body.indexOf (tag) > -1) return tag;
+            if (tag === 'u::' || H.isRangeTag (tag)) return tag;
+            if (inc (rs.body, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
@@ -4437,6 +4454,9 @@ views.pics = function () {
                            else if (H.isMonthTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : (inc (monthTags, which) ? ' tag--bolded-grey' : ' tag--light-grey'));
                            }
+                           else if (H.isRangeTag (which)) {
+                              var Class = 'tag-list__item tag' + (inc (selected, which) ? ' tag--bolded' : (inc (monthTags, which) ? ' tag--bolded-grey' : ' tag--light-grey'));
+                           }
                            else if (H.isGeoTag (which)) {
                               var isCountryTag = H.isCountryTag (which);
                               if (isCountryTag) {
@@ -4468,6 +4488,7 @@ views.pics = function () {
                            var disabledTag = disabledUntagged || blankMonth;
 
                            var showName = tag.replace (/^[a-z]::/, '');
+                           if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
                            return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
@@ -4493,12 +4514,17 @@ views.pics = function () {
                            ]];
                         }
 
+                        var rangeTag = dale.stopNot (selected, undefined, function (tag) {
+                           if (H.isRangeTag (tag)) return tag;
+                        });
+
                         return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
                            dale.go (yearlist, makeTag),
                            ['br'], ['br'],
-                           yearlist.length !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
+                           dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
+                           ! rangeTag ? [] : makeTag (rangeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
                                  ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
@@ -4753,6 +4779,7 @@ views.pics = function () {
                                        if (tag === 'a::') showName = (tags.length === 0 ? 'All pictures ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
+                                       if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
                                        if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                        return ['li', {class: Class}, [
                                           H.if (tag === 'a::', H.putSvg ('tagAll')),
@@ -4878,8 +4905,12 @@ views.grid = function () {
          return ['div', {style: style ({'min-height': window.innerHeight})}, [
             dale.go (chunks, function (chunk) {
                if (! chunk.DOMVisible) return ['div', {class: 'chunk', style: style ({'height': chunk.end - chunk.start})}];
+               var d1 = chunk.pivs [0] [dateField], d2 = teishi.last (chunk.pivs) [dateField];
+               var dayOffset = 1000 * 60 * 60 * 24;
+               var rangeLo   = Math.min (d1, d2) - (Math.min (d1, d2) % dayOffset);
+               var rangeHi   = Math.max (d1, d2) + dayOffset - (Math.max (d1, d2) % dayOffset) - 1;
                return ['div', {class: 'chunk', style: style ({'padding-top': 30})}, [
-                  ['h3', {class: 'chunk_title'}, H.formatChunkDates (chunk.pivs [0] [dateField], teishi.last (chunk.pivs) [dateField])],
+                  ['h3', {onclick: B.ev ('toggle', 'tag', 'r::' + rangeLo + ':' + rangeHi), class: 'chunk_title'}, H.formatChunkDates (chunk.pivs [0] [dateField], teishi.last (chunk.pivs) [dateField])],
                   dale.go (chunk.pivs, function (piv, k) {
                      H.computePivFrame (piv);
 
