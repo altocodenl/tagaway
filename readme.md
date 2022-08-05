@@ -40,12 +40,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
+   - Fix bug untagging with unselect all
+   - Feedback box
    - Fix scroll + back bug
    - Fix position moving around when uploads are happening in the background
-
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
-
-- Feedback box
 - Share & manage
    - Core implementation
       - Both users exist
@@ -57,20 +56,40 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - If user B removes the shared tag from the list, it disappears from their shared with me view, but not from user A's shared with others view. It creates an equivalent scenario to user B not accepting the invitation.
       - User B can re-accept the invitation to see tag X as long as user A doesn't delete or untag all the pivs on tag X.
       - User B can see the pivs belonging to tag X but not download them, rotate nor delete.
-      - User B can tag pivs belonging to tag X.
+      - User B can tag pivs belonging to tag X. But the added tags should only be visible to B, not to A, nor to any other users with whom tag X was shared.
       - If user A unshares tag X with user B, the tag disappears from the Share view for both users A and B. If user B re-clicks on the old invitation, an error message will appear.
       - If user A deletes or untags all the pivs from tag X, it is the same as if user A had unshared tag X with user B.
       - When user B shares a tag Y with user C that contains pivs belonging to user A:
          - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
          - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
+         - If user A shares tag X with user C, user B will not see the tag Y on the pivs that belong to user A.
       - Each user can see a list of email addresses of previous shares
       - In main view, mark tags shared with me.
       - Rename tag.
+   - Server changes
+      - shm in/out endpoint (check that sho exists)
+      - send email for shm
+      - remove sho & shm when tag disappears
+      - rename endpoint
+   - Tests:
+      - check queries & tags
+         - check disappearing of access when either sho or shm is removed
+         - if sho is removed also check that shm was removed
+         - if two shared tags have same piv, don't duplicate them but show both tags
+         - if a piv has tags X and Y for user A, but user A only shares X with user B, user B should not see tag Y
+         - querying on shared tag
+         - if A shares tag X including piv 1 with B, and B has piv 1 as well, there should be no double counting in all pivs or in the pivs returned, but the shared tag should be visible for B
+         - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. User C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
+         - if a shared tag loses all pivs through untagging or deletion, remove it from sho and shm (try multiple shos as well).
+         - TODO: tag by hash, no matter to whom it belongs
+      - rename endpoint
+   - update readme: redis structure, endpoints
    - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
 
-- Google Play submission
-- Google Drive validation
-- App Store submission
+- Submissions
+   - Google Play
+   - Google Drive
+   - App Store
 
 ### Already implemented
 
@@ -240,6 +259,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Other
    - Refactor UI with unified terminology for pivs: Pics&Vids, pivs.
+   - When notifications cannot be send, default to writing error to local logfile
    - Import lets behind temporary invalid piv.
    - On shutdown, wait for background processes: S3 uploads, mp4 conversions and geotagging
    - Check graceful app shutdown on mg restart: wait for S3 uploads and ongoing uploads
@@ -661,7 +681,7 @@ All the routes below require an admin user to be logged in.
 
 - geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
-- email:EMAIL (hash): key is email, value is username
+- email:EMAIL (string): key is email, value is username
 
 - invite:EMAIL (string): key is email, value is {email: STRING, firstName: STRING, token: STRING, sent: INT (date), accepted: UNDEFINED|INT (date)}
 
