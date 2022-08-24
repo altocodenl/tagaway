@@ -2,7 +2,7 @@
 
 - All processes must be executed in the Development Environment.
 - Must be initially logged out of the environment.
-- Browser must NOT be on "Incognito" Mode.
+- Browser must NOT be in "Incognito" Mode.
 - Reliable internet connection must be available (WiFi)
 - Tests must be conducted in the following browsers (versions TBD):
 	- Google Chrome
@@ -44,7 +44,7 @@
 	- Test passwords with special characters '@' '$' '%' '^' '*' '!'
 		- Password should be accepted.
 	- Account is created:
-		- Green snackbar of "Your account has been created." should appear."
+		- Green snackbar of "Your account has been created." should appear.
 	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.
 	- Log out. 
 
@@ -73,7 +73,28 @@
 	- Should be logged in and redirected to 'empty' View Pictures view.
 
 ## Recover password
-Not developed yet INCLUDE
+	- On log in page, click on 'Forgot password?'
+	- Insert email used to create account
+	- Check email, there should be an email with the subject 'Did you forget your password?'
+	- Click on the link in the email
+	- You should be taken to a landing page to reset password.
+	- Create new password
+	- Repeat new passoword
+	- Click on 'Reset password'
+	- You should be taken to Log In page.
+	- Log in with new credentials. 
+	- Log out.
+	- On log in page, click on 'Forgot password?'
+	- Insert username used to create account
+	- Check email, there should be an email with the subject 'Did you forget your password?'
+	- Click on the link in the email
+	- You should be taken to a landing page to reset password.
+	- Create new password
+	- Repeat new passoword
+	- Click on 'Reset password'
+	- You should be taken to Log In page.
+	- Log in with new credentials. 
+	- Log out.
 
 ## Change password
 	- Included in 'My account' view flow
@@ -1826,7 +1847,7 @@ Not developed yet
 		- 'Cancel your account' link, cursor:pointer; text-decoration: underlined; 
 
 
-## 2GB limit reached
+## 5GB limit reached
 	- Space alert (upload & import). INCLUDE
 	- Upgrade view
 
@@ -1835,3 +1856,9 @@ Not developed yet
 
 ## Payment process
 Not developed yet
+
+
+## Mobile upload iOS
+
+## Mobile upload Android
+

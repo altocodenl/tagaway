@@ -6252,7 +6252,7 @@ views.upgrade = function () {
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'We charge a lineal fee based on how much space you use. We charge you at cost, no markup.']
+                                    ['span', {class: 'hover-text'}, 'We charge a linear fee based on how much space you use. We charge you at cost, no markup.']
                                  ]],
                               ]],
                            ]],

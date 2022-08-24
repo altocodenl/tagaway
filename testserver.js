@@ -615,7 +615,7 @@ suites.auth = {
          // existing email check cannot happen if we signup by invite because invite is looked up by email
          ['try to signup with same token again', 'post', 'auth/signup', {}, function (s) {
             return {username: user.username, password: user.password, email: user.email, token: s.inviteToken};
-         }, 403, H.cBody ({error: 'email'})],
+         }, 403, H.cBody ({error: 'token'})],
          ['login with invalid password', 'post', 'auth/login', {}, {username: user.username, password: user.password + 'foo', timezone: user.timezone}, 403, H.cBody ({error: 'auth'})],
          ['login with invalid username', 'post', 'auth/login', {}, {username: user.username, password: user.password + 'foo', timezone: user.timezone}, 403, H.cBody ({error: 'auth'})],
          ['login before verification', 'post', 'auth/login', {}, function (s) {

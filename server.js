@@ -145,6 +145,22 @@ var notify = function (s, message) {
    });
 }
 
+// *** ON UNCAUGHT EXCEPTION, REPORT AND CLOSE SERVER ***
+
+var server;
+
+process.on ('uncaughtException', function (error, origin) {
+   a.seq ([
+      [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
+      function (s) {
+         if (! server) process.exit (1);
+         else server.destroy (function () {
+            process.exit (1);
+         });
+      }
+   ]);
+});
+
 // *** SENDMAIL ***
 
 var sendmail = function (s, o) {
@@ -4123,7 +4139,7 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
-var server = cicek.listen ({port: CONFIG.port}, routes);
+server = cicek.listen ({port: CONFIG.port}, routes);
 
 if (cicek.isMaster) a.seq ([
    [k, 'git', 'rev-parse', 'HEAD'],
@@ -4132,18 +4148,6 @@ if (cicek.isMaster) a.seq ([
       notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
    }
 ]);
-
-process.on ('uncaughtException', function (error, origin) {
-   a.seq ([
-      [notify, {priority: 'critical', type: 'server error', error: error, stack: error.stack, origin: origin}],
-      function (s) {
-         if (! server) process.exit (1);
-         else server.close (function () {
-            process.exit (1);
-         });
-      }
-   ]);
-});
 
 // *** REDIS ERROR HANDLER ***
 

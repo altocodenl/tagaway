@@ -44,6 +44,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Feedback box
    - Fix scroll + back bug
    - Fix position moving around when uploads are happening in the background
+   - Sidebar: Date ranges shown after selecting chunk title. Dates must follow mock up proposed formats to avoid line wrapping https://docs.google.com/drawings/d/1c5OwqSkmtSCe3oO7y_zMDnNM4joMRka8IVydYLHXj_U/edit & https://docs.google.com/drawings/d/1SLKEZ8kM_XdeOFiU9sjq2PX9AddeeI4VE_wR92UwJkY/edit
+   - Sidebar chunking: When user clicks year, months are not shown.
+   - Remove share icons in thumbnail and full screen mode
+   - .pictures-header__action-bar "margin-top: 0"
+   - tag__icon tag__icon--all must have span opaque with height of 24px
+
+
+- Import
+   - REVIEW IMPORT PROCESS. LISTING ERROR IS OCURRING
+
+- Mobile app
+   - 'https://altocode.nl/dev/pic/app/' + '/csrf' returns 405 with valid log in credentials.
+
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 - Share & manage
    - Core implementation
