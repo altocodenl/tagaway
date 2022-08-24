@@ -1847,7 +1847,7 @@ Not developed yet
 		- 'Cancel your account' link, cursor:pointer; text-decoration: underlined; 
 
 
-## 2GB limit reached
+## 5GB limit reached
 	- Space alert (upload & import). INCLUDE
 	- Upgrade view
 
@@ -1856,3 +1856,9 @@ Not developed yet
 
 ## Payment process
 Not developed yet
+
+
+## Mobile upload iOS
+
+## Mobile upload Android
+

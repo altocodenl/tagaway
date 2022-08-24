@@ -50,7 +50,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 
 - Import
-   - REVIEW IMPORT PROCESS. LISTING ERROR IS OCURRING       For Google we must include notice that user must allow altocode.nl access of "Select and download all your Google Drive files"; given that there are now options and might confuse user. Example of what the user sees https://drive.google.com/file/d/1BqURQP_MVZUHwW2u-C0VvXWFqNd55YjE/view?usp=sharing
+   - REVIEW IMPORT PROCESS. LISTING ERROR IS OCURRING
+
+- Mobile app 
+   - 'https://altocode.nl/dev/pic/app/' + '/csrf' returns 405 with valid log in credentials. 
 
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
 
