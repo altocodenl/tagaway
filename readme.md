@@ -48,10 +48,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - .pictures-header__action-bar "margin-top: 0" 
    - tag__icon tag__icon--all must have span opaque with height of 24px
 
-
-- Import
-   - REVIEW IMPORT PROCESS. LISTING ERROR IS OCURRING
-
 - Mobile app 
    - 'https://altocode.nl/dev/pic/app/' + '/csrf' returns 405 with valid log in credentials. 
 
