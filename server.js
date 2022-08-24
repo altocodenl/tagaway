@@ -910,7 +910,8 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
                   'prompt=consent',
                   'response_type=code',
                   'client_id=' + SECRET.google.oauth.client,
-                  '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly',
+                  // https://developers.google.com/identity/protocols/oauth2/scopes
+                  '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.metadata.readonly',
                   'access_type=offline',
                   'state=' + rq.user.csrf
                ].join ('&'),
