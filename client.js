@@ -1066,11 +1066,11 @@ CSS.litc = [
       fill: 'rgba(' + CSS.toRGBA (CSS.vars ['grey--darker']) + ', 0.7)',
       transition: '250ms linear all',
    }]],
-   ['.share-icon', {
-      'width, height': 24,
-      'margin-top': 5,
-      'margin-right': 2
-   }],
+   // ['.share-icon', {
+   //    'width, height': 24,
+   //    'margin-top': 5,
+   //    'margin-right': 2
+   // }],
    ['.tag-share__item:hover path', {fill: CSS.vars ['grey--darker']}],
    ['.tag-share__item-img', {
       display: 'inline-block',
@@ -2079,7 +2079,7 @@ CSS.litc = [
 
    }],
    ['.pictures-header__action-bar', {
-      'margin-top': CSS.typography.spaceVer (0.3),
+      // 'margin-top': CSS.typography.spaceVer (0.3),
       display: 'flex',
       width: 1,
       'align-items': 'center',
@@ -4492,7 +4492,7 @@ views.pics = function () {
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
                            return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
-                              H.if (which === 'a::', H.putSvg ('tagAll')),
+                              H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
@@ -4782,7 +4782,7 @@ views.pics = function () {
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
                                        if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                        return ['li', {class: Class}, [
-                                          H.if (tag === 'a::', H.putSvg ('tagAll')),
+                                          H.if (tag === 'a::', H.putSvg ('tagAll', 24)),
                                           H.if (tag === 'u::', H.putSvg ('itemUntagged')),
                                           H.if (tag === 's::', H.putSvg ('selectedCircle')),
                                           H.if (H.isDateTag (tag), H.putSvg ('itemTime')),
@@ -4862,22 +4862,22 @@ views.grid = function () {
             'font-size': CSS.typography.fontSize (-1),
             transition: 'opacity',
          }],
-         ['.share-icon-button', {
-            'width, height': 22,
-            outline: 0,
-            'border-radius': 100,
-            display: 'inline-flex',
-            'align-items': 'center',
-            'text-align': 'center',
-            transition: CSS.vars.easeOutQuart,
-            border: '1px solid #fbfbfb',
-            'margin-top': '-1px'
-         }],
-         ['.caption .share-icon', {
-            'width, height': 16,
-            'margin-top': 6,
-            'margin-left': '1px'
-         }],
+         // ['.share-icon-button', {
+         //    'width, height': 22,
+         //    outline: 0,
+         //    'border-radius': 100,
+         //    display: 'inline-flex',
+         //    'align-items': 'center',
+         //    'text-align': 'center',
+         //    transition: CSS.vars.easeOutQuart,
+         //    border: '1px solid #fbfbfb',
+         //    'margin-top': '-1px'
+         // }],
+         // ['.caption .share-icon', {
+         //    'width, height': 16,
+         //    'margin-top': 6,
+         //    'margin-left': '1px'
+         // }],
          ['.pictures-grid__item-picture .mask', {
             'background-color': '#5b6eff',
             opacity: '0',
@@ -4949,11 +4949,11 @@ views.grid = function () {
                            piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
                            ['div', {class: 'mask'}],
                            ['div', {class: 'caption'}, [
-                              ['span', {style: style ({position: 'absolute', left: 5})}, [
-                                 ['span', {class: 'share-icon-button'}, [
-                                    H.putSvg ('shareIcon')
-                                 ]]
-                              ]],
+                              // ['span', {style: style ({position: 'absolute', left: 5})}, [
+                              //    ['span', {class: 'share-icon-button'}, [
+                              //       H.putSvg ('shareIcon')
+                              //    ]]
+                              // ]],
                               ['span', {style: style ({position: 'absolute', right: 5})}, H.formatDate (piv.date)],
                            ]],
                         ]],
@@ -4997,10 +4997,10 @@ views.open = function () {
             return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true}];
          }) ()],
          ['div', {class: 'fullscreen__actions'}, [
-               ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
-                  ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
-                  ['div', {class: 'fullscreen__action-text'}, 'Share'],
-               ]],
+               // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
+               //    ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
+               //    ['div', {class: 'fullscreen__action-text'}, 'Share'],
+               // ]],
             H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
                ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
                ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
