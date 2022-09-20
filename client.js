@@ -5842,9 +5842,10 @@ views.import = function () {
 views.importFolders = function (importState, importData) {
    importData = importData [0];
    var folderList = ! importState.currentFolder ? importData.data.roots : importData.data.folders [importState.currentFolder].children;
+   folderList = dale.fil (folderList, undefined, function (id) {
+       if (importData.data.folders [id]) return id;
+    });
    folderList.sort (function (a, b) {
-      // If child is a file, ignore.
-      if (! importData.data.folders [a]) return 0;
       var nameA = importData.data.folders [a].name;
       var nameB = importData.data.folders [b].name;
       return nameA.toLowerCase () > nameB.toLowerCase () ? 1 : -1;
@@ -5952,7 +5953,6 @@ views.importFolders = function (importState, importData) {
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.go (folderList, function (id) {
                      var folder = importData.data.folders [id];
                      var selected = !! selection [id];
-                     if (! folder) return;
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
                            ['label', {class: 'checkbox-container'}, [
@@ -5961,7 +5961,7 @@ views.importFolders = function (importState, importData) {
                            ]],
                         ]],
                         ['div', {class: 'folder-icon'}, H.putSvg ('folderIcon')],
-                        ['div', {title: folder.name, class: 'import-folder-name pointer', onclick: folder.children ? '' : B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], id)}, folder.name],
+                        ['div', {title: folder.name, class: 'import-folder-name pointer', onclick: folder.children ? B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], id) : ''}, folder.name],
                         ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                      ]];
                   })],
