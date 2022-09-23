@@ -2346,7 +2346,7 @@ var routes = [
             // If we are here, this user already has a piv that is identical in its content, but not in its metadata.
             // As with identical pivs, the two modifications possible to the original piv are tags and dates.
             a.seq (s, [
-               [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hash],
+               [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
                ! s.raceConditionHash ? [] : [Redis, 'del', 'raceConditionHash:' + rq.user.username + ':' + s.hash],
                [Redis, 'hgetall', 'piv:' + s.last [0]],
                function (s) {

@@ -1813,6 +1813,16 @@ suites.upload.piv = function () {
             return true;
          }],
          ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+         ['upload small-meta piv to check absence of race condition hashes', 'post', 'piv', {}, function (s) {return {multipart: [
+            {type: 'file',  name: 'piv',          path:  tk.pivs ['small-meta'].path},
+            {type: 'field', name: 'id',           value: s.uploadId},
+            {type: 'field', name: 'lastModified', value: tk.pivs ['small-meta'].mtime},
+         ]}}, 200, function (s, rq, rs) {
+            if (rs.body.repeated) return clog ('raceConditionHash or raceConditionHashOrig not cleaned up');
+            s.smallMetaId = rs.body.id;
+            return true;
+         }],
+         ['delete small-meta piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallMetaId]}}, 200],
       ],
       suites.auth.out (tk.users.user1),
    ];
