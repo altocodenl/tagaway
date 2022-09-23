@@ -2338,6 +2338,7 @@ var routes = [
             // If there's currently a piv being uploaded right now that is identical to this one in its content but not its metadata, we consider this piv to be repeated.
             // In the very unlikely case that this piv belongs to a different upload, we would be losing the tags from this piv. More importantly, we could be losing valuable date metadata. A future improvement could leave those dates in Redis temporarily so they could be picked up by the other content-identical piv once its upload is finished.
             if (! s.last [0] && s.last [1]) return a.seq (s, [
+               ! s.raceConditionHashorig ? [] : [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
                [H.log, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.last [1], tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true}],
                [reply, rs, 200, {id: s.last [1], repeated: true}],
 
@@ -2346,7 +2347,7 @@ var routes = [
             // If we are here, this user already has a piv that is identical in its content, but not in its metadata.
             // As with identical pivs, the two modifications possible to the original piv are tags and dates.
             a.seq (s, [
-               [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
+               ! s.raceConditionHashorig ? [] : [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
                ! s.raceConditionHash ? [] : [Redis, 'del', 'raceConditionHash:' + rq.user.username + ':' + s.hash],
                [Redis, 'hgetall', 'piv:' + s.last [0]],
                function (s) {
