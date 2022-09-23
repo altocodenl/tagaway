@@ -1745,63 +1745,75 @@ suites.upload.piv = function () {
             ['delete piv', 'post', 'delete', {}, function (s) {return {ids: [s.repeatedId]}}, 200],
          ];
       }),
-      // *** REPEATED PIVS UPLOADED AT THE SAME TIME ***
-      ['load multiple requests with identical files', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
-         var results = [], left = 5, body = {multipart: [
+      // *** REPEATED PIVS UPLOADED AT THE SAME TIME (RACE CONDITION HASH CHECKS) ***
+      [
+         ['load multiple requests with identical files', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+            var results = [], left = 5, body = {multipart: [
+               {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+               {type: 'field', name: 'id',           value: s.uploadId},
+               {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+               {type: 'field', name: 'csrf',         value: s.csrf}
+            ]};
+            dale.go (dale.times (5, 0), function (n) {
+               h.one (s, {method: 'post', path: 'piv', code: 200, body: body, apres: function (s, rq, rs) {
+                  results [n] = rs.body;
+                  left--;
+                  return true;
+               }}, function (error) {
+                  if (left) return;
+                  var id, repeated = 0;
+                  var error = dale.stopNot (results, undefined, function (result) {
+                     if (! id) id = result.id;
+                     if (result.id !== id) return 'Invalid/different id: ' + result.id + ', expected ' + id;
+                     if (result.repeated) repeated++;
+                  });
+                  if (error) return clog (error);
+                  if (repeated !== 4) return clog ('Expected 4 repeated pivs and one uploaded piv, but instead got ' + repeated + ' pivs');
+                  s.smallId = id;
+                  next ();
+               });
+            });
+         }],
+         ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+         ['load multiple requests with files with different metadata', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+            var results = [], left = 5;
+            dale.go (dale.times (5, 0), function (n) {
+               var body = {multipart: [
+                  {type: 'file',  name: 'piv',          path:  tk.pivs [n % 2 === 0 ? 'small' : 'small-meta'].path},
+                  {type: 'field', name: 'id',           value: s.uploadId},
+                  {type: 'field', name: 'lastModified', value: tk.pivs [n % 2 === 0 ? 'small' : 'small-meta'].mtime},
+                  {type: 'field', name: 'csrf',         value: s.csrf}
+               ]};
+               h.one (s, {method: 'post', path: 'piv', code: 200, body: body, apres: function (s, rq, rs) {
+                  results [n] = rs.body;
+                  left--;
+                  return true;
+               }}, function (error) {
+                  if (left) return;
+                  var repeated = 0, id;
+                  dale.go (results, function (result) {
+                     if (result.repeated) repeated++;
+                     else id = result.id;
+                  });
+                  if (repeated !== 4) return clog ('Expected 4 repeated pivs and one uploaded piv, but instead got ' + repeated + ' pivs');
+                  // We don't check for the ids to be the same because some ids might be temporary ids from pivs being uploaded right now that are repeated on the hash check (after stripping metadata) but not on the hashorig check (before stripping metadata)
+                  s.smallId = id;
+                  next ();
+               });
+            });
+         }],
+         ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+         ['upload small piv to check absence of race condition hashes', 'post', 'piv', {}, function (s) {return {multipart: [
             {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
             {type: 'field', name: 'id',           value: s.uploadId},
             {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
-            {type: 'field', name: 'csrf',         value: s.csrf}
-         ]};
-         dale.go (dale.times (5, 0), function (n) {
-            h.one (s, {method: 'post', path: 'piv', code: 200, body: body, apres: function (s, rq, rs) {
-               results [n] = rs.body;
-               left--;
-               return true;
-            }}, function (error) {
-               if (left) return;
-               var id, repeated = 0;
-               var error = dale.stopNot (results, undefined, function (result) {
-                  if (! id) id = result.id;
-                  if (result.id !== id) return 'Invalid/different id: ' + result.id + ', expected ' + id;
-                  if (result.repeated) repeated++;
-               });
-               if (error) return clog (error);
-               if (repeated !== 4) return clog ('Expected 4 repeated pivs and one uploaded piv, but instead got ' + repeated + ' pivs');
-               s.smallId = id;
-               next ();
-            });
-         });
-      }],
-      ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
-      ['load multiple requests with files with different metadata', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
-         var results = [], left = 5;
-         dale.go (dale.times (5, 0), function (n) {
-            var body = {multipart: [
-               {type: 'file',  name: 'piv',          path:  tk.pivs [n % 2 === 0 ? 'small' : 'small-meta'].path},
-               {type: 'field', name: 'id',           value: s.uploadId},
-               {type: 'field', name: 'lastModified', value: tk.pivs [n % 2 === 0 ? 'small' : 'small-meta'].mtime},
-               {type: 'field', name: 'csrf',         value: s.csrf}
-            ]};
-            h.one (s, {method: 'post', path: 'piv', code: 200, body: body, apres: function (s, rq, rs) {
-               results [n] = rs.body;
-               left--;
-               return true;
-            }}, function (error) {
-               if (left) return;
-               var repeated = 0, id;
-               dale.go (results, function (result) {
-                  if (result.repeated) repeated++;
-                  else id = result.id;
-               });
-               if (repeated !== 4) return clog ('Expected 4 repeated pivs and one uploaded piv, but instead got ' + repeated + ' pivs');
-               // We don't check for the ids to be the same because some ids might be temporary ids from pivs being uploaded right now that are repeated on the hash check (after stripping metadata) but not on the hashorig check (before stripping metadata)
-               s.smallId = id;
-               next ();
-            });
-         });
-      }],
-      ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+         ]}}, 200, function (s, rq, rs) {
+            if (rs.body.repeated) return clog ('raceConditionHash or raceConditionHashOrig not cleaned up');
+            s.smallId = rs.body.id;
+            return true;
+         }],
+         ['delete small piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+      ],
       suites.auth.out (tk.users.user1),
    ];
 }
