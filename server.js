@@ -2053,7 +2053,7 @@ var routes = [
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['id', 'hash', 'name', 'size', 'lastModified', 'tags'], 'eachOf', teishi.test.equal],
          ['body.id',   b.id,   'integer'],
-         ['body.hash', b.hash, 'integer'],
+         ['body.hash', b.hash, 'string'],
          ['body.name', b.name, 'string'],
          ['body.size', b.size, 'integer'],
          ['body.size', b.size, {min: 0}, teishi.test.range],
@@ -2246,7 +2246,8 @@ var routes = [
          [a.set, 'hashorig', function (s) {
             fs.readFile (path, function (error, file) {
                if (error) return s.next (null, error);
-               s.next (hash (file));
+               // hash is the actual hash concatenated with the size of the file, to avoid collisions on files of different lengths
+               s.next (hash (file) + ':' + s.byfs.size);
                // We remove the reference to the buffer to free memory.
                file = null;
             });
@@ -2312,10 +2313,14 @@ var routes = [
                ]);
             }
          },
+         [a.set, 'byhash', function (s) {
+            a.make (fs.stat) (s, piv.format === 'bmp' ? path : s.hashpath);
+         }],
          [a.set, 'hash', function (s) {
             fs.readFile (piv.format === 'bmp' ? path : s.hashpath, function (error, file) {
                if (error) return s.next (null, error);
-               s.next (hash (file));
+               // hash is the actual hash concatenated with the size of the file, to avoid collisions on files of different lengths
+               s.next (hash (file) + ':' + s.byhash.size);
                // We remove the reference to the buffer to free memory.
                file = null;
             });

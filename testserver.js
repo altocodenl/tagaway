@@ -343,7 +343,7 @@ var H = {
                function (s) {
                   fs.readFile (piv.path, function (error, file) {
                      if (error) return s.next (null, error);
-                     piv.hash = hash (file);
+                     piv.hash = hash (file) + ':' + piv.size;
                      // We remove the reference to the buffer to free memory.
                      file = null;
                      s.next ();
@@ -923,7 +923,7 @@ suites.upload.upload = function () {
 }
 
 suites.upload.uploadCheck = function () {
-   var validBody = {id: 1, hash: 1, name: 'small.jpg', size: 1, lastModified: Date.now ()};
+   var validBody = {id: 1, hash: '1:1', name: 'small.jpg', size: 1, lastModified: Date.now ()};
    return [
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('uploadCheck', 'uploadCheck', [
@@ -931,7 +931,7 @@ suites.upload.uploadCheck = function () {
          [[], 'keys', ['id', 'hash', 'name', 'size', 'lastModified', 'tags']],
          [[], 'invalidKeys', ['foo']],
          [['id'], 'integer'],
-         [['hash'], 'integer'],
+         [['hash'], 'string'],
          [['name'], 'string'],
          [['size'], 'integer'],
          [['size'], 'range', {min: 0}],
@@ -984,7 +984,7 @@ suites.upload.uploadCheck = function () {
          s.originalSmall = rs.body.pivs [0];
          return true;
       }],
-      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: 1, name: 'small.jpg', size: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
+      ['uploadCheck piv with no match', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: '1:1', name: 'small.jpg', size: 1, lastModified: Date.now ()}}, 200, H.cBody ({repeated: false})],
       ['uploadCheck piv with match, same name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, name: tk.pivs.small.name, size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
       ['uploadCheck piv with match, different name, different upload', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadIdAlt, hash: tk.pivs.small.hash, name: tk.pivs.small.name + 'foo', size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})],
       ['get piv metadata after uploadCheck (same name & different name, no dates or tags), ensure no modifications happened', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {

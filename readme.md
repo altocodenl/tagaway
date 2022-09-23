@@ -40,24 +40,20 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Dynamize pricing calculator
-- Shorten months of time chunk on the left
+- Add last activity on user to track inactive accounts?
+- Stats: join stock into flow, change graunlarity.
 - Pivs
    - Feedback box
    - Fix bug untagging with unselect all
    - Fix scroll + back bug
    - Fix position moving around when uploads are happening in the background
    - Sidebar: Date ranges shown after selecting chunk title. Dates must follow mock up proposed formats to avoid line wrapping https://docs.google.com/drawings/d/1c5OwqSkmtSCe3oO7y_zMDnNM4joMRka8IVydYLHXj_U/edit & https://docs.google.com/drawings/d/1SLKEZ8kM_XdeOFiU9sjq2PX9AddeeI4VE_wR92UwJkY/edit
-   - Sidebar chunking: When user clicks year, months are not shown.
+   - Sidebar chunking bug: When user clicks year, months are not shown.
 
-- Add length to hash to avoid collisions from different files? Add script to check for collisions by using size, for both hash and hashorig. Add note: When using 128-bits, the x86 and x64 versions do not produce the same values, as the algorithms are optimized for their respective platforms.
-- Add last activity on user to track inactive accounts?
-- Stats: join stock into flow, change graunlarity.
 - Upgrade pop up notice or email when running out of free space.
-
 - Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
-- Share & manage
-
 - Add mpg support.
+- Share & manage
 - Investigate Glacier lifecycle.
 - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
 - Investigate intermittent busboy error.
@@ -395,7 +391,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /uploadCheck`
    - This route is used to see if a piv has already been uploaded.
-   - Body must be of the form `{ID: INTEGER (id of the upload), hash: INTEGER, name: STRING, size: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
+   - Body must be of the form `{ID: INTEGER (id of the upload), hash: STRING, name: STRING, size: INTEGER, lastModified: INTEGER, tags: UNDEFINED|[STRING, ...]}`.
    - If `tags` are included, after being trimmed, none of them should start with `[a-z]::` (otherwise, 400 with body `{error: 'invalid tag'}`).
    - `body.size` must be the size in bytes of the file being checked.
    - `body.id` must be that of an existing upload id, otherwise the endpoint returns 404 with body `{error: 'upload'}`; if the upload exists but its status is not `uploading`, the endpoint returns 409 with body `{error: 'status: complete|cancelled|stalled|error'}`.

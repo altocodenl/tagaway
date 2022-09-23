@@ -2842,7 +2842,7 @@ H.hash = function (file, cb) {
    freader.readAsArrayBuffer (file);
    freader.onerror = function () {cb (true)}
    freader.onload = function () {
-      cb (null, murmur.v3 (new Uint8Array (freader.result)));
+      cb (null, murmur.v3 (new Uint8Array (freader.result)) + ':' + file.size);
    }
 }
 
