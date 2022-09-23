@@ -2434,7 +2434,7 @@ suites.query = function () {
       }],
       ['query pivs with range that shaves oldest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date + 1, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::2014': 1, 'd::2022': 1, 'd::M3': 1})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::2014': 1, 'd::2022': 1, 'd::M9': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves all pivs', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: s.rangePivs [2].date - 1}}, 200, function (s, rq, rs, next) {
