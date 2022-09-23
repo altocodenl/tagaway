@@ -39,9 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- Dynamize pricing calculator
+- Shorten months of time chunk on the left
 - Pivs
-   - Fix bug untagging with unselect all
    - Feedback box
+   - Fix bug untagging with unselect all
    - Fix scroll + back bug
    - Fix position moving around when uploads are happening in the background
    - Sidebar: Date ranges shown after selecting chunk title. Dates must follow mock up proposed formats to avoid line wrapping https://docs.google.com/drawings/d/1c5OwqSkmtSCe3oO7y_zMDnNM4joMRka8IVydYLHXj_U/edit & https://docs.google.com/drawings/d/1SLKEZ8kM_XdeOFiU9sjq2PX9AddeeI4VE_wR92UwJkY/edit
@@ -91,10 +93,22 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - update readme: redis structure, endpoints
    - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
 
+- Add length to hash to avoid collisions from different files? Add script to check for collisions by using size, for both hash and hashorig. Add note: When using 128-bits, the x86 and x64 versions do not produce the same values, as the algorithms are optimized for their respective platforms.
+- Add last activity on user to track inactive accounts?
+- Stats: join stock into flow, change graunlarity.
+- Add mpg support.
+- Investigate Glacier lifecycle.
+- Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
+- Investigate intermittent busboy error.
+
 - Submissions
    - Google Play
    - Google Drive
    - App Store
+
+- Self-hosted
+   - Turn off/on S3
+   - Docker
 
 ### Already implemented
 
