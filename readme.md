@@ -48,54 +48,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fix position moving around when uploads are happening in the background
    - Sidebar: Date ranges shown after selecting chunk title. Dates must follow mock up proposed formats to avoid line wrapping https://docs.google.com/drawings/d/1c5OwqSkmtSCe3oO7y_zMDnNM4joMRka8IVydYLHXj_U/edit & https://docs.google.com/drawings/d/1SLKEZ8kM_XdeOFiU9sjq2PX9AddeeI4VE_wR92UwJkY/edit
    - Sidebar chunking: When user clicks year, months are not shown.
-   - In 'import', Google Drive import stalled. Check
-   - In 'import', Google Drive when clicking the logo, user gets "Coming soon, hang tight!". Changed nothing.
-
-- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
-- Share & manage
-   - Core implementation
-      - Both users exist
-      - User A shares tag X with user B
-      - User A sees the tag as shared with others in its Share view
-      - User B gets transactional email to accept tag X
-      - If user B doesn't click on the accept button, nothing else happens
-      - When user B clicks on the accept button, they are taken to the Share view and tag X appears on the list of tags shared with me
-      - If user B removes the shared tag from the list, it disappears from their shared with me view, but not from user A's shared with others view. It creates an equivalent scenario to user B not accepting the invitation.
-      - User B can re-accept the invitation to see tag X as long as user A doesn't delete or untag all the pivs on tag X.
-      - User B can see the pivs belonging to tag X but not download them, rotate nor delete.
-      - User B can tag pivs belonging to tag X. But the added tags should only be visible to B, not to A, nor to any other users with whom tag X was shared.
-      - If user A unshares tag X with user B, the tag disappears from the Share view for both users A and B. If user B re-clicks on the old invitation, an error message will appear.
-      - If user A deletes or untags all the pivs from tag X, it is the same as if user A had unshared tag X with user B.
-      - When user B shares a tag Y with user C that contains pivs belonging to user A:
-         - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
-         - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
-         - If user A shares tag X with user C, user B will not see the tag Y on the pivs that belong to user A.
-      - Each user can see a list of email addresses of previous shares
-      - In main view, mark tags shared with me.
-      - Rename tag.
-   - Server changes
-      - shm in/out endpoint (check that sho exists)
-      - send email for shm
-      - remove sho & shm when tag disappears
-      - rename endpoint
-   - Tests:
-      - check queries & tags
-         - check disappearing of access when either sho or shm is removed
-         - if sho is removed also check that shm was removed
-         - if two shared tags have same piv, don't duplicate them but show both tags
-         - if a piv has tags X and Y for user A, but user A only shares X with user B, user B should not see tag Y
-         - querying on shared tag
-         - if A shares tag X including piv 1 with B, and B has piv 1 as well, there should be no double counting in all pivs or in the pivs returned, but the shared tag should be visible for B
-         - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. User C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
-         - if a shared tag loses all pivs through untagging or deletion, remove it from sho and shm (try multiple shos as well).
-         - TODO: tag by hash, no matter to whom it belongs
-      - rename endpoint
-   - update readme: redis structure, endpoints
-   - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
 
 - Add length to hash to avoid collisions from different files? Add script to check for collisions by using size, for both hash and hashorig. Add note: When using 128-bits, the x86 and x64 versions do not produce the same values, as the algorithms are optimized for their respective platforms.
 - Add last activity on user to track inactive accounts?
 - Stats: join stock into flow, change graunlarity.
+- Upgrade pop up notice or email when running out of free space.
+
+- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
+- Share & manage
+
 - Add mpg support.
 - Investigate Glacier lifecycle.
 - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
