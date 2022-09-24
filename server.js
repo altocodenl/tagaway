@@ -500,8 +500,8 @@ H.s3exec = function () {
                // update S3 & the stats
                [Redis, 'hset', 's3:files', next.key, bys3],
                [H.stat.w, [
-                  ['stock', 'bys3',                  bys3],
-                  ['stock', 'bys3-' + next.username, bys3],
+                  ['flow', 'bys3',                  bys3],
+                  ['flow', 'bys3-' + next.username, bys3],
                ]]
             ]);
          }
@@ -518,8 +518,8 @@ H.s3exec = function () {
                [H.s3del, next.key],
                [Redis, 'hdel', 's3:files', next.key],
                [H.stat.w, [
-                  ['stock', 'bys3',                  - bys3],
-                  ['stock', 'bys3-' + next.username, - bys3],
+                  ['flow', 'bys3',                  - bys3],
+                  ['flow', 'bys3-' + next.username, - bys3],
                ]],
             ]);
          }
@@ -597,12 +597,12 @@ H.deletePiv = function (s, id, username) {
       function (s) {
          H.stat.w (s, [
             // The minus sign coerces the strings into numbers.
-            ['stock', 'byfs',             - s.piv.byfs - (s.piv.bythumbS || 0) - (s.piv.bythumbM || 0) - (s.piv.bymp4 || 0)],
-            ['stock', 'byfs-' + username, - s.piv.byfs - (s.piv.bythumbS || 0) - (s.piv.bythumbM || 0) - (s.piv.bymp4 || 0)],
-            ['stock', s.piv.vid ? 'vids' : 'pics', -1],
-            ['stock', 'format-' + s.piv.format, -1],
-            s.piv.bythumbS ? ['stock', 'thumbS', -1] : [],
-            s.piv.bythumbM ? ['stock', 'thumbM', -1] : [],
+            ['flow', 'byfs',             - s.piv.byfs - (s.piv.bythumbS || 0) - (s.piv.bythumbM || 0) - (s.piv.bymp4 || 0)],
+            ['flow', 'byfs-' + username, - s.piv.byfs - (s.piv.bythumbS || 0) - (s.piv.bythumbM || 0) - (s.piv.bymp4 || 0)],
+            ['flow', s.piv.vid ? 'vids' : 'pics', -1],
+            ['flow', 'format-' + s.piv.format, -1],
+            s.piv.bythumbS ? ['flow', 'thumbS', -1] : [],
+            s.piv.bythumbM ? ['flow', 'thumbM', -1] : [],
          ]);
       }
    ]);
@@ -1147,12 +1147,11 @@ redis.script ('load', [
 });
 
 H.stat.w = function (s) {
-   var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
    var t = Date.now (), multi = redis.multi ();
-   t = t - t % 1000;
+   var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
    // TODO: validations, add when exposing as a service. For each of the ops:
       // op must be array of length 3 or 0 (for no-op)
-      // type is one of: flow, max, min, stock, unique
+      // type is one of: flow, max, min, unique
       // name must be a string and cannot contain a colon
       // if type is `unique`, value can be a string, integer or float
       // if type is not `unique`, value can only be an integer or float
@@ -1168,20 +1167,20 @@ H.stat.w = function (s) {
             d: d - d % (1000 * 60 * 60 * 24),
             h: d - d % (1000 * 60 * 60),
             m: d - d % (1000 * 60),
-            s: t,
+            s: d - d % 1000
          }, function (date, period) {
-            multi.pfadd ('stat:u:' + name + ':' + (date + '').slice (0, -3) + ':' + period, value);
+            multi.pfadd ('stat:u:' + name + ':' + date + ':' + period, value);
          });
       }
-      else if (type === 'stock') {
-         multi.incrbyfloat ('stat:s:' + name,                                value);
-         multi.incrbyfloat ('stat:s:' + name + ':' + (t + '').slice (0, -3), value);
-      }
       else if (type === 'max' || type === 'min') {
-         multi.evalsha (H.stat [type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + (t + '').slice (0, -3), value);
+         multi.evalsha (H.stat [type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + t, value);
+      }
+      else if (type === 'flow') {
+         multi.incrbyfloat ('stat:f:' + name + ':' + t, value);
+         multi.incrbyfloat ('stat:f:' + name,           value);
       }
       else {
-         multi.incrbyfloat ('stat:f:' + name + ':' + (t + '').slice (0, -3), value);
+         throw new Error ('Unsupported stats type: ' + type);
       }
    });
    mexec (s, multi);
@@ -1191,7 +1190,7 @@ H.stat.r = function (s) {
    var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
    // TODO: validations, add when exposing as a service. For each of the ops:
       // op must be array of length 3 or 0 (for no-op)
-      // type is one of: flow, max, min, stock, unique
+      // type is one of: flow, max, min, unique
       // name must be a string and cannot contain a colon
       // options must be an object
       // options should be {min: *|INT, max: *|INT, aggregateBy: s|m|h|d|M|y}
@@ -1214,7 +1213,7 @@ H.stat.r = function (s) {
          // CSV export of all
          var CSV = [];
          dale.go (s.last, function (v, k) {
-            var type = {u: 'unique', f: 'flow', s: 'stock', M: 'max', m: 'min'} [k [5]];
+            var type = {u: 'unique', f: 'flow', M: 'max', m: 'min'} [k [5]];
             k = k.slice (7);
             var name = k.split (':') [0];
             CSV.push ([type, name, k.replace (name + ':', ''), v]);
@@ -1241,7 +1240,7 @@ H.stat.r = function (s) {
             // aggregate:
                // if unique, return all matching by specified, there's no aggregation
                // otherwise, aggregate (sum or min/max) by unit specified
-            // if stock, also add current value
+            // if flow, also add current value
          });
       },
    ]);
@@ -1372,7 +1371,7 @@ var routes = [
       var multi = redis.multi ();
       var keys = ['byfs', 'bys3', 'pics', 'vids', 'thumbS', 'thumbM', 'users'];
       dale.go (keys, function (key) {
-         multi.get ('stat:s:' + key);
+         multi.get ('stat:f:' + key);
       });
       multi.exec (function (error, data) {
          if (error) return reply (rs, 500, {error: error});
@@ -1493,7 +1492,7 @@ var routes = [
             mexec (s, multi);
          },
          ! ENV ? [
-            [H.stat.w, 'stock', 'users', 1],
+            [H.stat.w, 'flow', 'users', 1],
             [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
             [a.get, reply, rs, 200, {token: '@verifytoken'}],
          ] : [
@@ -1508,7 +1507,7 @@ var routes = [
             function (s) {
                Redis (s, 'setex', 'csrf:' + s.session, giz.config.expires, s.csrf);
             },
-            [H.stat.w, 'stock', 'users', 1],
+            [H.stat.w, 'flow', 'users', 1],
             [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
             function (s) {
                reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
@@ -1742,7 +1741,7 @@ var routes = [
                      return [H.deletePiv, piv, user.username];
                   }, {max: os.cpus ().length});
                },
-               [H.stat.w, 'stock', 'users', -1],
+               [H.stat.w, 'flow', 'users', -1],
                function (s) {
                   var multi = redis.multi ();
                   if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
@@ -1818,8 +1817,8 @@ var routes = [
          [function (s) {
             var multi = redis.multi ();
             ENV ? multi.get ('foo') : multi.lrange ('ulog:' + rq.user.username, 0, -1);
-            multi.get    ('stat:s:byfs-' + rq.user.username);
-            multi.get    ('stat:s:bys3-' + rq.user.username);
+            multi.get    ('stat:f:byfs-' + rq.user.username);
+            multi.get    ('stat:f:bys3-' + rq.user.username);
             multi.get    ('geo:'         + rq.user.username);
             mexec (s, multi);
          }],
@@ -2198,7 +2197,7 @@ var routes = [
                [reply, rs, 400, {error: 'tooLarge', name: piv.name}]
             ]);
          },
-         [Redis, 'get', 'stat:s:byfs-' + rq.user.username],
+         [Redis, 'get', 'stat:f:byfs-' + rq.user.username],
          function (s) {
             var used = parseInt (s.last) || 0;
             var limit = CONFIG.freeSpace;
@@ -2406,8 +2405,8 @@ var routes = [
                },
                function (s) {
                   H.stat.w (s, [
-                     ['stock', 'byfs',                     s.bymp4],
-                     ['stock', 'byfs-' + rq.user.username, s.bymp4],
+                     ['flow', 'byfs',                     s.bymp4],
+                     ['flow', 'byfs-' + rq.user.username, s.bymp4],
                      ['flow', 'ms-video-convert', Date.now () - start],
                      ['flow', 'ms-video-convert:' + piv.format.split (':') [0], Date.now () - start]
                   ]);
@@ -2508,12 +2507,12 @@ var routes = [
          [perfTrack, 'db'],
          function (s) {
             H.stat.w (s, [
-               ['stock', 'byfs',                     piv.byfs + (piv.bythumbS || 0) + (piv.bythumbM || 0)],
-               ['stock', 'byfs-' + rq.user.username, piv.byfs + (piv.bythumbS || 0) + (piv.bythumbM || 0)],
-               ['stock', piv.vid ? 'vids' : 'pics', 1],
-               ['stock', 'format-' + piv.format.split (':') [0], 1],
-               piv.bythumbS ? ['stock', 'thumbS', 1] : [],
-               piv.bythumbM ? ['stock', 'thumbM', 1] : [],
+               ['flow', 'byfs',                     piv.byfs + (piv.bythumbS || 0) + (piv.bythumbM || 0)],
+               ['flow', 'byfs-' + rq.user.username, piv.byfs + (piv.bythumbS || 0) + (piv.bythumbM || 0)],
+               ['flow', piv.vid ? 'vids' : 'pics', 1],
+               ['flow', 'format-' + piv.format.split (':') [0], 1],
+               piv.bythumbS ? ['flow', 'thumbS', 1] : [],
+               piv.bythumbM ? ['flow', 'thumbM', 1] : [],
             ].concat (dale.fil (perf, undefined, function (item, k) {
                if (k > 0) return ['flow', 'ms-upload-' + item [0], item [1] - perf [k - 1] [1]];
             })));
@@ -2719,7 +2718,8 @@ var routes = [
          ['body.to', b.to, {min: b.from}, teishi.test.range],
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
-         ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
+         ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf'],
+         ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
       ])) return;
 
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
@@ -4091,7 +4091,9 @@ cicek.apres = function (rs) {
          if (path === 'piv' && rs.log.url === 'post') path = 'pivup';
          if (rs.log.method !== ((path === 'piv' || path === 'thumb') ? 'get' : 'post')) return;
          if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
-         logs.push (['flow', 'rq-' + path, 1]);
+         if (path === 'query') var rqpath = path + rs.log.requestBody.refresh ? 'r' : 'm';
+         else                  var rqpath = path;
+         logs.push (['flow', 'rq-' + rqpath, 1]);
          logs.push (['flow', 'ms-' + path, t - rs.log.startTime]);
          logs.push (['max',  'ms-' + path, t - rs.log.startTime]);
       });
@@ -4356,7 +4358,7 @@ if (cicek.isMaster && ENV) a.stop ([
 if (cicek.isMaster && ENV) a.stop ([
    // Get list of all S3 sizes
    [a.set, 's3:files', [Redis, 'hgetall', 's3:files']],
-   [redis.keyscan, 'stat:s:by*'],
+   [redis.keyscan, 'stat:f:by*'],
    function (s) {
       s.statkeys = s.last;
       var multi = redis.multi ();
@@ -4367,7 +4369,7 @@ if (cicek.isMaster && ENV) a.stop ([
    },
    function (s) {
       s.stats = dale.obj (s.last, function (n, k) {
-         // Ignore stock:TIME, we want only the final numbers
+         // Ignore flow:TIME, we want only the final numbers
          if (s.statkeys [k].match (/:\d+$/)) return;
          return [s.statkeys [k], parseInt (n)];
       });
@@ -4402,8 +4404,8 @@ if (cicek.isMaster && ENV) a.stop ([
       });
       var mismatch = [];
       dale.go (actual, function (v, k) {
-         if (k === 'TOTAL') var stats = {fs: s.stats ['stat:s:byfs']      || 0, s3: s.stats ['stat:s:bys3']      || 0};
-         else               var stats = {fs: s.stats ['stat:s:byfs-' + k] || 0, s3: s.stats ['stat:s:bys3-' + k] || 0};
+         if (k === 'TOTAL') var stats = {fs: s.stats ['stat:f:byfs']      || 0, s3: s.stats ['stat:f:bys3']      || 0};
+         else               var stats = {fs: s.stats ['stat:f:byfs-' + k] || 0, s3: s.stats ['stat:f:bys3-' + k] || 0};
          if (v.fs !== stats.fs) mismatch.push (['byfs' + (k === 'TOTAL' ? '' : '-' + k), v.fs - stats.fs]);
          if (v.s3 !== stats.s3) mismatch.push (['bys3' + (k === 'TOTAL' ? '' : '-' + k), v.s3 - stats.s3]);
       });
@@ -4418,7 +4420,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
       a.seq (s, [
          [H.stat.w, dale.go (mismatch, function (v) {
-            return ['stock', v [0], v [1]];
+            return ['flow', v [0], v [1]];
          })],
          function (s) {
             var multi = redis.multi ();

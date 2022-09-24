@@ -39,9 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Dynamize pricing calculator
-- Add last activity on user to track inactive accounts?
-- Stats: join stock into flow, change graunlarity.
 - Pivs
    - Feedback box
    - Fix bug untagging with unselect all
@@ -51,7 +48,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Sidebar chunking bug: When user clicks year, months are not shown.
 
 - Upgrade pop up notice or email when running out of free space.
-- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
+- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc, teishi.prod = true in server
 - Add mpg support.
 - Share & manage
 - Investigate Glacier lifecycle.
@@ -442,7 +439,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `a::`, `d::`, or tags shared with the user by other users.
 
 - `POST /query`
-   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT|UNDEFINED, fromDate: INT|UNDEFINED, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
+   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT|UNDEFINED, fromDate: INT|UNDEFINED, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED, refresh: UNDEFINED|BOOLEAN}`. Otherwise, a 400 is returned with body `{error: ...}`.
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
    - If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and it represents a timestamp. For the provided query, the server will find the index of the piv with the `date` (or `dateup` in the case of `sort` being `upload`) and use that as the `from` parameter. For example, if `fromDate` is `X`, `to` is 100 and `sort` is `newest`, the query will return the 100 pivs that match the query that were taken at `X` onwards.
    - `a::` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
@@ -451,6 +448,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
+   - If `body.refresh` is set to `true`, this will be considered as a request triggered by an automatic refresh by the client. This only makes a difference for statistical purposes.
    - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
@@ -580,19 +578,7 @@ All the routes below require an admin user to be logged in.
 1. uniques:
    - users: active users
 
-2. stock:
-   - byfs:          total bytes stored in FS
-   - bys3:          total bytes stored in S3
-   - byfs-USERNAME: total bytes stored in FS for USERNAME
-   - bys3-USERNAME: total bytes stored in S3 for USERNAME
-   - pics:          total pics
-   - vids:          total vids
-   - format-FORMAT: total pivs with the specified format
-   - thumbS:        total thumbnails of small size
-   - thumbM:        total thumbnails of medium size
-   - users:         total users
-
-3. maximum:
+2. maximum:
    - ms-all:    maximum ms for successful requests for all endpoints
    - ms-auth:   maximum ms for successful requests for POST /auth
    - ms-piv:    maximum ms for successful requests for GET /piv
@@ -607,40 +593,51 @@ All the routes below require an admin user to be logged in.
    - ms-s3put:  maximum ms for successful uploads to S3
    - ms-s3del:  maximum ms for successful deletions to S3
 
-4. stat:f (flow)
-   - rq-user-USERNAME: total requests from USERNAME
-   - rq-NNN:    total requests responded with HTTP code NNN
-   - rq-bad:    total unsuccessful requests for all endpoints
-   - rq-all:    total successful requests for all endpoints
-   - rq-auth:   total successful requests for POST /auth
-   - rq-piv:    total successful requests for GET /piv
-   - rq-thumb:  total successful requests for GET /thumb
-   - rq-pivup:  total successful requests for POST /piv
-   - rq-delete: total successful requests for POST /delete
-   - rq-rotate: total successful requests for POST /rotate
-   - rq-tag:    total successful requests for POST /tag and /tags
-   - rq-query:  total successful requests for POST /query
-   - rq-share:  total successful requests for POST /share
-   - rq-geo:    total successful requests for POST /geo
-   - ms-all:    total ms for successful requests for all endpoints
-   - ms-auth:   total ms for successful requests for POST /auth
-   - ms-piv:    total ms for successful requests for GET /piv
-   - ms-thumb:  total ms for successful requests for GET /thumb
-   - ms-pivup:  total ms for successful requests for POST /piv
-   - ms-delete: total ms for successful requests for POST /delete
-   - ms-rotate: total ms for successful requests for POST /rotate
-   - ms-tag:    total ms for successful requests for POST /tag
-   - ms-query:  total ms for successful requests for POST /query
-   - ms-share:  total ms for successful requests for POST /share
-   - ms-geo:    total ms for successful requests for POST /geo
-   - ms-pivup-initial:   total ms for initial checks in POST /piv
-   - ms-pivup-metadata:  total ms for metadata check in POST /piv
-   - ms-pivup-hash:      total ms for hash check in POST /piv
-   - ms-pivup-fs:        total ms for FS operations in POST /piv
-   - ms-pivup-thumb:     total ms for thumbnail creation in POST /piv
-   - ms-pivup-db:        total ms for info storage & DB processing in POST /piv
-   - ms-video-convert:   total ms for non-mp4 to mp4 video conversion
-   - ms-video-convert:FORMAT: total ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
+3. stat:f (flow) - stock variables are also expressed as flow variables
+   - byfs:          bytes stored in FS
+   - bys3:          bytes stored in S3
+   - byfs-USERNAME: bytes stored in FS for USERNAME
+   - bys3-USERNAME: bytes stored in S3 for USERNAME
+   - pics:          number of pics
+   - vids:          number of vids
+   - format-FORMAT: pivs with the specified format
+   - thumbS:        thumbnails of small size
+   - thumbM:        thumbnails of medium size
+   - users:         number of users
+   - rq-user-USERNAME: requests from USERNAME
+   - rq-NNN:    requests responded with HTTP code NNN
+   - rq-bad:    unsuccessful requests for all endpoints
+   - rq-all:    successful requests for all endpoints
+   - rq-auth:   successful requests for POST /auth
+   - rq-piv:    successful requests for GET /piv
+   - rq-thumb:  successful requests for GET /thumb
+   - rq-pivup:  successful requests for POST /piv
+   - rq-delete: successful requests for POST /delete
+   - rq-rotate: successful requests for POST /rotate
+   - rq-tag:    successful requests for POST /tag and /tags
+   - rq-querym: successful requests for POST /query done as part of a manual query by the user
+   - rq-queryr: successful requests for POST /query done as part of an automatic refresh
+   - rq-share:  successful requests for POST /share
+   - rq-geo:    successful requests for POST /geo
+   - ms-all:    ms for successful requests for all endpoints
+   - ms-auth:   ms for successful requests for POST /auth
+   - ms-piv:    ms for successful requests for GET /piv
+   - ms-thumb:  ms for successful requests for GET /thumb
+   - ms-pivup:  ms for successful requests for POST /piv
+   - ms-delete: ms for successful requests for POST /delete
+   - ms-rotate: ms for successful requests for POST /rotate
+   - ms-tag:    ms for successful requests for POST /tag
+   - ms-query:  ms for successful requests for POST /query
+   - ms-share:  ms for successful requests for POST /share
+   - ms-geo:    ms for successful requests for POST /geo
+   - ms-pivup-initial:   ms for initial checks in POST /piv
+   - ms-pivup-metadata:  ms for metadata check in POST /piv
+   - ms-pivup-hash:      ms for hash check in POST /piv
+   - ms-pivup-fs:        ms for FS operations in POST /piv
+   - ms-pivup-thumb:     ms for thumbnail creation in POST /piv
+   - ms-pivup-db:        ms for info storage & DB processing in POST /piv
+   - ms-video-convert:   ms for non-mp4 to mp4 video conversion
+   - ms-video-convert:FORMAT: ms for non-mp4 (with format FORMAT, where format is `mov|avi|3gp`) to mp4 video conversion
 
 ### Redis structure
 
@@ -763,10 +760,9 @@ All the routes below require an admin user to be logged in.
 
 - stat:...: statistics
    - stat:f:NAME:DATE: flow
+   - stat:f:NAME:      total flow
    - stat:m:NAME:DATE: min
    - stat:M:NAME:DATE: max
-   - stat:s:NAME:      stock
-   - stat:s:NAME:DATE: stock change
    - stat:u:NAME:PERIOD:DATE: unique
 
 - s3:...: S3 management
@@ -983,14 +979,14 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.query` is not set, does nothing.
       - If `State.querying` is `true` and the second argument passed to the responder is not truthy, it does nothing (since there's a query already ongoing); otherwise it sets it `State.querying` to `true`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
-      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`). If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server.
+      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`). If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server. Finally, the third argument passed to the responder will be passed in the `refresh` field.
       - Once the query is done, if `State.query.tags` or `State.query.sort` changed while the query was being done (but not if `State.query.fromDate` changes), it retries the query by calling `query pivs updateSelected true`; in this case, the second argument, `retry`, will override the block to all other queries done by `State.querying`.
       - If we're here, the query didn't change, so there is no need to retry it. It sets again `State.querying` to `false`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
       - Invokes `query tags`.
       - If the query contains a year tag, a second query equal to the current query minus the month tags will be performed to the server and the returned `queryTags` field will be set in `Data.monthTags` (just the tags, not the number of pivs for each); if the query does not contain a year tag, it will remove `Data.monthTags`. If this query fails, an error will be printed, but the responder will continue executing the rest of the logic.
       - It sets `Data.queryTags`and `Data.pivTotal` based on the result of the query.
-      - If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs` after 1500ms.
+      - If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs false false true` after 1500ms. The truthy third argument indicates that this is a request triggered by an automatic refresh.
       - If it receives a truthy first argument (`updateSelected`), it updates `State.selected` to filter out those pivs that are no longer returned by the current query. If it updates `State.selected`, it does so directly without an event; the `change` event will be fired afterwards in the responder logic.
       - It sets `State.chunks` to the output of `H.computeChunks`.
       - It invokes `scroll` since that will match a responder that calculates chunk visibility.

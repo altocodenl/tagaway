@@ -3332,7 +3332,7 @@ B.mrespond ([
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
-   ['query', 'pivs', function (x, updateSelected, retry) {
+   ['query', 'pivs', function (x, updateSelected, retry, refresh) {
       // We copy the query onto a new object so that we can check whether State.query changed after the ajax call returns.
       var query = teishi.copy (B.get ('State', 'query'));
 
@@ -3359,7 +3359,7 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate, refresh: refresh}, function (x, error, rs) {
          if (! teishi.eq ({tags: query.tags, sort: query.sort}, {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort')})) {
             return B.call (x, 'query', 'pivs', updateSelected, true);
          }
@@ -3384,7 +3384,7 @@ B.mrespond ([
 
          // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
-            B.call (x, 'query', 'pivs');
+            B.call (x, 'query', 'pivs', false, false, true);
          }, 1500));
 
          if (updateSelected) {

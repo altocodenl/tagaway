@@ -2224,7 +2224,7 @@ suites.query = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('query pivs', 'query', [
          [[], 'object'],
-         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate']],
+         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh']],
          [[], 'invalidKeys', ['foo']],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
@@ -2249,6 +2249,7 @@ suites.query = function () {
          [['tags'], 'invalidValues', [['a::']], 'all'],
          [['recentlyTagged'], 'values', [['foo']]],
          [['tags'], 'invalidValues', [['foo']], 'recentlyTagged'],
+         [['refresh'], ['undefined', 'boolean']]
       ]),
       ['query pivs with refreshQuery not activated', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('body.refreshQuery', rs.body.refreshQuery, undefined)) return false;
