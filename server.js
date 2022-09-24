@@ -3,7 +3,7 @@ ac;pic - v0.1.0
 
 Written by Altocode (https://altocode.nl) and released into the public domain.
 
-Please refer to readme.md to read the annotated source (but not yet!).
+Please refer to readme.md to read the annotated source (some parts are annotated already, but not the whole file yet).
 */
 
 // *** SETUP ***
@@ -531,11 +531,13 @@ H.deletePiv = function (s, id, username) {
          var multi = redis.multi ();
          multi.hgetall  ('piv:'  + id);
          multi.smembers ('pivt:' + id);
+         multi.smembers ('sho:' + rq.user.username);
          mexec (s, multi);
       }],
       function (s) {
          s.piv  = s.last [0];
          s.tags = s.last [1];
+         s.sho  = s.last [2];
          if (! s.piv || username !== s.piv.owner) return s.next (0, 'nf');
 
          H.s3queue (s, 'del', username, Path.join (H.hash (username), id));
@@ -554,6 +556,7 @@ H.deletePiv = function (s, id, username) {
          // Delete mp4 version of non-mp4 video
          H.unlink (s, Path.join (CONFIG.basepath, H.hash (username), s.piv.vid));
       },
+      [a.set, 'sharedHashes', [H.getSharedHashes, rq.user.username]],
       function (s) {
          var multi = redis.multi ();
 
@@ -571,13 +574,19 @@ H.deletePiv = function (s, id, username) {
             multi.sadd ('hashdel:' + s.piv.owner + ':' + providerHash [0], providerHash [1]);
          }
 
-         dale.go (s.tags.concat (['a::', 'u::']), function (tag) {
-            // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
-            multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
+         // If the piv is deleted and the user has another piv shared with them that has the same hash, we will create hashtag and taghash entries (hashtag:USERNAME:HASH and taghash:USERNAME:TAG)
+         if (inc (s.sharedHashes, s.piv.hash)) dale.go (s.tags, function (tag) {
+            if (! H.isUserTag (tag)) return;
+            multi.sadd ('hashtag:' + username + ':' + s.piv.hash, tag)
+            multi.sadd ('taghash:' + username + ':' + tag, s.piv.hash);
          });
 
+         dale.go (s.tags.concat (['a::', 'u::']), function (tag) {
+            multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
+         });
          mexec (s, multi);
       },
+      [a.get, H.tagCleanup, rq.user.username, '@tags', [s.piv.id], '@sho'],
       function (s) {
          H.stat.w (s, [
             // The minus sign coerces the strings into numbers.
@@ -592,14 +601,14 @@ H.deletePiv = function (s, id, username) {
    ]);
 }
 
+// If it returns false, piv does not exist or user has no access; otherwise, returns the piv itself.
 H.hasAccess = function (S, username, pivId) {
-   a.stop ([
-      [a.set, 'piv', [Redis, 'hgetall', 'piv:' + pivId], true],
+   a.stop (s, [
+      [Redis, 'hgetall', 'piv:' + pivId],
       function (s) {
-         if (! s.last)             return S.next (false);
-         S.piv = s.piv;
-         s.owner = s.last.owner;
-         if (s.owner === username) return S.next (s.piv);
+         if (! s.last) return s.next (false);
+         s.piv = s.last;
+         if (s.piv.owner === username) return S.next (s.piv);
          Redis (s, 'smembers', 'pivt:' + pivId);
       },
       function (s) {
@@ -611,7 +620,9 @@ H.hasAccess = function (S, username, pivId) {
          mexec (s, multi);
       },
       function (s) {
-         S.next (dale.stop (s.last, true, function (v) {return !! v}) ? s.piv : false);
+         S.next (dale.stop (s.last, true, function (v) {
+            return !! v
+         }) ? s.piv : false);
       }
    ], function (s, error) {
       S.next (undefined, error);
@@ -948,14 +959,13 @@ H.parseDate = function (date) {
    return -1;
 }
 
-
 H.addTags = function (s, tags, username, id) {
    // We add the tags of this piv to those of the identical piv already existing
    var multi = redis.multi ();
    dale.go (tags, function (tag) {
       multi.sadd ('pivt:' + id,       tag);
-      multi.sadd ('tags:' + username, tag);;
       multi.sadd ('tag:'  + username + ':' + tag, id);
+      multi.sadd ('tags:' + username, tag);
    });
    if (tags.length > 0) multi.srem ('tag:' + username + ':u::', id);
    mexec (s, multi);
@@ -1011,6 +1021,8 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    var newYearTag  = 'd::'  + new Date (parseInt (piv.date)).getUTCFullYear ();
    var newMonthTag = 'd::M' + (new Date (parseInt (piv.date)).getUTCMonth () + 1);
 
+   var tagsToCleanup = [];
+
    dale.go ([[oldYearTag, newYearTag], [oldMonthTag, newMonthTag]], function (pair) {
       if (pair [0] === pair [1]) return;
       multi.sadd ('pivt:' + piv.id, pair [1]);
@@ -1018,9 +1030,13 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       multi.sadd ('tag:'  + piv.owner + ':' + pair [1], piv.id);
       multi.srem ('tag:'  + piv.owner + ':' + pair [0], piv.id);
       multi.sadd ('tags:' + piv.owner, pair [1]);
-      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has the old year or month tag.
+      tagsToCleanup.push (pair [0])
    });
-   mexec (s, multi);
+
+   a.seq (s, [
+      [mexec, multi],
+      [H.tagCleanup, piv.owner, tagsToCleanup]
+   ]);
 }
 
 H.dateFromName = function (name) {
@@ -1051,6 +1067,117 @@ H.dateFromName = function (name) {
    }
    return H.parseDate (date);
 }
+
+// *** BEGIN ANNOTATED SOURCE CODE ***
+
+H.getSharedHashes = function (s, username) {
+   a.seq (s, [
+      [Redis, 'smembers', 'shm:' + username],
+      function (s) {
+         var multi = redis.multi (), qid = 'query:' + uuid ();
+         // Get a set of all the piv ids from all the tags shared with the user
+         multi.sunionstore (qid, dale.go (s.last, function (share) {
+            return 'tag:' + share;
+         }));
+         multi.smembers (qid);
+         multi.del (qid);
+         mexec (s, multi);
+      },
+      function (s) {
+         var multi = redis.multi ();
+         dale.go (teishi.last (s.last, 2), function (id) {
+            multi.hget ('piv:' + id, 'hash');
+         });
+         mexec (s, multi);
+      }
+   ]);
+}
+
+H.tagCleanup = function (s, username, tags, ids, sho, unshare) {
+   a.seq (s, [
+      [function (s) {
+         if (unshare) return s.next ();
+         var multi = redis.multi ();
+         dale.go (tags, function (tag) {
+            multi.exists ('tag:'     + username + ':' + tag);
+            multi.exists ('taghash:' + username + ':' + tag);
+         });
+         mexec (s, multi);
+      }],
+      function (s) {
+         if (unshare) return s.next ();
+         var multi = redis.multi ();
+         var toRemove = dale.go (tags, undefined, function (tag, k) {
+            var tagExists = s.last [k * 2], taghashExists = s.last [k * 2 + 1];
+            if (! tagExists && ! taghashExists) multi.srem ('tags:' + username, tag);
+            if (! tagExists) return tag;
+         });
+         dale.go (sho, function (share) {
+            var whom = share.split (':') [0], tag = share.split (':').slice (1).join (':');
+            if (! inc (toRemove, tag)) return;
+            multi.srem ('sho:' + username, whom + ':' + tag);
+            multi.srem ('shm:' + whom, username + ':' + tag);
+         });
+         mexec (s, multi);
+      },
+      [a.set, 'hashes', function (s) {
+         var multi = redis.multi ();
+         dale.go (ids, function (id) {
+            multi.hget ('piv:' + id, 'hash');
+         });
+         mexec (s, multi);
+      }],
+      function (s) {
+         s.affectedUsers = [];
+         dale.go (sho, function (share) {
+            var username = share.split (':') [0], tag = share.split (':').slice (1).join (':');
+            if (inc (tags, tag) && ! inc (s.affectedUsers, username)) s.affectedUsers.push (username);
+         });
+         a.fork (s, s.affectedUsers, H.getSharedHashes, {max: 5});
+      },
+      function (s) {
+         var multi = redis.multi ();
+         s.toRemove = [];
+         dale.go (s.last, function (hashes, k) {
+            var username = s.affectedUsers [k];
+            dale.go (s.hashes, function (hash) {
+               if (inc (hashes, hash)) return;
+               s.toRemove.push ([username, hash]);
+               multi.smembers ('hashtag:' + username + ':' + hash);
+            });
+         });
+         mexec (s, multi);
+      },
+      function (s) {
+         var multi = redis.multi ();
+         dale.go (s.toRemove, function (toRemove, k) {
+            multi.del ('hashtag:' + toRemove [0] + ':' + toRemove [1]);
+            dale.go (s.last [k], function (tag) {
+               multi.srem ('taghash:' + toRemove [0] + ':' + tag, toRemove [1]);
+            });
+         });
+
+         s.toRemove2 = [];
+         dale.go (s.toRemove, function (toRemove, k) {
+            dale.go (s.last [k], function (tag) {
+               multi.exists ('tag:' + toRemove [0] + ':' + tag, 'taghash:' + toRemove [0] + ':' + tag);
+               s.toRemove2.push ([toRemove [0], tag]);
+            });
+         });
+         mexec (s, multi);
+      },
+      function (s) {
+         var multi = redis.multi ();
+         s.last = s.last.slice (- toRemove2.length);
+         dale.go (s.toRemove2, function (toRemove2) {
+            if (! s.last [k]) multi.srem ('tags:' + toRemove2 [0], toRemove2 [1]);
+         });
+         mexec (s, multi);
+      }
+   ]);
+}
+
+// *** END ANNOTATED SOURCE CODE FRAGMENT ***
 
 // *** OAUTH HELPERS ***
 
@@ -1872,7 +1999,7 @@ var routes = [
 
    ['get', 'piv/:id', function (rq, rs) {
       astop (rs, [
-         [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id]], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
@@ -1936,7 +2063,7 @@ var routes = [
    ['get', 'thumb/:size/:id', function (rq, rs) {
       if (! inc (['S', 'M'], rq.data.params.size)) return reply (rs, 400);
       astop (rs, [
-         [a.cond, [H.hasAccess, rq.user.username, rq.data.params.id], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id]], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === 'S' ? 'xthumbS' : 'xthumbM', 1],
          function (s) {
             // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
@@ -2422,7 +2549,7 @@ var routes = [
          [H.s3queue, 'put', rq.user.username, Path.join (H.hash (rq.user.username), piv.id), newpath],
          // Freshly get whether geotagging is enabled or not, in case the flag was changed during an upload.
          [Redis, 'hget', 'users:' + rq.user.username, 'geo'],
-         function (s) {
+         [a.set, 'geotags', function (s) {
             if (piv.loc) {
                // We remove piv.loc if geotagging is disabled
                if (! s.last) delete piv.loc;
@@ -2433,9 +2560,11 @@ var routes = [
                }
             }
             return s.next ([]);
-         },
+         }],
+         [a.set, 'hashtags', function (s) {
+            Redis (s, 'smembers', 'hashtag:' + rq.user.username + ':' + s.hash);
+         }],
          function (s) {
-            var geotags = s.last;
             var multi = redis.multi ();
 
             piv.byfs         = s.byfs.size;
@@ -2466,14 +2595,23 @@ var routes = [
             }
             multi.sadd ('tag:' + rq.user.username + ':a::', piv.id);
 
-            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (geotags), function (tag) {
+            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (s.geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
-               multi.sadd ('tags:' + rq.user.username, tag);;
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
+               multi.sadd ('tags:' + rq.user.username, tag);
             });
-            if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
+            if (tags.length === 0 && s.hashtags.length === 0) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
 
             multi.hmset ('piv:' + piv.id, piv);
+
+            dale.go (s.hashtags, function (hashtag) {
+               multi.sadd ('pivt:' + piv.id, hashtag);
+               multi.sadd ('tag:'  + rq.user.username + ':' + hashtag, piv.id);
+               multi.sadd ('tags:' + rq.user.username, hashtag);
+               multi.srem ('hashtag:' + rq.user.username + ':' + s.hash, hashtag);
+               multi.srem ('taghash:' + rq.user.username + ':' + hashtag, s.hash);
+            });
+
             mexec (s, multi);
          },
          function (s) {
@@ -2577,6 +2715,8 @@ var routes = [
       ]);
    }],
 
+   // *** BEGIN ANNOTATED SOURCE CODE FRAGMENT ***
+
    // *** TAGGING ***
 
    ['post', 'tag', function (rq, rs) {
@@ -2584,7 +2724,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['ids', 'tag', 'del'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tag', 'ids', 'del'], 'eachOf', teishi.test.equal],
          ['body.tag', b.tag, 'string'],
          ['body.ids', b.ids, 'array'],
          ['body.ids', b.ids, 'string', 'each'],
@@ -2595,50 +2735,85 @@ var routes = [
       b.tag = H.trim (b.tag);
       if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
 
-      var multi = redis.multi (), seen = {};
-      dale.go (b.ids, function (id) {
-         seen [id] = true;
-         multi.hget     ('piv:'  + id, 'owner');
-         multi.smembers ('pivt:' + id);
+      var seen = dale.obj (b.ids, function (id) {
+         return [id, true];
       });
-
       if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
 
       astop (rs, [
-         [mexec, multi],
+         [a.fork, b.ids, function (s, id) {
+            H.hasAccess (s, rq.user.username, id);
+         }, {max: 5}],
+         function (s) {
+            if (dale.stop (s.last, true, function (piv) {return piv === false})) return reply (rs, 404);
+            s.pivs = s.last;
+
+            var sharedPivs = dale.fil (s.pivs, undefined, function (piv, k) {
+               piv.k = k;
+               if (piv.owner !== rq.user.username) return piv;
+            });
+
+            if (! sharedPivs.length) return s.next ();
+
+            a.seq (s, [
+               [Redis, 'hmget', 'hash:' + rq.user.username, dale.go (sharedPivs, function (piv) {return piv.hash})],
+               function (s) {
+                  dale.go (sharedPivs, function (piv, k) {
+                     if (! s.last [piv.hash]) return;
+                     s.pivs [piv.k].id    = s.last [piv.hash];
+                     s.pivs [piv.k].owner = rq.user.username;
+                  });
+                  s.next ();
+               }
+            ]);
+         },
+         ! b.del ? [] : function (s) {
+            var multi = redis.multi ();
+            dale.go (s.pivs, function (piv) {
+               if (piv.owner === rq.user.username) multi.smembers ('pivt:' + piv.id);
+               else                                multi.smembers ('hashtag:' + rq.user.username + ':' + piv.hash);
+            });
+            multi.smembers ('sho:' + rq.user.username);
+            mexec (s, multi);
+         },
          function (s) {
             var multi = redis.multi ();
+            if (b.del) {
+               s.sho = teishi.last (s.last);
+               s.ids = [];
+            }
 
-            if (dale.stopNot (s.last, undefined, function (owner, k) {
-               if (k % 2 !== 0) return;
-               if (owner !== rq.user.username) {
-                  reply (rs, 404);
-                  return true;
-               }
-
-               var id = b.ids [k / 2], tags = s.last [k + 1];
-
-               if (b.del) {
-                  if (! inc (s.last [k + 1], b.tag)) return;
-                  multi.srem ('pivt:' + id, b.tag);
-                  // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
-                  multi.srem ('tag:'  + rq.user.username + ':' + b.tag, id);
-                  // If the tag being removed is the last user tag on the piv, add the piv to the `untagged` set.
-                  if (dale.fil (tags, false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':u::', id);
-               }
-
-               else {
-                  if (inc (s.last [k + 1], b.tag)) return;
-                  multi.sadd ('pivt:' + id, b.tag);
+            dale.go (s.pivs, function (piv, k) {
+               if (! b.del) {
                   multi.sadd ('tags:' + rq.user.username, b.tag);
-                  multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, id);
-                  // If the piv already had a tag and wasn't on the `untagged` set, this will be a no-op.
-                  multi.srem ('tag:'  + rq.user.username + ':u::', id);
+                  if (piv.owner !== rq.user.username) {
+                     multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
+                     multi.sadd ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+                  }
+                  else {
+                     multi.sadd ('pivt:' + piv.id, b.tag);
+                     multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+                     multi.srem ('tag:'  + rq.user.username + ':u::', piv.id);
+                  }
+                  return;
                }
-            })) return;
+
+               if (! inc (s.last [k], b.tag)) return;
+               if (piv.owner !== rq.user.username) {
+                  multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
+                  multi.srem ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+               }
+               else {
+                  s.ids.push (piv.id);
+                  multi.srem ('pivt:' + piv.id, b.tag);
+                  multi.srem ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+                  if (dale.fil (s.last [k], false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
+               }
+            });
 
             mexec (s, multi);
          },
+         ! b.del ? [] : [a.get, H.tagCleanup, rq.user.username, [b.tag], '@ids', '@sho'],
          [H.log, rq.user.username, {ev: 'tag', type: b.del ? 'untag' : 'tag', ids: b.ids, tag: b.tag}],
          [reply, rs, 200],
       ]);
@@ -2646,51 +2821,45 @@ var routes = [
 
    ['get', 'tags', function (rq, rs) {
       astop (rs, [
-         [Redis, 'smembers', 'tags:' + rq.user.username],
-         function (s) {
+         [function (s) {
             var multi = redis.multi ();
-            s.tags = s.last;
-            dale.go (s.last, function (tag) {
-               multi.scard ('tag:' + rq.user.username + ':' + tag);
+            multi.smembers ('tags:' + rq.user.username);
+            multi.smembers ('shm:'  + rq.user.username);
+            mexec (s, multi);
+         }],
+         function (s) {
+            dale.go (s.last [1], function (share) {
+               s.last [0].push ('s::' + share);
             });
-            mexec (s, multi);
-         },
-         function (s) {
-            var multi = redis.multi ();
-            s.output = dale.fil (s.last, undefined, function (n, k) {
-               if (n > 0) return s.tags [k];
-               // We cleanup tags from tags:USERID if the tag set is empty.
-               // The cleanup is done here because it would be cumbersome to have to do it in POST /delete, POST /tag and POST /geo
-               else multi.srem ('tags:' + rq.user.username, s.tags [k]);
-            }).sort ();
-            mexec (s, multi);
-         },
-         [a.get, reply, rs, 200, '@output'],
+            reply (rs, 200, s.last [0].sort ());
+         }
       ]);
    }],
 
-   // *** SEARCH ***
+   // *** QUERY ***
 
    ['post', 'query', function (rq, rs) {
 
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
          ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
          ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.to',      b.to, 'integer'],
          b.from === undefined ? [
             ['body.fromDate', b.fromDate, 'integer'],
+            ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range]
+            ['body.to',       b.to,       {min: 1}, teishi.test.range],
          ] : [
-            ['body.from', b.from, ['integer', 'undefined'], 'oneOf'],
             ['body.fromDate', b.fromDate, 'undefined'],
+            ['body.from', b.from, 'integer'],
+            ['body.from', b.from, {min: 1},      teishi.test.range]
+            ['body.to',   b.to,   {min: b.from}, teishi.test.range],
          ],
-         ['body.to',      b.to, 'integer'],
-         b.from === undefined ? ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range] : ['body.from', b.from, {min: 1}, teishi.test.range],
-         ['body.to', b.to, {min: b.from}, teishi.test.range],
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
@@ -2699,16 +2868,39 @@ var routes = [
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
       if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 
-      var yeartags = [];
-
       var tags = dale.obj (b.tags, function (tag) {
-         if (! H.isYearTag (tag)) return [tag, [rq.user.username]];
-         yeartags.push (tag);
-      });
+         return [tag, [rq.user.username]];
+      };
+
+      var qid = uuid ();
 
       astop (rs, [
-         [Redis, 'smembers', 'shm:' + rq.user.username],
+         [a.set, 'shm', [Redis, 'smembers', 'shm:' + rq.user.username]],
+         [a.set, 'sharedIds', function (s) {
+            var multi = redis.multi ();
+            multi.sunionstore ('query:' + qid, dale.go (s.shm, function (tag) {
+               return 'tag:' + tag;
+            }));
+            mexec (s, multi);
+         }],
          function (s) {
+            /*
+            Check auth for each shared tag
+            Union of geo and date for all sharing users with intersection of all shared pivs
+            Intersection of every set for a tag
+            With duplicates, prioritize. But not the lookup of tag.
+            */
+            // all mode: get all own, union with all shared pivs
+            // date tag: get own pivs with tag, union of all shared, union of all EACHSHARINGUSER:DATE, intersect the last two unions, union the result with own pivs with tag
+            // geo tag: (ignore if geo is off for user, or better, return 400) same as with date, and if owners don't have geo data, nothing will be returned!
+            // multiple date and geo: intersect the resulting unions
+
+            // from taghash, get hashes, from hashes, get all possible pivs. we could just store this! this would also allow us to see repetition and test the hasher. but if you had only one per user, you could just do the call to get for each sharing user the id of that hash. from taghash then, you get a list of ids of shared pivs that have that tag. then you union that with your own.
+
+            // one tag mode: get own pivs with tag, OR: get hashes from taghash, get all shared pivs, filter them out to only match those hashes
+            // multiple tag mode: intersect own pivs across tags, OR:
+
+            // THEN, in all cases, remove repeated by priority (own, sorted owner id)
             var allMode = b.tags.length === 0;
 
             if (allMode) tags ['a::'] = [rq.user.username];
@@ -2782,7 +2974,7 @@ var routes = [
                return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
             });
 
-            // To avoid returning duplicated piv if someone shares a piv you already have with you. Own piv has priority.
+            // To avoid returning duplicated piv if someone shares a piv you already have with you, or if the piv was shared with the user multiple times by other users. Own piv has priority.
             var hashes = {};
             output.pivs = dale.fil (output.pivs, undefined, function (piv, k) {
                if (! hashes [piv.hash]) {
@@ -2896,11 +3088,11 @@ var routes = [
       ]);
    }],
 
-   // *** SHARING ***
+   // *** SHARE & RENAME ***
 
-   ['post', 'share', function (rq, rs) {
+   ['post', /sho|shm/, function (rq, rs) {
 
-      var b = rq.body;
+      var b = rq.body, action = rq.url.replace ('/', '');
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['tag', 'whom', 'del'], 'eachOf', teishi.test.equal],
@@ -2910,23 +3102,57 @@ var routes = [
       ])) return;
 
       b.tag = H.trim (b.tag);
-      if (! H.isUserTag (b.tag))       return reply (rs, 400, {error: 'tag'});
-      if (b.whom === rq.user.username) return reply (rs, 400, {error: 'self'});
+      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
 
       astop (rs, [
-         [a.cond, [Redis, 'exists', 'users:' + b.whom], {'0': [reply, rs, 404]}],
+         [Redis, 'get', 'email:' + b.whom],
+         [function (s) {
+            s.email = b.whom;
+            b.whom = s.last;
+            if (! b.whom)                    return reply (rs, 404, {error: 'user'});
+            if (b.whom === rq.user.username) return reply (rs, 400, {error: 'self'});
+            s.next ();
+         }],
          function (s) {
+            if (action === 'sho') Redis (s, 'exists',    'tag:' + rq.user.username + ':' + b.tag);
+            if (action === 'shm') Redis (s, 'sismember', 'sho:' + b.whom, rq.user.username + ':' + b.tag);
+         },
+         function (s) {
+            if (! s.last && action === 'sho') return reply (rs, 404, {error: 'tag'});
+            if (! s.last && action === 'shm') return reply (rs, 403);
             var multi = redis.multi ();
-
-            multi [b.del ? 'srem' : 'sadd'] ('sho:' + rq.user.username, b.whom           + ':' + b.tag);
-            multi [b.del ? 'srem' : 'sadd'] ('shm:' + b.whom,           rq.user.username + ':' + b.tag);
+            multi [b.del ? 'srem' : 'sadd'] (action + ':' + rq.user.username, b.whom + ':' + b.tag);
+            if (action === 'sho' && b.del) multi.srem ('shm:' + b.whom, rq.user.username + ':' + b.tag);
+            if (b.del) multi.smembers ('tag:' + (action === 'sho' ? rq.user.username : b.whom) + ':' + b.tag);
             mexec (s, multi);
          },
-         [H.log, rq.user.username, {ev: 'share', type: b.del ? 'unshare' : 'share', tag: b.tag, whom: b.whom}],
-         [H.log, b.whom,           {ev: 'share', type: b.del ? 'unshare' : 'share', tag: b.tag, who:  rq.user.username}],
+         function (s) {
+            if (! s.last [0]) return reply (rs, 200);
+            s.next ();
+         },
+         ! b.del ? [] : [
+            [Redis, 'smembers', 'tag:' + action === 'sho' ? rq.user.username : b.whom],
+            [a.get, H.tagCleanup, rq.user.username, [b.tag], '@last', [(action === 'sho' ? b.whom : rq.user.username) + ':' + b.tag])],
+         ],
+         function (s) {
+            var eventType;
+            if (action === 'sho') eventType = b.del ? 'unshare' : 'share';
+            if (action === 'shm') eventType = b.del ? 'remove'  : 'accept';
+            H.log (s, rq.user.username, {ev: 'share', type: eventType, tag: b.tag, whom: b.whom});
+         },
+         ! ENV && action === 'sho' && ! b.del ? function (s) {
+            sendmail (s, {
+               to1:     b.whom,
+               to2:     s.email,
+               subject: CONFIG.etemplates.share.subject,
+               message: CONFIG.etemplates.share.message (b.whom, rq.user.username, b.tag)
+            });
+         } : [],
          [reply, rs, 200],
       ]);
    }],
+
+   // *** END ANNOTATED SOURCE CODE FRAGMENT ***
 
    ['get', 'share', function (rq, rs) {
       var multi = redis.multi ();
@@ -2944,6 +3170,57 @@ var routes = [
                }),
             });
          }
+      ]);
+   }],
+
+   ['post', 'rename', function (rq, rs) {
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['from', 'to'], 'eachOf', teishi.test.equal],
+         ['body.from', b.from, 'string'],
+         ['body.to', b.to, 'string'],
+      ])) return;
+
+      b.to = H.trim (b.to);
+      if (! H.isUserTag (b.to)) return reply (rs, 400, {error: 'tag'});
+
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            multi.smembers ('tag:'     + rq.user.username + ':' + b.from);
+            multi.exists   ('tag:'     + rq.user.username + ':' + b.to);
+            multi.smembers ('sho:'     + rq.user.username);
+            multi.smembers ('taghash:' + rq.user.username + ':' + b.from);
+            mexec (s, multi);
+         }],
+         function (s) {
+            if (! s.last [0].length) return reply (rs, 404, {error: 'tag'});
+            if (s.last [1])          return reply (rs, 409, {error: 'exists'});
+
+            var tagIsShared = dale.stop (s.last [2], true, function (shared) {
+               return b.to === shared.split (':').slice (1).join (':');
+            });
+            if (tagIsShared) return reply (rs, 409, {error: 'shared'});
+
+            var multi = redis.multi ();
+            multi.rename ('tag:' + rq.user.username + ':' + b.from, 'tag:' + rq.user.username + ':' + b.to);
+            multi.srem ('tags:' + rq.user.username, b.from);
+            multi.sadd ('tags:' + rq.user.username, b.to);
+            dale.go (s.last [0], function (id) {
+               multi.srem ('pivt:' + id, b.from);
+               multi.sadd ('pivt:' + id, b.to);
+            });
+            if (s.last [3].length) {
+               multi.rename ('taghash:' + rq.user.username + ':' + b.from, 'taghash:' + rq.user.username + ':' + b.to);
+               dale.go (s.last [3], function (hash) {
+                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.from);
+                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.to);
+               });
+            }
+            mexec (s, multi);
+         },
+         [reply, rs, 200]
       ]);
    }],
 
@@ -3019,36 +3296,21 @@ var routes = [
             dale.go (b.ids, function (id) {
                multi.hgetall ('piv:' + id);
             });
-            dale.go (b.ids, function (id) {
-               multi.smembers ('pivt:' + id);
-            });
-            multi.smembers ('shm:' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
-            var sharedWithUser = teishi.last (s.last);
-
-            var hasAccess = dale.stopNot (s.last.slice (0, b.ids.length), true, function (piv, k) {
-               // No such piv
-               if (! piv) return false;
-               if (piv.owner === rq.user.username) return true;
-               var tags = s.last [b.ids.length + k];
-               return dale.stop (tags, true, function (tag) {
-                  return inc (sharedWithUser, piv.owner + ':' + tag);
-               });
-            });
-
-            if (! hasAccess) return reply (rs, 404);
+            if (dale.stop (s.last, true, function (piv, k) {
+               // No such piv or piv is not owned by user
+               return ! piv || piv.owner === rq.user.username;
+            })) return reply (rs, 404);
 
             var downloadId = uuid ();
-            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pivs: dale.go (b.ids, function (id, k) {
-               var piv = s.last [k];
+            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pivs: dale.go (s.last, function (piv) {
                return {owner: piv.owner, id: piv.id, name: piv.name, mtime: JSON.parse (piv.dates) ['upload:lastModified']};
             })}), function (error) {
                if (error) return reply (rs, 500, {error: error});
                reply (rs, 200, {id: downloadId + '.zip'});
             });
-
          },
       ]);
    }],
@@ -3110,9 +3372,9 @@ var routes = [
                   multi.hdel ('piv:' + s.allPivs [k], 'loc');
                   dale.go (tags, function (tag) {
                      if (! H.isGeoTag (tag)) return;
-                     // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
                      multi.srem ('pivt:' + s.allPivs [k], tag);
                      multi.del ('tag:' + rq.user.username + ':' + tag);
+                     multi.srem ('tags:' + rq.user.username, tag);
                   });
                });
                multi.hdel ('users:' + rq.user.username, 'geo');

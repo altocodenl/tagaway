@@ -40,37 +40,67 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - Pivs
-   - Fix bug untagging with unselect all
    - Feedback box
+   - Fix bug untagging with unselect all
    - Fix scroll + back bug
    - Fix position moving around when uploads are happening in the background
-- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc
+- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc, teishi.prod = true in server
 - Share & manage
-   - Core implementation
-      - Both users exist
-      - User A shares tag X with user B
-      - User A sees the tag as shared with others in its Share view
-      - User B gets transactional email to accept tag X
-      - If user B doesn't click on the accept button, nothing else happens
-      - When user B clicks on the accept button, they are taken to the Share view and tag X appears on the list of tags shared with me
-      - If user B removes the shared tag from the list, it disappears from their shared with me view, but not from user A's shared with others view. It creates an equivalent scenario to user B not accepting the invitation.
+   - If user A shares tag X with user B:
+      - User A sees the tag as shared with others in its share view.
+      - User B gets transactional email to accept tag X.
+      - If user B doesn't click on the accept button, nothing else happens.
+      - If user B is not logged in yet, they are prompted to login. If they don't have an account, they can create one. In both cases, the flow is resumed as if user B was logged in, once the login/signup is completed successfully.
+   - If user B clicks on the accept share button (after a potential login/signup):
+      - They are taken to the Share view and a notification tells them that tag X from user A is now available to them.
+      - Tag X appears on the list of tags shared with me.
+      - User B can see the pivs belonging to tag X, and they are also counted inside All Pictures.
+      - If user A has also tagged a certain piv with a tag Y, and that piv also has tag X, user B will be able to see tag X on that piv, but not tag Y.
+      - User B will see date tags relevant to those pivs that have been shared by user A. And if user B has geotagging enabled, they will also see geotags relevant to those pivs but only if user A turned on geotagging as well.
+   - If user B removes tag X from the list:
+      - Tag X disappears from their shared with me view, but not from user A's shared with others view.
+      - User B cannot longer see pivs belonging to tag X, and they don't count anymore towards All Pictures.
+      - User B can see the pivs belonging to tag X but not download them, rotate, delete nor share.
+      - User B can tag the pivs belonging to tag X, but those tags will only be visible to user B, not to user A, nor to any other user with whom user A shared tag X.
       - User B can re-accept the invitation to see tag X as long as user A doesn't delete or untag all the pivs on tag X.
-      - User B can see the pivs belonging to tag X but not download them, rotate nor delete.
-      - User B can tag pivs belonging to tag X. But the added tags should only be visible to B, not to A, nor to any other users with whom tag X was shared.
-      - If user A unshares tag X with user B, the tag disappears from the Share view for both users A and B. If user B re-clicks on the old invitation, an error message will appear.
-      - If user A deletes or untags all the pivs from tag X, it is the same as if user A had unshared tag X with user B.
-      - When user B shares a tag Y with user C that contains pivs belonging to user A:
-         - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
-         - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
-         - If user A shares tag X with user C, user B will not see the tag Y on the pivs that belong to user A.
-      - Each user can see a list of email addresses of previous shares
-      - In main view, mark tags shared with me.
-      - Rename tag.
+   - If user A unshares tag X with user B, it will be the same as if B removes tag X from the list, except that:
+      - Tag X will disappear from user A's shared with others view., the tag disappears from the Share view for both users A and B.
+      - If user B re-accepts the old invitation, an error message will appear stating that they no longer have access to tag X.
+   - If user A deletes or untags all the pivs from tag X, and the tag X disappears, it is the same as if user A had unshared tag X with user B.
+   - If user B tags a piv belonging to tag X with a tag Y, and then uploads a piv with the same hash as that tagged piv, the piv owned by B will also have the tag Y. The converse is also true: if the user B first has its own piv with tag Y and then a piv with identical hash is shared, that piv with also have the tag Y, but only for user B.
+   - If a piv with hash 1, either owned by user B or shared with user B or both, is untagged from tag X, tag X won't be visible on that piv for user B.
+   - If user B shares a tag Y with user C that contains pivs belonging to user A:
+      - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
+      - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
+      - If user A shares tag X with user C, user B will not see the tag Y on the pivs that belong to user A.
+      - When user A shares a tag X with user C containing a piv with hash 1, and user B shares a tag Y with user C containing a piv with hash 1, user C should only see one piv with hash 1, and only one of those should count towards the total on All pictures.
+      - If tag Y only has pivs belonging to user A, user B will get an error stating that a shared tag must have at least one own piv.
+   - Each user can see a list of email addresses of previous shares. If user A shared one or more tags with user B in the past but removed all of those shares, then user B's email address won't be visible in user A's list.
+   - In main view, see tags shared with me with a different icon than own tags.
+   - Rename tag.
+
+- Share implementation
    - Server changes
+      - rename endpoint
       - shm in/out endpoint (check that sho exists)
       - send email for shm
       - remove sho & shm when tag disappears
-      - rename endpoint
+      - tags & hashes
+         - tag/untag: if own piv with that hash, tag/untag own. otherwise, resolve hash and add/rem from hashtag:HASH.
+         - delete: if shared pivs with hash, (re)create hashtag:HASH
+         - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
+
+         - finish annotated of
+
+         - query: tags of own pivs are those in piv itself; for shared pivs, try to look them up in hash of own piv, otherwise on hashtag:HASH. But then you need to add those of other shared tags that also have that piv, and not only that piv, that HASH! Do it by getting ALL shared pivs, and their hashes, then you can trace back to the shared tag itself.
+            - remove treatment of years as or tags.
+            - from selected tags (or all tags), get all pivs that have them, also get all pivs from shared tags that match the query. result is a list of ids.
+            - get pivs and hashes.
+            - if pivs with same hash, use own piv as priority. if all are shared, disambiguate by username of who shares. result is list of ids with no hash repetition.
+            - for pivs with same hash, put list of tags from hashtag; also put date tags. TODO: put geotags there? or put them only if both users have it enabled?
+            - sort.
+            - if idsonly, return that.
+            - use both own tags and tags from hashtag, both for each piv's tags and for the total count.
    - Tests:
       - check queries & tags
          - check disappearing of access when either sho or shm is removed
@@ -79,17 +109,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - if a piv has tags X and Y for user A, but user A only shares X with user B, user B should not see tag Y
          - querying on shared tag
          - if A shares tag X including piv 1 with B, and B has piv 1 as well, there should be no double counting in all pivs or in the pivs returned, but the shared tag should be visible for B
-         - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. User C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
+         - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. user C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
          - if a shared tag loses all pivs through untagging or deletion, remove it from sho and shm (try multiple shos as well).
          - TODO: tag by hash, no matter to whom it belongs
-      - rename endpoint
    - update readme: redis structure, endpoints
    - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
-
-- Submissions
-   - Google Play
-   - Google Drive
-   - App Store
 
 ### Already implemented
 
@@ -463,19 +487,32 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `a::`, `d::`, or tags shared with the user by other users.
+   - Returns an array of the form `['tag1', 'tag2', ...]`. This list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`.
 
 - `POST /query`
-   - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT|UNDEFINED, fromDate: INT|UNDEFINED, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED}`. Otherwise, a 400 is returned with body `{error: ...}`.
+   - Body must be of the form:
+```
+{
+   tags: [STRING, ...],
+   mindate: INT|UNDEFINED,
+   maxdate: INT|UNDEFINED,
+   sort: newest|oldest|upload,
+   from: INT|UNDEFINED,
+   fromDate: INT|UNDEFINED,
+   to: INT,
+   recentlyTagged: [STRING, ...]|UNDEFINED,
+   idsOnly: BOOLEAN|UNDEFINED
+}
+```
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
-   - If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and it represents a timestamp. For the provided query, the server will find the index of the piv with the `date` (or `dateup` in the case of `sort` being `upload`) and use that as the `from` parameter. For example, if `fromDate` is `X`, `to` is 100 and `sort` is `newest`, the query will return the 100 pivs that match the query that were taken at `X` onwards.
+3. If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and will represent a timestamp. For the provided query, the server will find the index of the piv with the `date` (or `dateup` in the case of `sort` being `upload`) and use that as the `from` parameter. For example, if `fromDate` is `X`, `to` is 100 and `sort` is `newest`, the query will return the 100 pivs that match the query that were taken at `X` onwards, *plus all the pivs* taken before `X`.
    - `a::` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
    - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
    - Each of the returned pivs will have all the tags present in `body.tags`. The only exception to this rule are year tags, on which the query returns pivs that contain at least one of the given date tags. For example, the query `['d::2018', 'd::2019']` will return pivs from both 2018 and 2019.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`. The field `tags` will potentially also date tags, geotags and tags shared with the user.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
       - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `a::` and `untagged`, which indicate the *total* amount of all and untagged pivs, irrespective of the query.
@@ -693,7 +730,7 @@ All the routes below require an admin user to be logged in.
 
 - hashorig:USERNAME (hash): key is hash of piv uploaded (without metadata stripped), value is id of corresponding piv. Used to check for already uploaded piv.
 
-- hash:USERNAME:PROVIDER (set): contains hashes of the pivs imported by an user. The hashed quantity is `ID:MODIFIED_TIME`.
+- hash:USERNAME:PROVIDER (set): contains hashes of the pivs imported by an user. The hashed quantity is `ID:MODIFIED_TIME` - not to be confused with the hashing of the uploaded piv that is stored in `hash:USERNAME`.
 
 - hashdel:USERNAME (set): contains hashes of the pivs deleted by an user, to check for repetition when re-uploading files that were deleted. This field is not in use yet.
 
@@ -736,13 +773,17 @@ All the routes below require an admin user to be logged in.
 
 - pivt:ID (set): list of all the tags belonging to a piv.
 
-- tag:USERNAME:TAG (set): piv ids.
+- hashtag:USERNAME:HASH (set): list of all the tags belonging to pivs with a hash HASH. This will exist only if the user has one or more other users sharing a piv with a hash HASH that have one or more tags and, at the same time, the user has no piv with hash HASH.
 
-- tags:USERNAME (set): list of all tags created by the user. Does not include tags shared with the user.
+- taghash:USERNAME:TAG (set): list of all of the hashes belonging to a given tag, for all the pivs not owned by `USERNAME` that are tagged with that tag. The taghash sets contain the same information than the hashtag sets.
 
-- shm:USERNAME (set): USERA:TAG, USERB:TAG (shared with me)
+- tag:USERNAME:TAG (set): piv ids that belong to that tag.
 
-- sho:USERNAME (set): USERA:TAG, USERB:TAG (shared with others)
+- tags:USERNAME (set): list of all tags created by the user. Does not include tags shared with the user, nor `a::` or `u::`, but it does include geotags and date tags.
+
+- shm:USERNAME (set): USERNAMEA:TAG, USERNAMEB:TAG (shared with me)
+
+- sho:USERNAME (set): USERNAMEA:TAG, USERNAMEB:TAG (shared with others)
 
 - download:ID (string): stringified object of the shape `{username: ID, pivs: [{owner: ID, id: ID, name: STRING}, {...}, ...]}`. Expires after 5 seconds.
 
@@ -1229,6 +1270,727 @@ For now, we only have annotated fragments of the code. This might be expanded co
 
 ### `server.js`
 
+TODO: add all code from the top of the file.
+
+We define `H.getSharedHashes`, a function that will return a list of all the hashes of all the pivs shared with a given user.
+
+This function will be used by `H.deletePiv` and `H.tagCleanup`.
+
+As arguments, it takes an astack `s` and the `username` for which we want to obtain the list of hashes.
+
+```javascript
+H.getSharedHashes = function (s, username) {
+```
+
+We start an asynchronous sequence using the received astack.
+
+```javascript
+   a.seq (s, [
+```
+
+We first get a list of all the tags shared with the user, by getting `shm:USERNAME`.
+
+```javascript
+      [Redis, 'smembers', 'shm:' + username],
+```
+
+We will now build a list of all the ids of all the pivs shared with the user. For this, we define a redis `multi` operation and a `qid` (query id) since we will temporarily store our list of ids in redis.
+
+```javascript
+      function (s) {
+         var multi = redis.multi (), qid = 'query:' + uuid ();
+```
+
+We iterate the tags shared with the user. These share items are of the form `USERNAME:tag`, so by merely prepending them with `tag:`, we will get the list of piv ids that are bound to each tag. The resulting ids are added in a set at key `qid` through the `sunionstore` operation.
+
+A very useful consequence of using a set is that repeated piv ids won't be present more than once, since redis sets will not allow repeated items. Repeated pivs are indeed possible if a user A tags a piv 1 with tags X and Y, and shares both tags with another user.
+
+```javascript
+         multi.sunionstore (qid, dale.go (s.last, function (share) {
+            return 'tag:' + share;
+         }));
+```
+
+We then get the resulting set, delete it from redis and execute the multi operation.
+
+```javascript
+         multi.smembers (qid);
+         multi.del (qid);
+         mexec (s, multi);
+      },
+```
+
+We now iterate the list of ids, and obtain the `hash` for each of them as part of a new multi operation.
+
+If two (or more) distinct pivs have the same hash, the list will contain repeated hashes. However, we're OK with this, since the amount of repeated pivs should be relatively small, and the use we have for this list doesn't require it to contain non-repeated elements. To eliminate duplicates, we could either filter them in javascript, or add all the resulting hashes onto a redis set, but we won't do it - at least, not for now.
+
+Note that we access the next-to-last element in `s.last`, since the result of the last operation corresponds to the deletion of `qid`, rather than the `smembers` operation which brings the ids.
+
+We will merely return the result of obtaining all the hashes, which should produce a list of hashes. This concludes the function.
+
+```javascript
+      function (s) {
+         var multi = redis.multi ();
+         dale.go (teishi.last (s.last, 2), function (id) {
+            multi.hget ('piv:' + id, 'hash');
+         });
+         mexec (s, multi);
+      }
+   ]);
+}
+```
+
+We now define `H.tagCleanup`, a function that removes tag entries from a user's list of tags (`tags:USERNAME`), as well as shared tag entries (of the form `sho:USERNAME:TAG` and `shm:ANOTHERUSERNAME:TAG`). Those entries will be removed if no more pivs exist that hold a given tag - which means that the tag, for that particular user, has ceased to exist. If a tag entry is removed from `tags:USERNAME`, if that tag is shared with others, some entries on `sho:USERNAME` and `shm:ANOTEHRUSERNAME` will have to be removed as well. The cleanup of `tags:USERNAME`, `sho:USERNAME` and `shm:ANOTHERUSERNAME` is what we call the *first half* of the function.
+
+The function will also delete hashtag entries that are no longer needed, while also removing some hashes from taghash entries. The affected hashtags and taghashes will belong to **other users**, rather than the user itself (with the exception of the *remove share* case, see below). The cleanup of hashtags and taghashes is what we call the *second half* of the function.
+
+Some background on hashtags is helpful: hashtags are sets of the form `hashtag:USERNAME:HASH` that point to one or more tags. Their purpose is to allow a user B to tag pivs that don't belong to them, but are shared with them. Why is this done on a hash rather than on a piv id itself? For the following reason: if multiple users (say, A and C) happen to own each a piv with a hash 1, and they both share both pivs with user B, whenever user B tags one of those pivs, the desired behavior is that the tagging will happen to a piv that looks exactly like that one, rather than the version shared by either user A or C. In other words, what the user tags is *a piv that looks like this* - and the accurate proxy for a *piv that looks like this* is its `hash` entry.
+
+taghashes are reverse hashtags: they are sets of the form `taghash:USERNAME:TAG` that point to one or more hashes. Their purpose is to make querying more efficient. Their contents, however, are equivalent to that of hashtags. Both should be kept consistent with each other.
+
+One more thing regarding hashtags and taghashes: if a user B owns a piv with hash 1, they will have no hashtag entry for hash 1 and no taghashes will contain the hash 1. In other words, if a user owns a piv with hash 1, there's no need for hashtags, since tags on a piv with hash 1 will be applied to the only piv they will own with hash 1.
+
+This function will be invoked in the following five situations:
+
+1. For a given user, a piv with the same content but different metadata is uploaded, which ends up changing the month and year of the piv with which the piv is tagged. This happens in `H.updateDate`. In this case, the change only affects one piv, and we only have to check whether the old month/year tags are gone and should be removed from `tags:USERNAME`. There's no need to clean up `sho`/`shm` entries, or hashtags/taghashes, since date tags cannot be shared.
+2. A piv is deleted. In this case, one piv is removed, and we'll have to check whether each of the tags on that piv has now disappeared; we also have to perform `sho`/`shm` cleanup; we will also have to check if other users' hashtags/taghashes require cleanup.
+3. One or more pivs are untagged. This is the same as when a piv is deleted, except that multiple pivs are potentially affected, and there's only one tag concerned, when it comes to the first half. Hashtag/taghash cleanup is also required.
+4. A tag is unshared. In this case, `tags:USERNAME` entries for the user are not affected, and the `sho`/`shm` changes are performed directly by the endpoint rather than this function. But hashtag/taghash cleanup for other users is required, since an unshare potentially means loss of access to pivs by other users.
+5. A tag shared by another user is removed by the user from their own list. In this case, hashtag/taghash cleanup is necessary **but for the user itself**, since they are provoking their own potential loss of access to pivs shared by others. And, after the cleanup of hashtag/taghash entries, we need to perform cleanup on the user's `tags:` entries - but not on `sho`/`shm` entries, since if the removal of hashtag/taghash entries causes the removal of an own tag, that means that the tag has no own pivs, and therefore cannot be a shared tag.
+
+Interestingly enough, it is not necessary to invoke this function when disabling geotagging, since all geotags will be removed from the `tags:USERNAME` set by the endpoint itself, and because geotags cannot be shared (so it cannot affect neither `sho`/`shm` entries, nor hashtag/taghash entries).
+
+Why do we need a helper function for tag cleanup and not one for tag setting? Simply, because adding a tag to a set can always be done, since this will add the tag to the set if the tag is not there, or will be a no-op if the tag is already there. But to check whether the tag is gone requires us to see that no more pivs are tagged with it; hence, the need for custom logic. The same goes for hashtags/taghashes.
+
+The logic for the first half of the function (cleaning up `tags:USERNAME` and `sho:USERNAME`/`shm:ANOTHERUSERNAME` entries) is straigthforward: check whether `tag:USERNAME:TAG` or `taghash:USERNAME:TAG` still exist; if none of them does, remove the tag from `tags:USERNAME`; if only a taghash entry exists, remove the tag from `sho`/`shm` entries if it's a shared tag.
+
+What's much less straightforward is the second half, hashtag/taghash cleanup. Even if no tags are removed from `tags:USERNAME` and `sho`/`shm`, other users might potentially lose access to one or more hashes of pivs previously (but no longer) shared with them. And, any change in a hashtag entry must be reflected in the relevant taghash entries as well. For this reason, the inputs received by the function make the two halves independent: the operations of the first half of the function don't affect the result of the second function, or viceversa. The inputs are provided by the calling functions to reduce the potential number of operations to perform the cleanup, particularly for the second half. The first half uses only the arguments `username` and `tags`, whereas the second half uses only the arguments `tags`, `ids` and `sho`.
+
+The logic for hashtag/taghash cleanup is as follows: get a set of all the ids of the pivs to which other users might have lost access (because they were deleted, untagged, unshared, or the share was removed by the user performing the operation); from there, get the list of hashes for those pivs. Then, for each of these hashes, and *after* the rest of the delete/untag/unshare/remove share operation has been done, check whether the user has access to each of these hashes through a share. For each of the hashes that the user no longer has access to: 1) get the relevant hashtag entry `hashtag:ANOTHERUSERNAME:HASH`; 2) if it exists, delete it; 3) for each tag in that entry, remove the hash from `taghash:ANOTHERUSERNAME:TAG`; if a `taghash:ANOTHERUSERNAME:TAG` entry disappears, AND the user has no own pivs tagged with that tag, then remove that tag from `tags:ANOTHERUSERNAME`.
+
+Now, how do we know that the hashtag/taghash changes don't affect further users downstream? The reason is simple: a user B cannot share a piv shared with them by user A with a user C. So, any tags that disappear because of a taghash entry that's gone is necessarily a tag that only existed on pivs not owned by the user; hence, it cannot affect another user.
+
+Do you find this confusing? You're in good company. This function is probably the trickiest piece of code in the entire application.
+
+The function takes as arguments:
+- An astack `s`.
+- The `username` for which we want to perform the tag cleanup.
+- A list of `tags`.
+- A list of `ids`. This argument can be absent in the case where `H.updateDates` invokes this function.
+- `sho`, which will be the `sho:USERNAME` entry *before* the deletion/untagging/unsharing operation takes place.
+- `unshare`, an optional flag that indicates whether this function is being invoked by the unshare/remove share endpoint.
+
+```javascript
+H.tagCleanup = function (s, username, tags, ids, sho, unshare) {
+```
+
+We start an asynchronous sequence using the received astack.
+
+```javascript
+   a.seq (s, [
+```
+
+We start by iterating all the `tags` and checking whether they still exist, by checking for the existence of `tag:USERNAME:TAG` and `taghash:USERNAME:tag`.
+
+Note we wrap the afunction in an array, to indicate astack that this is a single afunction with no arguments passed to it by astack. This is necessary only because this is the first entry of the array we pass to `a.seq`.
+
+Note also that if `unshare` is present, we skip this asynchronous function.
+
+```javascript
+      [function (s) {
+         if (unshare) return s.next ();
+         var multi = redis.multi ();
+         dale.go (tags, function (tag) {
+            multi.exists ('tag:'     + username + ':' + tag);
+            multi.exists ('taghash:' + username + ':' + tag);
+         });
+         mexec (s, multi);
+      }],
+```
+
+Now that we have the required info (tag existence and shared tags), we will iterate `tags`; for those that don't exist any more, we remove them from `tags:USERNAME`. We also collect all the tags that have no normal tag entry (whether they have a taghash entry or not) in an array `toRemove`. The reason for the distinction is the following: if a tag only exists on pivs not owned by the user, the tag can no longer be a shared tag.
+
+Note also that if `unshare` is present, we skip this asynchronous function.
+
+```javascript
+      function (s) {
+         if (unshare) return s.next ();
+         var multi = redis.multi ();
+         var toRemove = dale.go (tags, undefined, function (tag, k) {
+            if (s.last [k]) return;
+            multi.srem ('tags:' + username, tag);
+            var tagExists = s.last [k * 2], taghashExists = s.last [k * 2 + 1];
+            if (! tagExists && ! taghashExists) multi.srem ('tags:' + username, tag);
+            if (! tagExists) return tag;
+         });
+```
+
+We now iterate the tags shared by the user. We split each of the items in `sho:USERNAME` into `whom` (the user with whom the tag is shared) and the `tag` itself.
+
+If `sho` is not passed, as is in the case of the invocation done by `H.updateDates`, the iteration won't do anything.
+
+```javascript
+         dale.go (sho, function (share) {
+            var whom = share.split (':') [0], tag = share.split (':').slice (1).join (':');
+```
+
+If the `tag` is in the `toRemove` list, we remove `WHOM:TAG` from `sho:USERNAME`, as well as `USERNAME:TAG` from `shm:ANOTHERUSERNAME` - the latter is the list that contains the tags shared *with* `whom`.
+
+```javascript
+            if (! inc (toRemove, tag)) return;
+            multi.srem ('sho:' + username, whom + ':' + tag);
+            multi.srem ('shm:' + whom, username + ':' + tag);
+         });
+         mexec (s, multi);
+      },
+```
+
+This concludes the first half of the function. Now we're ready to perform hashtag/taghash cleanup.
+
+We get the hash for each of the `ids` using a redis `multi` operation. We set the result, which will be an array of hashes, in `s.hashes`. If there are no `ids` present (in the case of date cleanup), this will be a no-op.
+
+```javascript
+      [a.set, 'hashes', function (s) {
+         var multi = redis.multi ();
+         dale.go (ids, function (id) {
+            multi.hget ('piv:' + id, 'hash');
+         });
+         mexec (s, multi);
+      }],
+```
+
+We now will compile a list of all the affected users - that is, users that might have lost access to one or more pivs as a result of the delete/untag/unshare/remove share operation that invoked this function.
+
+To do this, we iterate the tags shared by `USERNAME`, and, if any of them is included in `tags` and is shared with a username `X`, we add `X` to the list of affected users. We will store this list of affected users in `s.affectedUsers` since we'll use it again below.
+
+```javascript
+         s.affectedUsers = [];
+         dale.go (sho, function (share) {
+```
+
+We extract `username` and `tag` from each `share` string. Note we do a split, slice and join to get the tag from `USERNAME:tag`, since a tag may well contain colons. However, because usernames cannot contain a colon, we can access the username merely by splitting the `share` item by colon and then accessing its first element. This, by the way, is the reason colons are forbidden in usernames - so that we can always know that the username is contained in the first (or sometimes second) part of a string punctuated with colons.
+
+```javascript
+            var username = share.split (':') [0], tag = share.split (':').slice (1).join (':');
+```
+
+If the tag is inside `tags` and we haven't yet placed the username into `s.affectedUsers`, we do so. If a user is affected multiple times, by not adding them to the list multiple times we will avoid repeating identical operations later.
+
+```javascript
+            if (inc (tags, tag) && ! inc (s.affectedUsers, username)) s.affectedUsers.push (username);
+         });
+```
+
+We invoke `a.fork` on `s.affectedUsers` and `H.getSharedHashes`, to get the hashes shared with each affected user. This operation, as well as the entire invocation to `H.tagCleanup`, should happen *after* deletion/untagging/unsharing, so that the list of hashes will be updated. However, `sho` and `ids` should contain the information present *before* the operation, since this will indicate us what is the scope of what should be cleaned up.
+
+```javascript
+         a.fork (s, s.affectedUsers, H.getSharedHashes, {max: 5});
+      },
+```
+
+We now start another `multi` operation to get each hashtag corresponding to each hash that is no longer accessible to a user. We will place items of the form `[username, hash]` in `s.toRemove`.
+
+```javascript
+      function (s) {
+         var multi = redis.multi ();
+         s.toRemove = [];
+```
+
+We iterate the list of shared hashes for each user (available at `s.last`).
+
+```javascript
+         dale.go (s.last, function (hashes, k) {
+```
+
+We get the corresponding username from `s.affectedUsers`.
+
+```javascript
+            var username = s.affectedUsers [k];
+```
+
+We iterate all the hashes (each of them corresponding to each id in `ids`); for each hash that is no longer available for this user, we push `[username, hash]` to `s.toRemove` and retrieve all the tags inside `HASHTAG:USERNAME:HASH`.
+
+Now, if the hash is no longer shared with the user, two things could have happen: either the user indeed just lost access to a piv with that hash, or the user could also have an own piv with that hash. If the latter happens, the user will not have a hashtag entry for that tag, nor any of their taghash entries will contain that hash. But if this is the case, then removing the hashtag and taghash entries for that given hash won't make any difference. So we don't bother checking whether the user has an own piv with that hash; the fact that no user shares a piv with that hash is enough for us to perform a cleanup.
+
+If, however, another user was still sharing a piv with the same hash, we would not want to remove the hashtag entry for this hash. It is precisely for this reason that we have to perform the check to see whether the hash is still available to the user.
+
+Something interesting to note: there's no longer any references to the original list of tags passed as argument to the function. For hashtag/taghash purposes, that original list of tags was just a way to determine which users might have been affected by the operation.
+
+```javascript
+            dale.go (s.hashes, function (hash) {
+               if (inc (hashes, hash)) return;
+               s.toRemove.push ([user, hash]);
+               multi.smembers ('hashtag:' + user + ':' + hash);
+            });
+         });
+         mexec (s, multi);
+      },
+```
+
+We will now start a multi operation to perform removals of hashtags and taghashes. We iterate `s.toRemove` to remove hashtags and taghashes.
+
+```javascript
+      function (s) {
+         var multi = redis.multi ();
+         dale.go (s.toRemove, function (toRemove, k) {
+```
+
+For each `toRemove` entry, we remove outright the `hashtag:USERNAME:HASH` entry; we then iterate the k-th element of `s.last`, each of which will be a tag that was inside the hashtag. Then, for each of `taghash:USERNAME:TAG`, we remove the hash.
+
+```javascript
+            multi.del ('hashtag:' + toRemove [0] + ':' + toRemove [1]);
+            dale.go (s.last [k], function (tag) {
+               multi.srem ('taghash:' + toRemove [0] + ':' + tag, toRemove [1]);
+            });
+         });
+```
+
+Now, for a further check. It might be the case that, for one or more users, the loss of access to one or more pivs might have meant that they also lost a tag. Namely, if a user B tagged a shared piv with hash 1 with the tag Y, and has no other piv tagged with tag Y, and then loses access to said piv, then the tag Y should be removed from user B's list of tags. To know whether this is the case, we check whether each user, after all the aforementioned deletions, still has either a taghash entry or a tag entry for each tag previously contained in their hashtag entry. If neither exists, it means that the tag is now lost and should be removed from the user's `tags:USERNAME` set.
+
+So we will iterate the `s.toRemove` entries and make a new set of entries, each of them composed of a username and a tag, and store them in `s.toRemove2`. Not all of these entries may require cleanup, that will be determined by the result of the `exists` calls.
+
+Note we do this within the same multi block, but at the very end of it, to make sure all cleanups happen before.
+
+```javascript
+         s.toRemove2 = [];
+         dale.go (s.toRemove, function (toRemove, k) {
+            dale.go (s.last [k], function (tag) {
+               multi.exists ('tag:' + toRemove [0] + ':' + tag, 'taghash:' + toRemove [0] + ':' + tag);
+               s.toRemove2.push ([toRemove [0], tag]);
+            });
+         });
+         mexec (s, multi);
+      },
+```
+
+We will now start another `multi` operation.
+
+```javascript
+      function (s) {
+         var multi = redis.multi ();
+```
+
+We will only iterate the entries that are relevant to us, namely, the `exists` checks, which are at the end of the array of results we just obtained. The first part of the array, which we discarded, belong to the cleanup of hashtag/taghashes.
+
+```javascript
+         s.last = s.last.slice (- toRemove2.length);
+```
+
+We iterate the `s.toRemove2` entries.
+
+```javascript
+         dale.go (s.toRemove2, function (toRemove2, k) {
+```
+
+If neither a taghash nor a tag entry exists for the given username and tag combination, then we remove the tag from the list of tags for that user.
+
+```javascript
+            if (! s.last [k]) multi.srem ('tags:' + toRemove2 [0], toRemove2 [1]);
+         });
+```
+
+```javascript
+
+This concludes the function.
+
+```javascript
+         mexec (s, multi);
+      }
+   ]);
+}
+```
+
+TODO: add annotated source code between `H.tagCleanup` and the `POST /tag` endpoint.
+
+We now define the `POST /tag` endpoint. This endpoint will serve for both tagging and untagging operations.
+
+```javascript
+   ['post', 'tag', function (rq, rs) {
+```
+
+We create a shorthand `b` for the request's body.
+
+```javascript
+      var b = rq.body;
+```
+
+The body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`. `ids` should have at least one tag in it. If any of these requirements is not met, a 400 will be returned with the corresponding validation error.
+
+```javascript
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['tag', 'ids', 'del'], 'eachOf', teishi.test.equal],
+         ['body.tag', b.tag, 'string'],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+         function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
+         ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
+      ])) return;
+```
+
+`b.tag` should be a valid user tag - that is, a string that, after being trimmed, should have length of at least 1 and should *not* start with a lowercase letter followed by two colons.
+
+If after trimming it the conditions are not met, we return a 400 error with body `{error: 'tag'}`.
+
+```javascript
+      b.tag = H.trim (b.tag);
+      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
+```
+
+We check whether there are repeated ids inside `ids`. We do this by creating an object of the form `{ID1: true, ID2: true, ...}`. If this object has less keys than the length of `ids`, it means there are repeated keys. If that's the case, we return a 400 error with body `{error: 'repeated'}`.
+
+```javascript
+      var seen = dale.obj (b.ids, function (id) {
+         return [id, true];
+      });
+      if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+```
+
+We start the asynchronous part of the operation, invoking `astop`.
+
+```javascript
+      astop (rs, [
+```
+
+We first whether the user has access to each of the pivs. To find out, we invoke `H.hasAccess`. If the user has access to a piv (because the piv exists and it's either owned by the user or shared with the user) this function will also return the actual piv in question.
+
+```javascript
+         [a.fork, b.ids, function (s, id) {
+            H.hasAccess (s, rq.user.username, id);
+         }, {max: 5}],
+```
+
+We iterate the results of `H.hasAccess`. If any of them is `false`, we return a 404 error with no body.
+
+```javascript
+         function (s) {
+            if (dale.stop (s.last, true, function (piv) {return piv === false})) return reply (rs, 404);
+```
+
+If we're here, all of the pivs in `ids` exist, and the user has access to all of them. We store the list of pivs in `s.pivs`.
+
+```javascript
+            s.pivs = s.last;
+```
+
+We iterate `s.pivs` and collect those that are shared with the user (as opposed to being owned by the user) in an array `sharedPivs`. We also store the index of each piv inside itself in the field `k`, since this will be useful to us in a minute.
+
+```javascript
+            var sharedPivs = dale.fil (s.pivs, undefined, function (piv, k) {
+               piv.k = k;
+               if (piv.owner !== rq.user.username) return piv;
+            });
+```
+
+If all of the pivs are owned by the user, we skip to the next asynchronous function.
+
+```javascript
+            if (! sharedPivs.length) return s.next ();
+```
+
+If we're here, at least one of the pivs is shared with the user. For each of the `sharedPivs`, we will see if the user owns a piv with the same hash. We do this by performing a lookup on `hash:USERNAME`.
+
+```javascript
+            a.seq (s, [
+               [Redis, 'hmget', 'hash:' + rq.user.username, dale.go (sharedPivs, function (piv) {return piv.hash})],
+```
+
+We iterate `sharedPivs`. If the user doesn't own a piv with the same hash, there's nothing to do for that particular piv.
+
+```javascript
+               function (s) {
+                  dale.go (sharedPivs, function (piv, k) {
+                     if (! s.last [piv.hash]) return;
+```
+
+If the user indeed owns a piv with the same hash, we will then perform the tagging/untagging operation on the user's own piv. We replace the fields `id` and `owner` in the piv we obtained earlier, by the id of the piv owned by the user, and the user's username, respectively. Note we don't touch the database entry for piv, just the copy of it we queried in our code.
+
+Any shared pivs that have no equivalent piv owned by the user will remain unchanged.
+
+This concludes the asynchronous detour of `sharedPivs`.
+
+```javascript
+                     s.pivs [piv.k].id    = s.last [piv.hash];
+                     s.pivs [piv.k].owner = rq.user.username;
+                  });
+                  s.next ();
+               }
+            ]);
+         },
+```
+
+If we're performing an untagging operation, we iterate through `s.pivs` and, for each piv that is owned by the user, we return its list of tags. We also do so for each piv not owned by the user but potentially tagged. While we don't need the list of tags in the case of shared pivs, we have added the call anyway to have one entry per piv, as well as to make the code more illustrative than doing a dummy call `multi.get ('foo')` - the difference in performance should be negligible.
+
+```javascript
+         ! b.del ? [] : function (s) {
+            var multi = redis.multi ();
+            dale.go (s.pivs, function (piv) {
+               if (piv.owner !== rq.user.username) multi.smembers ('pivt:' + piv.id);
+               else                                multi.smembers ('hashtag:' + rq.user.username + ':' + piv.hash);
+            });
+```
+
+We also get the list of tags shared by the user, since we might also need it in the case of an untagging operation.
+
+```javascript
+            multi.smembers ('sho:' + rq.user.username);
+            mexec (s, multi);
+         },
+```
+
+We create another `multi` operation.
+
+```javascript
+         function (s) {
+            var multi = redis.multi ();
+```
+
+If this is an untagging operation, we store the last operation from the last set of operations (the `smembers` call to `sho:USERNAME`) in `s.sho`. We then set up, `s.ids` an array of ids of pivs that are necessary for performing hashtag cleanup and will be passed to `H.tagCleanup` later.
+
+```javascript
+            if (b.del) {
+               s.sho = teishi.last (s.last);
+               s.ids = [];
+            }
+```
+
+We start iterating the pivs.
+
+```javascript
+            dale.go (s.pivs, function (piv, k) {
+```
+
+We will first deal with the tagging operation.
+
+```javascript
+               if (! b.del) {
+```
+
+We add `b.tag` to `tags:USERNAME`. If the tag was already there, this will be a no-op. Note we do this for both pivs owned and not owned by the user.
+
+```javascript
+                  multi.sadd ('tags:' + rq.user.username, b.tag);
+```
+
+If the piv is not owned by the user, we will add `b.tag` to `hashtag:USERNAME:HASH` and `piv.hash` to `taghash:USERNAME:TAG`. If they were already there, this operation will not change anything.
+
+```javascript
+                  if (piv.owner !== rq.user.username) {
+                     multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
+                     multi.sadd ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+                  }
+```
+
+If the piv is owned by the user, we add `b.tag` to `pivt:ID`, as well as `piv.id` to `tag:USERNAME:TAG`. If this piv was tagged with this tag already, both will be no-ops.
+
+```javascript
+                  else {
+                     multi.sadd ('pivt:' + piv.id, b.tag);
+                     multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+```
+
+Finally, we remove the piv's id from `tag:USERNAME:u::`, which is the list of untagged pivs. If the piv already had an user tag, this will be a no-op. Note we don't do this for pivs that are not owned by the user, since they will not be inside the `tag:USERNAME:u::` entry (or in any `tag:USERNAME:...` entry, for that matter).
+
+```javascript
+                     multi.srem ('tag:' + rq.user.username + ':u::', piv.id);
+                  }
+```
+
+This concludes the tagging operation. Notice we didn't need to refer to the list of existing tags for the piv, since if an element was removed that wasn't there or added that already was there before, that will simply amount to a no-op instead of an error or duplication.
+
+We use again a `return` statement to avoid having to write an `else` block for the untagging code.
+
+```javascript
+                  return;
+               }
+```
+
+If we're here, we're dealing with an untagging operation. We check whether the tag is present in the piv; if it's not the case, we don't do anything else for this piv.
+
+```javascript
+               if (! inc (s.last [k], b.tag)) return;
+```
+
+If the piv is not owned by the user, we will remove the tag from the user's hashtag entry for a piv with that hash. Since the user doesn't own a piv with that hash, then we know the user must have a hashtag entry for it. And as we saw above, the list of tags for this piv came from the hashtag entry, not a regular `pivt:USERNAME` entry.
+
+We also remove the hash from the taghash entry for the tag (`taghash:USERNAME:TAG`).
+
+```javascript
+               if (piv.owner !== rq.user.username) {
+                  multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
+                  multi.srem ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+               }
+```
+
+If we're here, the user is untagging a piv that belongs to them.
+
+Since that could restrict access to the piv to another user with whom the tag was shared, we push the piv's id to `ids`, which will be passed to `H.tagCleanup` later.
+
+We do not add ids of pivs not owned by the user to the list of ids, since those untaggings cannot remove access by other users to that piv, so it requires no further tag cleanup.
+
+```javascript
+               else {
+                  s.ids.push (piv.id);
+```
+
+We remove the tag from `pivt:ID` and the id from `tag:USERNAME:TAG`.
+
+```javascript
+                  multi.srem ('pivt:' + piv.id, b.tag);
+                  multi.srem ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+```
+
+If there's only one user tag left on the piv, then we are removing the last user piv from the piv. In that case, we add the piv to the `untagged` set (`tag:USERNAME:u::`.
+
+```javascript
+                  if (dale.fil (s.last [k], false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
+               }
+```
+
+We're done iterating each of the pivs. We then execute the operations we just set up.
+
+```javascript
+            });
+            mexec (s, multi);
+         },
+```
+
+If this is an untagging operation, we will invoke `H.tagCleanup` passing to it the username and the tag (the tag wrapped in an array), as well as `s.ids` and `s.sho`. `s.ids` will be the list of ids of pivs owned by the user that were untagged (excluding no-ops) and `s.sho` will be the list of tags shared by the user *before* the untagging operation.
+
+```javascript
+         ! b.del ? [] : [a.get, H.tagCleanup, rq.user.username, [b.tag], '@ids', '@sho'],
+```
+
+We then create a log entry for the user with the `type` set to either `'tag'` or `'untag'`. In all cases, the `ev` is `'tag'`. We also pass `ids` and `tag` and `whom` to the log entry.
+
+Note that, unlike other operations, we create a log entry even if this is a no-op. While it would be possible to quite efficiently figure out whether this was a no-op or not, we believe it would be confusing to the user to see their own log and see that what to them was a tag to N pivs was in fact a tag on N-M pivs (or, if all the pivs were already tagged, the tagging operation wouldn't be marked at all). This, however, is subject to future change.
+
+```javascript
+         [H.log, rq.user.username, {ev: 'tag', type: b.del ? 'untag' : 'tag', ids: b.ids, tag: b.tag}],
+```
+
+We reply with a 200 code. This concludes the endpoint.
+
+```javascript
+         [reply, rs, 200],
+      ]);
+   }],
+```
+
+We now define the `get /tags` endpoint. This endpoint will return all the tags set by the user as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`.
+
+```javascript
+   ['get', 'tags', function (rq, rs) {
+      astop (rs, [
+```
+
+The endpoint needs to get the list of members of `tags:USERNAME`, as well as all the tags shared with the user (located at `shm:USERNAME`).
+
+Interestingly enough, the only reason that this endpoint returns all tags and not only user tags (and consequently, that `tags:USERNAME` stores all tags, not just user tags) is that one of the client responders, `query tags`, needs to have the full list of existing tags, in order to filter out tags that no longer exist after any modifications. If it wasn't for this requirement, we would only store and return user tags on this endpoint, since the rest of the interface *always* filter out the non-user tags from the list of tags.
+
+```javascript
+         [function (s) {
+            var multi = redis.multi ();
+            multi.smembers ('tags:' + rq.user.username);
+            multi.smembers ('shm:'  + rq.user.username);
+            mexec (s, multi);
+         }],
+```
+
+We iterate the list of tags shared with the user; for each of them, we prepend it with `s::` to denote that they are shared tags; we then add them to the list of tags belonging to the user itself. We sort the resulting array and return it to the user. This concludes the endpoint.
+
+```javascript
+         function (s) {
+            dale.go (s.last [1], function (share) {
+               s.last [0].push ('s::' + share);
+            });
+            reply (rs, 200, s.last [0].sort ());
+         }
+      ]);
+   }],
+```
+
+We now define `POST /query`, the main querying endpoint for the app.
+
+```javascript
+   ['post', 'query', function (rq, rs) {
+```
+
+We create a shorthand `b` for the request's body.
+
+```javascript
+      var b = rq.body;
+```
+
+Here are the requirements for the body (taken from the documentation of `POST /query`). If any of these requirements is not met, a 400 will be returned with the corresponding validation error.
+
+1. Body must be of the form:
+```
+{
+   tags: []|[STRING, ...],
+   mindate: INT|UNDEFINED,
+   maxdate: INT|UNDEFINED,
+   sort: newest|oldest|upload,
+   from: INT|UNDEFINED,
+   fromDate: INT|UNDEFINED,
+   to: INT,
+   recentlyTagged: [STRING, ...]|UNDEFINED,
+   idsOnly: BOOLEAN|UNDEFINED
+}
+```
+2. `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
+3. If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and will represent a timestamp.
+
+```javascript
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly'], 'eachOf', teishi.test.equal],
+         ['body.tags',    b.tags, 'array'],
+         ['body.tags',    b.tags, 'string', 'each'],
+         ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
+         ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
+         ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.to',      b.to, 'integer'],
+         b.from === undefined ? [
+            ['body.fromDate', b.fromDate, 'integer'],
+            ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range]
+            ['body.to',       b.to,       {min: 1}, teishi.test.range],
+         ] : [
+            ['body.fromDate', b.fromDate, 'undefined'],
+            ['body.from', b.from, 'integer'],
+            ['body.from', b.from, {min: 1},      teishi.test.range]
+            ['body.to',   b.to,   {min: b.from}, teishi.test.range],
+         ],
+         ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
+         ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
+         ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
+      ])) return;
+```
+
+`a::` cannot be included on `body.tags`. If the user sends this tag, they will get a 400 with body `{error: 'all'}`.
+
+```javascript
+      if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
+```
+
+If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query.
+
+```javascript
+      if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 We create an array `ytags` to store the year tags in the query.
 
 ```javascript
@@ -1430,6 +2192,188 @@ If there are no pivs, we return an object representing an empty query. The field
 ```javascript
             if (s.pivs.length === 0) return reply (rs, 200, {total: 0, pivs: [], tags: []});
 ```
+
+
+
+We now define `POST /sho` and `POST /shm`. Because of the similarities in the code for both endpoints, we define them within one function. These endpoints handle four operations:
+
+- Share a tag with an user (`sho` & `b.del` set to `false` or `undefined`).
+- Accept a tag shared by another user (`shm` & `b.del` set to `false` or `undefined`).
+- Unshare a tag with an user (`sho` & `b.del` set to `true`).
+- Remove a tag shared by another user (`shm` & `b.del` set to `true`).
+
+```javascript
+   ['post', /sho|shm/, function (rq, rs) {
+```
+
+We define two variables, one to hold the body in `b`, another one to contain the `action` we're performing (`sho` for sharing, `shm` for accepting share).
+
+```javascript
+      var b = rq.body, action = rq.url.replace ('/', '');
+```
+
+
+The body should be of the form `{tag: STRING, whom: STRING, del: BOOLEAN|UNDEFINED}`. If any of these requirements is not met, a 400 will be returned with the corresponding validation error.
+
+```javascript
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['tag', 'whom', 'del'], 'eachOf', teishi.test.equal],
+         ['body.tag',  b.tag, 'string'],
+         ['body.whom', b.whom, 'string'],
+         ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
+      ])) return;
+```
+
+`b.tag` should be a valid user tag - that is, a string that, after being trimmed, should have length of at least 1 and should *not* start with a lowercase letter followed by two colons.
+
+If after trimming it the conditions are not met, we return a 400 error with body `{error: 'tag'}`.
+
+```javascript
+      b.tag = H.trim (b.tag);
+      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
+```
+
+Note that after this, `b.tag` will be trimmed.
+
+We now check whether `b.whom` matches an email address from an existing user in the system.
+
+```javascript
+      astop (rs, [
+         [Redis, 'get', 'email:' + b.whom],
+```
+
+We now store `b.whom` into `s.email`, and set `b.whom` to `s.last`. This will have the effect of putting the email address of the target user in `s.email`, whereas the user's email will now be in `b.whom`.
+
+```javascript
+         [function (s) {
+            s.email = b.whom;
+            b.whom = s.last;
+```
+
+If there's no user entry for the provided email, we return a 404 with body `{error: 'user'}`, since there's no user already signed up with that email.
+
+```javascript
+            if (! b.whom) return reply (rs, 404, {error: 'user'});
+```
+
+If our silly user is trying to perform a share operation with themselves, we will return a 400 with body `{error: 'self'}`.
+
+```javascript
+            if (b.whom === rq.user.username) return reply (rs, 400, {error: 'self'});
+            s.next ();
+         }],
+```
+
+If the user is sharing/unsharing a tag with others, we will check whether `tag:USERNAME:TAG` exists, since that tag should at least have one piv owned by the user. This actually can happen if the user tries to share a tag that they have applied only on pivs shared with them, but not owned by them.
+
+```javascript
+         function (s) {
+            if (action === 'sho') Redis (s, 'exists',    'tag:' + rq.user.username + ':' + b.tag);
+```
+
+If the user is accepting/removing a share from another user, we will check whether that other user indeed shared the tag with them.
+
+```javascript
+            if (action === 'shm') Redis (s, 'sismember', 'sho:' + b.whom, rq.user.username + ':' + b.tag);
+         },
+```
+
+If the user is attempting a share/unshare and has no own pivs with that tag, a 404 error will be returned with body `{error: 'tag'}`.
+
+```javascript
+         function (s) {
+            if (! s.last && action === 'sho') return reply (rs, 404, {error: 'tag'});
+```
+
+If the user is attempting to accept/remove a share that hasn't been provided by the other user, we return a 403 error with no body.
+
+```javascript
+            if (! s.last && action === 'shm') return reply (rs, 403);
+```
+
+If we're here, we have performed all validations and are ready to perform the operation in question.
+
+If this is a share/unshare operation, we will add/remove the entry `WHOM:TAG` to/from `sho:USERNAME`. If it is an accept/remove share operation, we will add/remove the entry `WHOM:TAG` to/from `shm:USERNAME`.
+
+```javascript
+            var multi = redis.multi ();
+            multi [b.del ? 'srem' : 'sadd'] (action + ':' + rq.user.username, b.whom + ':' + b.tag);
+```
+
+If this is an unshare operation, we will also remove the entry `USERNAME:TAG` from `shm:WHOM`; the unshare operation removes the entry from the `shm` entry of the targeted user. Note this is the only of the four operations that affects the other user's data directly. In the case of a share, the tag still must be accepted by the target user; and accepting or removing a share will not affect the keys of the user sharing the tag.
+
+```javascript
+            if (action === 'sho' && b.del) multi.srem ('shm:' + b.whom, rq.user.username + ':' + b.tag);
+```
+
+Finally, in the case of an unshare or a remove operation, we get the list of piv ids tagged with the tag, which will be necessary to our invocation of `H.hashtagCleanup` below. We then execute this set of redis operations.
+
+```javascript
+            if (b.del) multi.smembers ('tag:' + (action === 'sho' ? rq.user.username : b.whom) + ':' + b.tag);
+            mexec (s, multi);
+         },
+```
+
+If the adding/removing of the entry `WHOM:TAG` was a no-op (which means that the contents of the DB were not changed since the entry either wasn't there  (in an unshare) or it was there already (in the case of a share)), we simply return a 200 code and do no further work. We are able to determine a no-op since Redis will return the number of items added/removed if a `sadd`/`srem` operation produces a change - in this case, it should be a `'1'`.
+
+```javascript
+         function (s) {
+            if (! s.last [0]) return reply (rs, 200);
+```
+
+```javascript
+            s.next ();
+         },
+
+If we're here, the operation was successful and it is not a no-op. We move on to the next asynchronous function.
+
+If this is either an unshare or a remove share operation, we invoke `H.tagCleanup`. Note this is done after removing the relevant `sho`/`shm` entries, which is necessary for `H.tagCleanup` to work properly. As arguments to `H.tagCleanup` we pass the tag wrapped in an array, the list of ids of the pivs tagged with the tag. Finally, we create a fake `sho` entry, composed of the name of the user losing access to the given tag (`username` in the case of a remove share, `b.whom` in the case of an unshare). This fake `sho` with one entry will be used for hashtag/taghash cleanup - for more details, please refer to the implementation of `H.tagCleanup`, which describes hashtag/taghash cleanup in detail.
+
+```javascript
+         ! b.del ? [] : [
+            [Redis, 'smembers', 'tag:' + action === 'sho' ? rq.user.username : b.whom],
+            [a.get, H.tagCleanup, rq.user.username, [b.tag], '@last', [(action === 'sho' ? b.whom : rq.user.username) + ':' + b.tag])],
+         ],
+```
+
+ We define `eventType` to be either `'share'`, `'unshare'`, `'accept'` or `'remove'`.
+
+```javascript
+         function (s) {
+            var eventType;
+            if (action === 'sho') eventType = b.del ? 'unshare' : 'share';
+            if (action === 'shm') eventType = b.del ? 'remove'  : 'accept';
+```
+
+We create a log entry for the user with the right `eventType` as `type`. In all cases, the `ev` is `'share'`. We also pass `tag` and `whom` to the log entry.
+
+```javascript
+            H.log (s, rq.user.username, {ev: 'share', type: eventType, tag: b.tag, whom: b.whom});
+         },
+```
+
+If this is a share operation and we are not in a local or test environment, we send the share email to the targeted user, using the `sendmail` function. We use the email template `share`, which is available at `config.js`.
+
+```javascript
+         ! ENV && action === 'sho' && ! b.del ? function (s) {
+            sendmail (s, {
+               to1:     b.whom,
+               to2:     s.email,
+               subject: CONFIG.etemplates.share.subject,
+               message: CONFIG.etemplates.share.message (b.whom, rq.user.username, b.tag)
+            });
+         },
+```
+
+We return a 200 code and close the endpoint.
+
+```javascript
+         [reply, rs, 200],
+      ]);
+   }],
+```
+
+TODO: add annotated source code from here to the end of the file.
 
 ## License
 
