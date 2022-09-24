@@ -2701,7 +2701,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -4091,7 +4091,7 @@ cicek.apres = function (rs) {
          if (path === 'piv' && rs.log.url === 'post') path = 'pivup';
          if (rs.log.method !== ((path === 'piv' || path === 'thumb') ? 'get' : 'post')) return;
          if (! rs.log.url.match (new RegExp ('^\/' + path))) return;
-         if (path === 'query') var rqpath = path + rs.log.requestBody.refresh ? 'r' : 'm';
+         if (path === 'query') var rqpath = path + (rs.log.requestBody.refresh ? 'r' : 'm');
          else                  var rqpath = path;
          logs.push (['flow', 'rq-' + rqpath, 1]);
          logs.push (['flow', 'ms-' + path, t - rs.log.startTime]);

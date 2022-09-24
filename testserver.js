@@ -2255,6 +2255,9 @@ suites.query = function () {
          if (H.stop ('body.refreshQuery', rs.body.refreshQuery, undefined)) return false;
          return true;
       }],
+      ['query pivs with `true` refresh field', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1, refresh: true}, 200, function (s, rq, rs) {
+         return true;
+      }],
       ['start upload to test querying', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
