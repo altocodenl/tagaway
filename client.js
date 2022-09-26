@@ -5784,8 +5784,8 @@ views.import = function () {
                               ['p', {class: 'upload-progress'}, [
                                  H.putSvg ('uploadProgress'),
                                  ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
-                                 ['span', {class: 'upload-progress__default-text'}, ' pics imported.'],
                                  ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'pics imported'],
                                  ! v2.alreadyUploaded ? [] : [
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.alreadyUploaded],
@@ -5800,19 +5800,19 @@ views.import = function () {
                                  ],
                                  ! v2.invalid ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.invalid.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.invalid.length],
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'invalid,']
                                  ],
                                  ! v2.tooLarge ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.tooLarge.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.tooLarge.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, ' too big,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'too big,']
                                  ],
                                  ! v2.providerErrors ? [] : [
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.providerErrors.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.providerErrors.length],
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
                                  ],
