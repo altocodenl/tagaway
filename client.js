@@ -2886,7 +2886,9 @@ H.computeChunks = function (x, pivs) {
             rows++;
          }
          else width += piv.frame.width + 16;
-         piv.start = chunk.start + 55 + (rows - 1) * CSS.pivWidths [1];
+         // For first piv, we set the start to the chunk start since when we want to focus the first piv of a chunk, we also want to see the chunk header
+         if (k === 0) piv.start = chunk.start;
+         else         piv.start = chunk.start + 55 + (rows - 1) * CSS.pivWidths [1];
       });
 
       return 55 + rows * CSS.pivWidths [1];
@@ -3261,11 +3263,11 @@ B.mrespond ([
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
       if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.call (x, 'query', 'pivs', true);
+      else B.call (x, 'query', 'pivs');
 
       B.call (x, 'change', ['State', 'selected']);
    }],
-   ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'query'], {match: B.changeResponder}, function (x, newValue, oldValue) {
       // If the State object itself changes, or the path is State.query.recentlyTaggged, don't respond to that.
       if (x.path.length < 2 || x.path [2] === 'recentlyTagged') return;
 
@@ -3273,9 +3275,11 @@ B.mrespond ([
 
       B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
 
+      // If what changes in the query is the `fromDate` key, we write a mechanism that will prevent unnecessary calls to `query pivs`.
       if (x.path [2] === 'fromDate') {
-         // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't do anything.
+         // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't query further pivs.
          if (B.get ('Data', 'pivs').length === B.get ('Data', 'pivTotal')) return;
+         // If we are scrolling backwards on the same query, we also don't have to perform a new query. But if the previous load gave us enough pivs, the last visible chunk check below will prevent this issue. So there's no need for further logic to cover this case.
          var chunks = B.get ('State', 'chunks');
          if (chunks.length) {
             var lastVisibleChunkIndex;
@@ -3287,7 +3291,7 @@ B.mrespond ([
          }
       }
 
-      B.call (x, 'query', 'pivs', true);
+      B.call (x, 'query', 'pivs', {noScrolling: x.path [2] === 'fromDate' && oldValue});
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -3332,15 +3336,15 @@ B.mrespond ([
       target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
       if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
-   ['query', 'pivs', function (x, updateSelected, retry, refresh) {
+   ['query', 'pivs', function (x, options) {
+      options = options || {};
       // We copy the query onto a new object so that we can check whether State.query changed after the ajax call returns.
       var query = teishi.copy (B.get ('State', 'query'));
 
       if (! query) return;
-      if (! retry) {
-         if (B.get ('State', 'querying')) return;
-         B.call (x, 'set', ['State', 'querying'], true);
-      }
+      var t = Date.now ();
+      if (! options.retry && B.get ('State', 'querying')) return B.call (x, 'set', ['State', 'querying'], {t: t, options: options});
+      else                                                       B.call (x, 'set', ['State', 'querying'], {t: t, options: options});
 
       var timeout = B.get ('State', 'queryRefresh');
       if (timeout) {
@@ -3359,11 +3363,13 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate, refresh: refresh}, function (x, error, rs) {
-         if (! teishi.eq ({tags: query.tags, sort: query.sort}, {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort')})) {
-            return B.call (x, 'query', 'pivs', updateSelected, true);
+      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate, refresh: options.refresh}, function (x, error, rs) {
+         var querying = B.get ('State', 'querying');
+         if (t !== querying.t) {
+            querying.options.retry = true;
+            return B.call (x, 'query', 'pivs', querying.options);
          }
-         B.call (x, 'set', ['State', 'querying'], false);
+         B.call (x, 'rem', 'State', 'querying');
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
          B.call (x, 'query', 'tags');
 
@@ -3384,56 +3390,50 @@ B.mrespond ([
 
          // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
-            B.call (x, 'query', 'pivs', false, false, true);
+            B.call (x, 'query', 'pivs', {refresh: true});
          }, 1500));
 
-         if (updateSelected) {
-            var selected = B.get ('State', 'selected') || {};
-            // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
-            B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
-               if (selected [piv.id]) return [piv.id, true];
-            }));
-         }
 
-         B.call (x, 'set', ['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
-         B.call (x, 'scroll', []);
-         if (! query.fromDate) window.scrollTo (0, 0);
-         else {
-            var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
-               // The < and > are there in case the date requested is not held by any pivs that match the query
-               if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start : undefined;
-               else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start : undefined;
-               else                              return query.fromDate >= piv.dateup ? piv.start : undefined;
-            });
-            if (scrollTo && scrollTo > window.scrollY + CSS.pivWidths [1]) setTimeout (function () {
-               window.scrollTo (0, scrollTo);
-            }, 0);
-         }
+         // Perform mute updates
+         var selected = B.get ('State', 'selected') || {};
+         // Update the selection to only include pivs that are returned in the current query
+         B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
+            if (selected [piv.id]) return [piv.id, true];
+         }));
+         B.set (['Data', 'pivs'], rs.body.pivs);
+         B.set (['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
 
-         if (B.get ('State', 'open') === undefined) {
-            B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
-            return;
-         }
+         if (options.refresh) query.fromDate = B.get ('State', 'query', 'fromDate');
 
-         var open = B.get ('Data', 'pivs') [B.get ('State', 'open')];
+         if (options.noScrolling)   var scrollTo = -1;
+         else if (! query.fromDate) var scrollTo = 0;
+         else                       var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
+            // The < and > are there in case the date requested is not held by any pivs that match the query
+            if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start : undefined;
+            else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start : undefined;
+            else                              return query.fromDate >= piv.dateup ? piv.start : undefined;
+         });
+         B.call ('scroll', [], scrollTo);
+
+         var open = B.get ('State', 'open');
+
+         // Changes on State.selected will be performed by the scrolling responder, same with State.chunks
+         if (! open) return B.call (x, 'change', ['Data', 'pivs'], rs.body.pivs);
+
          var newOpen = dale.stopNot (rs.body.pivs, undefined, function (piv, k) {
-            if (piv.id === open.id) return k;
+            if (piv.id === open.id) return {id: piv.id, k: k};
          });
          // If opened piv is no longer in query, exit open.
-         if (newOpen === undefined) {
-            B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
+         if (! newOpen) {
+            B.call (x, 'rem', 'State', 'open');
+            B.call (x, 'change', ['Data', 'pivs'], rs.body.pivs);
             B.call (x, 'exit', 'fullscreen');
-            return;
          }
-         // Otherwise, update the index of the opened piv.
-         // We first set the values, then trigger the change event, to prevent the piv flickering.
-         B.set (['State', 'open'], newOpen);
-         B.set (['Data', 'pivs'], rs.body.pivs);
-         B.call (x, 'change', ['State', 'open']);
-         B.call (x, 'change', ['Data', 'pivs']);
-         if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
+         // Otherwise, update the index of the opened piv. We first set the values, then trigger the change event, to prevent the piv flickering.
+         else {
+            B.call (x, 'set', ['State', 'open'], newOpen);
+            B.call (x, 'change', ['Data', 'pivs']);
+         }
       });
    }],
    ['click', 'piv', function (x, id, k, ev) {
@@ -3441,7 +3441,7 @@ B.mrespond ([
       // If the last click was also on this piv and happened less than 500ms ago, we open the piv in fullscreen.
       if (last.id === id && Date.now () - last.time < 500) {
          B.call (x, 'rem', ['State', 'selected'], id);
-         B.call (x, 'set', ['State', 'open'], k);
+         B.call (x, 'set', ['State', 'open'], {id: id, k: k});
          return;
       }
 
@@ -3470,7 +3470,6 @@ B.mrespond ([
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
    ['toggle', 'tag', function (x, tag) {
-      if (B.get ('State', 'querying')) return;
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
 
       // Tag is removed
@@ -3567,7 +3566,7 @@ B.mrespond ([
          operationComplete = true;
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          if (timeoutFired) B.call (x, 'clear', 'snackbar');
-         B.call (x, 'query', 'pivs', true);
+         B.call (x, 'query', 'pivs', {updateSelected: true});
       });
    }],
    ['goto', 'tag', function (x, tag) {
@@ -3576,9 +3575,11 @@ B.mrespond ([
    }],
    ['scroll', [], function (x, to) {
       if (B.get ('State', 'page') !== 'pics') return;
-      var lastScroll = B.get ('State', 'lastScroll');
-      if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
-      var y = to || window.scrollY;
+      if (to === undefined) {
+         var lastScroll = B.get ('State', 'lastScroll');
+         if (lastScroll && (Date.now () - lastScroll.time < 50)) return;
+      }
+      var y = (to === undefined || to === -1) ? window.scrollY : to;
       B.call (x, 'set', ['State', 'lastScroll'], {y: y, time: Date.now ()});
 
       var visibleGridHeight = window.innerHeight - CSS.typography.spaceVerPx (3) + 1 + CSS.vars ['padding--s'] + CSS.typography.spaceVerPx (2) + CSS.typography.spaceVerPx (7);
@@ -3587,20 +3588,26 @@ B.mrespond ([
       var maxDOMVisible  = y + visibleGridHeight + bufferSize;
       var minUserVisible = y;
       var maxUserVisible = y + visibleGridHeight;
+      var changes;
       dale.go (B.get ('State', 'chunks'), function (chunk, k) {
+         var DOMVisible = chunk.DOMVisible, userVisible = chunk.userVisible;
          if (chunk.end < minDOMVisible || chunk.start > maxDOMVisible) chunk.DOMVisible = false;
          else chunk.DOMVisible = true;
          if (chunk.end <= minUserVisible || chunk.start >= maxUserVisible) chunk.userVisible = false;
          else chunk.userVisible = true;
+         if (DOMVisible !== chunk.DOMVisible || userVisible !== chunk.userVisible) changes = k + 1;
       });
-      B.call (x, 'change', ['State', 'chunks']);
-      B.call (x, 'change', ['State', 'selected']);
+      if (changes) {
+         B.call (x, 'change', ['State', 'selected']);
+         B.call (x, 'change', ['State', 'chunks']);
+      }
 
       var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
-      dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
-         if (y < piv.start) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
+      dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
+         if (piv.start >= y) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
       });
-      if (to) setTimeout (function () {
+      // We do this as a timeout to allow the HTML to be updated before we scroll to it. This is necessary when the part we want to scroll to is not drawn yet.
+      if (to !== undefined && to !== -1) setTimeout (function () {
          window.scrollTo (0, to);
       }, 0);
    }],
@@ -3692,10 +3699,10 @@ B.mrespond ([
    }],
    ['open', /prev|next/, function (x) {
       var open = B.get ('State', 'open');
-      var targetPiv = B.get ('Data', 'pivs', open + (x.path [0] === 'prev' ? -1 : 1));
+      var targetPiv = B.get ('Data', 'pivs', open.k + (x.path [0] === 'prev' ? -1 : 1));
       if (! targetPiv) return;
 
-      B.call (x, 'set', ['State', 'open'], open + (x.path [0] === 'prev' ? -1 : 1));
+      B.call (x, 'set', ['State', 'open'], {id: targetPiv.id, k: open.k + (x.path [0] === 'prev' ? -1 : 1)});
       window.scrollTo (0, targetPiv.start);
    }],
    ['touch', 'start', function (x, ev) {
@@ -4060,8 +4067,8 @@ B.mrespond ([
                return -1;
             }
             // Convert dates into readable dates
-            rs.body.db.date = parseDate (rs.body.db.date);
-            rs.body.db.dateup = parseDate (rs.body.db.dateup);
+            rs.body.db.date = parseDate (parseInt (rs.body.db.date));
+            rs.body.db.dateup = parseDate (parseInt (rs.body.db.dateup));
             rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
                return [k, parseDate (v) + ' // ' + v];
             });
@@ -4971,7 +4978,7 @@ views.grid = function () {
 views.open = function () {
    return B.view ([['State', 'open'], ['Data', 'pivs']], function (open, pivs) {
       if (open === undefined) return ['div'];
-      var piv = pivs [open], next = pivs [open + 1];
+      var piv = pivs [open.k], next = pivs [open.k + 1];
 
       var askance = piv.deg === 90 || piv.deg === -90;
       var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
@@ -5012,7 +5019,7 @@ views.open = function () {
             ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
          ]],
          ['div', {class: 'fullscreen__count'}, [
-            ['span', {class: 'fullscreen__count-current'}, open + 1],
+            ['span', {class: 'fullscreen__count-current'}, open.k + 1],
             '/',
             ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pivTotal')],
          ]],
