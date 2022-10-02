@@ -866,8 +866,11 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             }
          });
          s.next (dale.go (uploads, function (v) {delete v.lastActivity; return v}).sort (function (a, b) {
-            // We sort uploads by their end date. If they don't have an end date, they go to the top of the list.
-            return (b.end || Infinity) - (a.end || Infinity);
+            // We sort uploads by their end date. If they don't have an end date, we sort them by id.
+            if (! b.end && ! a.end) return b.id - a.id;
+            if (! b.end) return -1;
+            if (! a.end) return 1;
+            return b.end - a.end;
          }));
       },
       function (s) {

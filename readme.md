@@ -41,12 +41,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Pivs
    - Feedback box
-   - Fix position moving around when uploads are happening in the background
    - Sidebar: Date ranges shown after selecting chunk title. Dates must follow mock up proposed formats to avoid line wrapping https://docs.google.com/drawings/d/1c5OwqSkmtSCe3oO7y_zMDnNM4joMRka8IVydYLHXj_U/edit & https://docs.google.com/drawings/d/1SLKEZ8kM_XdeOFiU9sjq2PX9AddeeI4VE_wR92UwJkY/edit
    - Sidebar chunking bug: When user clicks year, months are not shown.
 
 - Stats to second and epoch 2020, invert order of uniques
-- Stable sort of uploads
 - Prod mode client by environment
 
 ---

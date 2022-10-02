@@ -918,6 +918,15 @@ suites.upload.upload = function () {
          if (H.stop ('upload.status', rs.body [0].status, 'uploading')) return false;
          return true;
       }],
+      ['start another upload', 'post', 'upload', {}, {op: 'start', total: 1, tags: []}, 200, function (s, rq, rs) {
+         s.uploadId2 = rs.body.id;
+         return true;
+      }],
+      ['get uploads, check that newest upload is shown first', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('id of first upload', rs.body [0].id, s.uploadId2)) return false;
+         if (H.stop ('id of second upload', rs.body [1].id, s.uploadId)) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }
