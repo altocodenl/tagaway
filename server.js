@@ -1125,7 +1125,12 @@ H.getGoogleToken = function (S, username) {
 
 // *** STATISTICS ***
 
-H.stat = {};
+H.stat = {
+   zero: new Date ('2020-01-01T00:00:00.000Z').getTime (),
+   shorten: function (ms) {
+      return ((ms - (ms % 1000) - H.stat.zero) + '').slice (0, -3);
+   }
+};
 
 redis.script ('load', [
    'local v = tonumber (redis.call ("get", KEYS [1]));',
@@ -1149,6 +1154,7 @@ redis.script ('load', [
    H.stat.min = sha;
 });
 
+
 H.stat.w = function (s) {
    var t = Date.now (), multi = redis.multi ();
    var ops = type (arguments [1]) !== 'array' ? [[arguments [1], arguments [2], arguments [3]]] : arguments [1];
@@ -1170,17 +1176,17 @@ H.stat.w = function (s) {
             d: d - d % (1000 * 60 * 60 * 24),
             h: d - d % (1000 * 60 * 60),
             m: d - d % (1000 * 60),
-            s: d - d % 1000
+            s: d
          }, function (date, period) {
-            multi.pfadd ('stat:u:' + name + ':' + date + ':' + period, value);
+            multi.pfadd ('stat:u:' + name + ':' + period + ':' + H.stat.shorten (date), value);
          });
       }
       else if (type === 'max' || type === 'min') {
-         multi.evalsha (H.stat [type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + t, value);
+         multi.evalsha (H.stat [type], 1, 'stat:' + (type === 'max' ? 'M' : 'm') + ':' + name + ':' + H.stat.shorten (t), value);
       }
       else if (type === 'flow') {
-         multi.incrbyfloat ('stat:f:' + name + ':' + t, value);
-         multi.incrbyfloat ('stat:f:' + name,           value);
+         multi.incrbyfloat ('stat:f:' + name + ':' + H.stat.shorten (t), value);
+         multi.incrbyfloat ('stat:f:' + name,                            value);
       }
       else {
          throw new Error ('Unsupported stats type: ' + type);
