@@ -1832,7 +1832,7 @@ var routes = [
             mexec (s, multi);
          }],
          function (s) {
-            var limit = CONFIG.freeSpace;
+            var limit = parseInt (rq.user.spaceLimit) || CONFIG.freeSpace;
             if (ENV !== 'prod' && inc (SECRET.admins, rq.user.email)) limit = 1000 * 1000 * 1000 * 1000;
 
             reply (rs, 200, {
@@ -2209,7 +2209,7 @@ var routes = [
          [Redis, 'get', 'stat:f:byfs-' + rq.user.username],
          function (s) {
             var used = parseInt (s.last) || 0;
-            var limit = CONFIG.freeSpace;
+            var limit = parseInt (rq.user.spaceLimit) || CONFIG.freeSpace;
             if (ENV !== 'prod' && inc (SECRET.admins, rq.user.email)) limit = 1000 * 1000 * 1000 * 1000;
             if (used + s.byfs.size >= limit) return a.seq (s, [
                [H.log, rq.user.username, {ev: 'upload', type: 'noCapacity', id: rq.data.fields.id, provider: importData ? importData.provider : undefined}],
