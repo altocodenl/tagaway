@@ -4,12 +4,15 @@ var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c
 var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style;
 
 window.addEventListener ('keydown', function (ev) {
-   var code = (ev || document.event).keyCode;
-   if (code !== 75) return;
-   ev.preventDefault ();
-   var query = prompt ('Search the eventlog');
-   if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
-   B.eventlog (query);
+   ev = ev || document.event;
+   if (! ev.ctrlKey) return;
+   // CTRL+K: search the eventlog
+   if (ev.keyCode === 75) {
+      ev.preventDefault ();
+      var query = prompt ('Search the eventlog');
+      if (query === null && c ('#eventlog')) return c ('#eventlog').parentNode.removeChild (c ('#eventlog'));
+      B.eventlog (query);
+   }
 });
 
 // *** CSS ***
