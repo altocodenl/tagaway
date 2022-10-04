@@ -1607,6 +1607,27 @@ CSS.litc = [
       color: '#5b6eff',
       'background-color': '#fff',
    }],
+   // GO BACK TO VIEW PICTURES
+   ['.go-back-to-view-pictures', {
+      display: 'inline-flex', 
+      'margin-right': 'auto', 
+      'margin-left': 'auto', 
+      'margin-bottom': CSS.vars ['padding--l'],
+   }],
+   ['.go-back-to-view-pictures-p, .go-back-to-view-pictures-a', {
+      'font-size': CSS.typography.fontSize (1),
+   }],
+   ['.go-back-to-view-pictures-p', {
+      'margin-right': CSS.vars ['padding--xs'],
+   }],
+   ['.go-back-to-view-pictures-a', {
+      color: CSS.vars ['color--one'],
+      'text-decoration': 'underline',
+      'font-weight': CSS.vars ['fontPrimarySemiBold'],
+   }],
+   ['.go-back-to-view-pictures-a:hover', {
+      color: CSS.vars ['color--one'],
+   }],
    // BOXED ALERTS
    ['.boxed-alert', {
       display: 'flex',
@@ -2526,7 +2547,8 @@ CSS.litc = [
    }],
    ['.feedback-box', {
       position: 'fixed',
-      'top, left': 0.25,
+      'top': 0.25,
+      'left': .3,
       padding: 50
    }],
    ['.feedback-input-textarea', {
@@ -5458,6 +5480,10 @@ views.upload = function () {
                               })
                            ]]
                         ]],
+                     ]],
+                     ['div', {class: 'go-back-to-view-pictures'}, [
+                        ['p', {class: 'go-back-to-view-pictures-p'}, 'Want to go back to your pics?'],
+                        ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev ('goto', 'page', 'pics')}, 'Go back to View Pictures.']
                      ]],
                      // PENDING UPLOADS
                      dale.go (uploads, function (upload) {
