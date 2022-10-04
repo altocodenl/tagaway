@@ -2531,7 +2531,8 @@ CSS.litc = [
    }],
    ['.feedback-input-textarea', {
       mixin1: CSS.vars.fontPrimaryMedium,
-      width: window.innerWidth / 2,
+      // width: window.innerWidth / 2,
+      width: 582,
       height: 84,
       resize: 'none',
       'line-height': 20,
