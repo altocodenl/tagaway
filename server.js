@@ -1292,6 +1292,7 @@ var routes = [
             dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
                return ['script', {src: 'assets/' + v}];
             }),
+            ['script', 'B.prod = ' + (ENV === 'prod') + ';'],
             ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
             ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
             ['script', {src: 'client.js'}]

@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Prod mode client by environment
 - Imports: when two imports, one errored and one going, the interface doesn't show it.
 - Fix ENOENT error with webps.
 - See if there's a way to detect whatsapp videos that look the same but are slightly different.

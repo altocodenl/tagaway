@@ -4093,7 +4093,7 @@ B.mrespond ([
             });
             text = JSON.stringify (rs.body, null, '   ');
          }
-         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: absolute; top: 0; left: 0; z-index: 100000; background-color: white; padding: 10px;'}, [
+         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: fixed; top: 0; left: 0; z-index: 1000; background-color: white; padding: 10px;'}, [
             ['a', {href: '#', onclick: 'document.body.removeChild (c ("#debug-info"))', style: 'font-weight: bold; font-size: 28px'}, 'X'],
             ['pre', {style: 'width: 600px; height: 600px; overflow-y: scroll;'}, text]
          ]]);
@@ -5043,7 +5043,7 @@ views.open = function () {
                ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],
-            ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
+            B.prod ? [] : ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
          ]],
          ['div', {class: 'fullscreen__count'}, [
             ['span', {class: 'fullscreen__count-current'}, open.k + 1],
