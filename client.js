@@ -2517,21 +2517,28 @@ CSS.litc = [
    ['.fullscreen__action:hover .fullscreen__action-text', {color: CSS.vars ['grey--lightest']}],
    ['.no-svg svg', {display: 'none'}],
    // FEEDBACK BOX
-   ['.feedback-box', {
+   ['.feedback-box-mask', {
+      'width, height': 1,
+      'background-color': 'rgb(0,0,255,0.3)',
+      position: 'fixed',
+      top: 0,
+      'z-index': '102'
    }],
-   ['.feedback-input-box', {
-
+   ['.feedback-box', {
+      position: 'fixed',
+      'top, left': 0.25,
+      padding: 50
    }],
    ['.feedback-input-textarea', {
-      mixin1: CSS.vars.fontPrimaryItalic,
-      width: 582,
+      mixin1: CSS.vars.fontPrimaryMedium,
+      width: window.innerWidth / 2,
       height: 84,
       resize: 'none',
       'line-height': 20,
       border: '1px solid ' + CSS.vars ['border-color--dark'],
-      'border-radius': 25,
+      'border-radius': 10,
       'padding-left, padding-right': CSS.vars ['padding--s'],
-      'padding-top': CSS.vars ['padding--xs'],
+      'padding-top': CSS.vars ['padding--s'],
    }],
    // *** AUTH VIEWS ***
    ['.enter', {
@@ -3147,6 +3154,16 @@ B.mrespond ([
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
+   ['send', 'feedback', function (x) {
+      var feedback = B.get ('State', 'feedback');
+      if (! feedback) return B.call (x, 'snackbar', 'yellow', 'Please enter some feedback :).');
+      B.call (x, 'post', 'feedback', {}, {message: feedback}, function (x, error) {
+         if (error) return B.call (x, 'snackbar', 'red', 'We experienced a technical issue; could you please email us with your feedback instead?');
+         B.call (x, 'rem', 'State', 'feedback');
+         B.call (x, 'snackbar', 'green', 'Your feedback was successfully sent!');
+      });
+   }],
+
    ['test', [], function (x) {
       c.loadScript ('testclient.js');
    }],
@@ -4099,6 +4116,7 @@ views.base = function () {
    return [
       ['style', CSS.litc],
       views.snackbar (),
+      views.feedback (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4171,6 +4189,25 @@ views.snackbar = function () {
          ]];
       })
    ];
+}
+
+// *** FEEDBACK VIEW ***
+
+views.feedback = function () {
+   return B.view (['State', 'feedback'], function (feedback) {
+      if (feedback === undefined) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'feedback-box'}, [
+            ['div', {class: 'feedback-input-box'}, [
+               ['textarea', {class: 'feedback-input-textarea', autocomplete: 'off', type: 'text', placeholder: 'What things would you like us to change or fix…?', oninput: B.ev ('set', ['State', 'feedback'])}]
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6}), onclick: B.ev ('rem', 'State', 'feedback')}, 'Cancel'],
+               ['a', {href: '', class: 'button button--one', onclick: B.ev ('send', 'feedback')}, 'Send']
+            ]]
+         ]]
+      ]];
+   });
 }
 
 // *** LOGIN VIEW ***
@@ -4277,7 +4314,7 @@ views.header = function (showUpload, showImport) {
          ]]
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href:'', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'IMPLEMENT BOX'])}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href:'', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4291,26 +4328,13 @@ views.header = function (showUpload, showImport) {
          ]],
       ]],
       //SHARE BUTTON
-      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/share', class: 'button button--green'}, 'Share']],
+    //['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/share', class: 'button button--green'}, 'Share']],
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--green', onclick: B.ev (['snackbar', 'green', 'Coming soon, hang tight!'])}, 'Share']],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
       // UPLOAD BUTTON
       ['div', {class: 'header__upload-button', style: style ({opacity: showUpload ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
    ]];
-}
-
-// *** FEEDBACK BOX VIEW ***
-
-views.feedback = function(){
-   return ['div', {class: 'feedback-box'} [
-      ['div', {class: 'feedback-input-box'}, [
-         ['textarea', {class: 'feedback-input-textarea', autocomplete: 'off', type: 'text', placeholder: 'What things would you like us to change or fix…?'}]
-      ]],
-      ['div', {style: style ({'float': 'right'})}, [
-         ['a', {href: '', class: 'button button--two', style: style ({'margin-right': '6px'})}, 'Cancel'],
-         ['a', {href: '', class: 'button button--one'}, 'Send']
-      ]]
-   ]]
 }
 
 // *** EMPTY VIEW ***

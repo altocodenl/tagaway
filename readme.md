@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Feedback box
 - Prod mode client by environment
 - Imports: when two imports, one errored and one going, the interface doesn't show it.
 - Fix ENOENT error with webps.
@@ -876,23 +875,27 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Depends on: `State.snackbar`.
    - Events: `onclick -> clear snackbar`.
    - Contained by: `views.base`.
-3. `views.header`
-   - Events: `onclick -> logout`, `onclick -> goto page pics`.
+3. `views.feedback`
+   - Depends on `State.feedback`.
+   - Events: `onclick -> set|rem State.feedback`.
+   - Contained by: `views.base`.
+4. `views.header`
+   - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`.
    - Contained by: `views.pivs`, `views.upload`, `views.share`, `views.tags`.
-4. `views.empty`
+5. `views.empty`
    - Contained by: `views.pivs`.
-5. `views.grid`
+6. `views.grid`
    - Contained by: `views.pivs`.
    - Depends on `State.chunks`.
    - Events: `onclick -> click piv`.
-6. `views.open`
+7. `views.open`
    - Contained by: `views.pivs`.
    - Depends on `State.open` and `Data.pivTotal`.
    - Events: `onclick -> open prev`, `onclick -> open next`, `onclick -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
-7. `views.noSpace`
+8. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
-8. `views.importFolders`
+9. `views.importFolders`
    - Contained by: `views.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
@@ -961,7 +964,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
          - If `State.page` is different from `PAGE`, we set it.
          - If `State.queryURL` is set, we add it to page like this: `PAGE/QUERYURL`.
          - If `window.location.hash` doesn't match `PAGE`, we update it.
-   8. `test`: loads the test suite.
+   9. `send feedback`: if `State.feedback` is `undefined`, invokes `snackbar yellow`. Otherwise, it invokes `post feedback` and then invokes `snackbar`.
+   10. `test`: loads the test suite.
 
 3. Auth
    1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not.
@@ -1091,6 +1095,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `chunks`: if present, it is an array of objects, each representing a chunk of pivs to be shown. Each chunk has the form `{pivs: [...], start: INT, end: INT, visible: true|false|undefined}`. `pivs` is an array of pivs; `start` and `end` indicate the y-coordinate of the start and the end of the chunk. `visible` indicates whether the chunk should be displayed or not, given the current y-position of the window.
+   - `feedback`: if not `undefined`, contains a text string with feedback to be sent.
    - `filter`: filters tags shown in sidebar.
    - `imports`: if defined, it is an object with one key per provider and as value an object of the form:
 ```

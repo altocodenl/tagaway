@@ -1867,7 +1867,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [notify, {priority: 'important', type: 'feedback', user: rq.user.username, message: b.message}],
+         [notify, {priority: 'critical', type: 'feedback', user: rq.user.username, message: b.message}],
          ENV ? [] : [reply, rs, 200],
          [sendmail, {
             to1:     rq.user.username,
