@@ -39,11 +39,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Pivs
-   - Feedback box
-   - Sidebar: Date ranges shown after selecting chunk title. Dates must follow mock up proposed formats to avoid line wrapping https://docs.google.com/drawings/d/1c5OwqSkmtSCe3oO7y_zMDnNM4joMRka8IVydYLHXj_U/edit & https://docs.google.com/drawings/d/1SLKEZ8kM_XdeOFiU9sjq2PX9AddeeI4VE_wR92UwJkY/edit
-   - Sidebar chunking bug: When user clicks year, months are not shown.
+- Feedback box
 - Prod mode client by environment
+- Imports: when two imports, one errored and one going, the interface doesn't show it.
+- Fix ENOENT error with webps.
+- See if there's a way to detect whatsapp videos that look the same but are slightly different.
+- Get prod mirror.
 
 ---
 
@@ -200,7 +201,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Show tags in open view.
 
 - Upload/import
-   - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
    - Retry on error.

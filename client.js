@@ -2756,9 +2756,11 @@ H.formatDate = function (d) {
    return H.pad (d.getUTCDate ()) + '/' + H.pad (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
 }
 
-H.formatChunkDates = function (d1, d2) {
+H.formatChunkDates = function (d1, d2, shortMonths) {
+   if (! d1 || ! d2) return '';
    var m = new Date (Math.min (d1, d2)), M = new Date (Math.max (d1, d2));
-   var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+   if (shortMonths) var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+   else             var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
    // Formats: 1) m d, y ; 2) m d - d, y ; 3) m d - m d, y ; 4) m d, y - m d, y
    if (m.getUTCFullYear () !== M.getUTCFullYear ()) return [months [m.getUTCMonth ()], m.getUTCDate () + ',', m.getUTCFullYear (), '-', months [M.getUTCMonth ()], M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
    if (m.getUTCMonth () !== M.getUTCMonth ()) return [months [m.getUTCMonth ()], m.getUTCDate (), '-', months [M.getUTCMonth ()], M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
@@ -4495,7 +4497,7 @@ views.pics = function () {
                            var disabledTag = disabledUntagged || blankMonth;
 
                            var showName = tag.replace (/^[a-z]::/, '');
-                           if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
+                           if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
                            return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
@@ -4528,10 +4530,11 @@ views.pics = function () {
                         return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
-                           dale.go (yearlist, makeTag),
-                           ['br'], ['br'],
-                           dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
-                           ! rangeTag ? [] : makeTag (rangeTag),
+                           ! rangeTag ? [
+                              dale.go (yearlist, makeTag),
+                              ['br'], ['br'],
+                              dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
+                           ] : makeTag (rangeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
                                  ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
