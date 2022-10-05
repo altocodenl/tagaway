@@ -4166,15 +4166,17 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
-server = cicek.listen ({port: CONFIG.port}, routes);
+if (! inc (['checkConsistency', 'makeConsistent'], process.argv [3])) {
+   server = cicek.listen ({port: CONFIG.port}, routes);
 
-if (cicek.isMaster) a.seq ([
-   [k, 'git', 'rev-parse', 'HEAD'],
-   function (s) {
-      if (s.error) return notify (a.creat (), {priority: 'critical', type: 'server start', error: s.error});
-      notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
-   }
-]);
+   if (cicek.isMaster) a.seq ([
+      [k, 'git', 'rev-parse', 'HEAD'],
+      function (s) {
+         if (s.error) return notify (a.creat (), {priority: 'critical', type: 'server start', error: s.error});
+         notify (a.creat (), {priority: 'important', type: 'server start', sha: s.last.stdout.slice (0, -1)});
+      }
+   ]);
+}
 
 // *** REDIS ERROR HANDLER ***
 
@@ -4243,7 +4245,7 @@ if (cicek.isMaster && ENV) setTimeout (function () {
 
 // *** CHECK CONSISTENCY OF FILES BETWEEN DB, FS AND S3 ***
 
-if (cicek.isMaster && process.argv [3] === 'makeConsistent') var doneChecks = 0;
+if (cicek.isMaster && inc (['checkConsistency', 'makeConsistent'], process.argv [3])) var doneChecks = 0;
 
 if (cicek.isMaster && ENV) a.stop ([
    // Get list of files from S3
@@ -4328,32 +4330,33 @@ if (cicek.isMaster && ENV) a.stop ([
       if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing.slice (0, 100)});
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
 
-      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'normal', type: 'File consistency check done.'});
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
-      s.next ();
+      if (process.argv [3] !== 'makeConsistent') notify (s, {priority: 'normal', type: 'File consistency check done.'});
+      else a.seq (s, [
+         // Extraneous S3 files: delete. Don't update the statistics.
+         [function (s) {
+            H.s3del (s, s.s3extra);
+         }],
+         function (s) {
+            // Extraneous FS files: delete. Don't update the statistics.
+            a.fork (s, s.fsextra, function (v) {
+               return [H.unlink, Path.join (CONFIG.basepath, v)];
+            }, {max: os.cpus ().length});
+         },
+         // TODO: Missing S3 files: upload them to S3 if they are in the FS.
+         // TODO: Missing FS files: download them from S3 if they are there.
+         function (s) {
+            var messageType = (s.s3missing.length === 0 && s.fsmissing.length === 0) ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';
+            var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: messageType}, function (k) {
+               if (s [k].length) return [k, s [k]];
+            });
+            notify (s, message);
+         },
+      ]);
    },
-   // Extraneous S3 files: delete. Don't update the statistics.
-   // TODO: currently s3:files entries should be deleted manually. Make this automatic.
    function (s) {
-      H.s3del (s, s.s3extra);
-   },
-   function (s) {
-      // Extraneous FS files: delete. Don't update the statistics.
-      a.fork (s, s.fsextra, function (v) {
-         return [H.unlink, Path.join (CONFIG.basepath, v)];
-      }, {max: os.cpus ().length});
-   },
-   // TODO: Missing S3 files: upload them to S3 if they are in the FS.
-   // TODO: Missing FS files: download them from S3 if they are there.
-   function (s) {
-      var messageType = (s.s3missing.length === 0 && s.fsmissing.length === 0) ? 'File consistency check success.' : 'File consistency check failure: missing S3 and/or FS files.';
-      var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: messageType}, function (k) {
-         if (s [k]) return [k, s [k]];
-      });
-      notify (s, message);
-   },
-   function () {
+      if (! inc (['checkConsistency', 'makeConsistent'], process.argv [3])) return s.next ();
       console.log ('Done with file consistency check.');
       if (++doneChecks === 2) setTimeout (function () {
          process.exit (0);
@@ -4426,9 +4429,8 @@ if (cicek.isMaster && ENV) a.stop ([
 
       if (mismatch.length !== 0)           notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
 
-      if (process.argv [3] !== 'makeConsistent') return notify (a.creat (), {priority: 'normal', type: 'Stored sizes consistency check done.'});
-
-      a.seq (s, [
+      if (process.argv [3] !== 'makeConsistent') return notify (s, {priority: 'normal', type: 'Stored sizes consistency check done.'});
+      else a.seq (s, [
          [H.stat.w, dale.go (mismatch, function (v) {
             return ['flow', v [0], v [1]];
          })],
@@ -4436,11 +4438,17 @@ if (cicek.isMaster && ENV) a.stop ([
             var multi = redis.multi ();
             dale.go (extraneousS3, function (v, k) {multi.hdel ('s3:files', k)});
             mexec (s, multi);
+         },
+         function (s) {
+            var message = dale.obj (['missingS3', 'extraneousS3', 'invalidS3', 'mismatch'], {priority: 'critical', type: 'Stored sizes consistency operation success.'}, function (k) {
+               if (dale.keys (s [k]).length) return [k, s [k]];
+            });
+            notify (s, message);
          }
       ]);
    },
-   [notify, {priority: 'critical', type: 'Stored sizes consistency check success.'}],
-   function () {
+   function (s) {
+      if (! inc (['checkConsistency', 'makeConsistent'], process.argv [3])) return s.next ();
       console.log ('Done with sizes consistency check.');
       if (++doneChecks === 2) setTimeout (function () {
          process.exit (0);
@@ -4492,7 +4500,19 @@ if (cicek.isMaster && ENV) a.stop ([
 if (cicek.isMaster && ENV) a.stop ([
    [redis.keyscan, 'raceConditionHash*'],
    function (s) {
-      if (s.last.length > 0) return notify (s, {priority: 'critical', type: 'Leftover upload race conditions found on startup.', keys: s.last});
+      s.toClean = s.last;
+      if (s.last.length > 0) return notify (s, {priority: 'critical', type: 'Leftover upload race conditions found on startup.', keys: s.toClean});
+   },
+   function (s) {
+      if (process.argv [3] !== 'makeConsistent') return;
+      var multi = redis.multi ();
+      dale.go (s.toClean, function (key) {
+         multi.del (key);
+      });
+      mexec (s, multi);
+   },
+   function (s) {
+      notify (s, {priority: 'critical', type: 'Leftover upload race conditions cleanup success.', keys: s.toClean});
    }
 ], function (error) {
    notify (s, {priority: 'critical', type: 'Leftover upload race condition keys check check error.', error: error});

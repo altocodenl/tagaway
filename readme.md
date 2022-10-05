@@ -40,16 +40,15 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - deploy to prod while there are processes going on!
-   - processes: upload, import, geotagging switch, mp4 conversions
+   - background processes: upload, import, geotagging switch, mp4 conversions
    - incremental steps to solution:
       - don't shut down if there's something going on
       - shut down after all are done
       - stop new ones
       - save progress on what's already done
 
-- review consistency without having to stop: by date?
-- consistency issue right now (FS/S3/space)
-- race condition hashes
+- race condition hashes not being deleted on enoent
+- Fix ENOENT error with webps.
 
 - flv uploaded from client
 - process to review formats
@@ -59,7 +58,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - quick
       - 403 on favicon.ico no report
       - Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false",
-   - Fix ENOENT error with webps.
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - Exclude WA from hour in parse date
    - Get prod mirror.

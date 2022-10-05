@@ -47,6 +47,11 @@ if [ "$2" == "makeConsistent" ] ; then
    exit 0
 fi
 
+if [ "$2" == "checkConsistency" ] ; then
+   ssh $HOST "cd $FOLDER && node server $1 checkConsistency"
+   exit 0
+fi
+
 if [ "$2" == "fast" ] ; then
    cd .. && tar --exclude="$FOLDER/*.swp" --exclude="$FOLDER/node_modules" --exclude="$FOLDER/.git" --exclude="$FOLDER/test" -czvf $TAR $FOLDER
 else
