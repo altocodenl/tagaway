@@ -39,15 +39,42 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Imports: when two imports, one errored and one going, the interface doesn't show it.
-- Fix ENOENT error with webps.
-- See if there's a way to detect whatsapp videos that look the same but are slightly different.
-- Get prod mirror.
+- deploy to prod while there are processes going on!
+   - processes: upload, import, geotagging switch, mp4 conversions
+   - incremental steps to solution:
+      - don't shut down if there's something going on
+      - shut down after all are done
+      - stop new ones
+      - save progress on what's already done
+
+- review consistency without having to stop: by date?
+- consistency issue right now (FS/S3/space)
+- race condition hashes
+
+- flv uploaded from client
+- process to review formats
+- process to review invalid pivs
+
+- server
+   - quick
+      - 403 on favicon.ico no report
+      - Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false",
+   - Fix ENOENT error with webps.
+   - See if there's a way to detect whatsapp videos that look the same but are slightly different.
+   - Exclude WA from hour in parse date
+   - Get prod mirror.
+
+- client
+   - quick
+      - when on tag mode, make tags also be add tag
+      - Big button for view pictures
+      - Import jump if, you can close the tab
+   - Fix scroll with offset
+   - Fix ronin untagged or range tag when deleting all
+   - Imports: when two imports, one errored and one going, the interface doesn't show it.
 
 ---
 
-- Exclude WA from hour in parse date
-- Fix ronin untagged or range tag when deleting all
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - Add mpg support.
 - Share & manage
@@ -59,7 +86,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Check new price of servers & price of large disk
    - Check balance between disk and RAM and compare to actual RAM usage
 - Investigate intermittent busboy error.
-- Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false",
 
 - Submissions
    - Google Play
@@ -879,6 +905,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Events: `onclick -> set|rem State.feedback`.
    - Contained by: `views.base`.
 4. `views.header`
+   - Depends on `State.page`.
    - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`.
    - Contained by: `views.pivs`, `views.upload`, `views.share`, `views.tags`.
 5. `views.empty`

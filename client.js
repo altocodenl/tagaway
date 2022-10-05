@@ -1609,9 +1609,9 @@ CSS.litc = [
    }],
    // GO BACK TO VIEW PICTURES
    ['.go-back-to-view-pictures', {
-      display: 'inline-flex', 
-      'margin-right': 'auto', 
-      'margin-left': 'auto', 
+      display: 'inline-flex',
+      'margin-right': 'auto',
+      'margin-left': 'auto',
       'margin-bottom': CSS.vars ['padding--l'],
    }],
    ['.go-back-to-view-pictures-p, .go-back-to-view-pictures-a', {
@@ -4332,9 +4332,12 @@ views.header = function (showUpload, showImport) {
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
-         ['ul', {class: 'main-menu'}, [
-            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
-         ]]
+         B.view (['State', 'page'], function (page) {
+            if (page === 'pics') return ['div'];
+            return ['ul', {class: 'main-menu'}, [
+               ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
+            ]];
+         }),
       ]],
       //FEEDBACK BUTTON
       ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href:'', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
