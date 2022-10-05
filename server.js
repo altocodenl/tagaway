@@ -2531,8 +2531,12 @@ var routes = [
             reply (rs, 200, {id: piv.id, deg: piv.deg});
          }
       ], function (s, error) {
-         H.log (s, rq.user.username, {ev: 'upload', type: 'error', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error});
-         reply (rs, 500, {error: error});
+         a.seq (s, [
+            ! s.raceConditionHashorig ? [] : [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
+            ! s.raceConditionHash     ? [] : [Redis, 'del', 'raceConditionHash:'     + rq.user.username + ':' + s.hash],
+            [H.log, rq.user.username, {ev: 'upload', type: 'error', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, name: piv.name, error: error}],
+           [reply, rs, 500, {error: error}]
+         ]);
       });
    }],
 

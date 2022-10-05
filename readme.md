@@ -47,17 +47,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - stop new ones
       - save progress on what's already done
 
-- race condition hashes not being deleted on enoent
-- Fix ENOENT error with webps.
+- Check/fix (and add test case) for multiframe webp.
 
-- flv uploaded from client
 - process to review formats
 - process to review invalid pivs
 
 - server
    - quick
-      - 403 on favicon.ico no report
-      - Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false",
+      - Add mpg & flv support.
+      - ac;log: 403 on favicon.ico no report
+      - Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false" on all deployments.
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
    - Exclude WA from hour in parse date
    - Get prod mirror.
@@ -74,7 +73,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ---
 
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-- Add mpg support.
 - Share & manage
 - Upgrade pop up notice or email when running out of free space.
 - Pricing
