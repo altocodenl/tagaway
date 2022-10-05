@@ -4333,7 +4333,7 @@ views.header = function (showUpload, showImport) {
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          ['ul', {class: 'main-menu'}, [
-            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'main-menu__item-link'}, 'View pictures']],
+            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
          ]]
       ]],
       //FEEDBACK BUTTON
@@ -5355,7 +5355,7 @@ views.upload = function () {
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Once your upload starts, you can go to other areas of ac;pic, but don\'t browse away or close the browser!'],
             ]],
             ['div', {class: 'page-section'}, [
                // UPLOAD BOX
@@ -5759,7 +5759,7 @@ views.import = function () {
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Once your listing or import starts, you can browse away or even close the browser. We\'ll send you an email when it\'s done!']
             ]],
             B.view ([['Data', 'imports'], ['State', 'imports']], function (importData, importState) {
                if (! importData) return ['div'];
@@ -5829,6 +5829,10 @@ views.import = function () {
                   })
                ]];
             }),
+            ['div', {class: 'go-back-to-view-pictures'}, [
+               ['p', {class: 'go-back-to-view-pictures-p'}, 'Want to go back to your pics?'],
+               ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev ('goto', 'page', 'pics')}, 'Go back to View Pictures.']
+            ]],
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
             B.view (['Data', 'imports'], function (providers) {
