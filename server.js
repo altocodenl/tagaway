@@ -1377,16 +1377,20 @@ var routes = [
    // *** PUBLIC STATS ***
 
    ['get', 'stats', function (rq, rs) {
+      var split = function (n) {
+         return integer.toString ().replace (/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
       // TODO: replace with H.stat.r
       var multi = redis.multi ();
-      var keys = ['byfs', 'bys3', 'pics', 'vids', 'thumbS', 'thumbM', 'users'];
+      var keys = ['byfs', 'bys3', 'pivs', 'pics', 'vids', 'thumbS', 'thumbM', 'users'];
       dale.go (keys, function (key) {
          multi.get ('stat:f:' + key);
       });
       multi.exec (function (error, data) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200, dale.obj (keys, function (key, k) {
-            return [key, parseInt (data [k]) || 0];
+            if (k === 'pivs') return [key, split (parseInt (data.pics || 0) + (parseInt (data.vids) || 0))];
+            return [key, split (parseInt (data [k]) || 0)];
          }));
       });
    }],
@@ -4070,6 +4074,40 @@ var routes = [
          }
       ]);
    }],
+
+   // *** ADMIN: MEASURE SPACE USAGE BY KEY TYPE ***
+
+   ['get', 'admin/space', function (rq, rs) {
+
+      astop (rs, [
+         [a.set, 'keys', [redis.keyscan, '*']],
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (s.keys, function (key) {
+               multi.memory ('usage', key, 'samples', 0);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            var totals = {}, total = 0;
+            dale.go (s.keys, function (key, k) {
+               key = key.split (':');
+               if (key [0] === 'stat') key = key [0] + ':' + key [1];
+               else key = key [0];
+               if (key === 'hashorig') key = 'hash';
+               if (! totals [key]) totals [key] = 0;
+               totals [key] += s.last [k];
+               total += s.last [k];
+            });
+            totals = dale.go (totals, function (v, k) {
+               return [k, (Math.round (v / 100000) / 10), Math.round (100 * v / total) + '%'];
+            }).sort (function (a, b) {
+               return b [1] - a [1];
+            });
+            reply (rs, 200, JSON.stringify (totals, null, '   '));
+         }
+      ]);
+   }],
 ];
 
 // *** SERVER CONFIGURATION ***
@@ -4143,7 +4181,7 @@ cicek.log = function (message) {
       }
       */
    }
-   else if (message [1] === 'cicek.reply validation error' && message [2].match (/response.connection.writable passed to cicek.(reply|file) should be equal to true but instead is false/)) notification = {
+   else if (message [1].match (/cicek\.(reply|file) validation error/) && message [2].match (/response.connection.writable passed to cicek.(reply|file) should be equal to true but instead is false/)) notification = {
       priority: 'normal',
       type:    'client error',
       subtype: message [1],

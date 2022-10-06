@@ -40,31 +40,25 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - server
-   - quick
-      - ac;log: 403 on favicon.ico no report
-      - Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false" on all deployments.
-   - See if there's a way to detect whatsapp videos that look the same but are slightly different.
-   - Exclude WA from hour in parse date
+   - when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
    - Get prod mirror.
 
 - client
-   - quick
-      - when on tag mode, make tags also be add tag
-      - Import jump if, you can close the tab
+   - when on tag mode, make tags also be add tag
+   - Import jump if, you can close the tab
    - Fix scroll with offset
-   - Fix ronin untagged or range tag when deleting all
-   - Imports: when two imports, one errored and one going, the interface doesn't show it.
-
-- when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
-- show pivs in stats and commas to split numbers
 
 ---
 
+- Fix ronin untagged or range tag when deleting all
+- Imports: when two imports, one errored and one going, the interface doesn't show it.
+- See if there's a way to detect whatsapp videos that look the same but are slightly different.
+- Exclude WA from hour in parse date
 - Add flv support.
 - process to review unsupported formats
 - process to review invalid pivs
 - Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-- Add admin function to measure space usage by prefix.
+- Add UI for admin function that measures space usage by prefix.
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - Share & manage
 - Upgrade pop up notice or email when running out of free space.
@@ -83,6 +77,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - save progress on what's already done
 - Investigate intermittent busboy error.
 - Investigate deploying with rsync rather than tar (does it remove files at destination?)
+- Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
 
 - Submissions
    - Google Play
