@@ -1378,7 +1378,7 @@ var routes = [
 
    ['get', 'stats', function (rq, rs) {
       var split = function (n) {
-         return integer.toString ().replace (/\B(?=(\d{3})+(?!\d))/g, ',');
+         return n.toString ().replace (/\B(?=(\d{3})+(?!\d))/g, ',');
       }
       // TODO: replace with H.stat.r
       var multi = redis.multi ();
