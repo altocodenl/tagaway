@@ -2408,15 +2408,16 @@ suites.query = function () {
          s.uploadId = rs.body.id;
          return true;
       }],
+      // Dates: rotate > small > large
       ['upload small piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
          {type: 'field', name: 'id',           value: s.uploadId},
          {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
       ]}}, 200],
-      ['upload medium piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
-         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+      ['upload rotate piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.rotate.path},
          {type: 'field', name: 'id',           value: s.uploadId},
-         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+         {type: 'field', name: 'lastModified', value: tk.pivs.rotate.mtime},
       ]}}, 200],
       ['upload large piv to test querying', 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
@@ -2433,11 +2434,12 @@ suites.query = function () {
       }],
       ['query pivs with irrelevant range but right at the edges', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 3)) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 3, 'd::M3': 1, 'd::M5': 1, 'd::M7': 1, 'd::2014': 2, 'd::2017': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves newest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::M5': 1, 'd::2014': 2})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M5': 1, 'd::M7': 1, 'd::2014': 2})) return false;
          return true;
       }],
       ['query pivs with range that also shaves middle piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [1].date - 1}}, 200, function (s, rq, rs, next) {
@@ -2447,7 +2449,7 @@ suites.query = function () {
       }],
       ['query pivs with range that shaves oldest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date + 1, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::2014': 1, 'd::2022': 1, 'd::M9': 1})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M3': 1, 'd::M7': 1, 'd::2014': 1, 'd::2017': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves all pivs', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: s.rangePivs [2].date - 1}}, 200, function (s, rq, rs, next) {

@@ -55,14 +55,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Fix ronin untagged or range tag when deleting all
    - Imports: when two imports, one errored and one going, the interface doesn't show it.
 
+- when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
+- show pivs in stats and commas to split numbers
+
 ---
 
 - Add flv support.
-- when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
 - process to review unsupported formats
 - process to review invalid pivs
 - Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-- Add admin function to measure space by prefix.
+- Add admin function to measure space usage by prefix.
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - Share & manage
 - Upgrade pop up notice or email when running out of free space.
@@ -80,6 +82,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - stop new ones
       - save progress on what's already done
 - Investigate intermittent busboy error.
+- Investigate deploying with rsync rather than tar (does it remove files at destination?)
 
 - Submissions
    - Google Play
