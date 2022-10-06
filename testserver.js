@@ -907,7 +907,7 @@ suites.upload.upload = function () {
             if (H.stop ('ev', log.ev, 'upload')) return false;
             if (H.stop ('type', log.type, k === 3 ? 'start' : 'wait')) return false;
          }) === false) return false;
-         setTimeout (next, 10000);
+         setTimeout (next, 15000);
       }],
       ['get stalled upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('upload.status', rs.body [0].status, 'stalled')) return false;

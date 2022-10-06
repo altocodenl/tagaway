@@ -331,7 +331,7 @@ H.thumbPic = function (s, invalidHandler, piv, path, heic_path) {
       if (max > CONFIG.thumbSizes.S) s.thumbS = uuid ();
       if (max > CONFIG.thumbSizes.M) s.thumbM = uuid ();
    }
-   var multiframeFormat = inc (['gif', 'tiff'], piv.format);
+   var multiframeFormat = inc (['gif', 'tiff', 'webp'], piv.format);
    a.seq (s, dale.go (['S', 'M'], function (size) {
       if (! s ['thumb' + size]) return [];
       // In the case of thumbnails done for stripping rotation metadata or non jpeg/png formats, we don't go over 100% if the piv is smaller than the desired thumbnail size.
@@ -821,8 +821,8 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             }
             else if (log.type === 'start') {
                if (! upload.status) {
-                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait ten seconds.
-                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 10;
+                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait fifteen seconds.
+                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 15;
                   // We use log.t instead of log.id in case this is an import, because the id of the import might be quite older than the start of its upload process.
                   if (Date.now () > maxInactivity + (upload.lastActivity || log.t)) {
                      upload.status = 'stalled';

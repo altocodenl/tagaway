@@ -39,22 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- deploy to prod while there are processes going on!
-   - background processes: upload, import, geotagging switch, mp4 conversions
-   - incremental steps to solution:
-      - don't shut down if there's something going on
-      - shut down after all are done
-      - stop new ones
-      - save progress on what's already done
-
-- Check/fix (and add test case) for multiframe webp.
-
-- process to review formats
-- process to review invalid pivs
-
 - server
    - quick
-      - Add mpg & flv support.
       - ac;log: 403 on favicon.ico no report
       - Fix "response.connection.writable passed to cicek.file should be equal to true but instead is false" on all deployments.
    - See if there's a way to detect whatsapp videos that look the same but are slightly different.
@@ -64,7 +50,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - client
    - quick
       - when on tag mode, make tags also be add tag
-      - Big button for view pictures
       - Import jump if, you can close the tab
    - Fix scroll with offset
    - Fix ronin untagged or range tag when deleting all
@@ -72,6 +57,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ---
 
+- Add flv support.
+- when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
+- process to review unsupported formats
+- process to review invalid pivs
+- Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+- Add admin function to measure space by prefix.
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - Share & manage
 - Upgrade pop up notice or email when running out of free space.
@@ -81,6 +72,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Include price of PUT requests
    - Check new price of servers & price of large disk
    - Check balance between disk and RAM and compare to actual RAM usage
+- deploy to prod while there are processes going on!
+   - background processes: upload, import, geotagging switch, mp4 conversions
+   - incremental steps to solution:
+      - don't shut down if there's something going on
+      - shut down after all are done
+      - stop new ones
+      - save progress on what's already done
 - Investigate intermittent busboy error.
 
 - Submissions
