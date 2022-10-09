@@ -2410,7 +2410,7 @@ var routes = [
                [Redis, 'exists', 'piv:' + piv.id],
                function (s) {
                   if (! s.last) return a.stop (a.creat (), [H.unlink, Path.join (Path.dirname (newpath), id)], function (s, error) {
-                     notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, username: rq.user.username, piv: piv.id});
+                     notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, user: rq.user.username, piv: piv.id});
                   });
                   s.bymp4 = s.bymp4.size;
                   var multi = redis.multi ();
@@ -2427,7 +2427,7 @@ var routes = [
                }
             ], function (s, error) {
                a.seq (s, [
-                  [notify, {priority: 'critical', type: 'video conversion to mp4 error', error: error, username: rq.user.username, piv: piv.id}],
+                  [notify, {priority: 'critical', type: 'video conversion to mp4 error', error: error, user: rq.user.username, piv: piv.id}],
                   [H.unlink, Path.join (Path.dirname (newpath), id), true],
                   [H.unlink, Path.join (Path.dirname (newpath), id + '.mp4'), true],
                   [Redis, 'hdel', 'proc:vid', piv.id],
