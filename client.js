@@ -3442,6 +3442,10 @@ B.mrespond ([
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
             if (selected [piv.id]) return [piv.id, true];
          }));
+         // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScrolling will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
+         var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
+            if (piv.start + CSS.pivWidths [1] >= window.scrollY) return window.scrollY - piv.start;
+         });
          B.set (['Data', 'pivs'], rs.body.pivs);
          B.set (['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
 
@@ -3451,9 +3455,9 @@ B.mrespond ([
          else if (! query.fromDate) var scrollTo = 0;
          else                       var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
             // The < and > are there in case the date requested is not held by any pivs that match the query
-            if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start : undefined;
-            else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start : undefined;
-            else                              return query.fromDate >= piv.dateup ? piv.start : undefined;
+            if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start + offset : undefined;
+            else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start + offset : undefined;
+            else                              return query.fromDate >= piv.dateup ? piv.start + offset : undefined;
          });
          B.call ('scroll', [], scrollTo);
 
@@ -3646,7 +3650,7 @@ B.mrespond ([
 
       var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
       dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
-         if (piv.start >= y) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
+         if (piv.start + CSS.pivWidths [1] >= y) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
       });
       // We do this as a timeout to allow the HTML to be updated before we scroll to it. This is necessary when the part we want to scroll to is not drawn yet.
       if (to !== undefined && to !== -1) setTimeout (function () {

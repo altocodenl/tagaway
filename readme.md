@@ -39,17 +39,33 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- fix redraw bug when there are upgrades in the background
 - server
    - when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
+   - fix stats pivs
+   - soft delete S3 with different credentials
    - Get prod mirror.
 
 - client
+   - update
+      - put first cartel if undefined
+      - dismiss sets it to false
+      - new query deletes cartel
+      - auto-update sets another value
+      - State.refreshPivs: undefined (no cartel), false (cartel dismissed), true (auto-update), 'manual' (first cartel)
+      - impl
+         - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
+         - if chunks diverge, then must go into cartel mode:
+
    - when on tag mode, make tags also be add tag
    - Import jump if, you can close the tab
-   - Fix scroll with offset
 
+- select all after query bug
+- warn when navigating away from selection
+- joint space deduplication opt-in!
 ---
 
+- Redraw bug with going back to uploads when upload is ongoing
 - Fix ronin untagged or range tag when deleting all
 - Imports: when two imports, one errored and one going, the interface doesn't show it.
 - See if there's a way to detect whatsapp videos that look the same but are slightly different.
@@ -1026,7 +1042,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It invokes `scroll` since that will match a responder that calculates chunk visibility and optionally scrolls to a y-offset.
          - If `options.noScrolling` is set, it will invoke `scroll [] -1`. This will prevent scrolling.
          - If there's no `fromDate` set, it will invoke `scroll [] 0`. This will scroll the screen to the top.
-         - Otherwise it will invoke `scroll [] DATE`, where `DATE` is the date of the first piv whose `date` or `dateup` matches `query.fromDate`. This is done in the following way: we find the first piv that has a `date` (or `dateup`, if `query.sort` is `upload`) that's the same or less as `query.fromDate` (the same or more if `query.sort` is `oldest`).
+         - Otherwise it will invoke `scroll [] DATE`, where `DATE` is the date of the first piv whose `date` or `dateup` matches `query.fromDate`. This is done in the following way: we find the first piv that has a `date` (or `dateup`, if `query.sort` is `upload`) that's the same or less as `query.fromDate` (the same or more if `query.sort` is `oldest`). If `query.refresh` is `true`, an `offset` is added, which consists of how many pixels are hidden from the topmost row of visible pivs - this will make the scrolling not jump.
       - If `State.open` is not set, it will trigger a `change` event on `Data.pivs` to the pivs returned by the query. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set. We check whether the piv previously opened is still on the list of pivs returned by the query. If it is no longer in the query, it invokes `rem State.open` and `change Data.pivs`. It will also invoke `exit fullscreen`. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
@@ -1046,7 +1062,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Will set `State.lastScroll` to `{y: y, time: INTEGER}`.
       - Depending on the height of the window and the current `y`, it will directly set the `DOMVisible` and `userVisible` properties of the chunks within `State.chunks`, without an event being fired.
       - If there were changes to the `DOMVisible` or `userVisible` properties of one or more chunks, it will then fire the `change` event on both `State.chunks` and `State.selected`.
-      - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's fully visible in the viewport.
+      - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's at least partly visible in the viewport.
       - If a `to` parameter is passed that is not -1, it will scroll to that `y` position after a timeout of 0ms. The timeout is there to allow for DOM operations to conclude before scrolling.
       - Note: the scroll responder has an overall flow of the following shape: 1) determine visibility; 2) trigger changes that will redraw the grid; 3) update `State.query.fromDate`; 4) if necesary, scroll to the right position.
    16. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
