@@ -3121,7 +3121,9 @@ B.mrespond ([
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
       if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
 
-      B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
+      B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), log: B.r.log.slice (-100)});
+      if (B.prod) return;
+      console.log (arguments);
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
    }],
@@ -5523,7 +5525,7 @@ views.upload = function () {
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                           'Error:',
-                                          ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
+                                          teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error
                                        ]])
                                     ]],
                                     // UPLOAD BAR
@@ -5589,7 +5591,7 @@ views.upload = function () {
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                           'Error:',
-                                          ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
+                                          teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error
                                        ]])
                                     ]]
                                  ]],
