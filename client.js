@@ -356,6 +356,14 @@ CSS.litc = [
    ['.app-organise .main-menu__item--organise, .app-pictures .main-menu__item--pictures', ['.main-menu__item-link', {color: CSS.vars ['color--one']}]],
    // *** main-menu-mobile.scss ***
    // *** account-menu.scss ***
+   ['.account-menu', {
+      display: 'inline-flex'
+   }],
+   ['.username', {
+      color: CSS.vars ['grey--darker'],
+      'font-size': CSS.typography.fontSize (1.2),
+      'margin-top': 2
+   }],
    ['.account-menu__item', {
       position: 'relative',
       'padding-left, padding-right': 10,
@@ -4359,6 +4367,7 @@ views.header = function (showUpload, showImport) {
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
+            ['li',{class: 'username'}, 'username'],
             ['li', {class: 'account-menu__item'}, [
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
