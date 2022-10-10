@@ -65,6 +65,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - confirm username in signup interface
 - put username in interface top right
 - script to rename username
+
+- avoid sleep with video
+- retry upload button
+- slider photo/video/both
 ---
 
 - Redraw bug with going back to uploads when upload is ongoing
