@@ -3114,6 +3114,14 @@ B.mrespond ([
             B.call (x, 'goto', 'page', 'login');
             return B.call (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
          }
+         if (x.verb === 'post' && inc (['upload', 'error'], x.path [0]) && error && error.status === 0) {
+            body.retry = true;
+            body.originalTime = Date.now ();
+            // Retry to send POST /upload or POST /error after ten seconds if there's a connection error
+            return setTimeout (function () {
+               B.call (x, x.verb, x.path, headers, body, cb);
+            }, 30 * 1000);
+         }
          if (cb) cb (x, error, rs);
       });
    }],
@@ -3122,7 +3130,7 @@ B.mrespond ([
       if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
 
       B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), log: B.r.log.slice (-100)});
-      if (B.prod) return;
+      if (B.prod) return B.call (x, 'snackbar', 'red', 'There was an unexpected error. Please refresh the browser.');
       console.log (arguments);
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
@@ -3813,8 +3821,8 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'upload', 'wait', rs.body.id + ''], {
             lastActivity: Date.now (),
             interval: setInterval (function () {
-               // We put the check condition at 9 minutes (instead of the 10 of the stalled condition) to have some extra time to send the wait event.
-               if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 * 9 < Date.now ()) {
+               // We put the check condition after a minute of activity (instead of the 10 of the stalled condition) to have some extra time to send the wait event and also keep track of long uploads.
+               if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 < Date.now ()) {
                   B.call (x, 'upload', 'wait', rs.body.id);
                }
             }, 1000 * 15)
@@ -3936,8 +3944,9 @@ B.mrespond ([
          }
 
          H.hash (file.file, function (error, hash) {
-            if (error) return B.call (x, 'upload', 'error', file.id, false, false, {type: 'Hash error', error: error.toString ()});
-            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
+            if (error) B.call (x, 'post', 'error', {}, {error: 'hash error', keys: dale.keys (error), details: error.toString ()});
+
+            B.call (x, 'post', 'uploadCheck', {}, {hash: hash || '', id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
 
                // If the upload was already cancelled or errored by another file, cancel the upload on the client but don't report it to the server.
                if (error && error.status === 409 && error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', file.id, true);
