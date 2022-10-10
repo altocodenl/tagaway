@@ -1,7 +1,7 @@
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style;
+var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = teishi.inc;
 
 window.addEventListener ('keydown', function (ev) {
    ev = ev || document.event;
@@ -422,13 +422,8 @@ B.mrespond ([
    // *** LOGS RESPONDERS ***
 
    ['retrieve', 'logs', function (x, username) {
-      B.call (x, 'get', 'admin/logs', {}, '', function (x, error, rs) {
+      B.call (x, 'get', 'admin/logs/' + username, {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving logs.');
-         if (rs.body.length > 5000) {
-            var length = rs.body.length;
-            rs.body = rs.body.slice (-5000);
-            rs.body.push ({t: 0, username: (length - 5000) + ' older logs omitted'});
-         }
          B.call (x, 'set', ['Data', 'logs'], rs.body);
       });
    }],
@@ -722,11 +717,11 @@ views.dashboard = function (x) {
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/users'}, 'Users']],
       ['br'],
-      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/logs'}, 'Logs']],
-      ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/deploy'}, 'Deploy client']],
       ['br'],
-      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '/pic/app/admin/dates'}, 'See dates from pics']],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'admin/dates'}, 'See dates from pics']],
+      ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'admin/space'}, 'See space usage by key']],
    ]];
 }
 
@@ -780,7 +775,15 @@ views.users = function () {
             ['tr', dale.go (columns, function (v) {return ['th', v]})],
             dale.go (Data.users, function (user) {
                return ['tr', dale.go (columns, function (k) {
-                  if (k === 'actions') return ['td', ['span', {class: 'action', onclick: B.ev ('delete', 'user', user.username)}, 'Delete user']];
+                  if (k === 'actions') return ['td', [
+                     ['span', {class: 'action', onclick: B.ev (['retrieve', 'logs', user.username], ['set', ['State', 'page'], 'logs'])}, 'See logs'],
+                     ['br'], ['br'],
+                     ['span', {class: 'action'}, ['a', {href: 'admin/uploads/' + user.username, target: '_blank'}, 'See uploads']],
+                     ['br'], ['br'],
+                     ['span', {class: 'action'}, ['a', {href: 'admin/activity/' + user.username, target: '_blank'}, 'See activity']],
+                     ['br'], ['br'],
+                     ['span', {class: 'action', onclick: B.ev ('delete', 'user', user.username)}, 'Delete user'],
+                  ]];
                   if (k === 'created') return ['td', new Date (parseInt (user [k])).toUTCString ()];
                   return ['td', user [k]];
                })];
@@ -794,25 +797,19 @@ views.users = function () {
 
 views.logs = function () {
    return B.view (['Data', 'logs'], function (logs) {
-      var columns = ['t', 'username', 'ev', 'type'];
-      dale.go (logs, function (log) {
-         dale.go (log, function (v, k) {
-            if (columns.indexOf (k) === -1) columns.push (k);
-         });
-      });
+      var columns = ['#', 't', 'username', 'ev', 'type', 'other'];
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Logs'],
          ['table', {class: 'pure-table pure-table-striped'}, [
             ['tr', dale.go (columns, function (v) {return ['th', v]})],
-            dale.go (Data.logs, function (log) {
+            dale.go (Data.logs, function (log, i) {
                return ['tr', dale.go (columns, function (k) {
+                  if (k === '#') return ['td', i];
                   if (k === 't') return ['td', new Date (parseInt (log.t)).toUTCString ()];
-                  var value = log [k];
-                  if (value === undefined || value === null) return ['td'];
-                  if (value === true || value === false) return ['td', value + ''];
-                  if (teishi.complex (value)) value = JSON.stringify (value);
-                  if (type (value) === 'string' && value.length > 300) value = value.slice (0, 300) + '...';
-                  return ['td', value];
+                  if (k !== 'other' && inc (columns, k)) return ['td', log [k]];
+                  if (k === 'other') return ['td', ['pre', JSON.stringify (dale.obj (log, function (v, k) {
+                     if (! inc (columns, k)) return [k, v];
+                  }), null, '   ')]];
                })];
             }),
          ]],

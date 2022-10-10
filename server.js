@@ -1276,7 +1276,7 @@ var routes = [
 
    ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
-   ['get', ['assets/*', 'client.js', 'client2.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['assets/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
 
    ['get', '/', reply, lith.g ([
       ['!DOCTYPE HTML'],
@@ -1296,27 +1296,6 @@ var routes = [
             ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
             ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
             ['script', {src: 'client.js'}]
-         ]]
-      ]]
-   ])],
-
-   ['get', '/client2', reply, lith.g ([
-      ['!DOCTYPE HTML'],
-      ['html', [
-         ['head', [
-            ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['meta', {charset: 'utf-8'}],
-            ['title', 'ac;pic'],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-         ]],
-         ['body', [
-            dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
-               return ['script', {src: 'assets/' + v}];
-            }),
-            ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
-            ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
-            ['script', {src: 'client2.js'}]
          ]]
       ]]
    ])],
@@ -1389,7 +1368,7 @@ var routes = [
       multi.exec (function (error, data) {
          if (error) return reply (rs, 500, {error: error});
          reply (rs, 200, dale.obj (keys, function (key, k) {
-            if (k === 'pivs') return [key, split (parseInt (data.pics || 0) + (parseInt (data.vids) || 0))];
+            if (key === 'pivs') return [key, split (parseInt (data [3] || 0) + (parseInt (data [4]) || 0))];
             return [key, split (parseInt (data [k]) || 0)];
          }));
       });
@@ -3978,7 +3957,7 @@ var routes = [
       if (! rq.data.files || ! rq.data.files.file) return reply (rs, 400);
 
       astop (rs, [
-         [a.make (fs.rename), rq.data.files.file, 'client2.js'],
+         [a.make (fs.rename), rq.data.files.file, 'client.js'],
          [reply, rs, 200]
       ]);
    }],
@@ -4011,32 +3990,20 @@ var routes = [
 
    // *** ADMIN: USER LOGS ***
 
-   ['get', 'admin/logs', function (rq, rs) {
+   ['get', 'admin/logs/:username', function (rq, rs) {
 
       astop (rs, [
-         [redis.keyscan, 'users:*'],
-         function (s) {
-            var multi = redis.multi ();
-            s.users = [];
-            dale.go (s.last, function (username) {
-               username = username.replace ('users:', '');
-               s.users.push (username);
-               multi.lrange ('ulog:' + username, 0, -1);
-            });
-            mexec (s, multi);
-         },
+         [Redis, 'lrange', 'ulog:' + rq.data.params.username, 0, -1],
          function (s) {
             var output = [];
-            dale.go (s.last, function (logs, k) {
-               dale.go (logs, function (log) {
-                  log = JSON.parse (log);
-                  log.username = s.users [k];
-                  if (ENV === 'prod') {
-                     if (log.tag) delete log.tag;
-                     if (log.tags) log.tags = log.tags.length;
-                  }
-                  output.push (log);
-               });
+            dale.go (s.last, function (log) {
+               log = JSON.parse (log);
+               log.username = rq.data.params.username;
+               if (ENV === 'prod') {
+                  if (log.tag) delete log.tag;
+                  if (log.tags) log.tags = log.tags.length;
+               }
+               output.push (log);
             });
             reply (rs, 200, output);
          }
@@ -4099,6 +4066,7 @@ var routes = [
                totals [key] += s.last [k];
                total += s.last [k];
             });
+            totals.total = total;
             totals = dale.go (totals, function (v, k) {
                return [k, (Math.round (v / 100000) / 10), Math.round (100 * v / total) + '%'];
             }).sort (function (a, b) {
@@ -4108,6 +4076,50 @@ var routes = [
          }
       ]);
    }],
+
+   // *** ADMIN: LIST UPLOAD INFORMATION (FOR DEBUGGING) ***
+
+   ['get', 'admin/uploads/:username', function (rq, rs) {
+      astop (rs, [
+         [H.getUploads, rq.data.params.username],
+         function (s) {
+            dale.go (s.last, function (v) {
+               v.id = new Date (v.id).toISOString ();
+               if (v.end) v.end = new Date (v.end).toISOString ();
+            });
+            reply (rs, 200, JSON.stringify (s.last, null, '   '));
+         }
+      ]);
+   }],
+
+   // *** ADMIN: SEE USER ACTIVITY (FOR DEBUGGING) ***
+
+   ['get', 'admin/activity/:username', function (rq, rs) {
+      astop (rs, [
+         [redis.keyscan, 'stat:f:rq-user-' + rq.data.params.username + ':*'],
+         function (s) {
+            var keys = dale.go (s.last, function (key) {
+               return H.stat.zero + parseInt (key.split (':') [3] + '000');
+            }).sort ().reverse ();
+            var chunks = [];
+            dale.go (keys, function (key) {
+               if (! chunks.length) return chunks.push ([key]);
+               if (! teishi.last (chunks) [1]) return teishi.last (chunks).push (key);
+               // We consider contiguous activity two requests within 30 seconds
+               if (teishi.last (chunks) [1] - 30000 <= key) teishi.last (chunks) [1] = key;
+               else chunks.push ([key]);
+            });
+            chunks = dale.go (chunks, function (chunk) {
+               return [
+                  chunk [0] ? new Date (chunk [0]).toISOString () : undefined,
+                  chunk [1] ? new Date (chunk [1]).toISOString () : undefined,
+               ];
+            });
+            reply (rs, 200, JSON.stringify (chunks, null, '   '));
+         }
+      ]);
+   }],
+
 ];
 
 // *** SERVER CONFIGURATION ***

@@ -39,10 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- fix redraw bug when there are upgrades in the background
 - server
    - when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
-   - fix stats pivs
    - soft delete S3 with different credentials
    - Get prod mirror.
 
@@ -63,6 +61,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - select all after query bug
 - warn when navigating away from selection
 - joint space deduplication opt-in!
+
+- confirm username in signup interface
+- put username in interface top right
+- script to rename username
 ---
 
 - Redraw bug with going back to uploads when upload is ongoing
@@ -73,6 +75,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - Add flv support.
 - process to review unsupported formats
 - process to review invalid pivs
+- process to review errored mp4 conversions
 - Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
 - Add UI for admin function that measures space usage by prefix.
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
