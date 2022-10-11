@@ -4376,7 +4376,7 @@ if (cicek.isMaster && ENV) a.stop ([
          if (typeOrSize !== 'thumb') {
             if (! s.s3files [dbfile]) s.s3missing.push (dbfile);
             // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
-            else if (s.s3files [dbfile] - typeOrSize !== 33) s.s3WrongSize.push (dbfile);
+            else if (s.s3files [dbfile] - typeOrSize !== 32) s.s3WrongSize.push (dbfile);
          }
          // FS holds both original pivs and thumbnails. Ignore pending or errored conversions to mp4.
          if (! dbfile.match (/(pending|error)/) && ! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
