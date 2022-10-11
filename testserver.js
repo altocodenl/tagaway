@@ -508,6 +508,10 @@ var H = {
    }
 }
 
+var split = function (n) {
+   return n.toString ().replace (/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 // *** TEST SUITES ***
 
 var suites = {};
@@ -762,12 +766,12 @@ suites.public = function () {
       H.invalidTestMaker ('submit error', 'requestInvite', [
          [[], ['object', 'array']],
       ]),
-      ['submit error (array)', 'post', 'error', {}, [1], 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'PUBLIC', error: [1]})],
-      ['submit error (object)', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'PUBLIC', error: {sin: 'sobresaltos'}})],
+      ['submit error (array)', 'post', 'error', {}, [1], 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', user: 'PUBLIC', error: [1]})],
+      ['submit error (object)', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', user: 'PUBLIC', error: {sin: 'sobresaltos'}})],
       suites.auth.in (tk.users.user1),
-      ['submit error as logged in user', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', username: 'user1', error: {sin: 'sobresaltos'}})],
+      ['submit error as logged in user', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', user: 'user1', error: {sin: 'sobresaltos'}})],
       suites.auth.out (tk.users.user1),
-      ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: 0, bys3: 0, pics: 0, vids: 0, thumbS: 0, thumbM: 0, users: 0})],
+      ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: '0', bys3: '0', pics: '0', vids: '0', pivs: '0', thumbS: '0', thumbM: '0', users: '0'})],
       ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
    ];
 }
@@ -1591,7 +1595,7 @@ suites.upload.piv = function () {
                return true;
             }}),
             ['get public stats after uploading ' + name, 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, thumbS: s.thumbS, thumbM: s.thumbM, users: 1})) return false;
+               if (H.stop ('public stats', rs.body, {byfs: split (s.byfs), bys3: split (s.bys3), pivs: parseInt (s.pics) + parseInt (s.vids) + '', pics: s.pics + '', vids: s.vids + '', thumbS: s.thumbS + '', thumbM: s.thumbM + '', users: '1'})) return false;
                return true;
             }],
             piv.nonmp4 ? [] : {tag: 'download piv ' + piv.name, method: 'get', path: function (s) {return '/piv/' + piv.id}, code: 200, raw: true, apres: function (s, rq, rs, next) {
@@ -1619,7 +1623,7 @@ suites.upload.piv = function () {
                return true;
             }}),
             ['get public stats after deleting ' + name, 'get', 'stats', {}, '', 200, function (s, rq, rs) {
-               if (H.stop ('public stats', rs.body, {byfs: s.byfs, bys3: s.bys3, pics: s.pics, vids: s.vids, thumbS: s.thumbS, thumbM: s.thumbM, users: 1})) return false;
+               if (H.stop ('public stats', rs.body, {byfs: split (s.byfs), bys3: split (s.bys3), pivs: parseInt (s.pics) + parseInt (s.vids) + '', pics: s.pics + '', vids: s.vids + '', thumbS: s.thumbS + '', thumbM: s.thumbM + '', users: '1'})) return false;
                return true;
             }],
          ];

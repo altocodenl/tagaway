@@ -36,7 +36,7 @@ var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
-var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, reply = cicek.reply, stop = function (rs, rules) {
+var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, last = teishi.last, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    }, true);
@@ -2855,7 +2855,7 @@ var routes = [
          },
          function (s) {
             // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
-            if (teishi.last (s.last)) {
+            if (last (s.last)) {
                s.refreshQuery = true;
                return s.next (s.last);
             }
@@ -2872,7 +2872,7 @@ var routes = [
             ]);
          },
          function (s) {
-            s.output.tags = dale.obj (teishi.last (s.last, 3), {'a::': teishi.last (s.last, 2), 'u::': 0}, function (tag) {
+            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last, 2), 'u::': 0}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
@@ -3049,7 +3049,7 @@ var routes = [
             mexec (s, multi);
          }],
          function (s) {
-            var sharedWithUser = teishi.last (s.last);
+            var sharedWithUser = last (s.last);
 
             var hasAccess = dale.stopNot (s.last.slice (0, b.ids.length), true, function (piv, k) {
                // No such piv
@@ -4104,10 +4104,11 @@ var routes = [
             var chunks = [];
             dale.go (keys, function (key) {
                if (! chunks.length) return chunks.push ([key]);
-               if (! teishi.last (chunks) [1]) return teishi.last (chunks).push (key);
                // We consider contiguous activity two requests within 30 seconds
-               if (teishi.last (chunks) [1] - 30000 <= key) teishi.last (chunks) [1] = key;
-               else chunks.push ([key]);
+               if (last (last (chunks)) - 30000 <= key) {
+                  return last (chunks).length === 1 ? last (chunks).push (key) : last (chunks) [1] = key;
+               }
+               chunks.push ([key]);
             });
             chunks = dale.go (chunks, function (chunk) {
                return [
@@ -4302,6 +4303,10 @@ if (cicek.isMaster && ENV) setTimeout (function () {
 if (cicek.isMaster && inc (['checkConsistency', 'makeConsistent'], process.argv [3])) var doneChecks = 0;
 
 if (cicek.isMaster && ENV) a.stop ([
+   [function (s) {
+      s.start = Date.now ();
+      s.next ();
+   }],
    // Get list of files from S3
    [H.s3list, ''],
    function (s) {
@@ -4386,7 +4391,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
-      if (process.argv [3] !== 'makeConsistent') notify (s, {priority: 'normal', type: 'File consistency check done.'});
+      if (process.argv [3] !== 'makeConsistent') notify (s, {priority: 'normal', type: 'File consistency check done.', ms: Date.now () - s.start});
       else a.seq (s, [
          // Extraneous S3 files: delete. Don't update the statistics.
          [function (s) {
@@ -4405,6 +4410,7 @@ if (cicek.isMaster && ENV) a.stop ([
             var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: messageType}, function (k) {
                if (s [k].length) return [k, s [k]];
             });
+            message.ms = Date.now () - s.start;
             notify (s, message);
          },
       ]);
@@ -4423,6 +4429,10 @@ if (cicek.isMaster && ENV) a.stop ([
 // *** CHECK CONSISTENCY OF STORED SIZES IN DB ***
 
 if (cicek.isMaster && ENV) a.stop ([
+   [function (s) {
+      s.start = Date.now ();
+      s.next ();
+   }],
    // Get list of all S3 sizes
    [a.set, 's3:files', [Redis, 'hgetall', 's3:files']],
    [redis.keyscan, 'stat:f:by*'],
@@ -4483,7 +4493,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
       if (mismatch.length !== 0)           notify (a.creat (), {priority: 'critical', type: 'Stored sizes consistency mismatch', mismatch: mismatch});
 
-      if (process.argv [3] !== 'makeConsistent') return notify (s, {priority: 'normal', type: 'Stored sizes consistency check done.'});
+      if (process.argv [3] !== 'makeConsistent') return notify (s, {priority: 'normal', type: 'Stored sizes consistency check done.', ms: Date.now () - s.start});
       else a.seq (s, [
          [H.stat.w, dale.go (mismatch, function (v) {
             return ['flow', v [0], v [1]];
@@ -4497,6 +4507,7 @@ if (cicek.isMaster && ENV) a.stop ([
             var message = dale.obj (['missingS3', 'extraneousS3', 'invalidS3', 'mismatch'], {priority: 'critical', type: 'Stored sizes consistency operation success.'}, function (k) {
                if (dale.keys (s [k]).length) return [k, s [k]];
             });
+            message.ms = Date.now () - s.start;
             notify (s, message);
          }
       ]);
