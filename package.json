@@ -22,7 +22,7 @@
       "uuid":                     "8.3.2"
    },
    "main": "server.js",
-   "author": "Federico Pereiro <fpereiro@gmail.com>",
+   "author": "Altocode <info@altocode.nl>",
    "contributors": ["Ruben Meines (http://rubenmeines.com)"],
    "license": [{
       "type": "Public Domain",

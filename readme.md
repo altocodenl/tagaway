@@ -10,9 +10,9 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-ac;pic is currently under development and has not been launched yet. We aim to launch it in 2022.
+ac;pic is currently in private beta.
 
-The author wishes to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
+The authors wish to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
 ## Functionality
 
@@ -1241,7 +1241,8 @@ Only things that differ from client are noted.
 
 ## Version history
 
-- Alpha/v0: bfa9ad50b5e54c78ba804ba35fe1f6310e55dced
+- Alpha/v0: [bfa9ad50b5e54c78ba804ba35fe1f6310e55dced](https://github.com/altocodenl/acpic/tree/bfa9ad50b5e54c78ba804ba35fe1f6310e55dced)
+- Beta: [27fe9a5ad0ee597a7ffdf11b6da8aa935f6fb5d2](https://github.com/altocodenl/acpic/tree/27fe9a5ad0ee597a7ffdf11b6da8aa935f6fb5d2)
 
 ## Annotated source code
 
