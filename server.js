@@ -449,7 +449,7 @@ H.s3list = function (s, prefix) {
          if (error) return s.next (null, error);
          output = output.concat (data.Contents);
          delete data.Contents;
-         if (! data.IsTruncated) return s.next (dale.go (output, function (v) {return v.Key}));
+         if (! data.IsTruncated) return s.next (dale.go (output, function (v) {return {key: v.Key, size: v.Size}}));
          fetch (output [output.length - 1].Key);
       });
    }
@@ -4310,8 +4310,8 @@ if (cicek.isMaster && ENV) a.stop ([
    // Get list of files from S3
    [H.s3list, ''],
    function (s) {
-      s.s3files = dale.obj (s.last, function (path) {
-         return [path, true];
+      s.s3files = dale.obj (s.last, function (v) {
+         return [v.key, v.size];
       });
       s.next ();
    },
@@ -4354,7 +4354,7 @@ if (cicek.isMaster && ENV) a.stop ([
       s.dbfiles = {};
       dale.go (s.last, function (piv) {
          var prefix = H.hash (piv.owner) + '/';
-         s.dbfiles [prefix + piv.id] = 'piv';
+         s.dbfiles [prefix + piv.id] = piv.byfs;
          if (piv.thumbS) s.dbfiles [prefix + piv.thumbS] = 'thumb';
          if (piv.thumbM) s.dbfiles [prefix + piv.thumbM] = 'thumb';
          if (piv.vid && piv.vid !== '1') s.dbfiles [prefix + piv.vid] = 'thumb';
@@ -4369,10 +4369,15 @@ if (cicek.isMaster && ENV) a.stop ([
       s.fsmissing = [];
       s.s3extra   = [];
       s.s3missing = [];
+      s.s3WrongSize = [];
 
-      dale.go (s.dbfiles, function (type, dbfile) {
+      dale.go (s.dbfiles, function (typeOrSize, dbfile) {
          // S3 only holds original pivs
-         if (type === 'piv' && ! s.s3files [dbfile]) s.s3missing.push (dbfile);
+         if (typeOrSize !== 'thumb') {
+            if (! s.s3files [dbfile]) s.s3missing.push (dbfile);
+            // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
+            else if (s.s3files [dbfile] - typeOrSize !== 33) s.s3WrongSize.push (dbfile);
+         }
          // FS holds both original pivs and thumbnails. Ignore pending or errored conversions to mp4.
          if (! dbfile.match (/(pending|error)/) && ! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
       });
@@ -4388,6 +4393,7 @@ if (cicek.isMaster && ENV) a.stop ([
       if (s.fsextra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra.slice (0, 100)});
       if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing.slice (0, 100)});
       if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
+      if (s.s3WrongSize.length) notify (a.creat (), {priority: 'critical', type: 'Files of incorrect size in S3 error', n: s.s3WrongSize.length,   files: s.s3WrongSize.slice (0, 100)});
 
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
@@ -4404,6 +4410,7 @@ if (cicek.isMaster && ENV) a.stop ([
             }, {max: os.cpus ().length});
          },
          // TODO: Missing S3 files: upload them to S3 if they are in the FS.
+         // TODO: The same goes for S3 files of incorrect size.
          // TODO: Missing FS files: download them from S3 if they are there.
          function (s) {
             var messageType = (s.s3missing.length === 0 && s.fsmissing.length === 0) ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';

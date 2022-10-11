@@ -53,9 +53,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - if chunks diverge, then must go into cartel mode:
 
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
-- server: when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
 - server: soft delete S3 with different credentials
-- server: Get prod mirror.
+- server: Get prod mirror
 - server: script to rename username
 - client: avoid sleep with video
 - client: slider photo/video/both

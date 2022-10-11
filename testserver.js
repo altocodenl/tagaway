@@ -1580,7 +1580,7 @@ suites.upload.piv = function () {
                });
 
                s.byfs += piv.size + (piv.mp4size || 0) + (piv.bythumbS || 0) + (piv.bythumbM || 0);
-               // In S3, for some reason, files are 32 bytes bigger.
+               // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
                s.bys3 += piv.size + 32;
                if (H.stop ('byfs', rs.body.usage.byfs, s.byfs)) return false;
 
@@ -1608,7 +1608,7 @@ suites.upload.piv = function () {
             }},
             ['delete piv ' + name, 'post', 'delete', {}, function (s) {return {ids: [piv.id]}}, 200, function (s, rq, rs) {
                s.byfs -= piv.size + (piv.mp4size || 0) + (piv.bythumbS || 0) + (piv.bythumbM || 0);
-               // In S3, for some reason, files are 32 bytes bigger.
+               // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
                s.bys3 -= piv.size + 32;
 
                piv.isVid ? s.vids-- : s.pics--;
