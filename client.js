@@ -3424,7 +3424,7 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate, refresh: options.refresh}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3), recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate, refresh: options.refresh}, function (x, error, rs) {
          var querying = B.get ('State', 'querying');
          if (t !== querying.t) {
             querying.options.retry = true;
@@ -3456,6 +3456,7 @@ B.mrespond ([
 
 
          // Perform mute updates
+
          var selected = B.get ('State', 'selected') || {};
          // Update the selection to only include pivs that are returned in the current query
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
@@ -3482,7 +3483,7 @@ B.mrespond ([
 
          var open = B.get ('State', 'open');
 
-         // Changes on State.selected will be performed by the scrolling responder, same with State.chunks
+         // Changes on State.selected will be performed by the scroll responder, same with State.chunks
          if (! open) return B.call (x, 'change', ['Data', 'pivs'], rs.body.pivs);
 
          var newOpen = dale.stopNot (rs.body.pivs, undefined, function (piv, k) {
@@ -3630,7 +3631,7 @@ B.mrespond ([
          operationComplete = true;
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          if (timeoutFired) B.call (x, 'clear', 'snackbar');
-         B.call (x, 'query', 'pivs', {updateSelected: true});
+         B.call (x, 'query', 'pivs');
       });
    }],
    ['scroll', [], function (x, to) {

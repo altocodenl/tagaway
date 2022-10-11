@@ -39,8 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: select all after query bug
-
 - client: carteloni update
    - put first cartel if undefined
    - dismiss sets it to false
@@ -1016,7 +1014,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.querying` is set and the `options.retry` passed to the responder is not truthy, it will overwrite `State.querying` with `{t: INTEGER, options: {...}}` and do nothing else. This will prevent a concurrent query call to the server; later we'll add logic to make the responder re-invoke itself if a later query requests has happened while a request is being sent to the server.
       - It sets `State.querying` to `{t: INTEGER, options: {...}}`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
-      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will always be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`). If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server. Finally, the third argument passed to the responder will be passed in the `refresh` field.
+      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will be either the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`) or the amount of selected pivs, whatever is larger. If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server. Finally, the third argument passed to the responder will be passed in the `refresh` field.
       - Once the query is done, if `State.querying.t` is larger than the time at which the current query started, this means we need to retry. In this case, the responder will re-invoke itself using `State.querying.options` but also adding `retry = true` to it.
       - If we're here, the query didn't change, so there is no need to retry it. It sets `State.querying` to `undefined`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
