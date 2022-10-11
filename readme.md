@@ -39,51 +39,38 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- server
-   - when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
-   - soft delete S3 with different credentials
-   - Get prod mirror.
+- client: when on tag mode, make tags also be add tag
+- client: Import jump if, you can close the tab
+- client: select all after query bug
+- client: confirm username in signup interface
 
-- client
-   - update
-      - put first cartel if undefined
-      - dismiss sets it to false
-      - new query deletes cartel
-      - auto-update sets another value
-      - State.refreshPivs: undefined (no cartel), false (cartel dismissed), true (auto-update), 'manual' (first cartel)
-      - impl
-         - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
-         - if chunks diverge, then must go into cartel mode:
+- client: carteloni update
+   - put first cartel if undefined
+   - dismiss sets it to false
+   - new query deletes cartel
+   - auto-update sets another value
+   - State.refreshPivs: undefined (no cartel), false (cartel dismissed), true (auto-update), 'manual' (first cartel)
+   - impl
+      - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
+      - if chunks diverge, then must go into cartel mode:
 
-   - when on tag mode, make tags also be add tag
-   - Import jump if, you can close the tab
-
-- select all after query bug
-- warn when navigating away from selection
-- joint space deduplication opt-in!
-
-- confirm username in signup interface
-- script to rename username
-
-- avoid sleep with video
-- retry upload button
-- slider photo/video/both
+- server: process to review unsupported formats, invalid pivs and errored mp4 conversions
+- server: when getting s3 data in consistency check, get also sizes and compare with sizes of output of H.encrypt
+- server: soft delete S3 with different credentials
+- server: Get prod mirror.
+- server: script to rename username
+- client: avoid sleep with video
+- client: slider photo/video/both
 ---
-
-- Redraw bug with going back to uploads when upload is ongoing
-- Fix ronin untagged or range tag when deleting all
-- Imports: when two imports, one errored and one going, the interface doesn't show it.
-- See if there's a way to detect whatsapp videos that look the same but are slightly different.
+- client: retry upload button
+- client: Fix ronin untagged or range tag when deleting all
 - Exclude WA from hour in parse date
 - Add flv support.
-- process to review unsupported formats
-- process to review invalid pivs
-- process to review errored mp4 conversions
 - Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-- Add UI for admin function that measures space usage by prefix.
 - Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - Share & manage
 - Upgrade pop up notice or email when running out of free space.
+- discuss joint space deduplication opt-in!
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
@@ -98,7 +85,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - stop new ones
       - save progress on what's already done
 - Investigate intermittent busboy error.
-- Investigate deploying with rsync rather than tar (does it remove files at destination?)
 - Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
 
 - Submissions
@@ -294,6 +280,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo future
 
 - Pivs
+   - See if there's a way to detect & merge (whatsapp) videos that look the same but have different encoding qualities and slightly different lengths.
    - Hidden tags.
    - Set date manually.
    - Filters.
