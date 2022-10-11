@@ -5824,9 +5824,11 @@ views.import = function () {
                                     // If the OAuth flow hasn't been started yet, offer a link to start it.
                                     if (providerData.redirect) return ['div', attrs (), [
                                        provider.svg,
-                                       ['a', {href: providerData.redirect}, [
-                                          ['span', {style: style ({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}],
-                                       ]],
+                                       B.view (['State', 'upload', 'queue'], function (queue) {
+                                          return ['a', {href: providerData.redirect, target: queue && queue.length ? '_blank' : undefined}, [
+                                             ['span', {style: style ({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}],
+                                          ]];
+                                       }),
                                     ]];
 
                                     // If there's an error, print an error on click.

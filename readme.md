@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: Import jump if, you can close the tab
 - client: select all after query bug
 
 - client: carteloni update
@@ -58,31 +57,31 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server: script to rename username
 - client: avoid sleep with video
 - client: slider photo/video/both
----
+
 - client: retry upload button
 - client: Fix ronin untagged or range tag when deleting all
-- Exclude WA from hour in parse date
-- Add flv support.
-- Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-- Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-- Share & manage
-- Upgrade pop up notice or email when running out of free space.
-- discuss joint space deduplication opt-in!
+- server: Exclude WA from hour in parse date
+- server: Add flv support.
+- server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+- server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
+- server/client: Share & manage
+- client: Upgrade pop up notice or email when running out of free space.
+- server/client: discuss joint space deduplication opt-in!
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
    - Include price of PUT requests
    - Check new price of servers & price of large disk
    - Check balance between disk and RAM and compare to actual RAM usage
-- deploy to prod while there are processes going on!
+- server: deploy to prod while there are processes going on!
    - background processes: upload, import, geotagging switch, mp4 conversions
    - incremental steps to solution:
       - don't shut down if there's something going on
       - shut down after all are done
       - stop new ones
       - save progress on what's already done
-- Investigate intermittent busboy error.
-- Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
+- server: Investigate intermittent busboy error.
+- server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
 
 - Submissions
    - Google Play
@@ -864,7 +863,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 3. `views.share`
 4. `views.tags`
 5. `views.import`
-   - Depends on: `Data.imports`, `State.imports` and `Data.account`.
+   - Depends on: `Data.imports`, `State.imports`, `Data.account` and `State.upload.queue`.
    - Events:
       - `onclick -> import cancel`
       - `onclick -> import retry`
