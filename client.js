@@ -3243,7 +3243,8 @@ B.mrespond ([
       if (username.match ('@')) return B.call (x, 'snackbar', 'yellow', 'Your username cannot be an email or contain an @ symbol.');
       if (username.length < 3)  return B.call (x, 'snackbar', 'yellow', 'Your username must be at least 3 characters long.');
       if (password.length < 6)  return B.call (x, 'snackbar', 'yellow', 'Your password must be at least 6 characters long.');
-      if (c ('#auth-password').value !== c ('#auth-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated password does not match.');
+      if (c ('#auth-username').value !== c ('#auth-username-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated username does not match.');
+      if (c ('#auth-password').value !== c ('#auth-password-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated password does not match.');
       B.call (x, 'post', 'auth/signup', {}, {
          email: B.get ('Data', 'signup', 'email'),
          token: B.get ('Data', 'signup', 'token'),
@@ -4293,8 +4294,9 @@ views.signup = function () {
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
+                  ['input', {id: 'auth-username-confirm', type: 'username', class: 'enter-form__input', placeholder: 'Repeat username'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
-                  ['input', {id: 'auth-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
+                  ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
                ]]
             ]]

@@ -42,7 +42,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - client: when on tag mode, make tags also be add tag
 - client: Import jump if, you can close the tab
 - client: select all after query bug
-- client: confirm username in signup interface
 
 - client: carteloni update
    - put first cartel if undefined
