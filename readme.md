@@ -63,7 +63,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - joint space deduplication opt-in!
 
 - confirm username in signup interface
-- put username in interface top right
 - script to rename username
 
 - avoid sleep with video
@@ -920,7 +919,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Events: `onclick -> set|rem State.feedback`.
    - Contained by: `views.base`.
 4. `views.header`
-   - Depends on `State.page`.
+   - Depends on `State.page` and `Data.account`.
    - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`.
    - Contained by: `views.pivs`, `views.upload`, `views.share`, `views.tags`.
 5. `views.empty`

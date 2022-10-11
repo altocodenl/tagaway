@@ -4367,7 +4367,9 @@ views.header = function (showUpload, showImport) {
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
-            ['li',{class: 'username'}, 'username'],
+            B.view (['Data', 'account'], function (user) {
+               return ['li', {class: 'username'}, user ? user.username : ''];
+            }),
             ['li', {class: 'account-menu__item'}, [
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
