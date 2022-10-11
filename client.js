@@ -3580,8 +3580,7 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
       });
    }],
-   ['tag', 'pivs', function (x, tag, del, ev) {
-      if (ev) ev.stopPropagation ();
+   ['tag', 'pivs', function (x, tag, del) {
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
@@ -3633,10 +3632,6 @@ B.mrespond ([
          if (timeoutFired) B.call (x, 'clear', 'snackbar');
          B.call (x, 'query', 'pivs', {updateSelected: true});
       });
-   }],
-   ['goto', 'tag', function (x, tag) {
-      B.call (x, 'set', ['State', 'selected'], {});
-      B.call (x, 'set', ['State', 'query', 'tags'], [tag]);
    }],
    ['scroll', [], function (x, to) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -4663,7 +4658,7 @@ views.pics = function () {
                            ]],
                         ]],
                      ]],
-                     ['div', {class: 'sidebar__attach-form', onclick: B.ev ('stop', 'propagation', {raw: 'event'})}, [
+                     ['div', {class: 'sidebar__attach-form', onclick: B.ev (H.stopPropagation)}, [
                         B.view ([['State', 'newTag'], ['Data', 'tags'], ['State', 'selected']], function (newTag, tags, selected) {
                            if (! selected) return ['div'];
                            // We filter out tags that are already in all of the pivs of the current selection.
@@ -4695,7 +4690,7 @@ views.pics = function () {
                               ['div', {class: 'attach-form__dropdown'}, [
                                  // TAG LIST DROPDOWN
                                  ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
-                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', true])}, [
+                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', true])}, [
                                        ['div', {class: 'tag tag-list__item--' + H.tagColor (tag)}, [
                                           H.putSvg ('tagItem' + H.tagColor (tag)),
                                           ['span', {class: 'tag__title'}, tag]
@@ -4732,10 +4727,10 @@ views.pics = function () {
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
                               var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
-                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['goto', 'tag', tag])}, [
+                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
                                  ['span', {class: 'tag__title'}, tag],
-                                 ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
+                                 ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag])}, [
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],

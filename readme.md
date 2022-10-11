@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: when on tag mode, make tags also be add tag
 - client: Import jump if, you can close the tab
 - client: select all after query bug
 
@@ -1046,8 +1045,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    11. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
    12. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
-   14. `goto tag`: clears up `State.selection` and sets `State.query.tags` to the selected tag.
-   15. `scroll`:
+   14. `scroll`:
       - Only will perform actions if `State.page` is `pivs`.
       - If the `to` argument is `undefined` and `State.scroll` exists and happened less than 50ms ago, the responder won't do anything else - effectively ignoring the call.
       - If `to` is set to `-1` or `undefined`, our reference `y` position will be the current one.
@@ -1057,15 +1055,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's at least partly visible in the viewport.
       - If a `to` parameter is passed that is not -1, it will scroll to that `y` position after a timeout of 0ms. The timeout is there to allow for DOM operations to conclude before scrolling.
       - Note: the scroll responder has an overall flow of the following shape: 1) determine visibility; 2) trigger changes that will redraw the grid; 3) update `State.query.fromDate`; 4) if necesary, scroll to the right position.
-   16. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
-   17. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   18. `update queryURL`:
+   15. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
+   16. `stop propagation`: stops propagation of the `ev` passed as an argument.
+   17. `update queryURL`:
       - If `State.query` is not set, it does nothing.
       - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
       - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
       - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new history entry will *not* be generated.
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
-   19. `change State.queryURL`:
+   18. `change State.queryURL`:
       - If `State.queryURL` is not set, it does nothing.
       - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ..., recentlyTagged: ...}`. The `recentlyTagged` parameter will be taken from `State.query.recentlyTagged`.
       - It will set `State.query` to that object. Note that all the fields, except for `recentlyTagged` will be overwritten.
