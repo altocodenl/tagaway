@@ -955,7 +955,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    11. `touchend` -> `touch end`
 
 2. General
-   1. `initialize`: calls `reset store` and `retrieve csrf`. Then mounts `views.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile.
+   1. `initialize`: calls `reset store` and `retrieve csrf`. Then mounts `views.base` in the body. Executed at the end of the script. Burns after being matched. Also sets viewport width for zooming out in mobile. Finally, it sets an interval in `State.uploadRefresh` that will prevent the screen/disk from going to sleep while `State.upload.queue` is not empty.
    2. `reset store`: If its first argument (`logout`) is truthy, it clears out `B.r.log` (to remove all user data from the local event log) and sets `lastLogout` to the current date. Notes `State.redirect` and (re)initializes `B.store.State` and `B.store.Data` to empty objects (with the exception of `State.redirect`) and sets the global variables `State` and `Data` to these objects (so that they can be quickly printed from the console).
    3. `clear snackbar`: clears the timeout in `State.snackbar.timeout` (if present) and removes `State.snackbar`.
    4. `snackbar`: calls `clear snackbar` and sets `State.snackbar` (shown in a snackbar) for 4 seconds. Takes a path with the color (`green|red`) and the message to be printed as the first argument. As second argument it takes a flag `noSnackbar` that doesn't set a timeout to clear the snackbar.
@@ -1163,6 +1163,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `tag`: content of input to filter tag or add a new one.
       - `timeout`: if present, a timeout that invokes `query uploads`.
       - `wait`: if present, an object where every key is an upload id and the value is an array of the form `{lastActivity: INTEGER, interval: SETINTERVAL FUNCTION}`. These are used to determine when a `wait` event should be sent.
+   - `uploadRefresh`: an interval that will refresh the page (to prevent the screen and/or disk going to sleep) if `State.upload.queue` is not empty.
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.

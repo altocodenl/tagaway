@@ -3081,6 +3081,13 @@ B.mrespond ([
       B.call (x, 'reset',    'store');
       B.call (x, 'retrieve', 'csrf');
       B.mount ('body', views.base);
+
+      // With profuse thanks to https://matcha.fyi/keep-screen-awake-javascript/
+      B.call (x, 'set', ['State', 'uploadRefresh'], setInterval (function () {
+         if (! (B.get ('State', 'upload', 'queue') || []).length) return;
+         clog ('do it');
+         requestAnimationFrame (function () {document.body.style.background = 'white'});
+      }, 1000));
    }],
    ['reset', 'store', function (x, logout) {
       if (logout) {
