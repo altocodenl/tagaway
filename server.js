@@ -136,7 +136,7 @@ aclog.initialize (function (log) {
 
 var notify = function (s, message) {
    if (! ENV || ! SECRET.aclog.username) {
-      clog (new Date ().toUTCString (), message);
+      clog (new Date ().toISOString (), message);
       return s.next ();
    }
    aclog.send (message, function (error) {
@@ -1335,7 +1335,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         ! ENV ? [] : [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toUTCString (), ' ', b.email]]}],
+         ! ENV ? [] : [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toISOString (), ' ', b.email]]}],
          [reply, rs, 200, {success: true}],
       ]);
    }],
@@ -3969,22 +3969,14 @@ var routes = [
          [Redis, 'hgetall', 'piv:' + rq.data.params.id],
          function (s) {
             if (! s.last) return reply (rs, 200, {});
-            var db = s.last;
-            var path = Path.join (CONFIG.basepath, H.hash (s.last.owner), s.last.id);
-            a.seq (s, [
-               [k, 'exiftool', path],
-               function (s) {
-                  if (! s.last.vid) return reply (rs, 200, {db: db, exiftoolMetadata: s.last.stdout});
-                  var exiftoolMetadata = s.last.stdout;
-                  a.seq (s, [
-                     [k, 'ffprobe', '-i', path, '-show_streams'],
-                     function (s) {
-                        reply (rs, 200, {db: db, exiftoolMetadata: exiftoolMetadata, ffprobeMetadata: s.last.stdout + '\n' + s.last.stderr});
-                     }
-                  ]);
-               }
-            ]);
+            s.db = s.last;
+            s.db.dates = JSON.parse (s.db.dates);
+            s.file = Path.join (CONFIG.basepath, H.hash (s.last.owner), s.last.id);
+            H.getMetadata (s, s.file, false, s.last.dates ['upload:lastModified'], s.last.name);
          },
+         function (s) {
+            reply (rs, 200, {file: s.file, db: s.db, metadata: s.last});
+         }
       ]);
    }],
 
@@ -3992,20 +3984,66 @@ var routes = [
 
    ['get', 'admin/logs/:username', function (rq, rs) {
 
-      astop (rs, [
-         [Redis, 'lrange', 'ulog:' + rq.data.params.username, 0, -1],
-         function (s) {
-            var output = [];
-            dale.go (s.last, function (log) {
-               log = JSON.parse (log);
-               log.username = rq.data.params.username;
-               if (ENV === 'prod') {
-                  if (log.tag) delete log.tag;
-                  if (log.tags) log.tags = log.tags.length;
-               }
-               output.push (log);
+      var processLog = function (log, username, abbreviate) {
+         if (type (log) === 'string') log = JSON.parse (log);
+         log.username = username;
+         if (abbreviate && log.ev === 'upload' && inc (['ok', 'alreadyUploaded', 'repeated'], log.type)) return;
+         if (log.ids) log.ids = log.ids.length;
+         if (log.unsupported) {
+            var extensions = [];
+            dale.go (log.unsupported, function (v) {
+               v = teishi.last (v.split ('.'));
+               if (! inc (extensions, v)) extensions.push (v);
             });
-            reply (rs, 200, output);
+            log.unsupported = {n: log.unsupported.length, extensions: extensions};
+         }
+         if (ENV === 'prod') {
+            if (log.tag) delete log.tag;
+            if (log.tags) log.tags = log.tags.length
+         }
+         return log;
+      }
+
+      astop (rs, [
+         [function (s) {
+            if (rq.data.params.username !== 'all') a.seq (s, [
+               [Redis, 'lrange', 'ulog:' + rq.data.params.username, 0, -1],
+               function (s) {
+                  s.next (dale.fil (s.last, undefined, function (log) {
+                     return processLog (log, rq.data.params.username);
+                  }));
+               }
+            ]);
+            else a.seq (s, [
+               [redis.keyscan, 'ulog:*'],
+               function (s) {
+                  s.users = [];
+                  var multi = redis.multi ();
+                  dale.go (s.last, function (key) {
+                     s.users.push (key.split (':') [1]);
+                     multi.lrange (key, 0, -1);
+                  });
+                  mexec (s, multi);
+               },
+               function (s) {
+                  var output = [];
+                  dale.go (s.last, function (logs, k) {
+                     dale.go (logs, function (log) {
+                        log = processLog (log, s.users [k], true);
+                        if (log) output.push (log);
+                     });
+                  });
+                  s.next (output);
+               },
+               function (s) {
+                  s.next (s.last);
+               }
+            ]);
+         }],
+         function (s) {
+            reply (rs, 200, s.last.sort (function (a, b) {
+               return b.t - a.t;
+            }));
          }
       ]);
    }],

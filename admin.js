@@ -307,10 +307,10 @@ B.mrespond ([
       B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
    }],
    ['read', 'hash', function (x) {
-      var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
-      B.call (x, 'goto', 'page', page);
+      var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0], subpage = hash [1];
+      B.call (x, 'goto', 'page', page, subpage);
    }],
-   ['goto', 'page', function (x, page) {
+   ['goto', 'page', function (x, page, subpage) {
       var pages = {
          logged:   ['dashboard', 'invites', 'users', 'logs', 'deploy'],
          unlogged: ['login', 'signup', 'recover', 'reset']
@@ -333,8 +333,10 @@ B.mrespond ([
 
       document.title = ['ac;pic', page].join (' - ');
 
-      if (page !== B.get ('State', 'page'))     B.call (x, 'set', ['State', 'page'], page);
-      if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
+      if (page === 'logs' && subpage) B.call (x, 'set', ['State', 'logs', 'username'], subpage);
+
+      if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
+      if (window.location.hash !== '#/' + page + (subpage ? '/' + subpage : '')) window.location.hash = '#/' + page + (subpage ? '/' + subpage : '');
    }],
 
    // *** AUTH RESPONDERS ***
@@ -397,7 +399,7 @@ B.mrespond ([
          if (! B.get ('Data', 'users')) B.call (x, 'retrieve', 'users');
       }
       if (B.get ('State', 'page') === 'logs') {
-         if (! B.get ('Data', 'logs')) B.call (x, 'retrieve', 'logs');
+         B.call (x, 'retrieve', 'logs');
       }
    }],
 
@@ -421,13 +423,15 @@ B.mrespond ([
 
    // *** LOGS RESPONDERS ***
 
-   ['retrieve', 'logs', function (x, username) {
+   ['retrieve', 'logs', function (x) {
+      var username = B.get (['State', 'logs', 'username']);
       B.call (x, 'get', 'admin/logs/' + username, {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving logs.');
-         B.call (x, 'set', ['Data', 'logs'], rs.body);
+         if (rs.body.length > 2000) B.call (x, 'snackbar', 'yellow', 'Too many logs (' + rs.body.length + '), only showing 2000 entries');
+         else                       B.call (x, 'snackbar', 'green', 'Retrieved ' + rs.body.length + ' entries');
+         B.call (x, 'set', ['Data', 'logs'], rs.body.slice (0, 2000));
       });
    }],
-
 
    // *** DEPLOY RESPONDERS ***
 
@@ -717,6 +721,8 @@ views.dashboard = function (x) {
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/users'}, 'Users']],
       ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/logs/all'}, 'See recent logs']],
+      ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/deploy'}, 'Deploy client']],
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'admin/dates'}, 'See dates from pics']],
@@ -738,8 +744,8 @@ views.invites = function () {
                   ['td', email],
                   ['td', invite.firstName],
                   ['td', invite.token],
-                  ['td', new Date (invite.sent).toUTCString ()],
-                  ['td', invite.accepted ? new Date (invite.accepted).toUTCString () : ''],
+                  ['td', new Date (invite.sent).toISOString ()],
+                  ['td', invite.accepted ? new Date (invite.accepted).toISOString () : ''],
                   ['td', ['span', {class: 'action', onclick: B.ev ('delete', 'invite', email)}, 'Delete']],
                ]];
             }),
@@ -776,7 +782,7 @@ views.users = function () {
             dale.go (Data.users, function (user) {
                return ['tr', dale.go (columns, function (k) {
                   if (k === 'actions') return ['td', [
-                     ['span', {class: 'action', onclick: B.ev (['retrieve', 'logs', user.username], ['set', ['State', 'page'], 'logs'])}, 'See logs'],
+                     ['span', {class: 'action'}, ['a', {href: '#/logs/' + user.username}, 'See logs']],
                      ['br'], ['br'],
                      ['span', {class: 'action'}, ['a', {href: 'admin/uploads/' + user.username, target: '_blank'}, 'See uploads']],
                      ['br'], ['br'],
@@ -784,7 +790,7 @@ views.users = function () {
                      ['br'], ['br'],
                      ['span', {class: 'action', onclick: B.ev ('delete', 'user', user.username)}, 'Delete user'],
                   ]];
-                  if (k === 'created') return ['td', new Date (parseInt (user [k])).toUTCString ()];
+                  if (k === 'created') return ['td', new Date (parseInt (user [k])).toISOString ()];
                   return ['td', user [k]];
                })];
             }),
@@ -796,16 +802,16 @@ views.users = function () {
 // *** LOGS VIEW ***
 
 views.logs = function () {
-   return B.view (['Data', 'logs'], function (logs) {
+   return B.view ([['Data', 'logs'], ['State', 'logs', 'username']], function (logs, username) {
       var columns = ['#', 't', 'username', 'ev', 'type', 'other'];
       return ['div', {style: style ({padding: 60})}, [
-         ['h3', 'Logs'],
+         ['h3', 'Logs for ' + username],
          ['table', {class: 'pure-table pure-table-striped'}, [
             ['tr', dale.go (columns, function (v) {return ['th', v]})],
             dale.go (Data.logs, function (log, i) {
                return ['tr', dale.go (columns, function (k) {
-                  if (k === '#') return ['td', i];
-                  if (k === 't') return ['td', new Date (parseInt (log.t)).toUTCString ()];
+                  if (k === '#') return ['td', i + 1];
+                  if (k === 't') return ['td', new Date (parseInt (log.t)).toISOString ()];
                   if (k !== 'other' && inc (columns, k)) return ['td', log [k]];
                   if (k === 'other') return ['td', ['pre', JSON.stringify (dale.obj (log, function (v, k) {
                      if (! inc (columns, k)) return [k, v];

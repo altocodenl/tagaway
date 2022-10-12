@@ -592,14 +592,26 @@ All the routes below require an admin user to be logged in.
 `GET /admin/stats`
    - Returns an object with stats.
 
-`GET /admin/debug/ID`
-   - Returns an object with all the piv information.
+`POST /admin/deploy`
+   - Takes a file in the multipart field by name `file`. It will then overwrite `client.js` with that file.
 
-`GET /admin/logs`
-   - Returns an array of logs.
+`GET /admin/debug/ID`
+   - Returns an object with all the piv information for piv with id `ID`.
+
+`GET /admin/logs/USERNAME`
+   - Returns an array of logs for `USERNAME`, with some edits to reduce verbosity. If `USERNAME` is set to `'all'`, all logs will be returned, but upload logs of types `'ok'`, `'alreadyUploaded'` and `'repeated'` will be omitted.
 
 `GET /admin/dates`
-   - Returns a CSV file with the date information of pivs.
+   - Returns a CSV file with the date information of all pivs.
+
+`GET /admin/space`
+   - Returns a stringified object with the MBs used by each key prefix.
+
+`GET /admin/uploads/USERNAME`
+   - Returns an array of uploads done by `USERNAME`. Used to debug stalled uploads.
+
+`GET /admin/activity/USERNAME`
+   - Returns an array of intervals of time in which `USERNAME` was performing requests. Used to debug stalled uploads.
 
 ### Statistics
 
@@ -1199,7 +1211,7 @@ Only things that differ from client are noted.
    - Events:
       - `click -> delete user USERNAME`
 4. `views.logs`
-   - Depends on: `Data.logs`
+   - Depends on: `Data.logs`, `State.logs.username`
 5. `views.deploy`
    - Events:
       - `click -> deploy client`
@@ -1218,10 +1230,10 @@ Only things that differ from client are noted.
    3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
 
 3. Users
-   1. `retrieve logs`: invokes `get admin/logs`.
-   3. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve users`.
+   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`
+   2. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve logs`.
 
-3. Deploy
+4. Deploy
    1. `deploy client`: invokes `post admin/deploy` and `snackbar`.
 
 ### Store

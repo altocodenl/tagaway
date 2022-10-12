@@ -4119,26 +4119,10 @@ B.mrespond ([
       B.call (x, 'get', 'admin/debug/' + id, {}, '', function (x, error, rs) {
          var text;
          if (error) text = error.responseText;
-         else {
-            // Returns ms >= 0 if valid or -1 if not valid.
-            var parseDate = function (date) {
-               var d = new Date (date);
-               if (d.getTime () && d.getTime () >= 0) return d.toISOString ();
-               d = new Date (date.replace (':', '-').replace (':', '-'));
-               if (d.getTime () && d.getTime () >= 0) return d.toISOString ();
-               return -1;
-            }
-            // Convert dates into readable dates
-            rs.body.db.date = parseDate (parseInt (rs.body.db.date));
-            rs.body.db.dateup = parseDate (parseInt (rs.body.db.dateup));
-            rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
-               return [k, parseDate (v) + ' // ' + v];
-            });
-            text = JSON.stringify (rs.body, null, '   ');
-         }
-         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: fixed; top: 0; left: 0; z-index: 1000; background-color: white; padding: 10px;'}, [
+         else text = JSON.stringify (rs.body, null, '   ');
+         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'font-size: 16px; font-family: monospace; position: fixed; top: 0; left: 0; z-index: 100000; background-color: white; padding: 10px;'}, [
             ['a', {href: '#', onclick: 'document.body.removeChild (c ("#debug-info"))', style: 'font-weight: bold; font-size: 28px'}, 'X'],
-            ['pre', {style: 'width: 600px; height: 600px; overflow-y: scroll;'}, text]
+            ['pre', {style: 'width: 900px; height: 600px; overflow-y: scroll;'}, text]
          ]]);
       });
    }]
