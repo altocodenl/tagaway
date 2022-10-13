@@ -1645,7 +1645,10 @@ var routes = [
       }
 
       giz.auth (rq.data.cookie [CONFIG.cookieName], function (error, user) {
-         if (error)  return reply (rs, 500, {error: error});
+         if (error) {
+            if (error === 'User not found') return reply (rs, 403, {error: 'session'});
+            else                            return reply (rs, 500, {error: error});
+         }
          if (! user) return reply (rs, 403, {error: 'session'});
 
          rs.log.username = user.username;
@@ -1753,6 +1756,7 @@ var routes = [
                   multi.del ('ulog:'  + user.username);
                   mexec (s, multi);
                },
+               // TODO: delete all sessions and CSRF tokens belonging to the user
                b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookieName]] : [],
                [notify, {priority: 'important', type: 'delete', user: rq.user.username, ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
                [H.log, user.username, {ev: 'auth', type: 'delete', ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],

@@ -731,11 +731,16 @@ suites.auth = {
             [['message'], 'string'],
          ]),
          ['send feedback', 'post', 'feedback', {}, {message: 'La radio está buenísima.'}, 200],
+         ['login again to create a separate session', 'post', 'auth/login', {}, {username: tk.users.user1.username, password: tk.users.user1.password + 'bar', timezone: 0}, 200, function (s, rq, rs) {
+            s.alternativeSession = rs.headers ['set-cookie'] [0].split (';') [0];
+            return true;
+         }],
          ['delete account', 'post', 'auth/delete', {}, {}, 200, function (s, rq, rs) {
             if (! rs.headers ['set-cookie'] || ! rs.headers ['set-cookie'] [0].match (/max-age=0/i)) return clog ('Invalid set-cookie header', res.headers ['set-cookie']);
             return true;
          }],
          ['get CSRF token after account deletion', 'get', 'auth/csrf', {}, '', 403, H.cBody ({error: 'session'})],
+         ['get CSRF token after account deletion with alternative session', 'get', 'auth/csrf', function (s) {return {cookie: s.alternativeSession}}, '', 403, H.cBody ({error: 'session'})],
          ['logout after account deletion', 'post', 'auth/logout', {}, {}, 403, H.cBody ({error: 'session'})],
          ['login after account deletion', 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password + 'bar', timezone: user.timezone}}, 403, function (s) {
             s.headers = {};
