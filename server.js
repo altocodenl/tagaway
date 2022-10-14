@@ -3227,9 +3227,16 @@ var routes = [
 
    // This route is executed after the OAuth flow, the provider redirects here.
    ['get', 'import/oauth/google', function (rq, rs) {
-      if (! rq.data.query) return reply (rs, 400, {error: 'No query parameters.'});
-      if (! rq.data.query.code) return reply (rs, 403, {error: 'No code parameter.'});
-      if (rq.data.query.state !== rq.user.csrf) return reply (rs, 403, {error: 'Invalid state parameter.'});
+      if (! rq.data.query) return reply (rs, 400, {error: 'No query parameters.', query: rq.data.query});
+      if (! rq.data.query.code) return reply (rs, 403, {error: 'No code parameter.', query: rq.data.query});
+      if (rq.data.query.state !== rq.user.csrf) return reply (rs, 403, {error: 'Invalid state parameter.', query: rq.data.query});
+      if (! rq.data.query.scope) reply (rs, 403, {error: 'No scope parameter.', query: rq.data.query});
+      if (! eq (rq.data.query.scope.split (' ').sort (), ['https://www.googleapis.com/auth/drive.metadata.readonly', 'https://www.googleapis.com/auth/drive.photos.readonly', 'https://www.googleapis.com/auth/drive.readonly'])) {
+         return astop (rs, [
+            [notify, {priority: 'important', type: 'import scope error', provider: 'google', user: rq.user.username, error: 'Insufficient scopes', query: rq.data.query}],
+            [reply, rs, 302, {}, {location: CONFIG.domain + '#/import/error/google'}]
+         ]);
+      }
       var body = [
          'code='          + rq.data.query.code,
          'client_id='     + SECRET.google.oauth.client,

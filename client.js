@@ -3167,6 +3167,9 @@ B.mrespond ([
          if (hash [1] === 'success' && hash [2]) {
             B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'], true);
          }
+         if (hash [1] === 'error' && hash [2]) {
+            B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
+         }
       }
 
       if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
@@ -4000,6 +4003,10 @@ B.mrespond ([
          if (B.get ('State', 'imports', provider, 'authOK')) {
             B.call (x, 'rem', ['State', 'imports', provider], 'authOK');
             return B.call (x, 'import', 'list', provider);
+         }
+         if (B.get ('State', 'imports', provider, 'authError')) {
+            B.call (x, 'snackbar', 'red', 'Authentication failed. Please provide access to all requested scopes.');
+            B.call (x, 'rem', ['State', 'imports', provider], 'authError');
          }
          if (! B.get ('Data', 'imports', provider)) B.call (x, 'query', 'imports', provider);
       });

@@ -39,6 +39,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+
+- query changes: clear refresh limit
+- fresh query: send without refreshLimit, set refreshLimit on way back
+- non-fresh query: send with refreshLimit; if you get parameter that there's new, show cartel if not there.
+- if cartel is set to true, send without refresh limit even on non-fresh query.
+- manual update: update refreshLimit, re-query.
+- dismiss: leave at false.
+
+
+- new pics available: update once // auto-update /// pause auto-update
+
 - client: carteloni update
    - put first cartel if undefined
    - dismiss sets it to false
@@ -55,6 +66,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server: script to rename username
 - client: avoid sleep with video
 - client: slider photo/video/both
+- client: see info of piv
 
 - client: retry upload button
 - client: Fix ronin untagged or range tag when deleting all
@@ -64,7 +76,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - server/client: Share & manage
 - client: Upgrade pop up notice or email when running out of free space.
-- server/client: discuss joint space deduplication opt-in!
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
@@ -248,6 +259,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Downgrade my account alert.
    - Family plan.
    - Payment late flow: freeze uploads, email, auto-delete by size.
+   - Discuss joint space deduplication opt-in (if original piv X is shared by N users, each pays for bytes X/N).
 
 - Admin
    - Retrieve stats & test endpoint.
@@ -969,7 +981,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
    7. `read hash`:
       - If the page is `signup`, it reads the second part of the hash and stores it into `Data.signup`, then modifies the hash to get rid of the extra information once it is in the store.
-      - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `State.import.PROVIDER.authOK` to `true`.
+      - If the page is `import`, it reads the second and third part of the hash. If the second part is `success`, it expects the provider's name to be the third part of the hash (as sent in a redirect by the server) and sets `State.import.PROVIDER.authOK` to `true`. The same happens if the second part is `error`, in which case it will set `State.importPROVIDER.authError` to `true`.
       - If the page is `pics` and there's a second part to the hash, it sets `State.queryURL` to the second part of the hash.
       - Invokes `goto page PAGE`, where `PAGE` is the first part of the hash.
    8. `goto page PAGE`: this is the main navigation responder, which decides whether a change in the hash should take the app to a new page.
@@ -1018,7 +1030,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`.
       - We invoke `update queryURL` or `update queryURL true` - the latter will only be the case if what changes is `State.query.fromDate`.
       - If what changes is `State.query.fromDate`, we determine whether the amount of pivs in `Data.pivs` is enough or whether we need to invoke `query pivs`. If 1) there's already no more pivs in the query (as per `Data.pivTotal`) than we currently have loaded, or 2) the last chunk that is currently visible is neither the last nor the next-to-last chunk loaded, then the responder will not do anything else (that is, it won't invoke `query pivs`), since it is not necessary to load further pivs.
-      - It invokes `query pivs` - if the change is on `State.query.fromDate` and there was a previous value set on `fromDate`, it will invoke instead `query pivs {noScrolling: true}`. This last case will prevent a query triggered by scrolling to programatically set the scrolling point later. The case where `fromDate` changes but there was no previous value is the loading of a first query through a link that contains a `fromDate` parameter - in that case, we do want to programmatically set the scroll.
+      - It invokes `query pivs` - if the change is on `State.query.fromDate` and there was a previous value set on `fromDate`, it will invoke instead `query pivs {fromScroll: true}`. This last case will prevent a query triggered by scrolling to programatically set the scrolling point later. The case where `fromDate` changes but there was no previous value is the loading of a first query through a link that contains a `fromDate` parameter - in that case, we do want to programmatically set the scroll.
    3. `change State.selected`: if current page is not `pivs`, it does nothing. Adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    4. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    5. `query pivs`:
@@ -1039,7 +1051,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It sets `State.chunks` to the output of `H.computeChunks`, also without an event, to avoid redrawing just yet.
       - If `options.refresh` is set to `true`, we'll set `query.fromDate` to the current value of `State.query.fromDate`, since the `fromDate` info from a refresh will be stale if scrolls have happened afterwards.
       - It invokes `scroll` since that will match a responder that calculates chunk visibility and optionally scrolls to a y-offset.
-         - If `options.noScrolling` is set, it will invoke `scroll [] -1`. This will prevent scrolling.
+         - If `options.fromScroll` is set, it will invoke `scroll [] -1`. This will prevent scrolling.
          - If there's no `fromDate` set, it will invoke `scroll [] 0`. This will scroll the screen to the top.
          - Otherwise it will invoke `scroll [] DATE`, where `DATE` is the date of the first piv whose `date` or `dateup` matches `query.fromDate`. This is done in the following way: we find the first piv that has a `date` (or `dateup`, if `query.sort` is `upload`) that's the same or less as `query.fromDate` (the same or more if `query.sort` is `oldest`). If `query.refresh` is `true`, an `offset` is added, which consists of how many pixels are hidden from the topmost row of visible pivs - this will make the scrolling not jump.
       - If `State.open` is not set, it will trigger a `change` event on `Data.pivs` to the pivs returned by the query. If we entered this conditional, the responder won't do anything else.
@@ -1107,7 +1119,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Conditionally invokes `upload complete` if there was no unexpected error and this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
 
 7. Import
-   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
+   1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if `State.import.PROVIDER.authError` is set, it deletes it and invokes `snackbar`; 4) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
    2. `query imports PROVIDER`: if `State.imports.PROVIDER.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get imports/PROVIDER`; if the request is unsuccessful, invokes `snackbar red`, otherwise sets `set Data.imports.PROVIDER` to the result of the query; it conditionally sets `State.imports.PROVIDER.selection` and `State.imports.PROVIDER.timeout`. If a timeout is set, the timeout will invoke `query imports` again after 1500ms.
    3. `import list PROVIDER`: invokes `post import/list/PROVIDER`; if unsuccessful, invokes `snackbar`, otherwise invokes `query imports PROVIDER`.
    4. `import cancel PROVIDER`: invokes `post import/cancel/PROVIDER`; invokes `snackbar` and then `query imports PROVIDER`.
