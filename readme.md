@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: Attempt to use history.replaceState() more than 100 times per 30 seconds
 - client: refresh always in upload, import and pics
 - client: cannot go back from view pics to other views because of URL change
 

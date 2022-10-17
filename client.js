@@ -3143,6 +3143,8 @@ B.mrespond ([
    ['error', [], {match: H.matchVerb}, function (x) {
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
       if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      // Safari complains if we update the URL too often in the case of fast scrolling, so we also ignore this error.
+      if (arguments [1] === 'SecurityError: Attempt to use history.replaceState() more than 100 times per 30 seconds') return;
 
       B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), log: B.r.log.slice (-100)});
       if (B.prod) return B.call (x, 'snackbar', 'red', 'There was an unexpected error. Please refresh the browser.');
