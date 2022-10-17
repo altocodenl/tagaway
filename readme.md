@@ -39,35 +39,32 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- client: refresh always in upload, import and pics
+- server/client: new pics available: update once // auto-update /// pause auto-update
+   - query changes: clear refresh limit
+   - fresh query: send without refreshLimit, set refreshLimit on way back
+   - non-fresh query: send with refreshLimit; if you get parameter that there's new, show cartel if not there.
+   - if cartel is set to true, send without refresh limit even on non-fresh query.
+   - manual update: update refreshLimit, re-query.
+   - dismiss: leave at false.
 
-- query changes: clear refresh limit
-- fresh query: send without refreshLimit, set refreshLimit on way back
-- non-fresh query: send with refreshLimit; if you get parameter that there's new, show cartel if not there.
-- if cartel is set to true, send without refresh limit even on non-fresh query.
-- manual update: update refreshLimit, re-query.
-- dismiss: leave at false.
+   - client: carteloni update
+      - put first cartel if undefined
+      - dismiss sets it to false
+      - new query deletes cartel
+      - auto-update sets another value
+      - State.refreshPivs: undefined (no cartel), false (cartel dismissed), true (auto-update), 'manual' (first cartel)
+      - impl
+         - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
+         - if chunks diverge, then must go into cartel mode:
 
-
-- new pics available: update once // auto-update /// pause auto-update
-
-- client: carteloni update
-   - put first cartel if undefined
-   - dismiss sets it to false
-   - new query deletes cartel
-   - auto-update sets another value
-   - State.refreshPivs: undefined (no cartel), false (cartel dismissed), true (auto-update), 'manual' (first cartel)
-   - impl
-      - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
-      - if chunks diverge, then must go into cartel mode:
-
+- client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
 - server: soft delete S3 with different credentials
 - server: Get prod mirror
 - server: script to rename username
-- client: avoid sleep with video
 - client: slider photo/video/both
 - client: see info of piv
-
 - client: retry upload button
 - client: Fix ronin untagged or range tag when deleting all
 - server: Exclude WA from hour in parse date
@@ -91,15 +88,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - save progress on what's already done
 - server: Investigate intermittent busboy error.
 - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
+- server: get rid of thu entries, use id of piv + suffix
+- admin: add set of users for fast access rather than scanning db
 
 - Submissions
-   - Google Play
    - Google Drive
    - App Store
 
-- Self-hosted
+- Self-hosted ac;pic
    - Turn off/on S3
    - Docker
+   - Documentation
 
 ### Already implemented
 
@@ -788,6 +787,7 @@ All the routes below require an admin user to be logged in.
    - For geotagging:      {t: INT, ev: 'geotagging', type: 'enable|disable'}
    - Import:
       - For oauth request:     {t: INT, ev: 'import', type: 'request',    provider: PROVIDER}
+      - For oauth rerequest:   {t: INT, ev: 'import', type: 'requestAgain', provider: PROVIDER} - this will happen if the refresh token is invalidated by the user or if it expires.
       - For oauth grant:       {t: INT, ev: 'import', type: 'grant',      provider: PROVIDER}
       - For start listing:     {t: INT, ev: 'import', type: 'listStart',  provider: PROVIDER, id: INTEGER}
       - For listing ended:     {t: INT, ev: 'import', type: 'listEnd',    provider: PROVIDER, id: INTEGER}

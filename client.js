@@ -3152,6 +3152,8 @@ B.mrespond ([
    ['error', [], {match: H.matchVerb}, function (x) {
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
       if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      // Safari complains if we update the URL too often in the case of fast scrolling, so we also ignore this error.
+      if (arguments [1] === 'SecurityError: Attempt to use history.replaceState() more than 100 times per 30 seconds') return;
 
       B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), log: B.r.log.slice (-100)});
       if (B.prod) return B.call (x, 'snackbar', 'red', 'There was an unexpected error. Please refresh the browser.');
@@ -5642,7 +5644,7 @@ views.upload = function () {
                                     ]],
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
-                                          'Error:',
+                                          'Error: ',
                                           teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error
                                        ]])
                                     ]]
@@ -5901,7 +5903,7 @@ views.import = function () {
             B.view (['Data', 'imports'], function (providers) {
                return ['div', dale.go (providers, function (v, provider) {
                   return dale.go (v, function (v2) {
-                     if (! inc (['complete', 'error'], v2.status)) return;
+                     if (! inc (['complete', 'error', 'cancelled'], v2.status)) return;
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
                         ['div', {class: 'space-alert__image'}, [
@@ -5915,37 +5917,39 @@ views.import = function () {
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'pics imported'],
                                  ! v2.alreadyUploaded ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.alreadyUploaded],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.alreadyUploaded],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded)']
+                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded']
                                  ],
                                  ! repeated ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + repeated],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, repeated],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'repeated,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'repeated']
                                  ],
                                  ! v2.invalid ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.invalid.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.invalid.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'invalid,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'invalid']
                                  ],
                                  ! v2.tooLarge ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.tooLarge.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.tooLarge.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'too big,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'too large']
                                  ],
                                  ! v2.providerErrors ? [] : [
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.providerErrors.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.providerErrors.length],
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
                                  ],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + H.ago (Date.now () - v2.end) + ' ago.'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.status + ', ' + H.ago (Date.now () - v2.end) + ' ago)'],
+                                 ['LITERAL', '&nbsp'],
+                                 ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
+                                    H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
+                                       'Error: ',
+                                       teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
+                                    ]])
+                                 ]]
                               ]],
                            ]],
                         ]],

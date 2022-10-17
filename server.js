@@ -905,8 +905,8 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
 H.getImports = function (s, rq, rs, provider, maxResults) {
    a.seq (s, [
       [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-         if (error.errorCode === 1) return a.seq (s, [
-            [H.log, rq.user.username, {ev: 'import', type: 'request', provider: 'google'}],
+         if (error.errorCode === 1 || error.errorCode === 2) return a.seq (s, [
+            [H.log, rq.user.username, {ev: 'import', type: error.errorCode === 1 ? 'request' : 'requestAgain', provider: 'google'}],
             [reply, rs, 200, [{
                redirect: [
                   'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
@@ -1103,7 +1103,7 @@ H.getGoogleToken = function (S, username) {
                [Redis, 'del', 'oa:g:ref:' + username],
                function (s) {
                   // Report an error
-                  s.next (null, {errorCode: 2, error: 'Refresh token failed', code: rs.code, body: rs.body});
+                  s.next (null, {errorCode: 2, error: 'Refresh token failed.', code: rs.code, body: rs.body});
                }
             ]);
             // Refresh token was successful
