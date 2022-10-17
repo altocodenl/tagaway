@@ -5606,7 +5606,7 @@ views.upload = function () {
                                     ]],
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
-                                          'Error:',
+                                          'Error: ',
                                           teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error
                                        ]])
                                     ]]
@@ -5865,7 +5865,7 @@ views.import = function () {
             B.view (['Data', 'imports'], function (providers) {
                return ['div', dale.go (providers, function (v, provider) {
                   return dale.go (v, function (v2) {
-                     if (! inc (['complete', 'error'], v2.status)) return;
+                     if (! inc (['complete', 'error', 'cancelled'], v2.status)) return;
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
                         ['div', {class: 'space-alert__image'}, [
@@ -5879,37 +5879,39 @@ views.import = function () {
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__default-text'}, 'pics imported'],
                                  ! v2.alreadyUploaded ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.alreadyUploaded],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.alreadyUploaded],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded)']
+                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded']
                                  ],
                                  ! repeated ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + repeated],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, repeated],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'repeated,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'repeated']
                                  ],
                                  ! v2.invalid ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.invalid.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.invalid.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'invalid,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'invalid']
                                  ],
                                  ! v2.tooLarge ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.tooLarge.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.tooLarge.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'too big,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'too large']
                                  ],
                                  ! v2.providerErrors ? [] : [
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, v2.providerErrors.length],
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.providerErrors.length],
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
                                  ],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + H.ago (Date.now () - v2.end) + ' ago.'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.status + ', ' + H.ago (Date.now () - v2.end) + ' ago)'],
+                                 ['LITERAL', '&nbsp'],
+                                 ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
+                                    H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
+                                       'Error: ',
+                                       teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
+                                    ]])
+                                 ]]
                               ]],
                            ]],
                         ]],

@@ -39,9 +39,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: repeated /import/list/google (box not showing while listing happens)
 - client: Attempt to use history.replaceState() more than 100 times per 30 seconds
-- client: refresh always
+- client: refresh always in upload, import and pics
+- client: cannot go back from view pics to other views because of URL change
 
 - server/client: new pics available: update once // auto-update /// pause auto-update
    - query changes: clear refresh limit
