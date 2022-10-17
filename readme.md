@@ -41,8 +41,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - client: refresh always in upload, import and pics
 - server/client: new pics available: update once // auto-update /// pause auto-update
-   - query changes: clear refresh limit
-   - fresh query: send without refreshLimit, set refreshLimit on way back
+   - query changes: set refresh limit
+   - fresh query: send with refreshLimit (and present moment if in auto)
+   -
    - non-fresh query: send with refreshLimit; if you get parameter that there's new, show cartel if not there.
    - if cartel is set to true, send without refresh limit even on non-fresh query.
    - manual update: update refreshLimit, re-query.
@@ -57,7 +58,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - impl
          - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
          - if chunks diverge, then must go into cartel mode:
-
+- server: fix sorting of imports (ongoing goes first, just sort by id)
 - client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
 - server: soft delete S3 with different credentials
@@ -1030,7 +1031,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`.
       - We invoke `update queryURL` or `update queryURL true` - the latter will only be the case if what changes is `State.query.fromDate`.
       - If what changes is `State.query.fromDate`, we determine whether the amount of pivs in `Data.pivs` is enough or whether we need to invoke `query pivs`. If 1) there's already no more pivs in the query (as per `Data.pivTotal`) than we currently have loaded, or 2) the last chunk that is currently visible is neither the last nor the next-to-last chunk loaded, then the responder will not do anything else (that is, it won't invoke `query pivs`), since it is not necessary to load further pivs.
-      - It invokes `query pivs` - if the change is on `State.query.fromDate` and there was a previous value set on `fromDate`, it will invoke instead `query pivs {fromScroll: true}`. This last case will prevent a query triggered by scrolling to programatically set the scrolling point later. The case where `fromDate` changes but there was no previous value is the loading of a first query through a link that contains a `fromDate` parameter - in that case, we do want to programmatically set the scroll.
+      - It invokes `query pivs` - if the change is on `State.query.fromDate` and there was a previous value set on `fromDate`, it will invoke instead `query pivs {noScroll: true}`. This last case will prevent a query triggered by scrolling to programatically set the scrolling point later. The case where `fromDate` changes but there was no previous value is the loading of a first query through a link that contains a `fromDate` parameter - in that case, we do want to programmatically set the scroll.
    3. `change State.selected`: if current page is not `pivs`, it does nothing. Adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
    4. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
    5. `query pivs`:
@@ -1051,7 +1052,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It sets `State.chunks` to the output of `H.computeChunks`, also without an event, to avoid redrawing just yet.
       - If `options.refresh` is set to `true`, we'll set `query.fromDate` to the current value of `State.query.fromDate`, since the `fromDate` info from a refresh will be stale if scrolls have happened afterwards.
       - It invokes `scroll` since that will match a responder that calculates chunk visibility and optionally scrolls to a y-offset.
-         - If `options.fromScroll` is set, it will invoke `scroll [] -1`. This will prevent scrolling.
+         - If `options.noScroll` is set, it will invoke `scroll [] -1`. This will prevent scrolling.
          - If there's no `fromDate` set, it will invoke `scroll [] 0`. This will scroll the screen to the top.
          - Otherwise it will invoke `scroll [] DATE`, where `DATE` is the date of the first piv whose `date` or `dateup` matches `query.fromDate`. This is done in the following way: we find the first piv that has a `date` (or `dateup`, if `query.sort` is `upload`) that's the same or less as `query.fromDate` (the same or more if `query.sort` is `oldest`). If `query.refresh` is `true`, an `offset` is added, which consists of how many pixels are hidden from the topmost row of visible pivs - this will make the scrolling not jump.
       - If `State.open` is not set, it will trigger a `change` event on `Data.pivs` to the pivs returned by the query. If we entered this conditional, the responder won't do anything else.

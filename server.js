@@ -2702,7 +2702,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh', 'refreshLimit'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -2721,8 +2721,8 @@ var routes = [
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf'],
          ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
-         ['body.refreshLimit', b.refreshLimit, ['undefined', 'integer'], 'oneOf'],
-         b.refreshLimit === undefined ? [] : ['body.refreshLimit', b.refreshLimit, {min: 1}, teishi.test.range],
+         ['body.updateLimit', b.updateLimit, ['undefined', 'integer'], 'oneOf'],
+         b.updateLimit === undefined ? [] : ['body.updateLimit', b.updateLimit, {min: 1}, teishi.test.range],
       ])) return;
 
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
@@ -2820,20 +2820,16 @@ var routes = [
                }
             });
 
+            if (b.updateLimit) output.pivs = dale.fil (output.pivs, undefined, function (piv) {
+               if (piv.dateup <= b.updateLimit) return piv;
+            });
+
             // Sort pivs by criteria.
             output.pivs.sort (function (a, B) {
                var d1 = parseInt (a [b.sort === 'upload' ? 'dateup' : 'date']);
                var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
-
-            if (b.refreshLimit) {
-               var lastUploaded = 0;
-               output.pivs = dale.fil (output.pivs, undefined, function (piv) {
-                  if (piv.dateup <= b.refreshLimit) return piv;
-                  if (piv.dateup > lastUploaded) lastUploaded = piv.dateup;
-               });
-            }
 
             if (b.fromDate) {
                b.from = 1;
