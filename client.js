@@ -2571,6 +2571,15 @@ CSS.litc = [
       'padding-left, padding-right': CSS.vars ['padding--s'],
       'padding-top': CSS.vars ['padding--s'],
    }],
+   // *** REFRESH QUERY BOX ***
+   ['.refresh-pivs-box', {
+      position: 'fixed',
+      bottom: 0,
+      'left': .3,
+      width: Math.round (window.innerWidth / 2),
+      'z-index': '102',
+      'background-color': 'white'
+   }],
    // *** AUTH VIEWS ***
    ['.enter', {
       display: 'flex',
@@ -3342,7 +3351,10 @@ B.mrespond ([
       // If the State object itself changes, or the path is State.query.recentlyTaggged, don't respond to that.
       if (x.path.length < 2 || x.path [2] === 'recentlyTagged') return;
 
-      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate');
+      if (inc (['tags', 'sort'], x.path [2])) {
+         B.rem (['State', 'query'], 'fromDate');
+         B.rem (['State', 'query'], 'refreshLimit');
+      }
 
       B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
 
@@ -3362,7 +3374,7 @@ B.mrespond ([
          }
       }
 
-      B.call (x, 'query', 'pivs', {noScrolling: x.path [2] === 'fromDate' && oldValue});
+      B.call (x, 'query', 'pivs', {fromScroll: x.path [2] === 'fromDate' && oldValue});
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -3409,7 +3421,7 @@ B.mrespond ([
    }],
    ['query', 'pivs', function (x, options) {
       options = options || {};
-      // We copy the query onto a new object so that we can check whether State.query changed after the ajax call returns.
+      // We copy the query onto a new object so that if other events change the object after the ajax call, we will still have access to the original values.
       var query = teishi.copy (B.get ('State', 'query'));
 
       if (! query) return;
@@ -3434,7 +3446,18 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3), recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate, refresh: options.refresh}, function (x, error, rs) {
+      B.call (x, 'post', 'query', {}, {
+         tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
+         sort:           query.sort,
+         from:           query.fromDate ? undefined : 1,
+         fromDate:       query.fromDate,
+         to:             Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
+         recentlyTagged: query.recentlyTagged,
+         mindate:        mindate,
+         maxdate:        maxdate,
+         refresh:        options.refresh,
+         refreshLimit:   B.get ('State', 'refreshPivs') === 'auto' ? undefined : query.refreshLimit
+      }, function (x, error, rs) {
          var querying = B.get ('State', 'querying');
          if (t !== querying.t) {
             querying.options.retry = true;
@@ -3472,7 +3495,7 @@ B.mrespond ([
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
             if (selected [piv.id]) return [piv.id, true];
          }));
-         // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScrolling will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
+         // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.fromScroll will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
          var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
             if (piv.start + CSS.pivWidths [1] >= window.scrollY) return window.scrollY - piv.start;
          });
@@ -3481,7 +3504,7 @@ B.mrespond ([
 
          if (options.refresh) query.fromDate = B.get ('State', 'query', 'fromDate');
 
-         if (options.noScrolling)   var scrollTo = -1;
+         if (options.fromScroll)    var scrollTo = -1;
          else if (! query.fromDate) var scrollTo = 0;
          else                       var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
             // The < and > are there in case the date requested is not held by any pivs that match the query
@@ -4437,6 +4460,19 @@ views.pics = function () {
    return ['div', {class: 'pics-target app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
       views.header (true, true),
       views.open (),
+      B.view (['State', 'refreshPivs'], function (refresh) {
+         if (! refresh) return ['div'];
+         return ['div', {class: 'refresh-pivs-box'}, [
+            refresh === 'auto' ? [
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'refreshPivs'], 'manual')}, 'Pause auto-update'],
+            ] : [
+               ['div', {class: 'cross-button', onclick: B.ev ('set', ['State', 'refreshPivs'], false)}, ['span', {class: 'cross-button__cross'}]],
+               ['p', 'New pics available'],
+               ['span', {class: 'action', onclick: B.ev ('query', 'pivs')}, 'Update once'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'refreshPivs'], 'auto')}, 'Auto-update'],
+            ]
+         ]];
+      }),
       B.view (['Data', 'pivs'], function (pivs) {
          if (! pivs) return ['div'];
          if (B.get ('Data', 'queryTags', 'a::') === 0) return views.empty ();
