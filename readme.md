@@ -40,8 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - client: refresh always in upload, import and pics
-- client: cannot go back from view pics to other views because of URL change
-
 - server/client: new pics available: update once // auto-update /// pause auto-update
    - query changes: clear refresh limit
    - fresh query: send without refreshLimit, set refreshLimit on way back
@@ -60,14 +58,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
          - if chunks diverge, then must go into cartel mode:
 
+- client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
 - server: soft delete S3 with different credentials
 - server: Get prod mirror
 - server: script to rename username
-- client: avoid sleep with video
 - client: slider photo/video/both
 - client: see info of piv
-
 - client: retry upload button
 - client: Fix ronin untagged or range tag when deleting all
 - server: Exclude WA from hour in parse date
@@ -95,13 +92,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - admin: add set of users for fast access rather than scanning db
 
 - Submissions
-   - Google Play
    - Google Drive
    - App Store
 
-- Self-hosted
+- Self-hosted ac;pic
    - Turn off/on S3
    - Docker
+   - Documentation
 
 ### Already implemented
 
