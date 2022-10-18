@@ -4397,7 +4397,7 @@ views.header = function (showUpload, showImport) {
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['div'];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style({width: '135.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
             ]];
          }),
       ]],
