@@ -40,12 +40,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - client: test & style for update once // auto-update // pause auto-update box
+
 - client: check what happens if connection is dropped while uploading
 - server: proper ordering of upload data
-- server: check list of server vs import
-- client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
-- client: refresh always in upload, import and pics
 - server: fix sorting of imports (ongoing goes first, just sort by id)
+- server: check list of server vs import
+- server: when 401 error in listing or upload, delete credentials
+- server: delete credentials when deleting user
+- client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
+- client: delete account
+
+- client: refresh always in upload, import and pics
 - client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
 - server: soft delete S3 with different credentials
