@@ -3355,7 +3355,7 @@ B.mrespond ([
       if (inc (['tags', 'sort'], x.path [2])) {
          B.rem (['State', 'query'], 'fromDate');
          B.rem (['State', 'query'], 'update');
-         B.set (['State', 'query', 'updateLimit'], Date.now ());
+         B.rem (['State', 'query', 'updateLimit']);
       }
 
       if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());

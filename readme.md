@@ -832,8 +832,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 **Pages**:
 
-1. `views.pivs`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.reverseTagOrder`.
+1. `views.pics`
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.reverseTagOrder`, `State.query.update`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -854,6 +854,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> set State.filter`
       - `click -> goto tag`
       - `click -> set State.reverseTagOrder`
+      - `click -> set State.query.update`
+      - `click -> set State.query.updateLimit`
 2. `views.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
@@ -1010,8 +1012,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 4. Pics
    1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
    2. `change State.query`:
-      - If the path to the change is just `State` object (which only happens during initialization or logout), or `State.query.recentlyTagged`, we don't do anything.
-      - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`.
+      - If the path to the change is just `State` object (which only happens during initialization or logout), or `State.query.recentlyTagged`, or `State.query.update`, we don't do anything.
+      - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`. We also remove `State.query.update` and `State.query.updateLimit`.
+      - If `State.query.updateLimit` is either `undefined` or `true`, we set it to the present moment. It will be `undefined` in the case of a new query, and it will be set to `true` in case it is meant to refer to the present time.
       - We invoke `update queryURL` or `update queryURL true` - the latter will only be the case if what changes is `State.query.fromDate`.
       - If what changes is `State.query.fromDate`, we determine whether the amount of pivs in `Data.pivs` is enough or whether we need to invoke `query pivs`. If 1) there's already no more pivs in the query (as per `Data.pivTotal`) than we currently have loaded, or 2) the last chunk that is currently visible is neither the last nor the next-to-last chunk loaded, then the responder will not do anything else (that is, it won't invoke `query pivs`), since it is not necessary to load further pivs.
       - It invokes `query pivs` - if the change is on `State.query.fromDate` and there was a previous value set on `fromDate`, it will invoke instead `query pivs {noScroll: true}`. This last case will prevent a query triggered by scrolling to programatically set the scrolling point later. The case where `fromDate` changes but there was no previous value is the loading of a first query through a link that contains a `fromDate` parameter - in that case, we do want to programmatically set the scroll.
@@ -1022,14 +1025,20 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.querying` is set and the `options.retry` passed to the responder is not truthy, it will overwrite `State.querying` with `{t: INTEGER, options: {...}}` and do nothing else. This will prevent a concurrent query call to the server; later we'll add logic to make the responder re-invoke itself if a later query requests has happened while a request is being sent to the server.
       - It sets `State.querying` to `{t: INTEGER, options: {...}}`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
-      - Invokes `post query`, using `State.query`. If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`. The `to` parameter will be either the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`) or the amount of selected pivs, whatever is larger. If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server. Finally, the third argument passed to the responder will be passed in the `refresh` field.
+      - Invokes `post query`, using `State.query`:
+         - If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`.
+         - The `to` parameter will be either the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`) or the amount of selected pivs, whatever is larger.
+         - If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server.
+         - The third argument passed to the responder will be passed in the `refresh` field.
+         - If `State.query.update` is set to `'auto'`, it will set `updateLimit` to the present moment; otherwise, it will pass the value of `State.query.updateLimit`.
       - Once the query is done, if `State.querying.t` is larger than the time at which the current query started, this means we need to retry. In this case, the responder will re-invoke itself using `State.querying.options` but also adding `retry = true` to it.
       - If we're here, the query didn't change, so there is no need to retry it. It sets `State.querying` to `undefined`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
+      - If `body.refreshQuery` is set to `true` and `State.query.update` is `undefined`, it will set it to `'manual'`, to indicate that updates are available. If instead, `body.refreshQuery` is `false` and `State.query.update` is not `undefined`, it will remove it, to remove the box indicating that updates are available.
       - Invokes `query tags`.
       - If the query contains a year tag, a second query equal to the current query minus the month tags will be performed to the server and the returned `queryTags` field will be set in `Data.monthTags` (just the tags, not the number of pivs for each); if the query does not contain a year tag, it will remove `Data.monthTags`. If this query fails, an error will be printed, but the responder will continue executing the rest of the logic.
       - It sets `Data.queryTags`and `Data.pivTotal` based on the result of the query.
-      - If `body.refreshQuery` is set to true, it will set `State.querying` to a timeout that invokes `query pivs {refresh: true}` after 1500ms. The truthy `refresh` indicates that this is a request triggered by an automatic refresh.
+      - If `body.refreshQuery` is set to `true`, it will set `State.querying` to a timeout that invokes `query pivs {refresh: true}` after 1500ms. The truthy `refresh` indicates that this is a request triggered by an automatic refresh.
       - It updates `State.selected` to filter out those pivs that are no longer returned by the current query. The updates to `State.selected`, are done directly without an event; the `change` event will be fired afterwards in the responder logic.
       - It sets `Data.pivs` to `rs.body.pivs` without an event, to avoid redrawing jsut yet.
       - It sets `State.chunks` to the output of `H.computeChunks`, also without an event, to avoid redrawing just yet.
@@ -1069,7 +1078,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
    18. `change State.queryURL`:
       - If `State.queryURL` is not set, it does nothing.
-      - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ..., recentlyTagged: ...}`. The `recentlyTagged` parameter will be taken from `State.query.recentlyTagged`.
+      - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ...}`.
+      - If any of these fields is both set and different to the corresponding field of `State.query`, it will be overwritten in `State.query` and a `change` event on `State.query` will be invoked.
       - It will set `State.query` to that object. Note that all the fields, except for `recentlyTagged` will be overwritten.
       - If an error is thrown when decoding the hash, `post error` is invoked.
 
@@ -1144,7 +1154,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
    - `reverseTagOrder`: determines whether tags are shown in the default order or in reverse order
-   - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER, recentlyUploaded: UNDEFINED|[ID, ...]}`.
+   - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER, recentlyUploaded: UNDEFINED|[ID, ...], update: UNDEFINED|'auto'|'manual', updateLimit: UNDEFINED|INTEGER}`.
    - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
    - `queryURL`: if set, has the form `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER}`. When updated, its data will be used to update `State.query`.
    - `querying`: `UNDEFINED|{t: INTEGER, options: {updateSelected: BOOLEAN|UNDEFINED, refresh: BOOLEAN|UNDEFINED}`, set if `query pivs` is currently querying the server. Its purpose is to avoid concurrent queries to the server.
