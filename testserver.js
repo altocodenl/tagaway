@@ -2242,7 +2242,7 @@ suites.query = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('query pivs', 'query', [
          [[], 'object'],
-         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh']],
+         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh', 'updateLimit']],
          [[], 'invalidKeys', ['foo']],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
@@ -2267,7 +2267,10 @@ suites.query = function () {
          [['tags'], 'invalidValues', [['a::']], 'all'],
          [['recentlyTagged'], 'values', [['foo']]],
          [['tags'], 'invalidValues', [['foo']], 'recentlyTagged'],
-         [['refresh'], ['undefined', 'boolean']]
+         [['refresh'], ['undefined', 'boolean']],
+         [['updateLimit'], ['undefined', 'integer']]
+         [['updateLimit'], 'values', 'integer'],
+         [['updateLimit'], 'range', {min: 1}],
       ]),
       ['query pivs with refreshQuery not activated', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('body.refreshQuery', rs.body.refreshQuery, undefined)) return false;
@@ -2360,6 +2363,19 @@ suites.query = function () {
             return piv.id;
          });
          if (H.stop ('piv ids', ids, [s.largeId, s.mediumId, s.smallId])) return false;
+         s.lastUpload = rs.body.pivs [0].dateup;
+         return true;
+      }],
+      ['query pivs with updateLimit at present moment', 'post', 'query', {}, function (s) {return {tags: [], sort: 'upload', from: 1, to: 3, updateLimit: Date.now ()}}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs', rs.body.pivs.length, 3)) return false;
+         return true;
+      }],
+      ['query pivs with updateLimit equal to the dateup of the last uploaded piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'upload', from: 1, to: 3, updateLimit: s.lastUpload}}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs', rs.body.pivs.length, 3)) return false;
+         return true;
+      }],
+      ['query pivs with updateLimit equal to the dateup less of that of the last uploaded piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'upload', from: 1, to: 3, updateLimit: s.lastUpload - 1}}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs', rs.body.pivs.length, 2)) return false;
          return true;
       }],
       ['upload piv with geodata', 'post', 'piv', {}, function (s) {return {multipart: [

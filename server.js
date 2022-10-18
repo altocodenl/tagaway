@@ -2702,7 +2702,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -2721,6 +2721,8 @@ var routes = [
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf'],
          ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
+         ['body.updateLimit', b.updateLimit, ['undefined', 'integer'], 'oneOf'],
+         b.updateLimit === undefined ? [] : ['body.updateLimit', b.updateLimit, {min: 1}, teishi.test.range],
       ])) return;
 
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
@@ -2816,6 +2818,10 @@ var routes = [
                   hashes [piv.hash] = true;
                   return piv;
                }
+            });
+
+            if (b.updateLimit) output.pivs = dale.fil (output.pivs, undefined, function (piv) {
+               if (piv.dateup <= b.updateLimit) return piv;
             });
 
             // Sort pivs by criteria.
