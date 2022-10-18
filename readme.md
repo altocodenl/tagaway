@@ -39,7 +39,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: style for update once // auto-update // pause auto-update box
+- client: test & style for update once // auto-update // pause auto-update box
+- client: check what happens if connection is dropped while uploading
+- server: proper ordering of upload data
+- server: check list of server vs import
+- client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
 - client: refresh always in upload, import and pics
 - server: fix sorting of imports (ongoing goes first, just sort by id)
 - client: cannot go back from view pics to other views because of URL change
@@ -1030,11 +1034,11 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
          - The `to` parameter will be either the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`) or the amount of selected pivs, whatever is larger.
          - If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server.
          - The third argument passed to the responder will be passed in the `refresh` field.
-         - If `State.query.update` is set to `'auto'`, it will set `updateLimit` to the present moment; otherwise, it will pass the value of `State.query.updateLimit`.
+         - If `State.query.update` is set to `'auto'`, or if there are no pivs yet in `Data.pivs`, it will set `updateLimit` to the present moment; otherwise, it will pass the value of `State.query.updateLimit`.
       - Once the query is done, if `State.querying.t` is larger than the time at which the current query started, this means we need to retry. In this case, the responder will re-invoke itself using `State.querying.options` but also adding `retry = true` to it.
       - If we're here, the query didn't change, so there is no need to retry it. It sets `State.querying` to `undefined`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
-      - If `body.refreshQuery` is set to `true` and `State.query.update` is `undefined`, it will set it to `'manual'`, to indicate that updates are available. If instead, `body.refreshQuery` is `false` and `State.query.update` is not `undefined`, it will remove it, to remove the box indicating that updates are available.
+      - If `body.refreshQuery` is set to `true` and `State.query.update` is `undefined`, it will set it to `'manual'`, to indicate that updates are available. This will only happen if `Data.pivs` already has pivs.
       - Invokes `query tags`.
       - If the query contains a year tag, a second query equal to the current query minus the month tags will be performed to the server and the returned `queryTags` field will be set in `Data.monthTags` (just the tags, not the number of pivs for each); if the query does not contain a year tag, it will remove `Data.monthTags`. If this query fails, an error will be printed, but the responder will continue executing the rest of the logic.
       - It sets `Data.queryTags`and `Data.pivTotal` based on the result of the query.

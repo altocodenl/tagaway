@@ -3355,7 +3355,7 @@ B.mrespond ([
       if (inc (['tags', 'sort'], x.path [2])) {
          B.rem (['State', 'query'], 'fromDate');
          B.rem (['State', 'query'], 'update');
-         B.rem (['State', 'query', 'updateLimit']);
+         B.rem (['State', 'query'], 'updateLimit');
       }
 
       if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
@@ -3450,6 +3450,8 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
+      var firstQuery = dale.keys (B.get ('Data', 'pivs'));
+
       B.call (x, 'post', 'query', {}, {
          tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
          sort:           query.sort,
@@ -3460,7 +3462,7 @@ B.mrespond ([
          mindate:        mindate,
          maxdate:        maxdate,
          refresh:        options.refresh,
-         updateLimit:    query.update === 'auto' ? t : query.updateLimit
+         updateLimit:    (query.update === 'auto' || firstQuery) ? t : query.updateLimit
       }, function (x, error, rs) {
          var querying = B.get ('State', 'querying');
          if (t !== querying.t) {
@@ -3470,8 +3472,7 @@ B.mrespond ([
          B.call (x, 'rem', 'State', 'querying');
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
-         if (query.update === undefined && rs.body.refreshQuery)   B.call (x, 'set', ['State', 'query', 'update'], 'manual');
-         if (query.update !== undefined && ! rs.body.refreshQuery) B.call (x, 'rem', ['State', 'query'], 'update');
+         if (query.update === undefined && rs.body.refreshQuery && ! firstQuery) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
 
          B.call (x, 'query', 'tags');
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
