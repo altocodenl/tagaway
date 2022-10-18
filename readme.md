@@ -39,16 +39,20 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- server: fix sorting of imports (ongoing goes first, just sort by id)
+- server: delete oauth credentials when deleting user
+- server: when 401 error in listing or upload, delete credentials
+
+- bug a:: count, clarify in doc, document changes of last commit
+- document blank
+
+- server: check list of server vs import
 - client: test & style for update once // auto-update // pause auto-update box
+- client: check if more queries are done on initial load of update box
 
 - client: check what happens if connection is dropped while uploading
-- server: proper ordering of upload data
-- server: fix sorting of imports (ongoing goes first, just sort by id)
-- server: check list of server vs import
-- server: when 401 error in listing or upload, delete credentials
-- server: delete credentials when deleting user
 - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
-- client: delete account
+- client: delete account button
 
 - client: refresh always in upload, import and pics
 - client: cannot go back from view pics to other views because of URL change
@@ -66,6 +70,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - server/client: Share & manage
 - client: Upgrade pop up notice or email when running out of free space.
+- server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
@@ -818,7 +823,7 @@ All the routes below require an admin user to be logged in.
 - oa:g:acc:USERNAME (string): access token for google for USERNAME
 - oa:g:ref:USERNAME (string): refresh token for google for USERNAME
 
-- imp:PROVIDER:username (hash) information of current import operation from provider (`g` for google, `d` for dropbox). Has the shape {id: INTEGER, status: listing|ready|uploading|error, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: {ID: {...}, ...}, files: {ID: {...}, ...}}}
+- imp:PROVIDER:USERNAME (hash) information of current import operation from provider (`g` for google, `d` for dropbox). Has the shape {id: INTEGER, status: listing|ready|uploading|error, fileCount: INTEGER, folderCount: INTEGER, error: UNDEFINED|STRING, selection: UNDEFINED|[ID, ...], data: UNDEFINED|{roots: [ID, ...], folders: {ID: {...}, ...}, files: {ID: {...}, ...}}}
 
 - proc:vid (hash): list of ongoing non-mp4 to mp4 video conversions. key is the `id` of the video, value is the timestamp in milliseconds.
 
