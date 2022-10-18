@@ -3455,7 +3455,7 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      var firstQuery = dale.keys (B.get ('Data', 'pivs'));
+      var firstQuery = dale.keys (B.get ('Data', 'pivs')).length;
 
       B.call (x, 'post', 'query', {}, {
          tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
