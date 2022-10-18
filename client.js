@@ -62,7 +62,8 @@ var CSS = {
    },
    // *** variables.scss ***
    vars: {
-      tagColors: ['green', 'blue', 'yellow', 'orange', 'coral', 'indigo'],
+      // tagColors: ['green', 'blue', 'yellow', 'orange', 'coral', 'indigo'],
+      tagColors: ['#ec5bff', '#ff5b6e', '#5bffec', '#4aff95', '#ffec5b', '#80762e'],
       // Layout sizes
       'sidebar-width': 300,
       // Colors
@@ -257,6 +258,9 @@ CSS.litc = [
       cursor: 'pointer',
       'border-radius': 12,
    }],
+   media ('screen and (max-width: 1090px)', ['.button--feedback', {
+      display: 'none'
+   }]),
    media ('screen and (min-width: 1025px)', ['.button--one:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--one'],
@@ -287,6 +291,7 @@ CSS.litc = [
       'background-color': CSS.vars ['color--one'],
       color: '#fff',
    }]),
+
    // Buttons icon
    ['.button__icon', {
       display: 'inline-block',
@@ -4356,7 +4361,7 @@ views.header = function (showUpload, showImport) {
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['div'];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style({width: '135.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
             ]];
          }),
       ]],
