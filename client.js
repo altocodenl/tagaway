@@ -2580,9 +2580,12 @@ CSS.litc = [
    ['.update-pivs-box', {
       position: 'fixed',
       bottom: 0,
-      'left': .3,
-      width: Math.round (window.innerWidth / 2),
+      'left': .4,
+      width: Math.round (window.innerWidth / 5.5),
+      height: 80,
       'z-index': '102',
+      'border-top-left-radius, border-top-right-radius': 10,
+      'padding-bottom': CSS.vars ['padding--s'],
       'background-color': 'white'
    }],
    // *** AUTH VIEWS ***
@@ -4486,12 +4489,12 @@ views.pics = function () {
          if (! update) return ['div'];
          return ['div', {class: 'update-pivs-box'}, [
             update === 'auto' ? [
-               ['span', {class: 'action', onclick: B.ev (['set', ['State', 'query', 'update'], 'manual'], ['set', ['State', 'query', 'updateLimit'], true])}, 'Pause auto-update'],
+               ['span', {class: 'action', onclick: B.ev (['set', ['State', 'query', 'update'], 'manual'], ['set', ['State', 'query', 'updateLimit'], true]), style: style({'font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff', 'display': 'table', 'margin': '0 auto','padding-top': '33px'})}, 'Pause auto-update'],
             ] : [
-               ['div', {class: 'cross-button', onclick: B.ev ('set', ['State', 'query', 'update'], false)}, ['span', {class: 'cross-button__cross'}]],
-               ['p', 'New pics available'],
-               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true)}, 'Update once'],
-               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'update'], 'auto')}, 'Auto-update'],
+               ['div', {class: 'cross-button', style: style({'float': 'right'}), onclick: B.ev ('set', ['State', 'query', 'update'], false)}, ['span', {class: 'cross-button__cross'}]],
+               ['p',{style: style({'padding-top': '10px', 'padding-left': '30px', 'text-align': 'center', 'font-size': '16px', 'padding-bottom': '10px'})}, 'New pics available'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true), style: style({'float': 'left', 'padding-top': '10px', 'padding-left': '30px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Update once'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'update'], 'auto'), style: style({'float': 'right', 'padding-top': '10px','padding-right': '30px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Auto-update'],
             ]
          ]];
       }),
