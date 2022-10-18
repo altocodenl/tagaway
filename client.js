@@ -3343,7 +3343,7 @@ B.mrespond ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
+      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
       else B.call (x, 'query', 'pivs');
 
       B.call (x, 'change', ['State', 'selected']);
@@ -3358,7 +3358,7 @@ B.mrespond ([
          B.set (['State', 'query', 'updateLimit'], Date.now ());
       }
 
-      if (B.get ('State', 'query', 'updateLimit') === true) B.set (['State', 'query', 'updateLimit'], Date.now ());
+      if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
 
@@ -3470,7 +3470,8 @@ B.mrespond ([
          B.call (x, 'rem', 'State', 'querying');
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
-         if (query.update === undefined && rs.body.refreshQuery) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
+         if (query.update === undefined && rs.body.refreshQuery)   B.call (x, 'set', ['State', 'query', 'update'], 'manual');
+         if (query.update !== undefined && ! rs.body.refreshQuery) B.call (x, 'rem', ['State', 'query'], 'update');
 
          B.call (x, 'query', 'tags');
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
@@ -3757,8 +3758,13 @@ B.mrespond ([
       if (! B.get ('State', 'queryURL')) return;
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
-         if (B.get ('State', 'query', 'recentlyTagged')) query.recentlyTagged = B.get ('State', 'query', 'recentlyTagged');
-         B.call (x, 'set', ['State', 'query'], query);
+         var changes;
+         dale.go (['tags', 'sort', 'fromDate'], function (k) {
+            if (! query [k] || query [k] === B.get ('State', 'query', k)) return;
+            changes = true;
+            B.set (['State', 'query', k], query [k]);
+         });
+         if (changes) B.call (x, 'change', ['State', 'query']);
       }
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});

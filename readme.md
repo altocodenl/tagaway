@@ -39,25 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- client: style for update once // auto-update // pause auto-update box
 - client: refresh always in upload, import and pics
-- server/client: new pics available: update once // auto-update /// pause auto-update
-   - query changes: set refresh limit
-   - fresh query: send with refreshLimit (and present moment if in auto)
-   -
-   - non-fresh query: send with refreshLimit; if you get parameter that there's new, show cartel if not there.
-   - if cartel is set to true, send without refresh limit even on non-fresh query.
-   - manual update: update refreshLimit, re-query.
-   - dismiss: leave at false.
-
-   - client: carteloni update
-      - put first cartel if undefined
-      - dismiss sets it to false
-      - new query deletes cartel
-      - auto-update sets another value
-      - State.refreshPivs: undefined (no cartel), false (cartel dismissed), true (auto-update), 'manual' (first cartel)
-      - impl
-         - check all chunks until last visible, if ids are the same, stop (but update Data.pivs so that you can scroll?). Or just do it.
-         - if chunks diverge, then must go into cartel mode:
 - server: fix sorting of imports (ongoing goes first, just sort by id)
 - client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
