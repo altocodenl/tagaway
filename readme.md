@@ -39,21 +39,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- server: fix sorting of imports (ongoing goes first, just sort by id)
-- server: delete oauth credentials when deleting user
-- server: when 401 error in listing or upload, delete credentials
+fix sorting of imports (ongoing goes first, just sort by id), delete oauth credentials when deleting user, when 401 error in listing or upload, delete credentials and show error
 
-- bug a:: count, clarify in doc, document changes of last commit
-- document blank
-
+- server: test 401
+- server: bug a:: count, clarify in doc, document changes of last commit
+- server: downgrade notification priorities
 - server: check list of server vs import
-- client: test & style for update once // auto-update // pause auto-update box
 - client: check if more queries are done on initial load of update box
-
 - client: check what happens if connection is dropped while uploading
 - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
 - client: delete account button
-
 - client: refresh always in upload, import and pics
 - client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
@@ -91,7 +86,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Submissions
    - Google Drive
-   - App Store
 
 - Self-hosted ac;pic
    - Turn off/on S3
@@ -194,7 +188,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - Import
    - List
-      - If no auth access, provide link to start auth flow.
+      - If no auth access, provide link to start auth flow. If there's an upload going in the background in that same tab, open the auth flow in a new tab.
       - Start listing or see existing list.
       - When listing, update listing progress.
       - Show snackbar when process is done or if the listing ends in error.

@@ -867,10 +867,9 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
          });
          s.next (dale.go (uploads, function (v) {delete v.lastActivity; return v}).sort (function (a, b) {
             // We sort uploads by their end date. If they don't have an end date, we sort them by id.
+            if (b.end && a.end)     return b.end - a.end;
             if (! b.end && ! a.end) return b.id - a.id;
-            if (! b.end) return -1;
-            if (! a.end) return 1;
-            return b.end - a.end;
+            return a.end ? -1 : 1;
          }));
       },
       function (s) {
@@ -905,51 +904,55 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
 H.getImports = function (s, rq, rs, provider, maxResults) {
    a.seq (s, [
       [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-         if (error.errorCode === 1 || error.errorCode === 2) return a.seq (s, [
+         if (! inc ([1, 2], error.errorCode)) return reply (rs, 500, {error: error});
+         a.seq (s, [
             [H.log, rq.user.username, {ev: 'import', type: error.errorCode === 1 ? 'request' : 'requestAgain', provider: 'google'}],
-            [reply, rs, 200, [{
-               redirect: [
-                  'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
-                  'prompt=consent',
-                  'response_type=code',
-                  'client_id=' + SECRET.google.oauth.client,
-                  // https://developers.google.com/identity/protocols/oauth2/scopes
-                  '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.metadata.readonly',
-                  'access_type=offline',
-                  'state=' + rq.user.csrf
-               ].join ('&'),
-               provider: 'google'
-            }]],
+            function (s) {
+               s.redirect = {
+                  redirect: [
+                     'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
+                     'prompt=consent',
+                     'response_type=code',
+                     'client_id=' + SECRET.google.oauth.client,
+                     // https://developers.google.com/identity/protocols/oauth2/scopes
+                     '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.metadata.readonly',
+                     'access_type=offline',
+                     'state=' + rq.user.csrf
+                  ].join ('&'),
+                  provider: 'google'
+               };
+               s.next ();
+            }
          ]);
-
-         reply (rs, 403, {code: error.code || 500, error: error.body || error});
       }],
       [a.set, 'current', [Redis, 'hgetall', 'imp:' + {google: 'g', dropbox: 'd'} [provider] + ':' + rq.user.username]],
       [a.set, 'uploads', [H.getUploads, rq.user.username, {provider: provider}, maxResults]],
       function (s) {
          // The only previous imports that are registered in the history are those that had an upload, otherwise they are not considered.
-         if (! s.current) return s.next (s.uploads);
-         var id = parseInt (s.current.id);
-         var currentUpload = dale.stopNot (s.uploads, undefined, function (upload) {
-            if (upload.id === id) return upload;
-         });
+         if (s.current) {
+            var id = parseInt (s.current.id);
+            var currentUpload = s.uploads [0] && s.uploads [0].id === id ? s.uploads [0] : undefined;
 
-         // If current import has no upload entry, create an entry for it.
-         if (! currentUpload) {
-            s.uploads.unshift ({
-               id:          id,
-               provider:    provider,
-               status:      s.current.status,
-               fileCount:   parseInt (s.current.fileCount)   || 0,
-               folderCount: parseInt (s.current.folderCount) || 0,
-               // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
-               error:       teishi.parse (s.current.error) || s.current.error,
-               selection:   s.current.selection ? JSON.parse (s.current.selection) : undefined,
-               data:        s.current.data ? JSON.parse (s.current.data) : undefined
-            });
-            // Delete file data from import since it's not necessary in the client.
-            if (s.uploads [0].data) delete s.uploads [0].data.files;
+            // If current import has no upload entry, create an entry for it.
+            if (! currentUpload) {
+               s.uploads.unshift ({
+                  id:          id,
+                  provider:    provider,
+                  status:      s.current.status,
+                  fileCount:   parseInt (s.current.fileCount)   || 0,
+                  folderCount: parseInt (s.current.folderCount) || 0,
+                  // We attempt to process error as JSON; if it fails, it's either a non-JSON string or undefined.
+                  error:       teishi.parse (s.current.error) || s.current.error,
+                  selection:   s.current.selection ? JSON.parse (s.current.selection) : undefined,
+                  data:        s.current.data ? JSON.parse (s.current.data) : undefined,
+                  // The current import might be finished with an error, so we need to send the `end` field to say when that happened
+                  end:         s.current.end ? teishi.parse (s.current.end) : undefined
+               });
+               // Delete file data from import since it's not necessary in the client.
+               if (s.uploads [0].data) delete s.uploads [0].data.files;
+            }
          }
+         if (s.redirect) s.uploads.unshift (s.redirect);
          s.next (s.uploads);
       }
    ]);
@@ -1748,8 +1751,11 @@ var routes = [
                   // hash and hashorig entries are deleted incrementally when deleting each piv.
                   multi.del ('hashdel:'     + user.username);
                   multi.del ('hashorigdel:' + user.username);
-                  dale.go ([':g', ':d'], function (v) {
-                     multi.del ('hashdel:' + user.username + v);
+                  dale.go (['g', 'd'], function (v) {
+                     multi.del ('hashdel:' + user.username + ':' + v);
+                     multi.del ('oa:' + v + ':acc:' + user.username);
+                     multi.del ('oa:' + v + ':ref:' + user.username);
+                     multi.del ('imp:' + v + ':' + user.username);
                   });
                   multi.del ('shm:'   + user.username);
                   multi.del ('sho:'   + user.username);
@@ -3267,10 +3273,14 @@ var routes = [
 
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-            reply (rs, 403, {code: error.code || 500, error: error.body || error});
+            reply (rs, 401, {code: error.code || 500, error: error.body || error});
          }],
-         // If there's already an import process ongoing for this provider, we return a 409.
-         [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'1': [reply, rs, 409]}],
+         [Redis, 'hgetall', 'imp:g:' + rq.user.username],
+         function (s) {
+            if (! s.last) return s.next ();
+            if (s.last.status === 'error') return Redis (s, 'del', 'imp:g:' + rq.user.username);
+            reply (rs, 409);
+         },
          function (s) {
             s.id = Date.now ();
             a.seq (s, [
@@ -3535,11 +3545,16 @@ var routes = [
          }
       ], function (s, error) {
          a.stop (s, [
+            [function (s) {
+               // If there is an auth error, delete the credentials
+               if (error.error && error.error.code === 401) Redis (s, 'del', 'oa:g:acc:' + rq.user.username, 'oa:g:ref:' + rq.user.username);
+               else s.next ();
+            }],
             [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
             [function (s) {
                // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
                if (s.last !== s.id + '') return;
-               Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error});
+               Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()});
             }],
             [H.log, rq.user.username, {ev: 'import', type: 'listError', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
@@ -3553,7 +3568,7 @@ var routes = [
                });
             },
          ], function (s, error) {
-            notify (a.creat (), {priority: 'critical', type: 'import list error reporting error', provider: 'google', user: rq.user.username, error: error});
+            notify (a.creat (), {priority: 'critical', type: 'import list error handling error', provider: 'google', user: rq.user.username, error: error});
          });
       });
    }],
@@ -3611,7 +3626,7 @@ var routes = [
    ['post', 'import/upload/google', function (rq, rs) {
       a.stop ([
          [a.stop, [H.getGoogleToken, rq.user.username], function (s, error) {
-            reply (rs, 403, {code: error.code || 500, error: error.body || error});
+            reply (rs, 401, {code: error.code || 500, error: error.body || error});
          }],
          [a.set, 'hashes', [Redis, 'smembers', 'hash:'  + rq.user.username + ':g']],
          [a.set, 'import', [Redis, 'hgetall',  'imp:g:' + rq.user.username]],
@@ -3743,8 +3758,13 @@ var routes = [
                         if (Error) return;
                         Error = true;
                         clearInterval (waitInterval);
-                        a.seq (s, [
-                           [H.log, rq.user.username, {ev: 'upload', type: 'providerError', id: parseInt (s.import.id), provider: 'google', error: {code: code, error: error}}],
+                        a.seq (s, code === 401 ? [
+                           [Redis, 'del', 'oa:g:acc:' + rq.user.username, 'oa:g:ref:' + rq.user.username],
+                           [Redis, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()}],
+                           [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
+                           [H.log, rq.user.username, {ev: 'upload', type: 'error', id: s.id, provider: 'google', name: file.name, error: error}],
+                        ] : [
+                           [H.log, rq.user.username, {ev: 'upload', type: 'providerError', id: parseInt (s.import.id), provider: 'google', error: {code: code, error: error}, name: file.name}],
                            [importFile, index + 1]
                         ]);
                      }
@@ -3831,6 +3851,11 @@ var routes = [
                if (! rs.writableEnded) reply (rs, 500, {error: error});
                s.next ();
             }],
+            function (s) {
+               // If there is an auth error, delete the credentials
+               if (error.error && error.error.code === 401) Redis (s, 'del', 'oa:g:acc:' + rq.user.username, 'oa:g:ref:' + rq.user.username);
+               else s.next ();
+            },
             [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
             ! ENV ? [] : function (s) {
@@ -3843,7 +3868,7 @@ var routes = [
                });
             },
             [a.cond, [Redis, 'exists', 'imp:g:' + rq.user.username], {'1': function () {
-               redis.hset ('imp:g:' + rq.user.username, 'error', JSON.stringify (error));
+               redis.hmset ('imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()});
             }}]
          ]);
       });
