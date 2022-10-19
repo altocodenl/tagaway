@@ -5796,7 +5796,7 @@ views.import = function () {
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
                      ['span', {class: 'space-alert-icon-small'}, H.putSvg ('spaceAlert')],
-                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : data.error)]]
+                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : teishi.complex (data.error) ? JSON.stringify (data.error) : data.error)]]
                   ]],
                   ['div', {class: 'progress-bar'}],
                ]],
