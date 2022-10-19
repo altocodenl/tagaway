@@ -39,9 +39,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-fix sorting of imports (ongoing goes first, just sort by id), delete oauth credentials when deleting user, when 401 error in listing or upload, delete credentials and show error
-
-- server: test 401
+- server: test 401 when uploading from import
 - server: bug a:: count, clarify in doc, document changes of last commit
 - server: downgrade notification priorities
 - server: check list of server vs import
