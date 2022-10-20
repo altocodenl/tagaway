@@ -4500,8 +4500,8 @@ views.empty = function () {
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
                ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
                ['div', [
-                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, 'Import pictures'],
-                  ['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures'],
+                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, [H.putSvg ('cloudImport'), 'Import pictures']],
+                  ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'), 'Upload pictures']],
                ]],
             ]],
          ]],
