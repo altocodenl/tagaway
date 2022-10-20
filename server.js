@@ -869,7 +869,7 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             // We sort uploads by their end date. If they don't have an end date, we sort them by id.
             if (b.end && a.end)     return b.end - a.end;
             if (! b.end && ! a.end) return b.id - a.id;
-            return a.end ? -1 : 1;
+            return a.end ? 1 : -1;
          }));
       },
       function (s) {
@@ -3319,7 +3319,9 @@ var routes = [
                         'includeItemsFromAllDrives=true',
                         'orderBy=modifiedTime',
                         'pageSize=' + PAGESIZE,
-                        'q=' + 'mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27',
+                        // https://developers.google.com/drive/api/guides/search-files
+                        // We search for all images and videos, except for SVGs
+                        'q=' + 'mimeType%20!%3D%20%27image%2Fsvg%2Bxml%27%20and%20(mimeType%20contains%20%27image%2F%27%20or%20mimeType%20contains%20%27video%2F%27)',
                         'supportsAllDrives=true',
                         'spaces=drive,photos',
                      ].join ('&') + (! nextPageToken ? '' : '&pageToken=' + nextPageToken);
@@ -3348,6 +3350,8 @@ var routes = [
                            function (s) {
                               var allowedFiles = dale.fil (RS.body.files, undefined, function (file) {
                                  file.size = parseInt (file.size);
+                                 // We mark unsupported files
+                                 if (! inc (CONFIG.allowedFormats, file.mimeType)) file.unsupported = true;
                                  // Ignore trashed files!
                                  if (file.trashed) return;
                                  return file;
@@ -3428,7 +3432,7 @@ var routes = [
                            var json = JSON.parse (part.match (/^{[\s\S]+^}/gm) [0]);
                            if (json.error) return error = json.error;
 
-                           folders [json.id] = {name: json.name, parents: json.parents};
+                           folders [json.id] = {name: json.name, parents: json.parents, count: 0};
                            if (! json.parents) roots [json.id] = true;
                            dale.go (json.parents, function (id) {
                               if (! children [id]) children [id] = [];
@@ -3493,17 +3497,16 @@ var routes = [
                [getFilePage],
                getParentBatch,
                function (s) {
-                  // Count how many pivs per folder there are.
+                  // Count how many supported pivs per folder there are.
                   var porotoSum = function (id) {
-                     if (! folders [id].count) folders [id].count = 0;
                      folders [id].count++;
                      dale.go (folders [id].parents, porotoSum);
                   }
 
                   // Convert files into an object with their ids as keys
                   files = dale.obj (files, function (file) {
-                     // Increment count for all parent folders
-                     dale.go (file.parents, porotoSum);
+                     // If file is supported, increment count for all parent folders
+                     if (! file.unsupported) dale.go (file.parents, porotoSum);
                      return [file.id, file];
                   });
 

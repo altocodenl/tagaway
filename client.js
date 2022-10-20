@@ -290,7 +290,7 @@ CSS.litc = [
    media ('screen and (min-width: 1025px)', ['.button--green:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--attach'],
-   }, 
+   },
    ['.share-icon', {
       'fill': CSS.vars ['color--attach'],
    }]]),
@@ -5989,11 +5989,6 @@ views.import = function () {
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'too large']
                                  ],
-                                 ! v2.providerErrors ? [] : [
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.providerErrors.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
-                                 ],
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.status + ', ' + H.ago (Date.now () - v2.end) + ' ago)'],
                                  ['LITERAL', '&nbsp'],
@@ -6001,6 +5996,9 @@ views.import = function () {
                                     H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
                                        'Error: ',
                                        teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
+                                    ]]),
+                                    H.if (v2.providerErrors, ['span', {class: 'upload-progress__default-text'}, [
+                                       (v2.providerErrors || []).length + ' files could not be retrieved!'
                                     ]])
                                  ]]
                               ]],
@@ -6137,6 +6135,8 @@ views.importFolders = function (importState, importData) {
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.go (folderList, function (id) {
                      var folder = importData.data.folders [id];
+                     // If folder only has unsupported files, do not show it (unless it is the root).
+                     if (folder.count === 0 && ! inc (importData.data.roots, id)) return;
                      var selected = !! selection [id];
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
