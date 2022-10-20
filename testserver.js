@@ -317,12 +317,14 @@ var H = {
       ]);
    },
    loadPivData: function (s) {
-      var invalid  = ['empty.jpg', 'invalid.jpg', 'invalid.mp4'];
+      var invalid  = ['empty.jpg', 'invalid.jpg', 'invalidvid.mp4'];
       // medium-nometa.jpg has no metadata; small-meta.png has an extra metadata field for date
       var repeated = ['medium-nometa.jpg', 'small-meta.png'];
       var unsupported = ['location.svg'];
       var pivs = dale.obj (fs.readdirSync (tk.pivPath).sort (), function (file) {
          var stat = fs.statSync (Path.join (tk.pivPath, file));
+         // Ignore vim swap files
+         if (file.match (/.swp$/)) return;
          var data = {name: file, path: Path.join (tk.pivPath, file), size: stat.size, mtime: new Date (stat.mtime).getTime (), invalid: inc (invalid, file) || undefined, repeated: inc (repeated, file) || undefined, unsupported: inc (unsupported, file) || undefined};
          return [data.name.split ('.') [0], data];
       });
@@ -3068,19 +3070,19 @@ suites.import = function () {
          var entry = rs.body [0];
          if (H.stop ('entry.status', entry.status, 'complete')) return false;
          if (H.stop ('type of entry.end', type (entry.end), 'integer')) return false;
-         if (H.stop ('entry.ok', entry.ok, 16)) return false;
-         if (H.stop ('entry.total', entry.total, 21)) return false;
+         // 1 unsupported piv, 3 invalid pivs, 2 repeated pivs
+         if (H.stop ('entry.ok', entry.ok, dale.keys (tk.pivs).length - 1 - 3 - 2)) return false;
+         if (H.stop ('entry.total', entry.total, dale.keys (tk.pivs).length - 1)) return false;
          if (H.stop ('entry.alreadyImported', entry.alreadyImported, 0)) return false;
-         if (! eq (entry.repeated, ['small-meta.png', 'medium-nometa.jpg']) && ! eq (entry.repeated, ['medium.jpg', 'small-meta.png'])) {
-            return clog ('Invalid entry.repeated, got', entry.repeated, ', expected one of:', ['small-meta.png', 'medium-nometa.jpg'], ['medium.jpg', 'small-meta.png']);
-         }
-         if (H.stop ('entry.invalid', entry.invalid, ['empty.jpg', 'invalid.mp4', 'invalid.jpg'])) return false;
+         entry.repeated.sort ();
+         if (H.stop ('entry.repeated [0]', inc (['medium.jpg', 'medium-nometa.jpg'], entry.repeated [0]), true)) return false;
+         if (H.stop ('entry.repeated [1]', inc (['small.png', 'small-nometa.png'],   entry.repeated [1]), true)) return false;
+         if (H.stop ('entry.invalid', entry.invalid.sort (), ['empty.jpg', 'invalid.jpg', 'invalidvid.mp4'])) return false;
          if (H.stop ('entry.repeatedSize',  entry.repeatedSize, tk.pivs [entry.repeated [0].replace (/\..+/, '')].size + tk.pivs [entry.repeated [1].replace (/\..+/, '')].size)) return false;
-          if (H.stop ('entry.unsupported',  entry.unsupported, ['location.svg'])) return false;
          return true;
       }],
       ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1000}, 200, function (s, rq, rs) {
-         if (H.stop ('number of pivs', rs.body.pivs.length, 16)) return false;
+         if (H.stop ('number of pivs', rs.body.pivs.length, dale.keys (tk.pivs).length - 1 - 3 - 2)) return false;
          return true;
       }],
       ['get logs after no-op enable geo', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -3096,7 +3098,7 @@ suites.import = function () {
             7: {ev: 'import', type: 'listStart'},
             8: {ev: 'import', type: 'listEnd'},
             9: {ev: 'import', type: 'selection', folders: s.importFolders},
-            10: {ev: 'upload', type: 'start', unsupported: ['location.svg'], total: 21, alreadyImported: 0},
+            10: {ev: 'upload', type: 'start', total: dale.keys (tk.pivs).length - 1, alreadyImported: 0},
             11: {ev: 'upload', provider: 'google'},
             last: {ev: 'upload', type: 'complete', provider: 'google'}
          }, false, function (v, k) {

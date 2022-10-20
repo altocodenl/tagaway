@@ -290,7 +290,7 @@ CSS.litc = [
    media ('screen and (min-width: 1025px)', ['.button--green:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--attach'],
-   }, 
+   },
    ['.share-icon', {
       'fill': CSS.vars ['color--attach'],
    }]]),
@@ -4420,14 +4420,14 @@ views.reset = function () {
 views.header = function (showUpload, showImport) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['div'];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--green'}, 'View pictures']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
             ]];
          }),
       ]],
@@ -4481,6 +4481,7 @@ views.empty = function () {
                   ['img', {class: 'tip__icon', src: 'img/icon-tip.svg'}],
                   ['h5', {class: 'tip__title'}, 'Tip!'],
                ]],
+               // TODO: fix redraw bug that carries through click to anchor
                ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {href: '#/upload'}, 'Upload'], ' some photos and add some tags.']],
             ]],
          ]],
@@ -5448,7 +5449,7 @@ views.share = function () {
             ['div', {class: 'page-section'}, [
                // BACK LINK
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -5599,7 +5600,7 @@ views.upload = function () {
                      ]],
                      ['div', {class: 'go-back-to-view-pictures'}, [
                         ['p', {class: 'go-back-to-view-pictures-p'}, 'Want to go back to your pics?'],
-                        ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev ('goto', 'page', 'pics')}, 'Go back to View Pictures.']
+                        ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back to View Pictures.']
                      ]],
                      // PENDING UPLOADS
                      dale.go (uploads, function (upload) {
@@ -5721,7 +5722,7 @@ views.upload = function () {
             ['div', {class: 'page-section'}, [
                // BACK LINK
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -5751,7 +5752,7 @@ views.noSpace = function () {
                ['div', {class: 'progress-bar'}],
             ]],
             ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-               ['div', {class: 'boxed-alert-button-left button'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, 'Delete some files']],
+               ['div', {class: 'boxed-alert-button-left button'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Delete some files']],
                ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']],
             ]],
          ]],
@@ -5949,7 +5950,7 @@ views.import = function () {
             }),
             ['div', {class: 'go-back-to-view-pictures'}, [
                ['p', {class: 'go-back-to-view-pictures-p'}, 'Want to go back to your pics?'],
-               ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev ('goto', 'page', 'pics')}, 'Go back to View Pictures.']
+               ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back to View Pictures.']
             ]],
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
@@ -5989,11 +5990,6 @@ views.import = function () {
                                     ['LITERAL', '&nbsp'],
                                     ['span', {class: 'upload-progress__default-text'}, 'too large']
                                  ],
-                                 ! v2.providerErrors ? [] : [
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.providerErrors.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
-                                 ],
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.status + ', ' + H.ago (Date.now () - v2.end) + ' ago)'],
                                  ['LITERAL', '&nbsp'],
@@ -6001,6 +5997,9 @@ views.import = function () {
                                     H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
                                        'Error: ',
                                        teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
+                                    ]]),
+                                    H.if (v2.providerErrors, ['span', {class: 'upload-progress__default-text'}, [
+                                       (v2.providerErrors || []).length + ' files could not be retrieved!'
                                     ]])
                                  ]]
                               ]],
@@ -6013,7 +6012,7 @@ views.import = function () {
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -6137,6 +6136,8 @@ views.importFolders = function (importState, importData) {
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.go (folderList, function (id) {
                      var folder = importData.data.folders [id];
+                     // If folder only has unsupported files, do not show it (unless it is the root).
+                     if (folder.count === 0 && ! inc (importData.data.roots, id)) return;
                      var selected = !! selection [id];
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
