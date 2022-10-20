@@ -3637,6 +3637,8 @@ var routes = [
             if (! s.import) return reply (rs, 404);
             if (s.import.status !== 'ready') return reply (rs, 409);
 
+            s.id = parseInt (s.import.id);
+
             var data = JSON.parse (s.import.data);
 
             var hashes = dale.obj (s.hashes, function (hash) {
@@ -3677,8 +3679,8 @@ var routes = [
             // If there are no files to import, we delete the import key and set the user logs.
             if (dale.keys (filesToUpload).length === 0) return a.seq (s, [
                [Redis, 'del', 'imp:g:' + rq.user.username],
-               [H.log, rq.user.username, {ev: 'upload', type: 'start',    id: parseInt (s.import.id), provider: 'google', total: 0, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}],
-               [H.log, rq.user.username, {ev: 'upload', type: 'complete', id: parseInt (s.import.id), provider: 'google'}],
+               [H.log, rq.user.username, {ev: 'upload', type: 'start',    id: s.id, provider: 'google', total: 0, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported}],
+               [H.log, rq.user.username, {ev: 'upload', type: 'complete', id: s.id, provider: 'google'}],
                [reply, rs, 200]
             ]);
 
@@ -3686,7 +3688,7 @@ var routes = [
             s.ids = dale.keys (s.filesToUpload);
 
             // If we're here, there are files to be imported.
-            H.log (s, rq.user.username, {ev: 'upload', type: 'start', id: parseInt (s.import.id), provider: 'google', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
+            H.log (s, rq.user.username, {ev: 'upload', type: 'start', id: s.id, provider: 'google', total: s.ids.length, tooLarge: tooLarge.length ? tooLarge : undefined, unsupported: unsupported.length ? unsupported : undefined, alreadyImported: alreadyImported});
          },
          [Redis, 'hset', 'imp:g:' + rq.user.username, 'status', 'uploading'],
          [a.set, 'session', [a.make (require ('bcryptjs').genSalt), 20]],
@@ -3720,7 +3722,7 @@ var routes = [
                      a.seq (s, [
                         [notify, {priority: 'important', type: 'import wait event', currentStatus: currentStatus, user: rq.user.username, provider: 'google', file: s.filesToUpload [s.ids [index]]}],
                         function (s) {
-                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: parseInt (s.import.id), provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
+                           hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', headers: {cookie: s.Cookie}, body: {op: 'wait', id: s.id, provider: 'google', csrf: s.csrf}, code: '*', apres: function (S, RQ, RS, next) {
                               if (RS.code !== 200) {
                                  Error = true;
                                  clearInterval (waitInterval);
@@ -3737,7 +3739,7 @@ var routes = [
                   [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                   [function (s) {
                      // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
-                     if (s.last !== s.import.id) return;
+                     if (s.last !== (s.id + '')) return;
                      s.next ();
                   }],
                   function (s) {
@@ -3745,7 +3747,7 @@ var routes = [
                      // If we reached the end of the list, we're done.
                      if (index === s.ids.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
-                        [H.log, rq.user.username, {ev: 'upload', type: 'complete', id: parseInt (s.import.id), provider: 'google'}],
+                        [H.log, rq.user.username, {ev: 'upload', type: 'complete', id: s.id, provider: 'google'}],
                         ! ENV ? [] : function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
@@ -3767,7 +3769,7 @@ var routes = [
                            [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
                            [H.log, rq.user.username, {ev: 'upload', type: 'error', id: s.id, provider: 'google', name: file.name, error: error}],
                         ] : [
-                           [H.log, rq.user.username, {ev: 'upload', type: 'providerError', id: parseInt (s.import.id), provider: 'google', error: {code: code, error: error}, name: file.name}],
+                           [H.log, rq.user.username, {ev: 'upload', type: 'providerError', id: s.id, provider: 'google', error: {code: code, error: error}, name: file.name}],
                            [importFile, index + 1]
                         ]);
                      }
@@ -3809,7 +3811,7 @@ var routes = [
                            hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', headers: {cookie: s.Cookie}, body: {multipart: [
                               // This `file` field is a dummy one to pass validation. The actual file information goes inside importData
                               {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar' + Path.extname (file.name)},
-                              {type: 'field', name: 'id', value: parseInt (s.import.id)},
+                              {type: 'field', name: 'id', value: s.id},
                               // Use oldest date, whether createdTime or updatedTime
                               {type: 'field', name: 'lastModified', value: Math.min (new Date (file.createdTime).getTime (), new Date (file.modifiedTime).getTime ())},
                               {type: 'field', name: 'tags', value: JSON.stringify (file.tags.concat ('Google Drive'))},

@@ -39,8 +39,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- server: test 401 when uploading from import
 - server: bug a:: count, clarify in doc, document changes of last commit
+- client: investigate gotoB redraw bug
 - server: downgrade notification priorities
 - server: check list of server vs import
 - client: check if more queries are done on initial load of update box
@@ -50,7 +50,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - client: refresh always in upload, import and pics
 - client: cannot go back from view pics to other views because of URL change
 - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
-- server: soft delete S3 with different credentials
 - server: Get prod mirror
 - server: script to rename username
 - client: slider photo/video/both
@@ -58,7 +57,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - client: retry upload button
 - client: Fix ronin untagged or range tag when deleting all
 - server: Exclude WA from hour in parse date
-- server: Add flv support.
 - server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
 - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - server/client: Share & manage
@@ -81,10 +79,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
 - server: get rid of thu entries, use id of piv + suffix
 - admin: add set of users for fast access rather than scanning db
-
-- Submissions
-   - Google Drive
-
+- submission Google Drive
 - Self-hosted ac;pic
    - Turn off/on S3
    - Docker

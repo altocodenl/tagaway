@@ -201,8 +201,15 @@
       "hash": "1696501751:644986"
    },
    "invalid": {
-      "name": "invalid.mp4",
-      "path": "test/invalid.mp4",
+      "name": "invalid.jpg",
+      "path": "test/invalid.jpg",
+      "size": 465,
+      "mtime": 1647462085000,
+      "invalid": true
+   },
+   "invalidvid": {
+      "name": "invalidvid.mp4",
+      "path": "test/invalidvid.mp4",
       "size": 1000,
       "mtime": 1647462085000,
       "invalid": true
@@ -211,17 +218,17 @@
       "name": "kiss.webp",
       "path": "test/kiss.webp",
       "size": 135668,
-      "mtime": 1665071260481,
+      "mtime": 1665070461000,
       "dates": {
-         "upload:lastModified": 1665071260481
+         "upload:lastModified": 1665070461000
       },
       "mimetype": "image/webp",
       "format": "webp",
       "dimw": 512,
       "dimh": 512,
-      "date": 1665071260481,
+      "date": 1665070461000,
       "dateSource": "upload:lastModified",
-      "humanReadableDate": "2022-10-06T15:47:40.481Z",
+      "humanReadableDate": "2022-10-06T15:34:21.000Z",
       "dateTags": [
          "d::2022",
          "d::M10"
@@ -447,6 +454,28 @@
          "d::M8"
       ],
       "hash": "581334427:915319"
+   },
+   "test": {
+      "name": "test.flv",
+      "path": "test/test.flv",
+      "size": 174983,
+      "mtime": 1665335728000,
+      "dates": {
+         "upload:lastModified": 1665335728000
+      },
+      "mimetype": "video/x-flv",
+      "isVid": true,
+      "format": "flv:aac/h264",
+      "dimw": 240,
+      "dimh": 240,
+      "date": 1665335728000,
+      "dateSource": "upload:lastModified",
+      "humanReadableDate": "2022-10-09T17:15:28.000Z",
+      "dateTags": [
+         "d::2022",
+         "d::M10"
+      ],
+      "hash": "2264836858:174983"
    },
    "train": {
       "name": "train.mpg",

@@ -39,7 +39,7 @@ var GREETING = function (username) {
 module.exports = {
    domain: DOMAIN,
    cookieName: 'acpic' + (ENV ? '-' + ENV : ''),
-   allowedFormats: ['image/jpeg', 'image/png', 'image/bmp', 'image/heic', 'image/heif', 'image/gif', 'image/tiff', 'image/webp', 'video/mp4', 'video/quicktime', 'video/3gpp', 'video/avi', 'video/x-msvideo', 'video/webm', 'video/x-ms-wmv', 'video/x-m4v', 'video/mpeg'],
+   allowedFormats: ['image/jpeg', 'image/png', 'image/bmp', 'image/heic', 'image/heif', 'image/gif', 'image/tiff', 'image/webp', 'video/mp4', 'video/quicktime', 'video/3gpp', 'video/avi', 'video/x-msvideo', 'video/webm', 'video/x-ms-wmv', 'video/x-m4v', 'video/mpeg', 'video/x-flv'],
    thumbSizes: {S: 300, M: 900},
    port: ENV ? 1427 : 8000,
    basepath: ENV ? '/root/files/acpic' : '/tmp',
