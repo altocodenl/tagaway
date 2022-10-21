@@ -4432,7 +4432,7 @@ views.header = function (showUpload, showImport) {
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['div'];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
             ]];
          }),
       ]],
@@ -4487,7 +4487,7 @@ views.empty = function () {
                   ['h5', {class: 'tip__title'}, 'Tip!'],
                ]],
                // TODO: fix redraw bug that carries through click to anchor
-               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {href: '#/upload'}, 'Upload'], ' some photos and add some tags.']],
+               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {onclick: B.ev ('goto', 'page', 'upload')}, 'Upload'], ' some photos and add some tags.']],
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [

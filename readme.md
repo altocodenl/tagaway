@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - server: bug a:: count, clarify in doc, document changes of last commit
-- client: investigate gotoB redraw bug
 - server: downgrade notification priorities
 - server: check list of server vs import
 - client: check if more queries are done on initial load of update box
@@ -75,6 +74,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - shut down after all are done
       - stop new ones
       - save progress on what's already done
+- client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
 - server: Investigate intermittent busboy error.
 - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
 - server: get rid of thu entries, use id of piv + suffix
