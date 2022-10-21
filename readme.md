@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- server: bug a:: count, clarify in doc, document changes of last commit
 - server: downgrade notification priorities
 - server: check list of server vs import
 - client: check if more queries are done on initial load of update box
@@ -61,6 +60,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server/client: Share & manage
 - client: Upgrade pop up notice or email when running out of free space.
 - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
+- server: change stalled interval to 3s and send waits when doing video processing in tests
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.

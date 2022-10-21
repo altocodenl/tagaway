@@ -2863,8 +2863,6 @@ var routes = [
             if (output.total) multi.sunion (dale.go (output.pivs, function (piv) {
                return 'pivt:' + piv.id;
             }));
-            // Get the total amount of pivs
-            multi.scard ('tag:' + rq.user.username + ':a::');
 
             multi.get ('geo:' + rq.user.username);
             mexec (s, multi);
@@ -2888,7 +2886,34 @@ var routes = [
             ]);
          },
          function (s) {
-            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last, 2), 'u::': 0}, function (tag) {
+            var last = s.last;
+            a.seq (s, [
+               ! b.updateLimit ? [Redis, 'scard', 'tag:' + rq.user.username + ':a::'] : [
+                  // Note: this will not include pivs shared with the user. To be fixed when re-implementing this endpoint with sharing.
+                  [Redis, 'smembers', 'tag:' + rq.user.username + ':a::'],
+                  function (s) {
+                     var multi = redis.multi ();
+                     dale.go (s.last, function (piv) {
+                        multi.hget ('piv:' + piv, 'dateup');
+                     });
+                     mexec (s, multi);
+                  },
+                  function (s) {
+                     var count = 0;
+                     dale.go (s.last, function (v) {
+                        if (parseInt (v) <= b.updateLimit) count++;
+                     });
+                     s.next (count);
+                  }
+               ],
+               function (s) {
+                  last.push (s.last);
+                  s.next (last);
+               }
+            ]);
+         },
+         function (s) {
+            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
