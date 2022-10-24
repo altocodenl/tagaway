@@ -6009,15 +6009,15 @@ views.import = function () {
                                  ['LITERAL', '&nbsp'],
                                  ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.status + ', ' + H.ago (Date.now () - v2.end) + ' ago)'],
                                  ['LITERAL', '&nbsp'],
-                                 ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
-                                    H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
-                                       'Error: ',
-                                       teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
-                                    ]]),
-                                    H.if (v2.providerErrors, ['span', {class: 'upload-progress__default-text'}, [
-                                       (v2.providerErrors || []).length + ' files could not be retrieved!'
-                                    ]])
-                                 ]]
+                              ]],
+                              ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
+                                 H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
+                                    'Error: ',
+                                    teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
+                                 ]]),
+                                 H.if (v2.providerErrors, ['span', {class: 'upload-progress__default-text'}, [
+                                    (v2.providerErrors || []).length + ' files could not be retrieved!'
+                                 ]])
                               ]],
                            ]],
                         ]],
