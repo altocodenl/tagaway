@@ -3192,7 +3192,13 @@ B.mrespond ([
       // Safari complains if we update the URL too often in the case of fast scrolling, so we also ignore this error.
       if (arguments [1] === 'SecurityError: Attempt to use history.replaceState() more than 100 times per 30 seconds') return;
 
-      B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), log: B.r.log.slice (-100)});
+      var store = teishi.copy (B.store);
+      dale.go (store, function (v, k) {
+         dale.go (v, function (v2, k2) {
+            if (JSON.stringify (v2).length > 500) v [k2] = dale.keys (v2).length + ' keys';
+         });
+      });
+      B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), store: store, log: B.r.log.slice (-20)});
       if (B.prod) return B.call (x, 'snackbar', 'red', 'There was an unexpected error. Please refresh the browser.');
       console.log (arguments);
       // We report the ResizeObserver error, but we don't show the eventlog table.
