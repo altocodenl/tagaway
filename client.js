@@ -5865,7 +5865,10 @@ views.import = function () {
                      ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                      ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
                   ]],
-                  ['div', {class: 'progress-bar'}],
+                  ['div', {class: 'progress-bar'}, (function () {
+                     var done = (data.ok || 0) + (data.alreadyUploaded || 0) + (data.repeated || []).length + (data.invalid || []).length + (data.tooLarge || []).length;
+                     return ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * done / data.total) + '%'})}];
+                  }) ()],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', {class: 'listing-progress'}, [
