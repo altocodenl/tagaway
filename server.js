@@ -1349,7 +1349,7 @@ var routes = [
 
       if (rq.data.cookie && rq.data.cookie [CONFIG.cookieName]) return rs.next ();
 
-      var report = {priority: 'important', type: 'client error in browser', ip: rq.origin, user: 'PUBLIC', userAgent: rq.headers ['user-agent'], error: rq.body};
+      var report = {priority: 'critical', type: 'client error in browser', ip: rq.origin, user: 'PUBLIC', userAgent: rq.headers ['user-agent'], error: rq.body};
       astop (rs, [
          [notify, report],
          [reply, rs, 200, ENV ? {} : report],
@@ -1806,7 +1806,7 @@ var routes = [
    // *** CLIENT ERRORS (FROM LOGGED-IN USERS) ***
 
    ['post', 'error', function (rq, rs) {
-      var report = {priority: 'important', type: 'client error in browser', ip: rq.origin, user: rq.user.username, userAgent: rq.headers ['user-agent'], error: rq.body};
+      var report = {priority: 'critical', type: 'client error in browser', ip: rq.origin, user: rq.user.username, userAgent: rq.headers ['user-agent'], error: rq.body};
       astop (rs, [
          [notify, report],
          [reply, rs, 200, ENV ? {} : report],
