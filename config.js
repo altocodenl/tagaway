@@ -43,6 +43,7 @@ module.exports = {
    thumbSizes: {S: 300, M: 900},
    port: ENV ? 1427 : 8000,
    basepath: ENV ? '/root/files/acpic' : '/tmp',
+   invalidPath: ENV ? '/root/files/acpic/invalid' : '/tmp',
    redisdb: ENV ? 15 : 13,
    geodataPath: 'utils/cities500.txt',
    maxFileSize: 2 * 1000 * 1000 * 1000,
