@@ -1349,7 +1349,7 @@ var routes = [
 
       if (rq.data.cookie && rq.data.cookie [CONFIG.cookieName]) return rs.next ();
 
-      var report = {priority: 'critical', type: 'client error in browser', ip: rq.origin, user: 'PUBLIC', userAgent: rq.headers ['user-agent'], error: rq.body};
+      var report = {priority: 'important', type: 'client error in browser', ip: rq.origin, user: 'PUBLIC', userAgent: rq.headers ['user-agent'], error: rq.body};
       astop (rs, [
          [notify, report],
          [reply, rs, 200, ENV ? {} : report],
@@ -1806,7 +1806,7 @@ var routes = [
    // *** CLIENT ERRORS (FROM LOGGED-IN USERS) ***
 
    ['post', 'error', function (rq, rs) {
-      var report = {priority: 'critical', type: 'client error in browser', ip: rq.origin, user: rq.user.username, userAgent: rq.headers ['user-agent'], error: rq.body};
+      var report = {priority: 'important', type: 'client error in browser', ip: rq.origin, user: rq.user.username, userAgent: rq.headers ['user-agent'], error: rq.body};
       astop (rs, [
          [notify, report],
          [reply, rs, 200, ENV ? {} : report],
@@ -1861,7 +1861,7 @@ var routes = [
       ])) return;
 
       astop (rs, [
-         [notify, {priority: 'critical', type: 'feedback', user: rq.user.username, message: b.message}],
+         [notify, {priority: 'important', type: 'feedback', user: rq.user.username, message: b.message}],
          ENV ? [] : [reply, rs, 200],
          [sendmail, {
             to1:     rq.user.username,
@@ -2399,7 +2399,7 @@ var routes = [
                [Redis, 'exists', 'piv:' + piv.id],
                function (s) {
                   if (! s.last) return a.stop (a.creat (), [H.unlink, Path.join (Path.dirname (newpath), id)], function (s, error) {
-                     notify (a.creat (), {priority: 'critical', type: 'video conversion deletion of mp4', error: error, user: rq.user.username, piv: piv.id});
+                     notify (a.creat (), {priority: 'important', type: 'video conversion deletion of mp4', error: error, user: rq.user.username, piv: piv.id});
                   });
                   s.bymp4 = s.bymp4.size;
                   var multi = redis.multi ();
@@ -2416,7 +2416,7 @@ var routes = [
                }
             ], function (s, error) {
                a.seq (s, [
-                  [notify, {priority: 'critical', type: 'video conversion to mp4 error', error: error, user: rq.user.username, piv: piv.id}],
+                  [notify, {priority: 'important', type: 'video conversion to mp4 error', error: error, user: rq.user.username, piv: piv.id}],
                   [H.unlink, Path.join (Path.dirname (newpath), id), true],
                   [H.unlink, Path.join (Path.dirname (newpath), id + '.mp4'), true],
                   [Redis, 'hdel', 'proc:vid', piv.id],
@@ -3585,7 +3585,7 @@ var routes = [
                Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'error', error: teishi.complex (error) ? JSON.stringify (error) : error, end: Date.now ()});
             }],
             [H.log, rq.user.username, {ev: 'import', type: 'listError', provider: 'google', id: s.id, error: error}],
-            [notify, {priority: 'critical', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
+            [notify, {priority: 'important', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
             ! ENV ? [] : function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
@@ -3596,7 +3596,7 @@ var routes = [
                });
             },
          ], function (s, error) {
-            notify (a.creat (), {priority: 'critical', type: 'import list error handling error', provider: 'google', user: rq.user.username, error: error});
+            notify (a.creat (), {priority: 'important', type: 'import list error handling error', provider: 'google', user: rq.user.username, error: error});
          });
       });
    }],
@@ -3887,7 +3887,7 @@ var routes = [
                else s.next ();
             },
             [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
-            [notify, {priority: 'critical', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
+            [notify, {priority: 'important', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
             ! ENV ? [] : function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
@@ -4523,8 +4523,9 @@ if (cicek.isMaster && ENV) a.stop ([
          // TODO: The same goes for S3 files of incorrect size.
          // TODO: Missing FS files: download them from S3 if they are there.
          function (s) {
-            var messageType = (s.s3missing.length === 0 && s.fsmissing.length === 0) ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';
-            var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: 'critical', type: messageType}, function (k) {
+            var allOK = s.s3missing.length === 0 && s.fsmissing.length === 0;
+            var messageType = allOK ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';
+            var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: allOK ? 'important' : 'critical', type: messageType}, function (k) {
                if (s [k].length) return [k, s [k]];
             });
             message.ms = Date.now () - s.start;
@@ -4726,7 +4727,7 @@ if (cicek.isMaster) a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      notify (s, {priority: 'critical', type: 'Geodata loaded correctly in ' + (Date.now () - s.t) + 'ms.'});
+      notify (s, {priority: 'normal', type: 'Geodata loaded correctly in ' + (Date.now () - s.t) + 'ms.'});
    }
 ], function (s, error) {
    notify (s, {priority: 'critical', type: 'Geodata load error', error: error});
