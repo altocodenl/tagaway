@@ -292,6 +292,7 @@ H.getGeotags = function (s, lat, lon) {
 }
 
 // General policy on async helpers: unless a specific error is caught, leave it to the calling context to decide whether to put an error handler or not.
+// Note: this is not a recursive mkdir, if you want to make folder /a/b/c, both /a and /a/b must exist!
 H.mkdirif = function (s, path) {
    a.stop (s, [k, 'test', '-d', path], function (s) {
       // TODO: check error code
@@ -2162,6 +2163,17 @@ var routes = [
       var invalidHandler = function (s, input) {
          var cbError = function (error) {
             astop (rs, [
+               // We store invalid pivs in a folder for manual review if they are salvageable (review happens only if the owner grants us permission to do so)
+               [H.mkdirif, Path.join (CONFIG.invalidPath, H.hash (rq.user.username))],
+               [a.stop, [a.make (fs.stat), path], function (s, error) {
+                  if (error.code === 'ENOENT') return s.next ('newpath');
+                  s.next (null, error);
+               }],
+               function (s) {
+                  var invalidPiv = s.last === 'newpath' ? newpath : path;
+                  k (s, 'cp', invalidPiv, Path.join (CONFIG.invalidPath, H.hash (rq.user.username), Path.basename (path)));
+               },
+               // If there's a file at `path`, it will be removed by cicek automatically.
                [H.unlink, newpath, true],
                ! s.thumbS ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.thumbS), true],
                ! s.thumbM ? [] : [H.unlink, Path.join (Path.dirname (newpath), s.thumbM), true],
@@ -2310,7 +2322,7 @@ var routes = [
                if (piv.format === 'bmp') return s.next ();
                a.seq (s, [
                   [a.make (fs.copyFile), path, s.hashpath],
-                  // We use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
+                  // For webp files we use exiv2 for removing the metadata from the comparison file because exif doesn't support writing webp files
                   [invalidHandler, piv.format !== 'webp' ? [k, 'exiftool', '-all=', '-overwrite_original', s.hashpath] : [k, 'exiv2', 'rm', s.hashpath]],
                ]);
             }

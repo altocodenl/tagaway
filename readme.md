@@ -39,21 +39,27 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- client: progress bar in import
-- server: check list of server vs import
-- client: less subtle search box in sidebar
-- server: downgrade notification priorities
-- client: check if more queries are done on initial load of update box
-- client: check what happens if connection is dropped while uploading
-- client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
-- client: delete account button
-- client: refresh always in upload, import and pics
-- client: cannot go back from view pics to other views because of URL change
-- server: process to review unsupported formats, invalid pivs and errored mp4 conversions
+Tom
+   - server: check list of server vs import
+   - client: see info of piv
+   - client: slider photo/video/both
+   - client: less subtle search box in sidebar
+   - client: see Safari 15.3 ESC fullscreen
+   - client: in Safari, sidebar has a strange behavior, not good experience
+   - client: in import, create a flow where the user is notified that while listing and or while importing they can leave and we’ll let them know via email
+   - client: flow where the user knows what type of permissions they have to give to ac;pic
+
+Mono
+   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+   - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - client: cannot go back from view pics to other views because of URL change
+   - client: check if more queries are done on initial load of update box
+   - client: check what happens if connection is dropped while uploading
+   - client: refresh always in upload, import and pics
+
+Later
 - server: Get prod mirror
 - server: script to rename username
-- client: slider photo/video/both
-- client: see info of piv
 - client: retry upload button
 - client: Fix ronin untagged or range tag when deleting all
 - server: Exclude WA from hour in parse date
@@ -82,7 +88,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
 - server: get rid of thu entries, use id of piv + suffix
 - admin: add set of users for fast access rather than scanning db
-- submission Google Drive
+- Submission Google Drive
 - Self-hosted ac;pic
    - Turn off/on S3
    - Docker

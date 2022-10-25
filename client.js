@@ -3355,6 +3355,7 @@ B.mrespond ([
    }],
    ['delete', 'account', function (x) {
       var conf = prompt ('Are you sure you want to delete your account? You cannot revert this action! If you wish to proceed, please enter the text "DELETE MY ACCOUNT"');
+      if (conf === null) return B.call (x, 'snackbar', 'green', 'Phew!');
       if (conf !== 'DELETE MY ACCOUNT') return B.call (x, 'snackbar', 'yellow', 'Invalid confirmation message.');
       B.call (x, 'post', 'auth/delete', {}, {}, function (x, error) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting your account.');
@@ -6353,10 +6354,8 @@ views.account = function () {
                               ]],
                            ]
                         ]],
-                        free ? ['div', {class: 'cancel-account', onclick: B.ev ('delete', 'accounts')}, [
+                        ['div', {class: 'cancel-account', onclick: B.ev ('delete', 'account')}, [
                            ['a', {href: ''}, 'Delete my account']
-                        ]] : ['div', {class: 'cancel-account'}, [
-                           ['a', {href: ''}, 'Downgrade your subscription']
                         ]]
                      ]]
                   ]],
