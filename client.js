@@ -4542,7 +4542,7 @@ views.pics = function () {
             ] : [
                ['div', {class: 'cross-button', style: style({'float': 'right'}), onclick: B.ev ('set', ['State', 'query', 'update'], false)}, ['span', {class: 'cross-button__cross'}]],
                ['p',{style: style({'padding-top': '10px', 'padding-left': '30px', 'text-align': 'center', 'font-size': '16px', 'padding-bottom': '10px'})}, 'New pics available'],
-               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true), style: style({'float': 'left', 'padding-top': '10px', 'padding-left': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Update once'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true), style: style({'float': 'left', 'padding-top': '10px', 'padding-left': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Update now'],
                ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'update'], 'auto'), style: style({'float': 'right', 'padding-top': '10px','padding-right': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Auto-update'],
             ]
          ]];
