@@ -4799,7 +4799,7 @@ views.pics = function () {
                            return ['div', {class: 'attach-form'}, [
 
                               ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
-                              ['input', {id: 'newTag', class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name', value: newTag, oninput: B.ev ('set', ['State', 'newTag'])}],
+                              ['input', {id: 'newTag', class: 'attach-form__input attach-input', type: 'text', name:'notASearchField', placeholder: 'Add tag name', value: newTag, oninput: B.ev ('set', ['State', 'newTag'])}],
                               ['div', {class: 'attach-form__dropdown'}, [
                                  // TAG LIST DROPDOWN
                                  ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
