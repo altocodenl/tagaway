@@ -51,6 +51,7 @@ Tom
 
 Mono
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+   - client: fix case where uploading all invalid files does not result in finish
    - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
    - client: cannot go back from view pics to other views because of URL change
    - client: check if more queries are done on initial load of update box
@@ -1045,6 +1046,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If we're here, the query didn't change, so there is no need to retry it. It sets `State.querying` to `undefined`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
       - If `body.refreshQuery` is set to `true` and `State.query.update` is `undefined`, it will set it to `'manual'`, to indicate that updates are available. This will only happen if `Data.pivs` already has pivs.
+      - If `body.refreshQuery` is falsy and `State.query.update` is not `undefined` and `State.query.updateLimit` is less than 10ms away from the time we made the query, it will will set `State.query.update` to `undefined`, to indicate that updates are no longer available.
+      - If before the query there were no pivs in `Data.pivs`, `State.query.updateLimit` will be updated to the present moment, to avoid a further query using an outdated value that will make the pics view oscillate between being empty and having pivs.
       - Invokes `query tags`.
       - If the query contains a year tag, a second query equal to the current query minus the month tags will be performed to the server and the returned `queryTags` field will be set in `Data.monthTags` (just the tags, not the number of pivs for each); if the query does not contain a year tag, it will remove `Data.monthTags`. If this query fails, an error will be printed, but the responder will continue executing the rest of the logic.
       - It sets `Data.queryTags`and `Data.pivTotal` based on the result of the query.

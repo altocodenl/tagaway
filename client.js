@@ -3520,6 +3520,7 @@ B.mrespond ([
 
          if (query.update === undefined && rs.body.refreshQuery && ! firstQuery) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
          if (query.update !== undefined && ! rs.body.refreshQuery && (updateLimit === undefined || t - updateLimit < 10)) B.call (x, 'rem', ['State', 'query'], 'update');
+         if (firstQuery) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
          B.call (x, 'query', 'tags');
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
