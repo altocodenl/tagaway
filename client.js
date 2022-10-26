@@ -5785,6 +5785,69 @@ views.import = function () {
    var boxMaker = function (status, provider, data) {
       var className = provider === 'google' ? 'google-drive' : provider;
 
+      // *** NOTIFY USER THAT THEY CAN LEAVE WHEN G DRIVE IS LISTING OR IMPORTING
+
+      if (true) return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
+         ['div', {class: 'boxed-alert', style: style ({'background-color': 'white', 'z-index': '2', 'margin-top': '-190px'})}, [
+            ['div', {class: 'space-alert__image'}, [
+               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
+                  ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+                     ['span', {class: 'upload-progress__default-text'}, (status === 'listing' ? 'We’re listing your files' : 'Your pics and videos are being imported')]
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', {class: 'listing-progress'}, [
+                     ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
+                        ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
+                           ['p', {style: style({'display': 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos.')],
+                           ['p', {style: style({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
+                     ]],
+                  ]],
+                  ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('dismiss', 'selection')}, 'Got it']
+               ]],
+            ]],
+         ]]
+      ]];
+
+      // *** NOTIFY USER WHAT PERMISSIONS ARE NEEDED IN GOOGLE DRIVE ***
+
+      if (false) return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
+         ['div', {class: 'boxed-alert', style: style ({'background-color': 'white', 'z-index': '2', 'margin-top': '-190px'})}, [
+            ['div', {class: 'space-alert__image'}, [
+               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+            ]],
+            ['div', {class: 'boxed-alert__main'}, [
+               ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
+                  ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+                     ['span', {class: 'upload-progress__default-text'}, 'How to give ac;pic access to your Google Drive?']
+                  ]],
+                  ['div', {class: 'progress-bar'}],
+               ]],
+               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                  ['div', {class: 'listing-progress'}, [
+                     ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
+                        ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
+                           ['p', {style: style({'display': 'contents'})}, 'After you log in to your Google Account, '],
+                           ['p', {style: style({'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold, 'display': 'contents'})}, 'please check all the boxes that Google shows you. '],
+                           ['p', {style: style({'display': 'contents'})}, 'Otherwise, you won’t be able to import.'],
+                           ['p', {style: style({'margin-top': '10px'})}, 'We’ll only ask for what we need to get your photos and videos to ac;pic.']]],
+                     ]],
+                     ['div', {class: 'folders-found-so-far'}, [
+                        ['img', {src: 'assets/img/google-drive-access.png'}]
+                     ]],
+                  ]],
+                  ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('dismiss', 'selection')}, 'Got it']
+               ]],
+            ]],
+         ]]
+      ]];
+
       if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
@@ -5886,7 +5949,6 @@ views.import = function () {
             ]],
          ]],
       ]];
-
    }
 
    return ['div', [
