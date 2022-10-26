@@ -48,9 +48,13 @@ Tom
    - client: in Safari, sidebar has a strange behavior, not good experience
    - client: in import, create a flow where the user is notified that while listing and or while importing they can leave and we’ll let them know via email
    - client: flow where the user knows what type of permissions they have to give to ac;pic
+   - client: warn that folders will be used as tags
+   - client: A-Z icon to sort tags alphabetically
 
 Mono
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+   - client: comment changes to import boxes
+   - client: hide tag/untag slider, when button is green consider it as an untagging, onhover of the title activate onhover of the button
    - client: fix case where uploading all invalid files does not result in finish
    - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
    - client: cannot go back from view pics to other views because of URL change
