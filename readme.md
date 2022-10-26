@@ -52,8 +52,8 @@ Tom
    - client: A-Z icon to sort tags alphabetically
 
 Mono
-   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - client: comment changes to import boxes
+   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - client: hide tag/untag slider, when button is green consider it as an untagging, onhover of the title activate onhover of the button
    - client: fix case where uploading all invalid files does not result in finish
    - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
