@@ -5942,7 +5942,7 @@ views.import = function () {
                if (showFolders) return views.importFolders (importState [showFolders], importData [showFolders]);
                return ['div', {class: 'page-section'}, [
                   // *** NOTIFY USER WHAT PERMISSIONS ARE NEEDED IN GOOGLE DRIVE ***
-                  B.view ([['State', 'imports', 'googleOAuthBox'], ['State', 'upload', 'queue']], function (box, queue) {
+                  B.view ([['State', 'import', 'googleOAuthBox'], ['State', 'upload', 'queue']], function (box, queue) {
                      if (! box) return ['div'];
                      var provider = 'google', className = provider === 'google' ? 'google-drive' : provider;
                      // We consider only the first import entry for the provider.
@@ -6008,7 +6008,7 @@ views.import = function () {
 
                                     // If the OAuth flow hasn't been started yet, offer a link to start it.
                                     if (providerData.redirect) {
-                                       return ['div', attrs (['set', ['State', 'imports', 'googleOAuthBox'], true]), provider.svg];
+                                       return ['div', attrs (['set', ['State', 'import', 'googleOAuthBox'], true]), provider.svg];
                                     }
 
                                     // If there's an error, print an error on click.

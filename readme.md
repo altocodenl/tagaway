@@ -42,8 +42,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server: check list of server vs import
    - client: see info of piv
-   - client: slider photo/video/both
-   - client: less subtle search box in sidebar
    - client: see Safari 15.3 ESC fullscreen
    - client: in Safari, sidebar has a strange behavior, not good experience
    - client: in import, create a flow where the user is notified that while listing and or while importing they can leave and we’ll let them know via email
@@ -52,7 +50,10 @@ Tom
    - client: A-Z icon to sort tags alphabetically
 
 Mono
-   - client: comment changes to import boxes
+   - client: check if `_blank` breaks flows after oauth
+   - client: border-radius
+   - server: ignore invalids in consistency
+   - server: format errors with jpgs?
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - client: hide tag/untag slider, when button is green consider it as an untagging, onhover of the title activate onhover of the button
    - client: fix case where uploading all invalid files does not result in finish
@@ -61,6 +62,7 @@ Mono
    - client: check if more queries are done on initial load of update box
    - client: check what happens if connection is dropped while uploading
    - client: refresh always in upload, import and pics
+   - server/client: videos pseudo-tag
 
 Later
 - server: Get prod mirror
@@ -886,7 +888,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 3. `views.share`
 4. `views.tags`
 5. `views.import`
-   - Depends on: `Data.imports`, `State.imports`, `Data.account` and `State.upload.queue`.
+   - Depends on: `Data.imports`, `State.imports`, `Data.account`, `State.upload.queue`, `State.import.hideLeaveBox` and `State.import.googleOAuthBox`.
    - Events:
       - `onclick -> import cancel`
       - `onclick -> import retry`
@@ -896,6 +898,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `onclick -> set/rem State.imports.PROVIDER.currentFolder`
       - `onclick -> set/rem State.imports.PROVIDER.selection`
       - `onclick -> goto page pics`
+      - `onclick -> set/rem State.import.hideLeaveBox`
+      - `onclick -> set/rem State.import.googleOAuthBox`
 6. `views.account`
    - Depends on: `Data.account`.
    - Events:
@@ -1152,6 +1156,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `chunks`: if present, it is an array of objects, each representing a chunk of pivs to be shown. Each chunk has the form `{pivs: [...], start: INT, end: INT, visible: true|false|undefined}`. `pivs` is an array of pivs; `start` and `end` indicate the y-coordinate of the start and the end of the chunk. `visible` indicates whether the chunk should be displayed or not, given the current y-position of the window.
    - `feedback`: if not `undefined`, contains a text string with feedback to be sent.
    - `filter`: filters tags shown in sidebar.
+   - `import`:
+      - `googleOAuthBox`: if `true`, shows the instructional Google OAuth dialog.
+      - `hideLeaveBox`: if `true`, *hides* the instructional box that indicates that the tab can be closed while an import is listing or uploading.
    - `imports`: if defined, it is an object with one key per provider and as value an object of the form:
 ```
 {
