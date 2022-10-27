@@ -50,7 +50,6 @@ Tom
    - client: A-Z icon to sort tags alphabetically
 
 Mono
-   - client: line 2862 if (tag.match (/ \(new tag\)$/)) tag = tag.replace (/ \(new tag\)$/, '');
    - client: bug when untagging all and then unselecting, tag doesn't disappear from query until a refresh happens
    - client: in attach form, `(new tag)` being shown with existing tags too
    - client: fix case where uploading all invalid files does not result in finish

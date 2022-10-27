@@ -2842,6 +2842,7 @@ H.formatChunkDates = function (d1, d2, shortMonths) {
 H.tagColor = function (tag, a) {
    if (tag === 'u::') return 'untagged';
    if (H.isDateTag (tag)) return 'time';
+   if (tag.match (/ \(new tag\)$/)) tag = tag.replace (/ \(new tag\)$/, '');
    var r = dale.acc (tag.split (''), tag [0].charCodeAt (), function (a, b) {
       return a + b.charCodeAt ();
    });
