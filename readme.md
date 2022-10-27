@@ -44,20 +44,17 @@ Tom
    - client: see info of piv
    - client: see Safari 15.3 ESC fullscreen
    - client: in Safari, sidebar has a strange behavior, not good experience
-   - client: in import, create a flow where the user is notified that while listing and or while importing they can leave and we’ll let them know via email
-   - client: flow where the user knows what type of permissions they have to give to ac;pic
    - client: warn that folders will be used as tags
    - client: A-Z icon to sort tags alphabetically
 
 Mono
-   - client: bug when untagging all and then unselecting, tag doesn't disappear from query until a refresh happens
    - client: in attach form, `(new tag)` being shown with existing tags too
    - client: fix case where uploading all invalid files does not result in finish
    - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
    - client: cannot go back from view pics to other views because of URL change
    - client: check if more queries are done on initial load of update box
-   - client: check what happens if connection is dropped while uploading
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
+   - client: check what happens if connection is dropped while uploading
    - server: ignore invalids in consistency
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
@@ -1072,7 +1069,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
    8. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
    9. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
-   10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
+   10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`.
    11. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    12. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
    13. `scroll`:
