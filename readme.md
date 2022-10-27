@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - client: fix "Attach new tag" margin on sidebar
    - server: check list of server vs import
    - client: see info of piv
    - client: see Safari 15.3 ESC fullscreen
@@ -51,7 +50,6 @@ Tom
    - client: A-Z icon to sort tags alphabetically
 
 Mono
-   - client: got it `'window.open ("LINK", '_blank');`
    - client: line 2862 if (tag.match (/ \(new tag\)$/)) tag = tag.replace (/ \(new tag\)$/, '');
    - client: bug when untagging all and then unselecting, tag doesn't disappear from query until a refresh happens
    - client: in attach form, `(new tag)` being shown with existing tags too

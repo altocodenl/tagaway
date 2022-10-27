@@ -496,6 +496,9 @@ CSS.litc = [
    ['.sidebar__inner-section', {width: 0.5, position: 'relative'}],
    // Sidebar coherent paddings
    ['.sidebar__header, .sidebar__tags, .sidebar__tip', {'padding-left, padding-right': CSS.vars ['padding--m']}],
+   ['.sidebar__attach-form', {
+       'padding-left, padding-right':  'calc(' + CSS.vars ['padding--m'] + 'px - 6px)' // has smaller padding for optic correction of round shape
+   }],
    // Sidebar close section
    ['.sidebar__close-section-button', {
       position: 'absolute',
@@ -5928,7 +5931,7 @@ views.import = function () {
                                        ['img', {src: 'assets/img/google-drive-access.png'}]
                                     ]],
                                  ]],
-                                 ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['a', {href: providerData.redirect, target: queue && queue.length ? '_blank' : undefined}, 'Got it']]
+                                 ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: 'window.open ("' + providerData.redirect + '"' + (queue && queue.length ? ', "_blank"' : ', "_self"') + ')'}, 'Got it']
                               ]],
                            ]],
                         ]]
