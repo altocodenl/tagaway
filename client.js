@@ -5778,48 +5778,49 @@ views.noSpace = function () {
    });
 }
 
-views.importLeaveBox = function (status, provider) {
-   var className = provider === 'google' ? 'google-drive' : provider;
-   return B.view (['State', 'import', 'hideLeaveBox'], function (hide) {
-      if (hide) return ['div'];
-      return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
-         ['div', {class: 'boxed-alert', style: style ({'background-color': 'white', 'z-index': '2', 'margin-top': '-190px'})}, [
-            ['div', {class: 'space-alert__image'}, [
-               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
-            ]],
-            ['div', {class: 'boxed-alert__main'}, [
-               ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
-                  ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
-                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
-                     ['span', {class: 'upload-progress__default-text'}, (status === 'listing' ? 'We’re listing your files' : 'Your pics and videos are being imported')]
-                  ]],
-                  ['div', {class: 'progress-bar'}],
-               ]],
-               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-                  ['div', {class: 'listing-progress'}, [
-                     ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
-                        ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
-                           ['p', {style: style({'display': 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos.')],
-                           ['p', {style: style({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
-                     ]],
-                  ]],
-                  ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('set', ['State', 'import', 'hideLeaveBox'], true)}, 'Got it']
-               ]],
-            ]],
-         ]]
-      ]];
-   });
-}
-
 // *** IMPORT VIEW ***
 
 views.import = function () {
+
+   var importLeaveBox = function (status, provider) {
+      var className = provider === 'google' ? 'google-drive' : provider;
+      return B.view (['State', 'import', 'hideLeaveBox'], function (hide) {
+         if (hide) return ['div'];
+         return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
+            ['div', {class: 'boxed-alert', style: style ({'background-color': 'white', 'z-index': '2', 'margin-top': '-190px'})}, [
+               ['div', {class: 'space-alert__image'}, [
+                  ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+               ]],
+               ['div', {class: 'boxed-alert__main'}, [
+                  ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
+                     ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                        ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+                        ['span', {class: 'upload-progress__default-text'}, (status === 'listing' ? 'We’re listing your files' : 'Your pics and videos are being imported')]
+                     ]],
+                     ['div', {class: 'progress-bar'}],
+                  ]],
+                  ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                     ['div', {class: 'listing-progress'}, [
+                        ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
+                           ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
+                              ['p', {style: style({'display': 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos.')],
+                              ['p', {style: style({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
+                        ]],
+                     ]],
+                     ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('set', ['State', 'import', 'hideLeaveBox'], true)}, 'Got it']
+                  ]],
+               ]],
+            ]]
+         ]];
+      });
+   }
+
 
    var boxMaker = function (status, provider, data) {
       var className = provider === 'google' ? 'google-drive' : provider;
 
       if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
-         views.importLeaveBox (status, provider),
+         importLeaveBox (status, provider),
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
                ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)]
@@ -5891,7 +5892,7 @@ views.import = function () {
       ]];
 
       if (status === 'uploading') return ['div', {class: 'listing-in-process'}, [
-         views.importLeaveBox (status, provider),
+         importLeaveBox (status, provider),
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
                ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
@@ -5943,8 +5944,7 @@ views.import = function () {
                   // *** NOTIFY USER WHAT PERMISSIONS ARE NEEDED IN GOOGLE DRIVE ***
                   B.view ([['State', 'imports', 'googleOAuthBox'], ['State', 'upload', 'queue']], function (box, queue) {
                      if (! box) return ['div'];
-                     var provider = 'google';
-                     var className = provider === 'google' ? 'google-drive' : provider;
+                     var provider = 'google', className = provider === 'google' ? 'google-drive' : provider;
                      // We consider only the first import entry for the provider.
                      var providerData = (importData [provider] || []) [0] || {};
                      return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
