@@ -51,11 +51,8 @@ Tom
 
 Mono
    - client: check if `_blank` breaks flows after oauth
-   - client: border-radius
-   - server: ignore invalids in consistency
-   - server: format errors with jpgs?
-   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - client: hide tag/untag slider, when button is green consider it as an untagging, onhover of the title activate onhover of the button
+   - server: ignore invalids in consistency
    - client: fix case where uploading all invalid files does not result in finish
    - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
    - client: cannot go back from view pics to other views because of URL change
@@ -63,6 +60,8 @@ Mono
    - client: check what happens if connection is dropped while uploading
    - client: refresh always in upload, import and pics
    - server/client: videos pseudo-tag
+   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+   - server: review format errors with files that have a jpg extension
 
 Later
 - server: Get prod mirror
