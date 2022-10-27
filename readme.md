@@ -50,7 +50,6 @@ Tom
    - client: A-Z icon to sort tags alphabetically
 
 Mono
-   - client: check if `_blank` breaks flows after oauth
    - client: hide tag/untag slider, when button is green consider it as an untagging, onhover of the title activate onhover of the button
    - server: ignore invalids in consistency
    - client: fix case where uploading all invalid files does not result in finish
@@ -58,7 +57,7 @@ Mono
    - client: cannot go back from view pics to other views because of URL change
    - client: check if more queries are done on initial load of update box
    - client: check what happens if connection is dropped while uploading
-   - client: refresh always in upload, import and pics
+   - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
