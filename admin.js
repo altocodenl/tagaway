@@ -728,6 +728,8 @@ views.dashboard = function (x) {
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'admin/dates'}, 'See dates from pics']],
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'admin/space'}, 'See space usage by key']],
+      ['br'],
+      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'stats'}, 'See public stats']],
    ]];
 }
 
