@@ -4452,7 +4452,10 @@ views.header = function (showUpload, showImport) {
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
-            if (page === 'pics') return ['div'];
+            if (page === 'pics') 
+               return ['ul', {class: 'main-menu'}, [
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({color: CSS.vars ['color--one']})}, ['a', {href: 'https://altocode.nl/pic/', target: '_blank', style: style({'font-weight': CSS.vars ['fontPrimaryMedium']})}, 'Why ac;pic?']],
+            ]];
             return ['ul', {class: 'main-menu'}, [
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
             ]];
@@ -4706,7 +4709,6 @@ views.pics = function () {
                               H.if (which === 'f::', ['div', {style: style({'display': 'inline-flex'})}, [
                                  ['div', {style: style({'display': 'inline-flex'})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
                                  ['div', {style: style({'display': 'inline-flex', 'margin-left': 15})}, H.putSvg ('upAndDownArrows')]
-                                 // [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows'), H.putSvg ('zeroNineIcon', 24), H.putSvg ('upAndDownArrows')]
                               ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
                               ['span', {class: 'tag__title'}, [' ', showName]],
