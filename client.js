@@ -4725,12 +4725,7 @@ views.pics = function () {
                            // We filter out tags that are already in all of the pivs of the current selection.
                            // We might have to move this to a responder so we calculate it less often, since it can be expensive.
                            tags = dale.fil (tags, undefined, function (tag) {
-                              if (! H.isUserTag (tag)) return;
-                              var tagAbsent = ! dale.stop (pivs, false, function (piv) {
-                                 if (! selected [piv.id]) return true;
-                                 return inc (piv.tags, tag);
-                              });
-                              if (tagAbsent) return tag;
+                              if (H.isUserTag (tag)) return tag;
                            });
 
                            newTag = H.trim (newTag === undefined ? '' : newTag);

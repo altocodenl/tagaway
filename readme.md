@@ -46,9 +46,10 @@ Tom
    - client: in Safari, sidebar has a strange behavior, not good experience
    - client: warn that folders will be used as tags
    - client: A-Z icon to sort tags alphabetically
+   - client: rethink invite flow
+   - client: add "Why ac;pic?" button on header of pics view
 
 Mono
-   - client: in attach form, `(new tag)` being shown with existing tags too
    - client: fix case where uploading all invalid files does not result in finish
    - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
    - client: cannot go back from view pics to other views because of URL change
