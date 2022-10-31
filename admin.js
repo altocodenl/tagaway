@@ -427,8 +427,14 @@ B.mrespond ([
       var username = B.get (['State', 'logs', 'username']);
       B.call (x, 'get', 'admin/logs/' + username, {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving logs.');
-         if (rs.body.length > 2000) B.call (x, 'snackbar', 'yellow', 'Too many logs (' + rs.body.length + '), only showing 2000 entries');
-         else                       B.call (x, 'snackbar', 'green', 'Retrieved ' + rs.body.length + ' entries');
+         if (rs.body.length > 2000) {
+            B.call (x, 'snackbar', 'yellow', 'Too many logs (' + rs.body.length + '), only showing 2000 entries');
+            B.call (x, 'set', ['Data', 'allLogs'], rs.body);
+         }
+         else {
+            B.call (x, 'snackbar', 'green', 'Retrieved ' + rs.body.length + ' entries');
+            B.call (x, 'rem', 'Data', 'allLogs');
+         }
          B.call (x, 'set', ['Data', 'logs'], rs.body.slice (0, 2000));
       });
    }],
