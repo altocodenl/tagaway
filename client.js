@@ -4729,13 +4729,10 @@ views.pics = function () {
                            });
 
                            newTag = H.trim (newTag === undefined ? '' : newTag);
-                           var maxTags = 5, showTags = [], filterRegex = H.makeRegex (newTag);
-                           dale.stop (tags, true, function (tag) {
+                           var showTags = [], filterRegex = H.makeRegex (newTag);
+                           dale.go (tags, function (tag) {
                               if (newTag === undefined || newTag.length === 0) return;
-                              if (tag.match (filterRegex)) {
-                                 showTags.push (tag);
-                                 if (showTags.length === maxTags) return true;
-                              }
+                              if (tag.match (filterRegex)) showTags.push (tag);
                            });
                            if (newTag && ! inc (tags, newTag) && H.isUserTag (newTag)) showTags.unshift (newTag + ' (new tag)');
 
@@ -5503,14 +5500,11 @@ views.upload = function () {
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
                                              filter = H.trim (filter === undefined ? '' : filter);
-                                             var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
-                                             dale.stop (tags, true, function (tag) {
+                                             var showTags = [], filterRegex = H.makeRegex (filter);
+                                             dale.go (tags, function (tag) {
                                                 if (! H.isUserTag (tag)) return;
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
-                                                   showTags.push (tag);
-                                                   if (showTags.length === maxTags) return true;
-                                                }
+                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) showTags.push (tag);
                                              });
                                              if (filter && ! inc (tags, filter)) {
                                                 if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
