@@ -3911,7 +3911,7 @@ B.mrespond ([
                   if (H.isUserTag (folder)) fileTags = fileTags.concat (folder);
                });
             }
-            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags.concat (fileTags), lastInUpload: k + 1 === files.length});
+            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags.concat (fileTags)});
          });
          B.call (x, 'rem', ['State', 'upload'], 'new');
          B.call (x, 'change', ['State', 'upload', 'queue']);
@@ -3973,6 +3973,7 @@ B.mrespond ([
          if (file.uploading) return uploading++;
          file.uploading = true;
          uploading++;
+         B.call (x, 'set', ['State', 'upload', 'count', file.id], (B.get ('State', 'upload', 'count', file.id) || 0) + 1);
 
          var uploadFile = function () {
             var f = new FormData ();
@@ -4009,8 +4010,8 @@ B.mrespond ([
                   // If piv is invalid and we get a 400, carry on.
                }
 
-               // If file is the last in the upload, complete the upload.
-               if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
+               B.call (x, 'set', ['State', 'upload', 'count', file.id], B.get ('State', 'upload', 'count', file.id) - 1);
+               if (B.get ('State', 'upload', 'count', file.id) === 0 && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
                   return v.id === file.id && v.status === 'uploading';
                })) B.call (x, 'upload', 'complete', file.id);
             });
@@ -4027,25 +4028,28 @@ B.mrespond ([
                if (error) return B.call (x, 'upload', 'error', file.id, true);
 
                if (! rs.body.repeated) return uploadFile ();
-               // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.
+
+               // If an identical file is already uploaded, remove from queue
                dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                   if (v !== file) return;
                   B.call (x, 'rem', ['State', 'upload', 'queue'], i);
-                  if (! file.lastInUpload) return true;
+                  return true;
+               });
 
+               B.call (x, 'set', ['State', 'upload', 'count', file.id], B.get ('State', 'upload', 'count', file.id) - 1);
+               if (B.get ('State', 'upload', 'count', file.id) > 0) return;
+
+               var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
+                  if (upload.id === file.id) return upload;
+               });
+               // Depending on the timing of the interval that retrieves upload data, if the last file is an alreadyUploaded one and the whole upload takes very little time, we might not still have an upload entry. In that case, we wait a couple seconds until we do, to complete the upload.
+               if (! upload) setTimeout (function () {
                   var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
                      if (upload.id === file.id) return upload;
                   });
-                  // Depending on the timing of the interval that retrieves upload data, if the last file is an alreadyUploaded one and the whole upload takes very little time, we might not still have an upload entry. In that case, we wait a couple seconds until we do, to complete the upload.
-                  if (! upload) setTimeout (function () {
-                     var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
-                        if (upload.id === file.id) return upload;
-                     });
-                     if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
-                  }, 2000);
-                  else if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
-                  return true;
-               });
+                  if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
+               }, 2000);
+               else if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
             });
          });
       });
