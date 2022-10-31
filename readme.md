@@ -42,21 +42,26 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server: check list of server vs import
    - client: see info of piv
-   - client: see Safari 15.3 ESC fullscreen
    - client: in Safari, sidebar has a strange behavior, not good experience
    - client: warn that folders will be used as tags
-   - client: A-Z icon to sort tags alphabetically
    - client: rethink invite flow
-   - client: add "Why ac;pic?" button on header of pics view
 
 Mono
-   - client: fix case where uploading all invalid files does not result in finish
-   - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - client:
+      - sort alphabetically
+      - change Why ac;pic button
+   - client: test & document upload count fix
+      - fix case where uploading all invalid files does not result in finish
+      - fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - server: consistency
+      - ignore invalids in consistency check
+      - re-upload missing files in S3
+      - clear s3:proc counter
+      - fix invalid s3 entries
    - client: cannot go back from view pics to other views because of URL change
    - client: check if more queries are done on initial load of update box
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - client: check what happens if connection is dropped while uploading
-   - server: ignore invalids in consistency
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
@@ -1255,7 +1260,7 @@ Only things that differ from client are noted.
    3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
 
 3. Users
-   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`
+   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`; set `Data.logs` and optionally `Data.allLogs`.
    2. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve logs`.
 
 4. Deploy
@@ -1268,6 +1273,9 @@ Only things that differ from client are noted.
 
 - `Data`:
    - `invites`: `{EMAIL: {firstName: STRING, token: STRING, sent: INT, accepted: INT|UNDEFINED}, ...}`.
+   - `users`: `[...]`.
+   - `logs`: `[...]`.
+   - `allLogs`: `[...]` - only set if last logs query had more than 2k entries.
 
 ## Version history
 
