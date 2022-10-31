@@ -482,7 +482,8 @@ CSS.litc = [
       'border-right': CSS.vars ['border-color'] + ' 1px solid',
       height: 'calc(100vh - 58px)',
       'background-color': '#fff',
-      'overflow-x': 'hidden',
+      // 'overflow-x': 'hidden',
+      'overflow-x': 'auto',
    }],
    ['.sidebar__inner', {
       width: '200%',
