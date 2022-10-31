@@ -496,8 +496,8 @@ CSS.litc = [
    ['.sidebar__inner-section', {width: 0.5, position: 'relative'}],
    // Sidebar coherent paddings
    ['.sidebar__header, .sidebar__tags, .sidebar__tip', {'padding-left, padding-right': CSS.vars ['padding--m']}],
-   ['.sidebar__attach-form, .sidebar__switch', {
-      'padding-left, padding-right':  'calc(' + CSS.vars ['padding--m'] + 'px - 6px)' // has smaller padding for optic correction of round shape
+   ['.sidebar__attach-form', {
+       'padding-left, padding-right':  'calc(' + CSS.vars ['padding--m'] + 'px - 6px)' // has smaller padding for optic correction of round shape
    }],
    // Sidebar close section
    ['.sidebar__close-section-button', {
@@ -524,8 +524,6 @@ CSS.litc = [
       //display: 'none',
    }],
    ['.attach-form:hover .attach-form__dropdown', {display: 'block'}],
-   // Sidebar switch
-   ['.sidebar__switch', {'margin-bottom': CSS.typography.spaceVer (1)}],
    // Sidebar footer
    ['.sidebar__footer', {
       position: 'fixed',
@@ -542,11 +540,6 @@ CSS.litc = [
    ['.app-attach-tags', [
       ['.sidebar__attach-form', {display: 'block'}],
       ['.sidebar__section-title--untag', {display: 'none'}],
-   ]],
-   // Sidebar -- untag tags
-   ['.app-untag-tags', [
-      ['.sidebar__attach-form', {display: 'none'}],
-      ['.sidebar__section-title--attach', {display: 'none'}],
    ]],
    // *** sidebar-header.scss ***
    ['.sidebar-header', {position: 'relative'}],
@@ -631,7 +624,6 @@ CSS.litc = [
    }],
    ['.app-selected-tags .switch', {background: CSS.vars ['highlight--selection']}],
    ['.app-attach-tags .switch', {background: CSS.vars ['highlight--positive']}],
-   ['.app-untag-tags .switch', {background: CSS.vars ['highlight--negative']}],
    ['.switch::after', {
       content: "''",
       background: '#fff',
@@ -645,7 +637,6 @@ CSS.litc = [
    ['.app-all-tags .switch::after', {left: 4, width: 98}],
    ['.app-selected-tags .switch::after', {left: 101, width: 130}],
    ['.app-attach-tags .switch::after', {left: 4, width: 125}],
-   ['.app-untag-tags .switch::after', {left: 128, width: 110}],
    ['.switch-list', {
       position: 'relative',
       'z-index': '1',
@@ -935,11 +926,6 @@ CSS.litc = [
       ['.tag', {display: 'none'}],
       ['.tag--selected', {display: 'flex'}],
    ]],
-   // Tag list -- Sidebar -- only attached tags (Untag)
-   ['.app-untag-tags .tag-list--attach', [
-      ['.tag', {display: 'none'}],
-      ['.tag--attached', {display: 'flex'}],
-   ]],
    // *** tag.scss ***
    // Tag
    ['.tag', {
@@ -1069,14 +1055,10 @@ CSS.litc = [
          ['.tag-actions__item--attach', {display: 'none'}],
          ['.tag-actions__item--attached', {display: 'flex'}],
       ]],
-   ]],
-   // Tag actions -- Untag
-   ['.app-untag-tags', [
-      ['.tag-actions__item--attached', {display: 'flex'}],
-      ['.tag-actions:hover', [
+      ['.tag--attached:hover', [
          ['.tag-actions__item--attached', {display: 'none'}],
          ['.tag-actions__item--untag', {display: 'flex'}],
-      ]],
+      ]]
    ]],
    // *** tag-share.scss ***
    // Tag shared
@@ -2870,6 +2852,7 @@ H.formatChunkDates = function (d1, d2, shortMonths) {
 H.tagColor = function (tag, a) {
    if (tag === 'u::') return 'untagged';
    if (H.isDateTag (tag)) return 'time';
+   if (tag.match (/ \(new tag\)$/)) tag = tag.replace (/ \(new tag\)$/, '');
    var r = dale.acc (tag.split (''), tag [0].charCodeAt (), function (a, b) {
       return a + b.charCodeAt ();
    });
@@ -3452,7 +3435,7 @@ B.mrespond ([
       var selectedPivs = dale.keys (selected).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
-         organise: ['app-organise', 'app-show-organise-bar', B.get ('State', 'untag') ? 'app-untag-tags' : 'app-attach-tags'],
+         organise: ['app-organise', 'app-show-organise-bar', 'app-attach-tags'],
       }
       var target = c ('.pics-target') [0];
       if (! target) return;
@@ -3468,19 +3451,10 @@ B.mrespond ([
          });
       }, 0);
 
-      if (B.get ('State', 'untag') && ! selectedPivs) B.call (x, 'rem', 'State', 'untag');
-
       if (! selectedPivs && B.get ('State', 'query', 'recentlyTagged')) {
          B.call (x, 'rem', ['State', 'query'], 'recentlyTagged');
          B.call (x, 'snackbar', 'green', 'You can find your pictures under the tags you just used.');
       }
-   }],
-   ['change', ['State', 'untag'], {match: B.changeResponder}, function (x) {
-      var untag = B.get ('State', 'untag');
-      var target = c ('.pics-target') [0];
-      if (! target) return;
-      target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
-      if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
    }],
    ['query', 'pivs', function (x, options) {
       options = options || {};
@@ -3702,12 +3676,6 @@ B.mrespond ([
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
          if (! del) B.call (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
-         if (del) {
-            if (ids.length === pivTotal) {
-               B.call (x, 'query', 'tags');
-               return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
-            }
-         }
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
       });
@@ -4767,48 +4735,20 @@ views.pics = function () {
                            }),
                         ]],
                      ]],
-                     ['div', {class: 'sidebar__switch'}, [
-                        // Switch
-                        ['div', {class: 'switch'}, [
-                           ['ul', {class: 'switch-list'}, [
-                              ['li', {class: 'switch-list__item', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'untag'])}, [
-                                 ['div', {class: 'switch-list__button switch-list__button--attach'}, [
-                                    H.putSvg ('buttonAttach'),
-                                    ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
-                                 ]],
-                              ]],
-                              ['li', {class: 'switch-list__item', style: style ({width: 110}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'untag'], true])}, [
-                                 ['div', {class: 'switch-list__button switch-list__button--untag'}, [
-                                    H.putSvg ('buttonUntag'),
-                                    ['span', {class: 'switch-list__button-text'}, 'Untag '],
-                                    ['span', {class: 'switch-list__button-text-amount'}, ' '],
-                                 ]],
-                              ]],
-                           ]],
-                        ]],
-                     ]],
                      ['div', {class: 'sidebar__attach-form', onclick: B.ev (H.stopPropagation)}, [
                         B.view ([['State', 'newTag'], ['Data', 'tags'], ['State', 'selected']], function (newTag, tags, selected) {
                            if (! selected) return ['div'];
                            // We filter out tags that are already in all of the pivs of the current selection.
                            // We might have to move this to a responder so we calculate it less often, since it can be expensive.
                            tags = dale.fil (tags, undefined, function (tag) {
-                              if (! H.isUserTag (tag)) return;
-                              var tagAbsent = ! dale.stop (pivs, false, function (piv) {
-                                 if (! selected [piv.id]) return true;
-                                 return inc (piv.tags, tag);
-                              });
-                              if (tagAbsent) return tag;
+                              if (H.isUserTag (tag)) return tag;
                            });
 
                            newTag = H.trim (newTag === undefined ? '' : newTag);
-                           var maxTags = 5, showTags = [], filterRegex = H.makeRegex (newTag);
-                           dale.stop (tags, true, function (tag) {
+                           var showTags = [], filterRegex = H.makeRegex (newTag);
+                           dale.go (tags, function (tag) {
                               if (newTag === undefined || newTag.length === 0) return;
-                              if (tag.match (filterRegex)) {
-                                 showTags.push (tag);
-                                 if (showTags.length === maxTags) return true;
-                              }
+                              if (tag.match (filterRegex)) showTags.push (tag);
                            });
                            if (newTag && ! inc (tags, newTag) && H.isUserTag (newTag)) showTags.unshift (newTag + ' (new tag)');
 
@@ -4831,7 +4771,7 @@ views.pics = function () {
                            ]];
                         }),
                      ]],
-                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (untag, filter, selected, showNSelectedTags, tags) {
+                     B.view ([['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (filter, selected, showNSelectedTags, tags) {
                         filter = H.trim (filter === undefined ? '' : filter);
                         showNSelectedTags = showNSelectedTags || 75;
                         var selectedTags = {}, filterRegex = H.makeRegex (filter);
@@ -4856,11 +4796,11 @@ views.pics = function () {
                            ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
-                              var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
-                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag])}, [
+                              var attached = selectedTags [tag] === dale.keys (selected).length;
+                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
                                  ['span', {class: 'tag__title'}, tag],
-                                 ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag])}, [
+                                 ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
@@ -5576,14 +5516,11 @@ views.upload = function () {
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
                                              filter = H.trim (filter === undefined ? '' : filter);
-                                             var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
-                                             dale.stop (tags, true, function (tag) {
+                                             var showTags = [], filterRegex = H.makeRegex (filter);
+                                             dale.go (tags, function (tag) {
                                                 if (! H.isUserTag (tag)) return;
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
-                                                   showTags.push (tag);
-                                                   if (showTags.length === maxTags) return true;
-                                                }
+                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) showTags.push (tag);
                                              });
                                              if (filter && ! inc (tags, filter)) {
                                                 if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
@@ -5994,7 +5931,7 @@ views.import = function () {
                                        ['img', {src: 'assets/img/google-drive-access.png'}]
                                     ]],
                                  ]],
-                                 ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'})}, ['a', {href: providerData.redirect, target: queue && queue.length ? '_blank' : undefined}, 'Got it']]
+                                 ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: 'window.open ("' + providerData.redirect + '"' + (queue && queue.length ? ', "_blank"' : ', "_self"') + ')'}, 'Got it']
                               ]],
                            ]],
                         ]]

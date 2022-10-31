@@ -42,22 +42,26 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server: check list of server vs import
    - client: see info of piv
-   - client: see Safari 15.3 ESC fullscreen
    - client: in Safari, sidebar has a strange behavior, not good experience
-   - client: in import, create a flow where the user is notified that while listing and or while importing they can leave and we’ll let them know via email
-   - client: flow where the user knows what type of permissions they have to give to ac;pic
    - client: warn that folders will be used as tags
-   - client: A-Z icon to sort tags alphabetically
+   - client: rethink invite flow
 
 Mono
-   - client: hide tag/untag slider, when button is green consider it as an untagging, onhover of the title activate onhover of the button
-   - server: ignore invalids in consistency
-   - client: fix case where uploading all invalid files does not result in finish
-   - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - client:
+      - sort alphabetically
+      - change Why ac;pic button
+   - client: test & document upload count fix
+      - fix case where uploading all invalid files does not result in finish
+      - fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - server: consistency
+      - ignore invalids in consistency check
+      - re-upload missing files in S3
+      - clear s3:proc counter
+      - fix invalid s3 entries
    - client: cannot go back from view pics to other views because of URL change
    - client: check if more queries are done on initial load of update box
-   - client: check what happens if connection is dropped while uploading
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
+   - client: check what happens if connection is dropped while uploading
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
@@ -848,15 +852,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pics`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.untag`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.reverseTagOrder`, `State.query.update`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.reverseTagOrder`, `State.query.update`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
       - `click -> toggle tag`
       - `click -> select all`
       - `click -> scroll`
-      - `click -> rem State.untag`
-      - `click -> set State.untag true`
       - `click -> tag TAG`
       - `click -> untag TAG`
       - `click -> rotate pivs`
@@ -1035,9 +1037,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - We invoke `update queryURL` or `update queryURL true` - the latter will only be the case if what changes is `State.query.fromDate`.
       - If what changes is `State.query.fromDate`, we determine whether the amount of pivs in `Data.pivs` is enough or whether we need to invoke `query pivs`. If 1) there's already no more pivs in the query (as per `Data.pivTotal`) than we currently have loaded, or 2) the last chunk that is currently visible is neither the last nor the next-to-last chunk loaded, then the responder will not do anything else (that is, it won't invoke `query pivs`), since it is not necessary to load further pivs.
       - It invokes `query pivs` - if the change is on `State.query.fromDate` and there was a previous value set on `fromDate`, it will invoke instead `query pivs {noScroll: true}`. This last case will prevent a query triggered by scrolling to programatically set the scrolling point later. The case where `fromDate` changes but there was no previous value is the loading of a first query through a link that contains a `fromDate` parameter - in that case, we do want to programmatically set the scroll.
-   3. `change State.selected`: if current page is not `pivs`, it does nothing. Adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes)  and optionally removes `State.untag`. If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
-   4. `change State.untag`: adds & removes classes from `#pics`; if `State.selected` is empty, it will only remove classes, not add them.
-   5. `query pivs`:
+   3. `change State.selected`: if current page is not `pivs`, it does nothing. Adds & removes classes from `#pics`, adds & removes `selected` class from pivs in `views.grid` (this is done here for performance purposes, instead of making `views.grid` redraw itself when the `State.selected` changes). If there are no more pivs selected and `State.query.recentlyTagged` is set, we `rem` it and invoke `snackbar`.
+   4. `query pivs`:
       - If `State.query` is not set, does nothing.
       - If `State.querying` is set and the `options.retry` passed to the responder is not truthy, it will overwrite `State.querying` with `{t: INTEGER, options: {...}}` and do nothing else. This will prevent a concurrent query call to the server; later we'll add logic to make the responder re-invoke itself if a later query requests has happened while a request is being sent to the server.
       - It sets `State.querying` to `{t: INTEGER, options: {...}}`.
@@ -1069,15 +1070,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.open` is not set, it will trigger a `change` event on `Data.pivs` to the pivs returned by the query. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set. We check whether the piv previously opened is still on the list of pivs returned by the query. If it is no longer in the query, it invokes `rem State.open` and `change Data.pivs`. It will also invoke `exit fullscreen`. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
-   6. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
-   7. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
-   8. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
-   9. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
-   10. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
-   11. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs` and `query tags`.
-   12. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
-   13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
-   14. `scroll`:
+   5. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
+   6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
+   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
+   8. `select all`: Invokes `post query` using `State.query` and setting `body.idsOnly` to `true`. Sets `State.selected` using the body returned by the query.
+   9. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
+   10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`.
+   11. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
+   12. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
+   13. `scroll`:
       - Only will perform actions if `State.page` is `pivs`.
       - If the `to` argument is `undefined` and `State.scroll` exists and happened less than 50ms ago, the responder won't do anything else - effectively ignoring the call.
       - If `to` is set to `-1` or `undefined`, our reference `y` position will be the current one.
@@ -1087,15 +1088,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's at least partly visible in the viewport.
       - If a `to` parameter is passed that is not -1, it will scroll to that `y` position after a timeout of 0ms. The timeout is there to allow for DOM operations to conclude before scrolling.
       - Note: the scroll responder has an overall flow of the following shape: 1) determine visibility; 2) trigger changes that will redraw the grid; 3) update `State.query.fromDate`; 4) if necesary, scroll to the right position.
-   15. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
-   16. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   17. `update queryURL`:
+   14. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
+   15. `stop propagation`: stops propagation of the `ev` passed as an argument.
+   16. `update queryURL`:
       - If `State.query` is not set, it does nothing.
       - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
       - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
       - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new history entry will *not* be generated.
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
-   18. `change State.queryURL`:
+   17. `change State.queryURL`:
       - If `State.queryURL` is not set, it does nothing.
       - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ...}`.
       - If any of these fields is both set and different to the corresponding field of `State.query`, it will be overwritten in `State.query` and a `change` event on `State.query` will be invoked.
@@ -1259,7 +1260,7 @@ Only things that differ from client are noted.
    3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
 
 3. Users
-   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`
+   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`; set `Data.logs` and optionally `Data.allLogs`.
    2. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve logs`.
 
 4. Deploy
@@ -1272,6 +1273,9 @@ Only things that differ from client are noted.
 
 - `Data`:
    - `invites`: `{EMAIL: {firstName: STRING, token: STRING, sent: INT, accepted: INT|UNDEFINED}, ...}`.
+   - `users`: `[...]`.
+   - `logs`: `[...]`.
+   - `allLogs`: `[...]` - only set if last logs query had more than 2k entries.
 
 ## Version history
 
