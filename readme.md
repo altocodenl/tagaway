@@ -42,21 +42,23 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server: check list of server vs import
    - client: see info of piv
-   - client: see Safari 15.3 ESC fullscreen
    - client: in Safari, sidebar has a strange behavior, not good experience
    - client: warn that folders will be used as tags
-   - client: A-Z icon to sort tags alphabetically
    - client: rethink invite flow
-   - client: add "Why ac;pic?" button on header of pics view
 
 Mono
-   - client: fix case where uploading all invalid files does not result in finish
-   - client: fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - client: test & document upload count fix
+      - fix case where uploading all invalid files does not result in finish
+      - fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - server: consistency
+      - ignore invalids in consistency check
+      - re-upload missing files in S3
+      - clear s3:proc counter
+      - fix invalid s3 entries
    - client: cannot go back from view pics to other views because of URL change
    - client: check if more queries are done on initial load of update box
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - client: check what happens if connection is dropped while uploading
-   - server: ignore invalids in consistency
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
@@ -847,7 +849,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pics`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.reverseTagOrder`, `State.query.update`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -865,7 +867,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> rem State.showNSelectedTags`
       - `input -> set State.filter`
       - `click -> goto tag`
-      - `click -> set State.reverseTagOrder`
+      - `click -> set State.tagOrder`
       - `click -> set State.query.update`
       - `click -> set State.query.updateLimit`
 2. `views.upload`
@@ -925,7 +927,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Contained by: `views.base`.
 4. `views.header`
    - Depends on `State.page` and `Data.account`.
-   - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`.
+   - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`, `open location undefined URL`
    - Contained by: `views.pivs`, `views.upload`, `views.share`, `views.tags`.
 5. `views.empty`
    - Contained by: `views.pivs`.
@@ -1106,7 +1108,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `open prev|next`: decrements or increments `State.open.k`, as long as there's a previous (or next) piv. It will also scroll the window to the `start` position of the piv currently open (so that the grid scrolls up or down when the user goes back or forth within the `open` view).
    6. `touch start`: only performs actions if `State.open` is set. Sets `State.lastTouch`.
    7. `touch end`: only performs actions if `State.open` is set. Reads and deletes `State.lastTouch`. If it happened less than a second ago, it invokes `open prev` or `open next`, depending on the direction of the touch/swipe.
-   8. `open location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude.
+   8. `open location`: takes a `piv` with `loc` field as its argument. Opens Google Maps in a new tab with the specified latitude & longitude. If a second argument is passed instead, that is considered as a url, which is then opened in a new tab.
 
 6. Upload
    1. `change State.page`: if `State.page` is `upload` or `pivs`, 1) if no `Data.account`, `query account`; 2) if no `Data.tags`, `query tags`; 3) if no `Data.uploads`, `query uploads`.
@@ -1171,7 +1173,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `open`: `{id: STRING, k: INTEGER}`. id and index of the piv to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
-   - `reverseTagOrder`: determines whether tags are shown in the default order or in reverse order
+   - `tagOrder`: determines whether tags are sorted by number of pivs or alphabetically, and whether the order should be reverse or not. It is of the shape `{field: 'a|n', reverse: true|false|UNDEFINED}`.
    - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER, recentlyUploaded: UNDEFINED|[ID, ...], update: UNDEFINED|'auto'|'manual', updateLimit: UNDEFINED|INTEGER}`.
    - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
    - `queryURL`: if set, has the form `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER}`. When updated, its data will be used to update `State.query`.
@@ -1255,7 +1257,7 @@ Only things that differ from client are noted.
    3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
 
 3. Users
-   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`
+   1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`; set `Data.logs` and optionally `Data.allLogs`.
    2. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve logs`.
 
 4. Deploy
@@ -1268,6 +1270,9 @@ Only things that differ from client are noted.
 
 - `Data`:
    - `invites`: `{EMAIL: {firstName: STRING, token: STRING, sent: INT, accepted: INT|UNDEFINED}, ...}`.
+   - `users`: `[...]`.
+   - `logs`: `[...]`.
+   - `allLogs`: `[...]` - only set if last logs query had more than 2k entries.
 
 ## Version history
 

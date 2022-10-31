@@ -918,7 +918,8 @@ CSS.litc = [
       'margin-bottom': CSS.typography.spaceVer (0.5),
    }],
    ['.sort-arrow', {
-      'margin-left': .8,
+      // 'margin-left': .8,
+      'margin-left': .63,
    }],
    // Tag list -- Sidebar -- Only selected tags
    ['.app-selected-tags .tag-list--sidebar', [
@@ -950,6 +951,12 @@ CSS.litc = [
       mixin1: CSS.vars.fontPrimaryMedium,
       'margin-right': CSS.vars ['padding--xs'],
       width: 'inherit'
+   }],
+   ['.videoIcon', {
+      'width': 20,
+      'margin-right': 3,
+      'margin-left': 4,
+      'display': 'inline-block',
    }],
    // Tag title - amount
    ['.tag__title-amount', {
@@ -2752,6 +2759,7 @@ var svg = {
    sidebarSearch: '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>',
    searchTagIcon: '<svg class="tags-search-bar__search-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>',
    tagAll: '<svg class="tag__icon tag__icon--all" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm0-6c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5zm-4.5-.5c0-.3-.2-.5-.5-.5h-1c-.3 0-.5.2-.5.5s.2.5.5.5h1c.3 0 .5-.2.5-.5zm10.5-3v-1c0-.3-.2-.5-.5-.5s-.5.2-.5.5v1h-2v-.5c0-.8-.6-1.5-1.3-1.5h-3.3c-.8 0-1.4.7-1.4 1.5v.5h-2.5c-1.9 0-3.5 1.6-3.5 3.5v5c0 1.9 1.6 3.5 3.5 3.5h11c1.9 0 3.5-1.6 3.5-3.5v-5c0-1.8-1.3-3.2-3-3.5zm-8-.5c0-.3.2-.5.3-.5h3.3c.2 0 .4.2.4.5v.5h-4zm10 9c0 1.4-1.1 2.5-2.5 2.5h-11c-1.4 0-2.5-1.1-2.5-2.5v-5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5z"/></svg>',
+   videoIcon: '<svg class="videoIcon" version="1.1" viewBox="0.0 0.0 22.0 22.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l22.0 0l0 22.0l-22.0 0l0 -22.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l22.0 0l0 22.0l-22.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.67729837 7.3124757l0 0c0 -1.0183125 0.8255052 -1.8438172 1.8438175 -1.8438172l11.290979 0c0.4890108 0 0.9579935 0.19425869 1.3037758 0.54004145c0.34578323 0.34578276 0.5400419 0.814765 0.5400419 1.3037758l0 7.375048c0 1.0183125 -0.82550526 1.8438177 -1.8438177 1.8438177l-11.290979 0c-1.0183122 0 -1.8438175 -0.82550526 -1.8438175 -1.8438177z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.67729837 7.3124757l0 0c0 -1.0183125 0.8255052 -1.8438172 1.8438175 -1.8438172l11.290979 0c0.4890108 0 0.9579935 0.19425869 1.3037758 0.54004145c0.34578323 0.34578276 0.5400419 0.814765 0.5400419 1.3037758l0 7.375048c0 1.0183125 -0.82550526 1.8438177 -1.8438177 1.8438177l-11.290979 0c-1.0183122 0 -1.8438175 -0.82550526 -1.8438175 -1.8438177z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m21.322702 7.074921l0 7.8501573l-5.6652994 -1.5700312l0 -4.7100945z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m21.322702 7.074921l0 7.8501573l-5.6652994 -1.5700312l0 -4.7100945z" fill-rule="evenodd"/></g></svg>',
    itemSelected: '<svg class="tag-actions__item-icon tag-actions__item-icon--selected tag-actions__selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>',
    itemDeselect: '<svg class="tag-actions__item-icon tag-actions__item-icon--deselect" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
    itemAttach: '<svg class="tag-actions__item-icon tag-actions__item-icon--attach" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 7h-1v4.5h-4.5v1h4.5v4.5h1v-4.5h4.5v-1h-4.5z"/></svg>',
@@ -2791,6 +2799,8 @@ var svg = {
    chevron: '<svg class="chevron-svg" height="20" width="24" stroke="#484848"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke-width:1.5" /></svg>',
    selectedCircle: '<svg viewBox="0 0 100 100" fill="#5b6eff" width="12" height="12" style="margin-right: 6px; xmlns="http://www.w3.org/2000/svg"> <circle cx="50" cy="50" r="50"/></svg>',
    upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>',
+   azIcon:'<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m3.9071805 3.9625196l1.6562498 -3.734375l0.859375 0l1.6718755 3.734375l-0.9062505 0l-1.375 -3.296875l0.34375 0l-1.359375 3.296875l-0.89062476 0zm0.82812476 -0.796875l0.234375 -0.65625l1.921875 0l0.234375 0.65625l-2.390625 0z" fill-rule="nonzero"/><path fill="#484848" d="m4.41027 10.36252l0 -0.5625l2.3125 -2.78125l0.09375 0.3125l-2.359375 0l0 -0.703125l3.140625 0l0 0.5625l-2.3125 2.78125l-0.109375 -0.3125l2.5 0l0 0.703125l-3.265625 0z" fill-rule="nonzero"/></g></svg>',
+   zeroNineIcon:'<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m5.9983363 4.0250196q-0.46875 0 -0.828125 -0.21875q-0.359375 -0.234375 -0.578125 -0.65625q-0.203125 -0.4375 -0.203125 -1.046875q0 -0.6250001 0.203125 -1.0468751q0.21875 -0.43749994 0.578125 -0.65625q0.359375 -0.23437499 0.828125 -0.23437499q0.453125 0 0.8125 0.23437499q0.359375 0.21875003 0.5625 0.65625q0.21875 0.421875 0.21875 1.0468751q0 0.609375 -0.21875 1.046875q-0.203125 0.421875 -0.5625 0.65625q-0.359375 0.21875 -0.8125 0.21875zm0 -0.734375q0.21875 0 0.375 -0.109375q0.15625 -0.125 0.25 -0.390625q0.09375 -0.265625 0.09375 -0.6875q0 -0.42187512 -0.09375 -0.6875001q-0.09375 -0.265625 -0.25 -0.390625q-0.15625 -0.12499994 -0.375 -0.12499994q-0.21875 0 -0.390625 0.12499994q-0.15625 0.125 -0.25 0.390625q-0.09375 0.265625 -0.09375 0.6875001q0 0.421875 0.09375 0.6875q0.09375 0.265625 0.25 0.390625q0.171875 0.109375 0.390625 0.109375z" fill-rule="nonzero"/><path fill="#484848" d="m5.813354 6.565645q0.515625 0 0.890625 0.21875q0.375 0.203125 0.578125 0.625q0.203125 0.40625 0.203125 1.015625q0 0.640625 -0.25 1.09375q-0.234375 0.4375 -0.671875 0.671875q-0.421875 0.234375 -0.984375 0.234375q-0.296875 0 -0.5625 -0.0625q-0.265625 -0.0625 -0.46875 -0.1875l0.3125 -0.640625q0.15625 0.109375 0.328125 0.15625q0.1875 0.03125 0.375 0.03125q0.484375 0 0.765625 -0.28125q0.28125 -0.296875 0.28125 -0.875q0 -0.09375 0 -0.203125q0 -0.125 -0.03125 -0.25l0.234375 0.21875q-0.09375 0.21875 -0.265625 0.359375q-0.15625 0.140625 -0.375 0.21875q-0.21875 0.0625 -0.484375 0.0625q-0.359375 0 -0.65625 -0.140625q-0.28125 -0.140625 -0.453125 -0.40625q-0.171875 -0.265625 -0.171875 -0.609375q0 -0.390625 0.1875 -0.65625q0.1875 -0.28125 0.5 -0.4375q0.328125 -0.15625 0.71875 -0.15625zm0.0625 0.640625q-0.1875 0 -0.328125 0.078125q-0.140625 0.0625 -0.21875 0.1875q-0.078125 0.125 -0.078125 0.296875q0 0.25 0.171875 0.40625q0.171875 0.15625 0.453125 0.15625q0.1875 0 0.328125 -0.0625q0.15625 -0.078125 0.234375 -0.203125q0.078125 -0.140625 0.078125 -0.296875q0 -0.15625 -0.078125 -0.28125q-0.078125 -0.125 -0.21875 -0.203125q-0.140625 -0.078125 -0.34375 -0.078125z" fill-rule="nonzero"/></g></svg>',
    shareIcon: '<svg class="share-icon" fill="#fbfbfb" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="30px" height="30px"><path d="M 23 3 A 4 4 0 0 0 19 7 A 4 4 0 0 0 19.09375 7.8359375 L 10.011719 12.376953 A 4 4 0 0 0 7 11 A 4 4 0 0 0 3 15 A 4 4 0 0 0 7 19 A 4 4 0 0 0 10.013672 17.625 L 19.089844 22.164062 A 4 4 0 0 0 19 23 A 4 4 0 0 0 23 27 A 4 4 0 0 0 27 23 A 4 4 0 0 0 23 19 A 4 4 0 0 0 19.986328 20.375 L 10.910156 15.835938 A 4 4 0 0 0 11 15 A 4 4 0 0 0 10.90625 14.166016 L 19.988281 9.625 A 4 4 0 0 0 23 11 A 4 4 0 0 0 27 7 A 4 4 0 0 0 23 3 z"/></svg>',
    sharedWithMeSearchIcon: '<svg  class="tags-search-bar__shared-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    sharedWithMeSharedIcon: '<svg class="tag__status-icon tag__status-icon--shared" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
@@ -3848,8 +3858,8 @@ B.mrespond ([
       if (ev.changedTouches [0].pageX > lastTouch.x) B.call (x, 'open', 'prev');
       else                                           B.call (x, 'open', 'next');
    }],
-   ['open', 'location', function (x, piv) {
-      var url = 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
+   ['open', 'location', function (x, piv, url) {
+      url = url || 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
       var loc = window.open (url, '_blank');
       loc.focus ();
    }],
@@ -4414,7 +4424,9 @@ views.header = function (showUpload, showImport) {
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
-            if (page === 'pics') return ['div'];
+            if (page === 'pics') return ['ul', {class: 'main-menu'}, [
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
+            ]];
             return ['ul', {class: 'main-menu'}, [
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
             ]];
@@ -4497,7 +4509,7 @@ views.empty = function () {
                ['div', [
                   ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
                   ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
-                  ]]
+               ]]
             ]],
          ]],
       ]],
@@ -4548,8 +4560,9 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'reverseTagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, reverseTagOrder) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'tagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, tagOrder) {
                         if (! account || ! selected) return ['ul'];
+                        if (! tagOrder) tagOrder = {field: 'n'};
                         monthTags = monthTags || [];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
@@ -4590,11 +4603,16 @@ views.pics = function () {
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
-                           var aN = queryTags [a], bN = queryTags [b];
-                           if (aN !== bN) return reverseTagOrder ? aN - bN : bN - aN;
-
-                           if (reverseTagOrder) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
-                           else                 return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           if (tagOrder.field === 'n') {
+                              var aN = queryTags [a], bN = queryTags [b];
+                              if (aN !== bN) return tagOrder.reverse ? aN - bN : bN - aN;
+                              if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
+                              else                  return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           }
+                           else {
+                              if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
+                              else                  return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
+                           }
                         });
 
                         var all      = teishi.eq (selected, []);
@@ -4641,7 +4659,6 @@ views.pics = function () {
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
-                              var action = ['set', ['State', 'reverseTagOrder'], ! reverseTagOrder];
                            }
                            else {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
@@ -4658,14 +4675,17 @@ views.pics = function () {
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
-                              H.if (which === 'f::', H.putSvg ('upAndDownArrows')),
+                              H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
+                                 ['div', {style: style ({display: 'inline-flex'}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'a', reverse: tagOrder.field === 'a' ? ! tagOrder.reverse : false})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
+                                 ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
+                              ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
                               ['span', {class: 'tag__title'}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
@@ -4733,13 +4753,10 @@ views.pics = function () {
                            });
 
                            newTag = H.trim (newTag === undefined ? '' : newTag);
-                           var maxTags = 5, showTags = [], filterRegex = H.makeRegex (newTag);
-                           dale.stop (tags, true, function (tag) {
+                           var showTags = [], filterRegex = H.makeRegex (newTag);
+                           dale.go (tags, function (tag) {
                               if (newTag === undefined || newTag.length === 0) return;
-                              if (tag.match (filterRegex)) {
-                                 showTags.push (tag);
-                                 if (showTags.length === maxTags) return true;
-                              }
+                              if (tag.match (filterRegex)) showTags.push (tag);
                            });
                            if (newTag && ! inc (tags, newTag) && H.isUserTag (newTag)) showTags.unshift (newTag + ' (new tag)');
 
@@ -4815,7 +4832,7 @@ views.pics = function () {
                   var doneTagging = inc (tags, 'u::') && dale.keys (selected).length;
                   return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 114}), onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
-                        ['input', {class: 'sidebar-search__input search-input', style: style ({border: 'solid 1px #5b6eff'}), type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
+                        ['input', {class: 'sidebar-search__input search-input', style: style ({border: 'solid 1px #5b6eff', 'border-radius': 25}), type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
@@ -5507,14 +5524,11 @@ views.upload = function () {
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
                                              filter = H.trim (filter === undefined ? '' : filter);
-                                             var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
-                                             dale.stop (tags, true, function (tag) {
+                                             var showTags = [], filterRegex = H.makeRegex (filter);
+                                             dale.go (tags, function (tag) {
                                                 if (! H.isUserTag (tag)) return;
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
-                                                   showTags.push (tag);
-                                                   if (showTags.length === maxTags) return true;
-                                                }
+                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) showTags.push (tag);
                                              });
                                              if (filter && ! inc (tags, filter)) {
                                                 if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
