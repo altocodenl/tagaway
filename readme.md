@@ -45,6 +45,7 @@ Tom
    - client: in Safari, sidebar has a strange behavior, not good experience
    - client: warn that folders will be used as tags
    - client: rethink invite flow
+   - client: add button & modal for setting date
 
 Mono
    - client: test & document upload count fix
