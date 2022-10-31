@@ -531,7 +531,8 @@ CSS.litc = [
       'bottom, left': 0,
       height: 54,
       width: 300, // sidebar width
-      display: 'flex',
+      // display: 'flex',
+      display: 'none',
       'flex-direction': 'column-reverse', // FIX FOR '.done-tagging-button'
       'background-color': '#ffffff', // FIX FOR '.done-tagging-button'
       'align-items': 'center',
