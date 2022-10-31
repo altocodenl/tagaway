@@ -3858,8 +3858,8 @@ B.mrespond ([
       if (ev.changedTouches [0].pageX > lastTouch.x) B.call (x, 'open', 'prev');
       else                                           B.call (x, 'open', 'next');
    }],
-   ['open', 'location', function (x, piv) {
-      var url = 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
+   ['open', 'location', function (x, piv, url) {
+      url = url || 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
       var loc = window.open (url, '_blank');
       loc.focus ();
    }],
@@ -4420,9 +4420,8 @@ views.header = function (showUpload, showImport) {
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
-            if (page === 'pics') 
-               return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({color: CSS.vars ['color--one']})}, ['a', {href: 'https://altocode.nl/pic/', target: '_blank', style: style({'font-weight': CSS.vars ['fontPrimaryMedium']})}, 'Why ac;pic?']],
+            if (page === 'pics') return ['ul', {class: 'main-menu'}, [
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
@@ -4506,7 +4505,7 @@ views.empty = function () {
                ['div', [
                   ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
                   ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
-                  ]]
+               ]]
             ]],
          ]],
       ]],
@@ -4557,8 +4556,9 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'reverseTagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, reverseTagOrder) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'tagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, tagOrder) {
                         if (! account || ! selected) return ['ul'];
+                        if (! tagOrder) tagOrder = {field: 'n'};
                         monthTags = monthTags || [];
                         filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
@@ -4599,11 +4599,16 @@ views.pics = function () {
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
-                           var aN = queryTags [a], bN = queryTags [b];
-                           if (aN !== bN) return reverseTagOrder ? aN - bN : bN - aN;
-
-                           if (reverseTagOrder) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
-                           else                 return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           if (tagOrder.field === 'n') {
+                              var aN = queryTags [a], bN = queryTags [b];
+                              if (aN !== bN) return tagOrder.reverse ? aN - bN : bN - aN;
+                              if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
+                              else                  return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           }
+                           else {
+                              if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
+                              else                  return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
+                           }
                         });
 
                         var all      = teishi.eq (selected, []);
@@ -4650,7 +4655,6 @@ views.pics = function () {
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
-                              var action = ['set', ['State', 'reverseTagOrder'], ! reverseTagOrder];
                            }
                            else {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
@@ -4667,16 +4671,16 @@ views.pics = function () {
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
-                              H.if (which === 'f::', ['div', {style: style({'display': 'inline-flex'})}, [
-                                 ['div', {style: style({'display': 'inline-flex'})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
-                                 ['div', {style: style({'display': 'inline-flex', 'margin-left': 15})}, H.putSvg ('upAndDownArrows')]
+                              H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
+                                 ['div', {style: style ({display: 'inline-flex'}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'a', reverse: tagOrder.field === 'a' ? ! tagOrder.reverse : false})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
+                                 ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
                               ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
                               ['span', {class: 'tag__title'}, [' ', showName]],
