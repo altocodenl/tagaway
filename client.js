@@ -3491,7 +3491,7 @@ B.mrespond ([
          sort:           query.sort,
          from:           query.fromDate ? undefined : 1,
          fromDate:       query.fromDate,
-         to:             Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
+         to:             options.selectAll ? 1000000000 : Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
          recentlyTagged: query.recentlyTagged,
          mindate:        mindate,
          maxdate:        maxdate,
@@ -3531,12 +3531,11 @@ B.mrespond ([
             B.call (x, 'query', 'pivs', {refresh: true});
          }, 1500));
 
-
          // Perform mute updates
          var selected = B.get ('State', 'selected') || {};
          // Update the selection to only include pivs that are returned in the current query
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
-            if (selected [piv.id]) return [piv.id, true];
+            if (options.selectAll || selected [piv.id]) return [piv.id, true];
          }));
          // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScroll will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
          var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
@@ -3556,6 +3555,11 @@ B.mrespond ([
             else                              return query.fromDate >= piv.dateup ? piv.start + offset : undefined;
          });
          B.call ('scroll', [], scrollTo);
+
+         if (options.selectAll) {
+            B.call (x, 'clear', 'snackbar');
+            B.call (x, 'change', ['State', 'selected']);
+         }
 
          var open = B.get ('State', 'open');
 
@@ -3637,12 +3641,11 @@ B.mrespond ([
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
    }],
    ['select', 'all', function (x) {
-      var query = B.get ('State', 'query');
-      // query.sort, query.from and query.to are irrelevant, we just send them for the request to be valid.
-      B.call (x, 'post', 'query', {}, {idsOnly: true, tags: query.tags, sort: query.sort, from: 1, to: 1000000000, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
-         B.call (x, 'set', ['State', 'selected'], dale.obj (rs.body, function (id) {return [id, true]}));
-      });
+      B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
+         return [piv.id, true];
+      }));
+      if (B.get ('Data', 'pivTotal') > 2000) B.call (x, 'snackbar', 'yellow', 'Selecting all, please wait...', true);
+      B.call (x, 'query', 'pivs', {selectAll: true});
    }],
    ['query', 'tags', function (x) {
       B.call (x, 'get', 'tags', {}, '', function (x, error, rs) {
@@ -4928,9 +4931,12 @@ views.pics = function () {
                            ]],
                            ['div', {class: 'pictures-header__action-bar'}, [
                               ['div', {class: 'pictures-header__selected-tags'}, [
-                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal']], function (tags, pivTotal) {
+                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal'], ['State', 'querying']], function (tags, pivTotal, querying) {
                                     return ['ul', {class: 'tag-list-horizontal'}, dale.go (['a::', 's::'].concat (tags), function (tag) {
-                                       if (B.get ('State', 'querying')) pivTotal = '...';
+                                       if (querying) {
+                                          pivTotal = '...';
+                                          if (querying.options && querying.options.selectAll) selected = '...';
+                                       }
                                        if (selected === 0 && tag === 's::') return;
                                        var Class = 'tag tag-list-horizontal__item ';
                                        if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
