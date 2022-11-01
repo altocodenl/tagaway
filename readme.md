@@ -46,8 +46,7 @@ Tom
    - client: add button & modal for setting date
 
 Mono
-   - client: revert bug that causes an untag all to not remove the tag from the query (https://github.com/altocodenl/acpic/commit/4fc77fa54cd3a185374bbde156cfb910c6983d29#diff-78fd6b228128b4c53915b15d9b4dd128bf76ced9b86d0936c83a836113d94ac4L3669)
-   - server/client: check if unnecessary queries are done on initial load of update box
+   - server/client: check if unnecessary queries are done on initial load of update box, see if there is a quick way to speedup query performance on both ends
    - client: sidebar overflow fix
    - server: consistency
       - ignore invalids in consistency check
@@ -1071,7 +1070,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
    8. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
    9. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
-   10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`.
+   10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`.
    11. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    12. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
    13. `scroll`:

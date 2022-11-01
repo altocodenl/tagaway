@@ -3682,6 +3682,9 @@ B.mrespond ([
       var payload = {tag: tag, ids: ids, del: del}
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+
+         if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
+
          if (! del) B.call (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
