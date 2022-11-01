@@ -1117,16 +1117,18 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `upload cancel|complete|wait|error`: receives an upload `id` as its first argument and an optional `noAjax` flag as the second argument, an optional `noSnackbar` as the third argument and an optional `error` as a fourth argument. If `noAjax` is not `true`, it invokes `post upload` and if there's a server error during this ajax call, it will only invoke `snackbar red` and do nothing else; if the operation is `wait`, it sets `State.upload.wait.ID.lastActivity` and does nothing else; if we're performing the `cancel` or `error` operation, it finds all the files on `State.upload.queue` belonging to the upload with id `id`, filters them out and updates `State.upload.queue`. For all operations except `wait`, it then removes `State.upload.wait.ID`, clears the interval at `State.upload.wait.ID.interval` and invokes `query uploads`; if `noSnackbar` is not `true`, it invokes `snackbar` with a relevant message depending on the operation.
    6. `upload tag`: optionally invokes `snackbar`. Adds a tag to `State.upload.new.tags` and removes `State.upload.tag`.
    7. `query uploads`: if `State.upload.timeout` is set, it removes it and invokes `clearTimeout` on it; it then invokes `get uploads`; if there's an error, invokes `snackbar`; otherwise, sets the body in `Data.uploads` and conditionally sets `State.upload.timeout`. If a timeout is set, the timeout will invoke `query uploads` again after 1500ms.
-   8. `change State.upload.queue`:
+   8. `change State.upload.queue`: (for each piv that's next in the queue)
+      - Increments `State.upload.count.UPLOADID` (or sets it to `1` if it doesn't exist yet).
       - Hashes the file; if there is an error, invokes `upload error` and returns. The call to `upload error` will report the error to the server.
       - Invokes `post uploadCheck` to check if an identical file already exists; if there is an error, invokes `upload error` and returns.
-      - If a file with the same hash already exists, the responder removes it from `State.upload.queue` and conditionally invokes `upload complete` if this is the last file of an upload that still has status `uploading` (as per `Data.uploads`). It then returns.
+      - If a file with the same hash already exists, the responder removes it from `State.upload.queue`, decrements `State.upload.count.UPLOADID` and conditionally invokes `upload complete` if there are no other files in this upload being processed (`State.upload.count.UPLOADID === 0`) *and* it is part of an upload that still has status `uploading` (as per `Data.uploads`). It then returns.
       - Invokes `post piv` to upload the file.
       - Sets `State.upload.wait.ID.lastActivity`.
       - Removes the file just uploaded from `State.upload.queue`.
       - If space runs out, it invokes `snackbar` and `upload cancel` - the call to `upload cancel` will perform neither an ajax call nor show a snackbar.
       - If there's an unexpected error (not a 400) it invokes `upload error` but it will not perform an ajax call to report it to the server.
-      - Conditionally invokes `upload complete` if there was no unexpected error and this is the last file of an upload that still has status `uploading` (as per `Data.uploads`).
+      - Decrements `State.upload.count.UPLOADID`.
+      - Conditionally invokes `upload complete` if there are no other files in this upload being processed (`State.upload.count.UPLOADID === 0`) *and* it is part of an upload that still has status `uploading` (as per `Data.uploads`).
 
 7. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if `State.import.PROVIDER.authError` is set, it deletes it and invokes `snackbar`; 4) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
@@ -1183,8 +1185,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
    - `untag`: flag to mark that we're untagging pivs instead of tagging them.
    - `upload`:
+      - `count`: `UNDEFINED|{UPLOADID: INTEGER, ...}`. Each entry counts the number of items currently being processed for each upload.
       - `new`: {unsupported: [STRING, ...]|UNDEFINED, files: [...], tags: [...]|UNDEFINED}
-      - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED, lastInUpload: true|false}, ...]
+      - `queue`: [{file: ..., uid: STRING, tags: [...]|UNDEFINED, uploading: true|UNDEFINED}, ...]
       - `tag`: content of input to filter tag or add a new one.
       - `timeout`: if present, a timeout that invokes `query uploads`.
       - `wait`: if present, an object where every key is an upload id and the value is an array of the form `{lastActivity: INTEGER, interval: SETINTERVAL FUNCTION}`. These are used to determine when a `wait` event should be sent.
