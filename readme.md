@@ -42,14 +42,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server: check list of server vs import
    - client: see info of piv
-   - client: in Safari, sidebar has a strange behavior, not good experience
-   - client: warn that folders will be used as tags
    - client: rethink invite flow
+   - client: add button & modal for setting date
 
 Mono
-   - client: test & document upload count fix
-      - fix case where uploading all invalid files does not result in finish
-      - fix case where alreadyUploaded/repeated is too eager to send the complete operation
+   - client: update updateLimit when going back to view pics
+   - client: fix two bugs of unselect happening to user #3
+   - client: sidebar overflow fix
    - server: consistency
       - ignore invalids in consistency check
       - re-upload missing files in S3

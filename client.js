@@ -5769,8 +5769,9 @@ views.import = function () {
                      ['div', {class: 'listing-progress'}, [
                         ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
                            ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
-                              ['p', {style: style({'display': 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos.')],
-                              ['p', {style: style({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
+                              ['p', {style: style({'display': 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos. ')],
+                              ['p', {style: style({'display': 'contents', 'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold})}, (status === 'listing' ? '' : 'Please note that all your imported folders will turn to tags, so you know where to find your pics in ac;pic.')],
+                              ['p', {style: style({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many photos and videos you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
                         ]],
                      ]],
                      ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('set', ['State', 'import', 'hideLeaveBox'], true)}, 'Got it']
