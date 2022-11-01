@@ -46,7 +46,6 @@ Tom
    - client: add button & modal for setting date
 
 Mono
-   - client: verdecito
    - client: revert bug that causes an untag all to not remove the tag from the query (https://github.com/altocodenl/acpic/commit/4fc77fa54cd3a185374bbde156cfb910c6983d29#diff-78fd6b228128b4c53915b15d9b4dd128bf76ced9b86d0936c83a836113d94ac4L3669)
    - server/client: check if unnecessary queries are done on initial load of update box
    - client: sidebar overflow fix

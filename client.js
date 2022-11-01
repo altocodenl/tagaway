@@ -1058,6 +1058,10 @@ CSS.litc = [
       ['.tag--attached:hover', [
          ['.tag-actions__item--attached', {display: 'none'}],
          ['.tag-actions__item--untag', {display: 'flex'}],
+      ]],
+      ['.tag--unattached:hover', [
+         ['.tag-actions__item--attach', {display: 'none'}],
+         ['.tag-actions__item--attached', {display: 'flex'}],
       ]]
    ]],
    // *** tag-share.scss ***
@@ -4808,7 +4812,7 @@ views.pics = function () {
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
                               var attached = selectedTags [tag] === dale.keys (selected).length;
-                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
+                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ' tag--unattached'), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
