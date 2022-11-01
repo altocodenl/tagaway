@@ -3386,7 +3386,7 @@ B.mrespond ([
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
       if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.call (x, 'query', 'pivs');
+      else B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],

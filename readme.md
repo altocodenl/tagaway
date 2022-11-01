@@ -46,7 +46,6 @@ Tom
    - client: add button & modal for setting date
 
 Mono
-   - client: update updateLimit when going back to view pics
    - client: fix two bugs of unselect happening to user #3
    - client: sidebar overflow fix
    - server: consistency
@@ -1025,7 +1024,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    10. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pics
-   1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it invokes `query pivs`. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
+   1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it sets `State.query.updateLimit` to the current time (to update the query to the present moment). It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
    2. `change State.query`:
       - If the path to the change is just `State` object (which only happens during initialization or logout), or `State.query.recentlyTagged`, or `State.query.update`, we don't do anything.
       - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`. We also remove `State.query.update` and `State.query.updateLimit`.
@@ -1129,6 +1128,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If there's an unexpected error (not a 400) it invokes `upload error` but it will not perform an ajax call to report it to the server.
       - Decrements `State.upload.count.UPLOADID`.
       - Conditionally invokes `upload complete` if there are no other files in this upload being processed (`State.upload.count.UPLOADID === 0`) *and* it is part of an upload that still has status `uploading` (as per `Data.uploads`).
+      - Note: the logic of `State.upload.count.UPLOADID` works because we decrement *after* updating the queue. This updating of the queue triggers a recursive call to the responder itself, which brings another piv into processing, which increments the queue. In that way, the count entry for an upload reaches 0 only at the very end.
 
 7. Import
    1. `change State.page`: if `State.page` is `import`, 1) if no `Data.account`, `query account`; 2) for all providers, if `State.import.PROVIDER.authOK` is set, it deletes it and invokes `import list PROVIDER true` to create a new list; 3) for all providers, if `State.import.PROVIDER.authError` is set, it deletes it and invokes `snackbar`; 4) for all providers, if there's no `Data.import.PROVIDER`, invokes `import list PROVIDER`.
