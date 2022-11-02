@@ -18,6 +18,11 @@ if [ "$2" == "client" ] ; then
    exit 0
 fi
 
+if [ "$2" == "client2" ] ; then
+   scp client.js $HOST:$FOLDER/client2.js
+   exit 0
+fi
+
 if [ "$2" == "admin" ] ; then
    scp admin.js $HOST:$FOLDER
    exit 0

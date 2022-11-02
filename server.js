@@ -1280,29 +1280,31 @@ var routes = [
 
    ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
-   ['get', ['assets/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['assets/*', 'client.js', 'client2.js', 'testclient.js', 'admin.js'], cicek.file],
 
-   ['get', '/', reply, lith.g ([
-      ['!DOCTYPE HTML'],
-      ['html', [
-         ['head', [
-            ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['meta', {charset: 'utf-8'}],
-            ['title', 'ac;pic'],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-         ]],
-         ['body', [
-            dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
-               return ['script', {src: 'assets/' + v}];
-            }),
-            ['script', 'B.prod = ' + (ENV === 'prod') + ';'],
-            ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
-            ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
-            ['script', {src: 'client.js'}]
+   dale.go (['/', '/client2'], function (v) {
+      return ['get', v, reply, lith.g ([
+         ['!DOCTYPE HTML'],
+         ['html', [
+            ['head', [
+               ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
+               ['meta', {charset: 'utf-8'}],
+               ['title', 'ac;pic'],
+               ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
+               ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+            ]],
+            ['body', [
+               dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
+                  return ['script', {src: 'assets/' + v}];
+               }),
+               ['script', 'B.prod = ' + (ENV === 'prod') + ';'],
+               ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
+               ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
+               ['script', {src: v === '/' ? 'client.js' : 'client2.js'}]
+            ]]
          ]]
-      ]]
-   ])],
+      ])];
+   }),
 
    ['get', 'admin', reply, lith.g ([
       ['!DOCTYPE HTML'],
