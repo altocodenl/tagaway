@@ -4309,6 +4309,36 @@ views.snackbar = function () {
    ];
 }
 
+//  *** CHANGE DATE MODAL ***
+
+views.changeDate = function () {
+   return B.view ([], function () {
+      if (true) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'feedback-box'}, [
+            ['div', {class: 'feedback-input-box'}, [
+               ['div', [
+                  ['span', 'Change the date of the '],
+                  ['span', 'xxx'],
+                  ['span', ' selected pics to:']
+               ]],
+               ['div', [
+                  ['span', 'DD'],
+                  ['span', '/'],
+                  ['span', 'MM'],
+                  ['span', '/'],
+                  ['span', 'YYYY'],
+               ]],
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6})}, 'Cancel'],
+               ['a', {href: '', class: 'button button--one', onclick: B.ev ('send', 'feedback')}, 'Change']
+            ]]
+         ]]
+      ]];
+   });
+}
+
 // *** FEEDBACK VIEW ***
 
 views.feedback = function () {
