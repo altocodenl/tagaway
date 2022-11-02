@@ -4235,6 +4235,7 @@ views.base = function () {
       ['style', CSS.litc],
       views.snackbar (),
       views.feedback (),
+      views.changeDate (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4313,7 +4314,6 @@ views.snackbar = function () {
 
 views.changeDate = function () {
    return B.view ([], function () {
-      if (true) return ['div'];
       return ['div', {class: 'feedback-box-mask'}, [
          ['div', {class: 'feedback-box'}, [
             ['div', {class: 'feedback-input-box'}, [
