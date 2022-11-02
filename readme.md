@@ -49,10 +49,9 @@ Mono
    - client: sidebar overflow fix
    - client: new invite flow
    - server: consistency
-      - ignore invalids in consistency check
       - re-upload missing files in S3
       - clear s3:proc counter
-      - fix invalid s3 entries
+      - fix invalid s3 entries in s3:files
    - client: cannot go back from view pics to other views because of URL change
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - client: check what happens if connection is dropped while uploading
