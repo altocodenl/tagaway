@@ -4509,7 +4509,7 @@ if (cicek.isMaster && ENV) a.stop ([
          if (! s.dbfiles [s3file]) s.s3extra.push (s3file);
       });
       dale.go (s.fsfiles, function (v, fsfile) {
-         if (! s.dbfiles [fsfile]) s.fsextra.push (fsfile);
+         if (! s.dbfiles [fsfile] && ! fsfile.match (/^invalid/)) s.fsextra.push (fsfile);
       });
 
       // We only show the first 100 items to avoid making the email too big.
