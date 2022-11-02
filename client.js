@@ -2647,7 +2647,7 @@ CSS.litc = [
       }],
       ['.enter-form__input', {
          'border, background': 'none',
-         'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
+         'border-bottom': '1px solid ' + CSS.vars ['grey--light'],
          'font-size': 16,
          width: 1,
          'padding-top, padding-bottom': CSS.typography.spaceVer (1),
@@ -2722,11 +2722,12 @@ CSS.litc = [
          display: 'flex',
          'flex-direction': 'column',
          'justify-content': 'center',
-         'background-color': CSS.vars ['highlight--selection'],
+         // 'background-color': CSS.vars ['highlight--selection'],
          'padding-top': CSS.typography.spaceVer (3),
          'padding-bottom': CSS.typography.spaceVer (3.5),
          'padding-left, padding-right': 60,
          'border-radius': CSS.vars ['border-radius--m'],
+         border: '1px solid ' + CSS.vars ['grey--light'],
       }],
       media ('screen and (max-width: 767px)', ['.auth-card__inner', {
          'padding-top': CSS.typography.spaceVer (2.25),
@@ -4342,7 +4343,7 @@ views.login = function () {
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
-                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+                  ['p', {class: 'auth-card__header-text'}, 'Your life’s journey, organized.'],
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
@@ -4366,7 +4367,7 @@ views.signup = function () {
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
-                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+                  ['p', {class: 'auth-card__header-text'}, 'Your life’s journey, organized.'],
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
