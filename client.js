@@ -2599,6 +2599,32 @@ CSS.litc = [
       'padding-left, padding-right': CSS.vars ['padding--s'],
       'padding-top': CSS.vars ['padding--s'],
    }],
+   // CHANGE DATE
+   ['.change-date', {
+      'position': 'fixed',
+      'left': .35,
+      'top': .2,
+      width: 500,
+   }],
+   ['.change-date-box', {
+      'text-align': 'center',
+      'background-color': 'white',
+      'font-size':   CSS.typography.fontSize (2.5),
+      'margin-bottom': 12,
+      'border-radius': CSS.vars ['padding--s'],
+      'border': '1px solid' + CSS.vars ['color--one']
+   }],
+   ['.change-date-box-title', {
+      'padding-top': CSS.vars ['padding--m'],
+      'margin-bottom': CSS.vars ['padding--m'],
+      // 'font-weight': CSS.vars.fontPrimaryMedium,
+   }],
+   ['.change-date-box-input-date', {
+      'padding-bottom': CSS.vars ['padding--m'],
+      // 'font-weight': CSS.vars.fontPrimarySemiBold,
+      'font-weight': CSS.vars.fontPrimaryMedium,
+      'cursor': 'text',
+   }],
    // *** UPDATE QUERY BOX ***
    ['.update-pivs-box', {
       position: 'fixed',
@@ -4315,19 +4341,19 @@ views.snackbar = function () {
 views.changeDate = function () {
    return B.view ([], function () {
       return ['div', {class: 'feedback-box-mask'}, [
-         ['div', {class: 'feedback-box'}, [
-            ['div', {class: 'feedback-input-box'}, [
-               ['div', [
+         ['div', {class: 'change-date'}, [
+            ['div', {class: 'change-date-box'}, [
+               ['div', {class: 'change-date-box-title'}, [
                   ['span', 'Change the date of the '],
                   ['span', 'xxx'],
                   ['span', ' selected pics to:']
                ]],
-               ['div', [
-                  ['span', 'DD'],
+               ['div', {class: 'change-date-box-input-date'}, [
+                  ['span', {style: style({'text-decoration': 'underline'})}, 'DD'],
                   ['span', '/'],
-                  ['span', 'MM'],
+                  ['span', {style: style({'text-decoration': 'underline'})}, 'MM'],
                   ['span', '/'],
-                  ['span', 'YYYY'],
+                  ['span', {style: style({'text-decoration': 'underline'})}, 'YYYY'],
                ]],
             ]],
             ['div', {style: style ({float: 'right'})}, [
