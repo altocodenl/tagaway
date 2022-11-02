@@ -42,12 +42,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server: check list of server vs import
    - client: see info of piv
-   - client: rethink invite flow
-   - client: add button & modal for setting date
 
 Mono
    - server/client: check if unnecessary queries are done on initial load of update box, see if there is a quick way to speedup query performance on both ends
+   - client: add button & modal for setting date
    - client: sidebar overflow fix
+   - client: new invite flow
    - server: consistency
       - ignore invalids in consistency check
       - re-upload missing files in S3
