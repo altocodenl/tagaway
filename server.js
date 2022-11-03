@@ -3343,6 +3343,7 @@ var routes = [
 
             var getFilePage = function (s, nextPageToken) {
                a.seq (s, [
+                  [H.log, rq.user.username, {ev: 'importDebug', type: 'getFilePage start', nextPageToken: nextPageToken}],
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
                      var fields = ['id', 'name', 'size', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename', 'trashed'];
@@ -3380,6 +3381,7 @@ var routes = [
                         }
 
                         a.seq (s, [
+                           [H.log, rq.user.username, {ev: 'importDebug', type: 'getFilePage got page', nfiles: dale.keys (RS.body.files).length}],
                            [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                            function (s) {
                               // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
@@ -3425,6 +3427,7 @@ var routes = [
             var getParentBatch = function (s, maxRequests) {
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
+                  [H.log, rq.user.username, {ev: 'importDebug', type: 'getParentBatch start', maxRequests: maxRequests, limits: limits}],
                   function (s) {
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
@@ -3452,6 +3455,7 @@ var routes = [
 
                      setLimit (batch.length);
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
+                        H.log (a.creat (), rq.user.username, {ev: 'importDebug', type: 'getParentBatch got folders', code: RS.code, message: RS.body && RS.body.message});
                         if (RS.code !== 200) {
                            // If we hit a rate limit error, wait 0.5 seconds and try again.
                            if (RS.body.code === 403 && type (RS.body.message) === 'string' && RS.body.message.match ('User Rate Limit Exceeded')) {
@@ -3491,6 +3495,7 @@ var routes = [
                         }
 
                         a.seq (s, [
+                           [H.log, rq.user.username, {ev: 'importDebug', type: 'getParentBatch OK', maxRequests: maxRequests, limits: limits}],
                            [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                            function (s) {
                               // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
