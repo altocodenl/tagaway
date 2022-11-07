@@ -1280,29 +1280,31 @@ var routes = [
 
    ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
-   ['get', ['assets/*', 'client.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['assets/*', 'client.js', 'client2.js', 'testclient.js', 'admin.js'], cicek.file],
 
-   ['get', '/', reply, lith.g ([
-      ['!DOCTYPE HTML'],
-      ['html', [
-         ['head', [
-            ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
-            ['meta', {charset: 'utf-8'}],
-            ['title', 'ac;pic'],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
-            ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
-         ]],
-         ['body', [
-            dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
-               return ['script', {src: 'assets/' + v}];
-            }),
-            ['script', 'B.prod = ' + (ENV === 'prod') + ';'],
-            ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
-            ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
-            ['script', {src: 'client.js'}]
+   dale.go (['/', '/client2'], function (v) {
+      return ['get', v, reply, lith.g ([
+         ['!DOCTYPE HTML'],
+         ['html', [
+            ['head', [
+               ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
+               ['meta', {charset: 'utf-8'}],
+               ['title', 'ac;pic'],
+               ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
+               ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+            ]],
+            ['body', [
+               dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
+                  return ['script', {src: 'assets/' + v}];
+               }),
+               ['script', 'B.prod = ' + (ENV === 'prod') + ';'],
+               ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
+               ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
+               ['script', {src: v === '/' ? 'client.js' : 'client2.js'}]
+            ]]
          ]]
-      ]]
-   ])],
+      ])];
+   }),
 
    ['get', 'admin', reply, lith.g ([
       ['!DOCTYPE HTML'],
@@ -2717,7 +2719,19 @@ var routes = [
 
    ['post', 'query', function (rq, rs) {
 
-      var b = rq.body;
+      var b = rq.body, perf = [Date.now ()], addPerf = function (tag) {
+         perf.push ([tag, Date.now ()]);
+      }, computePerf = function () {
+         var output = [['total', 0]], t = perf [0];
+         dale.go (perf.slice (1), function (v, k) {
+            output.push ([v [0], v [1] - t]);
+            output [0] [1] += v [1] - t;
+            t = v [1];
+         });
+         return dale.obj (output.sort (function (a, b) {
+            return b [1] - a [1];
+         }), function (v) {return [v [0], v [1]]});
+      };
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
@@ -2754,6 +2768,7 @@ var routes = [
       });
 
       astop (rs, [
+         [function (s) {addPerf ('validation'); s.next (s.last);}],
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
             var allMode = b.tags.length === 0;
@@ -2790,6 +2805,7 @@ var routes = [
 
             mexec (s, multi);
          },
+         [function (s) {addPerf ('sunion/sinter'); s.next (s.last);}],
          function (s) {
             s.pivs = s.last [(yeartags.length ? 1 : 0) + dale.keys (tags).length];
             var multi = redis.multi (), ids = {};
@@ -2802,8 +2818,10 @@ var routes = [
                multi.hgetall ('piv:' + id);
                return id;
             });
+            addPerf ('getPivs node');
             mexec (s, multi);
          },
+         [function (s) {addPerf ('getPivs redis'); s.next (s.last);}],
          function (s) {
             var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
                if (! s.last [s.pivs.length + k] || s.last [s.pivs.length + k].owner !== rq.user.username) return;
@@ -2811,6 +2829,8 @@ var routes = [
             });
 
             s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
+
+            addPerf ('recentlyTagged');
 
             var output = {pivs: []};
 
@@ -2822,12 +2842,16 @@ var routes = [
                if (d >= mindate && d <= maxdate) output.pivs.push (piv);
             });
 
+            addPerf ('filterByDate');
+
             // Sort own pivs first.
             output.pivs.sort (function (a, b) {
                if (a.owner === rq.user.username) return -1;
                if (b.owner === rq.user.username) return 1;
                return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
             });
+
+            addPerf ('sortOwn');
 
             // To avoid returning duplicated piv if someone shares a piv you already have with you. Own piv has priority.
             var hashes = {};
@@ -2838,9 +2862,13 @@ var routes = [
                }
             });
 
+            addPerf ('hashes');
+
             if (b.updateLimit) output.pivs = dale.fil (output.pivs, undefined, function (piv) {
                if (piv.dateup <= b.updateLimit) return piv;
             });
+
+            addPerf ('updateLimit');
 
             // Sort pivs by criteria.
             output.pivs.sort (function (a, B) {
@@ -2848,6 +2876,8 @@ var routes = [
                var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
+
+            addPerf ('sortPivs');
 
             if (b.fromDate) {
                b.from = 1;
@@ -2858,6 +2888,7 @@ var routes = [
                   else                          return b.fromDate >= piv.dateup ? k : undefined;
                });
                b.to += fromIndex === undefined ? Infinity : fromIndex;
+               addPerf ('fromDate');
             }
 
             if (b.idsOnly) return reply (rs, 200, dale.go (output.pivs.slice (b.from - 1, b.to), function (piv) {return piv.id}));
@@ -2877,8 +2908,10 @@ var routes = [
             }));
 
             multi.get ('geo:' + rq.user.username);
+            addPerf ('getTags node');
             mexec (s, multi);
          },
+         [function (s) {addPerf ('getTags redis'); s.next (s.last);}],
          function (s) {
             // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
             if (last (s.last)) {
@@ -2889,6 +2922,7 @@ var routes = [
             a.seq (s, [
                // We assume that any ongoing uploads must be found in the first 20
                [H.getUploads, rq.user.username, {}, 20],
+               [function (s) {addPerf ('getUploads'); s.next (s.last);}],
                function (s) {
                   s.refreshQuery = dale.stop (s.last, true, function (v) {
                      return v.status === 'uploading';
@@ -2924,6 +2958,7 @@ var routes = [
                }
             ]);
          },
+         [function (s) {addPerf ('getAllPivsCount'); s.next (s.last);}],
          function (s) {
             s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0}, function (tag) {
                return [tag, 0];
@@ -2967,6 +3002,8 @@ var routes = [
                if (untagged) s.output.tags ['u::']++;
             });
             s.output.pivs = s.output.pivs.slice (b.from - 1, b.to);
+            addPerf ('buildOutput');
+            if (ENV) s.output.perf = computePerf ();
             reply (rs, 200, s.output);
          }
       ]);
@@ -3341,6 +3378,7 @@ var routes = [
 
             var getFilePage = function (s, nextPageToken) {
                a.seq (s, [
+                  [H.log, rq.user.username, {ev: 'importDebug', type: 'getFilePage start', nextPageToken: nextPageToken}],
                   [H.getGoogleToken, rq.user.username],
                   function (s) {
                      var fields = ['id', 'name', 'size', 'mimeType', 'createdTime', 'modifiedTime', 'owners', 'parents', 'originalFilename', 'trashed'];
@@ -3378,6 +3416,7 @@ var routes = [
                         }
 
                         a.seq (s, [
+                           [H.log, rq.user.username, {ev: 'importDebug', type: 'getFilePage got page', nfiles: dale.keys (RS.body.files).length}],
                            [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                            function (s) {
                               // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
@@ -3423,6 +3462,7 @@ var routes = [
             var getParentBatch = function (s, maxRequests) {
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
+                  [H.log, rq.user.username, {ev: 'importDebug', type: 'getParentBatch start', maxRequests: maxRequests, limits: limits}],
                   function (s) {
                      // QUERY LIMITS: daily: 1000m; per 100 seconds: 10k; per 100 seconds per user: 1k.
                      // don't extrapolate over user limit: 10 requests/second.
@@ -3450,6 +3490,7 @@ var routes = [
 
                      setLimit (batch.length);
                      hitit.one ({}, {timeout: 30, https: true, method: 'post', host: 'www.googleapis.com', path: 'batch/drive/v3', headers: {authorization: 'Bearer ' + s.token, 'content-type': 'multipart/mixed; boundary=' + boundary}, body: body, code: '*', apres: function (S, RQ, RS) {
+                        H.log (a.creat (), rq.user.username, {ev: 'importDebug', type: 'getParentBatch got folders', code: RS.code, message: RS.body && RS.body.message});
                         if (RS.code !== 200) {
                            // If we hit a rate limit error, wait 0.5 seconds and try again.
                            if (RS.body.code === 403 && type (RS.body.message) === 'string' && RS.body.message.match ('User Rate Limit Exceeded')) {
@@ -3489,6 +3530,7 @@ var routes = [
                         }
 
                         a.seq (s, [
+                           [H.log, rq.user.username, {ev: 'importDebug', type: 'getParentBatch OK', maxRequests: maxRequests, limits: limits}],
                            [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
                            function (s) {
                               // If there is no import process ongoing or this import was cancelled and a new one was started, don't do anything else.
@@ -4507,7 +4549,7 @@ if (cicek.isMaster && ENV) a.stop ([
          if (! s.dbfiles [s3file]) s.s3extra.push (s3file);
       });
       dale.go (s.fsfiles, function (v, fsfile) {
-         if (! s.dbfiles [fsfile]) s.fsextra.push (fsfile);
+         if (! s.dbfiles [fsfile] && ! fsfile.match (/^invalid/)) s.fsextra.push (fsfile);
       });
 
       // We only show the first 100 items to avoid making the email too big.

@@ -40,19 +40,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - server: check list of server vs import
+   - server/client: home view with pink button to go to home view on non-initial query
+   - client: show less year & country entries in sidebar
    - client: see info of piv
-   - client: rethink invite flow
-   - client: add button & modal for setting date
 
 Mono
-   - server/client: check if unnecessary queries are done on initial load of update box, see if there is a quick way to speedup query performance on both ends
    - client: sidebar overflow fix
+   - server/client: add button & modal for setting date
+   - client: new invite flow
+   - server: investigate performance improvements on large queries
    - server: consistency
-      - ignore invalids in consistency check
       - re-upload missing files in S3
       - clear s3:proc counter
-      - fix invalid s3 entries
+      - fix invalid s3 entries in s3:files
    - client: cannot go back from view pics to other views because of URL change
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - client: check what happens if connection is dropped while uploading
@@ -1023,7 +1023,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    10. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
 
 4. Pics
-   1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest'}`; otherwise, it sets `State.query.updateLimit` to the current time (to update the query to the present moment). It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
+   1. `change State.page`:if current page is not `pivs`, it does nothing. If there's no `Data.account`, it invokes `query account`. If there's no `State.query`, it initializes it to `{tags: [], sort: 'newest', updateLimit: INTEGER}`; otherwise, it sets `State.query.updateLimit` to the current time (to update the query to the present moment), unless the existing `updateLimit` is less than 100ms old. It also triggers a `change` in `State.selected` to mark the selected pivs if coming back from another view.
    2. `change State.query`:
       - If the path to the change is just `State` object (which only happens during initialization or logout), or `State.query.recentlyTagged`, or `State.query.update`, we don't do anything.
       - If the change is to `State.query.tags` or `State.query.sort`, we directly remove `State.query.fromDate` - this is done without an event to avoid triggering a `change` on `State.query.fromDate` and from there a call to `query pivs`. We also remove `State.query.update` and `State.query.updateLimit`.

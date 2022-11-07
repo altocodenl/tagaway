@@ -3390,8 +3390,8 @@ B.mrespond ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
+      else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
@@ -3488,8 +3488,8 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      var firstQuery = dale.keys (B.get ('Data', 'pivs')).length === 0;
-      var updateLimit = (query.update === 'auto' || firstQuery) ? undefined : query.updateLimit;
+      var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
+      var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
       B.call (x, 'post', 'query', {}, {
          tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
@@ -3511,9 +3511,9 @@ B.mrespond ([
          B.call (x, 'rem', 'State', 'querying');
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
-         if (query.update === undefined && rs.body.refreshQuery && ! firstQuery) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
+         if (query.update === undefined && rs.body.refreshQuery && ! noPivsYet) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
          if (query.update !== undefined && ! rs.body.refreshQuery && (updateLimit === undefined || t - updateLimit < 10)) B.call (x, 'rem', ['State', 'query'], 'update');
-         if (firstQuery && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+         if (noPivsYet && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
          B.call (x, 'query', 'tags');
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
@@ -3800,13 +3800,13 @@ B.mrespond ([
       if (! B.get ('State', 'queryURL')) return;
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
-         var changes;
+         var changes, oldValue = teishi.copy (B.get ('State', 'query'));
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (! query [k] || query [k] === B.get ('State', 'query', k)) return;
+            if (! query [k] || teishi.eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
-         if (changes) B.call (x, 'change', ['State', 'query']);
+         if (changes) B.call (x, 'change', ['State', 'query'], B.get ('State', 'query'), oldValue);
       }
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
@@ -4567,7 +4567,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
+                           ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                            ['div', {class: 'sidebar-header__filter-selected'}],
                         ]],
                      ]],
@@ -4637,7 +4637,7 @@ views.pics = function () {
                            var action = ['toggle', 'tag', tag];
                            if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
-                              tag = 'All pictures';
+                              tag = 'Everything';
                               action = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
@@ -4749,7 +4749,7 @@ views.pics = function () {
                         ['div', {class: 'sidebar-header'}, [
                            B.view (['State', 'selected'], function (selected) {
                               return ['h1', {class: 'sidebar-header__title'}, [
-                                 'Organize pictures ',
+                                 'Organize ',
                                  ['span', ['(', ['em', dale.keys (selected).length], ')']],
                               ]];
                            }),
@@ -4952,7 +4952,7 @@ views.pics = function () {
                                        else                  Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
 
                                        var showName = tag.replace (/^[a-z]::/, '');
-                                       if (tag === 'a::') showName = (tags.length === 0 ? 'All pictures ' : '') + '(' + pivTotal + ')';
+                                       if (tag === 'a::') showName = (tags.length === 0 ? 'Everything ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
