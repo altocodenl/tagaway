@@ -47,7 +47,6 @@ Tom
 Mono
    - client: sidebar overflow fix
    - server/client: add button & modal for setting date
-   - client: new invite flow
    - server: investigate performance improvements on large queries
    - server: consistency
       - re-upload missing files in S3
