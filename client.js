@@ -2573,6 +2573,32 @@ CSS.litc = [
       color: CSS.vars.grey,
       'font-size': CSS.typography.fontSize (0),
    }],
+   ['.file-info-modal', {
+      'background-color': 'white',
+      'margin-bottom': 300,
+      width: 400,
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': 10,
+   }],
+   ['file-info-modal-content'],
+   ['.file-info-modal-content-title', {
+      'text-align': 'center',
+      'color': CSS.vars ['grey--darker'],
+      'font-size': CSS.typography.fontSize (2),
+      'padding-top, padding-bottom': CSS.vars ['padding--m'],
+   }],
+   ['.file-info-modal-content-data', {
+      'padding-bottom': CSS.vars ['padding--m'],
+   }],
+   ['.file-info-modal-content-data-table'],
+   ['.file-info-modal-content-data-table-left-column', {
+      width: .5,
+      'padding-left': CSS.vars ['padding--m'],
+      'color': CSS.vars ['grey--darker'],
+   }],
+   ['.file-info-modal-content-data-table-right-column', {
+      'padding-right': CSS.vars ['padding--m'],
+   }],
    ['.fullscreen__action:hover .fullscreen__action-text', {color: CSS.vars ['grey--lightest']}],
    ['.no-svg svg', {display: 'none'}],
    // FEEDBACK BOX
@@ -5187,9 +5213,65 @@ views.open = function () {
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],
             ['div', {class: 'fullscreen__action', style: style ({})}, [
-                  ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('infoIcon', 24)],
-                  ['div', {class: 'fullscreen__action-text'}, 'Info'],
+               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('infoIcon', 24)],
+               ['div', {class: 'fullscreen__action-text'}, 'Info'],
+            ]],
+            ['div', {class:'file-info-modal'}, [
+               ['div', {class: 'cross-button', style: style({'float': 'right'})}, [
+                  ['span', {class: 'cross-button__cross'}]
                ]],
+               ['div', {class: 'file-info-modal-content'}, [
+                  ['div', {class: 'file-info-modal-content-title'}, 'File info'],
+                  ['div', {class: 'file-info-modal-content-data'}, [
+                     ['table', {class: 'file-info-modal-content-data-table'}, [
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'File name: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '12345678.png']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Type: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, 'PNG/Image']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Last modified date: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '22/08/2019 22:41:32 UTM']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Create date: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '22/08/2019 22:41:32 UTM']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Date/Time Original: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '22/08/2019 22:41:32 UTM']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column', style: style({'padding-top': CSS.vars ['padding--s']})}, 'Location:'],
+                           ['td']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Lon: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '25.802541666666666'],
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Lat: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '-80.1876']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column', style: style({'padding-top': CSS.vars ['padding--s']})}, 'Dimensions: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '4000x3000']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Size: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '1.9 MB']
+                        ]],
+                        ['tr', [
+                           ['td', {class: 'file-info-modal-content-data-table-left-column'}, 'Size in bytes: '],
+                           ['td', {class: 'file-info-modal-content-data-table-right-column'}, '1,898,897 bytes']
+                        ]]
+                     ]]
+                  ]]
+               ]]
+            ]],   
             B.prod ? [] : ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
          ]],
          ['div', {class: 'fullscreen__count'}, [
