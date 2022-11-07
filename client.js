@@ -2575,7 +2575,7 @@ CSS.litc = [
    }],
    ['.file-info-modal', {
       'background-color': 'white',
-      'margin-bottom': 300,
+      'margin-bottom': 1000,
       width: 400,
       'border': 'solid 1px' + CSS.vars ['color--one'],
       'border-radius': 10,
