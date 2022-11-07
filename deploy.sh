@@ -47,6 +47,7 @@ fi
 if [ "$2" == "makeConsistent" ] ; then
    ssh $HOST "cd $FOLDER && mg stop"
    ssh $HOST "cd $FOLDER && node server $1 makeConsistent"
+   ssh $HOST "cd $FOLDER && mg restart"
    exit 0
 fi
 
