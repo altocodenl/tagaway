@@ -2719,7 +2719,19 @@ var routes = [
 
    ['post', 'query', function (rq, rs) {
 
-      var b = rq.body;
+      var b = rq.body, perf = [Date.now ()], addPerf = function (tag) {
+         perf.push ([tag, Date.now ()]);
+      }, computePerf = function () {
+         var output = [['total', 0]], t = perf [0];
+         dale.go (perf.slice (1), function (v, k) {
+            output.push ([v [0], v [1] - t]);
+            output [0] [1] += v [1] - t;
+            t = v [1];
+         });
+         return dale.obj (output.sort (function (a, b) {
+            return b [1] - a [1];
+         }), function (v) {return [v [0], v [1]]});
+      };
 
       if (stop (rs, [
          ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'to', 'recentlyTagged', 'idsOnly', 'fromDate', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
@@ -2756,6 +2768,7 @@ var routes = [
       });
 
       astop (rs, [
+         [function (s) {addPerf ('validation'); s.next (s.last);}],
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
             var allMode = b.tags.length === 0;
@@ -2792,6 +2805,7 @@ var routes = [
 
             mexec (s, multi);
          },
+         [function (s) {addPerf ('sunion/sinter'); s.next (s.last);}],
          function (s) {
             s.pivs = s.last [(yeartags.length ? 1 : 0) + dale.keys (tags).length];
             var multi = redis.multi (), ids = {};
@@ -2804,8 +2818,10 @@ var routes = [
                multi.hgetall ('piv:' + id);
                return id;
             });
+            addPerf ('getPivs node');
             mexec (s, multi);
          },
+         [function (s) {addPerf ('getPivs redis'); s.next (s.last);}],
          function (s) {
             var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
                if (! s.last [s.pivs.length + k] || s.last [s.pivs.length + k].owner !== rq.user.username) return;
@@ -2813,6 +2829,8 @@ var routes = [
             });
 
             s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
+
+            addPerf ('recentlyTagged');
 
             var output = {pivs: []};
 
@@ -2824,12 +2842,16 @@ var routes = [
                if (d >= mindate && d <= maxdate) output.pivs.push (piv);
             });
 
+            addPerf ('filterByDate');
+
             // Sort own pivs first.
             output.pivs.sort (function (a, b) {
                if (a.owner === rq.user.username) return -1;
                if (b.owner === rq.user.username) return 1;
                return (a.owner < b.owner ? -1 : (a.owner > b.owner ? 1 : 0));
             });
+
+            addPerf ('sortOwn');
 
             // To avoid returning duplicated piv if someone shares a piv you already have with you. Own piv has priority.
             var hashes = {};
@@ -2840,9 +2862,13 @@ var routes = [
                }
             });
 
+            addPerf ('hashes');
+
             if (b.updateLimit) output.pivs = dale.fil (output.pivs, undefined, function (piv) {
                if (piv.dateup <= b.updateLimit) return piv;
             });
+
+            addPerf ('updateLimit');
 
             // Sort pivs by criteria.
             output.pivs.sort (function (a, B) {
@@ -2850,6 +2876,8 @@ var routes = [
                var d2 = parseInt (B [b.sort === 'upload' ? 'dateup' : 'date']);
                return b.sort === 'oldest' ? d1 - d2 : d2 - d1;
             });
+
+            addPerf ('sortPivs');
 
             if (b.fromDate) {
                b.from = 1;
@@ -2860,6 +2888,7 @@ var routes = [
                   else                          return b.fromDate >= piv.dateup ? k : undefined;
                });
                b.to += fromIndex === undefined ? Infinity : fromIndex;
+               addPerf ('fromDate');
             }
 
             if (b.idsOnly) return reply (rs, 200, dale.go (output.pivs.slice (b.from - 1, b.to), function (piv) {return piv.id}));
@@ -2879,8 +2908,10 @@ var routes = [
             }));
 
             multi.get ('geo:' + rq.user.username);
+            addPerf ('getTags node');
             mexec (s, multi);
          },
+         [function (s) {addPerf ('getTags redis'); s.next (s.last);}],
          function (s) {
             // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
             if (last (s.last)) {
@@ -2891,6 +2922,7 @@ var routes = [
             a.seq (s, [
                // We assume that any ongoing uploads must be found in the first 20
                [H.getUploads, rq.user.username, {}, 20],
+               [function (s) {addPerf ('getUploads'); s.next (s.last);}],
                function (s) {
                   s.refreshQuery = dale.stop (s.last, true, function (v) {
                      return v.status === 'uploading';
@@ -2926,6 +2958,7 @@ var routes = [
                }
             ]);
          },
+         [function (s) {addPerf ('getAllPivsCount'); s.next (s.last);}],
          function (s) {
             s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0}, function (tag) {
                return [tag, 0];
@@ -2969,6 +3002,8 @@ var routes = [
                if (untagged) s.output.tags ['u::']++;
             });
             s.output.pivs = s.output.pivs.slice (b.from - 1, b.to);
+            addPerf ('buildOutput');
+            s.output.perf = computePerf ();
             reply (rs, 200, s.output);
          }
       ]);
