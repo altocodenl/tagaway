@@ -4375,6 +4375,7 @@ views.signup = function () {
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
+                  ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('request', 'invite')}, 'Don\'t have an account? Request an invite.'],
                ]]
             ]]
          ]],
