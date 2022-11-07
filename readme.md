@@ -45,10 +45,10 @@ Tom
 
 Mono
    - client: see info of piv
-   - server: investigate performance improvements on large queries
-   - client: add button & modal for setting date
    - client: sidebar overflow fix
+   - server/client: add button & modal for setting date
    - client: new invite flow
+   - server: investigate performance improvements on large queries
    - server: consistency
       - re-upload missing files in S3
       - clear s3:proc counter
