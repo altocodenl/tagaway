@@ -531,8 +531,7 @@ CSS.litc = [
       'bottom, left': 0,
       height: 54,
       width: 300, // sidebar width
-      // display: 'flex',
-      display: 'none',
+      display: 'flex',
       'flex-direction': 'column-reverse', // FIX FOR '.done-tagging-button'
       'background-color': '#ffffff', // FIX FOR '.done-tagging-button'
       'align-items': 'center',
@@ -3457,6 +3456,14 @@ B.mrespond ([
             });
          });
       }, 0);
+
+      // In Safari, overflow-x is basically broken. This fixes it. 50ms is the shortest amount of time that seems to sidestep the problem.
+      if (! selectedPivs) {
+         c.set ('.sidebar__footer', {display: 'none'}, true);
+         setTimeout (function () {
+            c.set ('.sidebar__footer', {display: 'flex'}, true);
+         }, 50);
+      }
 
       if (! selectedPivs && B.get ('State', 'query', 'recentlyTagged')) {
          B.call (x, 'rem', ['State', 'query'], 'recentlyTagged');
