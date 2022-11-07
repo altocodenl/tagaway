@@ -3003,7 +3003,7 @@ var routes = [
             });
             s.output.pivs = s.output.pivs.slice (b.from - 1, b.to);
             addPerf ('buildOutput');
-            s.output.perf = computePerf ();
+            if (ENV) s.output.perf = computePerf ();
             reply (rs, 200, s.output);
          }
       ]);
