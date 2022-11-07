@@ -42,9 +42,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server/client: home view with pink button to go to home view on non-initial query
    - client: show less year & country entries in sidebar
+   - client: see info of piv
 
 Mono
-   - client: see info of piv
    - client: sidebar overflow fix
    - server/client: add button & modal for setting date
    - client: new invite flow
