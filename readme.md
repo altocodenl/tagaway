@@ -45,7 +45,6 @@ Tom
    - client: see info of piv
 
 Mono
-   - client: sidebar overflow fix
    - server/client: add button & modal for setting date
    - server: investigate performance improvements on large queries
    - server: consistency
