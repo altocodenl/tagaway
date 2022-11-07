@@ -79,10 +79,10 @@ module.exports = {
          message: function (username, token, email) {
             return TEMPLATE (username, [
                'You have been officially invited to join ac;pic. You’ll be sent to our website. When you get there, please click on the “Have an invite?” button on the upper right and follow the instructions. ',
-               // ['img', {src: 'assets/img/click-here-600x200.png'}],
+               ['img', {src: DOMAIN + 'assets/img/click-here-600x200.png'}],
                ['br'],
                'Ready? ',
-               ['a', {href: DOMAIN + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
+               ['a', {href: DOMAIN.replace (/app\/$/, '') + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
             ]);
          }
       },
