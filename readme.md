@@ -44,7 +44,6 @@ Tom
    - client: show less year & country entries in sidebar
 
 Mono
-   - client: change texts: everything, organize, view (remove?)
    - client: see info of piv
    - server: investigate performance improvements on large queries
    - client: add button & modal for setting date

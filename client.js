@@ -4565,7 +4565,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
+                           ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                            ['div', {class: 'sidebar-header__filter-selected'}],
                         ]],
                      ]],
@@ -4635,7 +4635,7 @@ views.pics = function () {
                            var action = ['toggle', 'tag', tag];
                            if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
-                              tag = 'All pictures';
+                              tag = 'Everything';
                               action = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
@@ -4747,7 +4747,7 @@ views.pics = function () {
                         ['div', {class: 'sidebar-header'}, [
                            B.view (['State', 'selected'], function (selected) {
                               return ['h1', {class: 'sidebar-header__title'}, [
-                                 'Organize pictures ',
+                                 'Organize ',
                                  ['span', ['(', ['em', dale.keys (selected).length], ')']],
                               ]];
                            }),
@@ -4950,7 +4950,7 @@ views.pics = function () {
                                        else                  Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
 
                                        var showName = tag.replace (/^[a-z]::/, '');
-                                       if (tag === 'a::') showName = (tags.length === 0 ? 'All pictures ' : '') + '(' + pivTotal + ')';
+                                       if (tag === 'a::') showName = (tags.length === 0 ? 'Everything ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
