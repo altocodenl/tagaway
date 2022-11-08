@@ -18,6 +18,11 @@ if [ "$2" == "client" ] ; then
    exit 0
 fi
 
+if [ "$2" == "client2" ] ; then
+   scp client.js $HOST:$FOLDER/client2.js
+   exit 0
+fi
+
 if [ "$2" == "admin" ] ; then
    scp admin.js $HOST:$FOLDER
    exit 0
@@ -42,6 +47,7 @@ fi
 if [ "$2" == "makeConsistent" ] ; then
    ssh $HOST "cd $FOLDER && mg stop"
    ssh $HOST "cd $FOLDER && node server $1 makeConsistent"
+   ssh $HOST "cd $FOLDER && mg restart"
    exit 0
 fi
 

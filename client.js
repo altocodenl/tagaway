@@ -482,7 +482,8 @@ CSS.litc = [
       'border-right': CSS.vars ['border-color'] + ' 1px solid',
       height: 'calc(100vh - 58px)',
       'background-color': '#fff',
-      'overflow-x': 'hidden',
+      // 'overflow-x': 'hidden',
+      'overflow-x': 'auto',
    }],
    ['.sidebar__inner', {
       width: '200%',
@@ -1058,6 +1059,10 @@ CSS.litc = [
       ['.tag--attached:hover', [
          ['.tag-actions__item--attached', {display: 'none'}],
          ['.tag-actions__item--untag', {display: 'flex'}],
+      ]],
+      ['.tag--unattached:hover', [
+         ['.tag-actions__item--attach', {display: 'none'}],
+         ['.tag-actions__item--attached', {display: 'flex'}],
       ]]
    ]],
    // *** tag-share.scss ***
@@ -2673,7 +2678,7 @@ CSS.litc = [
       }],
       ['.enter-form__input', {
          'border, background': 'none',
-         'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
+         'border-bottom': '1px solid ' + CSS.vars ['grey--light'],
          'font-size': 16,
          width: 1,
          'padding-top, padding-bottom': CSS.typography.spaceVer (1),
@@ -2748,11 +2753,12 @@ CSS.litc = [
          display: 'flex',
          'flex-direction': 'column',
          'justify-content': 'center',
-         'background-color': CSS.vars ['highlight--selection'],
+         // 'background-color': CSS.vars ['highlight--selection'],
          'padding-top': CSS.typography.spaceVer (3),
          'padding-bottom': CSS.typography.spaceVer (3.5),
          'padding-left, padding-right': 60,
          'border-radius': CSS.vars ['border-radius--m'],
+         border: '1px solid ' + CSS.vars ['grey--light'],
       }],
       media ('screen and (max-width: 767px)', ['.auth-card__inner', {
          'padding-top': CSS.typography.spaceVer (2.25),
@@ -3416,8 +3422,8 @@ B.mrespond ([
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
+      else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
@@ -3482,6 +3488,14 @@ B.mrespond ([
          });
       }, 0);
 
+      // In Safari, overflow-x is basically broken. This fixes it. 50ms is the shortest amount of time that seems to sidestep the problem.
+      if (! selectedPivs) {
+         c.set ('.sidebar__footer', {display: 'none'}, true);
+         setTimeout (function () {
+            c.set ('.sidebar__footer', {display: 'flex'}, true);
+         }, 50);
+      }
+
       if (! selectedPivs && B.get ('State', 'query', 'recentlyTagged')) {
          B.call (x, 'rem', ['State', 'query'], 'recentlyTagged');
          B.call (x, 'snackbar', 'green', 'You can find your pictures under the tags you just used.');
@@ -3514,15 +3528,15 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      var firstQuery = dale.keys (B.get ('Data', 'pivs')).length === 0;
-      var updateLimit = (query.update === 'auto' || firstQuery) ? undefined : query.updateLimit;
+      var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
+      var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
       B.call (x, 'post', 'query', {}, {
          tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
          sort:           query.sort,
          from:           query.fromDate ? undefined : 1,
          fromDate:       query.fromDate,
-         to:             Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
+         to:             options.selectAll ? 1000000000 : Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
          recentlyTagged: query.recentlyTagged,
          mindate:        mindate,
          maxdate:        maxdate,
@@ -3537,9 +3551,9 @@ B.mrespond ([
          B.call (x, 'rem', 'State', 'querying');
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
-         if (query.update === undefined && rs.body.refreshQuery && ! firstQuery) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
+         if (query.update === undefined && rs.body.refreshQuery && ! noPivsYet) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
          if (query.update !== undefined && ! rs.body.refreshQuery && (updateLimit === undefined || t - updateLimit < 10)) B.call (x, 'rem', ['State', 'query'], 'update');
-         if (firstQuery && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+         if (noPivsYet && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
          B.call (x, 'query', 'tags');
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
@@ -3562,12 +3576,11 @@ B.mrespond ([
             B.call (x, 'query', 'pivs', {refresh: true});
          }, 1500));
 
-
          // Perform mute updates
          var selected = B.get ('State', 'selected') || {};
          // Update the selection to only include pivs that are returned in the current query
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
-            if (selected [piv.id]) return [piv.id, true];
+            if (options.selectAll || selected [piv.id]) return [piv.id, true];
          }));
          // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScroll will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
          var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
@@ -3587,6 +3600,11 @@ B.mrespond ([
             else                              return query.fromDate >= piv.dateup ? piv.start + offset : undefined;
          });
          B.call ('scroll', [], scrollTo);
+
+         if (options.selectAll) {
+            B.call (x, 'clear', 'snackbar');
+            B.call (x, 'change', ['State', 'selected']);
+         }
 
          var open = B.get ('State', 'open');
 
@@ -3668,12 +3686,11 @@ B.mrespond ([
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
    }],
    ['select', 'all', function (x) {
-      var query = B.get ('State', 'query');
-      // query.sort, query.from and query.to are irrelevant, we just send them for the request to be valid.
-      B.call (x, 'post', 'query', {}, {idsOnly: true, tags: query.tags, sort: query.sort, from: 1, to: 1000000000, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
-         B.call (x, 'set', ['State', 'selected'], dale.obj (rs.body, function (id) {return [id, true]}));
-      });
+      B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
+         return [piv.id, true];
+      }));
+      if (B.get ('Data', 'pivTotal') > 2000) B.call (x, 'snackbar', 'yellow', 'Selecting all, please wait...', true);
+      B.call (x, 'query', 'pivs', {selectAll: true});
    }],
    ['query', 'tags', function (x) {
       B.call (x, 'get', 'tags', {}, '', function (x, error, rs) {
@@ -3706,6 +3723,9 @@ B.mrespond ([
       var payload = {tag: tag, ids: ids, del: del}
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+
+         if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
+
          if (! del) B.call (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
@@ -3820,13 +3840,13 @@ B.mrespond ([
       if (! B.get ('State', 'queryURL')) return;
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
-         var changes;
+         var changes, oldValue = teishi.copy (B.get ('State', 'query'));
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (! query [k] || query [k] === B.get ('State', 'query', k)) return;
+            if (! query [k] || teishi.eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
-         if (changes) B.call (x, 'change', ['State', 'query']);
+         if (changes) B.call (x, 'change', ['State', 'query'], B.get ('State', 'query'), oldValue);
       }
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
@@ -4393,7 +4413,7 @@ views.login = function () {
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
-                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+                  ['p', {class: 'auth-card__header-text'}, 'Your life’s journey, organized.'],
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
@@ -4417,7 +4437,7 @@ views.signup = function () {
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
-                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+                  ['p', {class: 'auth-card__header-text'}, 'Your life’s journey, organized.'],
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
@@ -4425,6 +4445,7 @@ views.signup = function () {
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
+                  ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('request', 'invite')}, 'Don\'t have an account? Request an invite.'],
                ]]
             ]]
          ]],
@@ -4616,7 +4637,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
+                           ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                            ['div', {class: 'sidebar-header__filter-selected'}],
                         ]],
                      ]],
@@ -4686,7 +4707,7 @@ views.pics = function () {
                            var action = ['toggle', 'tag', tag];
                            if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
-                              tag = 'All pictures';
+                              tag = 'Everything';
                               action = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
@@ -4798,7 +4819,7 @@ views.pics = function () {
                         ['div', {class: 'sidebar-header'}, [
                            B.view (['State', 'selected'], function (selected) {
                               return ['h1', {class: 'sidebar-header__title'}, [
-                                 'Organize pictures ',
+                                 'Organize ',
                                  ['span', ['(', ['em', dale.keys (selected).length], ')']],
                               ]];
                            }),
@@ -4866,7 +4887,7 @@ views.pics = function () {
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
                               var attached = selectedTags [tag] === dale.keys (selected).length;
-                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
+                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ' tag--unattached'), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
                                  ['span', {class: 'tag__title'}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
@@ -4993,16 +5014,19 @@ views.pics = function () {
                            ]],
                            ['div', {class: 'pictures-header__action-bar'}, [
                               ['div', {class: 'pictures-header__selected-tags'}, [
-                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal']], function (tags, pivTotal) {
+                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal'], ['State', 'querying']], function (tags, pivTotal, querying) {
                                     return ['ul', {class: 'tag-list-horizontal'}, dale.go (['a::', 's::'].concat (tags), function (tag) {
-                                       if (B.get ('State', 'querying')) pivTotal = '...';
+                                       if (querying) {
+                                          pivTotal = '...';
+                                          if (querying.options && querying.options.selectAll) selected = '...';
+                                       }
                                        if (selected === 0 && tag === 's::') return;
                                        var Class = 'tag tag-list-horizontal__item ';
                                        if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
                                        else                  Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
 
                                        var showName = tag.replace (/^[a-z]::/, '');
-                                       if (tag === 'a::') showName = (tags.length === 0 ? 'All pictures ' : '') + '(' + pivTotal + ')';
+                                       if (tag === 'a::') showName = (tags.length === 0 ? 'Everything ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
