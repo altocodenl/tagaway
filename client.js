@@ -2574,8 +2574,9 @@ CSS.litc = [
       'font-size': CSS.typography.fontSize (0),
    }],
    ['.file-info-modal', {
+      'position': 'fixed',
       'background-color': 'white',
-      'margin-bottom': 1000,
+      'z-index': '1',
       width: 400,
       'border': 'solid 1px' + CSS.vars ['color--one'],
       'border-radius': 10,
@@ -5193,30 +5194,7 @@ views.open = function () {
          ['style', media ('screen and (max-width: 767px)', [
             ['.fullscreen__image-container', {padding: 0}],
          ])],
-         ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
-            if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/M/' + piv.id, alt: 'picture'}];
-            if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
-            if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
-            return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true}];
-         }) ()],
-         ['div', {class: 'fullscreen__actions'}, [
-               // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
-               //    ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
-               //    ['div', {class: 'fullscreen__action-text'}, 'Share'],
-               // ]],
-            H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
-               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
-               ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
-            ]]),
-            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('open', 'location', piv)}, [
-               ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
-               ['div', {class: 'fullscreen__action-text'}, 'Location'],
-            ]],
-            ['div', {class: 'fullscreen__action', style: style ({})}, [
-               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('infoIcon', 24)],
-               ['div', {class: 'fullscreen__action-text'}, 'Info'],
-            ]],
-            ['div', {class:'file-info-modal'}, [
+         ['div', {class:'file-info-modal'}, [
                ['div', {class: 'cross-button', style: style({'float': 'right'})}, [
                   ['span', {class: 'cross-button__cross'}]
                ]],
@@ -5272,6 +5250,29 @@ views.open = function () {
                   ]]
                ]]
             ]],   
+         ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
+            if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/M/' + piv.id, alt: 'picture'}];
+            if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
+            if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
+            return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true}];
+         }) ()],
+         ['div', {class: 'fullscreen__actions'}, [
+               // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
+               //    ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
+               //    ['div', {class: 'fullscreen__action-text'}, 'Share'],
+               // ]],
+            H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
+               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
+               ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
+            ]]),
+            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('open', 'location', piv)}, [
+               ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
+               ['div', {class: 'fullscreen__action-text'}, 'Location'],
+            ]],
+            ['div', {class: 'fullscreen__action', style: style ({})}, [
+               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('infoIcon', 24)],
+               ['div', {class: 'fullscreen__action-text'}, 'Info'],
+            ]],
             B.prod ? [] : ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
          ]],
          ['div', {class: 'fullscreen__count'}, [
