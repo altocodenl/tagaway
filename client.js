@@ -4485,9 +4485,61 @@ views.header = function (showUpload, showImport) {
    ]];
 }
 
-// *** EMPTY VIEW ***
+// *** HOME VIEW ***
 
 views.empty = function () {
+   return ['div', [
+      // SIDEBAR
+      ['div', {class: 'sidebar'}, [
+         ['div', {class: 'sidebar__header'}, [
+            ['div', {class: 'sidebar-header'}, [
+               ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
+            ]],
+         ]],
+         ['div', {class: 'sidebar__tip'}, [
+            // TIP
+            ['div', {class: 'tip'}, [
+               ['div', {class: 'tip__header'}, [
+                  ['img', {class: 'tip__icon', src: 'img/icon-tip.svg'}],
+                  ['h5', {class: 'tip__title'}, 'Tip!'],
+               ]],
+               // TODO: fix redraw bug that carries through click to anchor
+               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {onclick: B.ev ('goto', 'page', 'upload')}, 'Upload'], ' some photos and add some tags.']],
+            ]],
+         ]],
+         ['div', {class: 'sidebar__footer'}, [
+            ['div', {class: 'sidebar-search', style: style ({'display':'none'})}, [
+               ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
+               H.putSvg ('sidebarSearch'),
+            ]],
+         ]],
+      ]],
+      // MAIN
+      ['div', {class: 'main'}, [
+         ['div', {class: 'main__inner'}, [
+            // GUIDE
+            ['div', {class: 'guide'}, [
+               ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
+               ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
+               ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
+               ['div', [
+                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, [H.putSvg ('cloudImport'), 'Import pictures']],
+                  ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'), 'Upload pictures']],
+               ]],
+               ['p', {class: 'guide__text', style: style({'margin-top': '20px'})}, 'Or download any of the mobile uploaders.'],
+               ['div', [
+                  ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
+                  ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
+               ]]
+            ]],
+         ]],
+      ]],
+   ]];
+}
+
+// *** EMPTY VIEW ***
+
+views.empty2 = function () {
    return ['div', [
       // SIDEBAR
       ['div', {class: 'sidebar'}, [
