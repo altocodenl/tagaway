@@ -972,7 +972,6 @@ H.parseDate = function (date) {
    return -1;
 }
 
-
 H.addTags = function (s, tags, username, id) {
    // We add the tags of this piv to those of the identical piv already existing
    var multi = redis.multi ();
@@ -985,8 +984,26 @@ H.addTags = function (s, tags, username, id) {
    mexec (s, multi);
 }
 
+// Takes a piv, a new date and a multi redis operation.
+H.updateDateTags = function (piv, oldDate, newDate, multi) {
+   var oldYearTag  = 'd::'  + new Date (oldDate).getUTCFullYear ();
+   var oldMonthTag = 'd::M' + (new Date (oldDate).getUTCMonth () + 1);
+   var newYearTag  = 'd::'  + new Date (newDate).getUTCFullYear ();
+   var newMonthTag = 'd::M' + (new Date (newDate).getUTCMonth () + 1);
+
+   dale.go ([[oldYearTag, newYearTag], [oldMonthTag, newMonthTag]], function (pair) {
+      if (pair [0] === pair [1]) return;
+      multi.sadd ('pivt:' + piv.id, pair [1]);
+      multi.srem ('pivt:' + piv.id, pair [0]);
+      multi.sadd ('tag:'  + piv.owner + ':' + pair [1], piv.id);
+      multi.srem ('tag:'  + piv.owner + ':' + pair [0], piv.id);
+      multi.sadd ('tags:' + piv.owner, pair [1]);
+      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has the old year or month tag.
+   });
+}
+
 // Updates piv.dates if there are new dates that have different values than those already existing.
-// Updates piv.date if any of the new dates is the existing piv date is not from a Date/Time Original metadata tag AND lower than the existing date of the piv. In that case, it also updates piv.dateSource and optionally the year tags for the piv.
+// Updates piv.date if any of the new dates in the existing piv date is not from a Date/Time Original metadata tag AND lower than the existing date of the piv. In that case, it also updates piv.dateSource and optionally the year tags for the piv.
 H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified, newDates) {
    var date = parseInt (piv.date), dates = JSON.parse (piv.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
    var key = repeatedOrAlreadyUploaded + ':' + Date.now ();
@@ -1030,20 +1047,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       }
    }
 
-   var oldYearTag  = 'd::'  + new Date (date).getUTCFullYear ();
-   var oldMonthTag = 'd::M' + (new Date (date).getUTCMonth () + 1);
-   var newYearTag  = 'd::'  + new Date (parseInt (piv.date)).getUTCFullYear ();
-   var newMonthTag = 'd::M' + (new Date (parseInt (piv.date)).getUTCMonth () + 1);
-
-   dale.go ([[oldYearTag, newYearTag], [oldMonthTag, newMonthTag]], function (pair) {
-      if (pair [0] === pair [1]) return;
-      multi.sadd ('pivt:' + piv.id, pair [1]);
-      multi.srem ('pivt:' + piv.id, pair [0]);
-      multi.sadd ('tag:'  + piv.owner + ':' + pair [1], piv.id);
-      multi.srem ('tag:'  + piv.owner + ':' + pair [0], piv.id);
-      multi.sadd ('tags:' + piv.owner, pair [1]);
-      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has the old year or month tag.
-   });
+   H.updateDateTags (piv, date, parseInt (piv.date), multi);
    mexec (s, multi);
 }
 
@@ -2008,6 +2012,7 @@ var routes = [
                ];
             }),
             ['body.total', b.total, 'integer'],
+            // Range is years 1970-2100
             ['body.total', b.total, {min: 0}, teishi.test.range],
             ['body.alreadyImported', b.alreadyImported, ['integer', 'undefined'], 'oneOf'],
             b.alreadyImported === undefined ? [] : ['body.alreadyImported', b.alreadyImported, {min: 1}, teishi.test.range],
@@ -2599,7 +2604,7 @@ var routes = [
          function (s) {
             var multi = redis.multi ();
 
-            if (dale.stopNot (s.last, undefined, function (piv) {
+            if (dale.stop (s.last, true, function (piv) {
                if (piv === null || piv.owner !== rq.user.username) {
                   reply (rs, 404);
                   return true;
@@ -2619,6 +2624,56 @@ var routes = [
             mexec (s, multi);
          },
          [H.log, rq.user.username, {ev: 'rotate', ids: b.ids, deg: b.deg}],
+         [reply, rs, 200],
+      ]);
+   }],
+
+   // *** CHANGE DATE ***
+
+   ['post', 'date', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids', 'date'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+         function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
+         ['body.date', b.date, 'integer'],
+         ['body.date', b.date, {min: 0, max: 4133980799999}, teishi.test.range],
+      ])) return;
+
+      var multi = redis.multi (), seen = dale.obj (b.ids, function (id) {
+         multi.hgetall ('piv:' + id);
+         return [id, true];
+      });
+
+      if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+
+      astop (rs, [
+         [mexec, multi],
+         function (s) {
+            var multi = redis.multi ();
+
+            if (dale.stop (s.last, true, function (piv) {
+               if (piv === null || piv.owner !== rq.user.username) {
+                  reply (rs, 404);
+                  return true;
+               }
+
+               var dates = JSON.parse (piv.dates);
+               // We respect the existing offset from midnight to avoid setting multiple pivs in the exact same moment.
+               var offset = parseInt (piv.date) % 86400000;
+               dates.userDate = b.date;
+               multi.hmset ('piv:' + piv.id, {date: b.date + offset, dateSource: 'userDate', dates: JSON.stringify (dates)});
+
+               H.updateDateTags (piv, parseInt (piv.date), b.date, multi);
+
+            })) return;
+
+            mexec (s, multi);
+         },
+         [H.log, rq.user.username, {ev: 'date', ids: b.ids, date: b.date}],
          [reply, rs, 200],
       ]);
    }],
@@ -2655,7 +2710,7 @@ var routes = [
          function (s) {
             var multi = redis.multi ();
 
-            if (dale.stopNot (s.last, undefined, function (owner, k) {
+            if (dale.stop (s.last, true, function (owner, k) {
                if (k % 2 !== 0) return;
                if (owner !== rq.user.username) {
                   reply (rs, 404);
