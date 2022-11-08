@@ -982,9 +982,11 @@ CSS.litc = [
    // Tag actions
    ['.tag-actions', {
       position: 'absolute',
-      display: 'inline-block',
+      // display: 'inline-block',
+      display: 'inline-flex',
       top: 0.5,
-      right: 0,
+      // right: 0,
+      right: 15,
       transform: 'translateY(-50%)',
       'width, height': 24,
       'border-radius': 20,
@@ -1026,6 +1028,12 @@ CSS.litc = [
    ['.tag-actions__item-icon', {
       display: 'inline-block',
       'width, height': 24,
+   }],
+   ['.tag-actions__item--view-query', {
+      'display': 'flex',
+      'background-color': CSS.vars ['grey'],
+      fill: '#fff',
+      'margin-right': CSS.vars ['padding--xs'],
    }],
    // Tag actions -- View pictures
    ['.app-pictures', [
@@ -4828,11 +4836,12 @@ views.pics = function () {
                               var attached = selectedTags [tag] === dale.keys (selected).length;
                               return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ' tag--unattached'), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
-                                 ['span', {class: 'tag__title'}, tag],
+                                 ['span', {class: 'tag__title', style: style({'width': 200})}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--view-query'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag', 24)],
