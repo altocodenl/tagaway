@@ -41,6 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 Tom
    - server/client: home view with pink button to go to home view on non-initial query
+   - client: add button to add tag to query on organize view
    - client: show less year & country entries in sidebar
    - client: see info of piv
 
