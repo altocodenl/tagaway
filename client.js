@@ -3637,11 +3637,12 @@ B.mrespond ([
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
-   ['toggle', 'tag', function (x, tag) {
+   ['toggle', 'tag', function (x, tag, addOnly) {
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
 
       // Tag is removed
       if (index > -1) {
+         if (addOnly) return;
          if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
          if (! H.isYearTag (tag)) return B.call (x, 'rem', ['State', 'query', 'tags'], index);
          return B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
@@ -4841,7 +4842,7 @@ views.pics = function () {
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
-                                       ['div', {class: 'tag-actions__item tag-actions__item--view-query'}, H.putSvg ('itemSelected', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--view-query', onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag, true])}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag', 24)],
