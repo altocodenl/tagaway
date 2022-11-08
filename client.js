@@ -2628,6 +2628,7 @@ CSS.litc = [
       'padding-bottom': CSS.vars ['padding--m'],
       // 'font-weight': CSS.vars.fontPrimarySemiBold,
       'font-weight': CSS.vars.fontPrimaryMedium,
+      'display': 'inline-flex',
       'cursor': 'text',
    }],
    // *** UPDATE QUERY BOX ***
@@ -4380,11 +4381,17 @@ views.date = function () {
                   ['span', ' selected pics to:']
                ]],
                ['div', {class: 'change-date-box-input-date'}, [
-                  ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'd']), placeholder: 'DD'}],
+                  ['span', {style: style({'width': 30, 'margin-right': '-2px'})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'd']), placeholder: 'DD'}]
+                  ]],
                   ['span', '/'],
-                  ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'm']), placeholder: 'MM'}],
+                  ['span', {style: style({'width': 30})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'm']), placeholder: 'MM'}]
+                  ]],
                   ['span', '/'],
-                  ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
+                  ['span', {style: style({'width': 50})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
+                  ]]                  
                ]],
             ]],
             ['div', {style: style ({float: 'right'})}, [
