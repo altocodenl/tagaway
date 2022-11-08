@@ -2072,6 +2072,58 @@ suites.rotate = function () {
    ];
 }
 
+suites.date = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('change date of pivs', 'date', [
+         [[], 'object'],
+         [[], 'keys', ['ids', 'date']],
+         [[], 'invalidKeys', ['foo']],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+         [['date'], 'integer'],
+         [['date'], 'values', [1]],
+         [['date'], 'range', {min: 0, max: 4133980799999}],
+         [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+      ]),
+      ['change date of nonexisting piv', 'post', 'date', {}, {ids: ['foo'], date: Date.now ()}, 404],
+      ['change date no-op', 'post', 'date', {}, {ids: [], date: Date.now ()}, 400],
+      ['start upload to test rotation', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test rotation', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['get small piv before date change', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.date = rs.body.pivs [0].date;
+         return true;
+      }],
+      ['change date of small piv', 'post', 'date', {}, function (s) {return {ids: [s.smallId], date: 0}}, 200],
+      ['get small piv after date change', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.date', rs.body.pivs [0].date, 0 + (s.date % 86400000))) return false;
+         if (H.stop ('piv.dates.userDate', rs.body.pivs [0].dates.userDate, 0)) return false;
+         if (H.stop ('piv.dateSource', rs.body.pivs [0].dateSource, 'userDate')) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::1970', 'd::M1'])) return false;
+         return true;
+      }],
+      ['change date of small piv again', 'post', 'date', {}, function (s) {return {ids: [s.smallId], date: new Date ('2022-12-18').getTime ()}}, 200],
+      ['get small piv after date change', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.date', rs.body.pivs [0].date, new Date ('2022-12-18').getTime () + (s.date % 86400000))) return false;
+         if (H.stop ('piv.dates.userDate', rs.body.pivs [0].dates.userDate, new Date ('2022-12-18').getTime ())) return false;
+         if (H.stop ('piv.dateSource', rs.body.pivs [0].dateSource, 'userDate')) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::2022', 'd::M12'])) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 suites.tag = function () {
    return [
       suites.auth.in (tk.users.user1),

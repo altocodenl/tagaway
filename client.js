@@ -3739,6 +3739,16 @@ B.mrespond ([
          B.call (x, 'query', 'pivs');
       });
    }],
+   ['date', 'pivs', function (x) {
+      var date = new Date (B.get ('State', 'date', 'y') + '-' + H.pad (parseInt (B.get ('State', 'date', 'm')) || 0) + '-' + H.pad (parseInt (B.get ('State', 'date', 'd')) || 0)).getTime ();
+      if (isNaN (date) || date < 0 || date > 4133980799999) return B.call (x, 'snackbar', 'yellow', 'Please enter a valid date.');
+      var pivs = dale.keys (B.get ('State', 'selected'));
+      B.call (x, 'post', 'date', {}, {ids: pivs, date: date}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error setting the date of the picture(s).');
+         B.call (x, 'rem', 'State', 'date');
+         B.call (x, 'query', 'pivs');
+      });
+   }],
    ['delete', 'pivs', function (x, deg) {
       var pivs = dale.keys (B.get ('State', 'selected'));
       if (pivs.length === 0) return;
@@ -4281,7 +4291,7 @@ views.base = function () {
       ['style', CSS.litc],
       views.snackbar (),
       views.feedback (),
-      views.changeDate (),
+      views.date (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4356,29 +4366,30 @@ views.snackbar = function () {
    ];
 }
 
-//  *** CHANGE DATE MODAL ***
+// *** CHANGE DATE MODAL ***
 
-views.changeDate = function () {
-   return B.view ([], function () {
+views.date = function () {
+   return B.view ([['State', 'date'], ['State', 'selected']], function (date, selected) {
+      if (! date) return ['div'];
       return ['div', {class: 'feedback-box-mask'}, [
          ['div', {class: 'change-date'}, [
             ['div', {class: 'change-date-box'}, [
                ['div', {class: 'change-date-box-title'}, [
                   ['span', 'Change the date of the '],
-                  ['span', 'xxx'],
+                  ['span', dale.keys (selected).length],
                   ['span', ' selected pics to:']
                ]],
                ['div', {class: 'change-date-box-input-date'}, [
-                  ['span', {style: style({'text-decoration': 'underline'})}, 'DD'],
+                  ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'd']), placeholder: 'DD'}],
                   ['span', '/'],
-                  ['span', {style: style({'text-decoration': 'underline'})}, 'MM'],
+                  ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'm']), placeholder: 'MM'}],
                   ['span', '/'],
-                  ['span', {style: style({'text-decoration': 'underline'})}, 'YYYY'],
+                  ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
                ]],
             ]],
             ['div', {style: style ({float: 'right'})}, [
-               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6})}, 'Cancel'],
-               ['a', {href: '', class: 'button button--one', onclick: B.ev ('send', 'feedback')}, 'Change']
+               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6}), onclick: B.ev ('rem', 'State', 'date')}, 'Cancel'],
+               ['a', {href: '', class: 'button button--one', onclick: B.ev ('date', 'pivs')}, 'Change']
             ]]
          ]]
       ]];
@@ -4948,7 +4959,7 @@ views.pics = function () {
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--change-date'}, [
                      H.putSvg ('calendarIcon'),
-                     ['span', {class: 'organise-bar__button-title'}, 'Change date'],
+                     ['span', {class: 'organise-bar__button-title', onclick: B.ev (H.stopPropagation, ['set', ['State', 'date'], {}])}, 'Change date'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--download', onclick: B.ev (H.stopPropagation, ['download', []])}, [
                      H.putSvg ('download'),
