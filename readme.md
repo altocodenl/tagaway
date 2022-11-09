@@ -1083,12 +1083,14 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    14. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
    15. `stop propagation`: stops propagation of the `ev` passed as an argument.
    16. `update queryURL`:
+      - This responder is responsible for taking changes to `State.query` in order to update `State.queryURL`.
       - If `State.query` is not set, it does nothing.
       - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
       - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
       - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new history entry will *not* be generated.
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
    17. `change State.queryURL`:
+      - This responder is responsible for taking changes to `State.queryURL` in order to update `State.query`.
       - If `State.queryURL` is not set, it does nothing.
       - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ...}`.
       - If any of these fields is both set and different to the corresponding field of `State.query`, it will be overwritten in `State.query` and a `change` event on `State.query` will be invoked.
