@@ -4409,7 +4409,7 @@ views.date = function () {
                   ['span', '/'],
                   ['span', {style: style({'width': 50})}, [
                      ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
-                  ]]                  
+                  ]]
                ]],
             ]],
             ['div', {style: style ({float: 'right'})}, [
