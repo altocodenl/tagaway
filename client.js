@@ -3237,12 +3237,9 @@ B.mrespond ([
          }
       }
 
-      B.call (x, 'goto', 'page', page);
+      if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
 
-      if (page === 'pics' && hash [1]) {
-         B.call (x, 'set', ['State', 'queryURL'], hash [1]);
-         B.call (x, 'update', 'queryURL');
-      }
+      B.call (x, 'goto', 'page', page);
 
    }],
    ['goto', 'page', function (x, page) {
@@ -3270,7 +3267,7 @@ B.mrespond ([
 
       if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
 
-      // if (page === 'pics' && B.get ('State', 'queryURL')) page = 'pics/' + B.get ('State', 'queryURL');
+      if (page === 'pics' && B.get ('State', 'queryURL')) page = 'pics/' + B.get ('State', 'queryURL');
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
