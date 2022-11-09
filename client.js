@@ -3801,18 +3801,17 @@ B.mrespond ([
       // We don't add query.update or query.updateLimit since we don't want to cache that
       delete query.update;
       delete query.updateLimit;
-      console.log ('BEGIN', dontAlterHistory, history.length);
       try {
          var hash = btoa (encodeURIComponent (JSON.stringify (query)));
          setTimeout (function () {
-            console.log ('MIDDLE', dontAlterHistory, history.length);
-            try {
-               var oldHash = teishi.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-               console.log ('DEBUG OLDHASH', oldHash);
-               if (oldHash && ! oldHash.fromDate) dontAlterHistory = true;
+            if (window.location.hash === '#/pics') dontAlterHistory = true;
+            else if (! dontAlterHistory) {
+               try {
+                  var oldHash = teishi.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+                  if (oldHash && ! oldHash.fromDate) dontAlterHistory = true;
+               }
+               catch (error) {}
             }
-            catch (error) {}
-            console.log ('DEBUG NOT ALTERING?', dontAlterHistory, history.length);
             if (dontAlterHistory) {
                history.replaceState (undefined, undefined, '#/pics/' + hash);
                B.set (['State', 'queryURL'], hash);
