@@ -771,6 +771,39 @@ CSS.litc = [
    ['.googlePlayBadge', {
       height: 40,
    }],
+   // *** HOME VIEW ***
+   ['.home-boxes'],
+   ['.home-boxes-row', {
+      'display': 'inline-flex',
+      'margin-top': CSS.vars ['padding--xl'],
+   }],
+   ['.home-box', {
+      width: 290,
+      height: 180,
+      'margin-left': CSS.vars ['padding--m'],
+      'margin-right': CSS.vars ['padding--xl']
+   }],
+   ['.box-ec5bff', {
+      'background-color': '#ec5bff',
+   }],
+   ['.box-ff5b6e', {
+      'background-color': '#ff5b6e',
+   }],
+   ['.box-5bffec', {
+      'background-color': '#5bffec',
+   }],
+   ['.box-4aff95', {
+      'background-color': '#4aff95',
+   }],
+   ['.box-ffec5b', {
+      'background-color': '#ffec5b',
+   }],
+   ['.box-80762e', {
+      'background-color': '#80762e',
+   }],
+   ['.home-box-tag-name', {
+      'font-size': CSS.typography.spaceVer(1.5),
+   }],
    // *** page-header.scss ***
    ['.page-header', {
       'margin-top': CSS.typography.spaceVer (4),
@@ -4519,19 +4552,33 @@ views.empty = function () {
          ['div', {class: 'main__inner'}, [
             // GUIDE
             ['div', {class: 'guide'}, [
-               ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
-               ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
-               ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
-               ['div', [
-                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, [H.putSvg ('cloudImport'), 'Import pictures']],
-                  ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'), 'Upload pictures']],
-               ]],
-               ['p', {class: 'guide__text', style: style({'margin-top': '20px'})}, 'Or download any of the mobile uploaders.'],
-               ['div', [
-                  ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
-                  ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
+               ['span', {style: style({'display': 'inline-flex'})}, [
+                  ['h2', {class: 'guide__title', style: style({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+                  ['h2', {class: 'guide__title'}, 'username'],
+                  ['h2', {class: 'guide__title'}, '!']
                ]]
             ]],
+            ['div', {class: 'home-boxes'}, [
+               ['div', {class: 'home-boxes-row'}, [
+                  ['div', {class: 'home-box box-ec5bff'}, [
+                     ['p', {class: 'home-box-tag-name'}, 'Vacations']
+                  ]], 
+                  ['div', {class: 'home-box box-ff5b6e'}, [
+                     ['p', {class: 'home-box-tag-name'}, 'Fiesta de casamiento']
+                  ]], 
+                  ['div', {class: 'home-box box-5bffec'}, [
+                     ['p', {class: 'home-box-tag-name'}, 'Freddie']
+                  ]], 
+               ]],
+               ['div', {class: 'home-boxes-row'}, [
+                  ['div', {class: 'home-box box-4aff95'}, [
+                     ['p', {class: 'home-box-tag-name'}, 'This is a very long tag name']
+                  ]], 
+                  ['div', {class: 'home-box box-ffec5b'}, [
+                     ['p', {class: 'home-box-tag-name'}, 'Birthdays']
+                  ]], 
+               ]]
+            ]]
          ]],
       ]],
    ]];
