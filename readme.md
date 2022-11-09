@@ -45,7 +45,6 @@ Tom
    - client: see info of piv
 
 Mono
-   - server/client: add button & modal for setting date
    - server: investigate performance improvements on large queries
    - server: consistency
       - re-upload missing files in S3
@@ -458,6 +457,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Videos will not be rotated and will be silently ignored.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
+
+- `POST /date`
+   - Body must be of the form `{ids: [STRING, ...], date: INTEGER}` (otherwise, 400 with body `{error: ...}`). `date` must be equal or greater than 0.
+   - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - On each of the pivs, if the existing `date` field has a positive offset from UTC midnight, this offset will be added to the provided `date`.
 
 - `POST /tag`
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
@@ -919,24 +924,28 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Depends on `State.feedback`.
    - Events: `onclick -> set|rem State.feedback`.
    - Contained by: `views.base`.
-4. `views.header`
+4. `views.date`
+   - Depends on `State.selected` and `State.date`.
+   - Contained by: `views.base`.
+   - Events: `onclick -> date pivs`.
+5. `views.header`
    - Depends on `State.page` and `Data.account`.
    - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`, `open location undefined URL`
    - Contained by: `views.pics`, `views.upload`, `views.share`, `views.tags`.
-5. `views.empty`
+6. `views.empty`
    - Contained by: `views.pics`.
-6. `views.grid`
+7. `views.grid`
    - Contained by: `views.pics`.
    - Depends on `State.chunks`.
    - Events: `onclick -> click piv`.
-7. `views.open`
+8. `views.open`
    - Contained by: `views.pics`.
    - Depends on `State.open` and `Data.pivTotal`.
    - Events: `onclick -> open prev`, `onclick -> open next`, `onclick -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
-8. `views.noSpace`
+9. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
-9. `views.importFolders`
+10. `views.importFolders`
    - Contained by: `views.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
@@ -1069,8 +1078,9 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    9. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
    10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`.
    11. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
-   12. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
-   13. `scroll`:
+   12. `date pivs`: invokes `snackbar` if there was either invalid input or the operation failed. If the input (`State.date`) is valid, it invokes `post date` and then if the operation is successful invokes `rem State.page` and `query pivs`.
+   13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
+   14. `scroll`:
       - Only will perform actions if `State.page` is `pivs`.
       - If the `to` argument is `undefined` and `State.scroll` exists and happened less than 50ms ago, the responder won't do anything else - effectively ignoring the call.
       - If `to` is set to `-1` or `undefined`, our reference `y` position will be the current one.
@@ -1080,16 +1090,16 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's at least partly visible in the viewport.
       - If a `to` parameter is passed that is not -1, it will scroll to that `y` position after a timeout of 0ms. The timeout is there to allow for DOM operations to conclude before scrolling.
       - Note: the scroll responder has an overall flow of the following shape: 1) determine visibility; 2) trigger changes that will redraw the grid; 3) update `State.query.fromDate`; 4) if necesary, scroll to the right position.
-   14. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
-   15. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   16. `update queryURL`:
+   15. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
+   16. `stop propagation`: stops propagation of the `ev` passed as an argument.
+   17. `update queryURL`:
       - This responder is responsible for taking changes to `State.query` in order to update `State.queryURL`.
       - If `State.query` is not set, it does nothing.
       - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
       - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
       - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new history entry will *not* be generated.
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
-   17. `change State.queryURL`:
+   18. `change State.queryURL`:
       - This responder is responsible for taking changes to `State.queryURL` in order to update `State.query`.
       - If `State.queryURL` is not set, it does nothing.
       - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ...}`.
@@ -1150,6 +1160,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `chunks`: if present, it is an array of objects, each representing a chunk of pivs to be shown. Each chunk has the form `{pivs: [...], start: INT, end: INT, visible: true|false|undefined}`. `pivs` is an array of pivs; `start` and `end` indicate the y-coordinate of the start and the end of the chunk. `visible` indicates whether the chunk should be displayed or not, given the current y-position of the window.
+   - `date`: `UNDEFINED|{y: STRING, m: STRING: d: STRING}`. If present, it denotes an object with date fields for dating pivs.
    - `feedback`: if not `undefined`, contains a text string with feedback to be sent.
    - `filter`: filters tags shown in sidebar.
    - `import`:
