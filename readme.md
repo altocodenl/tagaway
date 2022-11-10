@@ -780,6 +780,7 @@ All the routes below require an admin user to be logged in.
    - For account delete:  {t: INT, ev: 'auth', type: 'delete',         ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
    - For deletes:         {t: INT, ev: 'delete', ids: [STRING, ...]}
    - For rotates:         {t: INT, ev: 'rotate', ids: [STRING, ...], deg: 90|180|-90}
+   - For date setting:    {t: INT, ev: 'date', ids: [STRING, ...], date: INTEGER}
    - For (un)tags:        {t: INT, ev: 'tag',        type: tag|untag, ids: [STRING, ...], tag: STRING}
    - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID|UNDEFINED, who: ID|UNDEFINED} (if `whom` is present, `who` is absent and the operation is done by the user; if `who` is present, `whom` is absent and the operation is done to the user).
    - For dismiss:         {t: INT, ev: 'dismiss',    type: 'geotagging|selection'}
