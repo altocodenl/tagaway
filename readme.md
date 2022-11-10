@@ -51,7 +51,7 @@ Mono
       - clear s3:proc counter
       - fix invalid s3 entries in s3:files
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
-   - client: check what happens if connection is dropped while uploading
+   - client: Fix ronin untagged or range tag when deleting all
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
@@ -60,8 +60,8 @@ Later
 - server: Get prod mirror
 - server: script to rename username
 - client: retry upload button
-- client: Fix ronin untagged or range tag when deleting all
 - server: Exclude WA from hour in parse date
+- client: check what happens if connection is dropped while uploading
 - server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
 - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
 - server/client: Share & manage
@@ -69,6 +69,8 @@ Later
 - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
 - server: change stalled interval to 3s and send waits when doing video processing in tests
 - server: rename b to rq.body throughout
+- server: get rid of thu entries, use id of piv + suffix
+- admin: add set of users for fast access rather than scanning db
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
@@ -85,8 +87,6 @@ Later
 - client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
 - server: Investigate intermittent busboy error.
 - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
-- server: get rid of thu entries, use id of piv + suffix
-- admin: add set of users for fast access rather than scanning db
 - Submission Google Drive
 - Self-hosted ac;pic
    - Turn off/on S3
@@ -1096,8 +1096,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - This responder is responsible for taking changes to `State.query` in order to update `State.queryURL`.
       - If `State.query` is not set, it does nothing.
       - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
-      - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
-      - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new history entry will *not* be generated.
+      - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH` by rewriting the last `history` entry (instead of creating a new one). It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly. If the current hash is `#/pics` or the current hash, when decoded into an object, has no `fromDate` field, we also overwrite the existing history entry rather than creating a new one. In all, whenever an initial query is built up, or when only the `fromDate` entry changes, we overwrite the current `history` entry - otherwise, we create a new entry by directly changing the hash.
+      - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new `history` entry will *not* be generated.
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
    18. `change State.queryURL`:
       - This responder is responsible for taking changes to `State.queryURL` in order to update `State.query`.
