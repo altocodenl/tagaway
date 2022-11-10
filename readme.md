@@ -46,10 +46,6 @@ Tom
 
 Mono
    - server: investigate performance improvements on large queries
-   - server: consistency
-      - re-upload missing files in S3
-      - clear s3:proc counter
-      - fix invalid s3 entries in s3:files
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - client: Fix ronin untagged or range tag when deleting all
    - server/client: videos pseudo-tag
