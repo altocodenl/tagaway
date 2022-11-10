@@ -774,14 +774,17 @@ CSS.litc = [
    // *** HOME VIEW ***
    ['.home-boxes'],
    ['.home-boxes-row', {
+      width: 1,
       'display': 'inline-flex',
       'margin-top': CSS.vars ['padding--xl'],
    }],
    ['.home-box', {
       width: 290,
+      'min-width': 290,
       height: 180,
       'margin-left': CSS.vars ['padding--m'],
-      'margin-right': CSS.vars ['padding--xl']
+      'margin-right': CSS.vars ['padding--xl'],
+      position: 'relative',
    }],
    ['.box-ec5bff', {
       'background-color': '#ec5bff',
@@ -801,8 +804,33 @@ CSS.litc = [
    ['.box-80762e', {
       'background-color': '#80762e',
    }],
+   ['.box-add', {
+      'border': 'dotted 1px' + CSS.vars ['color--one'], 
+   }],
+   ['.box-add-circle', {
+      'position': 'absolute',
+      'top, bottom': .5,
+      'transform': 'translate(-50%, -50%)',
+      'height, width': 120,
+      'border': 'solid 1px' + CSS.vars ['color--one'], 
+      'border-radius': 1,
+      'margin-left': 82,
+   }],
+   ['.box-add-plus', {
+      '--b': 4,
+      'width': 80,
+      'aspect-ratio': '1',
+      'border': 'solid 10px #fff',
+      'background': 'conic-gradient(from 90deg at var(--b) var(--b),#fff 90deg,#5b6eff 0) calc(100% + var(--b)/2) calc(100% + var(--b)/2)/calc(50%  + var(--b))   calc(50%  + var(--b))',
+      'display': 'inline-block',
+   }],
    ['.home-box-tag-name', {
       'font-size': CSS.typography.spaceVer(1.5),
+      'font-weight': CSS.vars ['fontPrimarySemiBold'],
+      'line-height': CSS.typography.spaceVer (1.5),
+      position: 'absolute',
+      'bottom': 0,
+      'margin-bottom, margin-left, margin-right': CSS.vars ['padding--m'],
    }],
    // *** page-header.scss ***
    ['.page-header', {
@@ -4568,15 +4596,28 @@ views.empty = function () {
                   ]], 
                   ['div', {class: 'home-box box-5bffec'}, [
                      ['p', {class: 'home-box-tag-name'}, 'Freddie']
-                  ]], 
-               ]],
-               ['div', {class: 'home-boxes-row'}, [
+                  ]],
                   ['div', {class: 'home-box box-4aff95'}, [
                      ['p', {class: 'home-box-tag-name'}, 'This is a very long tag name']
                   ]], 
                   ['div', {class: 'home-box box-ffec5b'}, [
                      ['p', {class: 'home-box-tag-name'}, 'Birthdays']
-                  ]], 
+                  ]],  
+               ]],
+               // ['div', {class: 'home-boxes-row'}, [
+               //    ['div', {class: 'home-box box-4aff95'}, [
+               //       ['p', {class: 'home-box-tag-name'}, 'This is a very long tag name']
+               //    ]], 
+               //    ['div', {class: 'home-box box-ffec5b'}, [
+               //       ['p', {class: 'home-box-tag-name'}, 'Birthdays']
+               //    ]], 
+               // ]],
+               ['div', {class: 'home-boxes-row'}, [
+                  ['div', {class: 'home-box box-add'}, [
+                     ['div', {class: 'box-add-circle'}, [
+                        ['div', {class: 'box-add-plus'}]
+                     ]]
+                  ]]
                ]]
             ]]
          ]],
