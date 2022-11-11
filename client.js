@@ -774,16 +774,16 @@ CSS.litc = [
    // *** HOME VIEW ***
    ['.home-boxes'],
    ['.home-boxes-row', {
-      width: 1,
+      // width: 1,
+      'flex-wrap': 'wrap',
       'display': 'inline-flex',
-      'margin-top': CSS.vars ['padding--xl'],
+      'margin-left': CSS.vars ['padding--m'],
    }],
    ['.home-box', {
       width: 290,
       'min-width': 290,
       height: 180,
-      'margin-left': CSS.vars ['padding--m'],
-      'margin-right': CSS.vars ['padding--xl'],
+      'margin-right, margin-top': CSS.vars ['padding--xl'],
       position: 'relative',
    }],
    ['.box-ec5bff', {
@@ -4607,14 +4607,6 @@ views.empty = function () {
                      ['p', {class: 'home-box-tag-name'}, 'Birthdays']
                   ]],  
                ]],
-               // ['div', {class: 'home-boxes-row'}, [
-               //    ['div', {class: 'home-box box-4aff95'}, [
-               //       ['p', {class: 'home-box-tag-name'}, 'This is a very long tag name']
-               //    ]], 
-               //    ['div', {class: 'home-box box-ffec5b'}, [
-               //       ['p', {class: 'home-box-tag-name'}, 'Birthdays']
-               //    ]], 
-               // ]],
                ['div', {class: 'home-boxes-row'}, [
                   ['div', {class: 'home-box box-add'}, [
                      ['div', {class: 'box-add-circle'}, [
