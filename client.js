@@ -772,6 +772,16 @@ CSS.litc = [
       height: 40,
    }],
    // *** HOME VIEW ***
+   ['.button--purple', {
+       border: '1px solid #ec5bff',
+      'background-color': '#ec5bff',
+      color: '#fff',
+      cursor: 'pointer',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--purple:hover', {
+      'background-color': '#fff',
+      color: '#ec5bff',
+   }]),
    ['.home-boxes'],
    ['.home-boxes-row', {
       // width: 1,
@@ -4557,24 +4567,7 @@ views.empty = function () {
       ['div', {class: 'sidebar'}, [
          ['div', {class: 'sidebar__header'}, [
             ['div', {class: 'sidebar-header'}, [
-               ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
-            ]],
-         ]],
-         ['div', {class: 'sidebar__tip'}, [
-            // TIP
-            ['div', {class: 'tip'}, [
-               ['div', {class: 'tip__header'}, [
-                  ['img', {class: 'tip__icon', src: 'img/icon-tip.svg'}],
-                  ['h5', {class: 'tip__title'}, 'Tip!'],
-               ]],
-               // TODO: fix redraw bug that carries through click to anchor
-               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {onclick: B.ev ('goto', 'page', 'upload')}, 'Upload'], ' some photos and add some tags.']],
-            ]],
-         ]],
-         ['div', {class: 'sidebar__footer'}, [
-            ['div', {class: 'sidebar-search', style: style ({'display':'none'})}, [
-               ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
-               H.putSvg ('sidebarSearch'),
+               ['a', {href: '', class: 'button button--purple', style: style({})}, 'Go back home'],
             ]],
          ]],
       ]],
