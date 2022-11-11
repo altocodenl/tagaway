@@ -805,7 +805,7 @@ CSS.litc = [
       'background-color': '#80762e',
    }],
    ['.box-add', {
-      'border': 'dotted 1px' + CSS.vars ['color--one'], 
+      'border': 'dashed 1px' + CSS.vars ['color--one'], 
    }],
    ['.box-add-circle', {
       'position': 'absolute',
@@ -815,13 +815,16 @@ CSS.litc = [
       'border': 'solid 1px' + CSS.vars ['color--one'], 
       'border-radius': 1,
       'margin-left': 82,
+      'cursor': 'pointer',
    }],
    ['.box-add-plus', {
+      'position': 'absolute', 
+      'top': .29,
+      'left': .29,
       '--b': 4,
-      'width': 80,
+      'width': 50,
       'aspect-ratio': '1',
-      'border': 'solid 10px #fff',
-      'background': 'conic-gradient(from 90deg at var(--b) var(--b),#fff 90deg,#5b6eff 0) calc(100% + var(--b)/2) calc(100% + var(--b)/2)/calc(50%  + var(--b))   calc(50%  + var(--b))',
+      'background': 'conic-gradient(from 90deg at var(--b) var(--b),transparent 90deg,#5b6eff 0) calc(100% + var(--b)/2) calc(100% + var(--b)/2)/calc(50%  + var(--b))   calc(50%  + var(--b))',
       'display': 'inline-block',
    }],
    ['.home-box-tag-name', {
