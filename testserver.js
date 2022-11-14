@@ -3168,20 +3168,58 @@ suites.import = function () {
    ];
 }
 
+suites.perf = function () {
+   var perf = [];
+   return [
+      ['dummy request', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+         var readline = require ('readline').createInterface ({input: process.stdin, output: process.stdout});
+         readline.question ('Enter username:\n', function (username) {
+            readline.question ('Enter password\n', function (password) {
+               s.username = username;
+               s.password = password;
+               next ();
+            });
+         });
+      }],
+      ['login', 'post', 'auth/login', {}, function (s) {return {username: s.username, password: s.password, timezone: 0}}, 200, H.setCredentials],
+      dale.go (dale.times (2), function (v) {
+         return ['get all pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 300}, 200, function (s, rq, rs) {
+            perf.push (rs.body.perf);
+            return true;
+         }];
+      }),
+      ['dummy request', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+         var output = {};
+         dale.go (perf, function (v) {
+            dale.go (v, function (v2, k2) {
+               if (! output [k2]) output [k2] = 0;
+               output [k2] += v2;
+            });
+         });
+         dale.go (output, function (v, k) {
+            k += dale.go (dale.times (30 - k.length), function () {return ' '}).join ('');
+            clog (k, v, '\t', Math.round (100 * v / output.total) + '%');
+         });
+         next ();
+      }],
+   ];
+}
+
 // *** RUN TESTS ***
 
 var t = Date.now ();
 
-H.runServer ();
+if (toRun !== 'perf') H.runServer ();
 
 H.tryTimeout (10, 1000, function (cb) {
-   h.one ({}, {port: CONFIG.port, method: 'get', path: '/', code: 200}, cb);
+   h.one ({}, {port: toRun === 'perf' ? 1427 : CONFIG.port, method: 'get', path: '/', code: 200}, cb);
 }, function (error) {
    if (error) return clog ('SERVER DID NOT START', error);
    var serverStart = Date.now () - t;
 
    var suitesToRun = (function () {
-      if (! toRun) return dale.go (suites, function (v) {
+      if (! toRun) return dale.go (suites, function (v, k) {
+         if (k === 'perf') return [];
          if (type (v) === 'function') return v ();
          return v.full ();
       });
@@ -3190,7 +3228,7 @@ H.tryTimeout (10, 1000, function (cb) {
       return suite.full ();
    }) ();
 
-   h.seq ({port: CONFIG.port}, suitesToRun, function (error, tests) {
+   h.seq ({port: toRun === 'perf' ? 1427 : CONFIG.port}, suitesToRun, function (error, tests) {
       if (error) {
          if (error.request && error.request.body && type (error.request.body) === 'string') error.request.body = error.request.body.slice (0, 1000) + (error.request.body.length > 1000 ? '... OMITTING REMAINDER' : '');
          if (error.body && type (error.body) === 'string') error.body = error.body.slice (0, 1000) + (error.body.length > 1000 ? '... OMITTING REMAINDER' : '');
