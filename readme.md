@@ -42,31 +42,36 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 Tom
    - server/client: home view with pink button to go to home view on non-initial query
    - client: show less year & country entries in sidebar
-   - client: see info of piv
+   - mobile: ios background upload
 
 Mono
-   - server: investigate performance improvements on large queries
+   - server/client: opt-in near-duplicates recognition powered by AI
+   - server/client: opt-in face recognition powered by AI
+   - server: add dedicated keys for uploads in order to improve getUploads performance
+   - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
    - client: Fix ronin untagged or range tag when deleting all
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
+   - server: Exclude WA from hour in parse date
+   - server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+   - client: upload: check what happens if connection is dropped while uploading
+   - client: upload: retry upload button
+   - server/client: set location
+   - server/client: ignore deleted pivs flag for both upload & import.
+   - client: see info of piv
+   - server: set up prod mirror
+   - server: script to rename username
+   - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
+   - server/client: Share & manage
+   - client: upgrade pop up notice or email when running out of free space.
+   - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
+   - server: change stalled interval to 3s and send waits when doing video processing in tests
+   - server: rename b to rq.body throughout
+   - server: get rid of thu entries, use id of piv + suffix
+   - admin: add set of users for fast access rather than scanning db
 
-Later
-- server: Get prod mirror
-- server: script to rename username
-- client: retry upload button
-- server: Exclude WA from hour in parse date
-- client: check what happens if connection is dropped while uploading
-- server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-- server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-- server/client: Share & manage
-- client: Upgrade pop up notice or email when running out of free space.
-- server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-- server: change stalled interval to 3s and send waits when doing video processing in tests
-- server: rename b to rq.body throughout
-- server: get rid of thu entries, use id of piv + suffix
-- admin: add set of users for fast access rather than scanning db
 - Pricing
    - Investigate Glacier lifecycle.
    - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
@@ -218,11 +223,8 @@ Later
    - Show tags in open view.
 
 - Upload/import
-   - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
-   - Retry on error.
    - Show estimated time remaining in ongoing uploads.
-   - Ignore deleted pivs flag for both upload & import.
    - New upload flow
       - Starting state: area from dropdown & button for files & button for folder upload.
       - Uploading state: button for starting new upload and button for starting tagging state.
@@ -276,7 +278,6 @@ Later
 - Pivs
    - See if there's a way to detect & merge (whatsapp) videos that look the same but have different encoding qualities and slightly different lengths.
    - Hidden tags.
-   - Set date manually.
    - Filters.
    - Themes for the interface.
    - Set colors of tags?
@@ -294,7 +295,6 @@ Later
 - Share
    - Comments.
    - Share to social platforms.
-   - Share certain tags only on shared pivs.
    - Profile pages.
 
 ## Server
