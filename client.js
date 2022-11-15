@@ -4404,6 +4404,44 @@ views.feedback = function () {
    return B.view (['State', 'feedback'], function (feedback) {
       if (feedback === undefined) return ['div'];
       return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'home-add-tag-modal'}, [
+            ['div', {class: 'home-add-tag-modal-contents'}, [
+               ['div', {class: 'home-add-tag-modal-left-section'}, [
+                  ['div', {class: 'home-add-tag-modal-add-tags-section'}, [
+                     ['div', {class: 'home-add-tag-modal-title'}],
+                     ['div', {class: 'home-add-tag-modal-search-box'}],
+                     ['div', {class: 'home-add-tag-modal-tags-list'}, [
+                        ['ul', {class: 'home-add-tag-modal-tags-list-ul'}, [
+                           ['li', {class: 'home-add-tag-modal-tags-list-li'}]
+                        ]]
+                     ]]
+                  ]]
+               ]],
+               ['div', {class: 'home-add-tag-modal-right-section'}, [
+                  ['div', {class: 'home-add-tag-modal-your-tags-section'}, [
+                     ['div', {class: 'home-add-tag-modal-title'}],
+                     ['div', {class: 'home-add-tag-modal-your-tags-list'}, [
+                        ['ul', {class: 'home-add-tag-modal-your-tags-list-ul'}, [
+                           ['li', {class: 'home-add-tag-modal-your-tags-list-li'}]
+                        ]]
+                     ]]
+                  ]],
+                  ['div', {class: 'home-add-tag-modal-done-button'}, [
+                     ['a', {href: '', class: 'button button--one'}, 'Done']
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]];
+   });
+}
+
+// *** FEEDBACK VIEW ***
+
+views.feedback = function () {
+   return B.view (['State', 'feedback'], function (feedback) {
+      if (feedback === undefined) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
          ['div', {class: 'feedback-box'}, [
             ['div', {class: 'feedback-input-box'}, [
                ['textarea', {class: 'feedback-input-textarea', autocomplete: 'off', type: 'text', placeholder: 'What things would you like us to change or fix…?', oninput: B.ev ('set', ['State', 'feedback'])}]
