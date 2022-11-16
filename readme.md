@@ -43,21 +43,23 @@ Tom
    - server/client: home view with pink button to go to home view on non-initial query
    - client: show less year & country entries in sidebar
    - mobile: ios background upload
+   - Submission Google Drive
 
 Mono
+   - client: fix: keep selection when query changes and not enough pivs are returned
+   - client: fix ronin untagged or range tag when deleting all
+   - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
+
    - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
    - server/client: OCR recognition
-   - client: keep selection when query changes and not enough pivs are returned
    - server: add dedicated keys for uploads in order to improve getUploads performance
    - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
-   - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
-   - client: Fix ronin untagged or range tag when deleting all
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
-   - server: Exclude WA from hour in parse date
-   - server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+   - server: fix: exclude WA from hour in parse date
+   - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
    - client: upload: check what happens if connection is dropped while uploading
    - client: upload: retry upload button
    - server/client: set location
@@ -74,28 +76,26 @@ Mono
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
    - server/client: rotate videos
-
-- Pricing
-   - Investigate Glacier lifecycle.
-   - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
-   - Include price of PUT requests
-   - Check new price of servers & price of large disk
-   - Check balance between disk and RAM and compare to actual RAM usage
-- server: deploy to prod while there are processes going on!
-   - background processes: upload, import, geotagging switch, mp4 conversions
-   - incremental steps to solution:
-      - don't shut down if there's something going on
-      - shut down after all are done
-      - stop new ones
-      - save progress on what's already done
-- client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
-- server: Investigate intermittent busboy error.
-- server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
-- Submission Google Drive
-- Self-hosted ac;pic
-   - Turn off/on S3
-   - Docker
-   - Documentation
+   - Pricing
+      - Investigate Glacier lifecycle.
+      - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
+      - Include price of PUT requests
+      - Check new price of servers & price of large disk
+      - Check balance between disk and RAM and compare to actual RAM usage
+   - server: deploy to prod while there are processes going on!
+      - background processes: upload, import, geotagging switch, mp4 conversions
+      - incremental steps to solution:
+         - don't shut down if there's something going on
+         - shut down after all are done
+         - stop new ones
+         - save progress on what's already done
+   - client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
+   - server: Investigate intermittent busboy error.
+   - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
+   - Add notes on self-hosted ac;pic
+      - Turn off/on S3
+      - Docker
+      - Documentation
 
 ### Already implemented
 
@@ -220,7 +220,7 @@ Mono
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo v1
+### Todo soon
 
 - Open
    - Show tags in open view.
