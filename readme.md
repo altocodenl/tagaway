@@ -45,8 +45,10 @@ Tom
    - mobile: ios background upload
 
 Mono
-   - server/client: opt-in near-duplicates recognition powered by AI
+   - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
+   - server/client: OCR recognition
+   - client: keep selection when query changes and not enough pivs are returned
    - server: add dedicated keys for uploads in order to improve getUploads performance
    - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
@@ -71,6 +73,7 @@ Mono
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
+   - server/client: rotate videos
 
 - Pricing
    - Investigate Glacier lifecycle.
