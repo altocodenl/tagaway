@@ -871,12 +871,16 @@ CSS.litc = [
       stroke: CSS.vars ['color--one'],
       'stroke-width': 2
    }],
+   ['.see-more-geo-icon svg', {
+     'width, height': 16, 
+     'stroke-width': 3
+   }],
    ['.see-more-years-text, .see-more-geo-text', {
       'vertical-align': 'text-bottom'
    }],
    ['.see-more-geo-text', {
       width: 70,
-      'padding-top': CSS.vars ['padding--xs'],
+      'padding-top': 3,
    }],
    // *** tag-list-extended.scss ***
    // Tag list extended
@@ -4842,14 +4846,14 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
-                              H.if (which === 's::', ['div', {style: style ({display: 'inline-flex'})}, [
-                              ]),
-                              H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
+                              H.if (which === 's::', ['div', {style: style({'margin-left': '-2px'})}, [
                                  // HERE GOES SEE MORE GEO
                                  ['div', {class: 'see-more-geo'}, [
                                     ['span', {class: 'see-more-geo-icon'}, H.putSvg('geotagOpen')],
                                     ['span', {class: 'see-more-geo-text'}, 'See more']
-                                 ]],
+                                 ]]
+                              ]]),
+                              H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
                                  ['div', {style: style ({display: 'inline-flex'}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'a', reverse: tagOrder.field === 'a' ? ! tagOrder.reverse : false})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
                                  ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
                               ]]),
