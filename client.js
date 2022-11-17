@@ -777,6 +777,9 @@ CSS.litc = [
       'background-color': '#ec5bff',
       color: '#fff',
       cursor: 'pointer',
+      width: 200,
+      'padding-left': 50,
+      'margin-left': 25,
    }],
    media ('screen and (min-width: 1025px)', ['.button--purple:hover', {
       'background-color': '#fff',
