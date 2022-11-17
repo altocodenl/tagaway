@@ -868,7 +868,7 @@ CSS.litc = [
       'cursor': 'pointer',
    }],
    ['.see-more-years-icon svg, .see-more-geo-icon svg', {
-      stroke: CSS.vars ['color--one'], 
+      stroke: CSS.vars ['color--one'],
       'stroke-width': 2
    }],
    ['.see-more-years-text, .see-more-geo-text', {
@@ -4724,8 +4724,9 @@ views.pics = function () {
                         var geotagSelected = dale.stop (selected, true, H.isGeoTag);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
-                        // Pseudo-tag `f::` for arrow to switch sorting order.
                         queryTags = teishi.copy (queryTags);
+                        // Pseudo-tags `s::` and `f::` for Show More geotags & arrow to switch sorting order.
+                        queryTags ['s::'] = 0;
                         queryTags ['f::'] = 0;
 
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
@@ -4751,6 +4752,8 @@ views.pics = function () {
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
 
+                           if (a === 's::') return -1;
+                           if (b === 's::') return 1;
                            if (a === 'f::') return -1;
                            if (b === 'f::') return 1;
 
@@ -4811,6 +4814,9 @@ views.pics = function () {
                                  if (inc (selected, which)) Class += ' tag--selected';
                               }
                            }
+                           else if (which === 's::') {
+                              var Class = 'tag-list__item tag';
+                           }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
                            }
@@ -4818,7 +4824,7 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
+                           if (! H.isDateTag (which) && which !== 'f::' && which !== 's::') numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
@@ -4829,13 +4835,15 @@ views.pics = function () {
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::' || which === 's::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
+                              H.if (which === 's::', ['div', {style: style ({display: 'inline-flex'})}, [
+                              ]),
                               H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
                                  // HERE GOES SEE MORE GEO
                                  ['div', {class: 'see-more-geo'}, [
@@ -4849,7 +4857,7 @@ views.pics = function () {
                               ['span', {class: 'tag__title'}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
+                                 (which === 'f::' || which === 's::')? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
