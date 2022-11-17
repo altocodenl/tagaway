@@ -1157,9 +1157,11 @@ CSS.litc = [
    // Tag actions
    ['.tag-actions', {
       position: 'absolute',
-      display: 'inline-block',
+      // display: 'inline-block',
+      display: 'inline-flex',
       top: 0.5,
-      right: 0,
+      // right: 0,
+      right: 15,
       transform: 'translateY(-50%)',
       'width, height': 24,
       'border-radius': 20,
@@ -1201,6 +1203,12 @@ CSS.litc = [
    ['.tag-actions__item-icon', {
       display: 'inline-block',
       'width, height': 24,
+   }],
+   ['.tag-actions__item--view-query', {
+      'display': 'flex',
+      'background-color': CSS.vars ['grey'],
+      fill: '#fff',
+      'margin-right': CSS.vars ['padding--xs'],
    }],
    // Tag actions -- View pictures
    ['.app-pictures', [
@@ -2426,6 +2434,10 @@ CSS.litc = [
       'width, height': 24,
       fill: CSS.vars ['grey--darker'],
    }],
+   ['.organise-bar__button-calendar-icon', {
+      width: 20,
+      'margin-right': 4,
+   }],
    // *** selected-box.scss ***
    // Selected box (in organise bar)
    ['.selected-box', {
@@ -2775,6 +2787,33 @@ CSS.litc = [
       'padding-left, padding-right': CSS.vars ['padding--s'],
       'padding-top': CSS.vars ['padding--s'],
    }],
+   // CHANGE DATE
+   ['.change-date', {
+      'position': 'fixed',
+      'left': .35,
+      'top': .2,
+      width: 500,
+   }],
+   ['.change-date-box', {
+      'text-align': 'center',
+      'background-color': 'white',
+      'font-size':   CSS.typography.fontSize (2.5),
+      'margin-bottom': 12,
+      'border-radius': CSS.vars ['padding--s'],
+      'border': '1px solid' + CSS.vars ['color--one']
+   }],
+   ['.change-date-box-title', {
+      'padding-top': CSS.vars ['padding--m'],
+      'margin-bottom': CSS.vars ['padding--m'],
+      // 'font-weight': CSS.vars.fontPrimaryMedium,
+   }],
+   ['.change-date-box-input-date', {
+      'padding-bottom': CSS.vars ['padding--m'],
+      // 'font-weight': CSS.vars.fontPrimarySemiBold,
+      'font-weight': CSS.vars.fontPrimaryMedium,
+      'display': 'inline-flex',
+      'cursor': 'text',
+   }],
    // *** UPDATE QUERY BOX ***
    ['.update-pivs-box', {
       position: 'fixed',
@@ -2953,6 +2992,7 @@ var svg = {
    close: '<svg class="selected-box__close-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
    selectAll: '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7.5 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm8.5-2c0-2.2-1.8-4-4-4-1.7 0-3.1 1-3.7 2.5h-9.3c-1.9 0-3.5 1.6-3.5 3.5v8c0 1.3.8 2.5 1.9 3.1l.1.1c.5.2 1 .3 1.5.3h12c1.9 0 3.5-1.6 3.5-3.5v-6.9c.9-.7 1.5-1.8 1.5-3.1zm-17 12.5c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0l3.2 3.2zm12 0h-2.9l-3.7-3.7 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.4 4.5c-.3.9-1.2 1.5-2.2 1.5zm2.5-2.6-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9v-8c0-1.4 1.1-2.5 2.5-2.5h9.1c-.1.2-.1.3-.1.5 0 2.2 1.8 4 4 4 .5 0 1-.1 1.5-.3z"/></svg>',
    rotate: '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 11.5c-.3 0-.5.2-.5.5 0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6c1.5 0 3 .6 4.1 1.6l-.7.7c-.1.1-.1.2-.1.3 0 .3.2.5.5.5l2.4.2c.3 0 .5-.2.4-.4l-.2-2.4c0-.1-.1-.2-.2-.3-.2-.2-.5-.2-.7 0l-.8.8c-1.2-1.3-2.9-2-4.7-2-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7c0-.3-.2-.5-.5-.5z"/></svg>',
+   calendarIcon:'<svg class="organise-bar__button-icon organise-bar__button-calendar-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="p.0"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m1.009305 6.937845l0 0c0 -1.8120098 1.4689243 -3.2809343 3.2809343 -3.2809343l15.419521 0c0.87015724 0 1.7046757 0.3456688 2.319971 0.96096325c0.6152935 0.61529493 0.9609642 1.4498134 0.9609642 2.319971l0 13.123344c0 1.8120098 -1.4689255 3.2809334 -3.2809353 3.2809334l-15.419521 0c-1.81201 0 -3.2809343 -1.4689236 -3.2809343 -3.2809334z" fill-rule="evenodd"/><path stroke="#8b8b8b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m1.009305 6.937845l0 0c0 -1.8120098 1.4689243 -3.2809343 3.2809343 -3.2809343l15.419521 0c0.87015724 0 1.7046757 0.3456688 2.319971 0.96096325c0.6152935 0.61529493 0.9609642 1.4498134 0.9609642 2.319971l0 13.123344c0 1.8120098 -1.4689255 3.2809334 -3.2809353 3.2809334l-15.419521 0c-1.81201 0 -3.2809343 -1.4689236 -3.2809343 -3.2809334z" fill-rule="evenodd" style="fill:#fff"/><path fill="#8b8b8b" d="m3.953942 3.8841665l16.109077 0c0.70510864 0 1.3813362 0.28010297 1.8799248 0.7786901c0.49858665 0.49858665 0.77868843 1.1748157 0.77868843 1.8799238l0 2.6586137c0 9.918213E-5 -8.010864E-5 1.783371E-4 -1.7738342E-4 1.783371E-4l-21.426126 -1.783371E-4l0 0c-9.858608E-5 0 -1.7857552E-4 -8.010864E-5 -1.7857552E-4 -1.783371E-4l1.7857552E-4 -2.6584353l0 0c0 -1.4683118 1.190302 -2.658614 2.6586137 -2.658614z" fill-rule="evenodd"/><path stroke="#8b8b8b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m3.953942 3.8841665l16.109077 0c0.70510864 0 1.3813362 0.28010297 1.8799248 0.7786901c0.49858665 0.49858665 0.77868843 1.1748157 0.77868843 1.8799238l0 2.6586137c0 9.918213E-5 -8.010864E-5 1.783371E-4 -1.7738342E-4 1.783371E-4l-21.426126 -1.783371E-4l0 0c-9.858608E-5 0 -1.7857552E-4 -8.010864E-5 -1.7857552E-4 -1.783371E-4l1.7857552E-4 -2.6584353l0 0c0 -1.4683118 1.190302 -2.658614 2.6586137 -2.658614z" fill-rule="evenodd" style="fill:#8b8b8b"/><path fill="#8b8b8b" d="m5.530863 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.5369158 0.10887414 0.7307129 0.3026713c0.19379711 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m5.530863 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.5369158 0.10887414 0.7307129 0.3026713c0.19379711 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m16.402369 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.53691673 0.10887414 0.7307129 0.3026713c0.19379807 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m16.402369 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.53691673 0.10887414 0.7307129 0.3026713c0.19379807 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m9.63071 11.5798855l0 0c0 -0.43614197 0.3535633 -0.78970623 0.78970623 -0.78970623l3.1591682 0l0 0c0.20944309 0 0.41030788 0.08320141 0.55840683 0.23130035c0.14809895 0.14809799 0.2312994 0.34896278 0.2312994 0.5584059l0 3.1587296c0 0.43614292 -0.3535633 0.78970623 -0.78970623 0.78970623l-3.1591682 0c-0.43614292 0 -0.78970623 -0.3535633 -0.78970623 -0.78970623z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m16.117964 11.579808l0 0c0 -0.43614197 0.3535633 -0.7897053 0.7897072 -0.7897053l3.1591682 0l0 0c0.20944214 0 0.41030693 0.083200455 0.55840683 0.2312994c0.14809799 0.14809799 0.23129845 0.34896278 0.23129845 0.5584059l0 3.1587305c0 0.43614197 -0.3535633 0.78970623 -0.7897053 0.78970623l-3.1591682 0c-0.43614388 0 -0.7897072 -0.35356426 -0.7897072 -0.78970623z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m9.63071 17.459856l0 0c0 -0.43614197 0.3535633 -0.7897053 0.78970623 -0.7897053l3.1591682 0l0 0c0.20944309 0 0.41030788 0.083200455 0.55840683 0.23129845c0.14809895 0.1480999 0.2312994 0.3489647 0.2312994 0.55840683l0 3.1587296c0 0.43614388 -0.3535633 0.7897072 -0.78970623 0.7897072l-3.1591682 0c-0.43614292 0 -0.78970623 -0.3535633 -0.78970623 -0.7897072z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m16.117887 17.459856l0 0c0 -0.43614197 0.3535633 -0.7897053 0.7897053 -0.7897053l3.1591682 0l0 0c0.20944405 0 0.41030884 0.083200455 0.55840683 0.23129845c0.1480999 0.1480999 0.23130035 0.3489647 0.23130035 0.55840683l0 3.1587296c0 0.43614388 -0.3535633 0.7897072 -0.7897072 0.7897072l-3.1591682 0c-0.43614197 0 -0.7897053 -0.3535633 -0.7897053 -0.7897072z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m3.143532 17.459856l0 0c0 -0.43614197 0.35356355 -0.7897053 0.78970623 -0.7897053l3.1591685 0l0 0c0.20944309 0 0.41030788 0.083200455 0.55840635 0.23129845c0.14809895 0.1480999 0.23129988 0.3489647 0.23129988 0.55840683l0 3.1587296c0 0.43614388 -0.3535638 0.7897072 -0.78970623 0.7897072l-3.1591685 0c-0.43614268 0 -0.78970623 -0.3535633 -0.78970623 -0.7897072z" fill-rule="evenodd"/></g></svg>',
    delete: '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m17.5 6.5h-2.5v-.5c0-.8-.7-1.5-1.5-1.5h-3c-.8 0-1.5.7-1.5 1.5v.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5 6 2.5c.3 0 .5-.2.5-.5s-.2-.5-.5-.5zm-7.5 0v-.5c0-.3.2-.5.5-.5h3c.3 0 .5.2.5.5v.5zm0 10.5c-.3 0-.5-.2-.5-.5v-6.5c0-.3.2-.5.5-.5s.5.2.5.5v6.5c0 .3-.2.5-.5.5zm2 0c-.3 0-.5-.2-.5-.5v-6.5c0-.3.2-.5.5-.5s.5.2.5.5v6.5c0 .3-.2.5-.5.5zm2 0c-.3 0-.5-.2-.5-.5v-6.5c0-.3.2-.5.5-.5s.5.2.5.5v6.5c0 .3-.2.5-.5.5zm3-8v7c0 1.9-1.6 3.5-3.5 3.5h-3c-1.9 0-3.5-1.6-3.5-3.5v-7c0-.3.2-.5.5-.5s.5.2.5.5v7c0 1.4 1.1 2.5 2.5 2.5h3c1.4 0 2.5-1.1 2.5-2.5v-7c0-.3.2-.5.5-.5s.5.2.5.5z"/></svg>',
    fullScreenClose: '<svg class="fullscreen__close-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" > <path d="M11.5,18.8c0,0.4-0.3,0.8-0.7,0.8c0,0,0,0-0.1,0c-0.4,0-0.7-0.3-0.7-0.7l-0.3-3.6l-6.8,6.8c-0.1,0.1-0.3,0.2-0.5,0.2 s-0.4-0.1-0.5-0.2c-0.3-0.3-0.3-0.8,0-1.1l6.8-6.8L5,14c-0.4,0-0.7-0.4-0.7-0.8c0-0.4,0.4-0.7,0.8-0.7l4.4,0.3 c0.4,0,0.8,0.2,1.1,0.5c0.3,0.3,0.5,0.7,0.5,1.1L11.5,18.8z M22.6,1.1c-0.3-0.3-0.8-0.3-1.1,0l-6.8,6.8l-0.3-3.6 c0-0.4-0.4-0.7-0.8-0.7c-0.4,0-0.7,0.4-0.7,0.8l0.3,4.4c0,0.4,0.2,0.8,0.5,1.1c0.3,0.3,0.7,0.5,1.1,0.5l4.4,0.3c0,0,0,0,0.1,0 c0.4,0,0.7-0.3,0.7-0.7c0-0.4-0.3-0.8-0.7-0.8L15.8,9l6.8-6.8C22.9,1.8,22.9,1.4,22.6,1.1z"/>',
    left: '<svg class="fullscreen__nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
@@ -3411,6 +3451,7 @@ B.mrespond ([
       if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
 
       B.call (x, 'goto', 'page', page);
+
    }],
    ['goto', 'page', function (x, page) {
       var pages = {
@@ -3679,12 +3720,25 @@ B.mrespond ([
       var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
       var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
+      var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
+      if (selectedPivs) {
+         var farthestSelectedDate = query.sort === 'oldest' ? 0 : Date.now ();
+         dale.go (B.get ('State', 'selected'), function (piv) {
+            var date = piv [query.sort === 'upload' ? 'dateup' : 'date'];
+            if (farthestSelectedDate === undefined) return farthestSelectedDate = date;
+            if (query.sort === 'oldest' && date > farthestSelectedDate) farthestSelectedDate = date;
+            if (query.sort !== 'oldest' && date < farthestSelectedDate) farthestSelectedDate = date;
+         });
+         if (! query.fromDate) var fromDate = farthestSelectedDate;
+         else                  var fromDate = Math [query.sort !== 'oldest' ? 'min' : 'max'] (query.fromDate, farthestSelectedDate);
+      }
+
       B.call (x, 'post', 'query', {}, {
          tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
          sort:           query.sort,
-         from:           query.fromDate ? undefined : 1,
-         fromDate:       query.fromDate,
-         to:             options.selectAll ? 1000000000 : Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
+         from:           (query.fromDate || selectedPivs) ? undefined : 1,
+         fromDate:       selectedPivs ? fromDate : query.fromDate,
+         to:             options.selectAll ? 1000000000 : teishi.last (H.chunkSizes) * 3,
          recentlyTagged: query.recentlyTagged,
          mindate:        mindate,
          maxdate:        maxdate,
@@ -3728,7 +3782,7 @@ B.mrespond ([
          var selected = B.get ('State', 'selected') || {};
          // Update the selection to only include pivs that are returned in the current query
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
-            if (options.selectAll || selected [piv.id]) return [piv.id, true];
+            if (options.selectAll || selected [piv.id]) return [piv.id, {id: piv.id, date: piv.date, dateup: piv.dateup}];
          }));
          // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScroll will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
          var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
@@ -3775,16 +3829,16 @@ B.mrespond ([
          }
       });
    }],
-   ['click', 'piv', function (x, id, k, ev) {
+   ['click', 'piv', function (x, piv, k, ev) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this piv and happened less than 500ms ago, we open the piv in fullscreen.
-      if (last.id === id && Date.now () - last.time < 500) {
-         B.call (x, 'rem', ['State', 'selected'], id);
-         B.call (x, 'set', ['State', 'open'], {id: id, k: k});
+      if (last.id === piv.id && Date.now () - last.time < 500) {
+         B.call (x, 'rem', ['State', 'selected'], piv.id);
+         B.call (x, 'set', ['State', 'open'], {id: piv.id, k: k});
          return;
       }
 
-      B.call (x, 'set', ['State', 'lastClick'], {id: id, time: Date.now ()});
+      B.call (x, 'set', ['State', 'lastClick'], {id: piv.id, time: Date.now ()});
 
       var lastIndex = dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
          if (piv.id === last.id) return k;
@@ -3792,13 +3846,13 @@ B.mrespond ([
 
       // Single select/unselect (either no shift or the last click wasn't on a piv that we currently have or the last clicked piv is deselected)
       if (! ev.shiftKey || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
-         if (! B.get ('State', 'selected', id)) return B.call (x, 'set', ['State', 'selected', id], true);
-         else                                   return B.call (x, 'rem', ['State', 'selected'], id);
+         if (! B.get ('State', 'selected', piv.id)) return B.call (x, 'set', ['State', 'selected', piv.id], {id: piv.id, date: piv.date, dateup: piv.dateup});
+         else                                       return B.call (x, 'rem', ['State', 'selected'], piv.id);
       }
       // Multiple select/unselect
       dale.go (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
          // Instead of triggering events for each piv, we directly override the value (to avoid triggering n redraws for n pivs).
-         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], true);
+         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], {id: piv.id, date: piv.date, dateup: piv.dateup});
       });
       // We manually trigger the change event.
       B.call (x, 'change', ['State', 'selected']);
@@ -3808,11 +3862,12 @@ B.mrespond ([
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
-   ['toggle', 'tag', function (x, tag) {
+   ['toggle', 'tag', function (x, tag, addOnly) {
       var index = B.get ('State', 'query', 'tags').indexOf (tag);
 
       // Tag is removed
       if (index > -1) {
+         if (addOnly) return;
          if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
          if (! H.isYearTag (tag)) return B.call (x, 'rem', ['State', 'query', 'tags'], index);
          return B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
@@ -3835,7 +3890,7 @@ B.mrespond ([
    }],
    ['select', 'all', function (x) {
       B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
-         return [piv.id, true];
+         return [piv.id, {piv: piv.id, date: piv.date, dateup: piv.dateup}];
       }));
       if (B.get ('Data', 'pivTotal') > 2000) B.call (x, 'snackbar', 'yellow', 'Selecting all, please wait...', true);
       B.call (x, 'query', 'pivs', {selectAll: true});
@@ -3884,6 +3939,16 @@ B.mrespond ([
       if (pivs.length === 0) return;
       B.call (x, 'post', 'rotate', {}, {deg: deg, ids: pivs}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error rotating the picture(s).');
+         B.call (x, 'query', 'pivs');
+      });
+   }],
+   ['date', 'pivs', function (x) {
+      var date = new Date (B.get ('State', 'date', 'y') + '-' + H.pad (parseInt (B.get ('State', 'date', 'm')) || 0) + '-' + H.pad (parseInt (B.get ('State', 'date', 'd')) || 0)).getTime ();
+      if (isNaN (date) || date < 0 || date > 4133980799999) return B.call (x, 'snackbar', 'yellow', 'Please enter a valid date.');
+      var pivs = dale.keys (B.get ('State', 'selected'));
+      B.call (x, 'post', 'date', {}, {ids: pivs, date: date}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error setting the date of the picture(s).');
+         B.call (x, 'rem', 'State', 'date');
          B.call (x, 'query', 'pivs');
       });
    }],
@@ -3973,6 +4038,14 @@ B.mrespond ([
       try {
          var hash = btoa (encodeURIComponent (JSON.stringify (query)));
          setTimeout (function () {
+            if (window.location.hash === '#/pics') dontAlterHistory = true;
+            else if (! dontAlterHistory) {
+               try {
+                  var oldHash = teishi.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+                  if (oldHash && ! oldHash.fromDate) dontAlterHistory = true;
+               }
+               catch (error) {}
+            }
             if (dontAlterHistory) {
                history.replaceState (undefined, undefined, '#/pics/' + hash);
                B.set (['State', 'queryURL'], hash);
@@ -4429,6 +4502,7 @@ views.base = function () {
       ['style', CSS.litc],
       views.snackbar (),
       views.feedback (),
+      views.date (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4501,6 +4575,42 @@ views.snackbar = function () {
          ]];
       })
    ];
+}
+
+// *** CHANGE DATE MODAL ***
+
+views.date = function () {
+   return B.view ([['State', 'date'], ['State', 'selected']], function (date, selected) {
+      if (! date) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'change-date'}, [
+            ['div', {class: 'change-date-box'}, [
+               ['div', {class: 'change-date-box-title'}, [
+                  ['span', 'Change the date of the '],
+                  ['span', dale.keys (selected).length],
+                  ['span', ' selected pics to:']
+               ]],
+               ['div', {class: 'change-date-box-input-date'}, [
+                  ['span', {style: style({'width': 30, 'margin-right': '-2px'})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'd']), placeholder: 'DD'}]
+                  ]],
+                  ['span', '/'],
+                  ['span', {style: style({'width': 30})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'm']), placeholder: 'MM'}]
+                  ]],
+                  ['span', '/'],
+                  ['span', {style: style({'width': 50})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
+                  ]]
+               ]],
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6}), onclick: B.ev ('rem', 'State', 'date')}, 'Cancel'],
+               ['a', {href: '', class: 'button button--one', onclick: B.ev ('date', 'pivs')}, 'Change']
+            ]]
+         ]]
+      ]];
+   });
 }
 
 // *** FEEDBACK VIEW ***
@@ -5232,11 +5342,12 @@ views.pics = function () {
                               var attached = selectedTags [tag] === dale.keys (selected).length;
                               return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ' tag--unattached'), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
-                                 ['span', {class: 'tag__title'}, tag],
+                                 ['span', {class: 'tag__title', style: style({'width': 200})}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--view-query', onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag, true])}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag', 24)],
@@ -5288,6 +5399,10 @@ views.pics = function () {
                   ['div', {class: 'organise-bar__button organise-bar__button--select-all', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, [
                      H.putSvg ('selectAll'),
                      ['span', {class: 'organise-bar__button-title'}, 'Unselect all'],
+                  ]],
+                  ['div', {class: 'organise-bar__button organise-bar__button--change-date'}, [
+                     H.putSvg ('calendarIcon'),
+                     ['span', {class: 'organise-bar__button-title', onclick: B.ev (H.stopPropagation, ['set', ['State', 'date'], {}])}, 'Change date'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--download', onclick: B.ev (H.stopPropagation, ['download', []])}, [
                      H.putSvg ('download'),
@@ -5516,7 +5631,7 @@ views.grid = function () {
                         ['div', {
                            class: 'pictures-grid__item-picture',
                            id: piv.id,
-                           onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
+                           onclick: B.ev (H.stopPropagation, ['click', 'piv', {id: piv.id, date: piv.date, dateup: piv.dateup}, piv.index, {raw: 'event'}])
                         }, [
                            ['div', {
                               class: 'inner',

@@ -2072,6 +2072,58 @@ suites.rotate = function () {
    ];
 }
 
+suites.date = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('change date of pivs', 'date', [
+         [[], 'object'],
+         [[], 'keys', ['ids', 'date']],
+         [[], 'invalidKeys', ['foo']],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+         [['date'], 'integer'],
+         [['date'], 'values', [1]],
+         [['date'], 'range', {min: 0, max: 4133980799999}],
+         [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+      ]),
+      ['change date of nonexisting piv', 'post', 'date', {}, {ids: ['foo'], date: Date.now ()}, 404],
+      ['change date no-op', 'post', 'date', {}, {ids: [], date: Date.now ()}, 400],
+      ['start upload to test rotation', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test rotation', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['get small piv before date change', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         s.date = rs.body.pivs [0].date;
+         return true;
+      }],
+      ['change date of small piv', 'post', 'date', {}, function (s) {return {ids: [s.smallId], date: 0}}, 200],
+      ['get small piv after date change', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.date', rs.body.pivs [0].date, 0 + (s.date % 86400000))) return false;
+         if (H.stop ('piv.dates.userDate', rs.body.pivs [0].dates.userDate, 0)) return false;
+         if (H.stop ('piv.dateSource', rs.body.pivs [0].dateSource, 'userDate')) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::1970', 'd::M1'])) return false;
+         return true;
+      }],
+      ['change date of small piv again', 'post', 'date', {}, function (s) {return {ids: [s.smallId], date: new Date ('2022-12-18').getTime ()}}, 200],
+      ['get small piv after date change', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         if (H.stop ('piv.date', rs.body.pivs [0].date, new Date ('2022-12-18').getTime () + (s.date % 86400000))) return false;
+         if (H.stop ('piv.dates.userDate', rs.body.pivs [0].dates.userDate, new Date ('2022-12-18').getTime ())) return false;
+         if (H.stop ('piv.dateSource', rs.body.pivs [0].dateSource, 'userDate')) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::2022', 'd::M12'])) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 suites.tag = function () {
    return [
       suites.auth.in (tk.users.user1),
@@ -3116,20 +3168,58 @@ suites.import = function () {
    ];
 }
 
+suites.perf = function () {
+   var perf = [];
+   return [
+      ['dummy request', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+         var readline = require ('readline').createInterface ({input: process.stdin, output: process.stdout});
+         readline.question ('Enter username:\n', function (username) {
+            readline.question ('Enter password\n', function (password) {
+               s.username = username;
+               s.password = password;
+               next ();
+            });
+         });
+      }],
+      ['login', 'post', 'auth/login', {}, function (s) {return {username: s.username, password: s.password, timezone: 0}}, 200, H.setCredentials],
+      dale.go (dale.times (2), function (v) {
+         return ['get all pivs', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 300}, 200, function (s, rq, rs) {
+            perf.push (rs.body.perf);
+            return true;
+         }];
+      }),
+      ['dummy request', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+         var output = {};
+         dale.go (perf, function (v) {
+            dale.go (v, function (v2, k2) {
+               if (! output [k2]) output [k2] = 0;
+               output [k2] += v2;
+            });
+         });
+         dale.go (output, function (v, k) {
+            k += dale.go (dale.times (30 - k.length), function () {return ' '}).join ('');
+            clog (k, v, '\t', Math.round (100 * v / output.total) + '%');
+         });
+         next ();
+      }],
+   ];
+}
+
 // *** RUN TESTS ***
 
 var t = Date.now ();
 
-H.runServer ();
+if (toRun !== 'perf') H.runServer ();
 
 H.tryTimeout (10, 1000, function (cb) {
-   h.one ({}, {port: CONFIG.port, method: 'get', path: '/', code: 200}, cb);
+   h.one ({}, {port: toRun === 'perf' ? 1427 : CONFIG.port, method: 'get', path: '/', code: 200}, cb);
 }, function (error) {
    if (error) return clog ('SERVER DID NOT START', error);
    var serverStart = Date.now () - t;
 
    var suitesToRun = (function () {
-      if (! toRun) return dale.go (suites, function (v) {
+      if (! toRun) return dale.go (suites, function (v, k) {
+         if (k === 'perf') return [];
          if (type (v) === 'function') return v ();
          return v.full ();
       });
@@ -3138,7 +3228,7 @@ H.tryTimeout (10, 1000, function (cb) {
       return suite.full ();
    }) ();
 
-   h.seq ({port: CONFIG.port}, suitesToRun, function (error, tests) {
+   h.seq ({port: toRun === 'perf' ? 1427 : CONFIG.port}, suitesToRun, function (error, tests) {
       if (error) {
          if (error.request && error.request.body && type (error.request.body) === 'string') error.request.body = error.request.body.slice (0, 1000) + (error.request.body.length > 1000 ? '... OMITTING REMAINDER' : '');
          if (error.body && type (error.body) === 'string') error.body = error.body.slice (0, 1000) + (error.body.length > 1000 ? '... OMITTING REMAINDER' : '');

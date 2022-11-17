@@ -972,7 +972,6 @@ H.parseDate = function (date) {
    return -1;
 }
 
-
 H.addTags = function (s, tags, username, id) {
    // We add the tags of this piv to those of the identical piv already existing
    var multi = redis.multi ();
@@ -985,8 +984,26 @@ H.addTags = function (s, tags, username, id) {
    mexec (s, multi);
 }
 
+// Takes a piv, a new date and a multi redis operation.
+H.updateDateTags = function (piv, oldDate, newDate, multi) {
+   var oldYearTag  = 'd::'  + new Date (oldDate).getUTCFullYear ();
+   var oldMonthTag = 'd::M' + (new Date (oldDate).getUTCMonth () + 1);
+   var newYearTag  = 'd::'  + new Date (newDate).getUTCFullYear ();
+   var newMonthTag = 'd::M' + (new Date (newDate).getUTCMonth () + 1);
+
+   dale.go ([[oldYearTag, newYearTag], [oldMonthTag, newMonthTag]], function (pair) {
+      if (pair [0] === pair [1]) return;
+      multi.sadd ('pivt:' + piv.id, pair [1]);
+      multi.srem ('pivt:' + piv.id, pair [0]);
+      multi.sadd ('tag:'  + piv.owner + ':' + pair [1], piv.id);
+      multi.srem ('tag:'  + piv.owner + ':' + pair [0], piv.id);
+      multi.sadd ('tags:' + piv.owner, pair [1]);
+      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has the old year or month tag.
+   });
+}
+
 // Updates piv.dates if there are new dates that have different values than those already existing.
-// Updates piv.date if any of the new dates is the existing piv date is not from a Date/Time Original metadata tag AND lower than the existing date of the piv. In that case, it also updates piv.dateSource and optionally the year tags for the piv.
+// Updates piv.date if any of the new dates in the existing piv date is not from a Date/Time Original metadata tag AND lower than the existing date of the piv. In that case, it also updates piv.dateSource and optionally the year tags for the piv.
 H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified, newDates) {
    var date = parseInt (piv.date), dates = JSON.parse (piv.dates), existingDates = dale.obj (dates, function (v) {return [H.parseDate (v), true]});
    var key = repeatedOrAlreadyUploaded + ':' + Date.now ();
@@ -1030,20 +1047,7 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
       }
    }
 
-   var oldYearTag  = 'd::'  + new Date (date).getUTCFullYear ();
-   var oldMonthTag = 'd::M' + (new Date (date).getUTCMonth () + 1);
-   var newYearTag  = 'd::'  + new Date (parseInt (piv.date)).getUTCFullYear ();
-   var newMonthTag = 'd::M' + (new Date (parseInt (piv.date)).getUTCMonth () + 1);
-
-   dale.go ([[oldYearTag, newYearTag], [oldMonthTag, newMonthTag]], function (pair) {
-      if (pair [0] === pair [1]) return;
-      multi.sadd ('pivt:' + piv.id, pair [1]);
-      multi.srem ('pivt:' + piv.id, pair [0]);
-      multi.sadd ('tag:'  + piv.owner + ':' + pair [1], piv.id);
-      multi.srem ('tag:'  + piv.owner + ':' + pair [0], piv.id);
-      multi.sadd ('tags:' + piv.owner, pair [1]);
-      // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has the old year or month tag.
-   });
+   H.updateDateTags (piv, date, parseInt (piv.date), multi);
    mexec (s, multi);
 }
 
@@ -1262,6 +1266,13 @@ H.stat.r = function (s) {
 // *** ROUTES ***
 
 var routes = [
+
+   // *** DO NOT SERVE REQUESTS IF WE ARE PERFORMING CONSISTENCY OPERATIONS ***
+
+   ['all', '*', function (rq, rs) {
+      if (process.argv [3] === 'makeConsistent') return reply (rs, 503, {error: 'Consistency operation in process'});
+      rs.next ();
+   }],
 
    // *** UPTIME ROBOT ***
 
@@ -2008,6 +2019,7 @@ var routes = [
                ];
             }),
             ['body.total', b.total, 'integer'],
+            // Range is years 1970-2100
             ['body.total', b.total, {min: 0}, teishi.test.range],
             ['body.alreadyImported', b.alreadyImported, ['integer', 'undefined'], 'oneOf'],
             b.alreadyImported === undefined ? [] : ['body.alreadyImported', b.alreadyImported, {min: 1}, teishi.test.range],
@@ -2599,7 +2611,7 @@ var routes = [
          function (s) {
             var multi = redis.multi ();
 
-            if (dale.stopNot (s.last, undefined, function (piv) {
+            if (dale.stop (s.last, true, function (piv) {
                if (piv === null || piv.owner !== rq.user.username) {
                   reply (rs, 404);
                   return true;
@@ -2619,6 +2631,56 @@ var routes = [
             mexec (s, multi);
          },
          [H.log, rq.user.username, {ev: 'rotate', ids: b.ids, deg: b.deg}],
+         [reply, rs, 200],
+      ]);
+   }],
+
+   // *** CHANGE DATE ***
+
+   ['post', 'date', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids', 'date'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+         function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
+         ['body.date', b.date, 'integer'],
+         ['body.date', b.date, {min: 0, max: 4133980799999}, teishi.test.range],
+      ])) return;
+
+      var multi = redis.multi (), seen = dale.obj (b.ids, function (id) {
+         multi.hgetall ('piv:' + id);
+         return [id, true];
+      });
+
+      if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
+
+      astop (rs, [
+         [mexec, multi],
+         function (s) {
+            var multi = redis.multi ();
+
+            if (dale.stop (s.last, true, function (piv) {
+               if (piv === null || piv.owner !== rq.user.username) {
+                  reply (rs, 404);
+                  return true;
+               }
+
+               var dates = JSON.parse (piv.dates);
+               // We respect the existing offset from midnight to avoid setting multiple pivs in the exact same moment.
+               var offset = parseInt (piv.date) % 86400000;
+               dates.userDate = b.date;
+               multi.hmset ('piv:' + piv.id, {date: b.date + offset, dateSource: 'userDate', dates: JSON.stringify (dates)});
+
+               H.updateDateTags (piv, parseInt (piv.date), b.date, multi);
+
+            })) return;
+
+            mexec (s, multi);
+         },
+         [H.log, rq.user.username, {ev: 'date', ids: b.ids, date: b.date}],
          [reply, rs, 200],
       ]);
    }],
@@ -2655,7 +2717,7 @@ var routes = [
          function (s) {
             var multi = redis.multi ();
 
-            if (dale.stopNot (s.last, undefined, function (owner, k) {
+            if (dale.stop (s.last, true, function (owner, k) {
                if (k % 2 !== 0) return;
                if (owner !== rq.user.username) {
                   reply (rs, 404);
@@ -4385,7 +4447,7 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
-if (! inc (['checkConsistency', 'makeConsistent'], process.argv [3])) {
+if (! inc (['checkConsistency'], process.argv [3])) {
    server = cicek.listen ({port: CONFIG.port}, routes);
 
    if (cicek.isMaster) a.seq ([
@@ -4561,6 +4623,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
+      var notOK = [];
       if (process.argv [3] !== 'makeConsistent') notify (s, {priority: 'normal', type: 'File consistency check done.', ms: Date.now () - s.start});
       else a.seq (s, [
          // Extraneous S3 files: delete. Don't update the statistics.
@@ -4573,13 +4636,32 @@ if (cicek.isMaster && ENV) a.stop ([
                return [H.unlink, Path.join (CONFIG.basepath, v)];
             }, {max: os.cpus ().length});
          },
-         // TODO: Missing S3 files: upload them to S3 if they are in the FS.
-         // TODO: The same goes for S3 files of incorrect size.
-         // TODO: Missing FS files: download them from S3 if they are there.
          function (s) {
-            var allOK = s.s3missing.length === 0 && s.fsmissing.length === 0;
-            var messageType = allOK ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';
-            var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: allOK ? 'important' : 'critical', type: messageType}, function (k) {
+            // Missing S3 files or S3 files of incorrect size: upload them to S3 if they are in the FS.
+            a.fork (s, s.s3missing.concat (s.s3WrongSize), function (file) {
+               if (inc (s.fsmissing, file)) {
+                  notOK.push (file);
+                  return [];
+               }
+               return [H.s3put, file, Path.join (CONFIG.basepath, file)];
+            }, {max: os.cpus ().length});
+         },
+         function (s) {
+            // Missing FS files: download them from S3 if they are there.
+            a.fork (s, s.fsmissing, function (file) {
+               if (inc (s.s3missing, file)) {
+                  notOK.push (file);
+                  return [];
+               }
+               return [
+                  [H.s3get, file],
+                  [a.get, a.make (fs.writeFile), Path.join (CONFIG.basepath, file), '@last', {encoding: 'binary'}]
+               ];
+            }, {max: os.cpus ().length});
+         },
+         function (s) {
+            var messageType = notOK.length === 0 ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';
+            var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: notOK.length === 0 ? 'important' : 'critical', type: messageType}, function (k) {
                if (s [k].length) return [k, s [k]];
             });
             message.ms = Date.now () - s.start;
@@ -4636,7 +4718,7 @@ if (cicek.isMaster && ENV) a.stop ([
    function (s) {
       var actual = {TOTAL: {s3: 0, fs: 0}};
       if (! s ['s3:files']) s ['s3:files'] = {};
-      var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {};
+      var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {}, proper = {};
       dale.go (s.last, function (piv) {
          if (! actual [piv.owner]) actual [piv.owner] = {s3: 0, fs: 0};
          actual [piv.owner].fs += parseInt (piv.byfs) + parseInt (piv.bythumbS || 0) + parseInt (piv.bythumbM || 0) + parseInt (piv.bymp4 || 0);
@@ -4644,12 +4726,19 @@ if (cicek.isMaster && ENV) a.stop ([
          var key = H.hash (piv.owner) + '/' + piv.id;
          var s3entry = s ['s3:files'] [key];
          delete extraneousS3 [key];
-         if (type (parseInt (s3entry)) === 'integer') {
-            actual [piv.owner].s3 += parseInt (s ['s3:files'] [H.hash (piv.owner) + '/' + piv.id]);
-            actual.TOTAL.s3       += parseInt (s ['s3:files'] [H.hash (piv.owner) + '/' + piv.id]);
+
+         // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
+         actual [piv.owner].s3 += parseInt (piv.byfs) + 32;
+         actual.TOTAL.s3       += parseInt (piv.byfs) + 32;
+
+         if (s3entry === undefined) {
+            proper [key] = parseInt (piv.byfs) + 32;
+            missingS3 [key] = true;
          }
-         else if (s3entry === undefined) missingS3 = s3entry;
-         else invalidS3 [key] = s3entry;
+         else if (! (type (parseInt (s3entry)) === 'integer' && parseInt (s3entry) === parseInt (piv.byfs) + 32)) {
+            proper [key] = parseInt (piv.byfs) + 32;
+            invalidS3 [key] = s3entry;
+         }
       });
       var mismatch = [];
       dale.go (actual, function (v, k) {
@@ -4672,11 +4761,18 @@ if (cicek.isMaster && ENV) a.stop ([
          })],
          function (s) {
             var multi = redis.multi ();
+            dale.go (dale.keys (missingS3).concat (dale.keys (invalidS3)), function (v) {
+               multi.hset ('s3:files', v, proper [v]);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            var multi = redis.multi ();
             dale.go (extraneousS3, function (v, k) {multi.hdel ('s3:files', k)});
             mexec (s, multi);
          },
          function (s) {
-            var message = dale.obj (['missingS3', 'extraneousS3', 'invalidS3', 'mismatch'], {priority: 'critical', type: 'Stored sizes consistency operation success.'}, function (k) {
+            var message = dale.obj (['missingS3', 'extraneousS3', 'invalidS3', 'mismatch'], {priority: 'important', type: 'Stored sizes consistency operation success.'}, function (k) {
                if (dale.keys (s [k]).length) return [k, s [k]];
             });
             message.ms = Date.now () - s.start;
@@ -4698,11 +4794,20 @@ if (cicek.isMaster && ENV) a.stop ([
 // *** CHECK S3 QUEUE ON STARTUP ***
 
 if (cicek.isMaster && ENV) a.stop ([
-   [a.set, 'proc', [Redis, 'get', 's3:proc']],
+   [Redis, 'get', 's3:proc'],
+   function (s) {
+      if (! s.last || s.last === '0') return s.next ();
+      a.seq (s, [
+         [notify, {priority: 'critical', type: 'Non-empty S3 process counter on startup.', n: s.last}],
+         process.argv [3] === 'makeConsistent' ? [Redis, 'del', 's3:proc'] : [],
+      ]);
+   },
    [Redis, 'llen', 's3:queue'],
    function (s) {
-      if (s.proc && s.proc !== '0') notify (a.creat (), {priority: 'critical', type: 'Non-empty S3 process counter on startup.', n: s.proc});
-      if (s.last) notify (s, {priority: 'critical', type: 'Non-empty S3 queue on startup.', n: s.last});
+      if (! s.last) return;
+      // Resume S3 operations if the queue is not empty, but after we are done with consistency operations.
+      if (process.argv [3] !== 'makeConsistent') H.s3exec ();
+      notify (s, {priority: 'critical', type: 'Non-empty S3 queue on startup.', n: s.last});
    }
 ], function (error) {
    notify (s, {priority: 'critical', type: 'Non-empty S3 queue DB check error.', error: error});

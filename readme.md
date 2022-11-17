@@ -41,60 +41,61 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 Tom
    - server/client: home view with pink button to go to home view on non-initial query
-   - client: add button to add tag to query on organize view
    - client: show less year & country entries in sidebar
-   - client: see info of piv
+   - mobile: ios background upload
+   - Submission Google Drive
 
 Mono
-   - server/client: add button & modal for setting date
-   - server: investigate performance improvements on large queries
-   - server: consistency
-      - re-upload missing files in S3
-      - clear s3:proc counter
-      - fix invalid s3 entries in s3:files
-   - client: cannot go back from view pics to other views because of URL change
+   - client: fix: keep selection when query changes and not enough pivs are returned
+   - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
-   - client: check what happens if connection is dropped while uploading
+
+   - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
+   - server/client: opt-in face recognition powered by AI
+   - server/client: OCR recognition
+   - server: add dedicated keys for uploads in order to improve getUploads performance
+   - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
    - server/client: videos pseudo-tag
    - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
-
-Later
-- server: Get prod mirror
-- server: script to rename username
-- client: retry upload button
-- client: Fix ronin untagged or range tag when deleting all
-- server: Exclude WA from hour in parse date
-- server: Serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-- server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-- server/client: Share & manage
-- client: Upgrade pop up notice or email when running out of free space.
-- server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-- server: change stalled interval to 3s and send waits when doing video processing in tests
-- server: rename b to rq.body throughout
-- Pricing
-   - Investigate Glacier lifecycle.
-   - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
-   - Include price of PUT requests
-   - Check new price of servers & price of large disk
-   - Check balance between disk and RAM and compare to actual RAM usage
-- server: deploy to prod while there are processes going on!
-   - background processes: upload, import, geotagging switch, mp4 conversions
-   - incremental steps to solution:
-      - don't shut down if there's something going on
-      - shut down after all are done
-      - stop new ones
-      - save progress on what's already done
-- client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
-- server: Investigate intermittent busboy error.
-- server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
-- server: get rid of thu entries, use id of piv + suffix
-- admin: add set of users for fast access rather than scanning db
-- Submission Google Drive
-- Self-hosted ac;pic
-   - Turn off/on S3
-   - Docker
-   - Documentation
+   - server: fix: exclude WA from hour in parse date
+   - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+   - client: upload: check what happens if connection is dropped while uploading
+   - client: upload: retry upload button
+   - server/client: set location
+   - server/client: ignore deleted pivs flag for both upload & import.
+   - client: see info of piv
+   - server: set up prod mirror
+   - server: script to rename username
+   - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
+   - server/client: Share & manage
+   - client: upgrade pop up notice or email when running out of free space.
+   - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
+   - server: change stalled interval to 3s and send waits when doing video processing in tests
+   - server: rename b to rq.body throughout
+   - server: get rid of thu entries, use id of piv + suffix
+   - admin: add set of users for fast access rather than scanning db
+   - server/client: rotate videos
+   - Pricing
+      - Investigate Glacier lifecycle.
+      - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
+      - Include price of PUT requests
+      - Check new price of servers & price of large disk
+      - Check balance between disk and RAM and compare to actual RAM usage
+   - server: deploy to prod while there are processes going on!
+      - background processes: upload, import, geotagging switch, mp4 conversions
+      - incremental steps to solution:
+         - don't shut down if there's something going on
+         - shut down after all are done
+         - stop new ones
+         - save progress on what's already done
+   - client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
+   - server: Investigate intermittent busboy error.
+   - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
+   - Add notes on self-hosted ac;pic
+      - Turn off/on S3
+      - Docker
+      - Documentation
 
 ### Already implemented
 
@@ -219,17 +220,14 @@ Later
    - S3 & SES setup.
    - Set up dev & prod environments.
 
-### Todo v1
+### Todo soon
 
 - Open
    - Show tags in open view.
 
 - Upload/import
-   - If there's a provider error during an import, give a "try again" option with the same list and allow also to cancel it.
    - Add a "show more" button to show more items of Recent Imports or Recent Uploads.
-   - Retry on error.
    - Show estimated time remaining in ongoing uploads.
-   - Ignore deleted pivs flag for both upload & import.
    - New upload flow
       - Starting state: area from dropdown & button for files & button for folder upload.
       - Uploading state: button for starting new upload and button for starting tagging state.
@@ -283,7 +281,6 @@ Later
 - Pivs
    - See if there's a way to detect & merge (whatsapp) videos that look the same but have different encoding qualities and slightly different lengths.
    - Hidden tags.
-   - Set date manually.
    - Filters.
    - Themes for the interface.
    - Set colors of tags?
@@ -301,7 +298,6 @@ Later
 - Share
    - Comments.
    - Share to social platforms.
-   - Share certain tags only on shared pivs.
    - Profile pages.
 
 ## Server
@@ -460,6 +456,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Videos will not be rotated and will be silently ignored.
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
+
+- `POST /date`
+   - Body must be of the form `{ids: [STRING, ...], date: INTEGER}` (otherwise, 400 with body `{error: ...}`). `date` must be equal or greater than 0.
+   - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
+   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - On each of the pivs, if the existing `date` field has a positive offset from UTC midnight, this offset will be added to the provided `date`.
 
 - `POST /tag`
    - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
@@ -777,6 +779,7 @@ All the routes below require an admin user to be logged in.
    - For account delete:  {t: INT, ev: 'auth', type: 'delete',         ip: STRING, userAgent: STRING, triggeredByAdmin: true|UNDEFINED}
    - For deletes:         {t: INT, ev: 'delete', ids: [STRING, ...]}
    - For rotates:         {t: INT, ev: 'rotate', ids: [STRING, ...], deg: 90|180|-90}
+   - For date setting:    {t: INT, ev: 'date', ids: [STRING, ...], date: INTEGER}
    - For (un)tags:        {t: INT, ev: 'tag',        type: tag|untag, ids: [STRING, ...], tag: STRING}
    - For (un)shares:      {t: INT, ev: 'share',      type: 'share|unshare,                tag: STRING, whom: ID|UNDEFINED, who: ID|UNDEFINED} (if `whom` is present, `who` is absent and the operation is done by the user; if `who` is present, `whom` is absent and the operation is done to the user).
    - For dismiss:         {t: INT, ev: 'dismiss',    type: 'geotagging|selection'}
@@ -921,24 +924,28 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Depends on `State.feedback`.
    - Events: `onclick -> set|rem State.feedback`.
    - Contained by: `views.base`.
-4. `views.header`
+4. `views.date`
+   - Depends on `State.selected` and `State.date`.
+   - Contained by: `views.base`.
+   - Events: `onclick -> date pivs`.
+5. `views.header`
    - Depends on `State.page` and `Data.account`.
    - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`, `open location undefined URL`
    - Contained by: `views.pics`, `views.upload`, `views.share`, `views.tags`.
-5. `views.empty`
+6. `views.empty`
    - Contained by: `views.pics`.
-6. `views.grid`
+7. `views.grid`
    - Contained by: `views.pics`.
    - Depends on `State.chunks`.
    - Events: `onclick -> click piv`.
-7. `views.open`
+8. `views.open`
    - Contained by: `views.pics`.
    - Depends on `State.open` and `Data.pivTotal`.
    - Events: `onclick -> open prev`, `onclick -> open next`, `onclick -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
-8. `views.noSpace`
+9. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
-9. `views.importFolders`
+10. `views.importFolders`
    - Contained by: `views.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
@@ -1037,8 +1044,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It sets `State.querying` to `{t: INTEGER, options: {...}}`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
       - Invokes `post query`, using `State.query`:
-         - If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`.
-         - The `to` parameter will be either the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`) or the amount of selected pivs, whatever is larger. If `options.selectAll` is set, it will be set to a very large number instead.
+         - If `State.query.fromDate` is `undefined` and there are no pivs in `State.selected`, it will call the endpoint using the parameter `from` set to `1`. Otherwise, it will call the endpoint using the parameter `fromDate`, set to either `query.fromDate` or to the farthest date from any piv in `State.selected`, whichever of the two dates is the farthest one. The farthest date will be the *newest* one if `query.sort` is `oldest`, and the *oldest* one otherwise.
+         - The `to` parameter will be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`). If `options.selectAll` is set, it will be set to a very large number instead.
          - If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server.
          - The third argument passed to the responder will be passed in the `refresh` field.
          - If `State.query.update` is set to `'auto'`, or if there are no pivs yet in `Data.pivs`, it will set `updateLimit` to the present moment; otherwise, it will pass the value of `State.query.updateLimit`.
@@ -1064,15 +1071,16 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.open` is not set, it will trigger a `change` event on `Data.pivs` to the pivs returned by the query. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set. We check whether the piv previously opened is still on the list of pivs returned by the query. If it is no longer in the query, it invokes `rem State.open` and `change Data.pivs`. It will also invoke `exit fullscreen`. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
-   5. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
+   5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
    6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
-   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
+   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
    8. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
    9. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
    10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`.
    11. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
-   12. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
-   13. `scroll`:
+   12. `date pivs`: invokes `snackbar` if there was either invalid input or the operation failed. If the input (`State.date`) is valid, it invokes `post date` and then if the operation is successful invokes `rem State.page` and `query pivs`.
+   13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
+   14. `scroll`:
       - Only will perform actions if `State.page` is `pivs`.
       - If the `to` argument is `undefined` and `State.scroll` exists and happened less than 50ms ago, the responder won't do anything else - effectively ignoring the call.
       - If `to` is set to `-1` or `undefined`, our reference `y` position will be the current one.
@@ -1082,15 +1090,17 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's at least partly visible in the viewport.
       - If a `to` parameter is passed that is not -1, it will scroll to that `y` position after a timeout of 0ms. The timeout is there to allow for DOM operations to conclude before scrolling.
       - Note: the scroll responder has an overall flow of the following shape: 1) determine visibility; 2) trigger changes that will redraw the grid; 3) update `State.query.fromDate`; 4) if necesary, scroll to the right position.
-   14. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
-   15. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   16. `update queryURL`:
+   15. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
+   16. `stop propagation`: stops propagation of the `ev` passed as an argument.
+   17. `update queryURL`:
+      - This responder is responsible for taking changes to `State.query` in order to update `State.queryURL`.
       - If `State.query` is not set, it does nothing.
       - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
-      - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH`. It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly.
-      - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new history entry will *not* be generated.
+      - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH` by rewriting the last `history` entry (instead of creating a new one). It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly. If the current hash is `#/pics` or the current hash, when decoded into an object, has no `fromDate` field, we also overwrite the existing history entry rather than creating a new one. In all, whenever an initial query is built up, or when only the `fromDate` entry changes, we overwrite the current `history` entry - otherwise, we create a new entry by directly changing the hash.
+      - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new `history` entry will *not* be generated.
       - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
-   17. `change State.queryURL`:
+   18. `change State.queryURL`:
+      - This responder is responsible for taking changes to `State.queryURL` in order to update `State.query`.
       - If `State.queryURL` is not set, it does nothing.
       - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ...}`.
       - If any of these fields is both set and different to the corresponding field of `State.query`, it will be overwritten in `State.query` and a `change` event on `State.query` will be invoked.
@@ -1150,6 +1160,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `State`:
    - `changePassword`: if present, shows the change password form in the account view.
    - `chunks`: if present, it is an array of objects, each representing a chunk of pivs to be shown. Each chunk has the form `{pivs: [...], start: INT, end: INT, visible: true|false|undefined}`. `pivs` is an array of pivs; `start` and `end` indicate the y-coordinate of the start and the end of the chunk. `visible` indicates whether the chunk should be displayed or not, given the current y-position of the window.
+   - `date`: `UNDEFINED|{y: STRING, m: STRING: d: STRING}`. If present, it denotes an object with date fields for dating pivs.
    - `feedback`: if not `undefined`, contains a text string with feedback to be sent.
    - `filter`: filters tags shown in sidebar.
    - `import`:
@@ -1173,15 +1184,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `open`: `{id: STRING, k: INTEGER}`. id and index of the piv to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
-   - `tagOrder`: determines whether tags are sorted by number of pivs or alphabetically, and whether the order should be reverse or not. It is of the shape `{field: 'a|n', reverse: true|false|UNDEFINED}`.
    - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER, recentlyUploaded: UNDEFINED|[ID, ...], update: UNDEFINED|'auto'|'manual', updateLimit: UNDEFINED|INTEGER}`.
    - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
    - `queryURL`: if set, has the form `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER}`. When updated, its data will be used to update `State.query`.
    - `querying`: `UNDEFINED|{t: INTEGER, options: {updateSelected: BOOLEAN|UNDEFINED, refresh: BOOLEAN|UNDEFINED}`, set if `query pivs` is currently querying the server. Its purpose is to avoid concurrent queries to the server.
-   - `selected`: an object where each key is a piv id and every value is either `true` or `false`. If a certain piv key has a corresponding `true` value, the piv is selected.
+   - `selected`: an object where each key is a piv id and every value is `{id: STRING, date: INTEGER, dateup: INTEGER}`. If a certain piv key has a corresponding `true` value, the piv is selected.
    - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pivs are selected.
    - `showNSelectedTags`: UNDEFINED|INTEGER, determines the amount of tags seen when at least one piv is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
+   - `tagOrder`: determines whether tags are sorted by number of pivs or alphabetically, and whether the order should be reverse or not. It is of the shape `{field: 'a|n', reverse: true|false|UNDEFINED}`.
    - `untag`: flag to mark that we're untagging pivs instead of tagging them.
    - `upload`:
       - `count`: `UNDEFINED|{UPLOADID: INTEGER, ...}`. Each entry counts the number of items currently being processed for each upload.
