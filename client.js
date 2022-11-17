@@ -3541,12 +3541,25 @@ B.mrespond ([
       var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
       var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
+      var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
+      if (selectedPivs) {
+         var farthestSelectedDate = query.sort === 'oldest' ? 0 : Date.now ();
+         dale.go (B.get ('State', 'selected'), function (piv) {
+            var date = piv [query.sort === 'upload' ? 'dateup' : 'date'];
+            if (farthestSelectedDate === undefined) return farthestSelectedDate = date;
+            if (query.sort === 'oldest' && date > farthestSelectedDate) farthestSelectedDate = date;
+            if (query.sort !== 'oldest' && date < farthestSelectedDate) farthestSelectedDate = date;
+         });
+         if (! query.fromDate) var fromDate = farthestSelectedDate;
+         else                  var fromDate = Math [query.sort !== 'oldest' ? 'min' : 'max'] (query.fromDate, farthestSelectedDate);
+      }
+
       B.call (x, 'post', 'query', {}, {
          tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
          sort:           query.sort,
-         from:           query.fromDate ? undefined : 1,
-         fromDate:       query.fromDate,
-         to:             options.selectAll ? 1000000000 : Math.max (dale.keys (B.get ('State', 'selected')).length, teishi.last (H.chunkSizes) * 3),
+         from:           (query.fromDate || selectedPivs) ? undefined : 1,
+         fromDate:       selectedPivs ? fromDate : query.fromDate,
+         to:             options.selectAll ? 1000000000 : teishi.last (H.chunkSizes) * 3,
          recentlyTagged: query.recentlyTagged,
          mindate:        mindate,
          maxdate:        maxdate,
@@ -3590,7 +3603,7 @@ B.mrespond ([
          var selected = B.get ('State', 'selected') || {};
          // Update the selection to only include pivs that are returned in the current query
          B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
-            if (options.selectAll || selected [piv.id]) return [piv.id, true];
+            if (options.selectAll || selected [piv.id]) return [piv.id, {id: piv.id, date: piv.date, dateup: piv.dateup}];
          }));
          // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScroll will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
          var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
@@ -3637,16 +3650,16 @@ B.mrespond ([
          }
       });
    }],
-   ['click', 'piv', function (x, id, k, ev) {
+   ['click', 'piv', function (x, piv, k, ev) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this piv and happened less than 500ms ago, we open the piv in fullscreen.
-      if (last.id === id && Date.now () - last.time < 500) {
-         B.call (x, 'rem', ['State', 'selected'], id);
-         B.call (x, 'set', ['State', 'open'], {id: id, k: k});
+      if (last.id === piv.id && Date.now () - last.time < 500) {
+         B.call (x, 'rem', ['State', 'selected'], piv.id);
+         B.call (x, 'set', ['State', 'open'], {id: piv.id, k: k});
          return;
       }
 
-      B.call (x, 'set', ['State', 'lastClick'], {id: id, time: Date.now ()});
+      B.call (x, 'set', ['State', 'lastClick'], {id: piv.id, time: Date.now ()});
 
       var lastIndex = dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
          if (piv.id === last.id) return k;
@@ -3654,13 +3667,13 @@ B.mrespond ([
 
       // Single select/unselect (either no shift or the last click wasn't on a piv that we currently have or the last clicked piv is deselected)
       if (! ev.shiftKey || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
-         if (! B.get ('State', 'selected', id)) return B.call (x, 'set', ['State', 'selected', id], true);
-         else                                   return B.call (x, 'rem', ['State', 'selected'], id);
+         if (! B.get ('State', 'selected', piv.id)) return B.call (x, 'set', ['State', 'selected', piv.id], {id: piv.id, date: piv.date, dateup: piv.dateup});
+         else                                       return B.call (x, 'rem', ['State', 'selected'], piv.id);
       }
       // Multiple select/unselect
       dale.go (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
          // Instead of triggering events for each piv, we directly override the value (to avoid triggering n redraws for n pivs).
-         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], true);
+         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], {id: piv.id, date: piv.date, dateup: piv.dateup});
       });
       // We manually trigger the change event.
       B.call (x, 'change', ['State', 'selected']);
@@ -3698,7 +3711,7 @@ B.mrespond ([
    }],
    ['select', 'all', function (x) {
       B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
-         return [piv.id, true];
+         return [piv.id, {piv: piv.id, date: piv.date, dateup: piv.dateup}];
       }));
       if (B.get ('Data', 'pivTotal') > 2000) B.call (x, 'snackbar', 'yellow', 'Selecting all, please wait...', true);
       B.call (x, 'query', 'pivs', {selectAll: true});
@@ -5214,7 +5227,7 @@ views.grid = function () {
                         ['div', {
                            class: 'pictures-grid__item-picture',
                            id: piv.id,
-                           onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
+                           onclick: B.ev (H.stopPropagation, ['click', 'piv', {id: piv.id, date: piv.date, dateup: piv.dateup}, piv.index, {raw: 'event'}])
                         }, [
                            ['div', {
                               class: 'inner',

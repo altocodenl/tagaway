@@ -1044,8 +1044,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It sets `State.querying` to `{t: INTEGER, options: {...}}`.
       - If `State.queryRefresh` is set, it removes it and invokes `clearTimeout` on it.
       - Invokes `post query`, using `State.query`:
-         - If `State.query.fromDate` is `undefined`, it will instead call the endpoint using the parameter `from` set to `1`.
-         - The `to` parameter will be either the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`) or the amount of selected pivs, whatever is larger. If `options.selectAll` is set, it will be set to a very large number instead.
+         - If `State.query.fromDate` is `undefined` and there are no pivs in `State.selected`, it will call the endpoint using the parameter `from` set to `1`. Otherwise, it will call the endpoint using the parameter `fromDate`, set to either `query.fromDate` or to the farthest date from any piv in `State.selected`, whichever of the two dates is the farthest one. The farthest date will be the *newest* one if `query.sort` is `oldest`, and the *oldest* one otherwise.
+         - The `to` parameter will be the largest chunk size times three (`teishi.last (H.chunkSizes) * 3`). If `options.selectAll` is set, it will be set to a very large number instead.
          - If there's a range pseudo-tag (which is a strictly frontend query representing a date range), its values will be used as the `mindate` and `maxdate` parameters sent to the server.
          - The third argument passed to the responder will be passed in the `refresh` field.
          - If `State.query.update` is set to `'auto'`, or if there are no pivs yet in `Data.pivs`, it will set `updateLimit` to the present moment; otherwise, it will pass the value of `State.query.updateLimit`.
@@ -1071,7 +1071,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If `State.open` is not set, it will trigger a `change` event on `Data.pivs` to the pivs returned by the query. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set. We check whether the piv previously opened is still on the list of pivs returned by the query. If it is no longer in the query, it invokes `rem State.open` and `change Data.pivs`. It will also invoke `exit fullscreen`. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
-   5. `click piv id k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection.
+   5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
    6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
    7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
    8. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
@@ -1184,15 +1184,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `open`: `{id: STRING, k: INTEGER}`. id and index of the piv to be shown in full-screen mode.
    - `page`: determines the current page.
    - `redirect`: determines the page to be taken after logging in, if present on the original `window.location.hash`.
-   - `tagOrder`: determines whether tags are sorted by number of pivs or alphabetically, and whether the order should be reverse or not. It is of the shape `{field: 'a|n', reverse: true|false|UNDEFINED}`.
    - `query`: determines the current query for pivs. Has the shape: `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER, recentlyUploaded: UNDEFINED|[ID, ...], update: UNDEFINED|'auto'|'manual', updateLimit: UNDEFINED|INTEGER}`.
    - `queryRefresh`: if set, a timeout that invokes `query pivs` after 1500ms.
    - `queryURL`: if set, has the form `{tags: [...], sort: 'newest|oldest|upload', fromDate: UNDEFINED|INTEGER}`. When updated, its data will be used to update `State.query`.
    - `querying`: `UNDEFINED|{t: INTEGER, options: {updateSelected: BOOLEAN|UNDEFINED, refresh: BOOLEAN|UNDEFINED}`, set if `query pivs` is currently querying the server. Its purpose is to avoid concurrent queries to the server.
-   - `selected`: an object where each key is a piv id and every value is either `true` or `false`. If a certain piv key has a corresponding `true` value, the piv is selected.
+   - `selected`: an object where each key is a piv id and every value is `{id: STRING, date: INTEGER, dateup: INTEGER}`. If a certain piv key has a corresponding `true` value, the piv is selected.
    - `showNTags`: UNDEFINED|INTEGER, determines the amount of tags seen when no pivs are selected.
    - `showNSelectedTags`: UNDEFINED|INTEGER, determines the amount of tags seen when at least one piv is selected.
    - `snackbar`: prints a snackbar. If present, has the shape: `{color: STRING, message: STRING, timeout: TIMEOUT_FUNCTION}`. `timeout` is the function that will delete `State.snackbar` after a number of seconds. Set by `snackbar` event.
+   - `tagOrder`: determines whether tags are sorted by number of pivs or alphabetically, and whether the order should be reverse or not. It is of the shape `{field: 'a|n', reverse: true|false|UNDEFINED}`.
    - `untag`: flag to mark that we're untagging pivs instead of tagging them.
    - `upload`:
       - `count`: `UNDEFINED|{UPLOADID: INTEGER, ...}`. Each entry counts the number of items currently being processed for each upload.
