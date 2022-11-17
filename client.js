@@ -855,6 +855,29 @@ CSS.litc = [
       // color: 'white',
       'margin-left': CSS.vars ['padding--xs']
    }],
+   ['.see-more-years', {
+      'width, height': 'fit-content',
+      'margin-bottom': '-22px',
+      color: CSS.vars ['color--one'],
+      'cursor': 'pointer',
+   }],
+   ['.see-more-geo', {
+      'display': 'inline-flex',
+      'margin-bottom': '-22px',
+      color: CSS.vars ['color--one'],
+      'cursor': 'pointer',
+   }],
+   ['.see-more-years-icon svg, .see-more-geo-icon svg', {
+      stroke: CSS.vars ['color--one'], 
+      'stroke-width': 2
+   }],
+   ['.see-more-years-text, .see-more-geo-text', {
+      'vertical-align': 'text-bottom'
+   }],
+   ['.see-more-geo-text', {
+      width: 70,
+      'padding-top': CSS.vars ['padding--xs'],
+   }],
    // *** tag-list-extended.scss ***
    // Tag list extended
    ['.tag-list-extended', {
@@ -4814,6 +4837,11 @@ views.pics = function () {
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
                               H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
+                                 // HERE GOES SEE MORE GEO
+                                 ['div', {class: 'see-more-geo'}, [
+                                    ['span', {class: 'see-more-geo-icon'}, H.putSvg('geotagOpen')],
+                                    ['span', {class: 'see-more-geo-text'}, 'See more']
+                                 ]],
                                  ['div', {style: style ({display: 'inline-flex'}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'a', reverse: tagOrder.field === 'a' ? ! tagOrder.reverse : false})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
                                  ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
                               ]]),
@@ -4841,6 +4869,11 @@ views.pics = function () {
                            makeTag ('u::'),
                            ! rangeTag ? [
                               dale.go (yearlist, makeTag),
+                              // HERE SEE MORE YEARS
+                              ['div', {class: 'see-more-years'}, [
+                                 ['span', {class: 'see-more-years-icon', style: style({'stroke-width': '2px'})}, H.putSvg('itemTime')],
+                                 ['span', {class: 'see-more-years-text'}, 'See more']
+                              ]],
                               ['br'], ['br'],
                               dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
                            ] : makeTag (rangeTag),
