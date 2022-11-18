@@ -58,6 +58,8 @@ fi
 
 if [ "$2" == "test" ] ; then
    rsync -av . $HOST:$FOLDER
+   ssh $HOST chown -R root /root/$FOLDER
+   echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
    ssh $HOST "cd $FOLDER && node testserver $3"
    exit 0
 fi
