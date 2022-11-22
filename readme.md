@@ -45,6 +45,10 @@ Tom
    - Submission Google Drive
 
 Mono
+   - client: home tags:
+      - when on home, do not update the URL (keep the hash clean)
+      - when going back to pics, go to home even if there was a URL before
+      - when loading from link, go to grid if there is a query
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
 
