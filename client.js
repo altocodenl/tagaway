@@ -3592,6 +3592,7 @@ B.mrespond ([
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
       if (B.get ('State', 'page') !== 'pics') return;
+      if (B.get ('State', 'grid')) B.call (x, 'rem', 'State', 'grid');
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
       if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
