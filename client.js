@@ -252,6 +252,16 @@ CSS.litc = [
       color: '#fff',
       cursor: 'pointer',
    }],
+   ['.button--purple-header', {
+      border: '1px solid #ec5bff',
+      'background-color': '#ec5bff',
+      color: '#fff',
+      cursor: 'pointer',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--purple-header:hover', {
+      'background-color': '#fff',
+      color: '#ec5bff',
+   }]),
    ['.button--feedback', {
       border: '1px solid ' + CSS.vars ['color--one'],
       color: CSS.vars ['color--one'],
@@ -267,7 +277,7 @@ CSS.litc = [
    },
    ['.pcUpload-icon, .cloudImport-icon', {
       'fill': CSS.vars['color--one'],
-   }]
+   }],
    ]),
    ['.button--two', {
       border: '1px solid ' + CSS.vars.grey,
@@ -4813,7 +4823,7 @@ views.header = function (showUpload, showImport) {
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
             ]];
          }),
       ]],
@@ -4861,7 +4871,8 @@ views.home = function () {
                ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
                ['h2', {class: 'guide__title'}, account.username],
                ['h2', {class: 'guide__title'}, '!']
-            ]]
+            ]],
+            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
          ]],
          ['div', {class: 'home-boxes'}, [
             ['div', {class: 'home-boxes-row'}, [
