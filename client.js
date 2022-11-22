@@ -3941,6 +3941,7 @@ B.mrespond ([
       var payload = {tag: tag, ids: ids, del: del}
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+         if (! del && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
 
          if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
 
@@ -4083,7 +4084,7 @@ B.mrespond ([
             B.set (['State', 'query', k], query [k]);
          });
          if (changes) B.call (x, 'change', ['State', 'query'], B.get ('State', 'query'), oldValue);
-         if (changes && query.tags) B.call (x, 'set', ['State', 'grid'], true);
+         if (changes) B.call (x, 'set', ['State', 'grid'], true);
       }
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
@@ -5056,13 +5057,13 @@ views.pics = function () {
                            var tag = which;
                            var action = ['toggle', 'tag', tag], action2;
                            if (which === 'a::') {
-                              var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag--all-pictures' + (all && grid ? ' tag--selected' : '');
                               tag = 'Everything';
                               action = ['set', ['State', 'query', 'tags'], []];
                               action2 = ['set', ['State', 'grid'], true];
                            }
                            else if (which === 'u::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && grid ? ' tag--selected' : '');
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
                            }
@@ -5087,14 +5088,14 @@ views.pics = function () {
                               }
                               else {
                                  var Class = 'tag-list__item tag tag-list__item--geo-city';
-                                 if (inc (selected, which)) Class += ' tag--selected';
+                                 if (inc (selected, which) && grid) Class += ' tag--selected';
                               }
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
                            }
                            else {
-                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && grid ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
                            if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
