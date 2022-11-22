@@ -40,13 +40,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - server/client: home view with pink button to go to home view on non-initial query
    - client: show less year & country entries in sidebar
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
-   - client: fix: keep selection when query changes and not enough pivs are returned
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
 
@@ -71,7 +69,7 @@ Mono
    - server/client: Share & manage
    - client: upgrade pop up notice or email when running out of free space.
    - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-   - server: change stalled interval to 3s and send waits when doing video processing in tests
+   - server: change stalled interval to 2s and send waits when doing video processing in tests
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
@@ -1206,6 +1204,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
+   - `hometags`: an array of tags that are displayed in the home screen of the user.
    - `imports`: an object where each key is a provider. If defined, each key has as value an array with one or more imports. Imports that are in the process of being uploaded or have already been uploaded have the same shape as those in `Data.uploads`. However, there may be up to one import per provider representing an import in a listing or ready state. Also there might be just an object with the keys `redirect` and `provider`, if the OAuth flow has not been done yet.
 ```
    {
