@@ -40,17 +40,40 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - client: show less year & country entries in sidebar
+   - server/client: mark as organized
+   - client: onboarding
+
    - mobile: ios background upload
    - Submission Google Drive
+
+
+- initial load: 1) nothing, 2) URL; 3) putting new has (just like 2))
+- coming from another view
+
+- changes in query and home should be reflected in URL
+
+initial load:
+- read hash -> set State.queryURL -> set State.query -> change State.query -> update queryURL -> set hash
+                                                                           -> query pivs
+            -> goto page -> set hash
+                         -> set State.page -> set State.query
 
 Mono
    - client: home tags:
       - when on home, do not update the URL (keep the hash clean)
-      - when going back to pics, go to home even if there was a URL before
+      - when going back to pics from another view, go to home even if there was a URL before
       - when loading from link, go to grid if there is a query
+      - flows:
+         - from scratch go to home (check url and sidebar full), then to tag (check url and sidebar)
+         - from link go straight to tag (check grid, url and sidebar), then home (check grid, url and sidebar)
+         - from both home and tag, go to another view, then go back to pivs and be home
+         - from both home and tag, go to another view, then use back button to go back to where you were before
+         - go home, then go to a tag, then home, then click back one and be on the tag, click back again and be back on home
+
+      - remove state.grid?
    - client: fix ronin untagged or range tag when deleting all
-   - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
+   - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
+   - client: show less year & country entries in sidebar
 
    - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
@@ -281,11 +304,9 @@ Mono
 ### Todo future
 
 - Pivs
-   - See if there's a way to detect & merge (whatsapp) videos that look the same but have different encoding qualities and slightly different lengths.
    - Hidden tags.
-   - Filters.
+   - Picture filters.
    - Themes for the interface.
-   - Set colors of tags?
    - Order pivs within tag? Set priorities! Manual order mode.
 
 - Share & manage

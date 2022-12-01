@@ -3,7 +3,10 @@
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
 var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
 
+var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
+
 window.addEventListener ('keydown', function (ev) {
+   if (B.prod) return;
    ev = ev || document.event;
    if (! ev.ctrlKey) return;
    // CTRL+K: search the eventlog
@@ -3441,12 +3444,12 @@ B.mrespond ([
          }
       }
 
-      if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
+      if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
-      B.call (x, 'goto', 'page', page);
+      B.call (x, 'goto', 'page', page, true);
 
    }],
-   ['goto', 'page', function (x, page) {
+   ['goto', 'page', function (x, page, fromHash) {
       var pages = {
          logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
          unlogged: ['login', 'signup', 'recover', 'reset']
@@ -3471,7 +3474,10 @@ B.mrespond ([
 
       if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
 
-      if (page === 'pics' && B.get ('State', 'queryURL')) page = 'pics/' + B.get ('State', 'queryURL');
+      if (page === 'pics') {
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         page = 'pics/' + B.get ('State', 'queryURL');
+      }
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
@@ -3598,21 +3604,21 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
       if (B.get ('State', 'page') !== 'pics') return;
-      if (B.get ('State', 'grid')) B.call (x, 'rem', 'State', 'grid');
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
-      else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      //if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
+      //else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x, newValue, oldValue) {
       // If the State object itself changes, or the path is State.query.recentlyTaggged or State.query.update, don't respond to that.
-      if (x.path.length < 2 || x.path [2] === 'recentlyTagged' || x.path [2] === 'update') return;
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
 
       if (inc (['tags', 'sort'], x.path [2])) {
          B.rem (['State', 'query'], 'fromDate');
@@ -3871,8 +3877,8 @@ B.mrespond ([
          }));
       }
 
-      B.call (x, 'set', ['State', 'grid'], true);
       // Tag is added
+      B.call (x, 'set', ['State', 'query', 'home'], false);
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
@@ -4044,37 +4050,31 @@ B.mrespond ([
       ev.stopPropagation ();
    }],
    ['update', 'queryURL', function (x, dontAlterHistory) {
-      var query = teishi.copy (B.get ('State', 'query'));
-      if (! query) return;
-      // We don't add recentlyTagged to avoid going over 2k characters
-      delete query.recentlyTagged;
-      // We don't add query.update or query.updateLimit since we don't want to cache that
-      delete query.update;
-      delete query.updateLimit;
-      try {
-         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
-         setTimeout (function () {
-            if (window.location.hash === '#/pics') dontAlterHistory = true;
-            else if (! dontAlterHistory) {
-               try {
-                  var oldHash = teishi.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-                  if (oldHash && ! oldHash.fromDate) dontAlterHistory = true;
-               }
-               catch (error) {}
-            }
-            if (dontAlterHistory) {
-               history.replaceState (undefined, undefined, '#/pics/' + hash);
-               B.set (['State', 'queryURL'], hash);
-            }
-            else window.location.hash = '#/pics/' + hash;
-         }, 0);
+      if (B.get ('State', 'query', 'home')) var hash = 'home';
+      else {
+         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
+            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, teishi.copy (v)];
+            // We don't add query.recentlyTagged to avoid going over 2k characters
+            // We don't add query.update or query.updateLimit since we don't want to cache that
+         });
+         try {
+            var hash = btoa (encodeURIComponent (JSON.stringify (query)));
+         }
+         catch (error) {
+            return B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
+         }
       }
-      catch (error) {
-         B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
-      }
+      if (window.location.hash === '#/pics/' + hash) return;
+      setTimeout (function () {
+         if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
+
+         B.set (['State', 'queryURL'], hash);
+         history.replaceState (undefined, undefined, '#/pics/' + hash);
+      }, 0);
    }],
    ['change', ['State', 'queryURL'], function (x) {
-      if (! B.get ('State', 'queryURL')) return;
+      var queryURL = B.get ('State', 'queryURL');
+      if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
@@ -4083,8 +4083,8 @@ B.mrespond ([
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
+         if (changes) B.set (['State', 'query', 'home'], false);
          if (changes) B.call (x, 'change', ['State', 'query'], B.get ('State', 'query'), oldValue);
-         if (changes) B.call (x, 'set', ['State', 'grid'], true);
       }
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
@@ -4813,9 +4813,9 @@ views.reset = function () {
 // *** HEADER VIEW ***
 
 views.header = function (showUpload, showImport) {
-   return ['header', {class: 'header'}, [
+   return ['header', {class: 'header', onclick: B.ev (H.stopPropagation)}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
@@ -4824,12 +4824,12 @@ views.header = function (showUpload, showImport) {
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--purple-header'}, 'Go home']],
             ]];
          }),
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev ('set', ['State', 'feedback'], '')}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4840,7 +4840,7 @@ views.header = function (showUpload, showImport) {
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev ('logout', [])}, 'Logout']],
                ]],
             ]],
          ]],
@@ -4955,7 +4955,7 @@ views.pics = function () {
       views.open (),
       B.view (['State', 'query', 'update'], function (update) {
          if (! update) return ['div'];
-         return ['div', {class: 'update-pivs-box'}, [
+         return ['div', {class: 'update-pivs-box', onclick: B.ev (H.stopPropagation)}, [
             update === 'auto' ? [
                ['span', {class: 'action', onclick: B.ev (['set', ['State', 'query', 'update'], 'manual'], ['set', ['State', 'query', 'updateLimit'], true]), style: style ({'font-size': '16px', cursor: 'pointer', 'text-decoration': 'underline', color: '#5b6eff', display: 'table', margin: '0 auto','padding-top': '33px'})}, 'Pause auto-update'],
             ] : [
@@ -4966,7 +4966,7 @@ views.pics = function () {
             ]
          ]];
       }),
-      B.view ([['Data', 'pivs'], ['State', 'grid']], function (pivs, grid) {
+      B.view ([['Data', 'pivs'], ['State', 'query', 'home']], function (pivs, home) {
          if (! pivs) return ['div'];
          if (B.get ('Data', 'queryTags', 'a::') === 0) return views.empty ();
          return ['div', [
@@ -4986,7 +4986,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           grid ? ['a', {class: 'button button--purple', onclick: B.ev (['set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()}], ['rem', 'State', 'grid'])}, 'Go back home'] : [
+                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'], ['set', ['State', 'queryURL'], 'home'])}, 'Go back home'] : [
                               ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                               ['div', {class: 'sidebar-header__filter-selected'}],
                            ]
@@ -5055,15 +5055,14 @@ views.pics = function () {
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
 
                            var tag = which;
-                           var action = ['toggle', 'tag', tag], action2;
+                           var action = ['toggle', 'tag', tag];
                            if (which === 'a::') {
-                              var Class = 'tag-list__item tag tag--all-pictures' + (all && grid ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag--all-pictures' + (all && ! home ? ' tag--selected' : '');
                               tag = 'Everything';
                               action = ['set', ['State', 'query', 'tags'], []];
-                              action2 = ['set', ['State', 'grid'], true];
                            }
                            else if (which === 'u::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && grid ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && ! home ? ' tag--selected' : '');
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
                            }
@@ -5088,14 +5087,14 @@ views.pics = function () {
                               }
                               else {
                                  var Class = 'tag-list__item tag tag-list__item--geo-city';
-                                 if (inc (selected, which) && grid) Class += ' tag--selected';
+                                 if (inc (selected, which) && ! home) Class += ' tag--selected';
                               }
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
                            }
                            else {
-                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && grid ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && ! home ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
                            if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
@@ -5109,7 +5108,7 @@ views.pics = function () {
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : (action2 ? B.ev (H.stopPropagation, action, action2) : B.ev (H.stopPropagation, action))}, [
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
@@ -5316,7 +5315,7 @@ views.pics = function () {
             ['div', {class: 'main main--pictures'}, [
                ['div', {class: 'main__inner'}, [
                   B.view ([['State', 'selected'], ['State', 'chunks'], ['State', 'query', 'sort']], function (selected, chunks, sort) {
-                     if (! sort || ! grid) return ['div'];
+                     if (! sort || home) return ['div'];
                      selected = dale.keys (selected).length;
                      var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
                      var d1, d2, firstUserVisible, prev, next;
@@ -5436,7 +5435,7 @@ views.pics = function () {
                      ]];
                   }),
                   // PIVS GRID
-                  grid ? ['div', {class: 'pictures-grid'}, views.grid ()] : views.home ()
+                  home ? views.home () : ['div', {class: 'pictures-grid'}, views.grid ()]
                ]],
             ]],
          ]];
