@@ -1135,11 +1135,12 @@ CSS.litc = [
       height: 15,
       'margin-right': 9,
       'margin-left': 5,
+      'padding-top': '1px',
    }],
    ['.organized-icon', {
-      height: 18,
-      width: 20,
-      'margin-right': CSS.vars ['padding--xs'],
+      display: 'inherit',
+      'height, width': 22,
+      'margin-right': 4,
       'margin-left': 3
    }],
    // Tag title - amount
