@@ -47,7 +47,7 @@ Tom
    - Submission Google Drive
 
 
-- initial load: 1) nothing, 2) URL; 3) putting new has (just like 2))
+- initial load: 1) nothing, 2) URL; 3) putting new hash (just like 2))
 - coming from another view
 
 - changes in query and home should be reflected in URL

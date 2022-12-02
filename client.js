@@ -3422,7 +3422,7 @@ B.mrespond ([
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
    }],
-   ['read', 'hash', function (x) {
+   ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
       if (page === 'signup') {
@@ -3449,7 +3449,7 @@ B.mrespond ([
       B.call (x, 'goto', 'page', page, true);
 
    }],
-   ['goto', 'page', function (x, page, fromHash) {
+   ['goto', 'page', {id: 'goto page'}, function (x, page, fromHash) {
       var pages = {
          logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
          unlogged: ['login', 'signup', 'recover', 'reset']
@@ -3604,7 +3604,7 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], {id: 'change State.page', match: B.changeResponder}, function (x) {
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
       if (B.get ('State', 'page') !== 'pics') return;
