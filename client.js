@@ -3,7 +3,10 @@
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
 var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
 
+var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
+
 window.addEventListener ('keydown', function (ev) {
+   if (B.prod) return;
    ev = ev || document.event;
    if (! ev.ctrlKey) return;
    // CTRL+K: search the eventlog
@@ -252,6 +255,16 @@ CSS.litc = [
       color: '#fff',
       cursor: 'pointer',
    }],
+   ['.button--purple-header', {
+      border: '1px solid #ec5bff',
+      'background-color': '#ec5bff',
+      color: '#fff',
+      cursor: 'pointer',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--purple-header:hover', {
+      'background-color': '#fff',
+      color: '#ec5bff',
+   }]),
    ['.button--feedback', {
       border: '1px solid ' + CSS.vars ['color--one'],
       color: CSS.vars ['color--one'],
@@ -267,7 +280,7 @@ CSS.litc = [
    },
    ['.pcUpload-icon, .cloudImport-icon', {
       'fill': CSS.vars['color--one'],
-   }]
+   }],
    ]),
    ['.button--two', {
       border: '1px solid ' + CSS.vars.grey,
@@ -771,6 +784,163 @@ CSS.litc = [
    ['.googlePlayBadge', {
       height: 40,
    }],
+   // *** HOME VIEW ***
+   ['.button--purple', {
+       border: '1px solid #ec5bff',
+      'background-color': '#ec5bff',
+      color: '#fff',
+      cursor: 'pointer',
+      width: 200,
+      'padding-left': 50,
+      'margin-left': 25,
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--purple:hover', {
+      'background-color': '#fff',
+      color: '#ec5bff',
+   }]),
+   ['.home-boxes-row', {
+      // width: 1,
+      'flex-wrap': 'wrap',
+      'display': 'inline-flex',
+      'margin-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-box', {
+      width: 290,
+      'min-width': 290,
+      height: 180,
+      'margin-right, margin-top': CSS.vars ['padding--xl'],
+      position: 'relative',
+   }],
+   ['.box-add', {
+      'border': 'dashed 1px' + CSS.vars ['color--one'],
+   }],
+   ['.box-add-circle', {
+      'position': 'absolute',
+      'top, bottom': .5,
+      'transform': 'translate(-50%, -50%)',
+      'height, width': 120,
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': 1,
+      'margin-left': 82,
+      'cursor': 'pointer',
+   }],
+   ['.box-add-plus', {
+      'position': 'absolute',
+      'top': .29,
+      'left': .29,
+      '--b': 4,
+      'width': 50,
+      'aspect-ratio': '1',
+      'background': 'conic-gradient(from 90deg at var(--b) var(--b),transparent 90deg,#5b6eff 0) calc(100% + var(--b)/2) calc(100% + var(--b)/2)/calc(50%  + var(--b))   calc(50%  + var(--b))',
+      'display': 'inline-block',
+   }],
+   ['.home-box-tag-name', {
+      'font-size': CSS.typography.spaceVer(1.5),
+      'font-weight': CSS.vars ['fontPrimarySemiBold'],
+      'line-height': CSS.typography.spaceVer (1.5),
+      position: 'absolute',
+      'bottom': 0,
+      'margin-bottom, margin-left, margin-right': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal', {
+      width: 600,
+      height: 650,
+      'margin-top': CSS.vars ['padding--xl'],
+      'margin-left, margin-right': 'auto',
+      'background-color': 'white',
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': CSS.vars ['border-radius--m'],
+   }],
+   ['.home-add-tag-modal-contents', {
+      display: 'inline-flex',
+      'width, height': 'inherit'
+   }],
+   ['.home-add-tag-modal-left-section', {
+      width: .5,
+      'padding-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-add-tags-section'],
+   ['.home-add-tag-modal-title', {
+      'padding-top': CSS.vars ['padding--m'],
+      'text-align': 'center',
+      'font-size': CSS.typography.spaceVer(1),
+      'font-weight': CSS.vars ['fontPrimaryMedium'],
+      'line-height': CSS.typography.spaceVer (1),
+   }],
+   ['.home-add-tag-modal-search-box', {
+      'margin-left, margin-right': 'auto',
+      'padding-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-tags-list', {
+      height: 500,
+      'overflow': 'auto',
+      'padding-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--s'],
+      'margin-right, margin-left': 'auto',
+   }],
+   ['.home-add-tag-modal-tags-list-ul', {
+
+   }],
+   ['.home-add-tag-modal-tags-list-li', {
+   }],
+   ['.home-add-tag-modal-tag-actions__item', {
+      height: 24,
+   }],
+   ['.home-add-tag-modal-tags-list-tag__title', {
+      mixin1: CSS.vars.fontPrimaryMedium,
+      'margin-right': CSS.vars ['padding--xs'],
+      width: 200
+   }],
+   ['.home-add-tag-modal-right-section', {
+      'border-left-style': 'solid',
+      'border-left-color':  CSS.vars ['grey--light'],
+      'border-left-width': '1px',
+      width: .5,
+      'padding-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-your-tags-section', {
+      height: .9
+   }],
+   ['.home-add-tag-modal-your-tags-list', {
+      // width: .7,
+      'padding-left, padding-right': CSS.vars ['padding--m'],
+      'margin-left, margin-right': 'auto',
+       height: 500,
+      'overflow': 'auto',
+      'margin-top': 78,
+   }],
+   ['.home-add-tag-modal-your-tags-list-ul'],
+   ['.home-add-tag-modal-your-tags-list-li', {
+      'height': '29.5px',
+   }],
+   ['.home-add-tag-modal-done-button', {
+      'float': 'right',
+      'margin-right': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-your-tags-actions', {
+      'display': 'inline-flex',
+   }],
+   ['.tagBoxItem-icon', {
+      display: 'inline-block',
+      'width, height': 12,
+      'margin-right': CSS.vars ['padding--s'],
+   }],
+   ['.home-add-tag-modal-arrow-blue, .home-add-tag-modal-arrow-grey', {
+      'width, height': 18,
+      'margin-left': CSS.vars ['padding--s'],
+   }],
+   ['.home-add-tag-modal-your-tags-actions-left-arrow', {
+      transform: 'rotate(180deg)',
+      height: 18,
+      'margin-right': '-10px',
+   }],
+   ['.home-add-tag-modal-delete-box-icon', {
+      display: 'inline-block',
+      'width, height': 18,
+      'margin-right': 3,
+      'margin-left': CSS.vars ['padding--s'],
+   }],
    // *** page-header.scss ***
    ['.page-header', {
       'margin-top': CSS.typography.spaceVer (4),
@@ -1219,7 +1389,7 @@ CSS.litc = [
    // *** dropdown.scss ***
    ['.dropdown', {
       position: 'relative',
-      margin:'auto'
+      margin: 'auto'
    }],
    ['.dropdown__button', {
 
@@ -2858,13 +3028,16 @@ var svg = {
    chevron: '<svg class="chevron-svg" height="20" width="24" stroke="#484848"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke-width:1.5" /></svg>',
    selectedCircle: '<svg viewBox="0 0 100 100" fill="#5b6eff" width="12" height="12" style="margin-right: 6px; xmlns="http://www.w3.org/2000/svg"> <circle cx="50" cy="50" r="50"/></svg>',
    upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>',
-   azIcon:'<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m3.9071805 3.9625196l1.6562498 -3.734375l0.859375 0l1.6718755 3.734375l-0.9062505 0l-1.375 -3.296875l0.34375 0l-1.359375 3.296875l-0.89062476 0zm0.82812476 -0.796875l0.234375 -0.65625l1.921875 0l0.234375 0.65625l-2.390625 0z" fill-rule="nonzero"/><path fill="#484848" d="m4.41027 10.36252l0 -0.5625l2.3125 -2.78125l0.09375 0.3125l-2.359375 0l0 -0.703125l3.140625 0l0 0.5625l-2.3125 2.78125l-0.109375 -0.3125l2.5 0l0 0.703125l-3.265625 0z" fill-rule="nonzero"/></g></svg>',
-   zeroNineIcon:'<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m5.9983363 4.0250196q-0.46875 0 -0.828125 -0.21875q-0.359375 -0.234375 -0.578125 -0.65625q-0.203125 -0.4375 -0.203125 -1.046875q0 -0.6250001 0.203125 -1.0468751q0.21875 -0.43749994 0.578125 -0.65625q0.359375 -0.23437499 0.828125 -0.23437499q0.453125 0 0.8125 0.23437499q0.359375 0.21875003 0.5625 0.65625q0.21875 0.421875 0.21875 1.0468751q0 0.609375 -0.21875 1.046875q-0.203125 0.421875 -0.5625 0.65625q-0.359375 0.21875 -0.8125 0.21875zm0 -0.734375q0.21875 0 0.375 -0.109375q0.15625 -0.125 0.25 -0.390625q0.09375 -0.265625 0.09375 -0.6875q0 -0.42187512 -0.09375 -0.6875001q-0.09375 -0.265625 -0.25 -0.390625q-0.15625 -0.12499994 -0.375 -0.12499994q-0.21875 0 -0.390625 0.12499994q-0.15625 0.125 -0.25 0.390625q-0.09375 0.265625 -0.09375 0.6875001q0 0.421875 0.09375 0.6875q0.09375 0.265625 0.25 0.390625q0.171875 0.109375 0.390625 0.109375z" fill-rule="nonzero"/><path fill="#484848" d="m5.813354 6.565645q0.515625 0 0.890625 0.21875q0.375 0.203125 0.578125 0.625q0.203125 0.40625 0.203125 1.015625q0 0.640625 -0.25 1.09375q-0.234375 0.4375 -0.671875 0.671875q-0.421875 0.234375 -0.984375 0.234375q-0.296875 0 -0.5625 -0.0625q-0.265625 -0.0625 -0.46875 -0.1875l0.3125 -0.640625q0.15625 0.109375 0.328125 0.15625q0.1875 0.03125 0.375 0.03125q0.484375 0 0.765625 -0.28125q0.28125 -0.296875 0.28125 -0.875q0 -0.09375 0 -0.203125q0 -0.125 -0.03125 -0.25l0.234375 0.21875q-0.09375 0.21875 -0.265625 0.359375q-0.15625 0.140625 -0.375 0.21875q-0.21875 0.0625 -0.484375 0.0625q-0.359375 0 -0.65625 -0.140625q-0.28125 -0.140625 -0.453125 -0.40625q-0.171875 -0.265625 -0.171875 -0.609375q0 -0.390625 0.1875 -0.65625q0.1875 -0.28125 0.5 -0.4375q0.328125 -0.15625 0.71875 -0.15625zm0.0625 0.640625q-0.1875 0 -0.328125 0.078125q-0.140625 0.0625 -0.21875 0.1875q-0.078125 0.125 -0.078125 0.296875q0 0.25 0.171875 0.40625q0.171875 0.15625 0.453125 0.15625q0.1875 0 0.328125 -0.0625q0.15625 -0.078125 0.234375 -0.203125q0.078125 -0.140625 0.078125 -0.296875q0 -0.15625 -0.078125 -0.28125q-0.078125 -0.125 -0.21875 -0.203125q-0.140625 -0.078125 -0.34375 -0.078125z" fill-rule="nonzero"/></g></svg>',
+   azIcon: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m3.9071805 3.9625196l1.6562498 -3.734375l0.859375 0l1.6718755 3.734375l-0.9062505 0l-1.375 -3.296875l0.34375 0l-1.359375 3.296875l-0.89062476 0zm0.82812476 -0.796875l0.234375 -0.65625l1.921875 0l0.234375 0.65625l-2.390625 0z" fill-rule="nonzero"/><path fill="#484848" d="m4.41027 10.36252l0 -0.5625l2.3125 -2.78125l0.09375 0.3125l-2.359375 0l0 -0.703125l3.140625 0l0 0.5625l-2.3125 2.78125l-0.109375 -0.3125l2.5 0l0 0.703125l-3.265625 0z" fill-rule="nonzero"/></g></svg>',
+   zeroNineIcon: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m5.9983363 4.0250196q-0.46875 0 -0.828125 -0.21875q-0.359375 -0.234375 -0.578125 -0.65625q-0.203125 -0.4375 -0.203125 -1.046875q0 -0.6250001 0.203125 -1.0468751q0.21875 -0.43749994 0.578125 -0.65625q0.359375 -0.23437499 0.828125 -0.23437499q0.453125 0 0.8125 0.23437499q0.359375 0.21875003 0.5625 0.65625q0.21875 0.421875 0.21875 1.0468751q0 0.609375 -0.21875 1.046875q-0.203125 0.421875 -0.5625 0.65625q-0.359375 0.21875 -0.8125 0.21875zm0 -0.734375q0.21875 0 0.375 -0.109375q0.15625 -0.125 0.25 -0.390625q0.09375 -0.265625 0.09375 -0.6875q0 -0.42187512 -0.09375 -0.6875001q-0.09375 -0.265625 -0.25 -0.390625q-0.15625 -0.12499994 -0.375 -0.12499994q-0.21875 0 -0.390625 0.12499994q-0.15625 0.125 -0.25 0.390625q-0.09375 0.265625 -0.09375 0.6875001q0 0.421875 0.09375 0.6875q0.09375 0.265625 0.25 0.390625q0.171875 0.109375 0.390625 0.109375z" fill-rule="nonzero"/><path fill="#484848" d="m5.813354 6.565645q0.515625 0 0.890625 0.21875q0.375 0.203125 0.578125 0.625q0.203125 0.40625 0.203125 1.015625q0 0.640625 -0.25 1.09375q-0.234375 0.4375 -0.671875 0.671875q-0.421875 0.234375 -0.984375 0.234375q-0.296875 0 -0.5625 -0.0625q-0.265625 -0.0625 -0.46875 -0.1875l0.3125 -0.640625q0.15625 0.109375 0.328125 0.15625q0.1875 0.03125 0.375 0.03125q0.484375 0 0.765625 -0.28125q0.28125 -0.296875 0.28125 -0.875q0 -0.09375 0 -0.203125q0 -0.125 -0.03125 -0.25l0.234375 0.21875q-0.09375 0.21875 -0.265625 0.359375q-0.15625 0.140625 -0.375 0.21875q-0.21875 0.0625 -0.484375 0.0625q-0.359375 0 -0.65625 -0.140625q-0.28125 -0.140625 -0.453125 -0.40625q-0.171875 -0.265625 -0.171875 -0.609375q0 -0.390625 0.1875 -0.65625q0.1875 -0.28125 0.5 -0.4375q0.328125 -0.15625 0.71875 -0.15625zm0.0625 0.640625q-0.1875 0 -0.328125 0.078125q-0.140625 0.0625 -0.21875 0.1875q-0.078125 0.125 -0.078125 0.296875q0 0.25 0.171875 0.40625q0.171875 0.15625 0.453125 0.15625q0.1875 0 0.328125 -0.0625q0.15625 -0.078125 0.234375 -0.203125q0.078125 -0.140625 0.078125 -0.296875q0 -0.15625 -0.078125 -0.28125q-0.078125 -0.125 -0.21875 -0.203125q-0.140625 -0.078125 -0.34375 -0.078125z" fill-rule="nonzero"/></g></svg>',
    shareIcon: '<svg class="share-icon" fill="#fbfbfb" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="30px" height="30px"><path d="M 23 3 A 4 4 0 0 0 19 7 A 4 4 0 0 0 19.09375 7.8359375 L 10.011719 12.376953 A 4 4 0 0 0 7 11 A 4 4 0 0 0 3 15 A 4 4 0 0 0 7 19 A 4 4 0 0 0 10.013672 17.625 L 19.089844 22.164062 A 4 4 0 0 0 19 23 A 4 4 0 0 0 23 27 A 4 4 0 0 0 27 23 A 4 4 0 0 0 23 19 A 4 4 0 0 0 19.986328 20.375 L 10.910156 15.835938 A 4 4 0 0 0 11 15 A 4 4 0 0 0 10.90625 14.166016 L 19.988281 9.625 A 4 4 0 0 0 23 11 A 4 4 0 0 0 27 7 A 4 4 0 0 0 23 3 z"/></svg>',
    sharedWithMeSearchIcon: '<svg  class="tags-search-bar__shared-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    sharedWithMeSharedIcon: '<svg class="tag__status-icon tag__status-icon--shared" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    shareItemIcon: '<svg class="tag-share__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m9.5 11.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm3.5 12h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5zm-5.5-5c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2zm13.5-4.5h-3v-3c0-.3-.2-.5-.5-.5s-.5.2-.5.5v3h-3c-.3 0-.5.2-.5.5s.2.5.5.5h3v3c0 .3.2.5.5.5s.5-.2.5-.5v-3h3c.3 0 .5-.2.5-.5s-.2-.5-.5-.5z"/></svg>',
    tagSharedWithMe: '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="#5b6eff" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="#5b6eff" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>',
+   deleteHomeBoxIcon: '<svg class="home-add-tag-modal-delete-box-icon" height="18" width="18"><circle cx="8" cy="8" r="8" fill="#ff5b6eff" /><line x1="2" y1="8" x2="14" y2="8" style="stroke:white;stroke-width:2" /></svg>',
+   homeBoxModalArrowBlue: '<svg class="home-add-tag-modal-arrow-blue" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/><path stroke="#5b6eff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/></g></svg>',
+   homeBoxModalArrowGrey: '<svg class="home-add-tag-modal-arrow-grey" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/></g></svg>',
    cloudImport: '<svg class="cloudImport-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve"><path d="M82.451,37.699c0.033-0.488,0.049-0.969,0.049-1.449c0-13.096-10.654-23.75-23.75-23.75  c-9.847,0-18.659,6.215-22.146,15.201C33.453,25.943,29.879,25,26.25,25C14.533,25,5,34.533,5,46.25S14.533,67.5,26.25,67.5H42.5v-5  H26.25C17.29,62.5,10,55.209,10,46.25C10,37.289,17.29,30,26.25,30c3.746,0,7.27,1.246,10.191,3.604l3.142,2.535l0.87-3.943  C42.331,23.68,50.026,17.5,58.75,17.5c10.339,0,18.75,8.41,18.75,18.75c0,1.053-0.102,2.137-0.312,3.311L76.663,42.5H80  c5.514,0,10,4.486,10,10s-4.486,10-10,10H57.5v5H80c8.271,0,15-6.729,15-15C95,45.063,89.561,38.873,82.451,37.699z"></path><path d="M52.5,46.035l10.732,10.732C63.721,57.256,64.36,57.5,65,57.5s1.279-0.244,1.768-0.732c0.977-0.977,0.977-2.559,0-3.535  L51.771,38.235c-0.117-0.117-0.247-0.222-0.386-0.315c-0.056-0.037-0.116-0.062-0.174-0.094c-0.084-0.047-0.166-0.098-0.256-0.135  c-0.078-0.032-0.16-0.05-0.24-0.075c-0.075-0.022-0.148-0.051-0.226-0.067c-0.159-0.032-0.32-0.048-0.481-0.048  c-0.002,0-0.005-0.001-0.007-0.001l0,0c-0.165,0-0.328,0.017-0.49,0.049c-0.073,0.015-0.141,0.042-0.211,0.063  c-0.086,0.025-0.172,0.044-0.255,0.079c-0.084,0.035-0.161,0.083-0.241,0.126c-0.063,0.035-0.128,0.063-0.189,0.103  c-0.138,0.092-0.267,0.197-0.384,0.314L33.232,53.232c-0.977,0.977-0.977,2.559,0,3.535c0.976,0.977,2.56,0.977,3.535,0L47.5,46.035  V85c0,1.381,1.119,2.5,2.5,2.5s2.5-1.119,2.5-2.5V46.035z"></path></svg>',
    pcUpload:'<svg class="pcUpload-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve"><g><path d="M41.8,70.3h16.3c0.8,0,1.5,0.6,1.8,1.3h34.2l-10.2-2.8v-42c0-1.1-0.9-2-2-2H18.1c-1.1,0-2,0.9-2,2v42L5.9,71.6h34.2   C40.3,70.8,41,70.3,41.8,70.3z M18.3,65.6V28.2c0-0.3,0.2-0.5,0.5-0.5h62.3c0.3,0,0.5,0.2,0.5,0.5v37.4c0,0.3-0.2,0.5-0.5,0.5H18.8   C18.6,66.1,18.3,65.8,18.3,65.6z"></path><path d="M58.2,73.9H41.8c-0.8,0-1.5-0.6-1.8-1.3h-36c0.2,1.5,1.5,2.6,3.1,2.6h85.5c1.6,0,2.9-1.1,3.1-2.6h-36   C59.7,73.4,59,73.9,58.2,73.9z"></path><path d="M58.2,71.3H41.8c-0.4,0-0.8,0.4-0.8,0.8c0,0.4,0.4,0.8,0.8,0.8h16.3c0.4,0,0.8-0.4,0.8-0.8C59,71.6,58.6,71.3,58.2,71.3z"></path></g></svg>',
    toOrganizeIcon:'<svg class="to-organize-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m1.1679364 5.7221446l21.65556 0l0 16.230179l-21.65556 0z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m1.1679364 5.7221446l21.65556 0l0 16.230179l-21.65556 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m8.895797 9.087304l6.2060633 0l0 0c0.8130102 0 1.472086 0.692214 1.472086 1.5461025c0 0.85388947 -0.65907574 1.5461025 -1.472086 1.5461025l-6.2060633 0l0 0c-0.81301117 0 -1.4720869 -0.69221306 -1.4720869 -1.5461025c0 -0.8538885 0.65907574 -1.5461025 1.4720869 -1.5461025z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m8.895797 9.087304l6.2060633 0l0 0c0.8130102 0 1.472086 0.692214 1.472086 1.5461025c0 0.85388947 -0.65907574 1.5461025 -1.472086 1.5461025l-6.2060633 0l0 0c-0.81301117 0 -1.4720869 -0.69221306 -1.4720869 -1.5461025c0 -0.8538885 0.65907574 -1.5461025 1.4720869 -1.5461025z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m22.876385 5.8608932l-21.75277 0l4.350554 -3.8132172l13.051662 0z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m22.876385 5.8608932l-21.75277 0l4.350554 -3.8132172l13.051662 0z" fill-rule="evenodd"/></g></svg>',
@@ -2877,6 +3050,7 @@ dale.go (CSS.vars.tagColors, function (color) {
    svg ['tagItem' + color] = '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>';
    svg ['tagItemHorizontal' + color] = '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>';
    svg ['tagSharedWithMe' + color] = '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="' + color + '" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="' + color + '" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="' + color + '" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="' + color + '" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>';
+   svg ['tagBoxItem' + color] = '<svg class="tagBoxItem-icon" width="12" height="12"><rect width="12" height="12" style="fill:' + color + '" /></svg>'
 });
 
 // *** HELPERS ***
@@ -2910,7 +3084,7 @@ H.formatChunkDates = function (d1, d2, shortMonths) {
    return [months [m.getUTCMonth ()], m.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
 }
 
-H.tagColor = function (tag, a) {
+H.tagColor = function (tag) {
    if (tag === 'u::') return 'untagged';
    if (H.isDateTag (tag)) return 'time';
    if (tag.match (/ \(new tag\)$/)) tag = tag.replace (/ \(new tag\)$/, '');
@@ -2954,7 +3128,8 @@ H.isUserTag = function (tag) {
 }
 
 H.makeRegex = function (filter) {
-   return new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
+   if (filter === '' || filter === undefined) return new RegExp ('.*', 'i');
+   return new RegExp (filter.trim ().replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
 }
 
 H.isMobile = function () {
@@ -3262,7 +3437,7 @@ B.mrespond ([
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
    }],
-   ['read', 'hash', function (x) {
+   ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
       if (page === 'signup') {
@@ -3284,12 +3459,12 @@ B.mrespond ([
          }
       }
 
-      if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
+      if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
-      B.call (x, 'goto', 'page', page);
+      B.call (x, 'goto', 'page', page, true);
 
    }],
-   ['goto', 'page', function (x, page) {
+   ['goto', 'page', {id: 'goto page'}, function (x, page, fromHash) {
       var pages = {
          logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
          unlogged: ['login', 'signup', 'recover', 'reset']
@@ -3314,7 +3489,10 @@ B.mrespond ([
 
       if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
 
-      if (page === 'pics' && B.get ('State', 'queryURL')) page = 'pics/' + B.get ('State', 'queryURL');
+      if (page === 'pics') {
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         page = 'pics/' + B.get ('State', 'queryURL');
+      }
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
@@ -3441,20 +3619,21 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], {id: 'change State.page', match: B.changeResponder}, function (x) {
       // If the State object itself changes, don't respond to that.
       if (x.path.length < 2) return;
       if (B.get ('State', 'page') !== 'pics') return;
       if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
-      else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      //if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
+      //else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {match: B.changeResponder}, function (x, newValue, oldValue) {
       // If the State object itself changes, or the path is State.query.recentlyTaggged or State.query.update, don't respond to that.
-      if (x.path.length < 2 || x.path [2] === 'recentlyTagged' || x.path [2] === 'update') return;
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
 
       if (inc (['tags', 'sort'], x.path [2])) {
          B.rem (['State', 'query'], 'fromDate');
@@ -3714,6 +3893,7 @@ B.mrespond ([
       }
 
       // Tag is added
+      B.call (x, 'set', ['State', 'query', 'home'], false);
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
@@ -3723,6 +3903,25 @@ B.mrespond ([
          return existingTag;
       }).concat (tag));
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
+   }],
+   ['toggle', 'hometag', function (x, hometag) {
+      var index = B.get ('Data', 'hometags').indexOf (hometag);
+
+      if (index > -1) B.rem (['Data', 'hometags'], index);
+      else B.add (['Data', 'hometags'], hometag);;
+
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
+   }],
+   ['shift', 'hometag', function (x, from, to) {
+      var fromtag = B.get ('Data', 'hometags', from);
+      var totag   = B.get ('Data', 'hometags', to);
+      B.set (['Data', 'hometags', from], totag);
+      B.set (['Data', 'hometags', to], fromtag);
+      B.call (x, 'change', ['Data', 'hometags']);
    }],
    ['select', 'all', function (x) {
       B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
@@ -3734,11 +3933,12 @@ B.mrespond ([
    ['query', 'tags', function (x) {
       B.call (x, 'get', 'tags', {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your tags.');
-         B.call (x, 'set', ['Data', 'tags'], rs.body);
+         B.call (x, 'set', ['Data', 'tags'],     rs.body.tags);
+         B.call (x, 'set', ['Data', 'hometags'], rs.body.hometags);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
             if (tag === 'u::' || H.isRangeTag (tag)) return tag;
-            if (inc (rs.body, tag)) return tag;
+            if (inc (rs.body.tags, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
@@ -3762,6 +3962,7 @@ B.mrespond ([
       var payload = {tag: tag, ids: ids, del: del}
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+         if (! del && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
 
          if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
 
@@ -3864,37 +4065,31 @@ B.mrespond ([
       ev.stopPropagation ();
    }],
    ['update', 'queryURL', function (x, dontAlterHistory) {
-      var query = teishi.copy (B.get ('State', 'query'));
-      if (! query) return;
-      // We don't add recentlyTagged to avoid going over 2k characters
-      delete query.recentlyTagged;
-      // We don't add query.update or query.updateLimit since we don't want to cache that
-      delete query.update;
-      delete query.updateLimit;
-      try {
-         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
-         setTimeout (function () {
-            if (window.location.hash === '#/pics') dontAlterHistory = true;
-            else if (! dontAlterHistory) {
-               try {
-                  var oldHash = teishi.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-                  if (oldHash && ! oldHash.fromDate) dontAlterHistory = true;
-               }
-               catch (error) {}
-            }
-            if (dontAlterHistory) {
-               history.replaceState (undefined, undefined, '#/pics/' + hash);
-               B.set (['State', 'queryURL'], hash);
-            }
-            else window.location.hash = '#/pics/' + hash;
-         }, 0);
+      if (B.get ('State', 'query', 'home')) var hash = 'home';
+      else {
+         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
+            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, teishi.copy (v)];
+            // We don't add query.recentlyTagged to avoid going over 2k characters
+            // We don't add query.update or query.updateLimit since we don't want to cache that
+         });
+         try {
+            var hash = btoa (encodeURIComponent (JSON.stringify (query)));
+         }
+         catch (error) {
+            return B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
+         }
       }
-      catch (error) {
-         B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
-      }
+      if (window.location.hash === '#/pics/' + hash) return;
+      setTimeout (function () {
+         if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
+
+         B.set (['State', 'queryURL'], hash);
+         history.replaceState (undefined, undefined, '#/pics/' + hash);
+      }, 0);
    }],
    ['change', ['State', 'queryURL'], function (x) {
-      if (! B.get ('State', 'queryURL')) return;
+      var queryURL = B.get ('State', 'queryURL');
+      if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
@@ -3903,6 +4098,7 @@ B.mrespond ([
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
+         if (changes) B.set (['State', 'query', 'home'], false);
          if (changes) B.call (x, 'change', ['State', 'query'], B.get ('State', 'query'), oldValue);
       }
       catch (error) {
@@ -4338,6 +4534,7 @@ views.base = function () {
       ['style', CSS.litc],
       views.snackbar (),
       views.feedback (),
+      views.manageHome (),
       views.date (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
@@ -4427,15 +4624,15 @@ views.date = function () {
                   ['span', ' selected pics to:']
                ]],
                ['div', {class: 'change-date-box-input-date'}, [
-                  ['span', {style: style({'width': 30, 'margin-right': '-2px'})}, [
+                  ['span', {style: style ({'width': 30, 'margin-right': '-2px'})}, [
                      ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'd']), placeholder: 'DD'}]
                   ]],
                   ['span', '/'],
-                  ['span', {style: style({'width': 30})}, [
+                  ['span', {style: style ({'width': 30})}, [
                      ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'm']), placeholder: 'MM'}]
                   ]],
                   ['span', '/'],
-                  ['span', {style: style({'width': 50})}, [
+                  ['span', {style: style ({'width': 50})}, [
                      ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
                   ]]
                ]],
@@ -4443,6 +4640,74 @@ views.date = function () {
             ['div', {style: style ({float: 'right'})}, [
                ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6}), onclick: B.ev ('rem', 'State', 'date')}, 'Cancel'],
                ['a', {href: '', class: 'button button--one', onclick: B.ev ('date', 'pivs')}, 'Change']
+            ]]
+         ]]
+      ]];
+   });
+}
+
+// *** MANAGE HOME VIEW ***
+
+views.manageHome = function () {
+   return B.view ([['State', 'manageHome'], ['Data', 'tags'], ['Data', 'hometags']], function (manageHome, tags, hometags) {
+      if (manageHome === undefined) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'home-add-tag-modal'}, [
+            ['div', {class: 'home-add-tag-modal-contents'}, [
+               ['div', {class: 'home-add-tag-modal-left-section'}, [
+                  B.view (['State', 'homefilter'], function (homefilter) {
+                     var filterRegex = H.makeRegex (homefilter);
+                     var filteredTags = dale.fil (tags, undefined, function (tag) {
+                        if (inc (hometags, tag) || ! H.isUserTag (tag)) return;
+                        if (tag.match (filterRegex)) return tag;
+                     });
+                     return ['div', {class: 'home-add-tag-modal-add-tags-section'}, [
+                        ['div', {class: 'home-add-tag-modal-title'}, 'Add tags'],
+                        ['div', {class: 'home-add-tag-modal-search-box'}, [
+                           ['input', {id: 'addTag', class: 'attach-form__input attach-input', type: 'text', name: 'notASearchField', placeholder: 'Search tag to add', oninput: B.ev ('set', ['State', 'homefilter']), onchange: B.ev ('set', ['State', 'homefilter'])}]
+                        ]],
+                        ['div', {class: 'home-add-tag-modal-tags-list'}, [
+                           ['ul', {class: 'tag-list tag-list--attach home-add-tag-modal-tags-list-ul'}, dale.go (filteredTags, function (tag) {
+                              return ['li', {class: 'tag-list__item tag home-add-tag-modal-tags-list-li', onclick: B.ev ('toggle', 'hometag', tag)}, [
+                                 H.putSvg ('tagItem' + H.tagColor (tag)),
+                                 ['span', {class: 'home-add-tag-modal-tags-list-tag__title'}, tag],
+                                 ['div', {class: 'tag-actions'}, [
+                                    ['div', {class: 'home-add-tag-modal-tag-actions__item tag-actions__item tag-actions__item--attach', style: style ({'display': 'block'})}, H.putSvg ('itemAttach', 24)]
+                                 ]]
+                              ]];
+                           })]
+                        ]]
+                     ]];
+                  }),
+               ]],
+               ['div', {class: 'home-add-tag-modal-right-section'}, [
+                  ['div', {class: 'home-add-tag-modal-your-tags-section'}, [
+                     ['div', {class: 'home-add-tag-modal-title'}, 'Your home tags'],
+                     ['div', {class: 'home-add-tag-modal-your-tags-list'}, [
+                        ['ul', {class: 'tag-list tag-list--attach home-add-tag-modal-your-tags-list-ul'}, dale.go (hometags, function (hometag, k) {
+                           return ['li', {class: 'tag-list__item tag home-add-tag-modal-your-tags-list-li'}, [
+                              H.putSvg ('tagBoxItem' + H.tagColor (hometag)),
+                              ['span', {class: 'home-add-tag-modal-tags-list-tag__title'}, hometag],
+                              ['div', {class: 'home-add-tag-modal-your-tags-actions'}, [
+                                 H.if (k === 0,
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-left-arrow'}, H.putSvg ('homeBoxModalArrowGrey', 24)],
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-left-arrow', onclick: B.ev ('shift', 'hometag', k, k - 1)}, H.putSvg ('homeBoxModalArrowBlue', 24)]
+                                 ),
+                                 H.if (k === hometags.length - 1,
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-right-arrow'}, H.putSvg ('homeBoxModalArrowGrey', 24)],
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-right-arrow', onclick: B.ev ('shift', 'hometag', k, k + 1)}, H.putSvg ('homeBoxModalArrowBlue', 24)],
+                                 ),
+                                 ['span', {onclick: B.ev ('toggle', 'hometag', hometag)}, H.putSvg ('deleteHomeBoxIcon', 24)]
+
+                              ]]
+                           ]];
+                        })]
+                     ]]
+                  ]],
+                  ['div', {class: 'home-add-tag-modal-done-button', onclick: B.ev (['rem', 'State', 'manageHome'], ['rem', 'State', 'homefilter'])}, [
+                     ['a', {href: '', class: 'button button--one'}, 'Done']
+                  ]]
+               ]]
             ]]
          ]]
       ]];
@@ -4563,9 +4828,9 @@ views.reset = function () {
 // *** HEADER VIEW ***
 
 views.header = function (showUpload, showImport) {
-   return ['header', {class: 'header'}, [
+   return ['header', {class: 'header', onclick: B.ev (H.stopPropagation)}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
@@ -4574,12 +4839,12 @@ views.header = function (showUpload, showImport) {
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--green'}, 'View pictures']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--purple-header'}, 'Go home']],
             ]];
          }),
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href:'', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev ('set', ['State', 'feedback'], '')}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4590,7 +4855,7 @@ views.header = function (showUpload, showImport) {
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev ('logout', [])}, 'Logout']],
                ]],
             ]],
          ]],
@@ -4608,6 +4873,41 @@ views.header = function (showUpload, showImport) {
          ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'),'Upload']],
       ]],
    ]];
+}
+
+// *** HOME VIEW ***
+
+views.home = function () {
+   return B.view ([['Data', 'hometags'], ['Data', 'account']], function (hometags, account) {
+      if (! account) return ['div'];
+      return ['div', [
+         // GUIDE
+         ['div', {class: 'guide'}, [
+            ['span', {style: style ({display: 'inline-flex'})}, [
+               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, '!']
+            ]],
+            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
+         ]],
+         ['div', {class: 'home-boxes'}, [
+            ['div', {class: 'home-boxes-row'}, [
+               dale.go (hometags, function (hometag) {
+                  return ['div', {class: 'home-box', style: style ({'background-color': H.tagColor (hometag)}), onclick: B.ev ('toggle', 'tag', hometag)}, [
+                     ['p', {class: 'home-box-tag-name'}, hometag]
+                  ]];
+               })
+            ]],
+            ['div', {class: 'home-boxes-row'}, [
+               ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
+                  ['div', {class: 'box-add-circle'}, [
+                     ['div', {class: 'box-add-plus'}]
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]];
+   });
 }
 
 // *** EMPTY VIEW ***
@@ -4633,7 +4933,7 @@ views.empty = function () {
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
-            ['div', {class: 'sidebar-search', style: style ({'display':'none'})}, [
+            ['div', {class: 'sidebar-search', style: style ({display: 'none'})}, [
                ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
                H.putSvg ('sidebarSearch'),
             ]],
@@ -4648,10 +4948,10 @@ views.empty = function () {
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
                ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
                ['div', [
-                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, [H.putSvg ('cloudImport'), 'Import pictures']],
+                  ['a', {href: '#/import', class: 'button button--one', style: style ({'margin-right': '10px'})}, [H.putSvg ('cloudImport'), 'Import pictures']],
                   ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'), 'Upload pictures']],
                ]],
-               ['p', {class: 'guide__text', style: style({'margin-top': '20px'})}, 'Or download any of the mobile uploaders.'],
+               ['p', {class: 'guide__text', style: style ({'margin-top': '20px'})}, 'Or download any of the mobile uploaders.'],
                ['div', [
                   ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
                   ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
@@ -4670,18 +4970,18 @@ views.pics = function () {
       views.open (),
       B.view (['State', 'query', 'update'], function (update) {
          if (! update) return ['div'];
-         return ['div', {class: 'update-pivs-box'}, [
+         return ['div', {class: 'update-pivs-box', onclick: B.ev (H.stopPropagation)}, [
             update === 'auto' ? [
-               ['span', {class: 'action', onclick: B.ev (['set', ['State', 'query', 'update'], 'manual'], ['set', ['State', 'query', 'updateLimit'], true]), style: style({'font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff', 'display': 'table', 'margin': '0 auto','padding-top': '33px'})}, 'Pause auto-update'],
+               ['span', {class: 'action', onclick: B.ev (['set', ['State', 'query', 'update'], 'manual'], ['set', ['State', 'query', 'updateLimit'], true]), style: style ({'font-size': '16px', cursor: 'pointer', 'text-decoration': 'underline', color: '#5b6eff', display: 'table', margin: '0 auto','padding-top': '33px'})}, 'Pause auto-update'],
             ] : [
-               ['div', {class: 'cross-button', style: style({'float': 'right'}), onclick: B.ev ('set', ['State', 'query', 'update'], false)}, ['span', {class: 'cross-button__cross'}]],
-               ['p',{style: style({'padding-top': '10px', 'padding-left': '30px', 'text-align': 'center', 'font-size': '16px', 'padding-bottom': '10px'})}, 'New pics available'],
-               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true), style: style({'float': 'left', 'padding-top': '10px', 'padding-left': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Update now'],
-               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'update'], 'auto'), style: style({'float': 'right', 'padding-top': '10px','padding-right': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Auto-update'],
+               ['div', {class: 'cross-button', style: style ({'float': 'right'}), onclick: B.ev ('set', ['State', 'query', 'update'], false)}, ['span', {class: 'cross-button__cross'}]],
+               ['p',{style: style ({'padding-top': '10px', 'padding-left': '30px', 'text-align': 'center', 'font-size': '16px', 'padding-bottom': '10px'})}, 'New pics available'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true), style: style ({'float': 'left', 'padding-top': '10px', 'padding-left': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Update now'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'update'], 'auto'), style: style ({'float': 'right', 'padding-top': '10px','padding-right': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Auto-update'],
             ]
          ]];
       }),
-      B.view (['Data', 'pivs'], function (pivs) {
+      B.view ([['Data', 'pivs'], ['State', 'query', 'home']], function (pivs, home) {
          if (! pivs) return ['div'];
          if (B.get ('Data', 'queryTags', 'a::') === 0) return views.empty ();
          return ['div', [
@@ -4701,8 +5001,10 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, 'Explore'],
-                           ['div', {class: 'sidebar-header__filter-selected'}],
+                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'], ['set', ['State', 'queryURL'], 'home'])}, 'Go back home'] : [
+                              ['h1', {class: 'sidebar-header__title'}, 'Explore'],
+                              ['div', {class: 'sidebar-header__filter-selected'}],
+                           ]
                         ]],
                      ]],
                      // *** QUERY LIST ***
@@ -4710,27 +5012,27 @@ views.pics = function () {
                         if (! account || ! selected) return ['ul'];
                         if (! tagOrder) tagOrder = {field: 'n'};
                         monthTags = monthTags || [];
-                        filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
 
                         var geotagSelected = dale.stop (selected, true, H.isGeoTag);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
-                        // Pseudo-tag `f::` for arrow to switch sorting order.
                         queryTags = teishi.copy (queryTags);
-                        queryTags ['f::'] = 0;
+
+                        // Add pseudo-tag `f::` for arrow to switch sorting order, but only if we have user tags to show.
+                        if (dale.stop (queryTags, true, function (v, tag) {
+                           if (tag.match (filterRegex)) return H.isUserTag (tag);
+                        })) queryTags ['f::'] = 0;
 
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (! H.isYearTag (tag)) return;
                            if (inc (selected, tag)) return tag;
-                           if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
                            if (inc (selected, tag)) return tag;
-                           if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
                            var ac = H.isCountryTag (a), bc = H.isCountryTag (b);
@@ -4770,12 +5072,12 @@ views.pics = function () {
                            var tag = which;
                            var action = ['toggle', 'tag', tag];
                            if (which === 'a::') {
-                              var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag--all-pictures' + (all && ! home ? ' tag--selected' : '');
                               tag = 'Everything';
                               action = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && ! home ? ' tag--selected' : '');
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
                            }
@@ -4810,14 +5112,14 @@ views.pics = function () {
                               }
                               else {
                                  var Class = 'tag-list__item tag tag-list__item--geo-city';
-                                 if (inc (selected, which)) Class += ' tag--selected';
+                                 if (inc (selected, which) && ! home) Class += ' tag--selected';
                               }
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
                            }
                            else {
-                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && ! home ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
                            if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
@@ -4940,7 +5242,6 @@ views.pics = function () {
                         }),
                      ]],
                      B.view ([['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (filter, selected, showNSelectedTags, tags) {
-                        filter = H.trim (filter === undefined ? '' : filter);
                         showNSelectedTags = showNSelectedTags || 75;
                         var selectedTags = {}, filterRegex = H.makeRegex (filter);
                         if (selected) dale.go (B.get ('Data', 'pivs'), function (piv) {
@@ -4952,7 +5253,7 @@ views.pics = function () {
                         });
                         var editTags = dale.fil (tags, undefined, function (tag) {
                            if (! H.isUserTag (tag)) return;
-                           if (filter && ! tag.match (filterRegex)) return;
+                           if (! tag.match (filterRegex)) return;
                            if (! selectedTags [tag]) selectedTags [tag] = 0;
                            return tag;
                         }).sort (function (a, b) {
@@ -4967,7 +5268,7 @@ views.pics = function () {
                               var attached = selectedTags [tag] === dale.keys (selected).length;
                               return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ' tag--unattached'), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
-                                 ['span', {class: 'tag__title', style: style({'width': 200})}, tag],
+                                 ['span', {class: 'tag__title', style: style ({'width': 200})}, tag],
                                  ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
@@ -5043,7 +5344,7 @@ views.pics = function () {
             ['div', {class: 'main main--pictures'}, [
                ['div', {class: 'main__inner'}, [
                   B.view ([['State', 'selected'], ['State', 'chunks'], ['State', 'query', 'sort']], function (selected, chunks, sort) {
-                     if (! sort) return ['div'];
+                     if (! sort || home) return ['div'];
                      selected = dale.keys (selected).length;
                      var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
                      var d1, d2, firstUserVisible, prev, next;
@@ -5140,11 +5441,11 @@ views.pics = function () {
                            return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
                               ['div', {class: 'boxed-alert', style: style ({'background-color': 'white'})}, [
                                  ['div', {class: 'space-alert__image'}, [
-                                    ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
+                                    ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style ({transform: 'scale(.4)', 'margin-bottom': 0})}],
                                  ]],
                                  ['div', {class: 'boxed-alert__main'}, [
-                                    ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
-                                       ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                                    ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
+                                       ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
                                           ['span', {class: 'upload-progress__default-text'}, 'How to select and open pictures?']
                                        ]],
                                        ['div', {class: 'progress-bar'}],
@@ -5152,10 +5453,10 @@ views.pics = function () {
                                     ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                                        ['div', {class: 'listing-progress'}, [
                                           ['div', {class: 'files-found-so-far'}, [
-                                             ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Single click to select.'],
+                                             ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, 'Single click to select.'],
                                           ]],
                                           ['div', {class: 'folders-found-so-far'}, [
-                                             ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Double click to open.'],
+                                             ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, 'Double click to open.'],
                                           ]],
                                        ]],
                                        ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('dismiss', 'selection')}, 'Got it']
@@ -5167,7 +5468,7 @@ views.pics = function () {
                      ]];
                   }),
                   // PIVS GRID
-                  ['div', {class: 'pictures-grid'}, views.grid ()],
+                  home ? views.home () : ['div', {class: 'pictures-grid'}, views.grid ()]
                ]],
             ]],
          ]];
@@ -5397,7 +5698,7 @@ views.share = function () {
             ['ul', {class: 'tag-list-extended'}, [
                // NOT SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      H.putSvg ('tagItem' + H.tagColor ('b'), 24),
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Tristan da Cunha',
@@ -5423,7 +5724,7 @@ views.share = function () {
                ]],
                // NOT SHARED TAG EMAIL TEXTAREA
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      H.putSvg ('tagItem' + H.tagColor ('b'), 24),
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Greenland',
@@ -5450,7 +5751,7 @@ views.share = function () {
                            ]]
                         ]],
                      ]],
-                     ['div', {class: 'tag-list-extended__item-info-buttons', style: style({display: 'none'})}, [
+                     ['div', {class: 'tag-list-extended__item-info-buttons', style: style ({display: 'none'})}, [
                         ['a', {href: '', class: 'button button--one'}, 'See pictures'],
                         ['a', {href: '', class: 'button button--three'}, 'Rename tag']
                      ]]
@@ -5458,7 +5759,7 @@ views.share = function () {
                ]],
                // SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      H.putSvg ('tagItem' + H.tagColor ('c'), 24),
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Whatsapp',
@@ -5543,8 +5844,8 @@ views.share = function () {
                ]],
                // SHARED WITH ME
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
-                     ['span', {style: style({'margin-right, margin-left': '5px'})},
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
+                     ['span', {style: style ({'margin-right, margin-left': '5px'})},
                      H.putSvg ('tagSharedWithMe' + H.tagColor ('b'), 24),
                      ],
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
@@ -5570,7 +5871,7 @@ views.share = function () {
                ]],
                // SHARED PIV
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      ['span', {class: 'shared-box__image'}, [
                         H.putSvg ('uploadImage', 24)]],
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
@@ -5695,12 +5996,11 @@ views.upload = function () {
                                        return ['div', {class: 'upload-box__section'}, [
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
-                                             filter = H.trim (filter === undefined ? '' : filter);
                                              var showTags = [], filterRegex = H.makeRegex (filter);
                                              dale.go (tags, function (tag) {
                                                 if (! H.isUserTag (tag)) return;
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) showTags.push (tag);
+                                                if (tag.match (filterRegex)) showTags.push (tag);
                                              });
                                              if (filter && ! inc (tags, filter)) {
                                                 if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
@@ -5930,8 +6230,8 @@ views.import = function () {
                   ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                ]],
                ['div', {class: 'boxed-alert__main'}, [
-                  ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
-                     ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                  ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
+                     ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
                         ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                         ['span', {class: 'upload-progress__default-text'}, (status === 'listing' ? 'We’re listing your files' : 'Your pics and videos are being imported')]
                      ]],
@@ -5939,11 +6239,11 @@ views.import = function () {
                   ]],
                   ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                      ['div', {class: 'listing-progress'}, [
-                        ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
-                           ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
-                              ['p', {style: style({'display': 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos. ')],
-                              ['p', {style: style({'display': 'contents', 'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold})}, (status === 'listing' ? '' : 'Please note that all your imported folders will turn to tags, so you know where to find your pics in ac;pic.')],
-                              ['p', {style: style({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many photos and videos you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
+                        ['div', {class: 'files-found-so-far', style: style ({'padding-top': '10px'})}, [
+                           ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, [
+                              ['p', {style: style ({display: 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos. ')],
+                              ['p', {style: style ({display: 'contents', 'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold})}, (status === 'listing' ? '' : 'Please note that all your imported folders will turn to tags, so you know where to find your pics in ac;pic.')],
+                              ['p', {style: style ({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many photos and videos you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
                         ]],
                      ]],
                      ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('set', ['State', 'import', 'hideLeaveBox'], true)}, 'Got it']
@@ -6011,7 +6311,7 @@ views.import = function () {
       ]];
 
       if (status === 'error' || status === 'stalled') return ['div', {class: 'listing-in-process'}, [
-         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
                ['div', {class: 'space-alert-icon'}, H.putSvg ('spaceAlert')],
             ]],
@@ -6092,8 +6392,8 @@ views.import = function () {
                               ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                            ]],
                            ['div', {class: 'boxed-alert__main'}, [
-                              ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
-                                 ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                              ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
+                                 ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
                                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                                     ['span', {class: 'upload-progress__default-text'}, 'How to give ac;pic access to your Google Drive?']
                                  ]],
@@ -6101,12 +6401,12 @@ views.import = function () {
                               ]],
                               ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                                  ['div', {class: 'listing-progress'}, [
-                                    ['div', {class: 'files-found-so-far', style: style({'padding-top': '10px'})}, [
-                                       ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, [
-                                          ['p', {style: style({'display': 'contents'})}, 'After you log in to your Google Account, '],
-                                          ['p', {style: style({'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold, 'display': 'contents'})}, 'please check all the boxes that Google shows you. '],
-                                          ['p', {style: style({'display': 'contents'})}, 'Otherwise, you won’t be able to import.'],
-                                          ['p', {style: style({'margin-top': '10px'})}, 'We’ll only ask for what we need to get your photos and videos to ac;pic.']]],
+                                    ['div', {class: 'files-found-so-far', style: style ({'padding-top': '10px'})}, [
+                                       ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, [
+                                          ['p', {style: style ({display: 'contents'})}, 'After you log in to your Google Account, '],
+                                          ['p', {style: style ({'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold, display: 'contents'})}, 'please check all the boxes that Google shows you.'],
+                                          ['p', {style: style ({display: 'contents'})}, 'Otherwise, you won’t be able to import.'],
+                                          ['p', {style: style ({'margin-top': '10px'})}, 'We’ll only ask for what we need to get your photos and videos to ac;pic.']]],
                                     ]],
                                     ['div', {class: 'folders-found-so-far'}, [
                                        ['img', {src: 'assets/img/google-drive-access.png'}]

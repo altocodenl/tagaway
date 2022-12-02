@@ -40,15 +40,40 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - server/client: home view with pink button to go to home view on non-initial query
-   - client: show less year & country entries in sidebar
+   - server/client: mark as organized
+   - client: onboarding
+
    - mobile: ios background upload
    - Submission Google Drive
 
+
+- initial load: 1) nothing, 2) URL; 3) putting new hash (just like 2))
+- coming from another view
+
+- changes in query and home should be reflected in URL
+
+initial load:
+- read hash -> set State.queryURL -> set State.query -> change State.query -> update queryURL -> set hash
+                                                                           -> query pivs
+            -> goto page -> set hash
+                         -> set State.page -> set State.query
+
 Mono
-   - client: fix: keep selection when query changes and not enough pivs are returned
+   - client: home tags:
+      - when on home, do not update the URL (keep the hash clean)
+      - when going back to pics from another view, go to home even if there was a URL before
+      - when loading from link, go to grid if there is a query
+      - flows:
+         - from scratch go to home (check url and sidebar full), then to tag (check url and sidebar)
+         - from link go straight to tag (check grid, url and sidebar), then home (check grid, url and sidebar)
+         - from both home and tag, go to another view, then go back to pivs and be home
+         - from both home and tag, go to another view, then use back button to go back to where you were before
+         - go home, then go to a tag, then home, then click back one and be on the tag, click back again and be back on home
+
+      - remove state.grid?
    - client: fix ronin untagged or range tag when deleting all
-   - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
+   - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
+   - client: show less year & country entries in sidebar
 
    - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
@@ -71,7 +96,7 @@ Mono
    - server/client: Share & manage
    - client: upgrade pop up notice or email when running out of free space.
    - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-   - server: change stalled interval to 3s and send waits when doing video processing in tests
+   - server: change stalled interval to 2s and send waits when doing video processing in tests
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
@@ -279,11 +304,9 @@ Mono
 ### Todo future
 
 - Pivs
-   - See if there's a way to detect & merge (whatsapp) videos that look the same but have different encoding qualities and slightly different lengths.
    - Hidden tags.
-   - Filters.
+   - Picture filters.
    - Themes for the interface.
-   - Set colors of tags?
    - Order pivs within tag? Set priorities! Manual order mode.
 
 - Share & manage
@@ -1206,6 +1229,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
+   - `hometags`: an array of tags that are displayed in the home screen of the user.
    - `imports`: an object where each key is a provider. If defined, each key has as value an array with one or more imports. Imports that are in the process of being uploaded or have already been uploaded have the same shape as those in `Data.uploads`. However, there may be up to one import per provider representing an import in a listing or ready state. Also there might be just an object with the keys `redirect` and `provider`, if the OAuth flow has not been done yet.
 ```
    {
