@@ -963,8 +963,14 @@ CSS.litc = [
       display: 'inline-block',
       width: 14,
       height: 15,
-      'margin-right': CSS.vars ['padding--s'],
+      'margin-right': 9,
       'margin-left': 5,
+   }],
+   ['.organized-icon', {
+      height: 18,
+      width: 20,
+      'margin-right': CSS.vars ['padding--xs'],
+      'margin-left': 3
    }],
    // Tag title - amount
    ['.tag__title-amount', {
