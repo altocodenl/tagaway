@@ -3425,29 +3425,21 @@ B.mrespond ([
    ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
-      if (page === 'signup') {
-         if (hash [1]) {
-            B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
-         }
-      }
-      if (page === 'reset') {
-         if (hash [1] && hash [2]) {
-            B.call (x, 'set', ['Data', 'reset'], {token: decodeURIComponent (hash [1]), username: decodeURIComponent (hash [2])});
-         }
-      }
-      if (page === 'import') {
-         if (hash [1] === 'success' && hash [2]) {
-            B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'], true);
-         }
-         if (hash [1] === 'error' && hash [2]) {
-            B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
-         }
+      if (page === 'signup' && hash [1]) B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
+
+      if (page === 'reset' && hash [1] && hash [2]) B.call (x, 'set', ['Data', 'reset'], {
+         token:    decodeURIComponent (hash [1]),
+         username: decodeURIComponent (hash [2])
+      });
+
+      if (page === 'import' && hash [2]) {
+         if (hash [1] === 'success') B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'],    true);
+         if (hash [1] === 'error'  ) B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
       }
 
       if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
       B.call (x, 'goto', 'page', page, true);
-
    }],
    ['goto', 'page', {id: 'goto page'}, function (x, page, fromHash) {
       var pages = {
@@ -3455,9 +3447,7 @@ B.mrespond ([
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
-      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) {
-         page = pages.logged [0];
-      }
+      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) page = pages.logged [0];
 
       var logged = B.get ('Data', 'csrf');
 
@@ -3465,14 +3455,14 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'redirect'], page);
          return B.call (x, 'goto', 'page', pages.unlogged [0]);
       }
-      if (logged && inc (pages.unlogged, page)) {
-         return B.call (x, 'goto', 'page', pages.logged [0]);
-      }
+
+      if (logged && inc (pages.unlogged, page)) return B.call (x, 'goto', 'page', pages.logged [0]);
+
       if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
 
       document.title = ['ac;pic', page].join (' - ');
 
-      if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
+      B.call (x, 'set', ['State', 'page'], page);
 
       if (page === 'pics') {
          if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
@@ -3502,6 +3492,7 @@ B.mrespond ([
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
          B.call (x, 'read', 'hash');
+         B.call (x, 'query', 'account');
       });
    }],
    ['login', [], function (x) {
@@ -3604,44 +3595,30 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {id: 'change State.page', match: B.changeResponder}, function (x) {
-      // If the State object itself changes, don't respond to that.
-      if (x.path.length < 2) return;
+   ['change', ['State', 'page'], {id: 'change State.page -> pics'}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      //if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
-      //else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
-      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 10) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
-   ['change', ['State', 'query'], {match: B.changeResponder}, function (x, newValue, oldValue) {
-      // If the State object itself changes, or the path is State.query.recentlyTaggged or State.query.update, don't respond to that.
+   ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
       if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
 
-      if (inc (['tags', 'sort'], x.path [2])) {
-         B.rem (['State', 'query'], 'fromDate');
-         B.rem (['State', 'query'], 'update');
-         B.rem (['State', 'query'], 'updateLimit');
-      }
+      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
 
       if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
 
-      // If what changes in the query is the `fromDate` key, we write a mechanism that will prevent unnecessary calls to `query pivs`.
       if (x.path [2] === 'fromDate') {
-         // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't query further pivs.
          if (B.get ('Data', 'pivs').length === B.get ('Data', 'pivTotal')) return;
-         // If we are scrolling backwards on the same query, we also don't have to perform a new query. But if the previous load gave us enough pivs, the last visible chunk check below will prevent this issue. So there's no need for further logic to cover this case.
          var chunks = B.get ('State', 'chunks');
          if (chunks.length) {
             var lastVisibleChunkIndex;
             dale.go (chunks, function (chunk, k) {
                if (chunk.userVisible) lastVisibleChunkIndex = k;
             });
-            // If last visible chunk is the last or the next-to-last last chunk, we load more pivs. Otherwise, we don't.
             if (lastVisibleChunkIndex + 1 < chunks.length - 1) return;
          }
       }
@@ -4049,37 +4026,14 @@ B.mrespond ([
    ['stop', 'propagation', function (x, ev) {
       ev.stopPropagation ();
    }],
-   ['update', 'queryURL', function (x, dontAlterHistory) {
-      if (B.get ('State', 'query', 'home')) var hash = 'home';
-      else {
-         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
-            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, teishi.copy (v)];
-            // We don't add query.recentlyTagged to avoid going over 2k characters
-            // We don't add query.update or query.updateLimit since we don't want to cache that
-         });
-         try {
-            var hash = btoa (encodeURIComponent (JSON.stringify (query)));
-         }
-         catch (error) {
-            return B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
-         }
-      }
-      if (window.location.hash === '#/pics/' + hash) return;
-      setTimeout (function () {
-         if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
-
-         B.set (['State', 'queryURL'], hash);
-         history.replaceState (undefined, undefined, '#/pics/' + hash);
-      }, 0);
-   }],
-   ['change', ['State', 'queryURL'], function (x) {
+   ['change', ['State', 'queryURL'], {id: 'change State.queryURL'}, function (x) {
       var queryURL = B.get ('State', 'queryURL');
       if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (! query [k] || teishi.eq (query [k], B.get ('State', 'query', k))) return;
+            if (teishi.eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
@@ -4089,6 +4043,20 @@ B.mrespond ([
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
       }
+   }],
+   ['update', 'queryURL', {id: 'update queryURL'}, function (x, dontAlterHistory) {
+      if (B.get ('State', 'query', 'home')) var hash = 'home';
+      else {
+         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
+            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, v];
+         });
+         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
+      }
+      if (window.location.hash === '#/pics/' + hash) return;
+
+      if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
+      history.replaceState (undefined, undefined, '#/pics/' + hash);
+      B.set (['State', 'queryURL'], hash);
    }],
 
    // *** OPEN RESPONDERS ***
@@ -4155,9 +4123,8 @@ B.mrespond ([
 
    // *** UPLOAD RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'upload') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       if (! B.get ('Data', 'tags'))    B.call (x, 'query', 'tags');
       if (! B.get ('Data', 'uploads')) B.call (x, 'query', 'uploads');
    }],
@@ -4356,10 +4323,9 @@ B.mrespond ([
 
    // *** IMPORT RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       var page = B.get ('State', 'page');
       if (page !== 'import') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       dale.go (['google'], function (provider) {
          if (B.get ('State', 'imports', provider, 'authOK')) {
             B.call (x, 'rem', ['State', 'imports', provider], 'authOK');
@@ -4432,9 +4398,8 @@ B.mrespond ([
 
    // *** ACCOUNT RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'account') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
    }],
 
    ['query', 'account', function (x, cb) {
@@ -5055,11 +5020,12 @@ views.pics = function () {
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
 
                            var tag = which;
-                           var action = ['toggle', 'tag', tag];
+                           var action = ['toggle', 'tag', tag], action2;
                            if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all && ! home ? ' tag--selected' : '');
                               tag = 'Everything';
-                              action = ['set', ['State', 'query', 'tags'], []];
+                              action  = ['set', ['State', 'query', 'home'], false];
+                              action2 = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
                               var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && ! home ? ' tag--selected' : '');
@@ -5108,7 +5074,8 @@ views.pics = function () {
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
+                           // TODO: replace ['foo', 'bar'] by true no-op after gotoB 2.2.1 upgrade
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action, action2 || ['foo', 'bar'])}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
