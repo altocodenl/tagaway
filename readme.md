@@ -455,20 +455,20 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
    - Array with ids can be empty.
    - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
-   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - There should be no repeated ids on the body, otherwise a 400 is returned.
    - If the deletion is successful, a 200 is returned.
 
 - `POST /rotate`
    - Body must be of the form `{ids: [STRING, ...], deg: 90|180|-90}` (otherwise, 400 with body `{error: ...}`).
    - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - Videos will not be rotated and will be silently ignored.
-   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - There should be no repeated ids on the body, otherwise a 400 is returned.
    - If the rotation is successful, a 200 is returned.
 
 - `POST /date`
    - Body must be of the form `{ids: [STRING, ...], date: INTEGER}` (otherwise, 400 with body `{error: ...}`). `date` must be equal or greater than 0.
    - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
-   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - There should be no repeated ids on the body, otherwise a 400 is returned.
    - On each of the pivs, if the existing `date` field has a positive offset from UTC midnight, this offset will be added to the provided `date`.
 
 - `POST /tag`
@@ -477,11 +477,18 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - After trimmed, `tag` cannot start with `[a-z]::`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
    - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
-   - There should be no repeated ids on the query, otherwise a 400 is returned.
+   - There should be no repeated tags on the body, otherwise a 400 is returned.
    - If successful, returns a 200.
 
 - `GET /tags`
    - Returns an array of the form `['tag1', 'tag2', ...]`. This list also includes year tags and geotags, but it doesn't include `a::`, `d::`, or tags shared with the user by other users.
+
+- `POST /hometags`
+   - Body must be of the form `{hometags: [STRING, ...]}`.
+   - Each of the tags must be a string that does not start with `[a-z]::`.
+   - All the tags must exist and user must be owner of the pivs, otherwise a 404 is returned.
+   - There should be no repeated tags on the query, otherwise a 400 is returned.
+   - If successful, returns a 200.
 
 - `POST /query`
    - Body must be of the form `{tags: [STRING, ...], mindate: INT|UNDEFINED, maxdate: INT|UNDEFINED, sort: newest|oldest|upload, from: INT|UNDEFINED, fromDate: INT|UNDEFINED, to: INT, recentlyTagged: [STRING, ...]|UNDEFINED, refresh: UNDEFINED|BOOLEAN}`. Otherwise, a 400 is returned with body `{error: ...}`.
