@@ -6,6 +6,8 @@ if (! suite || inc (['auth', 'pivs'], suite)) {
    sessionStorage.setItem ('password', password);
 }
 if (suite) sessionStorage.setItem ('suite', suite);
+var from = sessionStorage.getItem ('from');
+if (from !== undefined) sessionStorage.removeItem ('from');
 
 var waits = {logout: 400, login: 400, sort: 100, pivs: 2000}
 var t = Date.now ();
@@ -275,6 +277,7 @@ var testsToRun = [];
 
 dale.go (suites, function (v, k) {
    if (! suite || suite === k) testsToRun = testsToRun.concat (v);
+   if (from !== undefined) testsToRun.slice (from);
 });
 
 c.test (testsToRun, function (error, time) {
