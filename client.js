@@ -2439,6 +2439,7 @@ CSS.litc = [
    }],
    ['.organise-bar__button--organized', {
       'background-color': CSS.vars ['color--organized'],
+      border: 'solid 1px' + CSS.vars ['color--organized'],
       display: 'inline-flex',
       'cursor': 'pointer',
       'border-radius': 100,
