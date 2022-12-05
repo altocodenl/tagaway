@@ -5452,7 +5452,7 @@ views.pics = function () {
                                           H.if (H.isGeoTag (tag) && ! H.isCountryTag (tag), H.putSvg ('geoCity')),
                                           H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                           H.if (H.isUserTag (tag), H.putSvg ('tagItem' + H.tagColor (tag))),
-                                          ['span', {class: 'tag__title'}, showName],
+                                          tag === 'o::' ? ['span', {class: 'tag__title', style: style({color: '#00992b'})}, showName] : ['span', {class: 'tag__title'}, showName],
                                           tag === 'a::' ? [] : ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
                                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, tag === 's::' ? ['rem', 'State', 'selected'] : ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
