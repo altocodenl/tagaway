@@ -77,7 +77,7 @@ var CSS = {
       'highlight--neutral': '#d8eeff',
       'highlight--selection': '#ffeccc',
       'highlight--positive': '#cfefdd',
-      'highlight--negative': '#ffd3d3',      
+      'highlight--negative': '#ffd3d3',
       // Greys
       'grey--darkest': '#3a3a3a',
       'grey--darker': '#484848',
@@ -1123,6 +1123,9 @@ CSS.litc = [
       mixin1: CSS.vars.fontPrimaryMedium,
       'margin-right': CSS.vars ['padding--xs'],
       width: 'inherit'
+   }],
+   ['.tag__title-organized', {
+      color: CSS.vars ['color--organized']
    }],
    ['.videoIcon', {
       'width': 20,
@@ -5168,7 +5171,7 @@ views.pics = function () {
                                  ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
                               ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', showName]],
+                              ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
@@ -5452,7 +5455,8 @@ views.pics = function () {
                                           H.if (H.isGeoTag (tag) && ! H.isCountryTag (tag), H.putSvg ('geoCity')),
                                           H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                           H.if (H.isUserTag (tag), H.putSvg ('tagItem' + H.tagColor (tag))),
-                                          tag === 'o::' ? ['span', {class: 'tag__title', style: style({color: '#00992b'})}, showName] : ['span', {class: 'tag__title'}, showName],
+                                          // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
+                                          ['span', {class: 'tag__title' + (tag === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                                           tag === 'a::' ? [] : ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
                                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, tag === 's::' ? ['rem', 'State', 'selected'] : ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
