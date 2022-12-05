@@ -49,13 +49,11 @@ Tom
 Mono
    - client: home tags:
       - always check: url, sidebar, grid
-      - from scratch go to home (check url and sidebar full), then to tag (check url and sidebar)
-      - from link go straight to tag (check grid, url and sidebar), then home (check grid, url and sidebar)
+      - from scratch go to home, then to tag
+      - from link go straight to tag, then home
       - from both home and tag, go to another view, then go back to pivs and be home
       - from both home and tag, go to another view, then use back button to go back to where you were before
       - go home, then go to a tag, then home, then click back one and be on the tag, click back again and be back on home
-
-      - remove state.grid?
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
    - client: show less year & country entries in sidebar
@@ -858,7 +856,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pics`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.querying`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.querying`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`, `State.query.home`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -927,35 +925,43 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 1. `views.logo`
    - Contained by: `views.header`.
 2. `views.snackbar`
+   - Contained by: `views.base`.
    - Depends on: `State.snackbar`.
    - Events: `onclick -> clear snackbar`.
-   - Contained by: `views.base`.
 3. `views.feedback`
+   - Contained by: `views.base`.
    - Depends on `State.feedback`.
    - Events: `onclick -> set|rem State.feedback`.
-   - Contained by: `views.base`.
 4. `views.date`
-   - Depends on `State.selected` and `State.date`.
    - Contained by: `views.base`.
+   - Depends on `State.selected` and `State.date`.
    - Events: `onclick -> date pivs`.
-5. `views.header`
+5. `views.manageHome`
+   - Contained by: `views.base`.
+   - Depends on `State.manageHome`, `Data.tags` and `Data.hometags`.
+   - Events: `onclick -> toggle hometag`, `onclick -> shift hometag`, `onclick -> rem State.managehome`.
+6. `views.header`
+   - Contained by: `views.pics`, `views.upload`, `views.share`, `views.tags`.
    - Depends on `State.page` and `Data.account`.
    - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`, `open location undefined URL`
-   - Contained by: `views.pics`, `views.upload`, `views.share`, `views.tags`.
-6. `views.empty`
+7. `views.empty`
    - Contained by: `views.pics`.
-7. `views.grid`
+8. `views.home`
+   - Contained by: `views.pics`.
+   - Depends on `Data.hometags` and `Data.account`.
+   - Event: `onclick -> goto page upload`.
+9. `views.grid`
    - Contained by: `views.pics`.
    - Depends on `State.chunks`.
    - Events: `onclick -> click piv`.
-8. `views.open`
+10. `views.open`
    - Contained by: `views.pics`.
    - Depends on `State.open` and `Data.pivTotal`.
    - Events: `onclick -> open prev`, `onclick -> open next`, `onclick -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
-9. `views.noSpace`
+11. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
-10. `views.importFolders`
+12. `views.importFolders`
    - Contained by: `views.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
@@ -1050,13 +1056,15 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
    6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
    7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
-   8. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
-   9. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
-   10. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`.
-   11. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
-   12. `date pivs`: invokes `snackbar` if there was either invalid input or the operation failed. If the input (`State.date`) is valid, it invokes `post date` and then if the operation is successful invokes `rem State.page` and `query pivs`.
-   13. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
-   14. `scroll`:
+   8. `toggle hometag`: see annotated source code.
+   9. `shift hometag`: see annotated source code.
+   10. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
+   11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
+   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`.
+   13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
+   14. `date pivs`: invokes `snackbar` if there was either invalid input or the operation failed. If the input (`State.date`) is valid, it invokes `post date` and then if the operation is successful invokes `rem State.page` and `query pivs`.
+   15. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
+   16. `scroll`:
       - Only will perform actions if `State.page` is `pivs`.
       - If the `to` argument is `undefined` and `State.scroll` exists and happened less than 50ms ago, the responder won't do anything else - effectively ignoring the call.
       - If `to` is set to `-1` or `undefined`, our reference `y` position will be the current one.
@@ -1066,22 +1074,10 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - It will `set State.query.fromDate` to the `date` (or `dateup` if `State.query.sort` is `upload`) of the first piv that's at least partly visible in the viewport.
       - If a `to` parameter is passed that is not -1, it will scroll to that `y` position after a timeout of 0ms. The timeout is there to allow for DOM operations to conclude before scrolling.
       - Note: the scroll responder has an overall flow of the following shape: 1) determine visibility; 2) trigger changes that will redraw the grid; 3) update `State.query.fromDate`; 4) if necesary, scroll to the right position.
-   15. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
-   16. `stop propagation`: stops propagation of the `ev` passed as an argument.
-   17. `change State.queryURL`:
-      - This responder is responsible for taking changes to `State.queryURL` in order to update `State.query`.
-      - If `State.queryURL` is not set, it does nothing.
-      - It decodes `State.queryURL` into an object of the form `{tags: [...], sort: ..., fromDate: ...}`.
-      - If any of these fields is both set and different to the corresponding field of `State.query`, it will be overwritten in `State.query` and a `change` event on `State.query` will be invoked.
-      - It will set `State.query` to that object. Note that all the fields, except for `recentlyTagged` will be overwritten.
-      - If an error is thrown when decoding the hash, `post error` is invoked.
-   18. `update queryURL`:
-      - This responder is responsible for taking changes to `State.query` in order to update `State.queryURL`.
-      - If `State.query` is not set, it does nothing.
-      - Takes the fields `tags`, `sort` and `fromDate` from `State.query` and builds a hash based on this new object. The object is stringified, escaped and converted to base64.
-      - If the first argument to the responder (`dontAlterHistory`) is absent, it sets `window.location.hash` to `#/pics/HASH` by rewriting the last `history` entry (instead of creating a new one). It does this within a timeout executed after 0ms, because otherwise the browser doesn't seem to update the hash properly. If the current hash is `#/pics` or the current hash, when decoded into an object, has no `fromDate` field, we also overwrite the existing history entry rather than creating a new one. In all, whenever an initial query is built up, or when only the `fromDate` entry changes, we overwrite the current `history` entry - otherwise, we create a new entry by directly changing the hash.
-      - Otherwise, if `dontAlterHistory` is present, it replaces the current URL with `#/pics/HASH`. It also does this within a timeout. The only difference between this case and the previous one is that a new `history` entry will *not* be generated.
-      - If the computation of the hash throws an error when converting to base64, `post error` is invoked.
+   17. `download`: uses `State.selected`. Invokes `post download`. If unsuccessful, invokes `snackbar`.
+   18. `stop propagation`: stops propagation of the `ev` passed as an argument.
+   19. `change State.queryURL`: see annotated source code.
+   20. `update queryURL`: see annotated source code.
 
 5. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
@@ -1285,7 +1281,7 @@ For now, we only have annotated fragments of the code. This might be expanded co
 
 ### `client.js`
 
-TODO: add annotated source code from the beginning of the file
+TODO: add annotated source code from the beginning of the file.
 
 We define a responder `read hash`, which will be called whenever the hash component of the URL changes.
 
@@ -1462,7 +1458,7 @@ Finally, we update `window.location.hash` if it's not what it should be. This co
    }],
 ```
 
-TODO: add annotated source code in between these two sections
+TODO: add annotated source code in between these two sections.
 
 We now define the `pics` responders.
 
@@ -1573,7 +1569,84 @@ This concludes the responder.
    }],
 ```
 
-TODO: add annotated source code in between these two sections
+TODO: add annotated source code in between these two sections.
+
+We now define the responder for `toggle hometag`, which will add or remove a tag from the list of home tags.
+
+```javascript
+   ['toggle', 'hometag', {id: 'toggle hometag'}, function (x, hometag) {
+```
+
+We start by noting the position of the tag in the list of hometags.
+
+```javascript
+      var index = B.get ('Data', 'hometags').indexOf (hometag);
+```
+
+If the position of the tag in `Data.hometags` is `-1`, then the tag should be added to the list since it's not there. Otherwise, we will remove it. Note we do this directly without triggering `change` events yet.
+
+```javascript
+      if (index > -1) B.rem (['Data', 'hometags'], index);
+      else B.add (['Data', 'hometags'], hometag);;
+```
+
+We invoke `POST /hometags` passing `Data.hometags` inside the body. If there's an error, we merely report it through `snackbar` and do nothing else.
+
+```javascript
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+```
+
+If the operation was successful, we invoke `query tags` (which will also refresh the list of home tags) and we call a `change` event on `Data.hometags`. This `change` event is necessary since we already updated `Data.hometags` without triggering a view redraw; even when the list of tags gets updated, no `change` event will now be fired since `Data.hometags` is what it already should be. For that reason, we now need to update the view directly through this `change` event.
+
+This concludes the responder.
+
+```javascript
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
+   }],
+```
+
+We now define `shift hometag`, a responder for changing the position of a tag within the list of home tags.
+
+```javascript
+   ['shift', 'hometag', {id: 'shift hometag'}, function (x, from, to) {
+```
+
+This responder takes two indexes, the first one that of the tag we are moving, the other one the index to which in which we want to insert that tag. We get the corresponding tags to those two indexes.
+
+```javascript
+      var fromtag = B.get ('Data', 'hometags', from);
+      var totag   = B.get ('Data', 'hometags', to);
+```
+
+We now update `Data.hometags` in place, without calling `change` events.
+
+```javascript
+      B.set (['Data', 'hometags', from], totag);
+      B.set (['Data', 'hometags', to], fromtag);
+```
+
+As with the previous responder, we invoke `POST /hometags` passing `Data.hometags` inside the body. If there's an error, we merely report it through `snackbar` and do nothing else.
+
+```javascript
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+```
+
+If the operation was successful, we invoke `query tags` (which will also refresh the list of home tags) and we call a `change` event on `Data.hometags`. This `change` event is necessary since we already updated `Data.hometags` without triggering a view redraw; even when the list of tags gets updated, no `change` event will now be fired since `Data.hometags` is what it already should be. For that reason, we now need to update the view directly through this `change` event.
+
+This concludes the responder.
+
+```javascript
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
+   }],
+```
+
+TODO: add annotated source code in between these two sections.
 
 We now define the responder for `change State.queryURL`. This responder will make sure that whatever is contained on `State.queryURL` is reflected on `State.query`.
 
@@ -1693,9 +1766,76 @@ This concludes the responder.
    }],
 ```
 
-TODO: add annotated source code to the end of the file
+TODO: add annotated source code to the end of the file.
 
 ### `server.js`
+
+TODO: add annotated source code from the beginning of the file.
+
+We define `POST /hometags`, an endpoint that will update the list of home tags for the user.
+
+```javascript
+   ['post', 'hometags', function (rq, rs) {
+```
+
+The `body` should be an object containing a `homekeys` key, which should be an array of strings.
+
+```javascript
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['hometags'], 'eachOf', teishi.test.equal],
+         ['body.hometags', b.hometags, 'array'],
+         ['body.hometags', b.hometags, 'string', 'each']
+      ])) return;
+```
+
+We define a `multi` key which we'll use to determine whether the tag exists for the user. We will also collect the tags on a `seen` object, to detect duplicate tags in the array.
+
+```javascript
+      var multi = redis.multi (), seen = {};
+```
+
+We iterate the tags sent by the user. We put entries for them in `seen`; if any tag is not a user tag, we will note the tag and stop the process, returning a 400 error of the form `{error: 'tag', tag: INVALID TAG}`. For every tag, we will also check whether it exists.
+
+```javascript
+      var invalidTag = dale.stopNot (b.hometags, undefined, function (hometag) {
+         seen [hometag] = true;
+         if (! H.isUserTag (hometag)) return hometag;
+         multi.exists ('tag:' + rq.user.username + ':' + hometag);
+      });
+      if (invalidTag) return reply (rs, 400, {error: 'tag', tag: invalidTag});
+```
+
+If there's less entries in `seen` than in `b.hometags`, there was at least one repeated tag. We reply with a 400 error.
+
+```javascript
+      if (dale.keys (seen).length < b.hometags.length) return reply (rs, 400, {error: 'repeated'});
+```
+
+We now check whether each tag exists. After getting them from redis, we iterate the list of results; if any of the tags does not exist, we reply with a 404 error.
+
+```javascript
+      astop (rs, [
+         [mexec, multi],
+         function (s) {
+            var missingTag = dale.stopNot (s.last, undefined, function (exists, k) {
+               if (! exists) return b.hometags [k];
+            });
+            if (missingTag) return reply (rs, 404, {tag: missingTag});
+```
+
+If we're here, the input is valid. We merely stringify `b.hometags` and store it in `hometags:USERNAME`. We reply with a 200 code. This concludes the responder.
+
+```javascript
+            Redis (s, 'set', 'hometags:' + rq.user.username, JSON.stringify (b.hometags));
+         },
+         [reply, rs, 200]
+      ]);
+   }],
+```
+
+TODO: add annotated source code in between these two sections.
 
 We create an array `ytags` to store the year tags in the query.
 

@@ -2813,7 +2813,7 @@ var routes = [
             var missingTag = dale.stopNot (s.last, undefined, function (exists, k) {
                if (! exists) return b.hometags [k];
             });
-            if (missingTag) return reply (rs, 404);
+            if (missingTag) return reply (rs, 404, {tag: missingTag});
             Redis (s, 'set', 'hometags:' + rq.user.username, JSON.stringify (b.hometags));
          },
          [reply, rs, 200]

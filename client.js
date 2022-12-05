@@ -3866,7 +3866,7 @@ B.mrespond ([
       }).concat (tag));
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
    }],
-   ['toggle', 'hometag', function (x, hometag) {
+   ['toggle', 'hometag', {id: 'toggle hometag'}, function (x, hometag) {
       var index = B.get ('Data', 'hometags').indexOf (hometag);
 
       if (index > -1) B.rem (['Data', 'hometags'], index);
@@ -3878,12 +3878,16 @@ B.mrespond ([
          B.call (x, 'change', ['Data', 'hometags']);
       });
    }],
-   ['shift', 'hometag', function (x, from, to) {
+   ['shift', 'hometag', {id: 'shift hometag'}, function (x, from, to) {
       var fromtag = B.get ('Data', 'hometags', from);
       var totag   = B.get ('Data', 'hometags', to);
       B.set (['Data', 'hometags', from], totag);
       B.set (['Data', 'hometags', to], fromtag);
-      B.call (x, 'change', ['Data', 'hometags']);
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
    }],
    ['select', 'all', function (x) {
       B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
@@ -4484,8 +4488,8 @@ views.base = function () {
       ['style', CSS.litc],
       views.snackbar (),
       views.feedback (),
-      views.manageHome (),
       views.date (),
+      views.manageHome (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4825,41 +4829,6 @@ views.header = function (showUpload, showImport) {
    ]];
 }
 
-// *** HOME VIEW ***
-
-views.home = function () {
-   return B.view ([['Data', 'hometags'], ['Data', 'account']], function (hometags, account) {
-      if (! account) return ['div'];
-      return ['div', [
-         // GUIDE
-         ['div', {class: 'guide'}, [
-            ['span', {style: style ({display: 'inline-flex'})}, [
-               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
-               ['h2', {class: 'guide__title'}, account.username],
-               ['h2', {class: 'guide__title'}, '!']
-            ]],
-            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
-         ]],
-         ['div', {class: 'home-boxes'}, [
-            ['div', {class: 'home-boxes-row'}, [
-               dale.go (hometags, function (hometag) {
-                  return ['div', {class: 'home-box', style: style ({'background-color': H.tagColor (hometag)}), onclick: B.ev ('toggle', 'tag', hometag)}, [
-                     ['p', {class: 'home-box-tag-name'}, hometag]
-                  ]];
-               })
-            ]],
-            ['div', {class: 'home-boxes-row'}, [
-               ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
-                  ['div', {class: 'box-add-circle'}, [
-                     ['div', {class: 'box-add-plus'}]
-                  ]]
-               ]]
-            ]]
-         ]]
-      ]];
-   });
-}
-
 // *** EMPTY VIEW ***
 
 views.empty = function () {
@@ -4892,7 +4861,6 @@ views.empty = function () {
       // MAIN
       ['div', {class: 'main'}, [
          ['div', {class: 'main__inner'}, [
-            // GUIDE
             ['div', {class: 'guide'}, [
                ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
@@ -4910,6 +4878,40 @@ views.empty = function () {
          ]],
       ]],
    ]];
+}
+
+// *** HOME VIEW ***
+
+views.home = function () {
+   return B.view ([['Data', 'hometags'], ['Data', 'account']], function (hometags, account) {
+      if (! account) return ['div'];
+      return ['div', [
+         ['div', {class: 'guide'}, [
+            ['span', {style: style ({display: 'inline-flex'})}, [
+               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, '!']
+            ]],
+            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
+         ]],
+         ['div', {class: 'home-boxes'}, [
+            ['div', {class: 'home-boxes-row'}, [
+               dale.go (hometags, function (hometag) {
+                  return ['div', {class: 'home-box', style: style ({'background-color': H.tagColor (hometag)}), onclick: B.ev ('toggle', 'tag', hometag)}, [
+                     ['p', {class: 'home-box-tag-name'}, hometag]
+                  ]];
+               })
+            ]],
+            ['div', {class: 'home-boxes-row'}, [
+               ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
+                  ['div', {class: 'box-add-circle'}, [
+                     ['div', {class: 'box-add-plus'}]
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]];
+   });
 }
 
 // *** PICS VIEW ***
