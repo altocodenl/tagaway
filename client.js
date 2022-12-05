@@ -5313,7 +5313,7 @@ views.pics = function () {
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
                   var doneTagging = inc (tags, 'u::') && dale.keys (selected).length;
-                  return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 114}), onclick: B.ev (H.stopPropagation)}, [
+                  return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 100}), onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', style: style ({border: 'solid 1px #5b6eff', 'border-radius': 25}), type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
                         H.putSvg ('sidebarSearch')
