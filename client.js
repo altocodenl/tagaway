@@ -784,6 +784,53 @@ CSS.litc = [
    ['.googlePlayBadge', {
       height: 40,
    }],
+   // *** ONBOARDING VIEW ***
+   ['.onboarding-modal-container', {
+      width: 800,
+      height: 400
+   }],
+   ['.onboarding-modal', {
+      height: 'inherit',
+      'display': 'flex',
+      'padding-top, padding-bottom': CSS.vars ['padding--l'],
+      'margin-bottom': CSS.vars ['padding--s'],
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': CSS.vars ['border-radius--l'],
+   }],
+   ['.onboarding-modal-text-div, .onboarding-modal-gif-div', {
+      height: 1,
+      width: .33,
+      'position': 'relative',
+      'border-radius': CSS.vars ['border-radius--l'],
+   }],
+   ['.onboarding-modal-text-div', {
+      'margin-left': CSS.vars ['padding--l'],
+      'background-color': CSS.vars ['color--one'],
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+   }],
+   ['.onboarding-modal-gif-div', {
+      'background-color': CSS.vars ['highlight--neutral'],
+      'border': 'solid 1px' + CSS.vars ['highlight--neutral'],
+   }],
+   ['.onboarding-modal-text-container', {
+      'margin': 0,
+      'position': 'absolute',
+      top: .5,
+      '-ms-transform': 'translateY(-50%)',
+      'transform': 'translateY(-50%)'
+   }],
+   ['.onboarding-modal-title, .onboarding-modal-text', {
+      color: 'white',
+      'margin-left, margin-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--m']
+   }],
+   ['.onboarding-modal-title', {
+      'font-size': CSS.typography.fontSize (4),
+      'font-weight': CSS.vars.fontPrimarySemiBold,
+   }],
+   ['.onboarding-modal-text', {
+      mixin1: CSS.vars.fontPrimarySemiBold,
+   }],
    // *** HOME VIEW ***
    ['.button--purple', {
        border: '1px solid #ec5bff',
@@ -4836,7 +4883,7 @@ views.header = function (showUpload, showImport) {
 
 // *** EMPTY VIEW ***
 
-views.empty = function () {
+views.empty2 = function () {
    return ['div', [
       // SIDEBAR
       ['div', {class: 'sidebar'}, [
@@ -4879,6 +4926,44 @@ views.empty = function () {
                   ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
                   ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
                ]]
+            ]],
+         ]],
+      ]],
+   ]];
+}
+
+// *** ONBOARDING VIEW ***
+
+views.empty = function () {
+   return ['div', [
+      // MAIN
+      ['div', {class: 'main'}, [
+         ['div', {class: 'main__inner'}, [
+            ['div', {class: 'guide'}, [
+               ['span', {style: style ({display: 'inline-flex'})}, [
+                  ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+                  ['h2', {class: 'guide__title'}, 'username'],
+                  ['h2', {class: 'guide__title'}, '!']
+               ]],
+               ['p', {class: 'guide__text', style: style({width: 800})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
+               ['p', {class: 'guide__text', style: style({width: 800})}, 'Let’s start by tagging your pics and videos, so you can group them as you like.'],
+               ['p', {class: 'guide__text', style: style({width: 800})}, 'It’s easy. Check it out!']
+            ]],
+            ['div', {class: 'onboarding-modal-container'}, [
+               ['div', {class: 'onboarding-modal'}, [
+                  ['div', {class: 'onboarding-modal-text-div'}, [
+                     ['div', {class: 'onboarding-modal-text-container'}, [
+                        ['p', {class: 'onboarding-modal-title'}, '1/4'],
+                        ['p', {class: 'onboarding-modal-title'}, 'Go to Everything'],
+                        ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, click on Everything. All your pics and videos are there.']   
+                     ]]
+                  ]],
+                  ['div', {class: 'onboarding-modal-gif-div'}]
+               ]],
+               ['div', {style: style ({float: 'right'})}, [
+                  ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6})}, 'Skip tour'],
+                  ['a', {href: '', class: 'button button--one'}, 'Next']
+            ]]
             ]],
          ]],
       ]],
