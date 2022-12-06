@@ -5108,7 +5108,7 @@ views.pics = function () {
                            }
                            else if (which === 't::') {
                               var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
-                              var tag = 'To organize';
+                              var tag = 'To Organize';
                               var action = ['toggle', 'tag', 'u::'];
                            }
                            else if (which === 'o::') {
@@ -5363,14 +5363,14 @@ views.pics = function () {
                      H.putSvg ('download'),
                      ['span', {class: 'organise-bar__button-title'}, 'Download'],
                   ]],
+                  ['div', {class: 'organise-bar__button organise-bar__button--to-organize'}, [
+                     ['span', {style: style({'padding-top': '1px'})}, H.putSvg ('toOrganizeIcon')],
+                     ['span', {class: 'organise-bar__button-title', style: style({'margin-left': '-2px'})}, 'Mark as To Organize'],
+                  ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--delete', onclick: B.ev (H.stopPropagation, ['delete', 'pivs'])}, [
                      H.putSvg ('delete'),
                      ['span', {class: 'organise-bar__button-title'}, 'Delete'],
                   ]],
-                  // ['div', {class: 'organise-bar__button organise-bar__button--organized'}, [
-                  //    H.putSvg ('organizedIcon'),
-                  //    ['span', {class: 'organise-bar__button-title'}, 'Mark as organized'],
-                  // ]],
                ]]];
             }),
             // MAIN
@@ -5441,7 +5441,7 @@ views.pics = function () {
                                        var showName = tag.replace (/^[a-z]::/, '');
                                        if (tag === 'a::') showName = (tags.length === 0 ? 'Everything ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
-                                       if (tag === 't::') showName = 'To organize';
+                                       if (tag === 't::') showName = 'To Organize';
                                        if (tag === 'o::') showName = 'Organized';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
