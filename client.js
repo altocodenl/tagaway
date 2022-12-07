@@ -4964,9 +4964,7 @@ views.empty = function () {
                   ['h2', {class: 'guide__title'}, 'username'],
                   ['h2', {class: 'guide__title'}, '!']
                ]],
-               ['p', {class: 'guide__text', style: style({width: 800})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
-               ['p', {class: 'guide__text', style: style({width: 800})}, 'Let’s start by tagging your pics and videos, so you can group them as you like.'],
-               ['p', {class: 'guide__text', style: style({width: 800})}, 'It’s easy. Check it out!']
+               ['p', {class: 'guide__text', style: style({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
             ]],
             ['div', {class: 'onboarding-modal-container'}, [
                ['div', {class: 'onboarding-modal'}, [
