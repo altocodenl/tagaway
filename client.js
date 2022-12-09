@@ -300,6 +300,15 @@ CSS.litc = [
       color: '#fff',
       background: CSS.vars.grey,
    }]),
+   ['.button--four', {
+      border: '1px solid ' + CSS.vars ['color--one'],
+      color: CSS.vars ['color--one'],
+      'background-color': '#fff',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--four:hover', {
+      color: '#fff',
+      background: CSS.vars ['color--one'],
+   }]),
    media ('screen and (min-width: 1025px)', ['.button--green:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--attach'],
@@ -798,13 +807,12 @@ CSS.litc = [
       'border-radius': CSS.vars ['border-radius--l'],
    }],
    ['.onboarding-modal-text-div, .onboarding-modal-gif-div', {
-      // width: .33,
-      width: .4,
       'position': 'relative',
       'border-radius': CSS.vars ['border-radius--l'],
    }],
    ['.onboarding-modal-text-div', {
-      height: .66,
+      width: .4,
+      height: .7,
       'margin-top': 56,
       'margin-left': CSS.vars ['padding--l'],
       'background-color': CSS.vars ['color--one'],
@@ -812,13 +820,15 @@ CSS.litc = [
    }],
    ['.onboarding-modal-gif-div', {
       height: 1,
+      width: .4,
       'background-color': CSS.vars ['highlight--neutral'],
       'border': 'solid 1px' + CSS.vars ['highlight--neutral'],
       'margin-right': CSS.vars ['padding--l'],
       'margin-left': 'auto',
    }],
    ['.onboarding-modal-gif', {
-      'height, width': 'auto',
+      'height': 'auto',
+      'width': .8,
       'border-radius': CSS.vars ['border-radius--l'],
       display: 'block',
       position: 'absolute',
@@ -843,10 +853,11 @@ CSS.litc = [
    }],
    ['.onboarding-modal-text', {
       mixin1: CSS.vars.fontPrimarySemiBold,
+      'margin-bottom': CSS.vars ['padding--m'],
    }],
    ['.onboarding-modal-arrow', {
       'height, width': 25,
-      'margin-top': '600%'
+      'margin-top': '640%'
 
    }],
    // *** HOME VIEW ***
@@ -4969,21 +4980,62 @@ views.empty = function () {
             ['div', {class: 'onboarding-modal-container'}, [
                ['div', {class: 'onboarding-modal'}, [
                   ['div', {class: 'onboarding-modal-text-div'}, [
+                     // ['div', {class: 'onboarding-modal-text-container'}, [
+                     //    ['p', {class: 'onboarding-modal-title'}, '1/8'],
+                     //    ['p', {class: 'onboarding-modal-title'}, 'Go to Everything'],
+                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, click on Everything. All your pics and videos are there.']   
+                     // ]],
+                     // ['div', {class: 'onboarding-modal-text-container'}, [
+                     //    ['p', {class: 'onboarding-modal-title'}, '2/8'],
+                     //    ['p', {class: 'onboarding-modal-title'}, 'One click to select'],
+                     //    ['p', {class: 'onboarding-modal-text'}, 'Select the pictures and videos you want to tag with one click.']   
+                     // ]],
+                     // ['div', {class: 'onboarding-modal-text-container'}, [
+                     //    ['p', {class: 'onboarding-modal-title'}, '3/8'],
+                     //    ['p', {class: 'onboarding-modal-title'}, 'Create tag'],
+                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, write the tag name you want for your selected pictures.']   
+                     // ]],
+                     // ['div', {class: 'onboarding-modal-text-container'}, [
+                     //    ['p', {class: 'onboarding-modal-title'}, '4/8'],
+                     //    ['p', {class: 'onboarding-modal-title'}, 'Or reuse tag'],
+                     //    ['p', {class: 'onboarding-modal-text'}, 'If there’s already a tag created and you want to add the selected pictures to it, just click on the “+”.']   
+                     // ]],
+                     // ['div', {class: 'onboarding-modal-text-container'}, [
+                     //    ['p', {class: 'onboarding-modal-title'}, '5/8'],
+                     //    ['p', {class: 'onboarding-modal-title'}, 'How to untag'],
+                     //    ['p', {class: 'onboarding-modal-text'}, 'If you want to ‘untag’, then hover on the check mark, you’ll find the scissors to untag those pics.']   
+                     // ]],
+                     // ['div', {class: 'onboarding-modal-text-container'}, [
+                     //    ['p', {class: 'onboarding-modal-title'}, '6/8'],
+                     //    ['p', {class: 'onboarding-modal-title'}, 'Use tags to find anything'],
+                     //    ['p', {class: 'onboarding-modal-text'}, 'You’ll find your tags on the left sidebar, together with your Year and Geo Tags, which will help you drill down into your collection.']   
+                     // ]],
                      ['div', {class: 'onboarding-modal-text-container'}, [
-                        ['p', {class: 'onboarding-modal-title'}, '1/4'],
-                        ['p', {class: 'onboarding-modal-title'}, 'Go to Everything'],
-                        ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, click on Everything. All your pics and videos are there.']   
-                     ]]
+                        ['p', {class: 'onboarding-modal-title'}, '7/8'],
+                        ['p', {class: 'onboarding-modal-title'}, 'No constraints'],
+                        ['p', {class: 'onboarding-modal-text'}, [
+                           'Tag your pics & videos with as many tags as you want. Combine tags to find what you\'re looking for.',
+                           ['br'],  
+                           'Vacations with friends or vacations with family?'
+                        ]]   
+                     ]],
                   ]],
                   ['div', {class: 'onboarding-modal-arrow-div'}, [
-                     // ['img', {class: 'onboarding-modal-arrow', src: 'assets/img/arrow 175x175 - 6.png', style: style({'margin-top': 56})}]
                      ['span', H.putSvg ('triangle')]
                   ]],
                   ['div', {class: 'onboarding-modal-gif-div'}, [
-                     ['img', {class: 'onboarding-modal-gif', src: 'assets/img/1.gif'}]]] 
+                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/1.gif'}],
+                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/2.gif'}],
+                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/3.gif'}],
+                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/4.gif'}],
+                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/5.gif'}],
+                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/6.gif'}],
+                     ['img', {class: 'onboarding-modal-gif', src: 'assets/img/7.gif'}]
+                  ]] 
                ]],
                ['div', {style: style ({float: 'right'})}, [
                   ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6})}, 'Skip tour'],
+                  ['a', {href: '', class: 'button button--four', style: style ({'margin-right': 6})}, 'Previous'],
                   ['a', {href: '', class: 'button button--one'}, 'Next']
             ]]
             ]],
