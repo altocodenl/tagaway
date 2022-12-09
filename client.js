@@ -804,12 +804,17 @@ CSS.litc = [
       'display': 'inline-flex',
       'margin-left': CSS.vars ['padding--m'],
    }],
+   ['.home-add-boxes-row', {
+      width: 1,
+      'margin-left': CSS.vars ['padding--m'],
+   }],
    ['.home-box', {
       width: 290,
       'min-width': 290,
       height: 180,
       'margin-right, margin-top': CSS.vars ['padding--xl'],
       position: 'relative',
+      'cursor': 'pointer'
    }],
    ['.box-add', {
       'border': 'dashed 1px' + CSS.vars ['color--one'],
@@ -4910,7 +4915,7 @@ views.home = function () {
                   ]];
                })
             ]],
-            ['div', {class: 'home-boxes-row'}, [
+            ['div', {class: 'home-add-boxes-row'}, [
                ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
                   ['div', {class: 'box-add-circle'}, [
                      ['div', {class: 'box-add-plus'}]
