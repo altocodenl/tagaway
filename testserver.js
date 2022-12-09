@@ -20,7 +20,7 @@ var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
-var clog   = teishi.clog, type = teishi.type, eq = teishi.eq, last = teishi.last, inc = function (a, v) {return a.indexOf (v) > -1}
+var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last, inc = teishi.inc;
 
 // *** TEST CONSTANTS ***
 

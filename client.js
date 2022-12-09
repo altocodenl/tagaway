@@ -1,7 +1,7 @@
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
+var type = teishi.type, clog = teishi.clog, eq = teishi.eq, last = teishi.last, inc = teishi.inc, media = lith.css.media, style = lith.css.style;
 
 var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
 
@@ -3352,6 +3352,8 @@ B.mrespond ([
          if (! (B.get ('State', 'upload', 'queue') || []).length) return;
          requestAnimationFrame (function () {document.body.style.background = 'white'});
       }, 1000));
+
+      if (sessionStorage.getItem ('testFrom')) B.call (x, 'test', []);
    }],
    ['reset', 'store', function (x, logout) {
       if (logout) {
@@ -3462,12 +3464,14 @@ B.mrespond ([
 
       document.title = ['ac;pic', page].join (' - ');
 
-      B.call (x, 'set', ['State', 'page'], page);
-
       if (page === 'pics') {
-         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
+            B.call (x, 'set', ['State', 'queryURL'], 'home');
+            return B.call (x, 'set', ['State', 'page'], page);
+         }
          page = 'pics/' + B.get ('State', 'queryURL');
       }
+      B.call (x, 'set', ['State', 'page'], page.replace (/\/.+/, ''));
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
@@ -3492,7 +3496,7 @@ B.mrespond ([
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
          B.call (x, 'read', 'hash');
-         B.call (x, 'query', 'account');
+         if (! error) B.call (x, 'query', 'account');
       });
    }],
    ['login', [], function (x) {
@@ -3504,6 +3508,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'clear', 'authInputs');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3536,6 +3541,7 @@ B.mrespond ([
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
          }
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3603,9 +3609,9 @@ B.mrespond ([
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
-      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update'], x.path [2])) return;
 
-      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
+      if (inc (['tags', 'sort', 'home'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
 
       if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
 
@@ -3694,7 +3700,7 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
+      var noPivsYet = eq (B.get ('Data', 'pivs'), []);
       var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
       var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
@@ -3855,7 +3861,9 @@ B.mrespond ([
       }
 
       // Tag is added
-      B.call (x, 'set', ['State', 'query', 'home'], false);
+      // We do not set this if removing a tag because we know we're already not with home set.
+      // We do this mutely since State.query.tags will change and trigger further changes.
+      B.set (['State', 'query', 'home'], false);
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
@@ -4037,7 +4045,7 @@ B.mrespond ([
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (teishi.eq (query [k], B.get ('State', 'query', k))) return;
+            if (eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
@@ -4782,23 +4790,23 @@ views.reset = function () {
 // *** HEADER VIEW ***
 
 views.header = function (showUpload, showImport) {
-   return ['header', {class: 'header', onclick: B.ev (H.stopPropagation)}, [
+   return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--purple-header'}, 'Go home']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
             ]];
          }),
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev ('set', ['State', 'feedback'], '')}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4809,14 +4817,14 @@ views.header = function (showUpload, showImport) {
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev ('logout', [])}, 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
                ]],
             ]],
          ]],
       ]],
       //SHARE BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
-         ['a', {href: '', class: 'button button--green', onclick: B.ev (['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
+         ['a', {href: '', class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
       ]],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
@@ -4953,7 +4961,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'], ['set', ['State', 'queryURL'], 'home'])}, 'Go back home'] : [
+                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back home'] : [
                               ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                               ['div', {class: 'sidebar-header__filter-selected'}],
                            ]
@@ -5015,7 +5023,7 @@ views.pics = function () {
                            }
                         });
 
-                        var all      = teishi.eq (selected, []);
+                        var all      = eq (selected, []);
                         var untagged = inc (selected, 'u::');
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.

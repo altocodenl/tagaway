@@ -1,4 +1,16 @@
-var suite    = prompt ('Suite?', suite);
+var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
+var type = teishi.type, clog = teishi.clog, eq = teishi.eq, last = teishi.last, inc = teishi.inc, media = lith.css.media, style = lith.css.style;
+
+var suite;
+
+var from = sessionStorage.getItem ('testFrom');
+if (from) {
+   from = JSON.parse (from);
+   var suite = from.suite;
+   sessionStorage.removeItem ('testFrom');
+}
+
+if (! suite) suite = prompt ('Suite?', suite);
 if (! suite || inc (['auth', 'pivs'], suite)) {
    var username = sessionStorage.getItem ('username') || prompt ('Username?');
    var password = sessionStorage.getItem ('password') || prompt ('Password?');
@@ -6,11 +18,14 @@ if (! suite || inc (['auth', 'pivs'], suite)) {
    sessionStorage.setItem ('password', password);
 }
 if (suite) sessionStorage.setItem ('suite', suite);
-var from = sessionStorage.getItem ('from');
-if (from !== undefined) sessionStorage.removeItem ('from');
 
 var waits = {logout: 400, login: 400, sort: 100, pivs: 2000}
-var t = Date.now ();
+
+var stop = function (label, result, value) {
+   if (eq (result, value)) return false;
+   if (teishi.complex (result) && teishi.complex (value)) return ['Invalid ' + label + ', expecting', value, 'got', result, 'in field', dale.stopNot (result, undefined, function (v, k) {if (! eq (v, value [k])) return k})];
+   else                                                   return ['Invalid ' + label + ', expecting', value, 'got', result];
+}
 
 c.test = function (tests, callback) {
 
@@ -97,7 +112,7 @@ suites.auth = [
       if (B.get ('State', 'page') !== 'pics') return ['Invalid State.page', B.get ('State', 'page')];
       if (window.location.hash !== '#/pics/home')  return ['Invalid hash', window.location.hash];
       var loginEvent = dale.stopNot (B.r.log, undefined, function (log) {
-         if (log.verb === 'post' && teishi.eq (log.path, ['auth/login'])) return log;
+         if (log.verb === 'post' && eq (log.path, ['auth/login'])) return log;
       });
       if (loginEvent.args [1].password !== 'REDACTED') return ['Password not removed from login logs!'];
       return true;
@@ -159,7 +174,7 @@ suites.auth = [
       B.call ('logout', []);
       wait (waits.logout);
    }, function () {
-      if (! teishi.eq (B.r.log [0].path, ['lastLogout'])) return ['Invalid first log in B.log after logout', B.r.log];
+      if (! eq (B.r.log [0].path, ['lastLogout'])) return ['Invalid first log in B.log after logout', B.r.log];
       if (B.get ('State', 'page') !== 'login') return ['Invalid State.page', B.get ('State', 'page')];
       if (window.location.hash !== '#/login')  return ['Invalid hash', window.location.hash];
       return true;
@@ -221,7 +236,7 @@ suites.pivs = [
       if (B.get ('State', 'page') !== 'pics') return ['Invalid State.page', B.get ('State', 'page')];
       if (window.location.hash !== '#/pics/home')  return ['Invalid hash', window.location.hash];
       var loginEvent = dale.stopNot (B.r.log, undefined, function (log) {
-         if (log.verb === 'post' && teishi.eq (log.path, ['auth/login'])) return log;
+         if (log.verb === 'post' && eq (log.path, ['auth/login'])) return log;
       });
       if (loginEvent && loginEvent.args [1].password !== 'REDACTED') return ['Password not removed from login logs!'];
       return true;
@@ -271,17 +286,223 @@ suites.pivs = [
    }],
 ];
 
+// *** HOME ***
+
+suites.home = [
+   ['Go back to the initial URL of the app', function () {
+      sessionStorage.setItem ('testFrom', JSON.stringify ({suite: 'home', from: 1, time: Date.now ()}));
+      window.location = window.location.href.replace (window.location.hash, '');
+   }, function () {
+      // This function will be ignored because we are leaving the page.
+   }],
+   ['Check that we land on the home view', function () {
+      return true;
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: [], sort: 'newest', home: true}
+      );
+      if (error) return error;
+      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
+      if (error) return error;
+      return true;
+   }],
+   ['Wait until the sidebar is drawn', function (wait) {
+      wait (500);
+   }, function () {
+      return c ('.tag__title').length > 0;
+   }],
+   ['Click on Everything to see pivs', function (wait) {
+      c ('.tag__title') [0].click ();
+      wait (300);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: [], sort: 'newest', home: false}
+      );
+      if (error) return error;
+      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: [], sort: 'newest'});
+      if (error) return error;
+      return true;
+   }],
+   ['Refresh the same page by landing on the same query', function (wait) {
+      sessionStorage.setItem ('testFrom', JSON.stringify ({suite: 'home', from: 5, time: from.time}));
+      location.reload ();
+   }, function () {
+      // This function will be ignored because we are leaving the page.
+   }],
+   ['Check that we are still on the same page after the refresh', function (wait) {
+      wait (200);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: [], sort: 'newest', home: false}
+      );
+      if (error) return error;
+      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: [], sort: 'newest'});
+      if (error) return error;
+      return !! c ('.pictures-grid__item-picture') [0];
+   }],
+   ['Select a piv', function (wait) {
+      c ('.pictures-grid__item-picture') [0].click ();
+      wait (100);
+   }, function () {
+      return dale.keys (B.get ('State', 'selected')).length > 0;
+   }],
+   ['Tag the piv and query that tag', function (wait) {
+      // TODO: do this through the interface rather than with an event
+      B.call ('tag', 'pivs', 'foo');
+      B.call ('set', ['State', 'query', 'tags'], ['foo']);
+      wait (100);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: ['foo'], sort: 'newest', home: false}
+      );
+      if (error) return error;
+      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
+      if (error) return error;
+      return true;
+   }],
+   ['Refresh the same page by landing on the same query', function (wait) {
+      sessionStorage.setItem ('testFrom', JSON.stringify ({suite: 'home', from: 9, time: from.time}));
+      location.reload ();
+   }, function () {
+      // This function will be ignored because we are leaving the page.
+   }],
+   ['Check that we are still on the same page after the refresh with a tag selected', function (wait) {
+      wait (200);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: ['foo'], sort: 'newest', home: false}
+      );
+      if (error) return error;
+      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
+      if (error) return error;
+      return !! c ('.pictures-grid__item-picture') [0];
+   }],
+   // Refreshing will have unselected the piv, so no need to do it.
+   ['Go home', function (wait) {
+      c ('.button--purple') [0].click ();
+      wait (100);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: [], sort: 'newest', home: true}
+      );
+      if (error) return error;
+      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
+      if (error) return error;
+      return true;
+   }],
+   ['Query a tag', function (wait) {
+      var tag = dale.stopNot (c ('.tag-list__item'), undefined, function (tag) {
+         if (tag.innerHTML.match ('foo')) return tag;
+      });
+      tag.click ();
+      wait (100);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: ['foo'], sort: 'newest', home: false}
+      );
+      if (error) return error;
+      return true;
+   }],
+   ['Go to the upload view', function (wait) {
+      c ('.header__upload-button a') [0].click ();
+      wait (100);
+   }, function () {
+      var error = stop ('State.page', B.get ('State', 'page'), 'upload');
+      if (error) return error;
+      if (! c ('.button--purple-header') [0]) return 'No purple button to go back home.';
+      return true;
+   }],
+   ['Go again to the pics page', function (wait) {
+      c ('.button--purple-header') [0].click ();
+      wait (100);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: [], sort: 'newest', home: true}
+      );
+      if (error) return error;
+      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
+      if (error) return error;
+      return true;
+   }],
+   ['Go back with the back button to the upload page', function (wait) {
+      history.back ();
+      wait (300);
+   }, function () {
+      var error = stop ('State.page', B.get ('State', 'page'), 'upload');
+      if (error) return error;
+      // We need the page to finish rendering before clicking back.
+      if (! c ('.button--purple-header') [0]) return 'No purple button to go back home.';
+      debug ('after first back');
+      return true;
+   }],
+   ['Go back with the back button to the pics page (query view)', function (wait) {
+      history.back ();
+      wait (300);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: ['foo'], sort: 'newest', home: false}
+      );
+      if (error) return error;
+      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
+      if (error) return error;
+      return true;
+   }],
+   ['Go back with the back button to the pics page (home view)', function (wait) {
+      history.back ();
+      wait (300);
+   }, function () {
+      var error = stop ('State.query',
+         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+         {tags: [], sort: 'newest', home: true}
+      );
+      if (error) return error;
+      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
+      if (error) return error;
+      return true;
+   }],
+];
+
 // *** RUN TESTS ***
 
 var testsToRun = [];
 
 dale.go (suites, function (v, k) {
    if (! suite || suite === k) testsToRun = testsToRun.concat (v);
-   if (from !== undefined) testsToRun.slice (from);
+   if (from) testsToRun = testsToRun.slice (from.from);
 });
 
 c.test (testsToRun, function (error, time) {
    if (error) clog (error);
    if (error) B.call ('snackbar', 'red',   JSON.stringify (error));
-   else       B.call ('snackbar', 'green', 'All tests passed in ' + time + 'ms');
+   else       B.call ('snackbar', 'green', 'All tests passed in ' + (from ? Date.now () - from.time : time) + 'ms');
+   from = undefined;
 });

@@ -40,24 +40,17 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - server/client: mark as organized
    - client: onboarding
 
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
-   - client: home tags:
-      - always check: url, sidebar, grid
-      - from scratch go to home, then to tag
-      - from link go straight to tag, then home
-      - from both home and tag, go to another view, then go back to pivs and be home
-      - from both home and tag, go to another view, then use back button to go back to where you were before
-      - go home, then go to a tag, then home, then click back one and be on the tag, click back again and be back on home
-   - client: fix ronin untagged or range tag when deleting all
-   - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
+   - server/client: mark as organized
    - client: show less year & country entries in sidebar
 
+   - client: fix ronin untagged or range tag when deleting all
+   - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
    - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
    - server/client: OCR recognition
@@ -880,10 +873,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> rem State.showNTags`
       - `input -> rem State.showNSelectedTags`
       - `input -> set State.filter`
+      - `click -> goto page`
       - `click -> goto tag`
       - `click -> set State.tagOrder`
       - `click -> set State.query.update`
       - `click -> set State.query.updateLimit`
+      - `click -> set State.query.home`
+      - `click -> set State.query.tags`
 2. `views.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
@@ -1013,10 +1009,10 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    10. `test`: loads the test suite.
 
 3. Auth
-   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not. Finally, it invokes `query account`.
-   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf` and invokes `goto page State.redirect`.
+   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not. Finally, if there was no error, it invokes `query account`.
+   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf`, invokes `query account` and invokes `goto page State.redirect`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument) and invokes `goto page login`.
-   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs` and updates `Data.csrf` and invokes `goto page State.redirect`.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf`, invokes `query account` and invokes `goto page State.redirect`.
    6. `recover`: calls `post /auth/recover`. In case of error, only calls `snackbar`; otherwise, it calls `clear authInputs`, invokes `goto page login` and invokes `snackbar`.
    7. `reset`: calls `post /auth/reset`. In case of error, only calls `snackbar`; otherwise it calls `rem Data.tokens`, `clear authInputs`, `goto page login` and `snackbar`.
    8. `delete account`: calls `post /auth/delete`. In case of error, only calls `snackbar`; otherwise it calls `reset store true`, `goto page login` and `snackbar`.
@@ -1425,22 +1421,19 @@ We set `document.title` based on the `page` to which we are sending the user.
       document.title = ['ac;pic', page].join (' - ');
 ```
 
-We `set State.page` to `page`.
-
-```javascript
-      B.call (x, 'set', ['State', 'page'], page);
-```
-
 If `page` is `'pics'`:
 
 ```javascript
       if (page === 'pics') {
 ```
 
-If the event was not called with the `fromHash` parameters and `State.query` is not `'home'`, this means that we are going to the `pics` page and we need to show the home tags. To ensure this, we `set State.queryURL` and not do anything else.
+If the event was not called with the `fromHash` parameters and `State.query` is not `'home'`, this means that we are going to the `pics` page and we need to show the home tags. To ensure this, we `set State.queryURL` and then we set `State.page` to `page`. In this case, we do not do anything else.
 
 ```javascript
-         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
+            B.call (x, 'set', ['State', 'queryURL'], 'home');
+            return B.call (x, 'set', ['State', 'page'], page);
+         }
 ```
 
 Let's go back for a minute to the sequence of changes produced when the hash of the page changes:
@@ -1457,6 +1450,13 @@ Finally, if `page` is `pics` but the event was called from the `read hash` event
          page = 'pics/' + B.get ('State', 'queryURL');
       }
 ```
+
+We `set State.page` to `page`. If `page` now contains a slash plus `State.queryURL` (as it will if `page` is `'pics'`), we take care to remove that part of the string before setting that value into `State.page`.
+
+```javascript
+      B.call (x, 'set', ['State', 'page'], page.replace (/\/.+/, ''));
+```
+
 
 Finally, we update `window.location.hash` if it's not what it should be. This concludes the responder.
 
@@ -1500,16 +1500,16 @@ We define the responder for `change State.query`. This is one of the main respon
    ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
 ```
 
-If what changes is the `State` object itself, or `State.query.recentlyTagged|update|home`, we don't do anything else, since we want to ignore these changes. But if `State.query` is set, or if `State.query.tags|sort|fromDate|updateLimit` change, we will perform further actions.
+If what changes is the `State` object itself, or `State.query.recentlyTagged|update`, we don't do anything else, since we want to ignore these changes. But if `State.query` is set, or if `State.query.tags|sort|home|fromDate|updateLimit` change, we will perform further actions.
 
 ```javascript
-      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update'], x.path [2])) return;
 ```
 
-If either `State.query.tags` or `State.query.sort` changed, we will remove the fields `fromDate`, `update` and `updateLimit` from the query, since we deem the query to have changed and thus we need to clear out these fields. We will do without triggering any `change` events yet, since we don't want to call other events yet.
+If either `State.query.tags` or `State.query.sort` or `State.query.home` changed, we will remove the fields `fromDate`, `update` and `updateLimit` from the query, since we deem the query to have changed and thus we need to clear out these fields. We will do without triggering any `change` events yet, since we don't want to call other events yet.
 
 ```javascript
-      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
+      if (inc (['tags', 'sort', 'home'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
 ```
 
 If `State.query.updateLimit` is either `true` or `undefined`, we set it to the current time. It will be `undefined` if it was just removed by the line above; and it will be `true` if set to that value by two user interactions; `true` means "the present moment", so the result will be the same.
@@ -1690,7 +1690,7 @@ We iterate the three keys from `State.query` that were previously stored in `Sta
 
 ```javascript
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (teishi.eq (query [k], B.get ('State', 'query', k))) return;
+            if (eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });

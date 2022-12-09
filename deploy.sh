@@ -15,12 +15,16 @@ FOLDER="acpic"
 
 if [ "$2" == "client" ] ; then
    scp client.js $HOST:$FOLDER
-   scp testclient.js $HOST:$FOLDER
    exit 0
 fi
 
 if [ "$2" == "client2" ] ; then
    scp client.js $HOST:$FOLDER/client2.js
+   exit 0
+fi
+\
+if [ "$2" == "testclient" ] ; then
+   scp testclient.js $HOST:$FOLDER
    exit 0
 fi
 
