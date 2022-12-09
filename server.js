@@ -36,7 +36,7 @@ var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
-var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, last = teishi.last, reply = cicek.reply, stop = function (rs, rules) {
+var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last, inc = teishi.inc, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    }, true);
@@ -2754,6 +2754,7 @@ var routes = [
 
    ['get', 'tags', function (rq, rs) {
       astop (rs, [
+         [a.set, 'hometags', [Redis, 'get', 'hometags:' + rq.user.username]],
          [Redis, 'smembers', 'tags:' + rq.user.username],
          function (s) {
             var multi = redis.multi ();
@@ -2765,15 +2766,57 @@ var routes = [
          },
          function (s) {
             var multi = redis.multi ();
-            s.output = dale.fil (s.last, undefined, function (n, k) {
+            var removedTags = [];
+            s.alltags = dale.fil (s.last, undefined, function (n, k) {
                if (n > 0) return s.tags [k];
                // We cleanup tags from tags:USERID if the tag set is empty.
                // The cleanup is done here because it would be cumbersome to have to do it in POST /delete, POST /tag and POST /geo
-               else multi.srem ('tags:' + rq.user.username, s.tags [k]);
+               multi.srem ('tags:' + rq.user.username, s.tags [k]);
+               removedTags.push (s.tags [k]);
             }).sort ();
+            s.hometags = dale.fil (JSON.parse (s.hometags || '[]'), undefined, function (v) {
+               if (! inc (removedTags, v)) return v;
+            });
+            multi.set ('hometags:' + rq.user.username, JSON.stringify (s.hometags));
             mexec (s, multi);
          },
-         [a.get, reply, rs, 200, '@output'],
+         function (s) {
+            reply (rs, 200, {tags: s.alltags, hometags: s.hometags});
+         }
+      ]);
+   }],
+
+   ['post', 'hometags', function (rq, rs) {
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['hometags'], 'eachOf', teishi.test.equal],
+         ['body.hometags', b.hometags, 'array'],
+         ['body.hometags', b.hometags, 'string', 'each']
+      ])) return;
+
+      // TODO: add support for adding tags shared by others (validate tag type, check if in shm:)
+
+      var multi = redis.multi (), seen = {};
+      var invalidTag = dale.stopNot (b.hometags, undefined, function (hometag) {
+         seen [hometag] = true;
+         if (! H.isUserTag (hometag)) return hometag;
+         multi.exists ('tag:' + rq.user.username + ':' + hometag);
+      });
+      if (invalidTag) return reply (rs, 400, {error: 'tag', tag: invalidTag});
+
+      if (dale.keys (seen).length < b.hometags.length) return reply (rs, 400, {error: 'repeated'});
+
+      astop (rs, [
+         [mexec, multi],
+         function (s) {
+            var missingTag = dale.stopNot (s.last, undefined, function (exists, k) {
+               if (! exists) return b.hometags [k];
+            });
+            if (missingTag) return reply (rs, 404, {tag: missingTag});
+            Redis (s, 'set', 'hometags:' + rq.user.username, JSON.stringify (b.hometags));
+         },
+         [reply, rs, 200]
       ]);
    }],
 

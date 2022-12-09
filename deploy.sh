@@ -22,6 +22,11 @@ if [ "$2" == "client2" ] ; then
    scp client.js $HOST:$FOLDER/client2.js
    exit 0
 fi
+\
+if [ "$2" == "testclient" ] ; then
+   scp testclient.js $HOST:$FOLDER
+   exit 0
+fi
 
 if [ "$2" == "admin" ] ; then
    scp admin.js $HOST:$FOLDER
@@ -58,6 +63,8 @@ fi
 
 if [ "$2" == "test" ] ; then
    rsync -av . $HOST:$FOLDER
+   ssh $HOST chown -R root /root/$FOLDER
+   echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
    ssh $HOST "cd $FOLDER && node testserver $3"
    exit 0
 fi
