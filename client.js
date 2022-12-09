@@ -1,7 +1,7 @@
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
+var type = teishi.type, clog = teishi.clog, eq = teishi.eq, last = teishi.last, inc = teishi.inc, media = lith.css.media, style = lith.css.style;
 
 var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
 
@@ -805,12 +805,17 @@ CSS.litc = [
       'display': 'inline-flex',
       'margin-left': CSS.vars ['padding--m'],
    }],
+   ['.home-add-boxes-row', {
+      width: 1,
+      'margin-left': CSS.vars ['padding--m'],
+   }],
    ['.home-box', {
       width: 290,
       'min-width': 290,
       height: 180,
       'margin-right, margin-top': CSS.vars ['padding--xl'],
       position: 'relative',
+      'cursor': 'pointer'
    }],
    ['.box-add', {
       'border': 'dashed 1px' + CSS.vars ['color--one'],
@@ -3392,6 +3397,8 @@ B.mrespond ([
          if (! (B.get ('State', 'upload', 'queue') || []).length) return;
          requestAnimationFrame (function () {document.body.style.background = 'white'});
       }, 1000));
+
+      if (sessionStorage.getItem ('testFrom')) B.call (x, 'test', []);
    }],
    ['reset', 'store', function (x, logout) {
       if (logout) {
@@ -3465,29 +3472,21 @@ B.mrespond ([
    ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
-      if (page === 'signup') {
-         if (hash [1]) {
-            B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
-         }
-      }
-      if (page === 'reset') {
-         if (hash [1] && hash [2]) {
-            B.call (x, 'set', ['Data', 'reset'], {token: decodeURIComponent (hash [1]), username: decodeURIComponent (hash [2])});
-         }
-      }
-      if (page === 'import') {
-         if (hash [1] === 'success' && hash [2]) {
-            B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'], true);
-         }
-         if (hash [1] === 'error' && hash [2]) {
-            B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
-         }
+      if (page === 'signup' && hash [1]) B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
+
+      if (page === 'reset' && hash [1] && hash [2]) B.call (x, 'set', ['Data', 'reset'], {
+         token:    decodeURIComponent (hash [1]),
+         username: decodeURIComponent (hash [2])
+      });
+
+      if (page === 'import' && hash [2]) {
+         if (hash [1] === 'success') B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'],    true);
+         if (hash [1] === 'error'  ) B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
       }
 
       if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
       B.call (x, 'goto', 'page', page, true);
-
    }],
    ['goto', 'page', {id: 'goto page'}, function (x, page, fromHash) {
       var pages = {
@@ -3495,9 +3494,7 @@ B.mrespond ([
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
-      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) {
-         page = pages.logged [0];
-      }
+      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) page = pages.logged [0];
 
       var logged = B.get ('Data', 'csrf');
 
@@ -3505,19 +3502,21 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'redirect'], page);
          return B.call (x, 'goto', 'page', pages.unlogged [0]);
       }
-      if (logged && inc (pages.unlogged, page)) {
-         return B.call (x, 'goto', 'page', pages.logged [0]);
-      }
+
+      if (logged && inc (pages.unlogged, page)) return B.call (x, 'goto', 'page', pages.logged [0]);
+
       if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
 
       document.title = ['ac;pic', page].join (' - ');
 
-      if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
-
       if (page === 'pics') {
-         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
+            B.call (x, 'set', ['State', 'queryURL'], 'home');
+            return B.call (x, 'set', ['State', 'page'], page);
+         }
          page = 'pics/' + B.get ('State', 'queryURL');
       }
+      B.call (x, 'set', ['State', 'page'], page.replace (/\/.+/, ''));
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
@@ -3542,6 +3541,7 @@ B.mrespond ([
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
          B.call (x, 'read', 'hash');
+         if (! error) B.call (x, 'query', 'account');
       });
    }],
    ['login', [], function (x) {
@@ -3553,6 +3553,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'clear', 'authInputs');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3585,6 +3586,7 @@ B.mrespond ([
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
          }
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3644,44 +3646,30 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {id: 'change State.page', match: B.changeResponder}, function (x) {
-      // If the State object itself changes, don't respond to that.
-      if (x.path.length < 2) return;
+   ['change', ['State', 'page'], {id: 'change State.page -> pics'}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      //if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now ()});
-      //else if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
-      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 100) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 10) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
-   ['change', ['State', 'query'], {match: B.changeResponder}, function (x, newValue, oldValue) {
-      // If the State object itself changes, or the path is State.query.recentlyTaggged or State.query.update, don't respond to that.
-      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
+   ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update'], x.path [2])) return;
 
-      if (inc (['tags', 'sort'], x.path [2])) {
-         B.rem (['State', 'query'], 'fromDate');
-         B.rem (['State', 'query'], 'update');
-         B.rem (['State', 'query'], 'updateLimit');
-      }
+      if (inc (['tags', 'sort', 'home'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
 
       if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
 
-      // If what changes in the query is the `fromDate` key, we write a mechanism that will prevent unnecessary calls to `query pivs`.
       if (x.path [2] === 'fromDate') {
-         // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't query further pivs.
          if (B.get ('Data', 'pivs').length === B.get ('Data', 'pivTotal')) return;
-         // If we are scrolling backwards on the same query, we also don't have to perform a new query. But if the previous load gave us enough pivs, the last visible chunk check below will prevent this issue. So there's no need for further logic to cover this case.
          var chunks = B.get ('State', 'chunks');
          if (chunks.length) {
             var lastVisibleChunkIndex;
             dale.go (chunks, function (chunk, k) {
                if (chunk.userVisible) lastVisibleChunkIndex = k;
             });
-            // If last visible chunk is the last or the next-to-last last chunk, we load more pivs. Otherwise, we don't.
             if (lastVisibleChunkIndex + 1 < chunks.length - 1) return;
          }
       }
@@ -3757,7 +3745,7 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
+      var noPivsYet = eq (B.get ('Data', 'pivs'), []);
       var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
       var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
@@ -3918,7 +3906,9 @@ B.mrespond ([
       }
 
       // Tag is added
-      B.call (x, 'set', ['State', 'query', 'home'], false);
+      // We do not set this if removing a tag because we know we're already not with home set.
+      // We do this mutely since State.query.tags will change and trigger further changes.
+      B.set (['State', 'query', 'home'], false);
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'u::' && isNormalTag) return;
@@ -3929,7 +3919,7 @@ B.mrespond ([
       }).concat (tag));
       if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
    }],
-   ['toggle', 'hometag', function (x, hometag) {
+   ['toggle', 'hometag', {id: 'toggle hometag'}, function (x, hometag) {
       var index = B.get ('Data', 'hometags').indexOf (hometag);
 
       if (index > -1) B.rem (['Data', 'hometags'], index);
@@ -3941,12 +3931,16 @@ B.mrespond ([
          B.call (x, 'change', ['Data', 'hometags']);
       });
    }],
-   ['shift', 'hometag', function (x, from, to) {
+   ['shift', 'hometag', {id: 'shift hometag'}, function (x, from, to) {
       var fromtag = B.get ('Data', 'hometags', from);
       var totag   = B.get ('Data', 'hometags', to);
       B.set (['Data', 'hometags', from], totag);
       B.set (['Data', 'hometags', to], fromtag);
-      B.call (x, 'change', ['Data', 'hometags']);
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
    }],
    ['select', 'all', function (x) {
       B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
@@ -4089,37 +4083,14 @@ B.mrespond ([
    ['stop', 'propagation', function (x, ev) {
       ev.stopPropagation ();
    }],
-   ['update', 'queryURL', function (x, dontAlterHistory) {
-      if (B.get ('State', 'query', 'home')) var hash = 'home';
-      else {
-         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
-            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, teishi.copy (v)];
-            // We don't add query.recentlyTagged to avoid going over 2k characters
-            // We don't add query.update or query.updateLimit since we don't want to cache that
-         });
-         try {
-            var hash = btoa (encodeURIComponent (JSON.stringify (query)));
-         }
-         catch (error) {
-            return B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
-         }
-      }
-      if (window.location.hash === '#/pics/' + hash) return;
-      setTimeout (function () {
-         if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
-
-         B.set (['State', 'queryURL'], hash);
-         history.replaceState (undefined, undefined, '#/pics/' + hash);
-      }, 0);
-   }],
-   ['change', ['State', 'queryURL'], function (x) {
+   ['change', ['State', 'queryURL'], {id: 'change State.queryURL'}, function (x) {
       var queryURL = B.get ('State', 'queryURL');
       if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (! query [k] || teishi.eq (query [k], B.get ('State', 'query', k))) return;
+            if (eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
@@ -4129,6 +4100,20 @@ B.mrespond ([
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
       }
+   }],
+   ['update', 'queryURL', {id: 'update queryURL'}, function (x, dontAlterHistory) {
+      if (B.get ('State', 'query', 'home')) var hash = 'home';
+      else {
+         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
+            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, v];
+         });
+         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
+      }
+      if (window.location.hash === '#/pics/' + hash) return;
+
+      if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
+      history.replaceState (undefined, undefined, '#/pics/' + hash);
+      B.set (['State', 'queryURL'], hash);
    }],
 
    // *** OPEN RESPONDERS ***
@@ -4195,9 +4180,8 @@ B.mrespond ([
 
    // *** UPLOAD RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'upload') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       if (! B.get ('Data', 'tags'))    B.call (x, 'query', 'tags');
       if (! B.get ('Data', 'uploads')) B.call (x, 'query', 'uploads');
    }],
@@ -4396,10 +4380,9 @@ B.mrespond ([
 
    // *** IMPORT RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       var page = B.get ('State', 'page');
       if (page !== 'import') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       dale.go (['google'], function (provider) {
          if (B.get ('State', 'imports', provider, 'authOK')) {
             B.call (x, 'rem', ['State', 'imports', provider], 'authOK');
@@ -4472,9 +4455,8 @@ B.mrespond ([
 
    // *** ACCOUNT RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'account') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
    }],
 
    ['query', 'account', function (x, cb) {
@@ -4559,8 +4541,8 @@ views.base = function () {
       ['style', CSS.litc],
       views.snackbar (),
       views.feedback (),
-      views.manageHome (),
       views.date (),
+      views.manageHome (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4853,23 +4835,23 @@ views.reset = function () {
 // *** HEADER VIEW ***
 
 views.header = function (showUpload, showImport) {
-   return ['header', {class: 'header', onclick: B.ev (H.stopPropagation)}, [
+   return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--purple-header'}, 'Go home']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
             ]];
          }),
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev ('set', ['State', 'feedback'], '')}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4880,14 +4862,14 @@ views.header = function (showUpload, showImport) {
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev ('logout', [])}, 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
                ]],
             ]],
          ]],
       ]],
       //SHARE BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
-         ['a', {href: '', class: 'button button--green', onclick: B.ev (['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
+         ['a', {href: '', class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
       ]],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
@@ -4898,41 +4880,6 @@ views.header = function (showUpload, showImport) {
          ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'),'Upload']],
       ]],
    ]];
-}
-
-// *** HOME VIEW ***
-
-views.home = function () {
-   return B.view ([['Data', 'hometags'], ['Data', 'account']], function (hometags, account) {
-      if (! account) return ['div'];
-      return ['div', [
-         // GUIDE
-         ['div', {class: 'guide'}, [
-            ['span', {style: style ({display: 'inline-flex'})}, [
-               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
-               ['h2', {class: 'guide__title'}, account.username],
-               ['h2', {class: 'guide__title'}, '!']
-            ]],
-            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
-         ]],
-         ['div', {class: 'home-boxes'}, [
-            ['div', {class: 'home-boxes-row'}, [
-               dale.go (hometags, function (hometag) {
-                  return ['div', {class: 'home-box', style: style ({'background-color': H.tagColor (hometag)}), onclick: B.ev ('toggle', 'tag', hometag)}, [
-                     ['p', {class: 'home-box-tag-name'}, hometag]
-                  ]];
-               })
-            ]],
-            ['div', {class: 'home-boxes-row'}, [
-               ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
-                  ['div', {class: 'box-add-circle'}, [
-                     ['div', {class: 'box-add-plus'}]
-                  ]]
-               ]]
-            ]]
-         ]]
-      ]];
-   });
 }
 
 // *** EMPTY VIEW ***
@@ -4967,7 +4914,6 @@ views.empty = function () {
       // MAIN
       ['div', {class: 'main'}, [
          ['div', {class: 'main__inner'}, [
-            // GUIDE
             ['div', {class: 'guide'}, [
                ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
@@ -4985,6 +4931,40 @@ views.empty = function () {
          ]],
       ]],
    ]];
+}
+
+// *** HOME VIEW ***
+
+views.home = function () {
+   return B.view ([['Data', 'hometags'], ['Data', 'account']], function (hometags, account) {
+      if (! account) return ['div'];
+      return ['div', [
+         ['div', {class: 'guide'}, [
+            ['span', {style: style ({display: 'inline-flex'})}, [
+               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, '!']
+            ]],
+            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
+         ]],
+         ['div', {class: 'home-boxes'}, [
+            ['div', {class: 'home-boxes-row'}, [
+               dale.go (hometags, function (hometag) {
+                  return ['div', {class: 'home-box', style: style ({'background-color': H.tagColor (hometag)}), onclick: B.ev ('toggle', 'tag', hometag)}, [
+                     ['p', {class: 'home-box-tag-name'}, hometag]
+                  ]];
+               })
+            ]],
+            ['div', {class: 'home-add-boxes-row'}, [
+               ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
+                  ['div', {class: 'box-add-circle'}, [
+                     ['div', {class: 'box-add-plus'}]
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]];
+   });
 }
 
 // *** PICS VIEW ***
@@ -5026,7 +5006,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'], ['set', ['State', 'queryURL'], 'home'])}, 'Go back home'] : [
+                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back home'] : [
                               ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                               ['div', {class: 'sidebar-header__filter-selected'}],
                            ]
@@ -5088,18 +5068,19 @@ views.pics = function () {
                            }
                         });
 
-                        var all      = teishi.eq (selected, []);
+                        var all      = eq (selected, []);
                         var untagged = inc (selected, 'u::');
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
 
                            var tag = which;
-                           var action = ['toggle', 'tag', tag];
+                           var action = ['toggle', 'tag', tag], action2;
                            if (which === 'a::') {
                               var Class = 'tag-list__item tag tag--all-pictures' + (all && ! home ? ' tag--selected' : '');
                               tag = 'Everything';
-                              action = ['set', ['State', 'query', 'tags'], []];
+                              action  = ['set', ['State', 'query', 'home'], false];
+                              action2 = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
                               var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && ! home ? ' tag--selected' : '');
@@ -5158,7 +5139,8 @@ views.pics = function () {
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
+                           // TODO: replace ['foo', 'bar'] by true no-op after gotoB 2.2.1 upgrade
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action, action2 || ['foo', 'bar'])}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (which === 't::', H.putSvg ('toOrganizeIcon')),

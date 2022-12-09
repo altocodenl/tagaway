@@ -36,7 +36,7 @@ var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
-var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, last = teishi.last, reply = cicek.reply, stop = function (rs, rules) {
+var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last, inc = teishi.inc, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    }, true);
@@ -2813,7 +2813,7 @@ var routes = [
             var missingTag = dale.stopNot (s.last, undefined, function (exists, k) {
                if (! exists) return b.hometags [k];
             });
-            if (missingTag) return reply (rs, 404);
+            if (missingTag) return reply (rs, 404, {tag: missingTag});
             Redis (s, 'set', 'hometags:' + rq.user.username, JSON.stringify (b.hometags));
          },
          [reply, rs, 200]

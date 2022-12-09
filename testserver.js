@@ -20,7 +20,7 @@ var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
-var clog   = teishi.clog, type = teishi.type, eq = teishi.eq, last = teishi.last, inc = function (a, v) {return a.indexOf (v) > -1}
+var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last, inc = teishi.inc;
 
 // *** TEST CONSTANTS ***
 
@@ -2555,7 +2555,7 @@ suites.hometags = function () {
          [['hometags'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
       ]),
       ['get hometags, that see list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
-      ['add nonexisting tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 404],
+      ['add nonexisting tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 404, H.cBody ({tag: 'foo'})],
       ['get hometags, that see list is still empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
       ['start upload to test hometags', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
