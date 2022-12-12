@@ -40,13 +40,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - client: onboarding
-
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
    - server/client: mark as organized
+   - client: onboarding
    - client: show less year & country entries in sidebar
 
    - client: fix ronin untagged or range tag when deleting all
@@ -72,7 +71,6 @@ Mono
    - server/client: Share & manage
    - client: upgrade pop up notice or email when running out of free space.
    - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-   - server: change stalled interval to 2s and send waits when doing video processing in tests
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
@@ -494,10 +492,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
    - If `body.refresh` is set to `true`, this will be considered as a request triggered by an automatic refresh by the client. This only makes a difference for statistical purposes.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, 'o::': INT, 'u::': 0, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
-      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `a::` and `untagged`, which indicate the *total* amount of all and untagged pivs, irrespective of the query.
+      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The only exception is `a::`, which indicate the *total* amount of all pivs, irrespective of the query. `u::` stands for untagged pivs, `o::` for pivs marked as organized, and `t::` for pivs not yet marked as organized.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 

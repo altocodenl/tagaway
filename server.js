@@ -588,7 +588,7 @@ H.deletePiv = function (s, id, username) {
             multi.sadd ('hashdel:' + s.piv.owner + ':' + providerHash [0], providerHash [1]);
          }
 
-         dale.go (s.tags.concat (['a::', 'u::']), function (tag) {
+         dale.go (s.tags.concat (['a::', 'u::', 'o::', 't::']), function (tag) {
             // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
             multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
@@ -822,8 +822,8 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             }
             else if (log.type === 'start') {
                if (! upload.status) {
-                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait fifteen seconds.
-                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 15;
+                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait three seconds.
+                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 3;
                   // We use log.t instead of log.id in case this is an import, because the id of the import might be quite older than the start of its upload process.
                   if (Date.now () > maxInactivity + (upload.lastActivity || log.t)) {
                      upload.status = 'stalled';
@@ -2520,9 +2520,9 @@ var routes = [
             }
             multi.sadd ('tag:' + rq.user.username + ':a::', piv.id);
 
-            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (geotags), function (tag) {
+            dale.go (tags.concat (['t::', 'd::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
-               multi.sadd ('tags:' + rq.user.username, tag);;
+               if (tag !== 't::') multi.sadd ('tags:' + rq.user.username, tag);
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
             if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
@@ -2701,7 +2701,8 @@ var routes = [
       ])) return;
 
       b.tag = H.trim (b.tag);
-      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (! H.isUserTag (b.tag) && ! inc (['o::', 't::'], b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (b.del && inc (['o::', 't::'], b.tag))                   return reply (rs, 400, {error: 'tag cannot be deleted'});
 
       var multi = redis.multi (), seen = {};
       dale.go (b.ids, function (id) {
@@ -2726,7 +2727,15 @@ var routes = [
 
                var id = b.ids [k / 2], tags = s.last [k + 1];
 
-               if (b.del) {
+               if (inc (['o::', 't::'], b.tag)) {
+                  var complement = b.tag === 'o::' ? 't::' : 'o::';
+                  multi.sadd ('pivt:' + id, b.tag);
+                  multi.srem ('pivt:' + id, complement);
+                  multi.sadd ('tag:'  + rq.user.username + ':' + b.tag,      id);
+                  multi.srem ('tag:'  + rq.user.username + ':' + complement, id);
+               }
+
+               else if (b.del) {
                   if (! inc (s.last [k + 1], b.tag)) return;
                   multi.srem ('pivt:' + id, b.tag);
                   // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
@@ -3065,7 +3074,7 @@ var routes = [
          },
          [function (s) {addPerf ('getAllPivsCount'); s.next (s.last);}],
          function (s) {
-            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0}, function (tag) {
+            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0, 'o::': 0, 't::': 0}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
@@ -3902,7 +3911,9 @@ var routes = [
                // We only set the interval if there are files still left to upload.
                if (index < s.ids.length) var waitInterval = setInterval (function () {
                   // If the last activity (either the beginning of the process or the last wait event) was 9 minutes ago or more, send a wait event to avoid the upload being stalled.
-                  if (Date.now () - lastActivity > 1000 * 60 * 9) {
+                  // If we are in the test environment, do it every two seconds.
+                  var maxInactivity = ENV ? 1000 * 60 * (10 - 1) : 1000 * (3 - 1);
+                  if (Date.now () - lastActivity > maxInactivity) {
                      a.seq (s, [
                         [notify, {priority: 'important', type: 'import wait event', currentStatus: currentStatus, user: rq.user.username, provider: 'google', file: s.filesToUpload [s.ids [index]]}],
                         function (s) {
@@ -3917,7 +3928,7 @@ var routes = [
                         }
                      ]);
                   }
-               }, 1000 * 15);
+               }, 1000);
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
