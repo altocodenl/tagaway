@@ -3909,10 +3909,12 @@ B.mrespond ([
       // We do not set this if removing a tag because we know we're already not with home set.
       // We do this mutely since State.query.tags will change and trigger further changes.
       B.set (['State', 'query', 'home'], false);
-      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
+      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag) && ! inc (['o::', 't::'], tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+         if (existingTag === 'o::' && tag === 't::') return;
+         if (existingTag === 't::' && tag === 'o::') return;
          if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag))) return;
+         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag) && ! inc (['o::', 't::'], existingTag))) return;
          if (H.isRangeTag (tag) && H.isDateTag (existingTag)) return;
          if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
          return existingTag;
@@ -3956,7 +3958,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'hometags'], rs.body.hometags);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (tag === 'u::' || H.isRangeTag (tag)) return tag;
+            if (inc (['u::', 'o::', 't::'], tag) || H.isRangeTag (tag)) return tag;
             if (inc (rs.body.tags, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
@@ -3967,7 +3969,7 @@ B.mrespond ([
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
-      if (! H.isUserTag (tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+      if (! H.isUserTag (tag) && ! inc (['o::', 't::'], tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
 
       var ids = dale.keys (B.get ('State', 'selected'));
       if (ids.length === 0) return;
@@ -3981,11 +3983,12 @@ B.mrespond ([
       var payload = {tag: tag, ids: ids, del: del}
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
-         if (! del && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
+         if (! del && H.isUserTag (tag) && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
 
          if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
 
-         if (! del) B.call (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
+         if (! del & H.isUserTag (tag)) B.call (x, 'snackbar', 'green', 'Just tagged ' + ids.length + ' picture(s) with tag ' + tag + '.');
+         else if (! del)                B.call (x, 'snackbar', 'green', 'Just marked ' + ids.length + ' picture(s) as ' + (tag === 'o::' ? 'Organized' : 'To Organize ') + '.');
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
       });
@@ -5036,7 +5039,7 @@ views.pics = function () {
                         }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
+                           if (H.isDateTag (tag) || inc (['a::', 'u::', 'o::', 't::'], tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
@@ -5069,7 +5072,6 @@ views.pics = function () {
                         });
 
                         var all      = eq (selected, []);
-                        var untagged = inc (selected, 'u::');
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
@@ -5083,19 +5085,19 @@ views.pics = function () {
                               action2 = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && ! home ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
                            }
                            else if (which === 't::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
                               var tag = 'To Organize';
-                              var action = ['toggle', 'tag', 'u::'];
+                              var action = ['toggle', 'tag', 't::'];
                            }
                            else if (which === 'o::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
                               var tag = 'Organized';
-                              var action = ['toggle', 'tag', 'u::'];
+                              var action = ['toggle', 'tag', 'o::'];
                            }
                            else if (H.isYearTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
@@ -5131,9 +5133,8 @@ views.pics = function () {
                            if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
-                           var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
-                           var blankMonth = H.isMonthTag (which) && ! inc (monthTags, which);
-                           var disabledTag = disabledUntagged || blankMonth;
+                           var disabledTag = inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0;
+                           if (H.isMonthTag (which) && ! inc (monthTags, which)) disabledTag = true;
 
                            var showName = tag.replace (/^[a-z]::/, '');
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
@@ -5298,14 +5299,14 @@ views.pics = function () {
                // SIDEBAR SEARCH
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
-                  var doneTagging = inc (tags, 'u::') && dale.keys (selected).length;
-                  return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 100}), onclick: B.ev (H.stopPropagation)}, [
+                  var markAsOrganized = dale.keys (selected).length;
+                  return ['div', {class: 'sidebar__footer', style: ! markAsOrganized ? undefined : style ({height: 100}), onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', style: style ({border: 'solid 1px #5b6eff', 'border-radius': 25}), type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
-                     H.if (doneTagging, ['div', {class: 'organise-bar__button--organized button'}, [
+                     H.if (markAsOrganized, ['div', {class: 'organise-bar__button--organized button', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 'o::'], ['rem', 'State', 'selected'])}, [
                         H.putSvg ('organizedIcon'),
                         H.putSvg ('organizedIconWhite'),
                         'Mark as organized'
@@ -5345,7 +5346,7 @@ views.pics = function () {
                      H.putSvg ('download'),
                      ['span', {class: 'organise-bar__button-title'}, 'Download'],
                   ]],
-                  ['div', {class: 'organise-bar__button organise-bar__button--to-organize'}, [
+                  ['div', {class: 'organise-bar__button organise-bar__button--to-organize', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 't::'])}, [
                      ['span', {style: style({'padding-top': '1px'})}, H.putSvg ('toOrganizeIcon')],
                      ['span', {class: 'organise-bar__button-title', style: style({'margin-left': '-2px'})}, 'Mark as To Organize'],
                   ]],

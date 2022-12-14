@@ -2874,9 +2874,10 @@ var routes = [
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
       if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 
-      var yeartags = [];
+      var yeartags = [], organizeTag;
 
       var tags = dale.obj (b.tags, function (tag) {
+         if (inc (['o::', 't::'], tag)) organizeTag = tag;
          if (! H.isYearTag (tag)) return [tag, [rq.user.username]];
          yeartags.push (tag);
       });
@@ -2885,7 +2886,7 @@ var routes = [
          [function (s) {addPerf ('validation'); s.next (s.last);}],
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
-            var allMode = b.tags.length === 0;
+            var allMode = b.tags.length === 0 || (b.tags.length === 1 && inc (['o::', 't::'], b.tags [0]));
 
             if (allMode) tags ['a::'] = [rq.user.username];
 
@@ -2908,20 +2909,24 @@ var routes = [
                }));
             });
 
-            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
-               return qid + ':' + tag;
-            }).concat (yeartags.length ? qid : []));
+            // We use sunionstore or sinterstore instead of sunion or sinter in case we have the organizeTag, in which case we need to have the total amount of entries before we add the o::/t:: tag to the query
+            multi [allMode ? 'sunionstore' : 'sinterstore'].apply (multi, [qid + ':result'].concat (dale.fil (tags, undefined, function (users, tag) {
+               if (tag !== organizeTag) return qid + ':' + tag;
+            }).concat (yeartags.length ? qid : [])));
 
-            multi.del (qid);
-            dale.go (tags, function (users, tag) {
-               multi.del (qid + ':' + tag);
-            });
+            if (organizeTag) multi.sinter   (qid + ':result', qid + ':' + organizeTag);
+            else             multi.smembers (qid + ':result');
+
+            multi.del ([qid, qid + ':result'].concat (dale.go (tags, function (users, tag) {
+               return qid + ':' + tag;
+            })));
 
             mexec (s, multi);
          },
          [function (s) {addPerf ('sunion/sinter'); s.next (s.last);}],
          function (s) {
-            s.pivs = s.last [(yeartags.length ? 1 : 0) + dale.keys (tags).length];
+            s.pivs = last (s.last, 2);
+            if (organizeTag) s.complement = last (s.last, 3) - s.pivs.length;
             var multi = redis.multi (), ids = {};
             dale.go (s.pivs, function (id) {
                multi.hgetall ('piv:' + id);
@@ -3074,7 +3079,7 @@ var routes = [
          },
          [function (s) {addPerf ('getAllPivsCount'); s.next (s.last);}],
          function (s) {
-            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0, 'o::': 0, 't::': 0}, function (tag) {
+            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0, 'o::': (organizeTag === 't::' ? s.complement : 0), 't::': (organizeTag === 'o::' ? s.complement : 0)}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
@@ -3267,8 +3272,8 @@ var routes = [
 
             if (! hasAccess) return reply (rs, 404);
 
-            var downloadId = uuid ();
-            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pivs: dale.go (b.ids, function (id, k) {
+            var downloadId = uuid (), expiresIn = ENV ? 5 : 1;
+            redis.setex ('download:' + downloadId, expiresIn, JSON.stringify ({username: rq.user.username, pivs: dale.go (b.ids, function (id, k) {
                var piv = s.last [k];
                return {owner: piv.owner, id: piv.id, name: piv.name, mtime: JSON.parse (piv.dates) ['upload:lastModified']};
             })}), function (error) {
