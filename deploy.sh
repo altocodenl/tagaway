@@ -1,5 +1,5 @@
 if [ "$1" == "prod" ] ; then
-   if [ "$2" != "confirm" ] && [ "$3" != "confirm" ] ; then
+   if [ "$2" != "confirm" ] && [ "$3" != "confirm" ]  && [ "$4" != "confirm" ]; then
       echo "Must add 'confirm' to deploy to prod"
       exit 1
    fi
