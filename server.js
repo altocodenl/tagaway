@@ -51,6 +51,8 @@ var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last
    });
 }
 
+var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
+
 // *** GIZ ***
 
 giz.redis          = redis;
@@ -1270,7 +1272,7 @@ var routes = [
    // *** DO NOT SERVE REQUESTS IF WE ARE PERFORMING CONSISTENCY OPERATIONS ***
 
    ['all', '*', function (rq, rs) {
-      if (process.argv [3] === 'makeConsistent') return reply (rs, 503, {error: 'Consistency operation in process'});
+      if (inc (['makeConsistent'], process.argv [3])) return reply (rs, 503, {error: 'Consistency operation in process'});
       rs.next ();
    }],
 
@@ -4506,7 +4508,7 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
-if (! inc (['checkConsistency'], process.argv [3])) {
+if (! inc (['checkConsistency', 'script'], process.argv [3])) {
    server = cicek.listen ({port: CONFIG.port}, routes);
 
    if (cicek.isMaster) a.seq ([
@@ -4531,7 +4533,7 @@ redis.on ('error', function (error) {
 
 // *** DB BACKUPS ***
 
-if (cicek.isMaster && ENV) setInterval (function () {
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') setInterval (function () {
    var s3 = new (require ('aws-sdk')).S3 ({
       apiVersion:  '2006-03-01',
       sslEnabled:  true,
@@ -4549,7 +4551,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 // *** CHECK OS RESOURCES ***
 
-if (cicek.isMaster && ENV) setInterval (function () {
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') setInterval (function () {
    a.seq ([
       [a.fork, ['mpstat', 'free'], function (v) {return [k, v]}],
       function (s) {
@@ -4571,7 +4573,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 // *** BOOTSTRAP FIRST ADMIN USER ***
 
-if (cicek.isMaster && ENV) setTimeout (function () {
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') setTimeout (function () {
    a.stop ([
       [Redis, 'get', 'invite:' + SECRET.admins [0]],
       function (s) {
@@ -4587,7 +4589,7 @@ if (cicek.isMaster && ENV) setTimeout (function () {
 
 if (cicek.isMaster && inc (['checkConsistency', 'makeConsistent'], process.argv [3])) var doneChecks = 0;
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [function (s) {
       s.start = Date.now ();
       s.next ();
@@ -4741,7 +4743,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK CONSISTENCY OF STORED SIZES IN DB ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [function (s) {
       s.start = Date.now ();
       s.next ();
@@ -4850,9 +4852,17 @@ if (cicek.isMaster && ENV) a.stop ([
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
 
+// *** RUN SCRIPT ***
+
+if (cicek.isMaster && ENV && process.argv [3] === 'script') (function () {
+   var script = fs.readFileSync (process.argv [4], 'utf8');
+   // Finally I found a valid use case for `eval`!
+   eval (script);
+}) ();
+
 // *** CHECK S3 QUEUE ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [Redis, 'get', 's3:proc'],
    function (s) {
       if (! s.last || s.last === '0') return s.next ();
@@ -4874,7 +4884,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK INTERRUPTED GEOTAGGING PROCESSES ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [redis.keyscan, 'geo:*'],
    function (s) {
       if (s.last.length > 0) return notify (s, {priority: 'critical', type: 'Interrupted geotagging processes found on startup.', users: dale.go (s.last, function (key) {
@@ -4887,7 +4897,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK INTERRUPTED MP4 CONVERSIONS ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [Redis, 'hkeys', 'proc:vid'],
    function (s) {
       if (s.last.length) notify (s, {priority: 'critical', type: 'Incomplete mp4 conversions', n: s.last.length});
@@ -4898,7 +4908,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK LEFTOVER UPLOAD RACE CONDITION KEYS ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [redis.keyscan, 'raceConditionHash*'],
    function (s) {
       s.toClean = s.last;
@@ -4921,7 +4931,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** LOAD GEODATA ***
 
-if (cicek.isMaster) a.stop ([
+if (cicek.isMaster && process.argv [3] !== 'script') a.stop ([
    [Redis, 'exists', 'geo'],
    function (s) {
       if (! s.last) return s.next ();

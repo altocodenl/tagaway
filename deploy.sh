@@ -61,6 +61,12 @@ if [ "$2" == "checkConsistency" ] ; then
    exit 0
 fi
 
+if [ "$2" == "script" ] ; then
+   scp $3 $HOST:$FOLDER/$3
+   ssh $HOST "cd $FOLDER && node server $1 script $3"
+   exit 0
+fi
+
 if [ "$2" == "test" ] ; then
    rsync -av . $HOST:$FOLDER
    ssh $HOST chown -R root /root/$FOLDER
