@@ -3433,7 +3433,7 @@ B.mrespond ([
       }
       c.ajax (x.verb, path, headers, body, function (error, rs) {
          B.call (x, 'ajax ' + x.verb, path, {t: Date.now () - t, code: error ? error.status : rs.xhr.status});
-         var authPath = path === 'csrf' || path.match (/^auth/);
+         var authPath = path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
          if (! authPath && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
@@ -3484,7 +3484,7 @@ B.mrespond ([
          if (hash [1] === 'error'  ) B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
       }
 
-      if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
+      if (B.get ('Data', 'csrf') && (! page || page === 'pics')) B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
       B.call (x, 'goto', 'page', page, true);
    }],

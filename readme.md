@@ -1323,10 +1323,10 @@ If `page` is `'import'` and there is a third part of the hash (which will repres
       }
 ```
 
-If there's no `page`, or if `page` is `'pics'`, we `set State.queryURL` to either the second part of the hash, or to `'home'` if there's no second part of the hash. We assume that if there's no `page` specified, the right page is `'pics'`, which it will be if the user is logged in. If the user is not logged in, the user will be redirected to the right page by `goto page`.
+If the user is logged in (which will be the case if `Data.csrf` is set) and there's no `page`, or if `page` is `'pics'`, we `set State.queryURL` to either the second part of the hash, or to `'home'` if there's no second part of the hash. We assume that if there's no `page` specified, the right page is `'pics'`, which it will be if the user is logged in. If the user is not logged in, the user will be redirected to the right page by `goto page`. We won't do this if the user is not logged in to avoid requesting pivs when the user has no session to do that yet.
 
 ```javascript
-      if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
+      if (B.get ('Data', 'csrf') && (! page || page === 'pics')) B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 ```
 
 This is as good a place as any to understand the flow of responders when this modification to `State.queryURL` is done, or, more in general, to understand how changes in the URL are reflected in the state and viceversa. The order of operations is the following:
