@@ -4964,7 +4964,7 @@ views.header = function (showUpload, showImport) {
 
 // *** EMPTY VIEW ***
 
-views.empty2 = function () {
+views.empty = function () {
    return ['div', [
       // SIDEBAR
       ['div', {class: 'sidebar'}, [
@@ -5015,7 +5015,7 @@ views.empty2 = function () {
 
 // *** ONBOARDING VIEW ***
 
-views.empty = function () {
+views.onboarding = function () {
    return ['div', [
       // MAIN
       ['div', {class: 'main'}, [
@@ -5034,53 +5034,53 @@ views.empty = function () {
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '1/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'Go to Everything'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, click on Everything. All your pics and videos are there.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, click on Everything. All your pics and videos are there.']
                      // ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '2/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'One click to select'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'Select the pictures and videos you want to tag with one click.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'Select the pictures and videos you want to tag with one click.']
                      // ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '3/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'Create tag'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, write the tag name you want for your selected pictures.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, write the tag name you want for your selected pictures.']
                      // ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '4/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'Or reuse tag'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'If there’s already a tag created and you want to add the selected pictures to it, just click on the “+”.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'If there’s already a tag created and you want to add the selected pictures to it, just click on the “+”.']
                      // ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '5/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'How to untag'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'If you want to ‘untag’, then hover on the check mark, you’ll find the scissors to untag those pics.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'If you want to ‘untag’, then hover on the check mark, you’ll find the scissors to untag those pics.']
                      // ]],
                      ['div', {class: 'onboarding-modal-text-container'}, [
                         ['p', {class: 'onboarding-modal-title'}, '6/9'],
                         ['p', {class: 'onboarding-modal-title'}, 'It\'s organized when you say so'],
-                        ['p', {class: 'onboarding-modal-text'}, 'Once you\'ve tagged your pics and videos, on the lower left, mark them as organized, so you know you\'ve got it done!']   
+                        ['p', {class: 'onboarding-modal-text'}, 'Once you\'ve tagged your pics and videos, on the lower left, mark them as organized, so you know you\'ve got it done!']
                      ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '7/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'Home is easy access'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'In Home you can pin your favorite tags, so you can easily access them.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'In Home you can pin your favorite tags, so you can easily access them.']
                      // ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '8/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'Use tags to find anything'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'You’ll find your tags on the left sidebar, together with your Year and Geo Tags, which will help you drill down into your collection.']   
+                     //    ['p', {class: 'onboarding-modal-text'}, 'You’ll find your tags on the left sidebar, together with your Year and Geo Tags, which will help you drill down into your collection.']
                      // ]],
                      // ['div', {class: 'onboarding-modal-text-container'}, [
                      //    ['p', {class: 'onboarding-modal-title'}, '9/9'],
                      //    ['p', {class: 'onboarding-modal-title'}, 'No constraints'],
                      //    ['p', {class: 'onboarding-modal-text'}, [
                      //       'Tag your pics & videos with as many tags as you want. Combine tags to find what you\'re looking for.',
-                     //       ['br'],  
+                     //       ['br'],
                      //       'Vacations with friends or vacations with family?'
-                     //    ]],   
-                     // ]], 
-                     
+                     //    ]],
+                     // ]],
+
                   ]],
                   ['div', {class: 'onboarding-modal-arrow-div'}, [
                      ['span', H.putSvg ('triangle')]
@@ -5095,7 +5095,7 @@ views.empty = function () {
                      // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/7.gif'}],
                      // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/8.gif'}],
                      // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/9.gif'}]
-                  ]] 
+                  ]]
                ]],
                ['div', {style: style ({float: 'right'})}, [
                   ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6})}, 'Skip tour'],
