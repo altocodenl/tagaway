@@ -36,7 +36,7 @@ var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
 
-var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v) {return a.indexOf (v) > -1}, last = teishi.last, reply = cicek.reply, stop = function (rs, rules) {
+var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last, inc = teishi.inc, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
       reply (rs, 400, {error: error});
    }, true);
@@ -50,6 +50,8 @@ var type = teishi.type, clog = console.log, eq = teishi.eq, inc = function (a, v
       s.next (data);
    });
 }
+
+var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
 
 // *** GIZ ***
 
@@ -588,7 +590,7 @@ H.deletePiv = function (s, id, username) {
             multi.sadd ('hashdel:' + s.piv.owner + ':' + providerHash [0], providerHash [1]);
          }
 
-         dale.go (s.tags.concat (['a::', 'u::']), function (tag) {
+         dale.go (s.tags.concat (['a::', 'u::', 'o::', 't::']), function (tag) {
             // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
             multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
@@ -822,8 +824,8 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
             }
             else if (log.type === 'start') {
                if (! upload.status) {
-                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait fifteen seconds.
-                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 15;
+                  // If current upload has had no activity in over ten minutes, we consider it stalled. For tests, we only wait three seconds.
+                  var maxInactivity = ENV ? 1000 * 60 * 10 : 1000 * 3;
                   // We use log.t instead of log.id in case this is an import, because the id of the import might be quite older than the start of its upload process.
                   if (Date.now () > maxInactivity + (upload.lastActivity || log.t)) {
                      upload.status = 'stalled';
@@ -1270,7 +1272,7 @@ var routes = [
    // *** DO NOT SERVE REQUESTS IF WE ARE PERFORMING CONSISTENCY OPERATIONS ***
 
    ['all', '*', function (rq, rs) {
-      if (process.argv [3] === 'makeConsistent') return reply (rs, 503, {error: 'Consistency operation in process'});
+      if (inc (['makeConsistent'], process.argv [3])) return reply (rs, 503, {error: 'Consistency operation in process'});
       rs.next ();
    }],
 
@@ -2520,9 +2522,9 @@ var routes = [
             }
             multi.sadd ('tag:' + rq.user.username + ':a::', piv.id);
 
-            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (geotags), function (tag) {
+            dale.go (tags.concat (['t::', 'd::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
-               multi.sadd ('tags:' + rq.user.username, tag);;
+               if (tag !== 't::') multi.sadd ('tags:' + rq.user.username, tag);
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
             });
             if (tags.length === 0) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
@@ -2701,7 +2703,8 @@ var routes = [
       ])) return;
 
       b.tag = H.trim (b.tag);
-      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (! H.isUserTag (b.tag) && ! inc (['o::', 't::'], b.tag)) return reply (rs, 400, {error: 'tag'});
+      if (b.del && inc (['o::', 't::'], b.tag))                   return reply (rs, 400, {error: 'tag cannot be deleted'});
 
       var multi = redis.multi (), seen = {};
       dale.go (b.ids, function (id) {
@@ -2726,7 +2729,15 @@ var routes = [
 
                var id = b.ids [k / 2], tags = s.last [k + 1];
 
-               if (b.del) {
+               if (inc (['o::', 't::'], b.tag)) {
+                  var complement = b.tag === 'o::' ? 't::' : 'o::';
+                  multi.sadd ('pivt:' + id, b.tag);
+                  multi.srem ('pivt:' + id, complement);
+                  multi.sadd ('tag:'  + rq.user.username + ':' + b.tag,      id);
+                  multi.srem ('tag:'  + rq.user.username + ':' + complement, id);
+               }
+
+               else if (b.del) {
                   if (! inc (s.last [k + 1], b.tag)) return;
                   multi.srem ('pivt:' + id, b.tag);
                   // The route GET /tags is in charge of removing empty entries in tags:USERNAME, so we don't need to call srem on tags:USERNAME if this is the last picture that has this tag.
@@ -2865,9 +2876,10 @@ var routes = [
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
       if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 
-      var yeartags = [];
+      var yeartags = [], organizeTag;
 
       var tags = dale.obj (b.tags, function (tag) {
+         if (inc (['o::', 't::'], tag)) organizeTag = tag;
          if (! H.isYearTag (tag)) return [tag, [rq.user.username]];
          yeartags.push (tag);
       });
@@ -2876,7 +2888,7 @@ var routes = [
          [function (s) {addPerf ('validation'); s.next (s.last);}],
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
-            var allMode = b.tags.length === 0;
+            var allMode = b.tags.length === 0 || (b.tags.length === 1 && inc (['o::', 't::'], b.tags [0]));
 
             if (allMode) tags ['a::'] = [rq.user.username];
 
@@ -2899,20 +2911,24 @@ var routes = [
                }));
             });
 
-            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
-               return qid + ':' + tag;
-            }).concat (yeartags.length ? qid : []));
+            // We use sunionstore or sinterstore instead of sunion or sinter in case we have the organizeTag, in which case we need to have the total amount of entries before we add the o::/t:: tag to the query
+            multi [allMode ? 'sunionstore' : 'sinterstore'].apply (multi, [qid + ':result'].concat (dale.fil (tags, undefined, function (users, tag) {
+               if (tag !== organizeTag) return qid + ':' + tag;
+            }).concat (yeartags.length ? qid : [])));
 
-            multi.del (qid);
-            dale.go (tags, function (users, tag) {
-               multi.del (qid + ':' + tag);
-            });
+            if (organizeTag) multi.sinter   (qid + ':result', qid + ':' + organizeTag);
+            else             multi.smembers (qid + ':result');
+
+            multi.del ([qid, qid + ':result'].concat (dale.go (tags, function (users, tag) {
+               return qid + ':' + tag;
+            })));
 
             mexec (s, multi);
          },
          [function (s) {addPerf ('sunion/sinter'); s.next (s.last);}],
          function (s) {
-            s.pivs = s.last [(yeartags.length ? 1 : 0) + dale.keys (tags).length];
+            s.pivs = last (s.last, 2);
+            if (organizeTag) s.complement = last (s.last, 3) - s.pivs.length;
             var multi = redis.multi (), ids = {};
             dale.go (s.pivs, function (id) {
                multi.hgetall ('piv:' + id);
@@ -3065,7 +3081,7 @@ var routes = [
          },
          [function (s) {addPerf ('getAllPivsCount'); s.next (s.last);}],
          function (s) {
-            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0}, function (tag) {
+            s.output.tags = dale.obj (last (s.last, 3), {'a::': last (s.last), 'u::': 0, 'o::': (organizeTag === 't::' ? s.complement : 0), 't::': (organizeTag === 'o::' ? s.complement : 0)}, function (tag) {
                return [tag, 0];
             });
             if (s.refreshQuery) s.output.refreshQuery = true;
@@ -3258,8 +3274,8 @@ var routes = [
 
             if (! hasAccess) return reply (rs, 404);
 
-            var downloadId = uuid ();
-            redis.setex ('download:' + downloadId, 5, JSON.stringify ({username: rq.user.username, pivs: dale.go (b.ids, function (id, k) {
+            var downloadId = uuid (), expiresIn = ENV ? 5 : 1;
+            redis.setex ('download:' + downloadId, expiresIn, JSON.stringify ({username: rq.user.username, pivs: dale.go (b.ids, function (id, k) {
                var piv = s.last [k];
                return {owner: piv.owner, id: piv.id, name: piv.name, mtime: JSON.parse (piv.dates) ['upload:lastModified']};
             })}), function (error) {
@@ -3902,7 +3918,9 @@ var routes = [
                // We only set the interval if there are files still left to upload.
                if (index < s.ids.length) var waitInterval = setInterval (function () {
                   // If the last activity (either the beginning of the process or the last wait event) was 9 minutes ago or more, send a wait event to avoid the upload being stalled.
-                  if (Date.now () - lastActivity > 1000 * 60 * 9) {
+                  // If we are in the test environment, do it every two seconds.
+                  var maxInactivity = ENV ? 1000 * 60 * (10 - 1) : 1000 * (3 - 1);
+                  if (Date.now () - lastActivity > maxInactivity) {
                      a.seq (s, [
                         [notify, {priority: 'important', type: 'import wait event', currentStatus: currentStatus, user: rq.user.username, provider: 'google', file: s.filesToUpload [s.ids [index]]}],
                         function (s) {
@@ -3917,7 +3935,7 @@ var routes = [
                         }
                      ]);
                   }
-               }, 1000 * 15);
+               }, 1000);
                a.seq (s, [
                   [H.getGoogleToken, rq.user.username],
                   [Redis, 'hget', 'imp:g:' + rq.user.username, 'id'],
@@ -4490,7 +4508,7 @@ cicek.log = function (message) {
 
 cicek.cluster ();
 
-if (! inc (['checkConsistency'], process.argv [3])) {
+if (! inc (['checkConsistency', 'script'], process.argv [3])) {
    server = cicek.listen ({port: CONFIG.port}, routes);
 
    if (cicek.isMaster) a.seq ([
@@ -4515,7 +4533,7 @@ redis.on ('error', function (error) {
 
 // *** DB BACKUPS ***
 
-if (cicek.isMaster && ENV) setInterval (function () {
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') setInterval (function () {
    var s3 = new (require ('aws-sdk')).S3 ({
       apiVersion:  '2006-03-01',
       sslEnabled:  true,
@@ -4533,7 +4551,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 // *** CHECK OS RESOURCES ***
 
-if (cicek.isMaster && ENV) setInterval (function () {
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') setInterval (function () {
    a.seq ([
       [a.fork, ['mpstat', 'free'], function (v) {return [k, v]}],
       function (s) {
@@ -4555,7 +4573,7 @@ if (cicek.isMaster && ENV) setInterval (function () {
 
 // *** BOOTSTRAP FIRST ADMIN USER ***
 
-if (cicek.isMaster && ENV) setTimeout (function () {
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') setTimeout (function () {
    a.stop ([
       [Redis, 'get', 'invite:' + SECRET.admins [0]],
       function (s) {
@@ -4571,7 +4589,7 @@ if (cicek.isMaster && ENV) setTimeout (function () {
 
 if (cicek.isMaster && inc (['checkConsistency', 'makeConsistent'], process.argv [3])) var doneChecks = 0;
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [function (s) {
       s.start = Date.now ();
       s.next ();
@@ -4725,7 +4743,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK CONSISTENCY OF STORED SIZES IN DB ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [function (s) {
       s.start = Date.now ();
       s.next ();
@@ -4834,9 +4852,17 @@ if (cicek.isMaster && ENV) a.stop ([
    notify (s, {priority: 'critical', type: 'Stored sizes consistency check error.', error: error});
 });
 
+// *** RUN SCRIPT ***
+
+if (cicek.isMaster && ENV && process.argv [3] === 'script') (function () {
+   var script = fs.readFileSync (process.argv [4], 'utf8');
+   // Finally I found a valid use case for `eval`!
+   eval (script);
+}) ();
+
 // *** CHECK S3 QUEUE ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [Redis, 'get', 's3:proc'],
    function (s) {
       if (! s.last || s.last === '0') return s.next ();
@@ -4858,7 +4884,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK INTERRUPTED GEOTAGGING PROCESSES ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [redis.keyscan, 'geo:*'],
    function (s) {
       if (s.last.length > 0) return notify (s, {priority: 'critical', type: 'Interrupted geotagging processes found on startup.', users: dale.go (s.last, function (key) {
@@ -4871,7 +4897,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK INTERRUPTED MP4 CONVERSIONS ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [Redis, 'hkeys', 'proc:vid'],
    function (s) {
       if (s.last.length) notify (s, {priority: 'critical', type: 'Incomplete mp4 conversions', n: s.last.length});
@@ -4882,7 +4908,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** CHECK LEFTOVER UPLOAD RACE CONDITION KEYS ON STARTUP ***
 
-if (cicek.isMaster && ENV) a.stop ([
+if (cicek.isMaster && ENV && process.argv [3] !== 'script') a.stop ([
    [redis.keyscan, 'raceConditionHash*'],
    function (s) {
       s.toClean = s.last;
@@ -4905,7 +4931,7 @@ if (cicek.isMaster && ENV) a.stop ([
 
 // *** LOAD GEODATA ***
 
-if (cicek.isMaster) a.stop ([
+if (cicek.isMaster && process.argv [3] !== 'script') a.stop ([
    [Redis, 'exists', 'geo'],
    function (s) {
       if (! s.last) return s.next ();

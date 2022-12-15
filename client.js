@@ -1,7 +1,7 @@
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
+var type = teishi.type, clog = teishi.clog, eq = teishi.eq, last = teishi.last, inc = teishi.inc, media = lith.css.media, style = lith.css.style;
 
 var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
 
@@ -73,6 +73,7 @@ var CSS = {
       'color--one': '#5b6eff',
       'color--attach': '#87D7AB',
       'color--remove': '#FC201F',
+      'color--organized': '#00992b',
       'highlight--neutral': '#d8eeff',
       'highlight--selection': '#ffeccc',
       'highlight--positive': '#cfefdd',
@@ -589,16 +590,16 @@ CSS.litc = [
    // Sidebar title
    ['.sidebar-header__title', {'font-size': CSS.typography.fontSize (3)}],
    // Sidebar Done Tagging button
-   ['.done-tagging-button', {
-      display: 'block',
-      float: 'right',
-      'cursor': 'pointer',
-      'margin-right': '-41%',
-      'margin-bottom': CSS.vars ['padding--xs'],
-      border: '1px solid #87D7AB',
-      color: '#fff',
-      'background-color': CSS.vars ['color--attach'],
-   }],
+   // ['.done-tagging-button', {
+   //    display: 'block',
+   //    float: 'right',
+   //    'cursor': 'pointer',
+   //    'margin-right': '-41%',
+   //    'margin-bottom': CSS.vars ['padding--xs'],
+   //    border: '1px solid #87D7AB',
+   //    color: '#fff',
+   //    'background-color': CSS.vars ['color--attach'],
+   // }],
    ['.done-tagging-button:hover', {
       color: CSS.vars ['color--attach'],
       'background-color': '#fff'
@@ -1204,11 +1205,28 @@ CSS.litc = [
       'margin-right': CSS.vars ['padding--xs'],
       width: 'inherit'
    }],
+   ['.tag__title-organized', {
+      color: CSS.vars ['color--organized']
+   }],
    ['.videoIcon', {
       'width': 20,
       'margin-right': 3,
       'margin-left': 4,
       'display': 'inline-block',
+   }],
+   ['.to-organize-icon', {
+      display: 'inline-block',
+      width: 14,
+      height: 15,
+      'margin-right': 9,
+      'margin-left': 5,
+      'padding-top': '1px',
+   }],
+   ['.organized-icon, .organized-icon-white', {
+      display: 'inherit',
+      'height, width': 22,
+      'margin-right': 4,
+      'margin-left': 3,
    }],
    // Tag title - amount
    ['.tag__title-amount', {
@@ -2497,6 +2515,25 @@ CSS.litc = [
       ['&:hover', {'background-color': 'rgba(' + CSS.toRGBA (CSS.vars ['color--remove']) + ', 0.1)'}],
       ['.organise-bar__button-icon path', {fill: 'rgba(' + CSS.toRGBA (CSS.vars ['color--remove']) + ', 0.7)'}],
    ]],
+   ['.organise-bar__button--organized .organized-icon', {
+      display: 'none'
+   }],
+   ['.organise-bar__button--organized', {
+      'background-color': CSS.vars ['color--organized'],
+      border: 'solid 1px' + CSS.vars ['color--organized'],
+      display: 'inline-flex',
+      'cursor': 'pointer',
+      'border-radius': 100,
+      color: 'white',
+      opacity: '1',
+      'margin-bottom': CSS.vars ['padding--xs'],
+      'padding-right': 24,
+   }, [
+      ['&:hover', {'background-color': 'white', color: CSS.vars ['color--organized'], border: 'solid 1px' + CSS.vars ['color--organized']}, [
+         ['.organized-icon-white', {display: 'none'}],
+         ['.organized-icon', {display: 'block'}]
+      ]],
+   ]],
    ['.organise-bar__button:hover', {opacity: '1'}],
    ['.organise-bar__button-title', {'margin-left': 4}],
    ['.organise-bar__button-icon-container', {
@@ -3108,7 +3145,10 @@ var svg = {
    homeBoxModalArrowGrey: '<svg class="home-add-tag-modal-arrow-grey" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/></g></svg>',
    triangle: '<svg class="onboarding-modal-arrow" version="1.1" viewBox="0.0 0.0 25.0 25.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l25.0 0l0 25.0l-25.0 0l0 -25.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l25.0 0l0 25.0l-25.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m0.015748031 0l21.606298 12.503937l-21.606298 12.503937z" fill-rule="evenodd"/></g></svg>',
    cloudImport: '<svg class="cloudImport-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve"><path d="M82.451,37.699c0.033-0.488,0.049-0.969,0.049-1.449c0-13.096-10.654-23.75-23.75-23.75  c-9.847,0-18.659,6.215-22.146,15.201C33.453,25.943,29.879,25,26.25,25C14.533,25,5,34.533,5,46.25S14.533,67.5,26.25,67.5H42.5v-5  H26.25C17.29,62.5,10,55.209,10,46.25C10,37.289,17.29,30,26.25,30c3.746,0,7.27,1.246,10.191,3.604l3.142,2.535l0.87-3.943  C42.331,23.68,50.026,17.5,58.75,17.5c10.339,0,18.75,8.41,18.75,18.75c0,1.053-0.102,2.137-0.312,3.311L76.663,42.5H80  c5.514,0,10,4.486,10,10s-4.486,10-10,10H57.5v5H80c8.271,0,15-6.729,15-15C95,45.063,89.561,38.873,82.451,37.699z"></path><path d="M52.5,46.035l10.732,10.732C63.721,57.256,64.36,57.5,65,57.5s1.279-0.244,1.768-0.732c0.977-0.977,0.977-2.559,0-3.535  L51.771,38.235c-0.117-0.117-0.247-0.222-0.386-0.315c-0.056-0.037-0.116-0.062-0.174-0.094c-0.084-0.047-0.166-0.098-0.256-0.135  c-0.078-0.032-0.16-0.05-0.24-0.075c-0.075-0.022-0.148-0.051-0.226-0.067c-0.159-0.032-0.32-0.048-0.481-0.048  c-0.002,0-0.005-0.001-0.007-0.001l0,0c-0.165,0-0.328,0.017-0.49,0.049c-0.073,0.015-0.141,0.042-0.211,0.063  c-0.086,0.025-0.172,0.044-0.255,0.079c-0.084,0.035-0.161,0.083-0.241,0.126c-0.063,0.035-0.128,0.063-0.189,0.103  c-0.138,0.092-0.267,0.197-0.384,0.314L33.232,53.232c-0.977,0.977-0.977,2.559,0,3.535c0.976,0.977,2.56,0.977,3.535,0L47.5,46.035  V85c0,1.381,1.119,2.5,2.5,2.5s2.5-1.119,2.5-2.5V46.035z"></path></svg>',
-   pcUpload: '<svg class="pcUpload-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve"><g><path d="M41.8,70.3h16.3c0.8,0,1.5,0.6,1.8,1.3h34.2l-10.2-2.8v-42c0-1.1-0.9-2-2-2H18.1c-1.1,0-2,0.9-2,2v42L5.9,71.6h34.2   C40.3,70.8,41,70.3,41.8,70.3z M18.3,65.6V28.2c0-0.3,0.2-0.5,0.5-0.5h62.3c0.3,0,0.5,0.2,0.5,0.5v37.4c0,0.3-0.2,0.5-0.5,0.5H18.8   C18.6,66.1,18.3,65.8,18.3,65.6z"></path><path d="M58.2,73.9H41.8c-0.8,0-1.5-0.6-1.8-1.3h-36c0.2,1.5,1.5,2.6,3.1,2.6h85.5c1.6,0,2.9-1.1,3.1-2.6h-36   C59.7,73.4,59,73.9,58.2,73.9z"></path><path d="M58.2,71.3H41.8c-0.4,0-0.8,0.4-0.8,0.8c0,0.4,0.4,0.8,0.8,0.8h16.3c0.4,0,0.8-0.4,0.8-0.8C59,71.6,58.6,71.3,58.2,71.3z"></path></g></svg>',
+   pcUpload:'<svg class="pcUpload-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve"><g><path d="M41.8,70.3h16.3c0.8,0,1.5,0.6,1.8,1.3h34.2l-10.2-2.8v-42c0-1.1-0.9-2-2-2H18.1c-1.1,0-2,0.9-2,2v42L5.9,71.6h34.2   C40.3,70.8,41,70.3,41.8,70.3z M18.3,65.6V28.2c0-0.3,0.2-0.5,0.5-0.5h62.3c0.3,0,0.5,0.2,0.5,0.5v37.4c0,0.3-0.2,0.5-0.5,0.5H18.8   C18.6,66.1,18.3,65.8,18.3,65.6z"></path><path d="M58.2,73.9H41.8c-0.8,0-1.5-0.6-1.8-1.3h-36c0.2,1.5,1.5,2.6,3.1,2.6h85.5c1.6,0,2.9-1.1,3.1-2.6h-36   C59.7,73.4,59,73.9,58.2,73.9z"></path><path d="M58.2,71.3H41.8c-0.4,0-0.8,0.4-0.8,0.8c0,0.4,0.4,0.8,0.8,0.8h16.3c0.4,0,0.8-0.4,0.8-0.8C59,71.6,58.6,71.3,58.2,71.3z"></path></g></svg>',
+   toOrganizeIcon:'<svg class="to-organize-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m1.1679364 5.7221446l21.65556 0l0 16.230179l-21.65556 0z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m1.1679364 5.7221446l21.65556 0l0 16.230179l-21.65556 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m8.895797 9.087304l6.2060633 0l0 0c0.8130102 0 1.472086 0.692214 1.472086 1.5461025c0 0.85388947 -0.65907574 1.5461025 -1.472086 1.5461025l-6.2060633 0l0 0c-0.81301117 0 -1.4720869 -0.69221306 -1.4720869 -1.5461025c0 -0.8538885 0.65907574 -1.5461025 1.4720869 -1.5461025z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m8.895797 9.087304l6.2060633 0l0 0c0.8130102 0 1.472086 0.692214 1.472086 1.5461025c0 0.85388947 -0.65907574 1.5461025 -1.472086 1.5461025l-6.2060633 0l0 0c-0.81301117 0 -1.4720869 -0.69221306 -1.4720869 -1.5461025c0 -0.8538885 0.65907574 -1.5461025 1.4720869 -1.5461025z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m22.876385 5.8608932l-21.75277 0l4.350554 -3.8132172l13.051662 0z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m22.876385 5.8608932l-21.75277 0l4.350554 -3.8132172l13.051662 0z" fill-rule="evenodd"/></g></svg>',
+   organizedIcon: '<svg class="organized-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#00992b" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path fill="#00992b" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/></g></svg>',
+   organizedIconWhite: '<svg class="organized-icon-white" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#ffffff" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path fill="#ffffff" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/></g></svg>',
    appStoreBadge: '<svg id="livetype" xmlns="http://www.w3.org/2000/svg" width="119.66407" height="40" viewBox="0 0 119.66407 40"><g><g><g><path d="M110.13477,0H9.53468c-.3667,0-.729,0-1.09473.002-.30615.002-.60986.00781-.91895.0127A13.21476,13.21476,0,0,0,5.5171.19141a6.66509,6.66509,0,0,0-1.90088.627A6.43779,6.43779,0,0,0,1.99757,1.99707,6.25844,6.25844,0,0,0,.81935,3.61816a6.60119,6.60119,0,0,0-.625,1.90332,12.993,12.993,0,0,0-.1792,2.002C.00587,7.83008.00489,8.1377,0,8.44434V31.5586c.00489.3105.00587.6113.01515.9219a12.99232,12.99232,0,0,0,.1792,2.0019,6.58756,6.58756,0,0,0,.625,1.9043A6.20778,6.20778,0,0,0,1.99757,38.001a6.27445,6.27445,0,0,0,1.61865,1.1787,6.70082,6.70082,0,0,0,1.90088.6308,13.45514,13.45514,0,0,0,2.0039.1768c.30909.0068.6128.0107.91895.0107C8.80567,40,9.168,40,9.53468,40H110.13477c.3594,0,.7246,0,1.084-.002.3047,0,.6172-.0039.9219-.0107a13.279,13.279,0,0,0,2-.1768,6.80432,6.80432,0,0,0,1.9082-.6308,6.27742,6.27742,0,0,0,1.6172-1.1787,6.39482,6.39482,0,0,0,1.1816-1.6143,6.60413,6.60413,0,0,0,.6191-1.9043,13.50643,13.50643,0,0,0,.1856-2.0019c.0039-.3106.0039-.6114.0039-.9219.0078-.3633.0078-.7246.0078-1.0938V9.53613c0-.36621,0-.72949-.0078-1.09179,0-.30664,0-.61426-.0039-.9209a13.5071,13.5071,0,0,0-.1856-2.002,6.6177,6.6177,0,0,0-.6191-1.90332,6.46619,6.46619,0,0,0-2.7988-2.7998,6.76754,6.76754,0,0,0-1.9082-.627,13.04394,13.04394,0,0,0-2-.17676c-.3047-.00488-.6172-.01074-.9219-.01269-.3594-.002-.7246-.002-1.084-.002Z" style="fill: #a6a6a6"/><path d="M8.44483,39.125c-.30468,0-.602-.0039-.90429-.0107a12.68714,12.68714,0,0,1-1.86914-.1631,5.88381,5.88381,0,0,1-1.65674-.5479,5.40573,5.40573,0,0,1-1.397-1.0166,5.32082,5.32082,0,0,1-1.02051-1.3965,5.72186,5.72186,0,0,1-.543-1.6572,12.41351,12.41351,0,0,1-.1665-1.875c-.00634-.2109-.01464-.9131-.01464-.9131V8.44434S.88185,7.75293.8877,7.5498a12.37039,12.37039,0,0,1,.16553-1.87207,5.7555,5.7555,0,0,1,.54346-1.6621A5.37349,5.37349,0,0,1,2.61183,2.61768,5.56543,5.56543,0,0,1,4.01417,1.59521a5.82309,5.82309,0,0,1,1.65332-.54394A12.58589,12.58589,0,0,1,7.543.88721L8.44532.875H111.21387l.9131.0127a12.38493,12.38493,0,0,1,1.8584.16259,5.93833,5.93833,0,0,1,1.6709.54785,5.59374,5.59374,0,0,1,2.415,2.41993,5.76267,5.76267,0,0,1,.5352,1.64892,12.995,12.995,0,0,1,.1738,1.88721c.0029.2832.0029.5874.0029.89014.0079.375.0079.73193.0079,1.09179V30.4648c0,.3633,0,.7178-.0079,1.0752,0,.3252,0,.6231-.0039.9297a12.73126,12.73126,0,0,1-.1709,1.8535,5.739,5.739,0,0,1-.54,1.67,5.48029,5.48029,0,0,1-1.0156,1.3857,5.4129,5.4129,0,0,1-1.3994,1.0225,5.86168,5.86168,0,0,1-1.668.5498,12.54218,12.54218,0,0,1-1.8692.1631c-.2929.0068-.5996.0107-.8974.0107l-1.084.002Z"/></g><g id="_Group_" data-name="&lt;Group&gt;"><g id="_Group_2" data-name="&lt;Group&gt;"><g id="_Group_3" data-name="&lt;Group&gt;"><path id="_Path_" data-name="&lt;Path&gt;" d="M24.76888,20.30068a4.94881,4.94881,0,0,1,2.35656-4.15206,5.06566,5.06566,0,0,0-3.99116-2.15768c-1.67924-.17626-3.30719,1.00483-4.1629,1.00483-.87227,0-2.18977-.98733-3.6085-.95814a5.31529,5.31529,0,0,0-4.47292,2.72787c-1.934,3.34842-.49141,8.26947,1.3612,10.97608.9269,1.32535,2.01018,2.8058,3.42763,2.7533,1.38706-.05753,1.9051-.88448,3.5794-.88448,1.65876,0,2.14479.88448,3.591.8511,1.48838-.02416,2.42613-1.33124,3.32051-2.66914a10.962,10.962,0,0,0,1.51842-3.09251A4.78205,4.78205,0,0,1,24.76888,20.30068Z" style="fill: #fff"/><path id="_Path_2" data-name="&lt;Path&gt;" d="M22.03725,12.21089a4.87248,4.87248,0,0,0,1.11452-3.49062,4.95746,4.95746,0,0,0-3.20758,1.65961,4.63634,4.63634,0,0,0-1.14371,3.36139A4.09905,4.09905,0,0,0,22.03725,12.21089Z" style="fill: #fff"/></g></g><g><path d="M42.30227,27.13965h-4.7334l-1.13672,3.35645H34.42727l4.4834-12.418h2.083l4.4834,12.418H43.438ZM38.0591,25.59082h3.752l-1.84961-5.44727h-.05176Z" style="fill: #fff"/><path d="M55.15969,25.96973c0,2.81348-1.50586,4.62109-3.77832,4.62109a3.0693,3.0693,0,0,1-2.84863-1.584h-.043v4.48438h-1.8584V21.44238H48.4302v1.50586h.03418a3.21162,3.21162,0,0,1,2.88281-1.60059C53.645,21.34766,55.15969,23.16406,55.15969,25.96973Zm-1.91016,0c0-1.833-.94727-3.03809-2.39258-3.03809-1.41992,0-2.375,1.23047-2.375,3.03809,0,1.82422.95508,3.0459,2.375,3.0459C52.30227,29.01563,53.24953,27.81934,53.24953,25.96973Z" style="fill: #fff"/><path d="M65.12453,25.96973c0,2.81348-1.50586,4.62109-3.77832,4.62109a3.0693,3.0693,0,0,1-2.84863-1.584h-.043v4.48438h-1.8584V21.44238H58.395v1.50586h.03418A3.21162,3.21162,0,0,1,61.312,21.34766C63.60988,21.34766,65.12453,23.16406,65.12453,25.96973Zm-1.91016,0c0-1.833-.94727-3.03809-2.39258-3.03809-1.41992,0-2.375,1.23047-2.375,3.03809,0,1.82422.95508,3.0459,2.375,3.0459C62.26711,29.01563,63.21438,27.81934,63.21438,25.96973Z" style="fill: #fff"/><path d="M71.71047,27.03613c.1377,1.23145,1.334,2.04,2.96875,2.04,1.56641,0,2.69336-.80859,2.69336-1.91895,0-.96387-.67969-1.541-2.28906-1.93652l-1.60937-.3877c-2.28027-.55078-3.33887-1.61719-3.33887-3.34766,0-2.14258,1.86719-3.61426,4.51855-3.61426,2.624,0,4.42285,1.47168,4.4834,3.61426h-1.876c-.1123-1.23926-1.13672-1.9873-2.63379-1.9873s-2.52148.75684-2.52148,1.8584c0,.87793.6543,1.39453,2.25488,1.79l1.36816.33594c2.54785.60254,3.60645,1.626,3.60645,3.44238,0,2.32324-1.85059,3.77832-4.79395,3.77832-2.75391,0-4.61328-1.4209-4.7334-3.667Z" style="fill: #fff"/><path d="M83.34621,19.2998v2.14258h1.72168v1.47168H83.34621v4.99121c0,.77539.34473,1.13672,1.10156,1.13672a5.80752,5.80752,0,0,0,.61133-.043v1.46289a5.10351,5.10351,0,0,1-1.03223.08594c-1.833,0-2.54785-.68848-2.54785-2.44434V22.91406H80.16262V21.44238H81.479V19.2998Z" style="fill: #fff"/><path d="M86.065,25.96973c0-2.84863,1.67773-4.63867,4.29395-4.63867,2.625,0,4.29492,1.79,4.29492,4.63867,0,2.85645-1.66113,4.63867-4.29492,4.63867C87.72609,30.6084,86.065,28.82617,86.065,25.96973Zm6.69531,0c0-1.9541-.89551-3.10742-2.40137-3.10742s-2.40039,1.16211-2.40039,3.10742c0,1.96191.89453,3.10645,2.40039,3.10645S92.76027,27.93164,92.76027,25.96973Z" style="fill: #fff"/><path d="M96.18606,21.44238h1.77246v1.541h.043a2.1594,2.1594,0,0,1,2.17773-1.63574,2.86616,2.86616,0,0,1,.63672.06934v1.73828a2.59794,2.59794,0,0,0-.835-.1123,1.87264,1.87264,0,0,0-1.93652,2.083v5.37012h-1.8584Z" style="fill: #fff"/><path d="M109.3843,27.83691c-.25,1.64355-1.85059,2.77148-3.89844,2.77148-2.63379,0-4.26855-1.76465-4.26855-4.5957,0-2.83984,1.64355-4.68164,4.19043-4.68164,2.50488,0,4.08008,1.7207,4.08008,4.46582v.63672h-6.39453v.1123a2.358,2.358,0,0,0,2.43555,2.56445,2.04834,2.04834,0,0,0,2.09082-1.27344Zm-6.28223-2.70215h4.52637a2.1773,2.1773,0,0,0-2.2207-2.29785A2.292,2.292,0,0,0,103.10207,25.13477Z" style="fill: #fff"/></g></g></g><g id="_Group_4" data-name="&lt;Group&gt;"><g><path d="M37.82619,8.731a2.63964,2.63964,0,0,1,2.80762,2.96484c0,1.90625-1.03027,3.002-2.80762,3.002H35.67092V8.731Zm-1.22852,5.123h1.125a1.87588,1.87588,0,0,0,1.96777-2.146,1.881,1.881,0,0,0-1.96777-2.13379h-1.125Z" style="fill: #fff"/><path d="M41.68068,12.44434a2.13323,2.13323,0,1,1,4.24707,0,2.13358,2.13358,0,1,1-4.24707,0Zm3.333,0c0-.97607-.43848-1.54687-1.208-1.54687-.77246,0-1.207.5708-1.207,1.54688,0,.98389.43457,1.55029,1.207,1.55029C44.57522,13.99463,45.01369,13.42432,45.01369,12.44434Z" style="fill: #fff"/><path d="M51.57326,14.69775h-.92187l-.93066-3.31641h-.07031l-.92676,3.31641h-.91309l-1.24121-4.50293h.90137l.80664,3.436h.06641l.92578-3.436h.85254l.92578,3.436h.07031l.80273-3.436h.88867Z" style="fill: #fff"/><path d="M53.85354,10.19482H54.709v.71533h.06641a1.348,1.348,0,0,1,1.34375-.80225,1.46456,1.46456,0,0,1,1.55859,1.6748v2.915h-.88867V12.00586c0-.72363-.31445-1.0835-.97168-1.0835a1.03294,1.03294,0,0,0-1.0752,1.14111v2.63428h-.88867Z" style="fill: #fff"/><path d="M59.09377,8.437h.88867v6.26074h-.88867Z" style="fill: #fff"/><path d="M61.21779,12.44434a2.13346,2.13346,0,1,1,4.24756,0,2.1338,2.1338,0,1,1-4.24756,0Zm3.333,0c0-.97607-.43848-1.54687-1.208-1.54687-.77246,0-1.207.5708-1.207,1.54688,0,.98389.43457,1.55029,1.207,1.55029C64.11232,13.99463,64.5508,13.42432,64.5508,12.44434Z" style="fill: #fff"/><path d="M66.4009,13.42432c0-.81055.60352-1.27783,1.6748-1.34424l1.21973-.07031v-.38867c0-.47559-.31445-.74414-.92187-.74414-.49609,0-.83984.18213-.93848.50049h-.86035c.09082-.77344.81836-1.26953,1.83984-1.26953,1.12891,0,1.76563.562,1.76563,1.51318v3.07666h-.85547v-.63281h-.07031a1.515,1.515,0,0,1-1.35254.707A1.36026,1.36026,0,0,1,66.4009,13.42432Zm2.89453-.38477v-.37646l-1.09961.07031c-.62012.0415-.90137.25244-.90137.64941,0,.40527.35156.64111.835.64111A1.0615,1.0615,0,0,0,69.29543,13.03955Z" style="fill: #fff"/><path d="M71.34816,12.44434c0-1.42285.73145-2.32422,1.86914-2.32422a1.484,1.484,0,0,1,1.38086.79h.06641V8.437h.88867v6.26074h-.85156v-.71143h-.07031a1.56284,1.56284,0,0,1-1.41406.78564C72.0718,14.772,71.34816,13.87061,71.34816,12.44434Zm.918,0c0,.95508.4502,1.52979,1.20313,1.52979.749,0,1.21191-.583,1.21191-1.52588,0-.93848-.46777-1.52979-1.21191-1.52979C72.72121,10.91846,72.26613,11.49707,72.26613,12.44434Z" style="fill: #fff"/><path d="M79.23,12.44434a2.13323,2.13323,0,1,1,4.24707,0,2.13358,2.13358,0,1,1-4.24707,0Zm3.333,0c0-.97607-.43848-1.54687-1.208-1.54687-.77246,0-1.207.5708-1.207,1.54688,0,.98389.43457,1.55029,1.207,1.55029C82.12453,13.99463,82.563,13.42432,82.563,12.44434Z" style="fill: #fff"/><path d="M84.66945,10.19482h.85547v.71533h.06641a1.348,1.348,0,0,1,1.34375-.80225,1.46456,1.46456,0,0,1,1.55859,1.6748v2.915H87.605V12.00586c0-.72363-.31445-1.0835-.97168-1.0835a1.03294,1.03294,0,0,0-1.0752,1.14111v2.63428h-.88867Z" style="fill: #fff"/><path d="M93.51516,9.07373v1.1416h.97559v.74854h-.97559V13.2793c0,.47168.19434.67822.63672.67822a2.96657,2.96657,0,0,0,.33887-.02051v.74023a2.9155,2.9155,0,0,1-.4834.04541c-.98828,0-1.38184-.34766-1.38184-1.21582v-2.543h-.71484v-.74854h.71484V9.07373Z" style="fill: #fff"/><path d="M95.70461,8.437h.88086v2.48145h.07031a1.3856,1.3856,0,0,1,1.373-.80664,1.48339,1.48339,0,0,1,1.55078,1.67871v2.90723H98.69v-2.688c0-.71924-.335-1.0835-.96289-1.0835a1.05194,1.05194,0,0,0-1.13379,1.1416v2.62988h-.88867Z" style="fill: #fff"/><path d="M104.76125,13.48193a1.828,1.828,0,0,1-1.95117,1.30273A2.04531,2.04531,0,0,1,100.73,12.46045a2.07685,2.07685,0,0,1,2.07617-2.35254c1.25293,0,2.00879.856,2.00879,2.27V12.688h-3.17969v.0498a1.1902,1.1902,0,0,0,1.19922,1.29,1.07934,1.07934,0,0,0,1.07129-.5459Zm-3.126-1.45117h2.27441a1.08647,1.08647,0,0,0-1.1084-1.1665A1.15162,1.15162,0,0,0,101.63527,12.03076Z" style="fill: #fff"/></g></g></g></svg>',
    googlePlayBadge: '<svg class="googlePlayBadge" id="svg51" width="180" height="53.333" version="1.1" viewBox="0 0 180 53.333" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><metadata id="metadata9"><rdf:RDF><cc:Work rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/></cc:Work></rdf:RDF></metadata><path id="path11" d="m173.33 53.333h-166.66c-3.6666 0-6.6665-2.9999-6.6665-6.6665v-39.999c0-3.6666 2.9999-6.6665 6.6665-6.6665h166.66c3.6666 0 6.6665 2.9999 6.6665 6.6665v39.999c0 3.6666-2.9999 6.6665-6.6665 6.6665" fill="#100f0d" stroke-width=".13333"/><path id="path13" d="m173.33 1e-3h-166.66c-3.6666 0-6.6665 2.9999-6.6665 6.6665v39.999c0 3.6666 2.9999 6.6665 6.6665 6.6665h166.66c3.6666 0 6.6665-2.9999 6.6665-6.6665v-39.999c0-3.6666-2.9999-6.6665-6.6665-6.6665zm0 1.0661c3.0879 0 5.5999 2.5125 5.5999 5.6004v39.999c0 3.0879-2.5119 5.6004-5.5999 5.6004h-166.66c-3.0879 0-5.5993-2.5125-5.5993-5.6004v-39.999c0-3.0879 2.5114-5.6004 5.5993-5.6004h166.66" fill="#a2a2a1" stroke-width=".13333"/><path id="path35" d="m142.58 40h2.4879v-16.669h-2.4879zm22.409-10.664-2.8519 7.2264h-0.0853l-2.9599-7.2264h-2.6799l4.4399 10.1-2.5319 5.6185h2.5946l6.8412-15.718zm-14.11 8.7706c-0.81331 0-1.9506-0.40786-1.9506-1.4156 0-1.2865 1.416-1.7797 2.6373-1.7797 1.0933 0 1.6093 0.23546 2.2733 0.55732-0.19333 1.5442-1.5226 2.6379-2.9599 2.6379zm0.30133-9.1352c-1.8013 0-3.6666 0.79371-4.4386 2.5521l2.208 0.92184c0.47198-0.92184 1.3506-1.2218 2.2733-1.2218 1.2866 0 2.5946 0.77131 2.6159 2.1442v0.17133c-0.45066-0.25733-1.416-0.64318-2.5946-0.64318-2.3813 0-4.8039 1.3077-4.8039 3.7524 0 2.2302 1.952 3.6671 4.1386 3.6671 1.672 0 2.5959-0.75054 3.1732-1.6301h0.0867v1.2874h2.4026v-6.391c0-2.9593-2.2106-4.6103-5.0612-4.6103zm-15.376 2.3937h-3.5386v-5.7133h3.5386c1.86 0 2.9159 1.5396 2.9159 2.8566 0 1.2917-1.056 2.8567-2.9159 2.8567zm-0.064-8.0337h-5.9614v16.669h2.4869v-6.3149h3.4746c2.7573 0 5.4679-1.9958 5.4679-5.1765 0-3.1801-2.7106-5.1769-5.4679-5.1769zm-32.507 14.778c-1.7188 0-3.1573-1.4396-3.1573-3.415 0-1.9984 1.4385-3.4583 3.1573-3.4583 1.6969 0 3.0286 1.46 3.0286 3.4583 0 1.9754-1.3317 3.415-3.0286 3.415zm2.8567-7.8403h-0.086c-0.55826-0.66572-1.6328-1.2672-2.9853-1.2672-2.8359 0-5.4348 2.4921-5.4348 5.6925 0 3.1786 2.5989 5.6488 5.4348 5.6488 1.3525 0 2.427-0.6016 2.9853-1.2885h0.086v0.81558c0 2.1703-1.1598 3.3296-3.0286 3.3296-1.5245 0-2.4697-1.0953-2.8567-2.0188l-2.1691 0.90206c0.62238 1.503 2.2759 3.351 5.0259 3.351 2.9218 0 5.392-1.7188 5.392-5.9077v-10.181h-2.3634zm4.0822 9.7304h2.4906v-16.669h-2.4906zm6.164-5.4988c-0.0641-2.1911 1.6978-3.3078 2.9645-3.3078 0.98851 0 1.8254 0.49425 2.1057 1.2026zm7.7326-1.8906c-0.47238-1.2666-1.9114-3.6082-4.8541-3.6082-2.9218 0-5.3488 2.2983-5.3488 5.6707 0 3.1791 2.4062 5.6707 5.6275 5.6707 2.5989 0 4.1031-1.589 4.7264-2.513l-1.9333-1.289c-0.64465 0.94531-1.5249 1.5682-2.7931 1.5682-1.2666 0-2.1692-0.58012-2.7483-1.7186l7.5815-3.1359zm-60.409-1.8682v2.4057h5.7565c-0.17186 1.3532-0.62292 2.3411-1.3104 3.0286-0.83798 0.83745-2.1483 1.7614-4.4462 1.7614-3.5443 0-6.315-2.8567-6.315-6.4009s2.7707-6.4013 6.315-6.4013c1.9118 0 3.3077 0.75198 4.3388 1.7186l1.6974-1.6973c-1.4396-1.3745-3.351-2.427-6.0362-2.427-4.8552 0-8.9363 3.9524-8.9363 8.807 0 4.8541 4.0811 8.8066 8.9363 8.8066 2.6202 0 4.5967-0.85932 6.143-2.4702 1.5896-1.5896 2.0838-3.8234 2.0838-5.628 0-0.55785-0.04333-1.0734-0.1292-1.5032zm14.772 7.3675c-1.7188 0-3.201-1.4177-3.201-3.4368 0-2.0406 1.4822-3.4364 3.201-3.4364 1.7181 0 3.2003 1.3958 3.2003 3.4364 0 2.0191-1.4822 3.4368-3.2003 3.4368zm0-9.1075c-3.137 0-5.6927 2.3842-5.6927 5.6707 0 3.265 2.5557 5.6707 5.6927 5.6707 3.1358 0 5.692-2.4057 5.692-5.6707 0-3.2865-2.5562-5.6707-5.692-5.6707zm12.417 9.1075c-1.7176 0-3.2003-1.4177-3.2003-3.4368 0-2.0406 1.4828-3.4364 3.2003-3.4364 1.7188 0 3.2005 1.3958 3.2005 3.4364 0 2.0191-1.4817 3.4368-3.2005 3.4368zm0-9.1075c-3.1358 0-5.6915 2.3842-5.6915 5.6707 0 3.265 2.5557 5.6707 5.6915 5.6707 3.137 0 5.6927-2.4057 5.6927-5.6707 0-3.2865-2.5557-5.6707-5.6927-5.6707" fill="#fff" stroke-width=".13333"/><path id="path37" d="m27.622 25.899-14.194 15.066c5.34e-4 0.0031 0.0016 0.0057 0.0021 0.0089 0.43532 1.636 1.9296 2.8406 3.703 2.8406 0.70892 0 1.3745-0.19166 1.9453-0.52812l0.04533-0.02656 15.978-9.22-7.479-8.141" fill="#eb3131" stroke-width=".13333"/><path id="path39" d="m41.983 23.334-0.0136-0.0093-6.8982-3.999-7.7717 6.9156 7.7987 7.7977 6.8618-3.9592c1.203-0.64945 2.0197-1.9177 2.0197-3.3802 0-1.452-0.80571-2.7139-1.9968-3.3655" fill="#f6b60b" stroke-width=".13333"/><path id="path41" d="m13.426 12.37c-0.08533 0.31466-0.13018 0.64425-0.13018 0.98651v26.623c0 0.34162 0.04432 0.67233 0.13072 0.98587l14.684-14.681-14.684-13.914" fill="#5778c5" stroke-width=".13333"/><path id="path43" d="m27.727 26.668 7.3473-7.3451-15.96-9.2534c-0.58012-0.34746-1.2572-0.54799-1.9817-0.54799-1.7734 0-3.2697 1.2068-3.7051 2.8447-5.34e-4 0.0016-5.34e-4 0.0027-5.34e-4 0.0041l14.3 14.298" fill="#3bad49" stroke-width=".13333"/><path id="path33" d="m63.193 13.042h-3.8895v0.96251h2.9146c-0.0792 0.78545-0.39172 1.4021-0.91878 1.85-0.52705 0.44799-1.2 0.67292-1.9958 0.67292-0.87291 0-1.6125-0.30413-2.2186-0.90824-0.59385-0.61665-0.89584-1.3792-0.89584-2.2979 0-0.91864 0.30199-1.6812 0.89584-2.2978 0.60612-0.60412 1.3457-0.90624 2.2186-0.90624 0.44799 0 0.87504 0.07707 1.2666 0.24586 0.39172 0.16866 0.70625 0.40412 0.95211 0.70625l0.73958-0.73958c-0.33546-0.38132-0.76038-0.67292-1.2876-0.88544-0.52705-0.21253-1.077-0.31453-1.6708-0.31453-1.1645 0-2.1519 0.40412-2.9582 1.2104-0.80625 0.80825-1.2104 1.8041-1.2104 2.9811 0 1.177 0.40412 2.175 1.2104 2.9813 0.80625 0.80611 1.7937 1.2104 2.9582 1.2104 1.2229 0 2.1979-0.39172 2.9479-1.1876 0.66038-0.66238 0.99784-1.5582 0.99784-2.679 0-0.1896-0.02293-0.39172-0.05627-0.60425zm1.5068-3.7332v8.0249h4.6852v-0.98544h-3.654v-2.5457h3.2958v-0.96251h-3.2958v-2.5437h3.654v-0.98758zm11.255 0.98758v-0.98758h-5.5145v0.98758h2.2417v7.0373h1.0312v-7.0373zm4.9925-0.98758h-1.0312v8.0249h1.0312zm6.8066 0.98758v-0.98758h-5.5144v0.98758h2.2415v7.0373h1.0312v-7.0373zm10.406 0.05626c-0.79585-0.81877-1.7708-1.2229-2.9354-1.2229-1.1666 0-2.1415 0.40412-2.9374 1.2104-0.79585 0.79585-1.1874 1.7937-1.1874 2.9811s0.39159 2.1854 1.1874 2.9813c0.79585 0.80611 1.7708 1.2104 2.9374 1.2104 1.1541 0 2.1395-0.40426 2.9354-1.2104 0.79585-0.79585 1.1874-1.7938 1.1874-2.9813 0-1.177-0.39159-2.1729-1.1874-2.9686zm-5.1332 0.67078c0.59372-0.60412 1.3229-0.90624 2.1978-0.90624 0.87291 0 1.6021 0.30213 2.1854 0.90624 0.59372 0.59372 0.88531 1.3686 0.88531 2.2978 0 0.93131-0.29159 1.7041-0.88531 2.2979-0.58332 0.60412-1.3125 0.90824-2.1854 0.90824-0.87491 0-1.6041-0.30413-2.1978-0.90824-0.58132-0.60625-0.87291-1.3666-0.87291-2.2979 0-0.92918 0.29159-1.6916 0.87291-2.2978zm8.7706 1.3125-0.0437-1.548h0.0437l4.0791 6.5457h1.077v-8.0249h-1.0312v4.6957l0.0437 1.548h-0.0437l-3.8999-6.2437h-1.2562v8.0249h1.0312z" fill="#fff" stroke="#fff" stroke-miterlimit="10" stroke-width=".26666"/></svg>'
 }
@@ -3434,6 +3474,8 @@ B.mrespond ([
          if (! (B.get ('State', 'upload', 'queue') || []).length) return;
          requestAnimationFrame (function () {document.body.style.background = 'white'});
       }, 1000));
+
+      if (sessionStorage.getItem ('testFrom')) B.call (x, 'test', []);
    }],
    ['reset', 'store', function (x, logout) {
       if (logout) {
@@ -3468,7 +3510,7 @@ B.mrespond ([
       }
       c.ajax (x.verb, path, headers, body, function (error, rs) {
          B.call (x, 'ajax ' + x.verb, path, {t: Date.now () - t, code: error ? error.status : rs.xhr.status});
-         var authPath = path === 'csrf' || path.match (/^auth/);
+         var authPath = path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
          if (! authPath && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
@@ -3519,7 +3561,7 @@ B.mrespond ([
          if (hash [1] === 'error'  ) B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
       }
 
-      if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
+      if (B.get ('Data', 'csrf') && (! page || page === 'pics')) B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
       B.call (x, 'goto', 'page', page, true);
    }],
@@ -3544,12 +3586,14 @@ B.mrespond ([
 
       document.title = ['ac;pic', page].join (' - ');
 
-      B.call (x, 'set', ['State', 'page'], page);
-
       if (page === 'pics') {
-         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
+            B.call (x, 'set', ['State', 'queryURL'], 'home');
+            return B.call (x, 'set', ['State', 'page'], page);
+         }
          page = 'pics/' + B.get ('State', 'queryURL');
       }
+      B.call (x, 'set', ['State', 'page'], page.replace (/\/.+/, ''));
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
@@ -3574,7 +3618,7 @@ B.mrespond ([
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
          B.call (x, 'read', 'hash');
-         B.call (x, 'query', 'account');
+         if (! error) B.call (x, 'query', 'account');
       });
    }],
    ['login', [], function (x) {
@@ -3586,6 +3630,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'clear', 'authInputs');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3618,6 +3663,7 @@ B.mrespond ([
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
          }
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3685,9 +3731,9 @@ B.mrespond ([
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
-      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update'], x.path [2])) return;
 
-      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
+      if (inc (['tags', 'sort', 'home'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
 
       if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
 
@@ -3776,7 +3822,7 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      var noPivsYet = teishi.eq (B.get ('Data', 'pivs'), []);
+      var noPivsYet = eq (B.get ('Data', 'pivs'), []);
       var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
 
       var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
@@ -3937,11 +3983,15 @@ B.mrespond ([
       }
 
       // Tag is added
-      B.call (x, 'set', ['State', 'query', 'home'], false);
-      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
+      // We do not set this if removing a tag because we know we're already not with home set.
+      // We do this mutely since State.query.tags will change and trigger further changes.
+      B.set (['State', 'query', 'home'], false);
+      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag) && ! inc (['o::', 't::'], tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+         if (existingTag === 'o::' && tag === 't::') return;
+         if (existingTag === 't::' && tag === 'o::') return;
          if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag))) return;
+         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag) && ! inc (['o::', 't::'], existingTag))) return;
          if (H.isRangeTag (tag) && H.isDateTag (existingTag)) return;
          if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
          return existingTag;
@@ -3985,7 +4035,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'hometags'], rs.body.hometags);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (tag === 'u::' || H.isRangeTag (tag)) return tag;
+            if (inc (['u::', 'o::', 't::'], tag) || H.isRangeTag (tag)) return tag;
             if (inc (rs.body.tags, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
@@ -3996,7 +4046,7 @@ B.mrespond ([
       if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
-      if (! H.isUserTag (tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+      if (! H.isUserTag (tag) && ! inc (['o::', 't::'], tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
 
       var ids = dale.keys (B.get ('State', 'selected'));
       if (ids.length === 0) return;
@@ -4010,11 +4060,12 @@ B.mrespond ([
       var payload = {tag: tag, ids: ids, del: del}
       B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
-         if (! del && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
+         if (! del && H.isUserTag (tag) && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
 
          if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
 
-         if (! del) B.call (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
+         if (! del & H.isUserTag (tag)) B.call (x, 'snackbar', 'green', 'Just tagged ' + ids.length + ' picture(s) with tag ' + tag + '.');
+         else if (! del)                B.call (x, 'snackbar', 'green', 'Just marked ' + ids.length + ' picture(s) as ' + (tag === 'o::' ? 'Organized' : 'To Organize ') + '.');
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
       });
@@ -4119,7 +4170,7 @@ B.mrespond ([
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (teishi.eq (query [k], B.get ('State', 'query', k))) return;
+            if (eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
@@ -4864,23 +4915,23 @@ views.reset = function () {
 // *** HEADER VIEW ***
 
 views.header = function (showUpload, showImport) {
-   return ['header', {class: 'header', onclick: B.ev (H.stopPropagation)}, [
+   return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('open', 'location', undefined, 'https://altocode.nl/pic'), class: 'button button--feedback'}, 'Why ac;pic?']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why ac;pic?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'button button--purple-header'}, 'Go home']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
             ]];
          }),
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev ('set', ['State', 'feedback'], '')}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
@@ -4891,14 +4942,14 @@ views.header = function (showUpload, showImport) {
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
                   ['li', {class: 'account-sub-menu__item'}, ['a', {href: '#/account', class: 'account-sub-menu__item-link'}, 'Account']],
-                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev ('logout', [])}, 'Logout']],
+                  ['li', {class: 'account-sub-menu__item'}, ['a', {class: 'account-sub-menu__item-link', onclick: B.ev (H.stopPropagation, ['logout', []])}, 'Logout']],
                ]],
             ]],
          ]],
       ]],
       //SHARE BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
-         ['a', {href: '', class: 'button button--green', onclick: B.ev (['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
+         ['a', {href: '', class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
       ]],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
@@ -5130,7 +5181,7 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'], ['set', ['State', 'queryURL'], 'home'])}, 'Go back home'] : [
+                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back home'] : [
                               ['h1', {class: 'sidebar-header__title'}, 'Explore'],
                               ['div', {class: 'sidebar-header__filter-selected'}],
                            ]
@@ -5160,7 +5211,7 @@ views.pics = function () {
                         }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
+                           if (H.isDateTag (tag) || inc (['a::', 'u::', 'o::', 't::'], tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
@@ -5192,8 +5243,7 @@ views.pics = function () {
                            }
                         });
 
-                        var all      = teishi.eq (selected, []);
-                        var untagged = inc (selected, 'u::');
+                        var all      = eq (selected, []);
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
@@ -5207,9 +5257,19 @@ views.pics = function () {
                               action2 = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged && ! home ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
+                           }
+                           else if (which === 't::') {
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
+                              var tag = 'To Organize';
+                              var action = ['toggle', 'tag', 't::'];
+                           }
+                           else if (which === 'o::') {
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
+                              var tag = 'Organized';
+                              var action = ['toggle', 'tag', 'o::'];
                            }
                            else if (H.isYearTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
@@ -5245,9 +5305,8 @@ views.pics = function () {
                            if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
-                           var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
-                           var blankMonth = H.isMonthTag (which) && ! inc (monthTags, which);
-                           var disabledTag = disabledUntagged || blankMonth;
+                           var disabledTag = inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0;
+                           if (H.isMonthTag (which) && ! inc (monthTags, which)) disabledTag = true;
 
                            var showName = tag.replace (/^[a-z]::/, '');
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
@@ -5257,6 +5316,8 @@ views.pics = function () {
                            return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action, action2 || ['foo', 'bar'])}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
+                              H.if (which === 't::', H.putSvg ('toOrganizeIcon')),
+                              H.if (which === 'o::', H.putSvg ('organizedIcon')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
@@ -5266,7 +5327,7 @@ views.pics = function () {
                                  ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
                               ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', showName]],
+                              ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
@@ -5287,6 +5348,8 @@ views.pics = function () {
                         return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
+                           makeTag ('t::'),
+                           makeTag ('o::'),
                            ! rangeTag ? [
                               dale.go (yearlist, makeTag),
                               ['br'], ['br'],
@@ -5408,14 +5471,18 @@ views.pics = function () {
                // SIDEBAR SEARCH
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
-                  var doneTagging = inc (tags, 'u::') && dale.keys (selected).length;
-                  return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 114}), onclick: B.ev (H.stopPropagation)}, [
+                  var markAsOrganized = dale.keys (selected).length;
+                  return ['div', {class: 'sidebar__footer', style: ! markAsOrganized ? undefined : style ({height: 100}), onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
                         ['input', {class: 'sidebar-search__input search-input', style: style ({border: 'solid 1px #5b6eff', 'border-radius': 25}), type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
-                     H.if (doneTagging, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
+                     H.if (markAsOrganized, ['div', {class: 'organise-bar__button--organized button', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 'o::'], ['rem', 'State', 'selected'])}, [
+                        H.putSvg ('organizedIcon'),
+                        H.putSvg ('organizedIconWhite'),
+                        'Mark as organized'
+                     ]])
                   ]];
                }),
             ]],
@@ -5450,6 +5517,10 @@ views.pics = function () {
                   ['div', {class: 'organise-bar__button organise-bar__button--download', onclick: B.ev (H.stopPropagation, ['download', []])}, [
                      H.putSvg ('download'),
                      ['span', {class: 'organise-bar__button-title'}, 'Download'],
+                  ]],
+                  ['div', {class: 'organise-bar__button organise-bar__button--to-organize', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 't::'])}, [
+                     ['span', {style: style({'padding-top': '1px'})}, H.putSvg ('toOrganizeIcon')],
+                     ['span', {class: 'organise-bar__button-title', style: style({'margin-left': '-2px'})}, 'Mark as To Organize'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--delete', onclick: B.ev (H.stopPropagation, ['delete', 'pivs'])}, [
                      H.putSvg ('delete'),
@@ -5525,18 +5596,23 @@ views.pics = function () {
                                        var showName = tag.replace (/^[a-z]::/, '');
                                        if (tag === 'a::') showName = (tags.length === 0 ? 'Everything ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
+                                       if (tag === 't::') showName = 'To Organize';
+                                       if (tag === 'o::') showName = 'Organized';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
                                        if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                        return ['li', {class: Class}, [
                                           H.if (tag === 'a::', H.putSvg ('tagAll', 24)),
                                           H.if (tag === 'u::', H.putSvg ('itemUntagged')),
+                                          H.if (tag === 't::', H.putSvg ('toOrganizeIcon')),
+                                          H.if (tag === 'o::', H.putSvg ('organizedIcon')),
                                           H.if (tag === 's::', H.putSvg ('selectedCircle')),
                                           H.if (H.isDateTag (tag), H.putSvg ('itemTime')),
                                           H.if (H.isGeoTag (tag) && ! H.isCountryTag (tag), H.putSvg ('geoCity')),
                                           H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                           H.if (H.isUserTag (tag), H.putSvg ('tagItem' + H.tagColor (tag))),
-                                          ['span', {class: 'tag__title'}, showName],
+                                          // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
+                                          ['span', {class: 'tag__title' + (tag === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                                           tag === 'a::' ? [] : ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
                                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, tag === 's::' ? ['rem', 'State', 'selected'] : ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],

@@ -40,23 +40,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - server/client: mark as organized
-   - client: onboarding
-
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
-   - client: home tags:
-      - always check: url, sidebar, grid
-      - from scratch go to home, then to tag
-      - from link go straight to tag, then home
-      - from both home and tag, go to another view, then go back to pivs and be home
-      - from both home and tag, go to another view, then use back button to go back to where you were before
-      - go home, then go to a tag, then home, then click back one and be on the tag, click back again and be back on home
+   - client: onboarding
+   - client: show less year & country entries in sidebar
+
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
-   - client: show less year & country entries in sidebar
+   - client: do not show New Pics Available sign if on the home view
 
    - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
@@ -79,7 +72,6 @@ Mono
    - server/client: Share & manage
    - client: upgrade pop up notice or email when running out of free space.
    - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-   - server: change stalled interval to 2s and send waits when doing video processing in tests
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
@@ -135,6 +127,8 @@ Mono
    - If query changes but selected pivs are still there, maintain their selection.
    - Filter tags when browsing.
    - Tag/untag.
+   - Allow to mark pivs as Organized or as To organize.
+   - For a given query, if the query includes Organized or To Organize, see the total number of pivs for the complement tag (for example: if `'o::'` is in the query, see the number of pivs To organize that the query would have *without* `'o::'`).
    - Filter tags when tagging/untagging.
    - Rotate pivs.
    - Delete pivs.
@@ -499,12 +493,12 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Each of the returned pivs will have all the tags present in `body.tags`. The only exception to this rule are year tags, on which the query returns pivs that contain at least one of the given date tags. For example, the query `['d::2018', 'd::2019']` will return pivs from both 2018 and 2019.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
-   - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
+   - If `body.recentlyTagged` is present, the `'u::'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
    - If `body.refresh` is set to `true`, this will be considered as a request triggered by an automatic refresh by the client. This only makes a difference for statistical purposes.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, 'o::': INT, 'u::': 0, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
-      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `a::` and `untagged`, which indicate the *total* amount of all and untagged pivs, irrespective of the query.
+      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The only exception is `a::`, which indicate the *total* amount of all pivs, irrespective of the query. `u::` stands for untagged pivs, `o::` for pivs marked as organized, and `t::` for pivs not yet marked as organized.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
@@ -880,10 +874,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `input -> rem State.showNTags`
       - `input -> rem State.showNSelectedTags`
       - `input -> set State.filter`
+      - `click -> goto page`
       - `click -> goto tag`
       - `click -> set State.tagOrder`
       - `click -> set State.query.update`
       - `click -> set State.query.updateLimit`
+      - `click -> set State.query.home`
+      - `click -> set State.query.tags`
 2. `views.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
@@ -1013,10 +1010,10 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    10. `test`: loads the test suite.
 
 3. Auth
-   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not. Finally, it invokes `query account`.
-   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf` and invokes `goto page State.redirect`.
+   1. `retrieve csrf`: takes no arguments. Calls `get /csrf`. In case of non-403 error, calls `snackbar`; otherwise, it sets `Data.csrf` to either the CSRF token returned by the call, or `false` if the server replied with a 403. Also invokes `read hash` to kick off the navigation after we determine whether the user is logged in or not. Finally, if there was no error, it invokes `query account`.
+   3. `login`: calls `post /auth/login. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf`, invokes `query account` and invokes `goto page State.redirect`.
    4. `logout`: takes no arguments. Calls `post /auth/logout`). In case of error, calls `snackbar`; otherwise, calls `reset store` (with truthy `logout` argument) and invokes `goto page login`.
-   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs` and updates `Data.csrf` and invokes `goto page State.redirect`.
+   5. `signup`: calls `post /auth/signup`. In case of error, calls `snackbar`; otherwise, it calls `clear authInputs`, updates `Data.csrf`, invokes `query account` and invokes `goto page State.redirect`.
    6. `recover`: calls `post /auth/recover`. In case of error, only calls `snackbar`; otherwise, it calls `clear authInputs`, invokes `goto page login` and invokes `snackbar`.
    7. `reset`: calls `post /auth/reset`. In case of error, only calls `snackbar`; otherwise it calls `rem Data.tokens`, `clear authInputs`, `goto page login` and `snackbar`.
    8. `delete account`: calls `post /auth/delete`. In case of error, only calls `snackbar`; otherwise it calls `reset store true`, `goto page login` and `snackbar`.
@@ -1062,12 +1059,12 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
    5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
    6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
-   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'untagged'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'untagged'`, we remove all user tags.
+   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'u::'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'u::'`, we remove all user tags. If `'t::'` is added, the `'o::'` tag, if present, is removed from the query; and viceversa.
    8. `toggle hometag`: see annotated source code.
    9. `shift hometag`: see annotated source code.
    10. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
-   11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `u::` (which never is returned by the server) and the strictly client-side range pseudo-tag).
-   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'untagged'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`.
+   11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `'u::'`, `'o::'` and `'t::'` (which never are returned by the server) and the strictly client-side range pseudo-tag).
+   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'u::'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`. If the action is a tagging (instead of an untagging) and `Data.hometags` is empty and the tag is a user tag (and not `'o::'` or `'t::'`), it will invoke `toggle hometags` to add the tag to the home tags.
    13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    14. `date pivs`: invokes `snackbar` if there was either invalid input or the operation failed. If the input (`State.date`) is valid, it invokes `post date` and then if the operation is successful invokes `rem State.page` and `query pivs`.
    15. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
@@ -1326,10 +1323,10 @@ If `page` is `'import'` and there is a third part of the hash (which will repres
       }
 ```
 
-If there's no `page`, or if `page` is `'pics'`, we `set State.queryURL` to either the second part of the hash, or to `'home'` if there's no second part of the hash. We assume that if there's no `page` specified, the right page is `'pics'`, which it will be if the user is logged in. If the user is not logged in, the user will be redirected to the right page by `goto page`.
+If the user is logged in (which will be the case if `Data.csrf` is set) and there's no `page`, or if `page` is `'pics'`, we `set State.queryURL` to either the second part of the hash, or to `'home'` if there's no second part of the hash. We assume that if there's no `page` specified, the right page is `'pics'`, which it will be if the user is logged in. If the user is not logged in, the user will be redirected to the right page by `goto page`. We won't do this if the user is not logged in to avoid requesting pivs when the user has no session to do that yet.
 
 ```javascript
-      if (! page || page === 'pics') B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
+      if (B.get ('Data', 'csrf') && (! page || page === 'pics')) B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 ```
 
 This is as good a place as any to understand the flow of responders when this modification to `State.queryURL` is done, or, more in general, to understand how changes in the URL are reflected in the state and viceversa. The order of operations is the following:
@@ -1425,22 +1422,19 @@ We set `document.title` based on the `page` to which we are sending the user.
       document.title = ['ac;pic', page].join (' - ');
 ```
 
-We `set State.page` to `page`.
-
-```javascript
-      B.call (x, 'set', ['State', 'page'], page);
-```
-
 If `page` is `'pics'`:
 
 ```javascript
       if (page === 'pics') {
 ```
 
-If the event was not called with the `fromHash` parameters and `State.query` is not `'home'`, this means that we are going to the `pics` page and we need to show the home tags. To ensure this, we `set State.queryURL` and not do anything else.
+If the event was not called with the `fromHash` parameters and `State.query` is not `'home'`, this means that we are going to the `pics` page and we need to show the home tags. To ensure this, we `set State.queryURL` and then we set `State.page` to `page`. In this case, we do not do anything else.
 
 ```javascript
-         if (! fromHash && B.get ('State', 'queryURL') !== 'home') return B.call (x, 'set', ['State', 'queryURL'], 'home');
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
+            B.call (x, 'set', ['State', 'queryURL'], 'home');
+            return B.call (x, 'set', ['State', 'page'], page);
+         }
 ```
 
 Let's go back for a minute to the sequence of changes produced when the hash of the page changes:
@@ -1457,6 +1451,13 @@ Finally, if `page` is `pics` but the event was called from the `read hash` event
          page = 'pics/' + B.get ('State', 'queryURL');
       }
 ```
+
+We `set State.page` to `page`. If `page` now contains a slash plus `State.queryURL` (as it will if `page` is `'pics'`), we take care to remove that part of the string before setting that value into `State.page`.
+
+```javascript
+      B.call (x, 'set', ['State', 'page'], page.replace (/\/.+/, ''));
+```
+
 
 Finally, we update `window.location.hash` if it's not what it should be. This concludes the responder.
 
@@ -1500,16 +1501,16 @@ We define the responder for `change State.query`. This is one of the main respon
    ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
 ```
 
-If what changes is the `State` object itself, or `State.query.recentlyTagged|update|home`, we don't do anything else, since we want to ignore these changes. But if `State.query` is set, or if `State.query.tags|sort|fromDate|updateLimit` change, we will perform further actions.
+If what changes is the `State` object itself, or `State.query.recentlyTagged|update`, we don't do anything else, since we want to ignore these changes. But if `State.query` is set, or if `State.query.tags|sort|home|fromDate|updateLimit` change, we will perform further actions.
 
 ```javascript
-      if (x.path.length < 2 || inc (['recentlyTagged', 'update', 'home'], x.path [2])) return;
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update'], x.path [2])) return;
 ```
 
-If either `State.query.tags` or `State.query.sort` changed, we will remove the fields `fromDate`, `update` and `updateLimit` from the query, since we deem the query to have changed and thus we need to clear out these fields. We will do without triggering any `change` events yet, since we don't want to call other events yet.
+If either `State.query.tags` or `State.query.sort` or `State.query.home` changed, we will remove the fields `fromDate`, `update` and `updateLimit` from the query, since we deem the query to have changed and thus we need to clear out these fields. We will do without triggering any `change` events yet, since we don't want to call other events yet.
 
 ```javascript
-      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
+      if (inc (['tags', 'sort', 'home'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
 ```
 
 If `State.query.updateLimit` is either `true` or `undefined`, we set it to the current time. It will be `undefined` if it was just removed by the line above; and it will be `true` if set to that value by two user interactions; `true` means "the present moment", so the result will be the same.
@@ -1690,7 +1691,7 @@ We iterate the three keys from `State.query` that were previously stored in `Sta
 
 ```javascript
          dale.go (['tags', 'sort', 'fromDate'], function (k) {
-            if (teishi.eq (query [k], B.get ('State', 'query', k))) return;
+            if (eq (query [k], B.get ('State', 'query', k))) return;
             changes = true;
             B.set (['State', 'query', k], query [k]);
          });
