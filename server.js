@@ -1493,7 +1493,8 @@ var routes = [
                email:               b.email,
                created:             Date.now (),
                suggestGeotagging:   1,
-               suggestSelection:    1
+               suggestSelection:    1,
+               onboarding:          1
             });
             // email verification happens only when testing, since now all users come through invites.
             // when this changes, the verificationPending flag should be set for all users
@@ -1835,10 +1836,11 @@ var routes = [
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            ENV ? multi.get ('foo') : multi.lrange ('ulog:' + rq.user.username, 0, -1);
-            multi.get    ('stat:f:byfs-' + rq.user.username);
-            multi.get    ('stat:f:bys3-' + rq.user.username);
-            multi.get    ('geo:'         + rq.user.username);
+            multi.get ('stat:f:byfs-' + rq.user.username);
+            multi.get ('stat:f:bys3-' + rq.user.username);
+            multi.get ('geo:'         + rq.user.username);
+            // We only return logs for testing purposes
+            if (! ENV) multi.lrange ('ulog:' + rq.user.username, 0, -1);
             mexec (s, multi);
          }],
          function (s) {
@@ -1851,15 +1853,16 @@ var routes = [
                created:  parseInt (rq.user.created),
                usage:    {
                   limit:  limit,
-                  byfs: parseInt (s.last [1]) || 0,
-                  bys3: parseInt (s.last [2]) || 0,
+                  byfs: parseInt (s.last [0]) || 0,
+                  bys3: parseInt (s.last [1]) || 0,
                },
-               geo:           rq.user.geo ? true : undefined,
-               geoInProgress: s.last [3]  ? true : undefined,
+               geo:               rq.user.geo               ? true : undefined,
+               geoInProgress:     s.last [2]                ? true : undefined,
                suggestGeotagging: rq.user.suggestGeotagging ? true : undefined,
                suggestSelection:  rq.user.suggestSelection  ? true : undefined,
-               // We only return logs for testing purposes when running the app locally
-               logs:          ENV ? undefined : dale.go (s.last [0], JSON.parse).reverse ()
+               onboarding:        rq.user.onboarding        ? true : undefined,
+               // We only return logs for testing purposes
+               logs:              ENV ? undefined : dale.go (s.last [3], JSON.parse).reverse ()
             });
          }
       ]);
@@ -2755,6 +2758,8 @@ var routes = [
                   multi.srem ('tag:'  + rq.user.username + ':u::', id);
                }
             })) return;
+
+            if (rq.user.onboarding && ! b.del && ! inc (['o::', 't::'], b.tag)) multi.hdel ('users:' + rq.user.username, 'onboarding');
 
             mexec (s, multi);
          },

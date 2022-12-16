@@ -656,7 +656,7 @@ suites.auth = {
             delete rs.body.logs;
             if (type (rs.body.created) !== 'integer' || Math.abs (Date.now () - rs.body.created) > 5000) return clog ('Invalid created field', rs.body.created);
             delete rs.body.created;
-            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true})) return false;
+            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true, onboarding: true})) return false;
             return true;
          }],
          ['get CSRF token without being logged in', 'get', 'auth/csrf', {cookie: ''}, '', 403, H.cBody ({error: 'nocookie'})],
@@ -2980,6 +2980,28 @@ suites.dismiss = function () {
             }],
          ];
       }),
+      ['start upload to test dismissing of onboarding', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test dismissing of onboarding', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['mark piv as organized (should be no-op for onboarding)', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId]}}, 200],
+      ['get account after marking a piv as organized', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.onboarding', rs.body.onboarding, true)) return false;
+         return true;
+      }],
+      ['tag piv (should dismiss onboarding)', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId]}}, 200],
+      ['get account after marking a piv as organized', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.onboarding', rs.body.onboarding, undefined)) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }

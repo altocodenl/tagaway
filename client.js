@@ -3985,7 +3985,8 @@ B.mrespond ([
       // Tag is added
       // We do not set this if removing a tag because we know we're already not with home set.
       // We do this mutely since State.query.tags will change and trigger further changes.
-      B.set (['State', 'query', 'home'], false);
+      if (B.get ('State', 'query', 'home')) B.set (['State', 'query', 'home'], false);
+      if (B.get ('Data', 'account', 'onboarding') && B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
       var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag) && ! inc (['o::', 't::'], tag);
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
          if (existingTag === 'o::' && tag === 't::') return;
@@ -4166,6 +4167,7 @@ B.mrespond ([
    ['change', ['State', 'queryURL'], {id: 'change State.queryURL'}, function (x) {
       var queryURL = B.get ('State', 'queryURL');
       if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
+      if (B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
          var changes, oldValue = teishi.copy (B.get ('State', 'query'));
@@ -5016,96 +5018,55 @@ views.empty = function () {
 // *** ONBOARDING VIEW ***
 
 views.onboarding = function () {
-   return ['div', [
-      // MAIN
-      ['div', {class: 'main'}, [
-         ['div', {class: 'main__inner'}, [
-            ['div', {class: 'guide'}, [
-               ['span', {style: style ({display: 'inline-flex'})}, [
-                  ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
-                  ['h2', {class: 'guide__title'}, 'username'],
-                  ['h2', {class: 'guide__title'}, '!']
-               ]],
-               ['p', {class: 'guide__text', style: style({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
-            ]],
-            ['div', {class: 'onboarding-modal-container'}, [
-               ['div', {class: 'onboarding-modal'}, [
-                  ['div', {class: 'onboarding-modal-text-div'}, [
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '1/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'Go to Everything'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, click on Everything. All your pics and videos are there.']
-                     // ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '2/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'One click to select'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'Select the pictures and videos you want to tag with one click.']
-                     // ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '3/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'Create tag'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'On the left sidebar, write the tag name you want for your selected pictures.']
-                     // ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '4/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'Or reuse tag'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'If there’s already a tag created and you want to add the selected pictures to it, just click on the “+”.']
-                     // ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '5/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'How to untag'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'If you want to ‘untag’, then hover on the check mark, you’ll find the scissors to untag those pics.']
-                     // ]],
-                     ['div', {class: 'onboarding-modal-text-container'}, [
-                        ['p', {class: 'onboarding-modal-title'}, '6/9'],
-                        ['p', {class: 'onboarding-modal-title'}, 'It\'s organized when you say so'],
-                        ['p', {class: 'onboarding-modal-text'}, 'Once you\'ve tagged your pics and videos, on the lower left, mark them as organized, so you know you\'ve got it done!']
-                     ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '7/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'Home is easy access'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'In Home you can pin your favorite tags, so you can easily access them.']
-                     // ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '8/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'Use tags to find anything'],
-                     //    ['p', {class: 'onboarding-modal-text'}, 'You’ll find your tags on the left sidebar, together with your Year and Geo Tags, which will help you drill down into your collection.']
-                     // ]],
-                     // ['div', {class: 'onboarding-modal-text-container'}, [
-                     //    ['p', {class: 'onboarding-modal-title'}, '9/9'],
-                     //    ['p', {class: 'onboarding-modal-title'}, 'No constraints'],
-                     //    ['p', {class: 'onboarding-modal-text'}, [
-                     //       'Tag your pics & videos with as many tags as you want. Combine tags to find what you\'re looking for.',
-                     //       ['br'],
-                     //       'Vacations with friends or vacations with family?'
-                     //    ]],
-                     // ]],
+   return B.view ([['State', 'onboarding'], ['Data', 'account']], function (page, account) {
+      if (! account) return ['div'];
+      if (page === false || ! account.onboarding) return ['div'];
+      if (page === undefined) page = 1;
 
-                  ]],
-                  ['div', {class: 'onboarding-modal-arrow-div'}, [
-                     ['span', H.putSvg ('triangle')]
-                  ]],
-                  ['div', {class: 'onboarding-modal-gif-div'}, [
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/1.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/2.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/3.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/4.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/5.gif'}],
-                     ['img', {class: 'onboarding-modal-gif', src: 'assets/img/6.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/7.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/8.gif'}],
-                     // ['img', {class: 'onboarding-modal-gif', src: 'assets/img/9.gif'}]
-                  ]]
-               ]],
-               ['div', {style: style ({float: 'right'})}, [
-                  ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6})}, 'Skip tour'],
-                  ['a', {href: '', class: 'button button--four', style: style ({'margin-right': 6})}, 'Previous'],
-                  ['a', {href: '', class: 'button button--one'}, 'Next']
-            ]]
+      var pages = [
+         ['Go to Everything', 'On the left sidebar, click on Everything. All your pics and videos are there.'],
+         ['One click to select', 'Select the pictures and videos you want to tag with one click.'],
+         ['Create tag', 'On the left sidebar, write the tag name you want for your selected pictures.'],
+         ['Or reuse tag', 'If there’s already a tag created and you want to add the selected pictures to it, just click on the “+”.'],
+         ['How to untag', 'If you want to ‘untag’, then hover on the check mark, you’ll find the scissors to untag those pics.'],
+         ['It\'s organized when you say so', 'Once you\'ve tagged your pics and videos, on the lower left, mark them as organized, so you know you\'ve got it done!'],
+         ['Home is easy access', 'In Home you can pin your favorite tags, so you can easily access them.'],
+         ['Use tags to find anything', 'You’ll find your tags on the left sidebar, together with your Year and Geo Tags, which will help you drill down into your collection.'],
+         ['No constraints', ['Tag your pics & videos with as many tags as you want. Combine tags to find what you\'re looking for.', ['br'], 'Vacations with friends or vacations with family?']],
+      ];
+      return ['div', [
+         ['div', {class: 'guide'}, [
+            ['span', {style: style ({display: 'inline-flex'})}, [
+               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, '!']
             ]],
+            ['p', {class: 'guide__text', style: style ({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
          ]],
-      ]],
-   ]];
+         ['div', {class: 'onboarding-modal-container'}, [
+            ['div', {class: 'onboarding-modal'}, [
+               ['div', {class: 'onboarding-modal-text-div'}, [
+                  ['div', {class: 'onboarding-modal-text-container'}, [
+                     ['p', {class: 'onboarding-modal-title'}, page + '/9'],
+                     ['p', {class: 'onboarding-modal-title'}, pages [page - 1] [0]],
+                     ['p', {class: 'onboarding-modal-text'},  pages [page - 1] [1]]
+                  ]],
+               ]],
+               ['div', {class: 'onboarding-modal-arrow-div'}, [
+                  ['span', H.putSvg ('triangle')]
+               ]],
+               ['div', {class: 'onboarding-modal-gif-div'}, [
+                  ['img', {class: 'onboarding-modal-gif', src: 'assets/img/' + page + '.gif'}],
+               ]]
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {class: 'button button--two',  style: style ({'margin-right': 6}), onclicK: B.ev ('set', ['State', 'onboarding'], false)}, 'Skip tour'],
+               ['a', {class: 'button button--four', style: style ({'margin-right': 6}), onclick: B.ev ('set', ['State', 'onboarding'], Math.max (page - 1, 1))}, 'Previous'],
+               ['a', {class: 'button button--one', onclick: B.ev ('set', ['State', 'onboarding'], Math.min (page + 1, pages.length))}, 'Next']
+            ]]
+         ]],
+      ]];
+   });
 }
 
 // *** HOME VIEW ***
@@ -5519,8 +5480,8 @@ views.pics = function () {
                      ['span', {class: 'organise-bar__button-title'}, 'Download'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--to-organize', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 't::'])}, [
-                     ['span', {style: style({'padding-top': '1px'})}, H.putSvg ('toOrganizeIcon')],
-                     ['span', {class: 'organise-bar__button-title', style: style({'margin-left': '-2px'})}, 'Mark as To Organize'],
+                     ['span', {style: style ({'padding-top': '1px'})}, H.putSvg ('toOrganizeIcon')],
+                     ['span', {class: 'organise-bar__button-title', style: style ({'margin-left': '-2px'})}, 'Mark as To Organize'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--delete', onclick: B.ev (H.stopPropagation, ['delete', 'pivs'])}, [
                      H.putSvg ('delete'),
@@ -5656,8 +5617,11 @@ views.pics = function () {
                         }),
                      ]];
                   }),
-                  // PIVS GRID
-                  home ? views.home () : ['div', {class: 'pictures-grid'}, views.grid ()]
+                  B.view ([['State', 'onboarding'], ['Data', 'account']], function (onboarding, account) {
+                     if (! account) return ['div'];
+                     if (onboarding !== false && account.onboarding) return ['div', views.onboarding ()];
+                     return home ? ['div', views.home ()] : ['div', {class: 'pictures-grid'}, views.grid ()];
+                  }),
                ]],
             ]],
          ]];

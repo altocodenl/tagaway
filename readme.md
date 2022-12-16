@@ -44,7 +44,6 @@ Tom
    - Submission Google Drive
 
 Mono
-   - client: onboarding
    - client: show less year & country entries in sidebar
    - client: fix issue with phantom selection when scrolling large selection
    - client: remove selection when removing all tags from query
@@ -101,6 +100,7 @@ Mono
 ### Already implemented
 
 - Pivs
+   - Show onboarding if the user hasn't tagged any pivs yet, but not if the user arrives to the app with a link to a query. When clicking on any tag, go to grid view.
    - Show home tags when entering to the app. When clicking on any tag, go to grid view.
    - When coming back to the pics view from another view, always show home tags.
    - Show dialog that indicates that a click selects a piv and that a double click opens it. The dialog should be permanently dismissable.
@@ -858,7 +858,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pics`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.querying`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`, `State.query.home`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.querying`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`, `State.query.home`, `State.onboarding`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -951,22 +951,26 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - Events: `onclick -> logout`, `onclick -> goto page pics`, `onclick -> set State.feedback`, `open location undefined URL`
 7. `views.empty`
    - Contained by: `views.pics`.
-8. `views.home`
+8. `views.onboarding`
+   - Contained by: `views.pics`.
+   - Depends on `State.onboarding` and `Data.account`.
+   - Event: `onclick -> set State.onboarding`.
+9. `views.home`
    - Contained by: `views.pics`.
    - Depends on `Data.hometags` and `Data.account`.
    - Event: `onclick -> goto page upload`.
-9. `views.grid`
+10. `views.grid`
    - Contained by: `views.pics`.
    - Depends on `State.chunks`.
    - Events: `onclick -> click piv`.
-10. `views.open`
+11. `views.open`
    - Contained by: `views.pics`.
    - Depends on `State.open` and `Data.pivTotal`.
    - Events: `onclick -> open prev`, `onclick -> open next`, `onclick -> exit fullscreen`, `rotate pivs 90 PIV`, `open location PIV`.
-11. `views.noSpace`
+12. `views.noSpace`
    - Contained by: `views.import`, `views.upload`.
    - Depends on `Data.account`.
-12. `views.importFolders`
+13. `views.importFolders`
    - Contained by: `views.import`.
    - Depends on: `Data.import` and `State.import`.
    - Events:
@@ -1060,7 +1064,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
    5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
    6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
-   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'u::'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'u::'`, we remove all user tags. If `'t::'` is added, the `'o::'` tag, if present, is removed from the query; and viceversa.
+   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'u::'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'u::'`, we remove all user tags. If `'t::'` is added, the `'o::'` tag, if present, is removed from the query; and viceversa. If a tag is added, `State.query.home` will be set to `false`, as well as `State.onboarding`.
    8. `toggle hometag`: see annotated source code.
    9. `shift hometag`: see annotated source code.
    10. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
@@ -1192,7 +1196,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `uploadRefresh`: an interval that will refresh the page (to prevent the screen and/or disk going to sleep) if `State.upload.queue` is not empty.
 
 - `Data`:
-   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED}`.
+   - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED, onboarding: true|UNDEFINED}`.
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `hometags`: an array of tags that are displayed in the home screen of the user.
    - `imports`: an object where each key is a provider. If defined, each key has as value an array with one or more imports. Imports that are in the process of being uploaded or have already been uploaded have the same shape as those in `Data.uploads`. However, there may be up to one import per provider representing an import in a listing or ready state. Also there might be just an object with the keys `redirect` and `provider`, if the OAuth flow has not been done yet.
@@ -1668,6 +1672,12 @@ If `queryURL` is `home`, it will initialize `State.query` to a query with no tag
 
 ```javascript
       if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
+```
+
+If we're here, the query URL presumably contains a query. If so, we make sure to set `State.onboarding` to `false` since we don't want to show the onboarding view if we are loading a query. We do not check whether `Data.account.onboarding` is set (to avoid setting it unnecessarily if `Data.account.onboarding` is disabled) because this might be executed before the account information arrives form the server.
+
+```javascript
+      if (B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
 ```
 
 We will wrap the rest of the logic in a `try/catch` block, since the decoding of the hash into a query object might fail if the user inputs an invalid URL.
