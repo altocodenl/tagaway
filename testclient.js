@@ -27,6 +27,7 @@ var stop = function (label, result, value) {
    else                                                   return ['Invalid ' + label + ', expecting', value, 'got', result];
 }
 
+// TODO: integrate this monkey patch into cocholate
 c.test = function (tests, callback) {
 
    if (! c.prod && teishi.stop ('c.test', [
@@ -78,7 +79,12 @@ c.test = function (tests, callback) {
    runNext (0);
 }
 
-var suites = {};
+// This test suite requires a dedicated user account created, with the pivs in the `test` folder uploaded to it.
+// TODO: perform these uploads automatically as part of the upload suite, getting the pivs from the GitHub repository
+
+// *** SUITES & HELPERS ***
+
+var suites = {}, helpers = {};
 
 // *** AUTH & NAVIGATION ***
 
@@ -225,6 +231,54 @@ suites.snackbar = [
 
 // *** PIVS ***
 
+helpers.checkHome = function () {
+   var error = stop ('State.query',
+      {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+      {tags: [], sort: 'newest', home: true}
+   );
+   if (error) return error;
+   var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
+   if (error) return error;
+   return true;
+}
+
+helpers.checkGrid = function () {
+   var error = stop ('State.query',
+      {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+      {tags: [], sort: 'newest', home: false}
+   );
+   if (error) return error;
+   // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+   if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+   var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+   decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+   var error = stop ('window.location.hash (decoded)', decodedHash, {tags: [], sort: 'newest'});
+   if (error) return error;
+   return !! c ('.pictures-grid__item-picture') [0];
+}
+
+helpers.checkTag = function () {
+   var error = stop ('State.query',
+      {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
+      {tags: ['foo'], sort: 'newest', home: false}
+   );
+   if (error) return error;
+   // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
+   if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
+   var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
+   decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
+   var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
+   if (error) return error;
+   return !! c ('.pictures-grid__item-picture') [0];
+}
+
+helpers.checkUpload = function () {
+   var error = stop ('State.page', B.get ('State', 'page'), 'upload');
+   if (error) return error;
+   if (! c ('.button--purple-header') [0]) return 'No purple button to go back home.';
+   return true;
+}
+
 suites.pivs = [
    ['Login if logged out', function (wait) {
       if (B.get ('Data', 'csrf')) return true;
@@ -234,11 +288,6 @@ suites.pivs = [
       wait (waits.login);
    }, function () {
       if (B.get ('State', 'page') !== 'pics') return ['Invalid State.page', B.get ('State', 'page')];
-      if (window.location.hash !== '#/pics/home')  return ['Invalid hash', window.location.hash];
-      var loginEvent = dale.stopNot (B.r.log, undefined, function (log) {
-         if (log.verb === 'post' && eq (log.path, ['auth/login'])) return log;
-      });
-      if (loginEvent && loginEvent.args [1].password !== 'REDACTED') return ['Password not removed from login logs!'];
       return true;
    }],
    // This assumes that the user has already uploaded pictures
@@ -295,64 +344,28 @@ suites.home = [
    }, function () {
       // This function will be ignored because we are leaving the page.
    }],
-   ['Check that we land on the home view', function () {
-      return true;
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: [], sort: 'newest', home: true}
-      );
-      if (error) return error;
-      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
-      if (error) return error;
-      return true;
-   }],
+   ['Check that we land on the home view', function () {return true}, helpers.checkHome],
    ['Wait until the sidebar is drawn', function (wait) {
       wait (500);
    }, function () {
       return c ('.tag__title').length > 0;
    }],
+   // Note: this assumes that the onboarding dialog is already dismissed
    ['Click on Everything to see pivs', function (wait) {
+      // TODO: fix this in cocholate
+      // c.fire (c ('.tag__title') [0], 'click');
       c ('.tag__title') [0].click ();
       wait (300);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: [], sort: 'newest', home: false}
-      );
-      if (error) return error;
-      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
-      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
-      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
-      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: [], sort: 'newest'});
-      if (error) return error;
-      return true;
-   }],
+   }, helpers.checkGrid],
    ['Refresh the same page by landing on the same query', function (wait) {
       sessionStorage.setItem ('testFrom', JSON.stringify ({suite: 'home', from: 5, time: from.time}));
       location.reload ();
    }, function () {
       // This function will be ignored because we are leaving the page.
    }],
-   ['Check that we are still on the same page after the refresh', function (wait) {
-      wait (200);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: [], sort: 'newest', home: false}
-      );
-      if (error) return error;
-      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
-      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
-      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
-      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: [], sort: 'newest'});
-      if (error) return error;
-      return !! c ('.pictures-grid__item-picture') [0];
-   }],
+   ['Check that we are still on the same page after the refresh', function (wait) {wait (200)}, helpers.checkGrid],
    ['Select a piv', function (wait) {
-      c ('.pictures-grid__item-picture') [0].click ();
+      c.fire (c ('.pictures-grid__item-picture') [0], 'click');
       wait (100);
    }, function () {
       return dale.keys (B.get ('State', 'selected')).length > 0;
@@ -362,133 +375,43 @@ suites.home = [
       B.call ('tag', 'pivs', 'foo');
       B.call ('set', ['State', 'query', 'tags'], ['foo']);
       wait (100);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: ['foo'], sort: 'newest', home: false}
-      );
-      if (error) return error;
-      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
-      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
-      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
-      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
-      if (error) return error;
-      return true;
-   }],
+   }, helpers.checkTag],
    ['Refresh the same page by landing on the same query', function (wait) {
       sessionStorage.setItem ('testFrom', JSON.stringify ({suite: 'home', from: 9, time: from.time}));
       location.reload ();
    }, function () {
       // This function will be ignored because we are leaving the page.
    }],
-   ['Check that we are still on the same page after the refresh with a tag selected', function (wait) {
-      wait (200);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: ['foo'], sort: 'newest', home: false}
-      );
-      if (error) return error;
-      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
-      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
-      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
-      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
-      if (error) return error;
-      return !! c ('.pictures-grid__item-picture') [0];
-   }],
-   // Refreshing will have unselected the piv, so no need to do it.
+   ['Check that we are still on the same page after the refresh with a tag selected', function (wait) {wait (200)}, helpers.checkTag],
+   // Refreshing will have unselected the piv, so no need to unselect the piv with a click.
    ['Go home', function (wait) {
+      // TODO: fix this in cocholate
+      //c.fire (c ('.button--purple') [0], 'click');
       c ('.button--purple') [0].click ();
       wait (100);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: [], sort: 'newest', home: true}
-      );
-      if (error) return error;
-      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
-      if (error) return error;
-      return true;
-   }],
+   }, helpers.checkHome],
    ['Query a tag', function (wait) {
       var tag = dale.stopNot (c ('.tag-list__item'), undefined, function (tag) {
          if (tag.innerHTML.match ('foo')) return tag;
       });
-      tag.click ();
-      wait (100);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: ['foo'], sort: 'newest', home: false}
-      );
-      if (error) return error;
-      return true;
-   }],
+      c.fire (tag, 'click');
+      wait (300);
+   }, helpers.checkTag],
    ['Go to the upload view', function (wait) {
+      // TODO: fix this in cocholate
+      // c.fire (c ('.header__upload-button a') [0], 'click');
       c ('.header__upload-button a') [0].click ();
       wait (100);
-   }, function () {
-      var error = stop ('State.page', B.get ('State', 'page'), 'upload');
-      if (error) return error;
-      if (! c ('.button--purple-header') [0]) return 'No purple button to go back home.';
-      return true;
-   }],
-   ['Go again to the pics page', function (wait) {
+   }, helpers.checkUpload],
+   ['Go again to the pics page (should be the home view)', function (wait) {
+      // TODO: fix this in cocholate
+      // c.fire (c ('.button--purple-header') [0], 'click');
       c ('.button--purple-header') [0].click ();
       wait (100);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: [], sort: 'newest', home: true}
-      );
-      if (error) return error;
-      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
-      if (error) return error;
-      return true;
-   }],
-   ['Go back with the back button to the upload page', function (wait) {
-      history.back ();
-      wait (300);
-   }, function () {
-      var error = stop ('State.page', B.get ('State', 'page'), 'upload');
-      if (error) return error;
-      // We need the page to finish rendering before clicking back.
-      if (! c ('.button--purple-header') [0]) return 'No purple button to go back home.';
-      debug ('after first back');
-      return true;
-   }],
-   ['Go back with the back button to the pics page (query view)', function (wait) {
-      history.back ();
-      wait (300);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: ['foo'], sort: 'newest', home: false}
-      );
-      if (error) return error;
-      // `JTdC` is base64 encoding for `%7B`, which percent decode is `{`
-      if (! window.location.hash.match (/#\/pics\/JTdC/)) return 'window.location.hash has no encoded State.queryURL in it.';
-      var decodedHash = JSON.parse (decodeURIComponent (atob (window.location.hash.replace ('#/pics/', ''))));
-      decodedHash = {tags: decodedHash.tags, sort: decodedHash.sort};
-      var error = stop ('window.location.hash (decoded)', decodedHash, {tags: ['foo'], sort: 'newest'});
-      if (error) return error;
-      return true;
-   }],
-   ['Go back with the back button to the pics page (home view)', function (wait) {
-      history.back ();
-      wait (300);
-   }, function () {
-      var error = stop ('State.query',
-         {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort'), home: B.get ('State', 'query', 'home')},
-         {tags: [], sort: 'newest', home: true}
-      );
-      if (error) return error;
-      var error = stop ('window.location.hash', window.location.hash, '#/pics/home');
-      if (error) return error;
-      return true;
-   }],
+   }, helpers.checkHome],
+   ['Go back with the back button to the upload page', function (wait) {history.back (); wait (300)}, helpers.checkUpload],
+   ['Go back with the back button to the pics page (query view)', function (wait) {history.back (); wait (300)}, helpers.checkTag],
+   ['Go back with the back button to the pics page (home view)', function (wait) {history.back (); wait (300)}, helpers.checkHome]
 ];
 
 // *** RUN TESTS ***

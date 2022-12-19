@@ -50,7 +50,6 @@ Mono
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
    - client: do not show New Pics Available sign if on the home view
-   - client: improve frontend tests by grouping
    - server: name argv 2 and put it as condition
    - server: count lines on all the scripts to keep in mind length
    --------------
