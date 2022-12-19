@@ -13,6 +13,8 @@ fi
 
 FOLDER="acpic"
 
+wc -l client.js server.js testclient.js testserver.js admin.js config.js secret.js deploy.sh
+
 if [ "$2" == "client" ] ; then
    scp client.js $HOST:$FOLDER
    exit 0
