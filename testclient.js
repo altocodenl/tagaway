@@ -409,9 +409,9 @@ suites.home = [
       c ('.button--purple-header') [0].click ();
       wait (100);
    }, helpers.checkHome],
-   ['Go back with the back button to the upload page', function (wait) {history.back (); wait (300)}, helpers.checkUpload],
+   ['Go back with the back button to the upload page',            function (wait) {history.back (); wait (300)}, helpers.checkUpload],
    ['Go back with the back button to the pics page (query view)', function (wait) {history.back (); wait (300)}, helpers.checkTag],
-   ['Go back with the back button to the pics page (home view)', function (wait) {history.back (); wait (300)}, helpers.checkHome]
+   ['Go back with the back button to the pics page (home view)',  function (wait) {history.back (); wait (300)}, helpers.checkHome]
 ];
 
 // *** RUN TESTS ***

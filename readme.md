@@ -50,8 +50,6 @@ Mono
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
    - client: do not show New Pics Available sign if on the home view
-   - server: name argv 2 and put it as condition
-   - server: count lines on all the scripts to keep in mind length
    --------------
    - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
    - server: fix: exclude WA from hour in parse date
@@ -65,7 +63,7 @@ Mono
    - admin: add set of users for fast access rather than scanning db
    --------------
    - server: set up prod mirror
-   - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches.
+   - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
    - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
    - server/client: opt-in face recognition powered by AI
    - server/client: opt-in OCR recognition
