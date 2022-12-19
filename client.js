@@ -5061,8 +5061,11 @@ views.onboarding = function () {
             ]],
             ['div', {style: style ({float: 'right'})}, [
                ['a', {class: 'button button--two',  style: style ({'margin-right': 6}), onclicK: B.ev ('set', ['State', 'onboarding'], false)}, 'Skip tour'],
-               ['a', {class: 'button button--four', style: style ({'margin-right': 6}), onclick: B.ev ('set', ['State', 'onboarding'], Math.max (page - 1, 1))}, 'Previous'],
-               ['a', {class: 'button button--one', onclick: B.ev ('set', ['State', 'onboarding'], Math.min (page + 1, pages.length))}, 'Next']
+               H.if (page > 1, ['a', {class: 'button button--four', style: style ({'margin-right': 6}), onclick: B.ev ('set', ['State', 'onboarding'], page - 1)}, 'Previous']),
+               H.if (page < pages.length,
+                  ['a', {class: 'button button--one', onclick: B.ev ('set', ['State', 'onboarding'], page + 1)}, 'Next'],
+                  ['a', {class: 'button button--one', onclick: B.ev ('set', ['State', 'onboarding'], false)}, 'Finish'],
+               )
             ]]
          ]],
       ]];
