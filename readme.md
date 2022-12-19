@@ -50,32 +50,37 @@ Mono
    - client: fix ronin untagged or range tag when deleting all
    - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
    - client: do not show New Pics Available sign if on the home view
-
-   - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
-   - server/client: opt-in face recognition powered by AI
-   - server/client: OCR recognition
-   - server: add dedicated keys for uploads in order to improve getUploads performance
-   - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
-   - server/client: videos pseudo-tag
-   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
-   - server: review format errors with files that have a jpg extension
-   - server: fix: exclude WA from hour in parse date
+   - client: improve frontend tests by grouping
+   - server: name argv 2 and put it as condition
+   - server: count lines on all the scripts to keep in mind length
+   --------------
    - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-   - client: upload: check what happens if connection is dropped while uploading
-   - client: upload: retry upload button
-   - server/client: set location
-   - server/client: ignore deleted pivs flag for both upload & import.
+   - server: fix: exclude WA from hour in parse date
    - client: see info of piv
-   - server: set up prod mirror
-   - server: script to rename username
+   - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
    - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-   - server/client: Share & manage
    - client: upgrade pop up notice or email when running out of free space.
    - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
+   --------------
+   - server: set up prod mirror
+   - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches.
+   - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
+   - server/client: opt-in face recognition powered by AI
+   - server/client: opt-in OCR recognition
    - server/client: rotate videos
+   - server: add dedicated keys for uploads in order to improve getUploads performance
+   - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
+   - server/client: videos pseudo-tag
+   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+   - server: review format errors with files that have a jpg extension
+   - client: upload: check what happens if connection is dropped while uploading
+   - client: upload: retry upload button
+   - server/client: set location
+   - server: script to rename username
+   - server/client: Share & manage
    - Pricing
       - Investigate Glacier lifecycle.
       - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
@@ -91,7 +96,6 @@ Mono
          - save progress on what's already done
    - client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
    - server: Investigate intermittent busboy error.
-   - server: Investigate soft deletion with different credentials in S3 for 24-48 hours for programmatic errors or security breaches.
    - Add notes on self-hosted ac;pic
       - Turn off/on S3
       - Docker
