@@ -100,7 +100,7 @@ var H = {
             }
          ], H.loadPivData],
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
-         requiresGeo ? [k, 'node', 'server', 'local', 'geodata', CONFIG.geodataPath] : [k, 'node', 'server', 'local'],
+         [k, 'node', 'server', 'local'],
          function (s) {
             if (s.error && ! H.testsDone) process.stdout.write (s.error.stdout.slice (-4500));
             process.exit (0);
