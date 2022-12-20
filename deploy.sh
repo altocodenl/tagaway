@@ -1,5 +1,5 @@
 if [ "$1" == "prod" ] ; then
-   if [ "$2" != "confirm" ] && [ "$3" != "confirm" ] ; then
+   if [ "$2" != "confirm" ] && [ "$3" != "confirm" ]  && [ "$4" != "confirm" ]; then
       echo "Must add 'confirm' to deploy to prod"
       exit 1
    fi
@@ -13,6 +13,8 @@ fi
 
 FOLDER="acpic"
 
+wc -l client.js server.js testclient.js testserver.js admin.js config.js secret.js deploy.sh
+
 if [ "$2" == "client" ] ; then
    scp client.js $HOST:$FOLDER
    exit 0
@@ -20,6 +22,11 @@ fi
 
 if [ "$2" == "client2" ] ; then
    scp client.js $HOST:$FOLDER/client2.js
+   exit 0
+fi
+\
+if [ "$2" == "testclient" ] ; then
+   scp testclient.js $HOST:$FOLDER
    exit 0
 fi
 
@@ -56,9 +63,17 @@ if [ "$2" == "checkConsistency" ] ; then
    exit 0
 fi
 
+if [ "$2" == "script" ] ; then
+   scp $3 $HOST:$FOLDER/$3
+   ssh $HOST "cd $FOLDER && node server $1 script $3"
+   exit 0
+fi
+
 if [ "$2" == "test" ] ; then
    rsync -av . $HOST:$FOLDER
-   ssh $HOST "cd $FOLDER && node testserver $3"
+   ssh $HOST chown -R root /root/$FOLDER
+   echo "main = node server $1" | ssh $HOST "cat >> $FOLDER/mongroup.conf"
+   ssh $HOST "cd $FOLDER && node testserver $3 $4 $5"
    exit 0
 fi
 

@@ -1,26 +1,32 @@
-// *** SETUP ***
+// *** TEST SELECTION ***
 
-var Path = require ('path');
+var dale   = require ('dale');
+var teishi = require ('teishi');
 
-var noImport = process.argv [2] === 'noImport';
+var noAuth   = dale.stop (process.argv, true, function (v) {return v === 'noAuth'});
+var noUpload = dale.stop (process.argv, true, function (v) {return v === 'noUpload'});
+var noImport = dale.stop (process.argv, true, function (v) {return v === 'noImport'});
+
 var toRun = process.argv [2];
 process.argv [2] = undefined;
-if (toRun === 'noImport') toRun = undefined;
+if (teishi.inc (['noAuth', 'noUpload', 'noImport'], toRun)) toRun = undefined;
 
-var hash   = require ('murmurhash').v3;
-var mime   = require ('mime');
+// *** SETUP ***
 
 var CONFIG = require ('./config.js');
 var SECRET = require ('./secret.js');
 
-var dale   = require ('dale');
-var teishi = require ('teishi');
+var Path = require ('path');
+
+var hash   = require ('murmurhash').v3;
+var mime   = require ('mime');
+
 var cicek  = require ('cicek');
 var redis  = require ('redis').createClient ({db: CONFIG.redisdb});
 var h      = require ('hitit');
 var a      = require ('./assets/astack.js');
 var fs     = require ('fs');
-var clog   = teishi.clog, type = teishi.type, eq = teishi.eq, last = teishi.last, inc = function (a, v) {return a.indexOf (v) > -1}
+var type   = teishi.type, clog = teishi.clog, eq = teishi.eq, last = teishi.last, inc = teishi.inc;
 
 // *** TEST CONSTANTS ***
 
@@ -94,7 +100,7 @@ var H = {
             }
          ], H.loadPivData],
          [k, 'redis-cli', '-n', CONFIG.redisdb, 'flushdb'],
-         requiresGeo ? [k, 'node', 'server', 'local', 'geodata', CONFIG.geodataPath] : [k, 'node', 'server', 'local'],
+         [k, 'node', 'server', 'local'],
          function (s) {
             if (s.error && ! H.testsDone) process.stdout.write (s.error.stdout.slice (-4500));
             process.exit (0);
@@ -550,6 +556,7 @@ suites.auth = {
       ];
    },
    full: function () {
+      if (noAuth) return [];
       var user = tk.users.user1;
       return [
          H.invalidTestMaker ('signup', 'auth/signup', [
@@ -649,7 +656,7 @@ suites.auth = {
             delete rs.body.logs;
             if (type (rs.body.created) !== 'integer' || Math.abs (Date.now () - rs.body.created) > 5000) return clog ('Invalid created field', rs.body.created);
             delete rs.body.created;
-            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true})) return false;
+            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true, onboarding: true})) return false;
             return true;
          }],
          ['get CSRF token without being logged in', 'get', 'auth/csrf', {cookie: ''}, '', 403, H.cBody ({error: 'nocookie'})],
@@ -918,7 +925,7 @@ suites.upload.upload = function () {
             if (H.stop ('ev', log.ev, 'upload')) return false;
             if (H.stop ('type', log.type, k === 3 ? 'start' : 'wait')) return false;
          }) === false) return false;
-         setTimeout (next, 15000);
+         setTimeout (next, 3000);
       }],
       ['get stalled upload', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('upload.status', rs.body [0].status, 'stalled')) return false;
@@ -1136,22 +1143,22 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get tags before uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags)) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags)) return false;
          return true;
       }],
       ['uploadCheck piv with match, same name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name, size: tk.pivs.small.size, lastModified: new Date ('2010-01-01').getTime ()}}, 200, H.cBody ({repeated: true})],
       ['get tags after first uploadCheck modification', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['d::2010', 'd::M1'])) return false;
+         if (H.stop ('tags', rs.body.tags, ['d::2010', 'd::M1'])) return false;
          return true;
       }],
       ['uploadCheck piv with match, different name, same upload, with another date', 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: tk.pivs.small.name + 'foo', size: tk.pivs.small.size, lastModified: new Date ('2005-12-01').getTime ()}}, 200, H.cBody ({repeated: true})],
       ['get tags after second uploadCheck modification', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['d::2005', 'd::M12'])) return false;
+         if (H.stop ('tags', rs.body.tags, ['d::2005', 'd::M12'])) return false;
          return true;
       }],
       ['get piv metadata after uploadCheck (same name & different name, new tags)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          // Update tags
-         s.originalSmall.tags = ['d::2005', 'd::M12'];
+         s.originalSmall.tags = ['d::2005', 'd::M12', 't::'];
          s.originalSmall.date = new Date ('2005-12-01').getTime ();
          var newDates = [], timestamp;
          if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
@@ -1226,14 +1233,14 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get tags before uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags)) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags)) return false;
          return true;
       }],
       dale.go (['Photo 2021-03-18.jpg', 'Pic - 20210319 - AUTO.jpg', 'Photo 2021-03-20 4:26.jpg', 'Pic - 20010321 04:26:52 PM.jpg'], function (nameWithDate, k) {
          return ['uploadCheck piv with match, same name, same upload, with another date from name #' + (k + 1), 'post', 'uploadCheck', {}, function (s) {return {id: s.uploadId, hash: tk.pivs.small.hash, name: nameWithDate, size: tk.pivs.small.size, lastModified: tk.pivs.small.mtime}}, 200, H.cBody ({repeated: true})];
       }),
       ['get piv metadata after uploadCheck with dates from names', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-         s.originalSmall.tags = ['d::2001', 'd::M3'];
+         s.originalSmall.tags = ['d::2001', 'd::M3', 't::'];
          s.originalSmall.date = new Date ('2001-03-21T16:26:52.000Z').getTime ();
          var newDates = [], timestamp;
          if (dale.stop (rs.body.pivs [0].dates, false, function (v, k) {
@@ -1249,7 +1256,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get tags after uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, ['d::2001', 'd::M3'])) return false;
+         if (H.stop ('tags', rs.body.tags, ['d::2001', 'd::M3'])) return false;
          return true;
       }],
       ['get upload after uploadCheck with dates from names', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
@@ -1308,7 +1315,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       ['get tags after uploadCheck modifications', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.rotate.dateTags)) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.rotate.dateTags)) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -1520,7 +1527,7 @@ suites.upload.piv = function () {
                if (dale.stop ({
                   owner: 'user1',
                   name: piv.name,
-                  tags: tags.concat (tk.pivs [name].dateTags).sort (),
+                  tags: tags.concat (tk.pivs [name].dateTags).concat ('t::').sort (),
                   date: piv.date,
                   dates: piv.dates,
                   dimw: piv.dimw,
@@ -1545,10 +1552,17 @@ suites.upload.piv = function () {
                // Get pending status on non-mp4 videos that are being converted.
                h.one (s, {method: 'get', path: 'piv/' + piv.id, code: 404, apres: function (s, rq, rs) {
                   if (H.stop ('body', rs.body, 'pending')) return next (false);
+
+                  // Keep the upload alive while we wait for the non-mp4 video to get a mp4 version
+                  var interval = setInterval (function () {
+                     h.one (s, {method: 'post', path: 'upload', code: 200, body: {csrf: s.csrf, id: s.uploadId, op: 'wait'}, apres: function () {}});
+                  }, 500);
+
                   // For non-mp4 videos, check that mp4 version of video is eventually returned.
                   H.tryTimeout (10, 3000, function (cb) {
                      h.one (s, {method: 'get', path: 'piv/' + piv.id, code: 200, raw: true, apres: function (s, rq, rs) {
                         piv.mp4size = Buffer.from (rs.body, 'binary').length;
+                        clearInterval (interval);
                         return true;
                      }}, cb);
                   }, next);
@@ -1693,14 +1707,13 @@ suites.upload.piv = function () {
       }],
       ['get piv metadata after repeated piv with lastModified', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          var piv = rs.body.pivs [0];
-         if (H.stop ('piv.tags', piv.tags, ['d::1995', 'd::M5', 'foo'])) return false;
+         if (H.stop ('piv.tags', piv.tags, ['d::1995', 'd::M5', 'foo', 't::'])) return false;
          var repeatedTimestamp = dale.stopNot (piv.dates, undefined, function (v, k) {
             if (k.match ('repeated')) return k.split (':') [1];
          });
          if (! repeatedTimestamp) return clog ('Piv must have two repeated timestamps!');
          if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':lastModified'], new Date ('2000-01-01').getTime ())) return false;
-         if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-05-01.jpg')) return false;
-         if (H.stop ('piv.tags', piv.tags, ['d::1995', 'd::M5', 'foo'])) return false;
+         if (H.stop ('piv.dates.repeated fromName', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-05-01.jpg')) return false;
          if (H.stop ('piv.date', piv.date, new Date ('1995-05-01').getTime ())) return false;
          return true;
       }],
@@ -1739,15 +1752,14 @@ suites.upload.piv = function () {
             }],
             ['get ' + testCase [0] + ' piv metadata after uploading piv with different metadata', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
                var piv = rs.body.pivs [0];
-               if (H.stop ('piv.tags', piv.tags, ['d::1995', 'd::M1', 'foo'])) return false;
+               if (H.stop ('piv.tags', piv.tags, ['d::1995', 'd::M1', 'foo', 't::'])) return false;
                var repeatedTimestamp = dale.stopNot (piv.dates, undefined, function (v, k) {
                   if (k.match ('repeated')) return k.split (':') [1];
                });
                if (! repeatedTimestamp) return clog ('Piv must have two repeated timestamps!');
                if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':lastModified'], new Date ('2000-01-01').getTime ())) return false;
-               if (H.stop ('piv.dates.repeated lastModified', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-01-01.jpg')) return false;
+               if (H.stop ('piv.dates.repeated fromName', piv.dates ['repeated:' + repeatedTimestamp + ':fromName'], 'PHOTO_1995-01-01.jpg')) return false;
                if (testCase [2] && H.stop ('piv.dates.repeated ' + testCase [2], piv.dates ['repeated:' + repeatedTimestamp + ':' + testCase [2]], tk.pivs [testCase [1]].dates [testCase [2]])) return false;
-               if (H.stop ('piv.tags', piv.tags, ['d::1995', 'd::M1', 'foo'])) return false;
                if (H.stop ('piv.date', piv.date, new Date ('1995-01-01').getTime ())) return false;
                return true;
             }],
@@ -1918,6 +1930,7 @@ suites.upload.stream = function () {
 }
 
 suites.upload.full = function () {
+   if (noUpload) return [];
    return [
       suites.upload.upload (),
       suites.upload.uploadCheck (),
@@ -1961,13 +1974,14 @@ suites.delete = function () {
          return true;
       }],
       ['tag large piv to test deletion', 'post', 'tag', {}, function (s) {return {ids: [s.largeId], tag: 'foo'}}, 200],
+      ['mark large piv as organized to test deletion', 'post', 'tag', {}, function (s) {return {ids: [s.largeId], tag: 'o::'}}, 200],
       ['delete piv', 'post', 'delete', {}, function (s) {return {ids: [s.largeId]}}, 200],
       ['get tags after deletion', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, [])) return false;
+         if (H.stop ('body', rs.body.tags, [])) return false;
          return true;
       }],
       ['query pivs after deletion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {'a::': 0, 'u::': 0}, refreshQuery: true})) return false;
+         if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {'a::': 0, 'u::': 0, 'o::': 0, 't::': 0}, refreshQuery: true})) return false;
          return true;
       }],
       ['get thumbS after deletion', 'get', function (s) {return 'thumb/S/' + s.largePiv.id}, {}, '', 404],
@@ -2109,7 +2123,7 @@ suites.date = function () {
          if (H.stop ('piv.date', rs.body.pivs [0].date, 0 + (s.date % 86400000))) return false;
          if (H.stop ('piv.dates.userDate', rs.body.pivs [0].dates.userDate, 0)) return false;
          if (H.stop ('piv.dateSource', rs.body.pivs [0].dateSource, 'userDate')) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::1970', 'd::M1'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::1970', 'd::M1', 't::'])) return false;
          return true;
       }],
       ['change date of small piv again', 'post', 'date', {}, function (s) {return {ids: [s.smallId], date: new Date ('2022-12-18').getTime ()}}, 200],
@@ -2117,7 +2131,7 @@ suites.date = function () {
          if (H.stop ('piv.date', rs.body.pivs [0].date, new Date ('2022-12-18').getTime () + (s.date % 86400000))) return false;
          if (H.stop ('piv.dates.userDate', rs.body.pivs [0].dates.userDate, new Date ('2022-12-18').getTime ())) return false;
          if (H.stop ('piv.dateSource', rs.body.pivs [0].dateSource, 'userDate')) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::2022', 'd::M12'])) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, ['d::2022', 'd::M12', 't::'])) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2168,35 +2182,35 @@ suites.tag = function () {
          return true;
       }],
       ['get tags before tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).sort ())) return false;
          return true;
       }],
       ['query pivs before tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          // Yes, I'm using the computed property feature of ES6. It's just too convenient. Don't tell anyone.
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags)) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags)) return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('t::'))) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat  ('t::'))) return false;
          return true;
       }],
       ['query pivs before tagging using year', 'post', 'query', {}, {tags: tk.pivs.small.dateTags, sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          // `all` always returns the total count; the amount of `untagged` pivs is query dependent, as is that of all other tags.
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 2, 'u::': 1})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.small.dateTags)) return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 0, 't::': 1})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.small.dateTags.concat ('t::'))) return false;
          return true;
       }],
       ['tag pivs', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
          return true;
       }],
       ['query pivs after tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('tag1').sort ())) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag1').sort ()))  return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 't::']).sort ())) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat  (['tag1', 't::']).sort ()))  return false;
          return true;
       }],
       ['query pivs after tagging, check that query that is cutoff still shows the right amount of pivs per tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2})) return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, 'o::': 0, 't::': 2})) return false;
          return true;
       }],
       ['get logs after tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -2207,13 +2221,13 @@ suites.tag = function () {
       }],
       ['tag pivs with the same tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
       ['get tags after repeated tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
          return true;
       }],
       ['query pivs after repeated tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('tag1').sort ())) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag1').sort ()))  return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 't::']).sort ())) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat  (['tag1', 't::']).sort ()))  return false;
          return true;
       }],
       ['get logs after tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -2227,13 +2241,13 @@ suites.tag = function () {
       }],
       ['untag a tag not on any piv', 'post', 'tag', {}, function (s) {return {tag: 'tag9', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after no-op untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
          return true;
       }],
       ['query pivs after no-op untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('tag1').sort ())) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag1').sort ()))  return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 't::']).sort ())) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat (['tag1', 't::']).sort ()))  return false;
          return true;
       }],
       ['get logs after no-op untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -2244,13 +2258,13 @@ suites.tag = function () {
       }],
       ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
       ['get tags after second tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1', 'tag2').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat (['tag1', 'tag2']).sort ())) return false;
          return true;
       }],
       ['query pivs after second tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, tag2: 1})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('tag1', 'tag2').sort ())) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag1').sort ()))  return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, tag2: 1, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 'tag2', 't::']).sort ())) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat  (['tag1', 't::']).sort ()))  return false;
          return true;
       }],
       ['get logs after second tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -2261,13 +2275,13 @@ suites.tag = function () {
       }],
       ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
          return true;
       }],
       ['query pivs after untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('tag1').sort ())) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag1').sort ()))  return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 't::']).sort ())) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat  (['tag1', 't::']).sort ())) return false;
          return true;
       }],
       ['get logs after untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
@@ -2278,13 +2292,67 @@ suites.tag = function () {
       }],
       ['untag first tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after second untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).sort ())) return false;
          return true;
       }],
       ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags)) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags)) return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('t::'))) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('t::')))  return false;
+         return true;
+      }],
+      ['mark piv as organized', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.mediumId]}}, 200],
+      ['query pivs after marking piv as organized', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('t::')))  return false;
+         return true;
+      }],
+      ['mark piv as organized again (no-op)', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.mediumId]}}, 200],
+      ['query pivs after marking piv as organized (no-op)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('t::')))  return false;
+         return true;
+      }],
+      ['mark unorganized piv as unorganized (no-op)', 'post', 'tag', {}, function (s) {return {tag: 't::', ids: [s.smallId]}}, 200],
+      ['query pivs after marking piv as organized (no-op)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('t::')))  return false;
+         return true;
+      }],
+      ['query organized pivs', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 1})) return false;
+         if (H.stop ('body.total', rs.body.total, 1)) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
+         return true;
+      }],
+      ['query unorganized pivs', 'post', 'query', {}, {tags: ['t::'], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 1})) return false;
+         if (H.stop ('body.total', rs.body.total, 1)) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.small.dateTags.concat ('t::')))  return false;
+         return true;
+      }],
+      ['query organized pivs with a tag that they have', 'post', 'query', {}, {tags: ['o::', tk.pivs.medium.dateTags [0]], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 0})) return false;
+         if (H.stop ('body.total', rs.body.total, 1)) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
+         return true;
+      }],
+      ['query organized pivs with a tag that they do not have', 'post', 'query', {}, {tags: ['o::', tk.pivs.small.dateTags [0]], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {'a::': 2, 'u::': 0, 'o::': 0, 't::': 1})) return false;
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      ['delete organized piv', 'post', 'delete', {}, function (s) {return {ids: [s.mediumId]}}, 200],
+      ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 1, 'u::': 1, 'o::': 0, 't::': 1})) return false;
+         return true;
+      }],
+      ['delete unorganized piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
+      ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body.tags, {'a::': 0, 'u::': 0, 'o::': 0, 't::': 0})) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2403,7 +2471,7 @@ suites.query = function () {
       }],
       ['query pivs with recentlyTagged', 'post', 'query', {}, function (s) {return {tags: ['u::', 'foobar'], sort: 'upload', from: 1, to: 3, recentlyTagged: [s.largeId, s.mediumId, s.smallId]}}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3, 'o::': 0, 't::': 3})) return false;
          var ids = dale.go (rs.body.pivs, function (piv) {
             return piv.id;
          });
@@ -2412,7 +2480,7 @@ suites.query = function () {
       }],
       ['query pivs with recentlyTagged, including non-existing pivs', 'post', 'query', {}, function (s) {return {tags: ['u::', 'foobar'], sort: 'upload', from: 1, to: 3, recentlyTagged: ['foo', s.largeId, s.mediumId, s.smallId, 'bar']}}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3, 'o::': 0, 't::': 3})) return false;
          var ids = dale.go (rs.body.pivs, function (piv) {
             return piv.id;
          });
@@ -2422,17 +2490,17 @@ suites.query = function () {
       }],
       ['query pivs with updateLimit at present moment', 'post', 'query', {}, function (s) {return {tags: [], sort: 'upload', from: 1, to: 3, updateLimit: Date.now ()}}, 200, function (s, rq, rs) {
          if (H.stop ('pivs', rs.body.pivs.length, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3, 'o::': 0, 't::': 3})) return false;
          return true;
       }],
       ['query pivs with updateLimit equal to the dateup of the last uploaded piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'upload', from: 1, to: 3, updateLimit: s.lastUpload}}, 200, function (s, rq, rs) {
          if (H.stop ('pivs', rs.body.pivs.length, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 2, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.large.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 3, 'u::': 3, 'o::': 0, 't::': 3})) return false;
          return true;
       }],
       ['query pivs with updateLimit equal to the dateup less of that of the last uploaded piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'upload', from: 1, to: 3, updateLimit: s.lastUpload - 1}}, 200, function (s, rq, rs) {
          if (H.stop ('pivs', rs.body.pivs.length, 2)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 0, 't::': 2})) return false;
          return true;
       }],
       ['upload piv with geodata', 'post', 'piv', {}, function (s) {return {multipart: [
@@ -2516,29 +2584,71 @@ suites.query = function () {
       }],
       ['query pivs with irrelevant range but right at the edges', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 3)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 3, 'd::M3': 1, 'd::M5': 1, 'd::M7': 1, 'd::2014': 2, 'd::2017': 1})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 3, 'o::': 0, 't::': 3, 'd::M3': 1, 'd::M5': 1, 'd::M7': 1, 'd::2014': 2, 'd::2017': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves newest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M5': 1, 'd::M7': 1, 'd::2014': 2})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'o::': 0, 't::': 2, 'd::M5': 1, 'd::M7': 1, 'd::2014': 2})) return false;
          return true;
       }],
       ['query pivs with range that also shaves middle piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [1].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 1)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 1, 'd::M5': 1, 'd::2014': 1})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 1, 'o::': 0, 't::': 1, 'd::M5': 1, 'd::2014': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves oldest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date + 1, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M3': 1, 'd::M7': 1, 'd::2014': 1, 'd::2017': 1})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'o::': 0, 't::': 2, 'd::M3': 1, 'd::M7': 1, 'd::2014': 1, 'd::2017': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves all pivs', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: s.rangePivs [2].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 0)) return false;
-         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 0})) return false;
+         if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 0, 'o::': 0, 't::': 0})) return false;
          return true;
       }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
+suites.hometags = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('set home tags', 'hometags', [
+         [[], 'object'],
+         [[], 'keys', ['hometags']],
+         [['hometags'], 'array'],
+         [['hometags', 0], 'type', 'string', 'each of the body.hometags should have as type string but one of .+ is .+ with type'],
+         [['hometags'], 'invalidValues', [['a::', '2021', 'g::Leiden']], {error: 'tag', tag: 'a::'}],
+         [['hometags'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
+      ]),
+      ['get hometags, that see list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
+      ['add nonexisting tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 404, H.cBody ({tag: 'foo'})],
+      ['get hometags, that see list is still empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
+      ['start upload to test hometags', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['tag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId]}}, 200],
+      ['add existing tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 200],
+      ['get hometags, that see list has the added tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5', 'foo'], hometags: ['foo']})],
+      ['tag piv with another tag', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId]}}, 200],
+      ['add both tags to hometags', 'post', 'hometags', {}, {hometags: ['foo', 'bar']}, 200],
+      ['get hometags, that see list has the second tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['foo', 'bar']})],
+      ['change order of hometags', 'post', 'hometags', {}, {hometags: ['bar', 'foo']}, 200],
+      ['get hometags, that see list has the tags in the right order', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['bar', 'foo']})],
+      ['untag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId], del: true}}, 200],
+      ['get hometags, that see list has no reference to the deleted tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5'], hometags: ['bar']})],
+      ['untag piv again', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId], del: true}}, 200],
+      ['get hometags, that see list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5'], hometags: []})],
       suites.auth.out (tk.users.user1),
    ];
 }
@@ -2675,7 +2785,7 @@ suites.share = function () {
          if (H.stop ('body.total', rs.body.total, 0)) return false;
          return true;
       }],
-      ['get tags after being unshared', 'get', 'tags', {}, '', 200, H.cBody ([])],
+      ['get tags after being unshared', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
       ['get logs after being unshared', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          var log = teishi.last (rs.body.logs, 2);
          delete log.t;
@@ -2702,7 +2812,7 @@ suites.share = function () {
          if (H.stop ('piv ids', ids, [s.mediumId, s.smallId])) return false;
          return true;
       }],
-      ['get tags after being shared two pivs', 'get', 'tags', {}, '', 200, H.cBody ([])],
+      ['get tags after being shared two pivs', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
       dale.go (['small', 'medium', 'large'], function (v, k) {
          var id = v + 'Id';
          var sharedStatus = k === 2 ? 'unshared' : 'shared';
@@ -2731,7 +2841,7 @@ suites.share = function () {
          return true;
       }],
       ['check that shared tag from second user doesn\'t contain pivs from the first user (tags)', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, [])) return false;
+         if (H.stop ('body', rs.body.tags, [])) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2812,14 +2922,14 @@ suites.download = function () {
                   var downloadedFile = tk.pivs [file].name;
                   if (file === 'bach') downloadedFile = tk.pivs.small.name + ' (copy)';
                   if (Buffer.compare (fs.readFileSync (downloadedFile), fs.readFileSync (tk.pivs [file].path)) !== 0) return 'Mismatch between expected and actual download: ' + file;
-                  // For some reason, sometimes there are ~1 second mismatches between the expected modified time of the downloaded files.
+                  // For some reason, sometimes there are ~1 second mismatches between the expected modified time and the actual modified time of the downloaded files.
                   if (Math.abs (fs.statSync (downloadedFile).mtime.getTime () !== tk.pivs [file].mtime) > 2000) return 'Invalid mtime on zip file';
                   fs.unlinkSync (downloadedFile);
                });
                if (error) return clog (error);
                fs.unlinkSync ('download.zip');
-               // Wait five seconds until download expires
-               setTimeout (next, 10000);
+               // Wait two seconds until download expires
+               setTimeout (next, 2000);
             }
          ], clog);
       }},
@@ -2870,6 +2980,28 @@ suites.dismiss = function () {
             }],
          ];
       }),
+      ['start upload to test dismissing of onboarding', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test dismissing of onboarding', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['mark piv as organized (should be no-op for onboarding)', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId]}}, 200],
+      ['get account after marking a piv as organized', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.onboarding', rs.body.onboarding, true)) return false;
+         return true;
+      }],
+      ['tag piv (should dismiss onboarding)', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId]}}, 200],
+      ['get account after marking a piv as organized', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('account.onboarding', rs.body.onboarding, undefined)) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }
@@ -2950,13 +3082,13 @@ suites.geo = function () {
       ['get location & tags of geotagged pivs', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
          if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, tk.pivs.small.loc))     return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR').sort ())) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR', 't::').sort ())) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
       }],
       ['get tags after geotagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.dunkerque.dateTags).concat ('g::Dunkerque', 'g::FR').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.dunkerque.dateTags).concat ('g::Dunkerque', 'g::FR').sort ())) return false;
          return true;
       }],
       ['enable geo, no-op', 'post', 'geo', {}, {operation: 'enable'}, 200],
@@ -2974,13 +3106,13 @@ suites.geo = function () {
       ['get location & tags of geotagged pivs after disabling geo', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, undefined)) return false;
          if (H.stop ('piv [1].loc', rs.body.pivs [1].loc, undefined))     return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags)) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('t::'))) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], undefined)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], undefined)) return false;
          return true;
       }],
       ['get tags after disabling geo', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.small.dateTags.concat (tk.pivs.dunkerque.dateTags).sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.dunkerque.dateTags).sort ())) return false;
          return true;
       }],
       ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
@@ -2995,7 +3127,7 @@ suites.geo = function () {
       }],
       ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR').sort ())) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR', 't::').sort ())) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
@@ -3017,13 +3149,13 @@ suites.geo = function () {
       }],
       ['get location & tags of geotagged piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('piv [0].loc', rs.body.pivs [0].loc, tk.pivs.dunkerque.loc)) return false;
-         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR').sort ())) return false;
+         if (H.stop ('piv [0].tags', rs.body.pivs [0].tags.sort (), tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR', 't::').sort ())) return false;
          if (H.stop ('tags.g::FR', rs.body.tags ['g::FR'], 1)) return false;
          if (H.stop ('tags.g::Dunkerque', rs.body.tags ['g::Dunkerque'], 1)) return false;
          return true;
       }],
       ['get tags after geotagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR').sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.dunkerque.dateTags.concat ('g::Dunkerque', 'g::FR').sort ())) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -3144,6 +3276,10 @@ suites.import = function () {
          var filteredLogs = dale.fil (rs.body.logs, undefined, function (log) {
             // We ignore all the requests we do waiting for the oauth process to be complete.
             if (log.ev === 'import' && log.type === 'request') return;
+            // We ignore all the requests for import debugging.
+            if (log.ev === 'importDebug') return;
+            // We ignore all `wait` events.
+            if (log.type === 'wait') return;
             return log;
          });
          if (dale.stop ({
