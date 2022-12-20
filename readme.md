@@ -51,8 +51,10 @@ Mono
       - client: fix issue with phantom selection when scrolling large selection
       - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
       - client: do not show New Pics Available sign if on the home view
+      - server: investigate bug with piv with location but no geotags
    --------------
    - small tasks
+      - client: make Organized number green
       - client: show less year & country entries in sidebar
       - client: see info of piv
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
