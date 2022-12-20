@@ -3969,37 +3969,30 @@ B.mrespond ([
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
-   ['toggle', 'tag', function (x, tag, addOnly) {
-      var index = B.get ('State', 'query', 'tags').indexOf (tag);
+   ['toggle', 'tag', {id: 'toggle tag'}, function (x, tag, addOnly) {
 
-      // Tag is removed
-      if (index > -1) {
+      if (inc (B.get ('State', 'query', 'tags'), tag)) {
          if (addOnly) return;
          if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
-         if (! H.isYearTag (tag)) return B.call (x, 'rem', ['State', 'query', 'tags'], index);
-         return B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
-            if (existingTag === tag) return;
-            if (H.isMonthTag (existingTag)) return;
-            return existingTag;
-         }));
+
+         var resultingTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+            if (! (existingTag === tag || (H.isYearTag (tag) && H.isMonthTag (existingTag)))) return existingTag;
+         });
+         if (resultingTags.length === 0 && dale.keys (B.get ('State', 'selected')).length) B.call (x, 'rem', 'State', 'selected');
+         return B.call (x, 'set', ['State', 'query', 'tags'], resultingTags);
       }
 
-      // Tag is added
-      // We do not set this if removing a tag because we know we're already not with home set.
-      // We do this mutely since State.query.tags will change and trigger further changes.
       if (B.get ('State', 'query', 'home')) B.set (['State', 'query', 'home'], false);
       if (B.get ('Data', 'account', 'onboarding') && B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
-      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag) && ! inc (['o::', 't::'], tag);
+
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
-         if (existingTag === 'o::' && tag === 't::') return;
-         if (existingTag === 't::' && tag === 'o::') return;
-         if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag) && ! inc (['o::', 't::'], existingTag))) return;
-         if (H.isRangeTag (tag) && H.isDateTag (existingTag)) return;
-         if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
+         if (existingTag === 'o::' && tag === 't::'     || existingTag === 't::'     && tag === 'o::') return;
+         if (existingTag === 'u::' && H.isUserTag (tag) || H.isUserTag (existingTag) && tag === 'u::') return;
+         if ((H.isDateTag (existingTag) || H.isRangeTag (existingTag)) && H.isRangeTag (tag)) return;
+         if (H.isMonthTag (existingTag) && H.isMonthTag (tag)) return;
          return existingTag;
       }).concat (tag));
-      if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
+      if (H.isUserTag (tag) && B.get ('State', 'filter')) B.call (x, 'rem', 'State', 'filter');
    }],
    ['toggle', 'hometag', {id: 'toggle hometag'}, function (x, hometag) {
       var index = B.get ('Data', 'hometags').indexOf (hometag);
@@ -4045,7 +4038,7 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
       });
    }],
-   ['tag', 'pivs', function (x, tag, del) {
+   ['tag', 'pivs', {id: 'tag pivs'}, function (x, tag, del) {
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
       if (! H.isUserTag (tag) && ! inc (['o::', 't::'], tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');

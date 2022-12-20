@@ -53,13 +53,13 @@ Mono
       - client: do not show New Pics Available sign if on the home view
    --------------
    - small tasks
-      - client: If all the tags are removed from a query, delete the selection.
       - client: show less year & country entries in sidebar
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
       - server: fix: exclude WA from hour in parse date
       - client: see info of piv
       - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
       - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
+      - server/client: videos pseudo-tag
       - client: upgrade pop up notice or email when running out of free space.
       - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
       - server: rename b to rq.body throughout
@@ -80,7 +80,6 @@ Mono
       - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
       - server: add dedicated keys for uploads in order to improve getUploads performance
       - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
-      - server/client: videos pseudo-tag
       - server/client: set location
       - Recompute pricing
          - Investigate Glacier lifecycle.
@@ -122,6 +121,8 @@ Mono
    - Show year tags.
    - Show only one year tag if one is selected.
    - Show month tags only when a year tag is selected. When a month tag is selected, show the other available months as selectable and remove the current month if another month is selected.
+   - When a year tag is removed from the query, also remove the month tag.
+   - When all tags are removed from the current query and there is a selection, remove the selection.
    - When querying untagged tag, remove non-year and non-geo tags. When querying normal tag, remove untagged tag.
    - When modifying pivs with `untagged` in the query, add button for confirming operation ("Mark As Organized"); show alert if user navigates away.
    - See list of tags.
@@ -1069,7 +1070,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
    5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
    6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pivs`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
-   7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'u::'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'u::'`, we remove all user tags. If `'t::'` is added, the `'o::'` tag, if present, is removed from the query; and viceversa. If a tag is added, `State.query.home` will be set to `false`, as well as `State.onboarding`.
+   7. `toggle tag`: see annotated source code.
    8. `toggle hometag`: see annotated source code.
    9. `shift hometag`: see annotated source code.
    10. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
@@ -1588,6 +1589,111 @@ This concludes the responder.
 ```
 
 TODO: add annotated source code in between these two sections.
+
+We now define the responder for `toggle tag`, which will add or remove a tag from `State.query.tags`.
+
+This endpoint takes as extra arguments `tag` (the tag to be toggled) and `addOnly`, a flag that if present, will only add the tag if it's not present in `State.query.tags` and do nothing if it's already there.
+
+```javascript
+   ['toggle', 'tag', {id: 'toggle tag'}, function (x, tag, addOnly) {
+```
+
+If `tag` is already in `State.query.tags`, we will want to remove it.
+
+```javascript
+      if (inc (B.get ('State', 'query', 'tags'), tags)) {
+```
+
+If `addOnly` is set, we will not remove the tag from the query. In this case, there's nothing else to do. This flag will be enabled on the sidebar when pivs are selected; when the icon to select the tag is clicked, we want only to add the tag, never to remove it - and it is cumbersome to add a conditional for each tag to specify either a call to `toggle tag` or a no-op.
+
+```javascript
+         if (addOnly) return;
+```
+
+If the tag being removed is `'u::'` and there are entries in `State.query.recentlyTagged`, we will remove `State.query.recentlyTagged` mutely (without calling a `change` event). We do this mutely since we will modify later `State.query.tags` and thus we want to avoid two calls to `query pivs`.
+
+```javascript
+         if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
+```
+
+We create a list of new tags in the variable `resultingTags`. If the tag being removed is *not* a year tag, the list will merely be the existing list of tags minus the tag being removed; but if the tag being removed is a year tag, and there is a month tag in the query as well, that month tag will be removed too from the list.
+
+```javascript
+         var resultingTags = dale.fil (B.get ('State', 'query', 'tags'), function (existingTag) {
+            if (! (existingTag === tag || (H.isYearTag (tag) && H.isMonthTag (existingTag)))) return existingTag;
+         });
+```
+
+If there are no more tags on the list of tags and there currently is a selection, we remove the existing selection.
+
+```javascript
+         if (resultingTags.length === 0 && dale.keys (B.get ('State', 'selected')).length) B.call (x, 'rem', 'State', 'selected');
+```
+
+We update `State.query.tags` and do nothing else. This concludes the case where we are removing the tag from the list. This concludes the case for removing the tag from the list.
+
+```javascript
+         return B.call (x, 'set', ['State', 'query', 'tags'], resultingTags);
+      }
+```
+
+If we are here, we will be adding the tag to the list.
+
+If `State.query.home` is set, we will mutely set it to `false`. We do this mutely since we will change `State.query` below and we want to do this just once during the execution of this responder.
+
+```javascript
+      if (B.get ('State', 'query', 'home')) B.set (['State', 'query', 'home'], false);
+```
+
+If the user's onboarding flag (`Data.account.onboarding`) is set and `State.onboarding` is not `false` yet, we set it to `false`. This will hide the onboarding view.
+
+```javascript
+      if (B.get ('Data', 'account', 'onboarding') && B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
+```
+
+We will now set `State.query.tags` to a new list of tags, which will include the tag being added, minus some tags already in the query that might have to be removed to avoid unwanted combinations in the query.
+
+```javascript
+      B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+```
+
+If we are adding the tags Organized or To Organize, and its complement tag is already present, we remove the complement tag from the new list of tags.
+
+```javascript
+         if (existingTag === 'o::' && tag === 't::'     || existingTag === 't::'     && tag === 'o::') return;
+```
+
+If the untagged tag is present and we are adding a user tag, we remove the untagged tag; conversely, if we are adding the untagged tag, we remove all the normal tags from the list.
+
+```javascript
+         if (existingTag === 'u::' && H.isUserTag (tag) || H.isUserTag (existingTag) && tag === 'u::') return;
+```
+
+If we are adding a range tag, we remove all the existing date tags (month and year), as well as other range tags, from the list.
+
+```javascript
+         if ((H.isDateTag (existingTag) || H.isRangeTag (existingTag)) && H.isRangeTag (tag)) return;
+```
+
+If we're adding a month tag, we remove any other month tags from the list.
+
+```javascript
+         if (H.isMonthTag (existingTag) && H.isMonthTag (tag)) return;
+```
+
+Otherwise, we let the existing tag stand. Finally, we add the new `tag` to the list.
+
+```javascript
+         return existingTag;
+      }).concat (tag));
+```
+
+Finally, if we are adding a user tag and `State.filter` is set, we remove it. This concludes the responder.
+
+```javascript
+      if (H.isUserTag (tag) && B.get ('State', 'filter')) B.call (x, 'rem', 'State', 'filter');
+   }],
+```
 
 We now define the responder for `toggle hometag`, which will add or remove a tag from the list of home tags.
 
