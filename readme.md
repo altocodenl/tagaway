@@ -133,14 +133,14 @@ Mono
    - When performing changes to pivs, if that results on a query with no pivs, the query will be resetted to show Everything.
    - Filter tags when browsing.
    - Tag/untag.
-   - Allow to mark pivs as Organized or as To organize.
-   - For a given query, if the query includes Organized or To Organize, see the total number of pivs for the complement tag (for example: if `'o::'` is in the query, see the number of pivs To organize that the query would have *without* `'o::'`).
+   - Allow to mark pivs as Organized or as To Organize.
+   - For a given query, if the query includes Organized or To Organize, see the total number of pivs for the complement tag (for example: if `'o::'` is in the query, see the number of pivs To Organize that the query would have *without* `'o::'`).
    - Filter tags when tagging/untagging.
    - Rotate pivs.
    - Delete pivs.
    - Ignore rotation of videos.
    - When clicking on tag on the attach/unattach menu, remove selection and query the tag.
-   - When untagging, if no pivs left with that tag, remove tag from query.
+   - When untagging, if no pivs left with that tag, remove tag from query. Same goes for marking as Organized if To Organize is in the query, or if marking as To Organize if Organized is in the query.
    - Fill pivs grid until screen is full or no pivs remain.
    - Block selection of a tag if the UI is still processing a previous selection of a tag.
    - Download a single piv.
@@ -1048,6 +1048,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - Once the query is done, if `State.querying.t` is larger than the time at which the current query started, this means we need to retry. In this case, the responder will re-invoke itself using `State.querying.options` but also adding `retry = true` to it.
       - If we're here, the query didn't change, so there is no need to retry it. It sets `State.querying` to `undefined`.
       - If the query returned an error, it invokes `snackbar` and doesn't do anything else.
+      - If the query returned no pivs and one or more tags were present in `query.tags`, it will `set` `State.query.tags` to an empty array and do nothing else, in order to avoid a ronin (empty) query. This will only happen through a deletion of the entire contents of the query, or an untagging of the entire contents on the query on another client.
       - If `body.refreshQuery` is set to `true` and `State.query.update` is `undefined`, it will set it to `'manual'`, to indicate that updates are available. This will only happen if `Data.pivs` already has pivs.
       - If `body.refreshQuery` is falsy and `State.query.update` is not `undefined` and `State.query.updateLimit` is less than 10ms away from the time we made the query, it will will set `State.query.update` to `undefined`, to indicate that updates are no longer available.
       - If before the query there were no pivs in `Data.pivs`, `State.query.updateLimit` will be updated to the present moment, to avoid a further query using an outdated value that will make the pics view oscillate between being empty and having pivs.
@@ -1068,13 +1069,13 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - If we're here, `State.open` is set. We check whether the piv previously opened is still on the list of pivs returned by the query. If it is no longer in the query, it invokes `rem State.open` and `change Data.pivs`. It will also invoke `exit fullscreen`. If we entered this conditional, the responder won't do anything else.
       - If we're here, `State.open` is set and the piv previously opened is still contained in the current query. It will `set State.open` and fire a `change` event on `Data.pivs`.
    5. `click piv piv k ev`: depends on `State.lastClick` and `State.selected`. If it registers a double click on a piv, it removes `State.selected.PIVID` and sets `State.open`. Otherwise, it will change the selection status of the piv itself; if `shift` is pressed (judging by reading the `shiftKey` of `ev` and the previous click was done on a piv still displayed, it will perform multiple selection. The `piv` argument is an object containing only the `id`, `date` and `dateup` fields, since the rest of them are not relevant for the purposes of the responder.
-   6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pics`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
+   6. `key down|up`: if `keyCode` is 13 and `#newTag` is focused, invoke `tag pivs`; if `keyCode` is 13 and `#uploadTag` is focused, invoke `upload tag`; if the path is `down` and keycode is either 46 (delete) or 8 (backspace) and there are selected pivs, it invokes `delete pivs`.
    7. `toggle tag`: if tag is in `State.query.tags`, it removes it; otherwise, it adds it - the one exception is if a second truthy argument (`addOnly`) is passed, which then will only ensure that the provided tag is added, but not removed. If the tag removed is `'u::'` and `State.query.recentlyTagged` is defined, we remove `State.query.recentlyTagged`. If the tag is added and it is an user tag, we invoke `rem State.filter`. If the tag removed is a year tag, all month tags will also be removed. If the tag added is a month tag, all other month tags will be removed. If the tag added is `'u::'`, we remove all user tags. If `'t::'` is added, the `'o::'` tag, if present, is removed from the query; and viceversa. If a tag is added, `State.query.home` will be set to `false`, as well as `State.onboarding`.
    8. `toggle hometag`: see annotated source code.
    9. `shift hometag`: see annotated source code.
    10. `select all`: places in `State.selected` all the pivs currently loaded; if the number of selected pivs is larger than 2k, it invokes `snackbar`; finally invokes `query pivs {selectAll: true}`.
    11. `query tags`: invokes `get tags` and sets `Data.tags`. It checks whether any of the tags in `State.query.tags` no longer exists and removes them from there (with the exception of `'u::'`, `'o::'` and `'t::'` (which never are returned by the server) and the strictly client-side range pseudo-tag).
-   12. `tag pivs`: invokes `post tag`, using `State.selected`. If tagging (and not untagging) and `'u::'` is in `State.query.tags`, it adds items to `State.query.recentlyTagged`, but not if they are alread there. In case the query is successful it invokes `query pivs`. Also invokes `snackbar`. A special case if the query is successful and we're untagging all the pivs that match the query: in that case, we only remove the tag from `State.query.tags` and not do anything else, since that invocation will in turn invoke `query pivs`. If the action is a tagging (instead of an untagging) and `Data.hometags` is empty and the tag is a user tag (and not `'o::'` or `'t::'`), it will invoke `toggle hometags` to add the tag to the home tags.
+   12. `tag pivs`: see annotated source code.
    13. `rotate pivs`: invokes `post rotate`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`. If it receives a second argument (which is a piv), it submits its id instead of `State.selected`.
    14. `date pivs`: invokes `snackbar` if there was either invalid input or the operation failed. If the input (`State.date`) is valid, it invokes `post date` and then if the operation is successful invokes `rem State.page` and `query pivs`.
    15. `delete pivs`: invokes `post delete`, using `State.selected`. In case the query is successful it invokes `query pivs`. In case of error, invokes `snackbar`.
@@ -1660,6 +1661,102 @@ This concludes the responder.
 ```javascript
          B.call (x, 'query', 'tags');
          B.call (x, 'change', ['Data', 'hometags']);
+      });
+   }],
+```
+
+TODO: add annotated source code in between these two sections.
+
+We now define `tag pivs`, the responder that will be in charge of tagging or untagging pivs.
+
+It takes two arguments besides the context: `tag`, the actual tag to be added/removed to the selected pivs; and `del`, a flag that indicates whether this is an untagging or not.
+
+```javascript
+   ['tag', 'pivs', function (x, tag, del) {
+```
+
+If no `tag` is sent, we don't do anything. This can only happen if the event is called from the input element for adding a new tag when there is nothing in the element.
+
+```javascript
+      if (! tag) return;
+```
+
+If we are untagging, we ask the user for confirmation. If the confirmation is not given, then we don't do anything else.
+
+```javascript
+      if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
+```
+
+If the user is trying to tag a tag that is neither a user tag nor an Organize/To Organize tag, we invoke `snackbar` and stop the operation.
+
+```javascript
+      if (! H.isUserTag (tag) && ! inc (['o::', 't::'], tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+```
+
+We place the ids of the pivs to be tagged/untagged into `ids`. We store `State.query` into `query` and the amount of pivs in the current query in `pivTotal`.
+
+```javascript
+      var ids = dale.keys (B.get ('State', 'selected')), query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
+```
+
+If tagging (and not untagging) and `'u::'` is in `State.query.tags`, it adds each of the `ids` to `State.query.recentlyTagged`, but not if they are already there. Note it does this without triggering a change event, since we don't want to invoke `query pivs` just yet.
+
+```javascript
+      if (! del && inc (query.tags, 'u::')) dale.go (ids, function (id) {
+         if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
+      });
+```
+
+We invoke `post tag`.
+
+```javascript
+      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del}, function (x, error, rs) {
+```
+
+If there was an error, we invoke `snackbar` and do not do anything else.
+
+```javascript
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
+```
+
+If this was a tagging operation (and we did not mark pivs as Organized or To Organize) and the user still has no home tags (`Data.hometags`), we invoke `toggle hometag` on this tag to add it to the home tags.
+
+```javascript
+         if (! del && H.isUserTag (tag) && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
+```
+
+If we are untagging all of the pivs in the query, we remove the tag from the query - more precisely, from `State.query.tags`. We don't do anything else, since this will indirectly perform a call to `query pivs`.
+
+```javascript
+         if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], query.tags.indexOf (tag));
+```
+
+If this was not an untagging operation, we invoke `snackbar`; note we use a differenet message if the tag in question is Organized or To Organize.
+
+```javascript
+         if (! del & H.isUserTag (tag)) B.call (x, 'snackbar', 'green', 'Just tagged ' + ids.length + ' picture(s) with tag ' + tag + '.');
+         else if (! del)                B.call (x, 'snackbar', 'green', 'Just marked ' + ids.length + ' picture(s) as ' + (tag === 'o::' ? 'Organized' : 'To Organize ') + '.');
+```
+
+Now for some delightful application logic. If we are marking pivs as Organized or To Organize, and the complement tag (To Organize if we are marking pivs as Organized, or Organized if we aer marking pivs as To Organize) is present in the query, we remove the complement tag from the query to avoid a ronin (empty) query. We won't do anything else, since this will indirectly invoke `query pivs`.
+
+```javascript
+         if (inc (['o::', 't::'], tag) && ids.length === pivTotal) {
+            var complement = tag === 'o::' ? 't::' : 'o::';
+            if (inc (query.tags, complement)) return B.call (x, 'rem', ['State', 'query', 'tags'], query.tags.indexOf (complement));
+         }
+```
+
+If we're here, we invoke `query pivs` directly, to update the tag information on the sidebar and on the pivs themselves.
+
+```javascript
+         B.call (x, 'query', 'pivs');
+```
+
+If `tag` is equal to `State.newTag`, we remove `State.newTag` so that the input will be cleaned. This concludes the responder.
+
+```javascript
+         if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
       });
    }],
 ```

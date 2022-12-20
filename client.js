@@ -3858,6 +3858,8 @@ B.mrespond ([
          B.call (x, 'rem', 'State', 'querying');
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
 
+         if (rs.body.total === 0 && query.tags.length) return B.call (x, 'set', ['State', 'query', 'tags'], []);
+
          if (query.update === undefined && rs.body.refreshQuery && ! noPivsYet) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
          if (query.update !== undefined && ! rs.body.refreshQuery && (updateLimit === undefined || t - updateLimit < 10)) B.call (x, 'rem', ['State', 'query'], 'update');
          if (noPivsYet && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
@@ -3963,7 +3965,7 @@ B.mrespond ([
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['key', /down|up/, function (x, keyCode) {
-      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.call (x, 'tag', 'pivs', true);
+      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.call (x, 'tag', 'pivs', B.get ('State', 'newTag'));
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
@@ -4044,29 +4046,30 @@ B.mrespond ([
       });
    }],
    ['tag', 'pivs', function (x, tag, del) {
-      if (tag === true) tag = B.get ('State', 'newTag');
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
       if (! H.isUserTag (tag) && ! inc (['o::', 't::'], tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
 
-      var ids = dale.keys (B.get ('State', 'selected'));
-      if (ids.length === 0) return;
+      var ids = dale.keys (B.get ('State', 'selected')), query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
 
-      var query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
-      if (! del && inc (query.tags, 'u::')) {
-         dale.go (ids, function (id) {
-            if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
-         });
-      }
-      var payload = {tag: tag, ids: ids, del: del}
-      B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
+      if (! del && inc (query.tags, 'u::')) dale.go (ids, function (id) {
+         if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
+      });
+
+      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
          if (! del && H.isUserTag (tag) && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
 
-         if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
+         if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], query.tags.indexOf (tag));
 
          if (! del & H.isUserTag (tag)) B.call (x, 'snackbar', 'green', 'Just tagged ' + ids.length + ' picture(s) with tag ' + tag + '.');
          else if (! del)                B.call (x, 'snackbar', 'green', 'Just marked ' + ids.length + ' picture(s) as ' + (tag === 'o::' ? 'Organized' : 'To Organize ') + '.');
+
+         if (inc (['o::', 't::'], tag) && ids.length === pivTotal) {
+            var complement = tag === 'o::' ? 't::' : 'o::';
+            if (inc (query.tags, complement)) return B.call (x, 'rem', ['State', 'query', 'tags'], query.tags.indexOf (complement));
+         }
+
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
       });
@@ -5374,7 +5377,7 @@ views.pics = function () {
                               ['div', {class: 'attach-form__dropdown'}, [
                                  // TAG LIST DROPDOWN
                                  ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
-                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', true])}, [
+                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', tag === newTag + ' (new tag)' ? newTag : tag])}, [
                                        ['div', {class: 'tag tag-list__item--' + H.tagColor (tag)}, [
                                           H.putSvg ('tagItem' + H.tagColor (tag)),
                                           ['span', {class: 'tag__title'}, tag]
