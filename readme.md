@@ -40,63 +40,66 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
+   - server/client: show checkbox on tags that are organized
+   - server/client: sharebox (investigate how to create preview of thumbnail in whatsapp)
+   - Change logo to ac✓pic
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
-   - client: fix issue with phantom selection when scrolling large selection
-   - client: remove selection when removing all tags from query
-   - client: fix ronin untagged or range tag when deleting all
-   - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
-   - client: do not show New Pics Available sign if on the home view
+   - bugs
+      - client: fix issue with phantom selection when scrolling large selection
+      - client: fix ronin untagged or range tag when deleting all
+      - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
+      - client: do not show New Pics Available sign if on the home view
    --------------
-   - client: show less year & country entries in sidebar
-   - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-   - server: fix: exclude WA from hour in parse date
-   - client: see info of piv
-   - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
-   - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-   - client: upgrade pop up notice or email when running out of free space.
-   - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-   - server: rename b to rq.body throughout
-   - server: get rid of thu entries, use id of piv + suffix
-   - admin: add set of users for fast access rather than scanning db
+   - small tasks
+      - client: If all the tags are removed from a query, delete the selection.
+      - client: show less year & country entries in sidebar
+      - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+      - server: fix: exclude WA from hour in parse date
+      - client: see info of piv
+      - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
+      - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
+      - client: upgrade pop up notice or email when running out of free space.
+      - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
+      - server: rename b to rq.body throughout
+      - server: get rid of thu entries, use id of piv + suffix
+      - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+      - server: review format errors with files that have a jpg extension
+      - admin: add set of users for fast access rather than scanning db
+      - client: upload: retry upload button
+      - server: script to rename username
    --------------
-   - server: set up prod mirror
-   - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
-   - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
-   - server/client: opt-in face recognition powered by AI
-   - server/client: opt-in OCR recognition
-   - server/client: rotate videos
-   - server: add dedicated keys for uploads in order to improve getUploads performance
-   - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
-   - server/client: videos pseudo-tag
-   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
-   - server: review format errors with files that have a jpg extension
-   - client: upload: check what happens if connection is dropped while uploading
-   - client: upload: retry upload button
-   - server/client: set location
-   - server: script to rename username
-   - server/client: Share & manage
-   - Pricing
-      - Investigate Glacier lifecycle.
-      - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
-      - Include price of PUT requests
-      - Check new price of servers & price of large disk
-      - Check balance between disk and RAM and compare to actual RAM usage
-   - server: deploy to prod while there are processes going on!
-      - background processes: upload, import, geotagging switch, mp4 conversions
-      - incremental steps to solution:
-         - don't shut down if there's something going on
-         - shut down after all are done
-         - stop new ones
-         - save progress on what's already done
-   - client: investigate & fix gotoB redraw bug b966ccb2e9a8b3d181998e902e8a5a8dc45ade59:4489 (would ev.preventDefault () work?)
-   - server: Investigate intermittent busboy error.
-   - Add notes on self-hosted ac;pic
-      - Turn off/on S3
-      - Docker
-      - Documentation
+   - large tasks
+      - server/client: Share & manage
+      - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
+      - server/client: opt-in face recognition powered by AI
+      - server/client: opt-in OCR recognition
+      - server/client: rotate videos
+      - server: set up prod mirror
+      - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
+      - server: add dedicated keys for uploads in order to improve getUploads performance
+      - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
+      - server/client: videos pseudo-tag
+      - server/client: set location
+      - Recompute pricing
+         - Investigate Glacier lifecycle.
+         - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
+         - Include price of PUT requests
+         - Check new price of servers & price of large disk
+         - Check balance between disk and RAM and compare to actual RAM usage
+      - server: deploy to prod while there are processes going on!
+         - background processes: upload, import, geotagging switch, mp4 conversions
+         - incremental steps to solution:
+            - don't shut down if there's something going on
+            - shut down after all are done
+            - stop new ones
+            - save progress on what's already done
+      - Add notes on self-hosted ac;pic
+         - Turn off/on S3
+         - Docker
+         - Documentation
 
 ### Already implemented
 
@@ -121,12 +124,13 @@ Mono
    - Show only one year tag if one is selected.
    - Show month tags only when a year tag is selected. When a month tag is selected, show the other available months as selectable and remove the current month if another month is selected.
    - When querying untagged tag, remove non-year and non-geo tags. When querying normal tag, remove untagged tag.
-   - When modifying pivs with `untagged` in the query, add button for confirming operation; show alert if user navigates away.
+   - When modifying pivs with `untagged` in the query, add button for confirming operation ("Mark As Organized"); show alert if user navigates away.
    - See list of tags.
    - Query by tag or tags.
    - Show pivs according to the selected tags.
    - If there are selected pivs, toggle between browse mode & organize mode.
    - If query changes but selected pivs are still there, maintain their selection.
+   - When performing changes to pivs, if that results on a query with no pivs, the query will be resetted to show Everything.
    - Filter tags when browsing.
    - Tag/untag.
    - Allow to mark pivs as Organized or as To organize.
