@@ -5315,10 +5315,10 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
-                              H.if (which === 's::', ['div', {style: style({'margin-left': '-2px'})}, [
+                              H.if (which === 's::', ['div', {style: style ({'margin-left': '-2px'})}, [
                                  // HERE GOES SEE MORE GEO
                                  ['div', {class: 'see-more-geo'}, [
-                                    ['span', {class: 'see-more-geo-icon'}, H.putSvg('geotagOpen')],
+                                    ['span', {class: 'see-more-geo-icon'}, H.putSvg ('geotagOpen')],
                                     ['span', {class: 'see-more-geo-text'}, 'See more']
                                  ]]
                               ]]),
@@ -5330,7 +5330,7 @@ views.pics = function () {
                               ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 (which === 'f::' || which === 's::')? [] : ['div', {class: 'tag-actions'}, [
+                                 inc (['f::', 's::'], which) ? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
@@ -5354,7 +5354,7 @@ views.pics = function () {
                               dale.go (yearlist, makeTag),
                               // HERE SEE MORE YEARS
                               ['div', {class: 'see-more-years'}, [
-                                 ['span', {class: 'see-more-years-icon', style: style({'stroke-width': '2px'})}, H.putSvg('itemTime')],
+                                 ['span', {class: 'see-more-years-icon', style: style ({'stroke-width': '2px'})}, H.putSvg ('itemTime')],
                                  ['span', {class: 'see-more-years-text'}, 'See more']
                               ]],
                               ['br'], ['br'],
