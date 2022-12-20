@@ -54,9 +54,9 @@ Mono
    --------------
    - small tasks
       - client: show less year & country entries in sidebar
+      - client: see info of piv
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
       - server: fix: exclude WA from hour in parse date
-      - client: see info of piv
       - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
       - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
       - server/client: videos pseudo-tag
