@@ -863,7 +863,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 **Pages**:
 
 1. `views.pics`
-   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.querying`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`, `State.query.home`, `State.onboarding`.
+   - Depends on: `Data.tags`, `Data.pivs`, `Data.pivTotal`, `Data.queryTags`, `Data.monthTags`, `Data.account`, `State.query`, `State.querying`, `State.selected`, `State.chunks`, `State.filter`, `State.newTag`, `State.showNTags`, `State.showNSelectedTags`, `State.tagOrder`, `State.query.update`, `State.query.home`, `State.onboarding`, `State.expandCountries`, `State.expandYears`.
    - Events:
       - `click -> stop propagation`
       - `click -> rem State.selected`
@@ -887,6 +887,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `click -> set State.query.updateLimit`
       - `click -> set State.query.home`
       - `click -> set State.query.tags`
+      - `click -> set State.expandCountries`.
+      - `click -> set State.expandYears`.
 2. `views.upload`
    - Depends on: `Data.uploads`, `Data.account`, `State.upload.new`, `Data.tags`.
    - Events:
@@ -1148,6 +1150,8 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `changePassword`: if present, shows the change password form in the account view.
    - `chunks`: if present, it is an array of objects, each representing a chunk of pivs to be shown. Each chunk has the form `{pivs: [...], start: INT, end: INT, visible: true|false|undefined}`. `pivs` is an array of pivs; `start` and `end` indicate the y-coordinate of the start and the end of the chunk. `visible` indicates whether the chunk should be displayed or not, given the current y-position of the window.
    - `date`: `UNDEFINED|{y: STRING, m: STRING: d: STRING}`. If present, it denotes an object with date fields for dating pivs.
+   - `expandCountries`: if set to `true`, it will show more than three country geotags.
+   - `expandYears`: if set to `true`, it will show more than three year tags.
    - `feedback`: if not `undefined`, contains a text string with feedback to be sent.
    - `filter`: filters tags shown in sidebar.
    - `import`:
