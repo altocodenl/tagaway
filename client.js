@@ -5237,6 +5237,13 @@ views.pics = function () {
                         var countryCount = dale.acc (taglist, 0, function (n, tag) {
                            return n += (H.isCountryTag (tag) ? 1 : 0);
                         });
+                        if (! expandCountries && countryCount > 3) {
+                           var shownCountries = 0;
+                           taglist = dale.fil (taglist, undefined, function (tag) {
+                              if (! H.isCountryTag (tag)) return tag;
+                              if (shownCountries++ < 3) return tag;
+                           });
+                        }
 
                         var all      = eq (selected, []);
                         var makeTag  = function (which) {
@@ -5321,7 +5328,7 @@ views.pics = function () {
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
                               H.if (which === 'e::' && countryCount > 3, ['div', {style: style ({'margin-left': '-2px'})}, [
-                                 ['div', {class: 'see-more-geo', onclick: B.ev ('set', ['State', 'expandCountries'], ! expandCountries)}, [
+                                 ['div', {class: 'see-more-geo', onclick: B.ev (H.stopPropagation, ['set', ['State', 'expandCountries'], ! expandCountries])}, [
                                     ['span', {class: 'see-more-geo-icon'}, H.putSvg ('geotagOpen')],
                                     ['span', {class: 'see-more-years-text'}, 'See ' + (expandCountries ? 'less' : 'more')]
                                  ]]
@@ -5356,7 +5363,7 @@ views.pics = function () {
                            makeTag ('o::'),
                            ! rangeTag ? [
                               dale.go (yearlist, makeTag).slice (expandYears ? 0 : -3),
-                              H.if (yearlist.length > 3, ['div', {class: 'see-more-years', onclick: B.ev ('set', ['State', 'expandYears'], ! expandYears)}, [
+                              H.if (yearlist.length > 3, ['div', {class: 'see-more-years', onclick: B.ev (H.stopPropagation, ['set', ['State', 'expandYears'], ! expandYears])}, [
                                  ['span', {class: 'see-more-years-icon', style: style ({'stroke-width': '2px'})}, H.putSvg ('itemTime')],
                                  ['span', {class: 'see-more-years-text'}, 'See ' + (expandYears ? 'less' : 'more')]
                               ]]),
