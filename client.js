@@ -3850,7 +3850,7 @@ B.mrespond ([
       }
 
       var noPivsYet = eq (B.get ('Data', 'pivs'), []);
-      var updateLimit = (query.update === 'auto' || noPivsYet) ? undefined : query.updateLimit;
+      var updateLimit = (query.update === 'auto' || noPivsYet || query.home) ? undefined : query.updateLimit;
 
       var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
       if (selectedPivs) {
@@ -3887,7 +3887,7 @@ B.mrespond ([
 
          if (rs.body.total === 0 && query.tags.length) return B.call (x, 'set', ['State', 'query', 'tags'], []);
 
-         if (query.update === undefined && rs.body.refreshQuery && ! noPivsYet) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
+         if (query.update === undefined && rs.body.refreshQuery   && ! noPivsYet && ! query.home) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
          if (query.update !== undefined && ! rs.body.refreshQuery && (updateLimit === undefined || t - updateLimit < 10)) B.call (x, 'rem', ['State', 'query'], 'update');
          if (noPivsYet && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 

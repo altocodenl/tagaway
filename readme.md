@@ -50,7 +50,6 @@ Mono
    - bugs
       - client: fix issue with phantom selection when scrolling large selection
       - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
-      - client: do not show New Pics Available sign if on the home view
       - server: investigate bug with piv with location but no geotags
    --------------
    - small tasks
@@ -155,6 +154,7 @@ Mono
    - The back button takes you to the previous query (including its scroll position), but not to the same query with a different scroll position.
    - When scrolling up/down, updates should not modify the scroll position.
    - When uploads are happening in the background that affect the current query, the piv at the top left of the screen should remain on the top row until the next refresh.
+   - When uploads are happening in the background that affect the current query, show a dialog that allows for the query to be manually updated, or auto-updated.
    - Be able to invert the order in which tags on the left sidebar are shown, as well as sorting alphabetically rather than by number of pivs.
    - Click on chunk header to narrow down selection (range tag).
 
