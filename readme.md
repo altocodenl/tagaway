@@ -57,16 +57,18 @@ Mono
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
       - server: fix: exclude WA from hour in parse date
       - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
-      - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
       - server/client: videos pseudo-tag
       - client: upgrade pop up notice or email when running out of free space.
+      - client: upload: retry upload button
+   --------------
+   - small internal tasks
+      - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
       - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
       - server: rename b to rq.body throughout
       - server: get rid of thu entries, use id of piv + suffix
       - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
       - server: review format errors with files that have a jpg extension
       - admin: add set of users for fast access rather than scanning db
-      - client: upload: retry upload button
       - server: script to rename username
    --------------
    - large tasks
