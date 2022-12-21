@@ -1107,6 +1107,33 @@ CSS.litc = [
       // color: 'white',
       'margin-left': CSS.vars ['padding--xs']
    }],
+   ['.see-more-years', {
+      'width, height': 'fit-content',
+      'margin-bottom': '-22px',
+      color: CSS.vars ['color--one'],
+      'cursor': 'pointer',
+   }],
+   ['.see-more-geo', {
+      'display': 'inline-flex',
+      'margin-bottom': '-22px',
+      color: CSS.vars ['color--one'],
+      'cursor': 'pointer',
+   }],
+   ['.see-more-years-icon svg, .see-more-geo-icon svg', {
+      stroke: CSS.vars ['color--one'],
+      'stroke-width': 2
+   }],
+   ['.see-more-geo-icon svg', {
+     'width, height': 16,
+     'stroke-width': 3
+   }],
+   ['.see-more-years-text, .see-more-geo-text', {
+      'vertical-align': 'text-bottom'
+   }],
+   ['.see-more-geo-text', {
+      width: 70,
+      'padding-top': 3,
+   }],
    // *** tag-list-extended.scss ***
    // Tag list extended
    ['.tag-list-extended', {
@@ -5148,7 +5175,7 @@ views.pics = function () {
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'tagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, tagOrder) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'tagOrder'], ['State', 'expandCountries'], ['State', 'expandYears']], function (filter, selected, queryTags, monthTags, account, showNTags, tagOrder, expandCountries, expandYears) {
                         if (! account || ! selected) return ['ul'];
                         if (! tagOrder) tagOrder = {field: 'n'};
                         monthTags = monthTags || [];
@@ -5159,6 +5186,8 @@ views.pics = function () {
 
                         queryTags = teishi.copy (queryTags);
 
+                        // Add pseudo-tag `e::` for See more/less countries.
+                        queryTags ['e::'] = 0;
                         // Add pseudo-tag `f::` for arrow to switch sorting order, but only if we have user tags to show.
                         if (dale.stop (queryTags, true, function (v, tag) {
                            if (tag.match (filterRegex)) return H.isUserTag (tag);
@@ -5185,6 +5214,8 @@ views.pics = function () {
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
 
+                           if (a === 'e::') return -1;
+                           if (b === 'e::') return 1;
                            if (a === 'f::') return -1;
                            if (b === 'f::') return 1;
 
@@ -5201,6 +5232,10 @@ views.pics = function () {
                               if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
                               else                  return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
                            }
+                        });
+
+                        var countryCount = dale.acc (taglist, 0, function (n, tag) {
+                           return n += (H.isCountryTag (tag) ? 1 : 0);
                         });
 
                         var all      = eq (selected, []);
@@ -5255,6 +5290,9 @@ views.pics = function () {
                                  if (inc (selected, which) && ! home) Class += ' tag--selected';
                               }
                            }
+                           else if (which === 'e::') {
+                              var Class = 'tag-list__item tag';
+                           }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
                            }
@@ -5262,18 +5300,18 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && ! home ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
+                           if (! H.isDateTag (which) && ! inc (['f::', 'e::'], which)) numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
-                           var disabledTag = inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0;
+                           var disabledTag = (inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0) || inc (['f::', 'e::'], which);
                            if (H.isMonthTag (which) && ! inc (monthTags, which)) disabledTag = true;
 
                            var showName = tag.replace (/^[a-z]::/, '');
                            if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           // TODO: replace ['foo', 'bar'] by true no-op after gotoB 2.2.1 upgrade
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: (disabledTag || which === 'f::') ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action, action2 || ['foo', 'bar'])}, [
+                           // TODO: replace ['foo', 'bar'] by true no-op (`[]`) after gotoB 2.3.0 upgrade
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action, action2 || ['foo', 'bar'])}, [
                               H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (which === 't::', H.putSvg ('toOrganizeIcon')),
@@ -5282,6 +5320,12 @@ views.pics = function () {
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
+                              H.if (which === 'e::' && countryCount > 3, ['div', {style: style ({'margin-left': '-2px'})}, [
+                                 ['div', {class: 'see-more-geo', onclick: B.ev ('set', ['State', 'expandCountries'], ! expandCountries)}, [
+                                    ['span', {class: 'see-more-geo-icon'}, H.putSvg ('geotagOpen')],
+                                    ['span', {class: 'see-more-years-text'}, 'See ' + (expandCountries ? 'less' : 'more')]
+                                 ]]
+                              ]]),
                               H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
                                  ['div', {style: style ({display: 'inline-flex'}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'a', reverse: tagOrder.field === 'a' ? ! tagOrder.reverse : false})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
                                  ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
@@ -5290,7 +5334,7 @@ views.pics = function () {
                               ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
+                                 inc (['f::', 'e::'], which) ? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
@@ -5311,7 +5355,11 @@ views.pics = function () {
                            makeTag ('t::'),
                            makeTag ('o::'),
                            ! rangeTag ? [
-                              dale.go (yearlist, makeTag),
+                              dale.go (yearlist, makeTag).slice (expandYears ? 0 : -3),
+                              H.if (yearlist.length > 3, ['div', {class: 'see-more-years', onclick: B.ev ('set', ['State', 'expandYears'], ! expandYears)}, [
+                                 ['span', {class: 'see-more-years-icon', style: style ({'stroke-width': '2px'})}, H.putSvg ('itemTime')],
+                                 ['span', {class: 'see-more-years-text'}, 'See ' + (expandYears ? 'less' : 'more')]
+                              ]]),
                               ['br'], ['br'],
                               dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
                            ] : makeTag (rangeTag),
