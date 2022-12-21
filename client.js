@@ -5300,7 +5300,7 @@ views.pics = function () {
                               var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && ! home ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which) && which !== 'f::' && which !== 'e::') numberOfPivs = ' ' + queryTags [which];
+                           if (! H.isDateTag (which) && ! inc (['f::', 'e::'], which)) numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
                            var disabledTag = (inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0) || inc (['f::', 'e::'], which);
@@ -5334,7 +5334,7 @@ views.pics = function () {
                               ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                               ['span', {class: 'number_of_pivs'}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 inc (['f::', 's::'], which) ? [] : ['div', {class: 'tag-actions'}, [
+                                 inc (['f::', 'e::'], which) ? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
