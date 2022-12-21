@@ -54,8 +54,6 @@ Mono
       - server: investigate bug with piv with location but no geotags
    --------------
    - small tasks
-      - client: make Organized number green
-      - client: show less year & country entries in sidebar
       - client: see info of piv
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
       - server: fix: exclude WA from hour in parse date

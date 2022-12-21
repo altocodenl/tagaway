@@ -5332,7 +5332,7 @@ views.pics = function () {
                               ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
                               ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
-                              ['span', {class: 'number_of_pivs'}, numberOfPivs],
+                              ['span', {class: 'number_of_pivs' + (which === 'o::' ? ' tag__title-organized' : '')}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  inc (['f::', 'e::'], which) ? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
