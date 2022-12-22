@@ -3420,5 +3420,8 @@ H.tryTimeout (10, 1000, function (cb) {
 });
 
 process.on ('exit', function () {
-   if (H.server && H.server.kill) H.server.kill ();
+   if (H.server && H.server.kill) setTimeout (function () {
+      // Wait 100ms to close the server in order to allow for enough time for S3 deletions to conclude.
+      H.server.kill ();
+   }, 100);
 });
