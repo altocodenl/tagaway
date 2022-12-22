@@ -39,12 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Pivs
-   - Feedback box
-   - Fix bug untagging with unselect all
-   - Fix scroll + back bug
-   - Fix position moving around when uploads are happening in the background
-- Upgrade to gotoB 2.2.0: add mute events, use teishi.inc, teishi.prod = true in server
 - Share & manage
    - If user A shares tag X with user B:
       - User A sees the tag as shared with others in its share view.
@@ -89,18 +83,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - tag/untag: if own piv with that hash, tag/untag own. otherwise, resolve hash and add/rem from hashtag:HASH.
          - delete: if shared pivs with hash, (re)create hashtag:HASH
          - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
+         - query: see below
 
-         - finish annotated of
+      - finish annotated of changes?
 
-         - query: tags of own pivs are those in piv itself; for shared pivs, try to look them up in hash of own piv, otherwise on hashtag:HASH. But then you need to add those of other shared tags that also have that piv, and not only that piv, that HASH! Do it by getting ALL shared pivs, and their hashes, then you can trace back to the shared tag itself.
-            - remove treatment of years as or tags.
-            - from selected tags (or all tags), get all pivs that have them, also get all pivs from shared tags that match the query. result is a list of ids.
-            - get pivs and hashes.
-            - if pivs with same hash, use own piv as priority. if all are shared, disambiguate by username of who shares. result is list of ids with no hash repetition.
-            - for pivs with same hash, put list of tags from hashtag; also put date tags. TODO: put geotags there? or put them only if both users have it enabled?
-            - sort.
-            - if idsonly, return that.
-            - use both own tags and tags from hashtag, both for each piv's tags and for the total count.
+      - query: tags of own pivs are those in piv itself; for shared pivs, try to look them up in hash of own piv, otherwise on hashtag:HASH. But then you need to add those of other shared tags that also have that piv, and not only that piv, that HASH! Do it by getting ALL shared pivs, and their hashes, then you can trace back to the shared tag itself.
+         - remove treatment of years as or tags.
+         - from selected tags (or all tags), get all pivs that have them, also get all pivs from shared tags that match the query. result is a list of ids.
+         - get pivs and hashes.
+         - if pivs with same hash, use own piv as priority. if all are shared, disambiguate by username of who shares. result is list of ids with no hash repetition.
+         - for pivs with same hash, put list of tags from hashtag; also put date tags. TODO: put geotags there? or put them only if both users have it enabled?
+         - sort.
+         - if idsonly, return that.
+         - use both own tags and tags from hashtag, both for each piv's tags and for the total count.
    - Tests:
       - check queries & tags
          - check disappearing of access when either sho or shm is removed
@@ -112,7 +107,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. user C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
          - if a shared tag loses all pivs through untagging or deletion, remove it from sho and shm (try multiple shos as well).
          - TODO: tag by hash, no matter to whom it belongs
-   - update readme: redis structure, endpoints
    - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
 
 ### Already implemented
@@ -519,16 +513,26 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned. When this parameter is enabled, `body.from`, `body.to` and `body.sort` will be ignored; in other words, an array with all the ids matching the query will be returned. This enables the "select all" functionality.
 
-- `POST /share`
-   - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`.
-   - The target user (`body.whom`) must exist, otherwise a 404 is returned.
+- `POST /sho` (for sharing or unsharing) and `POST /shm` (for accepting or removing a tag shared with the user).
+   - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`. `whom` must be the `email`, not the `username` of the target user.
    - If the tag being shared, after being trimmed, starts with `[a-z]::`, a 400 is returned with body `{error: 'tag'}`.
-   - If try to share with yourself, a 400 is returned with body `{error: 'self'}`.
+   - The target user (`body.whom`) must exist, otherwise a 404 is returned with body `{error: 'user'}`.
+   - If `body.whom` corresponds to no user, a 400 is returned with body `{error: 'self'}`.
+   - If the `tag` doesn't exist, a 404 is returned with body `{error: 'tag'}`. If this is a `shm` operation and the `tag` is not shared with the user, a 403 is returned.
+   - In the case of `sho`, `del` represents an unsharing with another user; whereas in the case of `shm`, `del` means the removal of a tag shared with the user.
    - If successful, returns a 200.
 
 - `GET /share`
    - If successful, returns a 200 with body `{sho: [[USERNAME1, TAG1], ...], shm: [[USERNAME2, TAG2], ...]}`.
    - `body.sho` lists the tags shared with others by the user. `body.shm` lists the tags shared with the user.
+
+- `POST /rename`
+   - Body must be of the form `{from: STRING, to: STRING}`, where both values are user tags - that is, a string that when trimmed *doesn't* start with a lowercased latin letter followed by two colons.
+   - If `to` is not a user tag, a 400 is returned with body `{error: 'tag'}`.
+   - If the user has no `from` tag, a 404 is returned with body `{error: 'tag'}`.
+   - If the user already has a `to` tag, a 409 is returned with body `{error: 'exists'}`, to avoid overlapping two tags through a rename.
+   - If the `from` tag is shared with one or more users, a 409 is returned with body `{error: 'shared'}`.
+   - If successful, returns a 200.
 
 - `POST /download`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
@@ -1303,7 +1307,7 @@ We will now build a list of all the ids of all the pivs shared with the user. Fo
 
 We iterate the tags shared with the user. These share items are of the form `USERNAME:tag`, so by merely prepending them with `tag:`, we will get the list of piv ids that are bound to each tag. The resulting ids are added in a set at key `qid` through the `sunionstore` operation.
 
-A very useful consequence of using a set is that repeated piv ids won't be present more than once, since redis sets will not allow repeated items. Repeated pivs are indeed possible if a user A tags a piv 1 with tags X and Y, and shares both tags with another user.
+A very useful consequence of using a set is that repeated piv ids won't be present more than once, since redis sets will not allow repeated items. Repeated pivs are indeed possible if (for example) user A tags a piv 1 with tags X and Y, and shares both tags with another user.
 
 ```javascript
          multi.sunionstore (qid, dale.go (s.last, function (share) {
@@ -1776,7 +1780,7 @@ If the piv is not owned by the user, we will add `b.tag` to `hashtag:USERNAME:HA
 ```javascript
                   if (piv.owner !== rq.user.username) {
                      multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
-                     multi.sadd ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+                     multi.sadd ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
                   }
 ```
 
@@ -1817,7 +1821,7 @@ We also remove the hash from the taghash entry for the tag (`taghash:USERNAME:TA
 ```javascript
                if (piv.owner !== rq.user.username) {
                   multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
-                  multi.srem ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+                  multi.srem ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
                }
 ```
 
@@ -1876,7 +1880,7 @@ We reply with a 200 code. This concludes the endpoint.
    }],
 ```
 
-We now define the `get /tags` endpoint. This endpoint will return all the tags set by the user as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`.
+We now define `GET /tags`. This endpoint will return all the tags set by the user as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`.
 
 ```javascript
    ['get', 'tags', function (rq, rs) {
@@ -2369,6 +2373,153 @@ We return a 200 code and close the endpoint.
 
 ```javascript
          [reply, rs, 200],
+      ]);
+   }],
+```
+
+We now define `GET /share`. This endpoint will return a list of all the tags shared *by* the user (inside the `sho` key - *sho* stands for *shared with **o**thers*), as well as all the tags shared *with* the user (inside the `shm` key - *shm* stands for *shared with **m**e*).
+
+```javascript
+   ['get', 'share', function (rq, rs) {
+```
+
+We start by getting the `sho:USERNAME` and `SHM:username`.
+
+```javascript
+      var multi = redis.multi ();
+      multi.smembers ('sho:' + rq.user.username);
+      multi.smembers ('shm:' + rq.user.username);
+      astop (rs, [
+         [mexec, multi],
+```
+
+All that's left is to do some text processing from the obtained outputs. Both `sho` and `shm` entries are of the form `USERNAME:TAG`. We merely split the username from the tag, so that each entry will be of the form `[USERNAME, TAG]`. We return a 200 code with the body `{sho: [...], shm: [...]}`. This concludes the endpoint.
+
+```javascript
+         function (s) {
+            reply (rs, 200, {
+               sho: dale.go (s.last [0], function (v) {
+                  return [v.split (':') [0], v.split (':').slice (1).join (':')];
+               }),
+               shm: dale.go (s.last [1], function (v) {
+                  return [v.split (':') [0], v.split (':').slice (1).join (':')];
+               })
+            });
+         }
+      ]);
+   }],
+```
+
+We now define `POST /rename`, the endpoint responsible for renaming a tag.
+
+```javascript
+   ['post', 'rename', function (rq, rs) {
+```
+
+We create a shorthand `b` for the request's body.
+
+```javascript
+      var b = rq.body;
+```
+
+The body must be of the form `{from: STRING, to: STRING}`, where `from` is the name of the tag to be renamed, and `to` is the desired name for the tag.
+
+```javascript
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['from', 'to'], 'eachOf', teishi.test.equal],
+         ['body.from', b.from, 'string'],
+         ['body.to', b.to, 'string'],
+      ])) return;
+```
+
+We trim the `to` field. If it's not a user tag, we will return a 400 with body `{error: 'tag'}`.
+
+The `from` should be trimmed and a valid user tag - we'll check for this in a minute.
+
+```javascript
+      b.to = H.trim (b.to);
+      if (! H.isUserTag (b.to)) return reply (rs, 400, {error: 'tag'});
+```
+
+We check for the existence of `tag:USERNAME:FROM`, `tag:USERNAME:TO`; also, we get the list of all tags shared by the user, as well as all the user's taghashes.
+
+```javascript
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            multi.smembers ('tag:'     + rq.user.username + ':' + b.from);
+            multi.exists   ('tag:'     + rq.user.username + ':' + b.to);
+            multi.smembers ('sho:'     + rq.user.username);
+            multi.smembers ('taghash:' + rq.user.username + ':' + b.from);
+            mexec (s, multi);
+         }],
+```
+
+If the tag `from` doesn't exist for the user, we return a 404 with body `{error: 'tag'}`.
+
+```javascript
+         function (s) {
+            if (! s.last [0].length) return reply (rs, 404, {error: 'tag'});
+```
+
+If the tag `to` already exists for the user, we return a 409 with body `{error: 'exists'}`. This avoids merging an existing tag onto a new tag through a rename operation.
+
+```javascript
+            if (s.last [1])          return reply (rs, 409, {error: 'exists'});
+```
+
+If the tag is shared with one or more users, we return a 409 with body `{error: 'shared'}`. We do not want shared tags to be renamed because this can cause confusion for users with whom tags are shared.
+
+```javascript
+            var tagIsShared = dale.stop (s.last [2], true, function (shared) {
+               return b.to === shared.split (':').slice (1).join (':');
+            });
+            if (tagIsShared) return reply (rs, 409, {error: 'shared'});
+```
+
+If we're here, all validations have passed and we are ready to perform the tag renaming.
+
+We rename `tag:USERNAME:FROM` to `tag:USERNAME:TO`.
+
+```javascript
+            var multi = redis.multi ();
+            multi.rename ('tag:' + rq.user.username + ':' + b.from, 'tag:' + rq.user.username + ':' + b.to);
+```
+
+We remove `from` and add `to` to `tags:USERNAME`.
+
+```javascript
+            multi.srem ('tags:' + rq.user.username, b.from);
+            multi.sadd ('tags:' + rq.user.username, b.to);
+```
+
+For each of the pivs that have the `from` tag, we remove the `from` tag and add `to` in each `pivt:ID` entry.
+
+```javascript
+            dale.go (s.last [0], function (id) {
+               multi.srem ('pivt:' + id, b.from);
+               multi.sadd ('pivt:' + id, b.to);
+            });
+```
+
+If there are taghashes of the form `taghash:USERNAME:FROM`, we rename `taghash:USERNAME:FROM` to `taghash:USERNAME:TO` and iterate the entries inside `taghash:USERNAME:TO` to remove `from` and add `to` to the `hashtag:USERNAME:HASH` entries that contain `from`.
+
+```javascript
+            if (s.last [3].length) {
+               multi.rename ('taghash:' + rq.user.username + ':' + b.from, 'taghash:' + rq.user.username + ':' + b.to);
+               dale.go (s.last [3], function (hash) {
+                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.from);
+                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.to);
+               });
+            }
+```
+
+We execute the operations and return a 200 if the operation is successful. This concludes the endpoint.
+
+```javascript
+            mexec (s, multi);
+         },
+         [reply, rs, 200]
       ]);
    }],
 ```

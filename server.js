@@ -2788,7 +2788,7 @@ var routes = [
                   multi.sadd ('tags:' + rq.user.username, b.tag);
                   if (piv.owner !== rq.user.username) {
                      multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
-                     multi.sadd ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+                     multi.sadd ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
                   }
                   else {
                      multi.sadd ('pivt:' + piv.id, b.tag);
@@ -2801,7 +2801,7 @@ var routes = [
                if (! inc (s.last [k], b.tag)) return;
                if (piv.owner !== rq.user.username) {
                   multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
-                  multi.srem ('taghash:' + rq.user.username + ':' + b.tag, piv.hash);
+                  multi.srem ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
                }
                else {
                   s.ids.push (piv.id);
@@ -3152,8 +3152,6 @@ var routes = [
       ]);
    }],
 
-   // *** END ANNOTATED SOURCE CODE FRAGMENT ***
-
    ['get', 'share', function (rq, rs) {
       var multi = redis.multi ();
       multi.smembers ('sho:' + rq.user.username);
@@ -3162,12 +3160,12 @@ var routes = [
          [mexec, multi],
          function (s) {
             reply (rs, 200, {
-               sho: dale.go (s.last [0], function (i) {
-                  return [i.split (':') [0], i.split (':').slice (1).join (':')];
+               sho: dale.go (s.last [0], function (v) {
+                  return [v.split (':') [0], v.split (':').slice (1).join (':')];
                }),
-               shm: dale.go (s.last [1], function (i) {
-                  return [i.split (':') [0], i.split (':').slice (1).join (':')];
-               }),
+               shm: dale.go (s.last [1], function (v) {
+                  return [v.split (':') [0], v.split (':').slice (1).join (':')];
+               })
             });
          }
       ]);
@@ -3223,6 +3221,8 @@ var routes = [
          [reply, rs, 200]
       ]);
    }],
+
+   // *** END ANNOTATED SOURCE CODE FRAGMENT ***
 
    // *** DOWNLOAD MULTIPLE PIVS ***
 
