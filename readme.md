@@ -83,11 +83,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - tag/untag: if own piv with that hash, tag/untag own. otherwise, resolve hash and add/rem from hashtag:HASH.
          - delete: if shared pivs with hash, (re)create hashtag:HASH
          - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
-         - query: see below
 
-      - finish annotated of changes?
-
-      - query: tags of own pivs are those in piv itself; for shared pivs, try to look them up in hash of own piv, otherwise on hashtag:HASH. But then you need to add those of other shared tags that also have that piv, and not only that piv, that HASH! Do it by getting ALL shared pivs, and their hashes, then you can trace back to the shared tag itself.
+      - TODO: query: tags of own pivs are those in piv itself; for shared pivs, try to look them up in hash of own piv, otherwise on hashtag:HASH. But then you need to add those of other shared tags that also have that piv, and not only that piv, that HASH! Do it by getting ALL shared pivs, and their hashes, then you can trace back to the shared tag itself.
          - remove treatment of years as or tags.
          - from selected tags (or all tags), get all pivs that have them, also get all pivs from shared tags that match the query. result is a list of ids.
          - get pivs and hashes.
@@ -96,6 +93,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - sort.
          - if idsonly, return that.
          - use both own tags and tags from hashtag, both for each piv's tags and for the total count.
+         - annotate source code
+   - TODO: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
    - Tests:
       - check queries & tags
          - check disappearing of access when either sho or shm is removed
@@ -107,7 +106,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. user C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
          - if a shared tag loses all pivs through untagging or deletion, remove it from sho and shm (try multiple shos as well).
          - TODO: tag by hash, no matter to whom it belongs
-   - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
 
 ### Already implemented
 
@@ -538,7 +536,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
    - There should be no repeated ids on the query, otherwise a 400 is returned.
    - `body.ids` must have at least a length of 2 (otherwise, 400 with body `{error: 'single'}`. To download a single piv you can use `GET /piv/ID?original=1` instead.
-   - All pivs must exist and user must be owner of the pivs or have the pivs shared with them, otherwise a 404 is returned.
+   - All pivs must exist and user must be owner of all the pivs, otherwise a 404 is returned. This means that no pivs shared with the user can be downloaded.
    - If successful, returns a 200 with body `{id: STRING}`. The `id` corresponds to a temporary download file that lasts 5 seconds and is only valid for the user that requested the download.
 
 - `GET /download/ID`
