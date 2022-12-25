@@ -2884,23 +2884,6 @@ var routes = [
             mexec (s, multi);
          }],
          function (s) {
-            /*
-            Check auth for each shared tag
-            Union of geo and date for all sharing users with intersection of all shared pivs
-            Intersection of every set for a tag
-            With duplicates, prioritize. But not the lookup of tag.
-            */
-            // all mode: get all own, union with all shared pivs
-            // date tag: get own pivs with tag, union of all shared, union of all EACHSHARINGUSER:DATE, intersect the last two unions, union the result with own pivs with tag
-            // geo tag: (ignore if geo is off for user, or better, return 400) same as with date, and if owners don't have geo data, nothing will be returned!
-            // multiple date and geo: intersect the resulting unions
-
-            // from taghash, get hashes, from hashes, get all possible pivs. we could just store this! this would also allow us to see repetition and test the hasher. but if you had only one per user, you could just do the call to get for each sharing user the id of that hash. from taghash then, you get a list of ids of shared pivs that have that tag. then you union that with your own.
-
-            // one tag mode: get own pivs with tag, OR: get hashes from taghash, get all shared pivs, filter them out to only match those hashes
-            // multiple tag mode: intersect own pivs across tags, OR:
-
-            // THEN, in all cases, remove repeated by priority (own, sorted owner id)
             var allMode = b.tags.length === 0;
 
             if (allMode) tags ['a::'] = [rq.user.username];

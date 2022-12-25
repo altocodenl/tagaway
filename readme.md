@@ -84,17 +84,44 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - delete: if shared pivs with hash, (re)create hashtag:HASH
          - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
 
-      - TODO: query: tags of own pivs are those in piv itself; for shared pivs, try to look them up in hash of own piv, otherwise on hashtag:HASH. But then you need to add those of other shared tags that also have that piv, and not only that piv, that HASH! Do it by getting ALL shared pivs, and their hashes, then you can trace back to the shared tag itself.
-         - remove treatment of years as or tags.
-         - from selected tags (or all tags), get all pivs that have them, also get all pivs from shared tags that match the query. result is a list of ids.
-         - get pivs and hashes.
-         - if pivs with same hash, use own piv as priority. if all are shared, disambiguate by username of who shares. result is list of ids with no hash repetition.
-         - for pivs with same hash, put list of tags from hashtag; also put date tags. TODO: put geotags there? or put them only if both users have it enabled?
-         - sort.
-         - if idsonly, return that.
-         - use both own tags and tags from hashtag, both for each piv's tags and for the total count.
+      - TODO: query:
+         - Three things to get: pivs, tags and total
+         - Pivs: only get the specified amount, not everything
+         - Tags and total: get all of it, no limit
+         - Hash overlap between own and shared:
+            - Pivs: prioritize own piv, if not by id of shared user. Only return one.
+            - Total: if repetition on hash, count only once.
+            - Tags: on a given hash, get all tags, but don't count them more than once for each hash
+
+         - Get all own pivs for query
+         - Get all shared pivs for query
+            - Per user that shares, make a year and/or geo tags list of ids
+            - If user tag, do it as sinter with year/geotag list
+            - (if no geo enabled on the shared piv, then nothing will come out)
+         - Result: two lists of piv ids, one own, one shared. Merge it into one list of piv ids
+         - Iterate the piv ids, getting the hash, date/dateup and owner for each (use the relevant date field depending on b.sort)
+         - Iterate the piv ids to get the tags for each piv.
+         - Build a dict where each key is a tag and the value is a set with all the hashes. this avoids double counting the same tag on two different pivs with the same hash.
+         - get the counts for each tag. if the piv is not own, avoid non-user tags, but allow date and geo tags if they are present. result: a list of tags, each with a count.
+         - Create a dict where the keys are piv *hashes* and the values are an array with the date and the owner; if the hash exists, prioritize the user themselves, if not the owner in alphabetical order
+         - Result: the amount of entries will be the total amount of pivs
+         - Insert the hashes and associated dates into a zset
+         - Get the amount of entries necessary from the zset and delete the zset
+         - From the list of hashes, get the list of ids
+         - Get the relevant fields for each of the ids, and return that
+
+         - hashtags/taghashes? only for tagging shared.
+         - don't let through tags not shared with user.
+         - no need to disarm tags to see shared, because shared tags are queried with user too.
+
+            // from taghash, get hashes, from hashes, get all possible pivs. we could just store this! this would also allow us to see repetition and test the hasher. but if you had only one per user, you could just do the call to get for each sharing user the id of that hash. from taghash then, you get a list of ids of shared pivs that have that tag. then you union that with your own.
+            // one tag mode: get own pivs with tag, OR: get hashes from taghash, get all shared pivs, filter them out to only match those hashes
+         - remove treatment of years as OR tags.
          - annotate source code
    - TODO: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
+   - TODO: merge
+      - organized/to organize
+      - updateLimit
    - Tests:
       - check queries & tags
          - check disappearing of access when either sho or shm is removed
@@ -504,7 +531,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`. The field `tags` will potentially also date tags, geotags and tags shared with the user.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, total: INT, refreshQuery: true|UNDEFINED}`. The field `tags` will also potentially include date tags, geotags and tags shared with the user.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
       - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The two exceptions are `a::` and `untagged`, which indicate the *total* amount of all and untagged pivs, irrespective of the query.
@@ -1350,7 +1377,7 @@ Some background on hashtags is helpful: hashtags are sets of the form `hashtag:U
 
 taghashes are reverse hashtags: they are sets of the form `taghash:USERNAME:TAG` that point to one or more hashes. Their purpose is to make querying more efficient. Their contents, however, are equivalent to that of hashtags. Both should be kept consistent with each other.
 
-One more thing regarding hashtags and taghashes: if a user B owns a piv with hash 1, they will have no hashtag entry for hash 1 and no taghashes will contain the hash 1. In other words, if a user owns a piv with hash 1, there's no need for hashtags, since tags on a piv with hash 1 will be applied to the only piv they will own with hash 1.
+One more thing regarding hashtags and taghashes: if a user B owns a piv with hash 1, they will have no hashtag entry for hash 1 and no taghashes will contain the hash 1. In other words, if a user owns a piv with hash 1, there's no need for hashtags or taghashes, since tags on a piv with hash 1 will be applied to the only piv they will own with hash 1.
 
 This function will be invoked in the following five situations:
 
