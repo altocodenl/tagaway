@@ -47,6 +47,11 @@ Tom
    - Submission Google Drive
 
 Mono
+   - discuss:
+      - simple mobile version
+      - demo mode
+      - photobooks
+      - two types of shares, for four combinations (out/out, in/out, out/in, in/in).
    - bugs
       - client: fix issue with phantom selection when scrolling large selection
       - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
