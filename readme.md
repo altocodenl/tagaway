@@ -85,7 +85,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
 
       - TODO: query:
-         - Three things to get: pivs, tags and total
+         - Three things to get: pivs, tags and total (OR: ids)
          - Pivs: only get the specified amount, not everything
          - Tags and total: get all of it, no limit
          - Hash overlap between own and shared:
@@ -93,30 +93,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
             - Total: if repetition on hash, count only once.
             - Tags: on a given hash, get all tags, but don't count them more than once for each hash
 
-         - Get all own pivs for query
          - Get all shared pivs for query
-            - Per user that shares, make a year and/or geo tags list of ids
-            - If user tag, do it as sinter with year/geotag list
-            - (if no geo enabled on the shared piv, then nothing will come out)
-         - Result: two lists of piv ids, one own, one shared. Merge it into one list of piv ids
-         - Iterate the piv ids, getting the hash, date/dateup and owner for each (use the relevant date field depending on b.sort)
-         - Iterate the piv ids to get the tags for each piv.
-         - Build a dict where each key is a tag and the value is a set with all the hashes. this avoids double counting the same tag on two different pivs with the same hash.
-         - get the counts for each tag. if the piv is not own, avoid non-user tags, but allow date and geo tags if they are present. result: a list of tags, each with a count.
-         - Create a dict where the keys are piv *hashes* and the values are an array with the date and the owner; if the hash exists, prioritize the user themselves, if not the owner in alphabetical order
-         - Result: the amount of entries will be the total amount of pivs
-         - Insert the hashes and associated dates into a zset
-         - Get the amount of entries necessary from the zset and delete the zset
-         - From the list of hashes, get the list of ids
-         - Get the relevant fields for each of the ids, and return that
+            - hashtags?
+            - If no tags, get all pivs by sunion of all shared tags
+            - Otherwise
+               - Determine relevant users: if shared tags, the list of users that own those shared tags (should be one user, but if multiple, the query should not break but return an empty array // What happens if multiple share tags that have pivs with the same hash? We don't consider this case, because we'd have to look for more ids based on the hashes we obtain - we resolve from hashes only for own tags, not shared tags)
+               - If there are date/geotagging tags, per relevant user, sinter all these tags; then sunion them among users to get a list of piv ids
+               - For all own user tags, sinter the hashes of the shared pivs. For each of these hashes, look for it on each of the relevant users and do a sadd. This will generate a list of ids for all the shared pivs that match these user tags. If there were date/geotagging tags, sinter this list with that. Keep on sintering.
+            - If there are shared tags in the query, sinter them with the other tags (for the relevant sharing user).
+            - TODO: Case of untagged? No shared pivs!
 
-         - hashtags/taghashes? only for tagging shared.
-         - don't let through tags not shared with user.
-         - no need to disarm tags to see shared, because shared tags are queried with user too.
-
-            // from taghash, get hashes, from hashes, get all possible pivs. we could just store this! this would also allow us to see repetition and test the hasher. but if you had only one per user, you could just do the call to get for each sharing user the id of that hash. from taghash then, you get a list of ids of shared pivs that have that tag. then you union that with your own.
-            // one tag mode: get own pivs with tag, OR: get hashes from taghash, get all shared pivs, filter them out to only match those hashes
-         - remove treatment of years as OR tags.
          - annotate source code
    - TODO: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
    - TODO: merge
@@ -524,13 +510,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 }
 ```
    - `body.from` and `body.to` must be positive integers, and `body.to` must be equal or larger to `body.from`. For a given query, they provide pagination capability. Both are indexes (starting at 1) that specify the first and the last piv to be returned from a certain query. If both are equal to 1, the first piv for the query will be returned. If they are 1 & 10 respectively, the first ten pivs for the query will be returned.
-3. If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and will represent a timestamp. For the provided query, the server will find the index of the piv with the `date` (or `dateup` in the case of `sort` being `upload`) and use that as the `from` parameter. For example, if `fromDate` is `X`, `to` is 100 and `sort` is `newest`, the query will return the 100 pivs that match the query that were taken at `X` onwards, *plus all the pivs* taken before `X`.
+3. If `body.fromDate` is present, `body.from` must be absent. `body.fromDate` should be an integer larger than 1, and will represent a timestamp. For the provided query, the server will find the index of the last piv with the `date` (or `dateup` in the case of `sort` being `upload`) and use that as the `from` parameter. For example, if `fromDate` is `X`, `to` is 100 and `sort` is `newest`, the query will return the 100 pivs that match the query that were taken at `X` onwards, *plus all the pivs* taken before `X`.
    - `a::` cannot be included on `body.tags`. If you want to search for all available pivs, set `body.tags` to an empty array. If you send this tag, you'll get a 400 with body `{error: 'all'}`.
    - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
    - Each of the returned pivs will have all the tags present in `body.tags`. The only exception to this rule are year tags, on which the query returns pivs that contain at least one of the given date tags. For example, the query `['d::2018', 'd::2019']` will return pivs from both 2018 and 2019.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
    - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
-   - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user, will be included as a result of the query, even if they are not untagged pivs.
+   - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user (or to which the user has access through a shared tag), will be included as a result of the query, even if they are not untagged pivs.
    - If the query is successful, a 200 is returned with body `pivs: [{...}], tags: {'a::': INT, 'u::': INT, otherTag1: INT, ...}, total: INT, refreshQuery: true|UNDEFINED}`. The field `tags` will also potentially include date tags, geotags and tags shared with the user.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
@@ -1325,8 +1311,11 @@ We first get a list of all the tags shared with the user, by getting `shm:USERNA
 
 We will now build a list of all the ids of all the pivs shared with the user. For this, we define a redis `multi` operation and a `qid` (query id) since we will temporarily store our list of ids in redis.
 
+If, however, there are no shared tags with the user, we simply return a string `'empty'` to the next asynchronous function.
+
 ```javascript
       function (s) {
+         if (s.last.length === 0) return s.next ('empty');
          var multi = redis.multi (), qid = 'query:' + uuid ();
 ```
 
@@ -1351,6 +1340,8 @@ We then get the resulting set, delete it from redis and execute the multi operat
 
 We now iterate the list of ids, and obtain the `hash` for each of them as part of a new multi operation.
 
+If no tags are shared with the user, we merely return an empty array.
+
 If two (or more) distinct pivs have the same hash, the list will contain repeated hashes. However, we're OK with this, since the amount of repeated pivs should be relatively small, and the use we have for this list doesn't require it to contain non-repeated elements. To eliminate duplicates, we could either filter them in javascript, or add all the resulting hashes onto a redis set, but we won't do it - at least, not for now.
 
 Note that we access the next-to-last element in `s.last`, since the result of the last operation corresponds to the deletion of `qid`, rather than the `smembers` operation which brings the ids.
@@ -1359,6 +1350,7 @@ We will merely return the result of obtaining all the hashes, which should produ
 
 ```javascript
       function (s) {
+         if (s.last === 'empty') return s.next ([]);
          var multi = redis.multi ();
          dale.go (teishi.last (s.last, 2), function (id) {
             multi.hget ('piv:' + id, 'hash');
@@ -1445,7 +1437,7 @@ Note also that if `unshare` is present, we skip this asynchronous function.
       function (s) {
          if (unshare) return s.next ();
          var multi = redis.multi ();
-         var toRemove = dale.go (tags, undefined, function (tag, k) {
+         var toRemove = dale.fil (tags, undefined, function (tag, k) {
             if (s.last [k]) return;
             multi.srem ('tags:' + username, tag);
             var tagExists = s.last [k * 2], taghashExists = s.last [k * 2 + 1];
@@ -1510,10 +1502,16 @@ If the tag is inside `tags` and we haven't yet placed the username into `s.affec
          });
 ```
 
+If there are no affected users, we simply pass an empty array to the next function.
+
+```javascript
+         if (s.affectedUsers.length === 0) return s.next ([]);
+```
+
 We invoke `a.fork` on `s.affectedUsers` and `H.getSharedHashes`, to get the hashes shared with each affected user. This operation, as well as the entire invocation to `H.tagCleanup`, should happen *after* deletion/untagging/unsharing, so that the list of hashes will be updated. However, `sho` and `ids` should contain the information present *before* the operation, since this will indicate us what is the scope of what should be cleaned up.
 
 ```javascript
-         a.fork (s, s.affectedUsers, H.getSharedHashes, {max: 5});
+         a.fork (s, s.affectedUsers, function (v) {return [H.getSharedHashes, v]}, {max: 5});
       },
 ```
 
@@ -1546,7 +1544,7 @@ If, however, another user was still sharing a piv with the same hash, we would n
 Something interesting to note: there's no longer any references to the original list of tags passed as argument to the function. For hashtag/taghash purposes, that original list of tags was just a way to determine which users might have been affected by the operation.
 
 ```javascript
-            dale.go (s.hashes, function (hash) {
+            dale.go (hashes, function (hash) {
                if (inc (hashes, hash)) return;
                s.toRemove.push ([user, hash]);
                multi.smembers ('hashtag:' + user + ':' + hash);
@@ -1602,7 +1600,7 @@ We will now start another `multi` operation.
 We will only iterate the entries that are relevant to us, namely, the `exists` checks, which are at the end of the array of results we just obtained. The first part of the array, which we discarded, belong to the cleanup of hashtag/taghashes.
 
 ```javascript
-         s.last = s.last.slice (- toRemove2.length);
+         s.last = s.last.slice (- s.toRemove2.length);
 ```
 
 We iterate the `s.toRemove2` entries.
@@ -1683,8 +1681,8 @@ We start the asynchronous part of the operation, invoking `astop`.
 We first whether the user has access to each of the pivs. To find out, we invoke `H.hasAccess`. If the user has access to a piv (because the piv exists and it's either owned by the user or shared with the user) this function will also return the actual piv in question.
 
 ```javascript
-         [a.fork, b.ids, function (s, id) {
-            H.hasAccess (s, rq.user.username, id);
+         [a.fork, b.ids, function (id) {
+            return [H.hasAccess, rq.user.username, id];
          }, {max: 5}],
 ```
 
@@ -1977,16 +1975,16 @@ Here are the requirements for the body (taken from the documentation of `POST /q
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
          ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
          ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.from',    b.from, ['undefined', 'integer'], 'oneOf'],
          ['body.to',      b.to, 'integer'],
          b.from === undefined ? [
             ['body.fromDate', b.fromDate, 'integer'],
-            ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range]
-            ['body.to',       b.to,       {min: 1}, teishi.test.range],
+            ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range],
+            ['body.to',       b.to,       {min: 1}, teishi.test.range]
          ] : [
             ['body.fromDate', b.fromDate, 'undefined'],
-            ['body.from', b.from, 'integer'],
-            ['body.from', b.from, {min: 1},      teishi.test.range]
-            ['body.to',   b.to,   {min: b.from}, teishi.test.range],
+            ['body.from', b.from, {min: 1},      teishi.test.range],
+            ['body.to',   b.to,   {min: b.from}, teishi.test.range]
          ],
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
@@ -2335,7 +2333,7 @@ If this is an unshare operation, we will also remove the entry `USERNAME:TAG` fr
             if (action === 'sho' && b.del) multi.srem ('shm:' + b.whom, rq.user.username + ':' + b.tag);
 ```
 
-Finally, in the case of an unshare or a remove operation, we get the list of piv ids tagged with the tag, which will be necessary to our invocation of `H.hashtagCleanup` below. We then execute this set of redis operations.
+Finally, in the case of an unshare or a remove operation, we get the list of piv ids tagged with the tag, which will be necessary to our invocation of `H.tagCleanup` below. We then execute this set of redis operations.
 
 ```javascript
             if (b.del) multi.smembers ('tag:' + (action === 'sho' ? rq.user.username : b.whom) + ':' + b.tag);
@@ -2361,7 +2359,7 @@ If this is either an unshare or a remove share operation, we invoke `H.tagCleanu
 ```javascript
          ! b.del ? [] : [
             [Redis, 'smembers', 'tag:' + action === 'sho' ? rq.user.username : b.whom],
-            [a.get, H.tagCleanup, rq.user.username, [b.tag], '@last', [(action === 'sho' ? b.whom : rq.user.username) + ':' + b.tag])],
+            [a.get, H.tagCleanup, rq.user.username, [b.tag], '@last', [(action === 'sho' ? b.whom : rq.user.username) + ':' + b.tag]],
          ],
 ```
 

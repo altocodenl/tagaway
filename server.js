@@ -234,8 +234,8 @@ H.hash = function (string) {
    return hash (string) + '';
 }
 
-H.isYearTag = function (tag) {
-   return !! tag.match (/^d::\d+/);
+H.isDateTag = function (tag) {
+   return !! tag.match (/^d::/);
 }
 
 H.isGeoTag = function (tag) {
@@ -531,7 +531,7 @@ H.deletePiv = function (s, id, username) {
          var multi = redis.multi ();
          multi.hgetall  ('piv:'  + id);
          multi.smembers ('pivt:' + id);
-         multi.smembers ('sho:' + rq.user.username);
+         multi.smembers ('sho:' + username);
          mexec (s, multi);
       }],
       function (s) {
@@ -556,7 +556,7 @@ H.deletePiv = function (s, id, username) {
          // Delete mp4 version of non-mp4 video
          H.unlink (s, Path.join (CONFIG.basepath, H.hash (username), s.piv.vid));
       },
-      [a.set, 'sharedHashes', [H.getSharedHashes, rq.user.username]],
+      [a.set, 'sharedHashes', [H.getSharedHashes, username]],
       function (s) {
          var multi = redis.multi ();
 
@@ -586,7 +586,7 @@ H.deletePiv = function (s, id, username) {
          });
          mexec (s, multi);
       },
-      [a.get, H.tagCleanup, rq.user.username, '@tags', [s.piv.id], '@sho'],
+      [a.get, H.tagCleanup, username, '@tags', [id], '@sho'],
       function (s) {
          H.stat.w (s, [
             // The minus sign coerces the strings into numbers.
@@ -603,7 +603,7 @@ H.deletePiv = function (s, id, username) {
 
 // If it returns false, piv does not exist or user has no access; otherwise, returns the piv itself.
 H.hasAccess = function (S, username, pivId) {
-   a.stop (s, [
+   a.stop ([
       [Redis, 'hgetall', 'piv:' + pivId],
       function (s) {
          if (! s.last) return s.next (false);
@@ -1074,8 +1074,8 @@ H.getSharedHashes = function (s, username) {
    a.seq (s, [
       [Redis, 'smembers', 'shm:' + username],
       function (s) {
+         if (s.last.length === 0) return s.next ('empty');
          var multi = redis.multi (), qid = 'query:' + uuid ();
-         // Get a set of all the piv ids from all the tags shared with the user
          multi.sunionstore (qid, dale.go (s.last, function (share) {
             return 'tag:' + share;
          }));
@@ -1084,6 +1084,7 @@ H.getSharedHashes = function (s, username) {
          mexec (s, multi);
       },
       function (s) {
+         if (s.last === 'empty') return s.next ([]);
          var multi = redis.multi ();
          dale.go (teishi.last (s.last, 2), function (id) {
             multi.hget ('piv:' + id, 'hash');
@@ -1107,7 +1108,7 @@ H.tagCleanup = function (s, username, tags, ids, sho, unshare) {
       function (s) {
          if (unshare) return s.next ();
          var multi = redis.multi ();
-         var toRemove = dale.go (tags, undefined, function (tag, k) {
+         var toRemove = dale.fil (tags, undefined, function (tag, k) {
             var tagExists = s.last [k * 2], taghashExists = s.last [k * 2 + 1];
             if (! tagExists && ! taghashExists) multi.srem ('tags:' + username, tag);
             if (! tagExists) return tag;
@@ -1133,14 +1134,16 @@ H.tagCleanup = function (s, username, tags, ids, sho, unshare) {
             var username = share.split (':') [0], tag = share.split (':').slice (1).join (':');
             if (inc (tags, tag) && ! inc (s.affectedUsers, username)) s.affectedUsers.push (username);
          });
-         a.fork (s, s.affectedUsers, H.getSharedHashes, {max: 5});
+         // TODO: remove special case for no-op once a.fork returns an empty array for a no-op
+         if (s.affectedUsers.length === 0) return s.next ([]);
+         else a.fork (s, s.affectedUsers, function (v) {return [H.getSharedHashes, v]}, {max: 5});
       },
       function (s) {
          var multi = redis.multi ();
          s.toRemove = [];
          dale.go (s.last, function (hashes, k) {
             var username = s.affectedUsers [k];
-            dale.go (s.hashes, function (hash) {
+            dale.go (hashes, function (hash) {
                if (inc (hashes, hash)) return;
                s.toRemove.push ([username, hash]);
                multi.smembers ('hashtag:' + username + ':' + hash);
@@ -1168,7 +1171,7 @@ H.tagCleanup = function (s, username, tags, ids, sho, unshare) {
       },
       function (s) {
          var multi = redis.multi ();
-         s.last = s.last.slice (- toRemove2.length);
+         s.last = s.last.slice (- s.toRemove2.length);
          dale.go (s.toRemove2, function (toRemove2) {
             if (! s.last [k]) multi.srem ('tags:' + toRemove2 [0], toRemove2 [1]);
          });
@@ -1999,7 +2002,7 @@ var routes = [
 
    ['get', 'piv/:id', function (rq, rs) {
       astop (rs, [
-         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id]], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id], true], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
@@ -2063,7 +2066,7 @@ var routes = [
    ['get', 'thumb/:size/:id', function (rq, rs) {
       if (! inc (['S', 'M'], rq.data.params.size)) return reply (rs, 400);
       astop (rs, [
-         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id]], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id], true], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === 'S' ? 'xthumbS' : 'xthumbM', 1],
          function (s) {
             // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
@@ -2741,8 +2744,8 @@ var routes = [
       if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
 
       astop (rs, [
-         [a.fork, b.ids, function (s, id) {
-            H.hasAccess (s, rq.user.username, id);
+         [a.fork, b.ids, function (id) {
+            return [H.hasAccess, rq.user.username, id];
          }, {max: 5}],
          function (s) {
             if (dale.stop (s.last, true, function (piv) {return piv === false})) return reply (rs, 404);
@@ -2849,16 +2852,16 @@ var routes = [
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
          ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
          ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.from',    b.from, ['undefined', 'integer'], 'oneOf'],
          ['body.to',      b.to, 'integer'],
          b.from === undefined ? [
             ['body.fromDate', b.fromDate, 'integer'],
-            ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range]
-            ['body.to',       b.to,       {min: 1}, teishi.test.range],
+            ['body.fromDate', b.fromDate, {min: 1}, teishi.test.range],
+            ['body.to',       b.to,       {min: 1}, teishi.test.range]
          ] : [
             ['body.fromDate', b.fromDate, 'undefined'],
-            ['body.from', b.from, 'integer'],
-            ['body.from', b.from, {min: 1},      teishi.test.range]
-            ['body.to',   b.to,   {min: b.from}, teishi.test.range],
+            ['body.from', b.from, {min: 1},      teishi.test.range],
+            ['body.to',   b.to,   {min: b.from}, teishi.test.range]
          ],
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
@@ -2868,14 +2871,183 @@ var routes = [
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
       if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 
-      var tags = dale.obj (b.tags, function (tag) {
-         return [tag, [rq.user.username]];
-      };
-
-      var qid = uuid ();
+      var qid = 'query-' + uuid ();
 
       astop (rs, [
-         [a.set, 'shm', [Redis, 'smembers', 'shm:' + rq.user.username]],
+         // TODO: remove the refreshQuery functionality. This section is not annotated since it won't last and is kept for compatibility purposes.
+         [Redis, 'get', 'geo:' + rq.user.username],
+         function (s) {
+            // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
+            if (s.last) {
+               s.refreshQuery = true;
+               return s.next ();
+            }
+            var data = s.last;
+            a.seq (s, [
+               // We assume that any ongoing uploads must be found in the first 20
+               [H.getUploads, rq.user.username, {}, 20],
+               function (s) {
+                  s.refreshQuery = dale.stop (s.last, true, function (v) {
+                     return v.status === 'uploading';
+                  });
+                  s.next (data);
+               }
+            ]);
+         },
+         // End of the refreshQuery functionality
+         [function (s) {
+            var relevantUsers = [];
+            var query = {
+               username: rq.user.username,
+               query: b,
+               dateGeoTags: dale.fil (b.tags, undefined, function (tag) {
+                  if (H.isGeoTag (tag) || H.isDateTag (tag)) return tag;
+               }),
+               userTags: dale.fil (b.tags, undefined, function (tag) {
+                  if (tag === 'u::' || H.isUserTag (tag)) return tag;
+               }),
+               sharedTags: dale.fil (b.tags, undefined, function (tag) {
+                  if (! tag.match (/^s::/)) return;
+                  tag = tag.split (':');
+                  if (! inc (relevantUsers, tag [1])) relevantUsers.push (tag [1]);
+                  return [tag [1], tag [2]];
+               })
+            };
+            query.relevantUsers = relevantUsers;
+            // TODO: move it to stored script
+            s.script = 'local query = cjson.decode (redis.call ("get", KEYS [1]));\n' +
+                       'local allShares = redis.call ("smembers", "shm:" .. query.username);\n' +
+                       // No tags sent
+                       'if #query.query.tags == 0 then\n' +
+                       '   redis.call ("sinterstore", KEYS [1] .. "-ids", "tag:" .. query.username .. ":a::");\n' +
+                       'else\n' +
+                       '   local prepended = {};\n' +
+                       '   for k, v in ipairs (query.dateGeoTags) do\n' +
+                       '      table.insert (prepended, "tag:" .. query.username .. ":" .. v);\n' +
+                       '   end\n' +
+                       '   for k, v in ipairs (query.userTags) do\n' +
+                       '      table.insert (prepended, "tag:" .. query.username .. ":" .. v);\n' +
+                       '   end\n' +
+                       '   redis.call ("sinterstore", KEYS [1] .. "-ids", unpack (prepended));\n' +
+                       'end\n' +
+                       'local output = {};\n' +
+                       // Recently tagged pivs TODO: For pivs that are not own, must mask against list of all pivs with access (add all shm pivs to the masked set through sinterstore)
+                       'if query.query.recentlyTagged and #query.query.recentlyTagged then\n' +
+                       '   redis.call ("sadd", KEYS [1] .. "-recent", unpack (query.query.recentlyTagged));\n' +
+                       '   redis.call ("sadd", KEYS [1] .. "-ids", unpack (redis.call ("sinter", "tag:" .. query.username .. ":a::", KEYS [1] .. "-recent")));\n' +
+                       'end\n' +
+                       'output.ids = redis.call ("smembers", KEYS [1] .. "-ids");\n' +
+                       'output.total = redis.call ("scard", KEYS [1] .. "-ids");\n' +
+                       'local sortField = query.query.sort == "upload" and "dateup" or "date";\n' +
+                       // Iterate ids to make a sorted set, exclude those with dates out of range
+                       'for k, v in ipairs (output.ids) do\n' +
+                       '   local date = tonumber (redis.call ("hget", "piv:" .. v, sortField));\n' +
+                       '   if not ((query.query.mindate and date < query.query.mindate) or (query.query.maxdate and date > query.query.maxdate)) then\n' +
+                       '      redis.call ("zadd", KEYS [1] .. "-sort", date, v);\n' +
+                       '   end\n' +
+                       'end\n' +
+                       // Update ids list to remove pivs that are out of the requested date range
+                       'if #output.ids > redis.call ("zcard", KEYS [1] .. "-sort") then\n' +
+                       '   output.ids = redis.call ("zrange", KEYS [1] .. "-sort", 0, -1);\n' +
+                       '   redis.call ("del", KEYS [1] .. "-ids");\n' +
+                       '   redis.call ("mget", "DEBUG", #output.ids);\n' +
+                       '   if #output.ids > 0 then redis.call ("sadd", KEYS [1] .. "-ids", unpack (output.ids)) end\n' +
+                       'end\n' +
+                       // fromDate: For newest/upload, we want the index of the last piv that is >= than fromDate. For that, we pass a maximum of infinite, a minimum of fromDate. If we get none, from is set at 1. If we call it with zrangebyscore, it will give us the lowest value first, which we want. For oldest, we want the index of the last piv that is <= than fromDate. For that, we pass a minimum of 0 and a maximum of fromDate. If we get none, from is set at 1. If we call it with zrevrangebyscore, it will give us the highest value first, which we want.
+                       'if query.query.fromDate then\n' +
+                       '   query.query.from = 1;\n' +
+                       '   local fromElement;\n' +
+                       '   if query.query.sort == "oldest" then\n' +
+                       '      fromElement = redis.call ("zrevrangebyscore", KEYS [1] .. "-sort", 0, query.query.fromDate,      "LIMIT", 0, 1);\n' +
+                       '   else\n' +
+                       '      fromElement = redis.call ("zrangebyscore",    KEYS [1] .. "-sort", query.query.fromDate, "+inf", "LIMIT", 0, 1);\n' +
+                       '   end\n' +
+                       '   if #fromElement > 0 then\n' +
+                       '      redis.call ("get", cjson.encode (fromElement));\n' +
+                       '      query.query.to = query.query.to + redis.call (query.query.sort == "oldest" and "zrank" or "zrevrank", KEYS [1] .. "-sort", fromElement [1]);\n' +
+                       '   end\n' +
+                       'end\n' +
+                       // Get tags if `idsOnly` is not set
+                       'if not query.idsOnly then\n' +
+                       '   for k, v in ipairs (output.ids) do\n' +
+                       '      for k2, v2 in ipairs (redis.call ("smembers", "pivt:" .. v)) do\n' +
+                       '         redis.call ("hincrby", KEYS [1] .. "-tags", v2, 1);\n' +
+                       '      end\n' +
+                       '   end\n' +
+                       '   output.tags = redis.call ("hgetall", KEYS [1] .. "-tags");\n' +
+                       '   table.insert (output.tags, "a::");\n' +
+                       '   table.insert (output.tags, redis.call ("scard", "tag:" .. query.username .. ":a::"));\n' +
+                       '   table.insert (output.tags, "u::");\n' +
+                       '   table.insert (output.tags, #redis.call ("sinter", KEYS [1] .. "-ids", "tag:" .. query.username .. ":u::"));\n' +
+                       'end\n' +
+                       // We replace the id list with only the number of pivs required only after getting the tags; in that way we can use the full list of ids we already have in Lua memory when getting tags
+                       'output.ids = redis.call (query.query.sort == "oldest" and "zrange" or "zrevrange", KEYS [1] .. "-sort", query.query.from - 1, query.query.to - 1);\n' +
+                       // Get piv info if `idsOnly` is not set, but for the pivs returned
+                       'output.pivs = {};\n' +
+                       'if not query.idsOnly then\n' +
+                       '   for k, v in ipairs (output.ids) do\n' +
+                       '      local piv = redis.call ("hgetall", "piv:" .. v);\n' +
+                       '      table.insert (piv, "tags");\n' +
+                       '      table.insert (piv, redis.call ("smembers", "pivt:" .. v));\n' +
+                       '      table.insert (output.pivs, piv);\n' +
+                       '   end\n' +
+                       'end\n' +
+                       'redis.call ("del", KEYS [1], KEYS [1] .. "-ids", KEYS [1] .. "-sort", KEYS [1] .. "-tags");\n' +
+                       'return cjson.encode (output);\n'
+            Redis (s, 'set', qid, JSON.stringify (query));
+         }],
+         // https://github.com/redis/redis/issues/10296
+         // We won't pass all the keys accessed, we cannot know them beforehand; if we don't use cluster and minimize memory usage in the script, we should be fine
+         [a.stop, [a.get, Redis, 'eval', '@script', 1, qid], function (s, error) {
+            console.log (error);
+            s.next ();
+         }],
+         function (s) {
+            s.last = JSON.parse (s.last);
+            if (b.idsOnly) return reply (rs, 200, s.last.ids);
+            s.last.tags = dale.obj (s.last.tags, function (v, k) {
+               if (k % 2 === 0) return [v, parseInt (s.last.tags [k + 1])];
+            });
+            s.last.pivs = dale.go (s.last.pivs, function (piv) {
+               return dale.obj (piv, function (v, k) {
+                  if (k % 2 === 0) return [v, piv [k + 1]];
+               });
+            });
+            s.last.pivs = dale.go (s.last.pivs, function (piv) {
+               var vid;
+               if (piv.vid) {
+                  if (piv.vid.match ('pending'))    {
+                     vid = 'pending';
+                     // If there are pending conversions, the query also needs refreshing.
+                     s.refreshQuery = true;
+                  }
+                  else if (piv.vid.match ('error')) vid = 'error';
+                  else                              vid = true;
+               }
+               return {
+                  id:      piv.id,
+                  owner:   piv.owner,
+                  name:    piv.name,
+                  tags:    piv.tags.sort (),
+                  date:    parseInt (piv.date),
+                  dateup:  parseInt (piv.dateup),
+                  dimh:    parseInt (piv.dimh),
+                  dimw:    parseInt (piv.dimw),
+                  vid:     vid,
+                  deg:     vid ? undefined : (parseInt (piv.deg) || undefined),
+                  loc:     piv.loc ? teishi.parse (piv.loc) : undefined,
+                  // Fields returned only during tests
+                  thumbS:     ! ENV ? piv.thumbS             : undefined,
+                  thumbM:     ! ENV ? piv.thumbM             : undefined,
+                  dates:      ! ENV ? JSON.parse (piv.dates) : undefined,
+                  dateSource: ! ENV ? piv.dateSource         : undefined,
+                  format:     ! ENV ? piv.format             : undefined
+               };
+            });
+            reply (rs, 200, {refreshQuery: s.refreshQuery || undefined, pivs: s.last.pivs, total: s.last.total, tags: s.last.tags});
+         },
+         // TODO: make it work with shared pivs
+         // TODO: remove all the code below
          [a.set, 'sharedIds', function (s) {
             var multi = redis.multi ();
             multi.sunionstore ('query:' + qid, dale.go (s.shm, function (tag) {
@@ -3115,7 +3287,7 @@ var routes = [
          },
          ! b.del ? [] : [
             [Redis, 'smembers', 'tag:' + action === 'sho' ? rq.user.username : b.whom],
-            [a.get, H.tagCleanup, rq.user.username, [b.tag], '@last', [(action === 'sho' ? b.whom : rq.user.username) + ':' + b.tag])],
+            [a.get, H.tagCleanup, rq.user.username, [b.tag], '@last', [(action === 'sho' ? b.whom : rq.user.username) + ':' + b.tag]],
          ],
          function (s) {
             var eventType;
@@ -3284,7 +3456,7 @@ var routes = [
          function (s) {
             if (dale.stop (s.last, true, function (piv, k) {
                // No such piv or piv is not owned by user
-               return ! piv || piv.owner === rq.user.username;
+               return ! piv || piv.owner !== rq.user.username;
             })) return reply (rs, 404);
 
             var downloadId = uuid ();
