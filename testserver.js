@@ -618,6 +618,8 @@ suites.auth = {
          }, 403, H.cBody ({error: 'username'})],
          // existing email check cannot happen if we signup by invite because invite is looked up by email
          ['try to signup with same token again', 'post', 'auth/signup', {}, function (s) {
+            // We delete the "another invite" created two tests ago
+            redis.del ('invite:' + user.email + 'foo', function () {});
             return {username: user.username, password: user.password, email: user.email, token: s.inviteToken};
          }, 403, H.cBody ({error: 'token'})],
          ['login with invalid password', 'post', 'auth/login', {}, {username: user.username, password: user.password + 'foo', timezone: user.timezone}, 403, H.cBody ({error: 'auth'})],
@@ -1547,6 +1549,8 @@ suites.upload.piv = function () {
                      function (s) {
                         var percentage = Math.min (Math.round (CONFIG.thumbSizes [size] / max * 100), 100);
                         var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
+                        // In some versions of heif-convert (for example the one that comes through Homebrew), sunrise.heic will be rotated when converted, which throws off our assertions. The code expects the jpg to be converted with the same dimensions and the same orientation header.
+                        // If you install heif-convert like it is specified in utils/provision.sh, this should not happen.
                         // TODO DEBUG: remove after debugging
                         //if (H.stop ('thumb' + size + ' width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
                         //if (H.stop ('thumb' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
@@ -2106,7 +2110,7 @@ suites.tag = function () {
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag1').sort ()))  return false;
          return true;
       }],
-      ['query pivs after tagging, check that query that is cutoff still shows the right amount of pivs per tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+      ['query pivs after tagging, check that query that is cutoff by `to` still shows the right amount of pivs per tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2})) return false;
          return true;
       }],
@@ -2231,6 +2235,7 @@ suites.query = function () {
          [['recentlyTagged', 0], 'type', 'string', 'each of the body.recentlyTagged should have as type string but one of .+ is .+ with type'],
          [['idsOnly'], ['undefined', 'boolean']],
          [['tags'], 'invalidValues', [['a::']], 'all'],
+         [['tags'], 'invalidValues', [['u::', 'foo', 'bar', 'foo']], 'repeated'],
          [['recentlyTagged'], 'values', [['foo']]],
          [['tags'], 'invalidValues', [['foo']], 'recentlyTagged'],
       ]),
@@ -2404,25 +2409,30 @@ suites.query = function () {
       }],
       ['query pivs with irrelevant range but right at the edges', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 3)) return false;
+         if (H.stop ('body.total', rs.body.total, 3)) return false;
          return true;
       }],
       ['query pivs with range that shaves newest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [0].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
+         if (H.stop ('body.total', rs.body.total, 2)) return false;
          if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::M5': 1, 'd::2014': 2})) return false;
          return true;
       }],
       ['query pivs with range that also shaves middle piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date, maxdate: s.rangePivs [1].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 1)) return false;
+         if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 1, 'd::M5': 1, 'd::2014': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves oldest piv', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: s.rangePivs [2].date + 1, maxdate: s.rangePivs [0].date}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 2)) return false;
+         if (H.stop ('body.total', rs.body.total, 2)) return false;
          if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 2, 'd::M7': 1, 'd::2014': 1, 'd::2022': 1, 'd::M3': 1})) return false;
          return true;
       }],
       ['query pivs with range that shaves all pivs', 'post', 'query', {}, function (s) {return {tags: [], sort: 'newest', from: 1, to: 3, mindate: 0, maxdate: s.rangePivs [2].date - 1}}, 200, function (s, rq, rs, next) {
          if (H.stop ('body.pivs.length', rs.body.pivs.length, 0)) return false;
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
          if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 0})) return false;
          return true;
       }],
@@ -3184,6 +3194,26 @@ suites.import = function () {
    ];
 }
 
+// This suite only checks for DB keys that should be deleted by the end of any test cycle.
+suites.cleanup = function () {
+   return ['dummy request before querying database keys for extraneous ones', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+      // Wait up to a second for S3 entries to be removed
+      H.tryTimeout (10, 100, function (cb) {
+         redis.keys ('*', function (error, keys) {
+            var keys = dale.fil (keys, undefined, function (v) {
+               // TODO DEBUG remove the line below after the merge
+               if (v.match (/^raceCondition/)) return;
+               if (v.match (/^(stat|ulog|csrf|session)/)) return;
+               if (inc (['s3:proc', 'geo'], v)) return;
+               return v;
+            });
+            if (keys.length) return cb ('Some keys were not cleaned up: ' + JSON.stringify (keys));
+            cb ();
+         });
+      }, next);
+   }];
+}
+
 // *** RUN TESTS ***
 
 var t = Date.now ();
@@ -3197,13 +3227,11 @@ H.tryTimeout (10, 1000, function (cb) {
    var serverStart = Date.now () - t;
 
    var suitesToRun = (function () {
-      if (! toRun) return dale.go (suites, function (v) {
+      return dale.fil (suites, undefined, function (v, k) {
+         if (toRun && ! inc ([toRun, 'cleanup'], k)) return;
          if (type (v) === 'function') return v ();
          return v.full ();
       });
-      var suite = suites [toRun];
-      if (type (suite) === 'function') return suite ();
-      return suite.full ();
    }) ();
 
    h.seq ({port: CONFIG.port}, suitesToRun, function (error, tests) {

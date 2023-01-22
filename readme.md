@@ -85,29 +85,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
 
       - TODO: query:
-         - Three things to get: pivs, tags and total (OR: ids)
-         - Pivs: only get the specified amount, not everything
-         - Tags and total: get all of it, no limit
-         - Hash overlap between own and shared:
-            - Pivs: prioritize own piv, if not by id of shared user. Only return one.
-            - Total: if repetition on hash, count only once.
-            - Tags: on a given hash, get all tags, but don't count them more than once for each hash
+         - leave tests on an easily resumable state
+         - merge: docs, check keys in db (s3, remove hometags), remove 100ms delay on H.server.kill, organized/to organize, updateLimit, add hashids script
 
-         - Get all shared pivs for query
-            - hashtags?
-            - If no tags, get all pivs by sunion of all shared tags
-            - Otherwise
-               - Determine relevant users: if shared tags, the list of users that own those shared tags (should be one user, but if multiple, the query should not break but return an empty array // What happens if multiple share tags that have pivs with the same hash? We don't consider this case, because we'd have to look for more ids based on the hashes we obtain - we resolve from hashes only for own tags, not shared tags)
-               - If there are date/geotagging tags, per relevant user, sinter all these tags; then sunion them among users to get a list of piv ids
-               - For all own user tags, sinter the hashes of the shared pivs. For each of these hashes, look for it on each of the relevant users and do a sadd. This will generate a list of ids for all the shared pivs that match these user tags. If there were date/geotagging tags, sinter this list with that. Keep on sintering.
-            - If there are shared tags in the query, sinter them with the other tags (for the relevant sharing user).
-            - TODO: Case of untagged? No shared pivs!
-
-         - annotate source code
    - TODO: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
-   - TODO: merge
-      - organized/to organize
-      - updateLimit
    - Tests:
       - check queries & tags
          - check disappearing of access when either sho or shm is removed
@@ -752,6 +733,8 @@ All the routes below require an admin user to be logged in.
 - hashorigdel:USERNAME (set): contains hashes of the pivs deleted by an user (without metadata stripped), to check for repetition when re-uploading files that were deleted. This field is not in use yet.
 
 - hashdel:USERNAME:PROVIDER (set): contains hashes of the pivs deleted by an user, to check for repetition when re-importing files that were deleted. The hashed quantity is `ID:MODIFIED_TIME`. This field is not in use yet.
+
+- hashids:HASH (set): contains a list of piv ids that have the given HASH
 
 - raceConditionHash:USERNAME:HASH (string): contains the id of a piv currently being uploaded by the user, to serve as a check to avoid a race condition between simultaneous uploads of pivs with identical content.
 
@@ -1666,9 +1649,7 @@ If after trimming it the conditions are not met, we return a 400 error with body
 We check whether there are repeated ids inside `ids`. We do this by creating an object of the form `{ID1: true, ID2: true, ...}`. If this object has less keys than the length of `ids`, it means there are repeated keys. If that's the case, we return a 400 error with body `{error: 'repeated'}`.
 
 ```javascript
-      var seen = dale.obj (b.ids, function (id) {
-         return [id, true];
-      });
+      var seen = dale.obj (b.ids, function (id) {return [id, true]});
       if (dale.keys (seen).length < b.ids.length) return reply (rs, 400, {error: 'repeated'});
 ```
 
@@ -2004,33 +1985,17 @@ If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query.
       if (b.recentlyTagged && ! inc (b.tags, 'u::')) return reply (rs, 400, {error: 'recentlyTagged'});
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-We create an array `ytags` to store the year tags in the query.
+We check whether there are repeated tags inside `tags`. We do this by creating an object of the form `{TAG1: true, TAG2: true, ...}`. If this object has less keys than the length of `tags`, it means there are repeated keys. If that's the case, we return a 400 error with body `{error: 'repeated'}`.
 
 ```javascript
-      var ytags = [];
+      var seen = dale.obj (b.tags, function (id) {return [id, true]});
+      if (dale.keys (seen).length < b.tags.length) return reply (rs, 400, {error: 'repeated'});
 ```
 
-We create an object `tags`, which will have each tag as a key, and as a value an array with one or more usernames. We iterate the tags of the query; for each of them, if it's not a year tag, we put it in an object `tags` with the value being an array with the username of the user. If it is a year tag, we simply append it to `ytags`.
+We define a variable `qid` to serve as a prefix for some temporary keys we will create in the database in the process of querying.
 
 ```javascript
-      var tags = dale.obj (b.tags, function (tag) {
-         if (! H.isYear (tag)) return [tag, [rq.user.username]];
-         ytags.push (tag);
-      });
+      var qid = 'query-' + uuid ();
 ```
 
 We start the query process, invoking `astop`. We first bring all the tags shared with the user.
@@ -2040,187 +2005,897 @@ We start the query process, invoking `astop`. We first bring all the tags shared
          [Redis, 'smembers', 'shm:' + rq.user.username],
 ```
 
-If the user sent no tags, we set a variable `allMode` to denote that we want all possible pivs.
+We iterate the tags from the query to find any shared tags (which start with `'s::'`) that are actually not shared with the user. If we find one, we stop the iteration and we return a 403 with body `{tag: TAG}`.
+
+```javascript
+            var forbidden = dale.stopNot (b.tags, undefined, function (tag) {
+               if (tag.match (/^s::/) && ! inc (s.last, tag.replace ('s::', ''))) return tag;
+            });
+            if (forbidden) return reply (rs, 403, {tag: forbidden});
+```
+
+If we're here, the query is valid.
+
+We will now create a `query` object that contains a curated set of variables that will be necessary to carry out the query. We have decided to write most of the query endpoint as a [Lua script that is executed inside Redis](https://redis.io/docs/manual/programmability/eval-intro/). While it is possible to write the query endpoint by performing some queries on Redis and then processing their results in node, this logic starts to become unacceptably slow for queries involving tens of thousands of pivs. Most of the delays entail bringing the information of those pivs and associated tags.
+
+The query endpoint is the core read operation of the app and is constantly invoked by the clients; for that reason it should be as fast as possible. By writing the query endpoint as a Lua function within Redis, we can do most of the processing in Redis proper, and bring only the necessary information to node.
+
+Lua, however, is a significantly more limited language than Javascript, so pre-processing some information in Javascript can save us considerable code. This is exactly what we're going to do now within the `query` variable.
 
 ```javascript
          function (s) {
-            var allMode = b.tags.length === 0;
+            var query = {
 ```
 
-If we're in `allMode`, we create an entry for the `a::` tag inside `tags`, with the same shape of the entries already there.
+We pass the `username` of the querying user, as well as the entire query.
 
 ```javascript
-            if (allMode) tags ['a::'] = [rq.user.username];
+               username: rq.user.username,
+               query:    b,
 ```
 
-We iterate the list of tags shared with the user, retrieved on the call to the database we just did.
+We group all the requested geo and date tags into `dateGeoTags`.
 
 ```javascript
-            dale.go (s.last, function (sharedTag) {
+               dateGeoTags: dale.fil (b.tags, undefined, function (tag) {
+                  if (H.isGeoTag (tag) || H.isDateTag (tag)) return tag;
+               }),
 ```
 
-We clean up the shared tag, which is of the form `USERNAME:TAG`; to do this, we strip the tag of all the characters preceding the colon, plus the colon itself. Usernames cannot have colons because we forbid it, so there's no risk of a colon meaning something else than the separator between the username and the tag. We store the cleaned shared tag into a variable `tag`.
+We group all the requested own user tags (rather than user tags that were shared by other users, which are prepended by `'s::'`) into `userTags`. We also include `'u::'` (the tag for untagged pivs) as well.
 
 ```javascript
-               var tag = sharedTag.replace (/[^:]+:/, '');
+               userTags: dale.fil (b.tags, undefined, function (tag) {
+                  if (tag === 'u::' || H.isUserTag (tag)) return tag;
+               }),
 ```
 
-If the tag is not already in `tags` and we're not in `allMode`, we ignore this tag. However, if we're in `allMode`, even though the user didn't specifically request for this tag, we will still consider it.
+We group all non-shared tags into `ownTagsPre`, which will contain all the tags in the query that are not tags shared with the user, and which will be prepended with `'tag:USERNAME:'`. These can be directly used in calls to Redis without processing in Lua.
 
 ```javascript
-               if (! tags [tag] && ! allMode) return;
+               ownTagsPre:    dale.fil (b.tags, undefined, function (tag) {
+                  if (! tag.match (/^s::/)) return 'tag:' + rq.user.username + ':' + tag;
+               }),
 ```
 
-If the entry for the tag does not exist yet in `tags` (which can only happen if we're in `allMode`), we create the entry.
+We build an object `sharedTags` of the form `{SHAREDTAG1: true, ...}`, for easy lookup of whether a shared tag is shared with the user. Note we build it from `s.last`, which is the result from the call we did earlier to read all the tags shared with the user.
 
 ```javascript
-               if (! tags [tag]) tags [tag] = [];
+               sharedTags:    dale.obj (s.last, function (v)   {return [v, true]}),
 ```
 
-We push the username of the shared tag to the entry for that tag. We extract the username by finding all the characters in the tag that are before the colon. This concludes our iteration of the shared tags.
+We build an array `sharedTagsPre`, which will contain all the tags shared with the user, prepended with the prefix `'tag:'`. These can be directly used in calls to Redis without processing in Lua.
 
 ```javascript
-               tags [tag].push (sharedTag.match (/[^:]+/) [0]);
+               sharedTagsPre: dale.go  (s.last, function (tag) {return 'tag:' + tag}),
+```
+
+We add a (for now) empty object `relevantUsers` that will group information from users that shared one or more tags with the user and which are relevant to the current query. We will populate this object in a moment.
+
+```javascript
+               relevantUsers: {},
+```
+
+Finally we set a flag `untagged` query to indicate whether we want to query untagged pivs. This is very useful because if that's the case, then no shared pivs will be matched by the query (since shares are only done through tags).
+
+```javascript
+               untaggedQuery: inc (b.tags, 'u::')
+            };
+```
+
+We iterate the tags of the query, only looking at shared tags. We only do this if `'u::'` is absent from the list of tags.
+
+```javascript
+            if (! query.untaggedQuery) dale.go (b.tags, function (tag) {
+               if (! tag.match (/^s::/)) return;
+```
+
+If this is indeed a shared tag, we remove its prefix (`s::`) and split it by its colons. These tags are of the form `USERNAME:TAGNAME`, so by splitting it by a colon we can access the username of the user that shared the tag with the querying user.
+
+```javascript
+               tag = tag.replace ('s::', '').split (':');
+```
+
+If there's no entry in `relevantUsers` for the user sharing this tag, we initialize it to an empty array.
+
+```javascript
+               if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
+```
+
+We push the tag, prepended with `tag:` and including username, into the entry for this user inside `relevantUsers`.
+
+```javascript
+               query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
             });
 ```
 
-By now, `tags` will be an object with each key as a tag, and each value as an array of one or more usernames, with the first one being the username of the user itself: `{KEY1: [USERNAME1, ...], ...}`. This gives us a list of all the tag + username combination that are relevant to the query.
+If there were any shared tags requested on the query, then `relevantUsers` will look like this: `{USER1: ['tag:USER1:TAG1', ...], ...}`.
 
-We create two variables: `multi`, to hold the redis transaction; and `qid`, an id for the query we're about to perform. This `qid` key will hold a set of piv ids in redis for the purposes of the query.
-
-```javascript
-            var multi = redis.multi (), qid = 'query:' + uuid ();
-```
-
-If we have year tags, we bring the ids of all the pivs belonging to each of them and store their union in the query key.
+Now, if there were no shared tags requested in the query, the relevant users are *all* of the users that shared tags with the querying user. So we iterate `s.last` (which is the list of all the tags shared with the querying user) and do the same operation. The only difference is that we don't remove the `s::` prefix since the tags brought from the database don't contain it. We only do this if `'u::'` is absent from the list of tags.
 
 ```javascript
-            if (ytags.length) multi.sunionstore (qid, dale.go (ytags, function (ytag) {
-               return 'tag:' + rq.user.username + ':' + ytag;
-            }));
-```
-
-We iterate the tags. For each tag, for each of its users, we store the ids of the corresponding pivs onto a key made by appending the tag to the query key.
-
-```javascript
-            dale.go (tags, function (users, tag) {
-               multi.sunionstore (qid + ':' + tag, dale.go (users, function (user) {
-                  return 'tag:' + user + ':' + tag;
-               }));
+            if (! query.untaggedQuery && ! dale.keys (query.relevantUsers).length) dale.go (s.last, function (tag) {
+               tag = tag.split (':');
+               if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
+               query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
             });
 ```
 
-We compute the ids of all the pivs that match the query. This will be either the intersection of all the ids for each tag. If there are `ytags`, we also use the query key. In the case of `allMode`, we perform the *union* of all tags, since there might be shared tags for the user.
-
-The year tags are queried separately from normal tags because 1) if more than one year tag is sent, we want the union (not the intersection) of their pivs; and 2) it's not possible to share a year tag with another user, so the querying is simpler.
+We now define a `multi` operation. We start by setting the stringified query in the key `qid`.
 
 ```javascript
-            multi [allMode ? 'sunion' : 'sinter'] (dale.go (tags, function (users, tag) {
-               return qid + ':' + tag;
-            }).concat (ytags.length ? qid : []));
+            var multi = redis.multi ();
+            multi.set (qid, JSON.stringify (query));
 ```
 
-We delete all the temporary sets of ids we created for the query.
+We will now start defining the Lua script! Or rather, we should say we will start now to *annotate* it. The script is actually defined earlier in `server.js`, before defining the routes, so the Lua script can be preloaded. We annotate the script here, since its natural context is the `POST /query` endpoint.
+
+While we'd like to only load the script if we're on the master process of Node, to avoid all the worker processes also loading it N times (where N is the number of workers), this would mean that the master process would have to communicate to all the worker processes what is the `sha` of the script. This complicates things, so we will instead load the script once per process.
 
 ```javascript
-            multi.del (qid);
-            dale.go (tags, function (users, tag) {
-               multi.del (qid + ':' + tag);
-            });
+redis.script ('load', [
 ```
 
-We run the transaction and move to the next step of the process.
+Before we start, it's useful to understand what information we are trying to get. If the `idsOnly` flag is passed, we only want a list of all the piv ids that match the query. If the flag is not passed, then we want three things: `total` (the number of pivs matched by the query), `tags` (the tags for all of the matched pivs, except for those tags in shared pivs to which the querying user has no access); and `pivs`, an array of objects, each with all the piv information, of the requested subset of pivs that match the query.
+
+The script will be invoked after we have stored the `query` object constructed above in the key `qid` - this key will be passed to the script as its only argument (accessible at `KEYS [1]`).
+
+We start by decoding this object into a local `query` variable.
+
+You might have noticed that we are writing the Lua script in Javascript proper, as a list of concatenated lines. This is not a pretty sight, but it allows us to have the Lua script next to the rest of the code for this endpoint.
+
+```javascript
+   'local query = cjson.decode (redis.call ("get", KEYS [1]));\n' +
+```
+
+We start by getting all the pivs that match the requested tags, without regard to the other parameters in the query.
+
+We have two main cases: one for when we get no tags in the query (which means we want all the pivs to which the querying user has access), and another one for when we have one or more tags on the query.
+
+If there are no tags on the query, we will compute the union of all the user's pivs (which are at `tag:USERNAME:a::`) plus that of all tags shared with the user. We will store this list of ids in `QID-ids`, a temporary key in Redis. Note we use the `sharedTagsPre`, which is a list of shared tags as they appear in Redis; note as well we use the `unpack` Lua function to take all the shared tags and place them as arguments in place to `redis.call`.
+
+```javascript
+   'if #query.query.tags == 0 then',
+   '   redis.call ("sunionstore", KEYS [1] .. "-ids", "tag:" .. query.username .. ":a::", unpack (query.sharedTagsPre));',
+```
+
+If there are one or more tags in the query, we first start by collecting all the relevant pivs owned by the user into `QID-ids`. Just as we did above, we leverage the array prepared in Javascript and pass it to the `unpack` operator. Notice that in this case we are doing an *intersection* (rather than an union) of all the tags, since the piv must be tagged with all of these tags to be considered a matching piv.
+
+If there are no own tags on the query, we don't perform the call, since `SINTERSTORE` requires one or more arguments for the keys that should be intersected.
+
+```javascript
+   'else',
+   '   if #query.ownTagsPre > 0 then',
+   '      redis.call ("sinterstore", KEYS [1] .. "-ids", unpack (query.ownTagsPre));',
+   '   end',
+```
+
+Now for the interesting part: getting the pivs from shared tags that are relevant to the query. Easily half of the code on this script deals with shared pivs. If the query contains the `untagged` tag (`'u::'`), we can skip this.
+
+```javascript
+   '   if not query.untaggedQuery then',
+```
+
+We start iterating the list of relevant users - the keys will be the usernames, while the values will be a list of tags of the form `tag:USERNAME:TAG`.
+
+```javascript
+  '      for k, v in ipairs (query.relevantUsers) do',
+```
+
+We create entries of the form `QID-ids-USERNAME`, each of them having a list of ids of pivs owned by `USERNAME` that are relevant to the current query. We start with the shared tags in the query, if there are any. If there are none, the tags will be all the tags shared by `USERNAME` with the querying user.
+
+Interestingly enough, by using the information in `relevantUsers`, we implicitly are executing the query on the required shared tags, if any. For that reason, we didn't need to pass a separate array of shared tags from Javascript to Lua.
+
+```javascript
+   '         redis.call ("sinterstore", KEYS [1] .. "-ids-" .. k, redis.call ("sinter", unpack (v)));',
+```
+
+If there are date or geotags on the query, we intersect the corresponding tag from this user into the `QID-ids-USERNAME` list. For example, if `'d::2021'` is on the query, then we will only get the pivs with that tag that belong to this user and that are shared with the querying user.
+
+```javascript
+   '         for k2, v2 in ipairs (query.dateGeoTags) do',
+   '            redis.call ("sinterstore", KEYS [1] .. "-ids-" .. k, KEYS [1] .. "-ids-" .. k, "tag:" .. k .. ":" .. v2);',
+   '         end',
+```
+
+We now store the resulting ids by user in a new set `QID-sharedIds`. We then delete the key that stores the matching ids for this particular user (`QID-ids-USERNAME`).
+
+```javascript
+   '         redis.call ("sunionstore", KEYS [1] .. "-sharedIds", KEYS [1] .. "-sharedIds", KEYS [1] .. "-ids-" .. k);',
+   '         redis.call ("del", KEYS [1] .. "-hashids", KEYS [1] .. "-hashes");',
+   '      end',
+```
+
+no shared piv can be untagged.
+for own tags on shared pivs: get the taghashes, that gives you list of hashes. from each hash, get all ids. sinter on the united masks. more tags can be done in the same way, but on the previous result.
+
+If there are user tags present in the query, we need to get those relevant shared pivs that have them. The tagging of a piv that's shared with the user (rather than owed by the user themselves) is quite tricky and explained in the section about hashtags/taghashes. Essentially, when a user tags a shared piv, they tag the *hash* of that piv, since if there are multiple pivs shared with the user that have the same hash, they will look the same to the user, so for the user the natural thing is that the tag to be applied to any and all instances of "that piv".
+
+In practice, this means we need to first get a list of hashes from the taghashes (which are reverse taghashes); from the hashes, we construct a list of ids (which we get from hashids, which we have put in place only for this reason); from the resulting list of ids, we can finally perform further operations. The yield of this section will be the list of all shared pivs that have the user tags present in the query.
+
+We put a conditional here, since if there are no user tags, the intersection we'll do at the end would remove all id entries we've seen so far - it is one thing that the set of shared pivs with user tags is zero if there were user tags on the query, vs. if there were not. In the last case, we still want the other pivs that match the query, whereas in the first one the result should indeed be an empty set.
+
+```javascript
+   '      if #query.userTags > 0 then',
+```
+
+We add all the hashes in each taghash entry into a set `QID-hashes`. If there are no taghash ids for a tag, we don't add anything to `QID-hashes` since this would generate a Redis error.
+
+```javascript
+   '         for k, v in ipairs (query.userTags) do',
+   '            if redis.call ("scard", "taghash:" .. query.username .. ":" .. v) > 0 then',
+   '               redis.call ("sadd", KEYS [1] .. "-hashes", unpack (redis.call ("smembers", "taghash:" .. query.username .. ":" .. v)));',
+   '            end',
+   '         end',
+```
+
+We iterate the items in `QID-hashes` to get all its corresponding ids (that is, *all* the pivs, belonging to any user, which have one of these hashes). We add the resulting ids into a set `QID-hashids`.
+
+```javascript
+   '         for k, v in ipairs (redis.call ("smembers", KEYS [1] .. "-hashes")) do',
+   '            redis.sadd (KEYS [1] .. "-hashids", unpack (redis.smembers ("hashids:" .. v)));',
+   '         end',
+```
+
+We now intersect the list of ids we obtained from taghashes and hashids with the existing list of shared ids. This does two things: first, it ensures that the remaining ids are of shared pivs to which the querying user has access (since we already put them on `QID-sharedIds`). Second, it removes those ids from `QID-sharedIds` that don't have all the requested user tags.
+
+If `QID-ids` was empty, then there are no pivs shared with the querying user, so we lose no information.
+
+```javascript
+   '         redis.call ("sinterstore", KEYS [1] .. "-sharedIds", KEYS [1] .. "-sharedIds", KEYS [1] .. "-hashids");',
+```
+
+We delete the `QID-hashids` and `QID-hashes` keys and close the conditional that deals with user tags.
+
+```javascript
+   '         redis.del (KEYS [1] .. "-hashids", KEYS [1] .. "-hashes");',
+   '      end',
+```
+
+We join all the shared ids onto `QID-ids` and then delete `QID-sharedIds`.
+
+```javascript
+   '      redis.call ("sunionstore", KEYS [1] .. "-ids", KEYS [1] .. "-ids", KEYS [1] .. "-sharedIds");',
+   '      redis.call ("del", KEYS [1] .. "-sharedIds");',
+```
+
+We close the case in which we look for shared pivs.
+
+```javascript
+   '   end',
+```
+
+We close the conditional where we populate `QID-ids`.
+
+```javascript
+   'end',
+```
+
+We now have a list of all the piv ids that match the tags in the query in the key `QID-ids`. Onwards!
+
+If there are `recentlyTagged` entries in the query, we want to add these ids to the results, whether they match the query or not. This functionality is used by the client when the user is tagging untagged pivs while querying the untagged pivs. If the pivs disappear after being tagged, the user cannot tag them again; by allowing certain ids to be added to the results, we avoid this issue. This is also why the entry is called `recentlyTagged`, by the way.
+
+```javascript
+   'if query.query.recentlyTagged and #query.query.recentlyTagged then',
+```
+
+We add all the `recentlyTagged` entries onto a set `QID-recent`.
+
+```javascript
+   '   redis.call ("sadd", KEYS [1] .. "-recent", unpack (query.query.recentlyTagged));',
+```
+
+We now create a list of *all* the pivs to which the user has access: how do we get that list of all the pivs to which the user has access? We do what we did at the beginning, which is to get the union of `tag:USERNAME:a::` plus all the shared tags. We need this set to make sure that any ids on the `recentlyTagged` are indeed accessible to the querying user (otherwise, the querying user could bypass our authorization mechanism).
+
+```javascript
+   '   redis.call ("sunionstore", KEYS [1] .. "-all", "tag:" .. query.username .. ":a::", unpack (query.sharedTagsPre));',
+```
+
+The next line packs some punch. We intersect `QID-recent` with `QID-all` and add all the remaining items (which should be the ids in `recentlyTagged` to which the querying user has access) to `QID-ids`.
+
+We store this list of `recentlyTagged` ids to which we know the user has access to into `QID-ids`.
+
+```javascript
+   '   redis.call ("sadd", KEYS [1] .. "-ids", unpack (redis.call ("sinter", KEYS [1] .. "-recent", KEYS [1] .. "-all")));',
+```
+
+We delete the `QID-recent` and `QID-all` keys. This concludes the `recentlyTagged` logic; the entries will now be inside `QID-ids`.
+
+```javascript
+   '   redis.call ("del", KEYS [1] .. "-recent", KEYS [1] .. "-all");',
+   'end',
+```
+
+We bring all the ids in `QID-ids` to a local variable `ids`.
+
+```javascript
+   'local ids = redis.call ("smembers", KEYS [1] .. "-ids");',
+```
+
+We now will add all the ids into a sorted set at key `QID-sort`, which will sort it for us. We start by determining the proper sort field (`dateup` if sort is `upload` and `date` otherwise) and storing it in a variable `sortField`.
+
+```javascript
+   'local sortField = query.query.sort == "upload" and "dateup" or "date";',
+```
+
+We now iterate the pivi ids; for each piv, we get its date and if the date is inside the range requested by the query, we add it to `QID-sort` with its date (the date being the score of the ZSET entry).
+
+Note that we wrote the conditional in a way that if there is no entry for `mindate` or `maxdate`, we don't exclude the piv if its date is below or above that value - for that reason, if we negate the overall clause and obtain a true value, the date doesn't go past neither of the boundaries, and the id can be included in the set.
+
+```javascript
+   'for k, v in ipairs (ids) ',
+   '   local date = tonumber (redis.call ("hget", "piv:" .. v, sortField));',
+   '   if not ((query.query.mindate and date < query.query.mindate) or (query.query.maxdate and date > query.query.maxdate)) then',
+   '      redis.call ("zadd", KEYS [1] .. "-sort", date, v);',
+   '   end',
+   'end',
+```
+
+If one or more pivs in were removed because of the requested date range, we update both the local list `ids` and the Redis key `QID-ids`. We get the list of updated ids from `QID-sort`.
+
+```javascript
+   'if #ids > redis.call ("zcard", KEYS [1] .. "-sort") then',
+   '   ids = redis.call ("zrange", KEYS [1] .. "-sort", 0, -1);',
+   '   redis.call ("del", KEYS [1] .. "-ids");',
+   '   if #ids > 0 then redis.call ("sadd", KEYS [1] .. "-ids", unpack (ids)) end',
+   'end',
+```
+
+We now define a list `output` which we'll use to return data back to Javascript.
+
+```javascript
+   'local output = {};',
+```
+
+We will now have the list of all the piv ids that match the query and respect the requested date range. We will now get the tag information for all of these pivs; if `idsOnly` is set, we don't need to do so (since we only want the piv ids) so we can skip this section.
+
+```javascript
+   'if not query.query.idsOnly then',
+```
+
+We iterate the piv ids.
+
+```javascript
+   '   for k, v in ipairs (ids) do',
+```
+
+We get the `hash` and `owner` of the piv and store it in a variable `piv`.
+
+```javascript
+   '      local piv = redis.call ("hmget", "piv:" .. v, "hash", "owner");',
+```
+
+We will also add the hash of the piv to a set in the key `QID-hashes`. Earlier we created another set at the same key, but we already deleted it, so here we start from scratch collecting the hashes of all the pivs that match the query.
+
+```javascript
+   '      redis.call ("sadd", KEYS [1] .. "-hashes", piv [1]);',
+```
+
+Now, you may ask: why do we need the hash of the piv? Couldn't we just count the tags on each piv and sum them up? Here's the thing: if two pivs with different ids have the same hash, we want to consider them as one piv! If they look the same to the user, in a very important regard they can be considered the same piv. For that reason, we need to aggregate tags per hash. Here's how it would work:
+
+If two pivs `A` and `B` have the same hash (let's say `H`), and piv `A` has tags `1` and `2`, and piv `B` has tags `1` and `3`, this means that the hash `H` is tagged with `1`, `2` and `3`. We also don't care whether more than one piv with that hash has that tag, all we care about is that at least one of them has that tag.
+
+We will collect the tags belonging to a certain hash in the set `QID-tags-HASH`. If the piv is owned by the querying user, then we add all the tags to the set.
+
+```javascript
+   '      if piv [2] == query.username then',
+   '         redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (redis.call ("smembers", "pivt:" .. v)));',
+```
+
+If the piv is not owned by the querying user, but rather shared by some other user, then we need to decide which of its tags will be seen in the query. We iterate the tags.
+
+```javascript
+   '      else',
+   '         for k2, v2 in ipairs (redis.call ("smembers", "pivt:" .. v)) do',
+```
+
+If the tag is in `sharedTags`, an object we sent from Javascript of the form `{SHAREDTAG1: true, ...}`, then the tag is shared with the user, so we will let tag through.
+
+```javascript
+   '            if query.sharedTags [piv [2] .. ":" .. v2] then',
+   '               redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], piv [2] .. ":" .. v2);',
+```
+
+If the tag is a date or geo tag, we also add it to the set.
+
+```javascript
+   '            elseif string.sub (v2, 0, 3) == "d::" or string.sub (v2, 0, 3) == "g::" then',
+   '               redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], v2);',
+```
+
+Otherwise, we don't count the tag. We close everything up to the external `for` loop - the one that iterated piv ids.
+
+```javascript
+   '            end',
+   '         end',
+   '      end',
+   '   end',
+```
+
+Before we continue with the tags, we can now figure out the total amount of pivs that match the query and set it in `output.total`. As we do with tags, we count the total amount of unique hashes from pivs that match the query, since we don't want to double count pivs that have the same hashes.
+
+```javascript
+   '   output.total = redis.call ("scard", KEYS [1] .. "-hashes");',
+```
+
+We continue computing the tags. We iterate the hashes.
+
+```javascript
+   '   for k, v in ipairs (redis.call ("smembers", KEYS [1] .. "-hashes")) do',
+```
+
+We iterate all the tags for the given hash.
+
+```javascript
+   '      for k2, v2 in ipairs (redis.call ("smembers", KEYS [1] .. "-tags-" .. v)) do',
+```
+
+We create a Redis hash `QID-tags` where each key will be a tag and the value will be the number of hashes (each associated to one or more pivs) that contain the tag. We do this through the `hincrby` command.
+
+```javascript
+   '         redis.call ("hincrby", KEYS [1] .. "-tags", v2, 1);',
+   '      end',
+```
+
+We delete the `QID-tags-HASH` entries since we don't need it anymore.
+
+```javascript
+   '     redis.call ("del", KEYS [1] .. "-tags-" .. v);',
+   '   end',
+```
+
+We now have to compute the number of all the available pivs to the user (`'a::'`) available to the user, without double counting pivs that have the same hash. If the query has no tags and we have no minimum or maximum date range specified, we already have this number - it is `output.total`, since the query intends to match all available pivs. In this case, we set it on the proper entry at `QID-tags`.
+
+```javascript
+   '   if #query.query.tags == 0 and not query.query.mindate and not query.query.maxdate then',
+   '      redis.call ("hset", KEYS [1] .. "-tags", "a::", output.total);',
+```
+
+If the query has one or more tags, we cannot use the work we did so far to calculate this number. Instead, we will iterate all the pivs available to the user and add their hashes to a new set at `QID-allHashes`.
+
+```javascript
+   '   else',
+   '      for k, v in ipairs (redis.call ("sunion", "tag:" .. query.username .. ":a::", unpack (query.sharedTagsPre))) do',
+   '         redis.call ("sadd", KEYS [1] .. "-allHashes", redis.call ("hget", "piv:" .. v, "hash"));',
+   '      end',
+```
+
+We add the entry in `QID-tags` using the cardinality of the `QID-allHashes` set we just created. We then delete the `QID-allHashes` set since we don't need it anymore.
+
+```javascript
+   '      redis.call ("hset", KEYS [1] .. "-tags", "a::", redis.call ("scard", KEYS [1] .. "-allHashes"));',
+   '      redis.call ("del", KEYS [1] .. "-allHashes");',
+   '   end',
+```
+
+We need to add an entry that matches all the untagged pivs in the current query. Since no shared pivs can be untagged, we can quickly compute this by intersecting all the ids in `QID-ids` and the set of untagged pivs of the user. Since a user cannot have more than one own piv with the same hash, there's no double counting we need to take care of.
+
+```javascript
+   '   redis.call ("hset", KEYS [1] .. "-tags", "u::", #redis.call ("sinter", KEYS [1] .. "-ids", "tag:" .. query.username .. ":u::"));',
+```
+
+We read `QID-tags` onto `output.tags` and then delete `QID-tags` since we don't need it anymore.
+
+
+```javascript
+   '   output.tags = redis.call ("hgetall", KEYS [1] .. "-tags");',
+   '   redis.call ("del", KEYS [1] .. "-hashes", KEYS [1] .. "-tags");',
+```
+
+This concludes the code for calculating the tags.
+
+```javascript
+   'end',
+```
+
+We will now apply the `fromDate` parameter. This parameter tells us to consider the piv with offset 1 as the one with a date equal to `fromDate`. So, if for example, `fromDate` is `X`, `sort` is newest, and `to` is `1`, we will want all the pivs newest than `X`, as well as one piv that is older or equal than `X`. The `fromDate` functionality enables the client to do a "deep scroll" query, in which we only bring the information above the current date offset, but we don't bring more than a few pivs below the current date offset - and note how this allows the client to not have to know how many pivs are "above" the `fromDate` - the server takes care of this.
+
+```javascript
+   'if query.query.fromDate then',
+```
+
+We initialize `from` to `1` - if `fromDate` is passed, then `from` has to be `undefined`, as per the validations done in Javascript. By setting it to `1`, we always start bringing pivs from the first one.
+
+The goal of this section is actually to figure out what the actual `to` parameter should be.
+
+```javascript
+   '   query.query.from = 1;',
+```
+
+We set a variable `fromPiv` which will contain the piv from which we will count the offset.
+
+```javascript
+   '   local fromPiv;',
+```
+
+In a sorted set, Redis puts the elements with the lowest score first.
+
+If the `sort` field is `oldest`, we want the index of the *last* piv that has a date lesser or equal to `fromDate`. To get that index, we ask Redis to give us all the elements between 0 and `fromDate`. If there are none, we won't modify the `to` parameter. If there are one or more items, we want the *last* one. To get the last element, we can invoke `zrevbyrange`, which returns elements in reverse order. By passing the arguments `LIMIT, 0, 1` we ensure we only get one.
+
+```javascript
+   '   if query.query.sort == "oldest" then',
+   '      fromPiv = redis.call ("zrevrangebyscore", KEYS [1] .. "-sort", 0, query.query.fromDate,      "LIMIT", 0, 1);',
+```
+
+If the sort field is `newest` or `upload`, we want the index of the last piv that is >= than `fromDate`. For that, we get the elements between `fromDate` and infinite (`+inf`), and just get the first element of the resulting list.
+
+```javascript
+   '   else',
+   '      fromPiv = redis.call ("zrangebyscore",    KEYS [1] .. "-sort", query.query.fromDate, "+inf", "LIMIT", 0, 1);',
+```
+
+If there is a piv that fulfills this condition, then we will increment `query.query.to` by the index of that piv in the `QID-sort` array. We get the index of the piv by using either the `zrank` command (if `sort` is `oldest`) or `zrevrank` (if `sort` is `newest` or `upload`); we use the reverse operation for `newest`/`upload` because those queries put the pivs with highest score *first*, which is the opposite of Redis' default ordering of sorted sets.
+
+```javascript
+   '   if #fromPiv > 0 then',
+   '      query.query.to = query.query.to + redis.call (query.query.sort == "oldest" and "zrank" or "zrevrank", KEYS [1] .. "-sort", fromPiv [1]);',
+   '   end',
+   'end',
+```
+
+If we only want the ids, there's precious little left to do. We can use the `from` and `to` parameters to get the elements out of `QID-sort`. If `sort` is `oldest`, we use the normal command (`zrange`), otherwise we use the reverse one (`zrevrange`). Note we substract 1 from both parameters since they are 1-indexed (that is, they start at 1) whereas Redis is 0-indexed.
+
+We'll store the ids in `output.ids`.
+
+```javascript
+   'if query.query.idsOnly then',
+   '   output.ids = redis.call (query.query.sort == "oldest" and "zrange" or "zrevrange", KEYS [1] .. "-sort", query.query.from - 1, query.query.to - 1);',
+```
+
+If `idsOnly` is not set, we need to get the piv information for the requested amount of pivs. Because of shared pivs, which can have the same hash as other pivs in the query, things are quite less straightforward.
+
+What we want to do is to start getting pivs in the order in which the appear (and respecting the `from` and `to` offsets); if we find a piv that has the same hash as another piv we already got, we either remove the previous piv and add the current one, or ignore the current piv.
+
+Whether to remove the previous piv or ignore the current one boils down to this: own pivs have priority, and if both pivs are shared, that with the lowest username gets priority. This allows us to return as many own pivs as possible (which have operations available that shared pivs don't) and to always return the same pivs, given the same query and pivs on the database.
+
+This is probably the trickiest piece of code of the Lua script, and perhaps only less tricky than the taghash/hashtag cleanup logic in the context of the entire codebase.
+
+We set three variables: `pivCount`, the amount of pivs we already have collected; `index`, which tells us which element to look up next in `QID-sort`; and hashes, a list where each key is a hash and its corresponding value is the id of the piv that has that hash.
+
+```javascript
+   '   local pivCount = 0;',
+   '   local index    = 0;',
+   '   local hashes   = {};',
+```
+
+While the amount of pivs is less than what we want (`to - from + 1`):
+
+```javascript
+   '   while pivCount < query.query.to - query.query.from + 1 do',
+```
+
+We get the id at index `index` from `QID-sort`. As we did above, we use `zrevrange` if we want the pivs with highest date first. And since `from` and `to` are 1-indexed but Redis is 0-indexed, we need to substract 1 from both.
+
+```javascript
+   '      local id = redis.call (query.query.sort == "oldest" and "zrange" or "zrevrange", KEYS [1] .. "-sort", query.query.from - 1 + index, query.query.from - 1 + index) [1];',
+```
+
+If there are no more pivs, we stop the loop. This can happen if there are less pivs to be returned than what the parameters require.
+
+```javascript
+   '      if not id then break end',
+```
+
+We increment `index` for when the next iteration happens.
+
+```javascript
+   '      index = index + 1',
+```
+
+We get the piv with id `id`; more specifically, we only get its hash, owner and date (or dateup, depending on `sortField`), and store it in a variable `piv`.
+
+```javascript
+   '      local piv = redis.call ("hmget", "piv:" .. id, "hash", "owner", sortField);',
+```
+
+If we haven't seen the hash of this piv, then we start by setting `hashes.HASH` to the `id`.
+
+```javascript
+   '      if not hashes [piv [1]] then',
+   '         hashes [piv [1]] = id;',
+```
+
+We add the piv to a new sorted set at key `QID-sortFiltered`. This sorted set will only contain the ids that we select to be sent to the user.
+
+```javascript
+   '         redis.call ("zadd", KEYS [1] .. "-sortFiltered", piv [3], id);',
+```
+
+We increment `pivCount`, since we now have another piv ready to be sent to the user.
+
+```javascript
+   '         pivCount = pivCount + 1;',
+```
+
+Now for the interesting case! If we already have a piv with this hash in `QID-sortFiltered`, we need to decide whether this piv should have priority, or if instead the previous piv should remain - remember we cannot allow both in the list of pivs to be sent to the user since both have the same hash.
+
+```javascript
+   '      else',
+```
+
+If the current piv is owned by the user, then this piv should stay and the previous piv with this hash should be removed; the same will happen if the username of whoever owns this piv is alphabetically lower than the owner of the other piv.
+
+```javascript
+   '         if piv [2] == query.username or piv [2] < redis.call ("hget", "piv:" .. hashes [piv [1]], "owner") then',
+```
+
+We update `hashes.HASH` to the new `id`.
+
+```javascript
+   '            hashes [piv [1]] = id;',
+```
+
+We remove the other piv with the same hash from `QID-sortFiltered` and add the curent one.
+
+Notice we haven't incremented `pivCount`, since we have the same amount of pivs in `sortFiltered`.
+
+```javascript
+   '            redis.call ("zrem", KEYS [1] .. "-sortFiltered", hashes [piv [1]]);',
+   '            redis.call ("zadd", KEYS [1] .. "-sortFiltered", piv [3], id);',
+```
+
+If the piv has the same hash as the previous one, but it neither belongs to the querying user nor it belongs to a user with a username lower than the other owner's username, we don't do anything.
+
+We can now close both conditionals and the `while` loop.
+
+```javascript
+   '         end',
+   '      end',
+   '   end',
+```
+
+We now have all the pivs we want to return to the user inside the sorted set `QID-sortFiltered`. We will now set `output.pivs` to an empty list, to which we'll append the pivs.
+
+```javascript
+   '   output.pivs = {};',
+```
+
+We iterate all the pivs in `QID-sortFiltered`. Note we use `zrevrange` for `sort` being `'newest'` or `'upload'`, since in those cases we want the items with highest score (date) first.
+
+```javascript
+   '   for k, v in ipairs (redis.call (query.query.sort == "oldest" and "zrange" or "zrevrange", KEYS [1] .. "-sortFiltered", 0, -1)) do',
+```
+
+We get all the info from the piv and store it in a variable `piv`.
+
+```javascript
+   '      local piv = redis.call ("hgetall", "piv:" .. v);',
+```
+
+We append a string `tags` to `piv`. Lua doesn't distinguish objects from arrays - it has only one complex data structure, [tables](https://www.lua.org/pil/3.6.html). This means that we need to first add a key and then a value, rather than writing `piv.tags = ...`.
+
+```javascript
+   '      table.insert (piv, "tags");',
+```
+
+If the piv is owned by the querying user, we should put all the piv's tags onto `piv.tags`.
+
+```javascript
+   '      local owner = redis.call ("hget", "piv:" .. v, "owner");',
+   '      if owner == query.username then',
+   '         table.insert (piv, redis.call ("smembers", "pivt:" .. v));',
+```
+
+If the piv is not owned by the querying user, but rather shared with them, then we should only let through a few tags, namely: tags shared with the querying user, or date and geo tags. We create a variable for holding the tags for this piv.
+
+```javascript
+   '      else',
+   '         local tags = {};',
+```
+
+We iterate the tags on the piv.
+
+```javascript
+   '         for k2, v2 in ipairs (redis.call ("smembers", "pivt:" .. v)) do',
+```
+
+We use `query.sharedTags` to see if the tag is shared with the querying user. If it is, we add it to `tags`.
+
+```javascript
+   '            if query.sharedTags [owner .. ":" .. v2] then',
+   '               table.insert (tags, owner .. ":" .. v2);',
+```
+
+If the tag starts with `'d::'` or `'g::'`, it is a date or geo tag, and we also add it to `tags`.
+
+```javascript
+   '            elseif string.sub (v2, 0, 3) == "d::" or string.sub (v2, 0, 3) == "g::" then',
+   '               table.insert (tags, v2);',
+```
+
+We close all the conditionals and insert the list of tags into `piv`. We then close the `for` loop that iterate tags.
+
+```javascript
+   '            end',
+   '         end',
+   '         table.insert (piv, tags);',
+   '      end',
+```
+
+We insert `piv` onto `output.pivs` and close the `for` loop that iterates pivs.
+
+```javascript
+   '      table.insert (output.pivs, piv);',
+   '   end',
+```
+
+We close the conditional branch that picks the pivs to be sent to the user. We are almost done!
+
+```javascript
+   'end',
+```
+
+We do all the remaining cleanup, by deleting `QID-ids`, `QID-sort`, `QID-sortFiltered` and `QID-tags`. `QID-sortFiltered` won't be set if `idsOnly` is passed, but in this case that deletion will be a no-op.
+
+```javascript
+   'redis.call ("del", KEYS [1], KEYS [1] .. "-ids", KEYS [1] .. "-sort", KEYS [1] .. "-sortFiltered", KEYS [1] .. "-tags");',
+```
+
+`output` will be now ready; in the case of `idsOnly`, it will contain only a key `ids` with a list of values. Otherwise, it will contain three keys: `total`, `tags` and `pivs`.
+
+We stringify `output` through `cjson.encode` and return it. This concludes the Lua script!
+
+```javascript
+   'return cjson.encode (output);'
+```
+
+We concatenate the script lines into a single string, with each line separated by a newline (`\n`) character. If we get an error when we load the script, we notify it. Otherwise, we set the `sha` of the script (which is the script id) to `H.query`.
+
+```javascript
+].join ('\n'), function (error, sha) {
+   if (error) return notify (a.creat (), {priority: 'critical', type: 'Redis script loading error', error: error});
+   H.query = sha;
+});
+```
+
+And with that, we're back on the `POST /query` endpoint and ready to invoke the script. Which we do, passing `1` (the number of keys) as an argument, as well as `qid` proper.
+
+```javascript
+            multi.evalsha (H.query, 1, qid);
+```
+
+Now, it is squarely unorthodox to write a Redis script that reads and writes keys that are not directly passed as arguments. Normally, these keys have to be passed, one by one, to the script. This restriction is absolutely impossible to work with in this case, where we don't even know some of the keys that we might have to access (for example, which `piv:ID` keys should we access?).
+
+However, taking a look at this [Redis issue](https://github.com/redis/redis/issues/10296), it seems that the possible issues shouldn't affect us: we're not dynamically creating a script every time with `EVAL`, so we should have no issues with script cache growth. We also don't use (nor plan to use) Redis Cluster nor ACL, so this shouldn't generate issues.
+
+Our future plans to create a consistent partitioned Redis architecture will, however, have to take this script into account - and viceversa. For now, we proceed.
+
+One final note: while the script reads all sorts of keys, it only writes keys with a certain prefix (starting with `qid`).
 
 ```javascript
             mexec (s, multi);
-         },
 ```
 
-By now, we have a list of all the ids of the pivs matching the query. To access them, we look for a certain item returned by the last call to redis. This item will be at index N (where N is the number of `tags`) or N+1, depending on whether the query has `ytags` or not.
+The output of the script will be in `s.last [1]` (since we used the same `multi` operation to set `qid`). We'll place it in the variable `output`.
 
 ```javascript
          function (s) {
-            s.pivs = s.last [(ytags.length ? 1 : 0) + dale.keys (tags).length];
+            var output = JSON.parse (s.last [1]);
 ```
 
-We create another `multi` transaction to retrieve the information for all the pivs. We also create an object `ids`, which we'll review in a minute.
+If `b.idsOnly` is set, we merely reply with `output.ids`.
 
 ```javascript
-            var multi = redis.multi (), ids = {};
+            if (b.idsOnly) return reply (rs, 200, output.ids);
 ```
 
-We retrieve all the info for this piv. If `b.recentlyTagged` is passed, we also set an entry for this id into the `ids` object.
+If we're here, we'll have to return `total`, `tags` and `pivs`.
+
+We now have to do some work to shape the outputs of the Lua script into the exact shape that we want to send back to the client. We don't do this in Lua because some things simply take more code to be done in Lua.
+
+We transform `output.tags` from an array of the form `[KEY1, VALUE1, KEY2, VALUE2, ...]` into `{KEY1: VALUE1, KEY2: VALUE2, ...}`. We also convert the values into integers, since they come back as strings.
 
 ```javascript
-            dale.go (s.pivs, function (id) {
-               multi.hgetall ('piv:' + id);
-               if (b.recentlyTagged) ids [id] = true;
+            output.tags = dale.obj (output.tags, function (v, k) {
+               if (k % 2 === 0) return [v, parseInt (output.tags [k + 1])];
             });
 ```
 
-We iterate `b.recentlyTagged` (this will be a no-op if it's not defined) and store the result into `s.recentlyTagged`.
+We do the same thing for each of the pivs in `output.pivs`; `output.pivs` has the shape `[ID1, PIV1, ID2, PIV2, ...]`. Note that `PIV1` and such come back as objects, so we only have to manipulate `output.pivs` at its highest level.
 
 ```javascript
-            s.recentlyTagged = dale.fil (b.recentlyTagged, undefined, function (id) {
-```
-
-If the piv that is inside `b.recentlyTagged` is already covered by the query, we ignore it.
-
-```javascript
-               if (ids [id]) return;
-```
-
-Otherwise, we bring its information from the database and return its `id`, so that it will be contained in `s.recentlyTagged`; this last variable will be then an array with the list of the recently tagged pivs that are in excess of the query.
-
-```javascript
-               multi.hgetall ('piv:' + id);
-               return id;
+            output.pivs = dale.go (output.pivs, function (piv) {
+               return dale.obj (piv, function (v, k) {
+                  if (k % 2 === 0) return [v, piv [k + 1]];
+               });
             });
 ```
 
-We perform the call to redis to retrieve piv information and move to the next step.
+We now iterate the pivs to apply some modifications to them.
 
 ```javascript
-            mexec (s, multi);
-         },
+            output.pivs = dale.go (output.pivs, function (piv) {
 ```
 
-We iterate the pivs in `s.recentlyTagged`, which are those in `b.recentlyTagged` that are not already contained in the rest of the query. The goal is to prevent returning info from pivs for which the user shouldn't have access.
+If the `piv.vid` field is set, this piv is a video. In this case, we set a variable `vid` to `true`.
 
 ```javascript
-         function (s) {
-            var recentlyTagged = dale.fil (s.recentlyTagged, undefined, function (v, k) {
+               var vid = piv.vid ? true : undefined;
 ```
 
-If there's no such piv or the piv doesn't belong to the user, it cannot be a recently tagged piv by the user (since the user cannot tag a piv that is not theirs). In this case, we ignore the piv. Otherwise, we return the actuali piv information.
+If `vid` is set, it can either be four things: 1) if the video is an mp4, it is merely a `1`, to indicate that the piv is a video; 2) if it is a non-mp4 video and its mp4 version has been finished already, it will be the id of the mp4 version; 3) if it's a string starting with `'pending'`, it means that the mp4 conversion is still taking place; 4) if it's a string starting with `'error'`, it means the mp4 conversion finished in an error.
+
+If we are in cases #3 or #4, we set `vid` to either `'pending'` or `'error'`.
 
 ```javascript
-               if (! s.last [s.pivs.length + k] || s.last [s.pivs.length + k].owner !== rq.user.username) return;
-               return s.last [s.pivs.length + k];
+               if (piv.vid && piv.vid.match ('pending')) vid = 'pending';
+               if (piv.vid && piv.vid.match ('error'))   vid = 'error';
+```
+
+We now construct a new piv object, using only the fields that we need.
+
+```javascript
+               return {
+```
+
+We put the fields `id`, `name` and `owner` as they appear.
+
+```javascript
+                  id:      piv.id,
+                  name:    piv.name,
+                  owner:   piv.owner,
+```
+
+We sort the `tags` array and then put it.
+
+```javascript
+                  tags:    piv.tags.sort (),
+```
+
+We convert the following fields to integer and then place them: `date`, `dateup`, `dimh`, `dimw`.
+
+```javascript
+                  date:    parseInt (piv.date),
+                  dateup:  parseInt (piv.dateup),
+                  dimh:    parseInt (piv.dimh),
+                  dimw:    parseInt (piv.dimw),
+```
+
+We put the `vid` field using the value of `vid`. It can only have one of the following values: `true`, `'pending'` or `'error'`.
+
+```javascript
+                  vid:     vid,
+```
+
+If `vid` is not set, `deg` will be either be `piv.deg` converted to an integer, or `undefined`.
+
+```javascript
+                  deg:     vid ? undefined : (parseInt (piv.deg) || undefined),
+```
+
+If `piv.loc` exists, we will parse it into an array of the shape `[LAT, LON]` and place it in the object.
+
+```javascript
+                  loc:     piv.loc ? teishi.parse (piv.loc) : undefined,
+```
+
+The following fields are only put in the test environment: `thumbS`, `thumbM`, `dates`, `dateSource`, `format`.
+
+```javascript
+                  thumbS:     ! ENV ? piv.thumbS             : undefined,
+                  thumbM:     ! ENV ? piv.thumbM             : undefined,
+                  dates:      ! ENV ? JSON.parse (piv.dates) : undefined,
+                  dateSource: ! ENV ? piv.dateSource         : undefined,
+                  format:     ! ENV ? piv.format             : undefined
+```
+
+This concludes the data manipulation on `output.pivs`.
+
+```javascript
+               };
             });
 ```
 
-We set `s.pivs` to hold the info of the pivs queried, ignoring those coming from `b.recentlyTagged`; we concatenate to it the pivs in `recentlyTagged`, which have been filtered both by existence and ownership. This is the set of pivs that will match the query.
+We reply with an object of the shape `{total: INT, tags: {...}, pivs: [{...}, ...]}`. This concludes the endpoint.
 
-Note that we filter out any `null` values, which can happen if some pivs returned by the query got deleted before getting their info but after the first part of the query was done.
-
-```javascript
-            s.pivs = dale.fil (s.last.slice (0, s.pivs.length).concat (recentlyTagged), null, function (piv) {return piv});
-```
-
-If `b.idsOnly` is `true`, we only return an array with the ids of all the matching pivs. Notice that we ignore `b.sort`, `b.from` and `b.to`.
+Note: the `refreshQuery` parameter will be soon removed.
 
 ```javascript
-            if (b.idsOnly) return dale.go (s.pivs, function (piv) {return piv.id});
+            reply (rs, 200, {refreshQuery: s.refreshQuery || undefined, total: output.total, tags: output.tags, pivs: output.pivs});
+         }
+      ]);
+   }],
 ```
-
-If there are no pivs, we return an object representing an empty query. The fields are `total`, `pivs` and `tags`.
-
-```javascript
-            if (s.pivs.length === 0) return reply (rs, 200, {total: 0, pivs: [], tags: []});
-```
-
-
 
 We now define `POST /sho` and `POST /shm`. Because of the similarities in the code for both endpoints, we define them within one function. These endpoints handle four operations:
 
