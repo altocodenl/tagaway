@@ -616,7 +616,7 @@ H.hasAccess = function (S, username, pivId) {
          if (s.last.length === 0) return S.next (false);
          var multi = redis.multi ();
          dale.go (s.last, function (tag) {
-            multi.sismember ('shm:' + username, s.owner + ':' + tag);
+            multi.sismember ('shm:' + username, s.piv.owner + ':' + tag);
          });
          mexec (s, multi);
       },
@@ -1087,7 +1087,7 @@ H.getSharedHashes = function (s, username) {
       function (s) {
          if (s.last === 'empty') return s.next ([]);
          var multi = redis.multi ();
-         dale.go (teishi.last (s.last, 2), function (id) {
+         dale.go (s.last [1], function (id) {
             multi.hget ('piv:' + id, 'hash');
          });
          mexec (s, multi);
@@ -2005,7 +2005,9 @@ var routes = [
             if (! s.last) return reply (rs, 404);
             var user = s.last;
             a.seq (s, [
-               [a.set, 'allPivs', [Redis, 'smembers', 'tag:' + user.username + ':a::']],
+               [a.set, 'allPivs',   [Redis, 'smembers', 'tag:' + user.username + ':a::']],
+               [a.set, 'hashtags',  [redis.keyscan, 'hashtag:' + rq.user.username + ':*']],
+               [a.set, 'taghashes', [redis.keyscan, 'taghash:' + rq.user.username + ':*']],
                [a.make (giz.destroy), user.username],
                function (s) {
                   a.fork (s, s.allPivs, function (piv) {
@@ -2029,6 +2031,7 @@ var routes = [
                   multi.del ('shm:'   + user.username);
                   multi.del ('sho:'   + user.username);
                   multi.del ('ulog:'  + user.username);
+                  dale.go (s.hashtags.concat (s.taghashes), function (v) {multi.del (v)});
                   mexec (s, multi);
                },
                b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookieName]] : [],
@@ -3197,7 +3200,7 @@ var routes = [
             if (action === 'shm') eventType = b.del ? 'remove'  : 'accept';
             H.log (s, rq.user.username, {ev: 'share', type: eventType, tag: b.tag, whom: b.whom});
          },
-         ! ENV && action === 'sho' && ! b.del ? function (s) {
+         ENV && action === 'sho' && ! b.del ? function (s) {
             sendmail (s, {
                to1:     b.whom,
                to2:     s.email,

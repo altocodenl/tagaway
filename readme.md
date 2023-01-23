@@ -39,67 +39,16 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- Share & manage
-   - If user A shares tag X with user B:
-      - User A sees the tag as shared with others in its share view.
-      - User B gets transactional email to accept tag X.
-      - If user B doesn't click on the accept button, nothing else happens.
-      - If user B is not logged in yet, they are prompted to login. If they don't have an account, they can create one. In both cases, the flow is resumed as if user B was logged in, once the login/signup is completed successfully.
-   - If user B clicks on the accept share button (after a potential login/signup):
-      - They are taken to the Share view and a notification tells them that tag X from user A is now available to them.
-      - Tag X appears on the list of tags shared with me.
-      - User B can see the pivs belonging to tag X, and they are also counted inside All Pictures.
-      - If user A has also tagged a certain piv with a tag Y, and that piv also has tag X, user B will be able to see tag X on that piv, but not tag Y.
-      - User B will see date tags relevant to those pivs that have been shared by user A. And if user B has geotagging enabled, they will also see geotags relevant to those pivs but only if user A turned on geotagging as well.
-   - If user B removes tag X from the list:
-      - Tag X disappears from their shared with me view, but not from user A's shared with others view.
-      - User B cannot longer see pivs belonging to tag X, and they don't count anymore towards All Pictures.
-      - User B can see the pivs belonging to tag X but not download them, rotate, delete nor share.
-      - User B can tag the pivs belonging to tag X, but those tags will only be visible to user B, not to user A, nor to any other user with whom user A shared tag X.
-      - User B can re-accept the invitation to see tag X as long as user A doesn't delete or untag all the pivs on tag X.
-   - If user A unshares tag X with user B, it will be the same as if B removes tag X from the list, except that:
-      - Tag X will disappear from user A's shared with others view., the tag disappears from the Share view for both users A and B.
-      - If user B re-accepts the old invitation, an error message will appear stating that they no longer have access to tag X.
-   - If user A deletes or untags all the pivs from tag X, and the tag X disappears, it is the same as if user A had unshared tag X with user B.
-   - If user B tags a piv belonging to tag X with a tag Y, and then uploads a piv with the same hash as that tagged piv, the piv owned by B will also have the tag Y. The converse is also true: if the user B first has its own piv with tag Y and then a piv with identical hash is shared, that piv with also have the tag Y, but only for user B.
-   - If a piv with hash 1, either owned by user B or shared with user B or both, is untagged from tag X, tag X won't be visible on that piv for user B.
-   - If user B shares a tag Y with user C that contains pivs belonging to user A:
-      - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
-      - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
-      - If user A shares tag X with user C, user B will not see the tag Y on the pivs that belong to user A.
-      - When user A shares a tag X with user C containing a piv with hash 1, and user B shares a tag Y with user C containing a piv with hash 1, user C should only see one piv with hash 1, and only one of those should count towards the total on All pictures.
-      - If tag Y only has pivs belonging to user A, user B will get an error stating that a shared tag must have at least one own piv.
-   - Each user can see a list of email addresses of previous shares. If user A shared one or more tags with user B in the past but removed all of those shares, then user B's email address won't be visible in user A's list.
-   - In main view, see tags shared with me with a different icon than own tags.
-   - Rename tag.
+- Merge share: docs, check keys in db (s3, remove hometags), remove 100ms delay on H.server.kill, organized/to organize, updateLimit, add hashids script
 
 - Share implementation
-   - Server changes
-      - rename endpoint
-      - shm in/out endpoint (check that sho exists)
-      - send email for shm
-      - remove sho & shm when tag disappears
-      - tags & hashes
-         - tag/untag: if own piv with that hash, tag/untag own. otherwise, resolve hash and add/rem from hashtag:HASH.
-         - delete: if shared pivs with hash, (re)create hashtag:HASH
-         - upload: if hashtag:HASH, put that onto piv and delete hashtag:HASH.
-
-      - TODO: query:
-         - leave tests on an easily resumable state
-         - merge: docs, check keys in db (s3, remove hometags), remove 100ms delay on H.server.kill, organized/to organize, updateLimit, add hashids script
-
-   - TODO: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
-   - Tests:
-      - check queries & tags
-         - check disappearing of access when either sho or shm is removed
-         - if sho is removed also check that shm was removed
-         - if two shared tags have same piv, don't duplicate them but show both tags
-         - if a piv has tags X and Y for user A, but user A only shares X with user B, user B should not see tag Y
-         - querying on shared tag
-         - if A shares tag X including piv 1 with B, and B has piv 1 as well, there should be no double counting in all pivs or in the pivs returned, but the shared tag should be visible for B
-         - if A shares tag X including piv 1 with C, and B does the same with tag Y including piv 1 with C, C should have a proper count in all pivs and see only the piv 1 once. user C should see both X and Y in the list of tags and also if she clicks on X, Y should still be visible as belonging to that piv.
-         - if a shared tag loses all pivs through untagging or deletion, remove it from sho and shm (try multiple shos as well).
-         - TODO: tag by hash, no matter to whom it belongs
+   - Finish server test of queries and tagging, in particular:
+      - Cleanup of taghashes/hashtags after owner untagging/deletion
+      - Don't return duplicated pivs and give priority to own pivs
+      - Don't double-count tags but do count all tags with duplicated pivs
+   - If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
+   - Share & manage UI
+   - In main view, see tags shared with me with a different icon than own tags.
 
 ### Already implemented
 
@@ -184,6 +133,40 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Mobile: show upload box as folders only, since there's no dropdown or perhaps no folders.
    - Snackbar with success message when pivs are finished uploading.
    - Show errors.
+
+- Share & manage
+   - If user A shares tag X with user B:
+      - User A sees the tag as shared with others in its share view.
+      - User B gets transactional email to accept tag X.
+      - If user B doesn't click on the accept button, nothing else happens.
+      - If user B is not logged in yet, they are prompted to login. If they don't have an account, they can create one. In both cases, the flow is resumed as if user B was logged in, once the login/signup is completed successfully.
+   - If user B clicks on the accept share button (after a potential login/signup):
+      - They are taken to the Share view and a notification tells them that tag X from user A is now available to them.
+      - Tag X appears on the list of tags shared with me.
+      - User B can see the pivs belonging to tag X, and they are also counted inside All Pictures.
+      - If user A has also tagged a certain piv with a tag Y, and that piv also has tag X, user B will be able to see tag X on that piv, but not tag Y.
+      - User B will see date tags relevant to those pivs that have been shared by user A. And if user B has geotagging enabled, they will also see geotags relevant to those pivs but only if user A turned on geotagging as well.
+   - If user B removes tag X from the list:
+      - Tag X disappears from their shared with me view, but not from user A's shared with others view.
+      - User B cannot longer see pivs belonging to tag X, and they don't count anymore towards All Pictures.
+      - User B can see the pivs belonging to tag X but not download them, rotate, delete nor share.
+      - User B can tag the pivs belonging to tag X, but those tags will only be visible to user B, not to user A, nor to any other user with whom user A shared tag X.
+      - User B can re-accept the invitation to see tag X as long as user A doesn't delete or untag all the pivs on tag X.
+   - If user A unshares tag X with user B, it will be the same as if B removes tag X from the list, except that:
+      - Tag X will disappear from user A's shared with others view., the tag disappears from the Share view for both users A and B.
+      - If user B re-accepts the old invitation, an error message will appear stating that they no longer have access to tag X.
+   - If user A deletes or untags all the pivs from tag X, and the tag X disappears, it is the same as if user A had unshared tag X with user B.
+   - If user B tags a piv belonging to tag X with a tag Y, and then uploads a piv with the same hash as that tagged piv, the piv owned by B will also have the tag Y. The converse is also true: if the user B first has its own piv with tag Y and then a piv with identical hash is shared, that piv with also have the tag Y, but only for user B.
+   - If a piv with hash 1, either owned by user B or shared with user B or both, is untagged from tag X, tag X won't be visible on that piv for user B.
+   - If user B shares a tag Y with user C that contains pivs belonging to user A:
+      - If the tag Y has pivs that belong to user B, user C will only see the pivs belonging to user B that are within the tag Y.
+      - If user B deletes/untags own pivs from tag Y, it is equivalent as unsharing tag Y with user C.
+      - If user A shares tag X with user C, user B will not see the tag Y on the pivs that belong to user A.
+      - When user A shares a tag X with user C containing a piv with hash 1, and user B shares a tag Y with user C containing a piv with hash 1, user C should only see one piv with hash 1, and only one of those should count towards the total on All pictures.
+      - If tag Y only has pivs belonging to user A, user B will get an error stating that a shared tag must have at least one own piv.
+   - Each user can see a list of email addresses of previous shares. If user A shared one or more tags with user B in the past but removed all of those shares, then user B's email address won't be visible in user A's list.
+   - In main view, see tags shared with me with a different icon than own tags.
+   - Rename tag.
 
 - Account & payment
    - Login/logout.
@@ -771,7 +754,7 @@ All the routes below require an admin user to be logged in.
 
 - pivt:ID (set): list of all the tags belonging to a piv.
 
-- hashtag:USERNAME:HASH (set): list of all the tags belonging to pivs with a hash HASH. This will exist only if the user has one or more other users sharing a piv with a hash HASH that have one or more tags and, at the same time, the user has no piv with hash HASH.
+- hashtag:USERNAME:HASH (set): list of all the tags belonging to pivs with a hash HASH for `USERNAME`. This will exist only if the user has one or more other users sharing a piv with a hash HASH that have one or more tags and, at the same time, the user has no own piv with hash HASH.
 
 - taghash:USERNAME:TAG (set): list of all of the hashes belonging to a given tag, for all the pivs not owned by `USERNAME` that are tagged with that tag. The taghash sets contain the same information than the hashtag sets.
 
@@ -1327,7 +1310,7 @@ If no tags are shared with the user, we merely return an empty array.
 
 If two (or more) distinct pivs have the same hash, the list will contain repeated hashes. However, we're OK with this, since the amount of repeated pivs should be relatively small, and the use we have for this list doesn't require it to contain non-repeated elements. To eliminate duplicates, we could either filter them in javascript, or add all the resulting hashes onto a redis set, but we won't do it - at least, not for now.
 
-Note that we access the next-to-last element in `s.last`, since the result of the last operation corresponds to the deletion of `qid`, rather than the `smembers` operation which brings the ids.
+Note that we access the second element in `s.last`, since that one corresponds to the `smembers` operation which brings the ids.
 
 We will merely return the result of obtaining all the hashes, which should produce a list of hashes. This concludes the function.
 
@@ -1335,7 +1318,7 @@ We will merely return the result of obtaining all the hashes, which should produ
       function (s) {
          if (s.last === 'empty') return s.next ([]);
          var multi = redis.multi ();
-         dale.go (teishi.last (s.last, 2), function (id) {
+         dale.go (s.last [1], function (id) {
             multi.hget ('piv:' + id, 'hash');
          });
          mexec (s, multi);
@@ -3057,7 +3040,7 @@ We create a log entry for the user with the right `eventType` as `type`. In all 
 If this is a share operation and we are not in a local or test environment, we send the share email to the targeted user, using the `sendmail` function. We use the email template `share`, which is available at `config.js`.
 
 ```javascript
-         ! ENV && action === 'sho' && ! b.del ? function (s) {
+         ENV && action === 'sho' && ! b.del ? function (s) {
             sendmail (s, {
                to1:     b.whom,
                to2:     s.email,
