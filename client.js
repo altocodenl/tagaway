@@ -1,9 +1,12 @@
 // *** SETUP ***
 
 var dale = window.dale, teishi = window.teishi, lith = window.lith, c = window.c, B = window.B;
-var type = teishi.type, clog = teishi.clog, media = lith.css.media, style = lith.css.style, inc = function (a, v) {return a.indexOf (v) > -1}
+var type = teishi.type, clog = teishi.clog, eq = teishi.eq, last = teishi.last, inc = teishi.inc, media = lith.css.media, style = lith.css.style;
+
+var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments, function (v) {return v})))};
 
 window.addEventListener ('keydown', function (ev) {
+   if (B.prod) return;
    ev = ev || document.event;
    if (! ev.ctrlKey) return;
    // CTRL+K: search the eventlog
@@ -62,13 +65,15 @@ var CSS = {
    },
    // *** variables.scss ***
    vars: {
-      tagColors: ['green', 'blue', 'yellow', 'orange', 'coral', 'indigo'],
+      // tagColors: ['green', 'blue', 'yellow', 'orange', 'coral', 'indigo'],
+      tagColors: ['#ec5bff', '#ff5b6e', '#5bffec', '#4aff95', '#ffec5b', '#80762e'],
       // Layout sizes
       'sidebar-width': 300,
       // Colors
       'color--one': '#5b6eff',
       'color--attach': '#87D7AB',
       'color--remove': '#FC201F',
+      'color--organized': '#00992b',
       'highlight--neutral': '#d8eeff',
       'highlight--selection': '#ffeccc',
       'highlight--positive': '#cfefdd',
@@ -251,16 +256,33 @@ CSS.litc = [
       color: '#fff',
       cursor: 'pointer',
    }],
+   ['.button--purple-header', {
+      border: '1px solid #ec5bff',
+      'background-color': '#ec5bff',
+      color: '#fff',
+      cursor: 'pointer',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--purple-header:hover', {
+      'background-color': '#fff',
+      color: '#ec5bff',
+   }]),
    ['.button--feedback', {
       border: '1px solid ' + CSS.vars ['color--one'],
       color: CSS.vars ['color--one'],
       cursor: 'pointer',
       'border-radius': 12,
    }],
+   media ('screen and (max-width: 1090px)', ['.button--feedback', {
+      display: 'none'
+   }]),
    media ('screen and (min-width: 1025px)', ['.button--one:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--one'],
-   }]),
+   },
+   ['.pcUpload-icon, .cloudImport-icon', {
+      'fill': CSS.vars['color--one'],
+   }],
+   ]),
    ['.button--two', {
       border: '1px solid ' + CSS.vars.grey,
       color: '#fff',
@@ -279,14 +301,27 @@ CSS.litc = [
       color: '#fff',
       background: CSS.vars.grey,
    }]),
+   ['.button--four', {
+      border: '1px solid ' + CSS.vars ['color--one'],
+      color: CSS.vars ['color--one'],
+      'background-color': '#fff',
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--four:hover', {
+      color: '#fff',
+      background: CSS.vars ['color--one'],
+   }]),
    media ('screen and (min-width: 1025px)', ['.button--green:hover', {
       'background-color': '#fff',
       color: CSS.vars ['color--attach'],
-   }]),
+   },
+   ['.share-icon', {
+      'fill': CSS.vars ['color--attach'],
+   }]]),
    media ('screen and (min-width: 1025px)', ['.button--feedback:hover', {
       'background-color': CSS.vars ['color--one'],
       color: '#fff',
    }]),
+
    // Buttons icon
    ['.button__icon', {
       display: 'inline-block',
@@ -336,6 +371,22 @@ CSS.litc = [
    ['.header__feedback-button', {'margin-left': 'auto'}],
    ['.header__upload-button', {'margin-left, margin-right': CSS.vars ['padding--m']}],
    ['.header__import-button', {'margin-left': 22, 'margin-right': -12}],
+   ['.button--green .share-icon', {
+      'margin-top': 16,
+      'margin-right': CSS.vars ['padding--xs'],
+   }],
+   ['.cloudImport-icon', {
+      'height, width': 26,
+      'fill': 'white',
+      'margin-top': 17,
+      'margin-right': CSS.vars ['padding--xs'],
+   }],
+   ['.pcUpload-icon', {
+      'height, width': 30,
+      'fill': 'white',
+      'margin-top': 15,
+      'margin-right': CSS.vars ['padding--xs'],
+   }],
    // *** logo.scss ***
    ['.logo__img', {
       display: 'inline-block',
@@ -356,6 +407,14 @@ CSS.litc = [
    ['.app-organise .main-menu__item--organise, .app-pictures .main-menu__item--pictures', ['.main-menu__item-link', {color: CSS.vars ['color--one']}]],
    // *** main-menu-mobile.scss ***
    // *** account-menu.scss ***
+   ['.account-menu', {
+      display: 'inline-flex'
+   }],
+   ['.username', {
+      color: CSS.vars ['grey--darker'],
+      'font-size': CSS.typography.fontSize (1.2),
+      'margin-top': 2
+   }],
    ['.account-menu__item', {
       position: 'relative',
       'padding-left, padding-right': 10,
@@ -446,7 +505,8 @@ CSS.litc = [
       'border-right': CSS.vars ['border-color'] + ' 1px solid',
       height: 'calc(100vh - 58px)',
       'background-color': '#fff',
-      'overflow-x': 'hidden',
+      // 'overflow-x': 'hidden',
+      'overflow-x': 'auto',
    }],
    ['.sidebar__inner', {
       width: '200%',
@@ -460,8 +520,8 @@ CSS.litc = [
    ['.sidebar__inner-section', {width: 0.5, position: 'relative'}],
    // Sidebar coherent paddings
    ['.sidebar__header, .sidebar__tags, .sidebar__tip', {'padding-left, padding-right': CSS.vars ['padding--m']}],
-   ['.sidebar__attach-form, .sidebar__switch', {
-      'padding-left, padding-right':  'calc(' + CSS.vars ['padding--m'] + 'px - 6px)' // has smaller padding for optic correction of round shape
+   ['.sidebar__attach-form', {
+       'padding-left, padding-right':  'calc(' + CSS.vars ['padding--m'] + 'px - 6px)' // has smaller padding for optic correction of round shape
    }],
    // Sidebar close section
    ['.sidebar__close-section-button', {
@@ -488,8 +548,6 @@ CSS.litc = [
       //display: 'none',
    }],
    ['.attach-form:hover .attach-form__dropdown', {display: 'block'}],
-   // Sidebar switch
-   ['.sidebar__switch', {'margin-bottom': CSS.typography.spaceVer (1)}],
    // Sidebar footer
    ['.sidebar__footer', {
       position: 'fixed',
@@ -506,11 +564,6 @@ CSS.litc = [
    ['.app-attach-tags', [
       ['.sidebar__attach-form', {display: 'block'}],
       ['.sidebar__section-title--untag', {display: 'none'}],
-   ]],
-   // Sidebar -- untag tags
-   ['.app-untag-tags', [
-      ['.sidebar__attach-form', {display: 'none'}],
-      ['.sidebar__section-title--attach', {display: 'none'}],
    ]],
    // *** sidebar-header.scss ***
    ['.sidebar-header', {position: 'relative'}],
@@ -537,16 +590,16 @@ CSS.litc = [
    // Sidebar title
    ['.sidebar-header__title', {'font-size': CSS.typography.fontSize (3)}],
    // Sidebar Done Tagging button
-   ['.done-tagging-button', {
-      display: 'block',
-      float: 'right',
-      'cursor': 'pointer',
-      'margin-right': '-41%',
-      'margin-bottom': CSS.vars ['padding--xs'],
-      border: '1px solid #87D7AB',
-      color: '#fff',
-      'background-color': CSS.vars ['color--attach'],
-   }],
+   // ['.done-tagging-button', {
+   //    display: 'block',
+   //    float: 'right',
+   //    'cursor': 'pointer',
+   //    'margin-right': '-41%',
+   //    'margin-bottom': CSS.vars ['padding--xs'],
+   //    border: '1px solid #87D7AB',
+   //    color: '#fff',
+   //    'background-color': CSS.vars ['color--attach'],
+   // }],
    ['.done-tagging-button:hover', {
       color: CSS.vars ['color--attach'],
       'background-color': '#fff'
@@ -572,6 +625,7 @@ CSS.litc = [
       'border-top, border-bottom': '1px solid ' + CSS.vars ['border-color'], // ORIGINALLY IN '.sidebar__footer'. MOVED HERE AS A FIX TO ACCOMODATE '.done-tagging-button'
    }],
    ['.sidebar-search__input', {'padding-left, padding-right': CSS.vars ['padding--m']}],
+   ['.sidebar-search__input::placeholder', {'color': CSS.vars ['color--one'], 'font-weight': CSS.vars ['fontPrimarySemiBold']}],
    ['.sidebar-search__icon', {
       position: 'absolute',
       right: CSS.vars ['padding--m'],
@@ -579,7 +633,10 @@ CSS.litc = [
       'margin-top': -12,
       'width, height': 24,
       display: 'inline-block',
-   }, ['path', {fill: CSS.vars ['grey--link']}]],
+   }, ['path', {
+      // fill: CSS.vars ['grey--link']
+      fill: CSS.vars ['color--one']
+   }]],
    // *** switch.scss ***
    ['.switch', {
       padding: 4,
@@ -591,7 +648,6 @@ CSS.litc = [
    }],
    ['.app-selected-tags .switch', {background: CSS.vars ['highlight--selection']}],
    ['.app-attach-tags .switch', {background: CSS.vars ['highlight--positive']}],
-   ['.app-untag-tags .switch', {background: CSS.vars ['highlight--negative']}],
    ['.switch::after', {
       content: "''",
       background: '#fff',
@@ -605,7 +661,6 @@ CSS.litc = [
    ['.app-all-tags .switch::after', {left: 4, width: 98}],
    ['.app-selected-tags .switch::after', {left: 101, width: 130}],
    ['.app-attach-tags .switch::after', {left: 4, width: 125}],
-   ['.app-untag-tags .switch::after', {left: 128, width: 110}],
    ['.switch-list', {
       position: 'relative',
       'z-index': '1',
@@ -736,6 +791,238 @@ CSS.litc = [
       'font-size': CSS.typography.fontSize (1),
       'margin-bottom': CSS.typography.spaceVer (1),
    }],
+   ['.googlePlayBadge', {
+      height: 40,
+   }],
+   // *** ONBOARDING VIEW ***
+   ['.onboarding-modal-container', {
+      width: 700,
+      height: 400
+   }],
+   ['.onboarding-modal', {
+      height: 'inherit',
+      'display': 'flex',
+      'padding-top, padding-bottom': CSS.vars ['padding--l'],
+      'margin-bottom': CSS.vars ['padding--s'],
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': CSS.vars ['border-radius--l'],
+   }],
+   ['.onboarding-modal-text-div, .onboarding-modal-gif-div', {
+      'position': 'relative',
+      'border-radius': CSS.vars ['border-radius--l'],
+   }],
+   ['.onboarding-modal-text-div', {
+      width: .4,
+      height: .7,
+      'margin-top': 56,
+      'margin-left': CSS.vars ['padding--l'],
+      'background-color': CSS.vars ['color--one'],
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+   }],
+   ['.onboarding-modal-gif-div', {
+      height: 1,
+      width: .4,
+      'background-color': CSS.vars ['highlight--neutral'],
+      'border': 'solid 1px' + CSS.vars ['highlight--neutral'],
+      'margin-right': CSS.vars ['padding--l'],
+      'margin-left': 'auto',
+   }],
+   ['.onboarding-modal-gif', {
+      'height': 'auto',
+      'width': .8,
+      'border-radius': CSS.vars ['border-radius--l'],
+      display: 'block',
+      position: 'absolute',
+      'margin': 'auto',
+      'top, bottom, right, left': 0
+   }],
+   ['.onboarding-modal-text-container', {
+      'margin': 0,
+      'position': 'absolute',
+      top: .5,
+      '-ms-transform': 'translateY(-50%)',
+      'transform': 'translateY(-50%)'
+   }],
+   ['.onboarding-modal-title, .onboarding-modal-text', {
+      color: 'white',
+      'margin-left, margin-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--m']
+   }],
+   ['.onboarding-modal-title', {
+      'font-size': CSS.typography.fontSize (4),
+      'font-weight': CSS.vars.fontPrimarySemiBold,
+   }],
+   ['.onboarding-modal-text', {
+      mixin1: CSS.vars.fontPrimarySemiBold,
+      'margin-bottom': CSS.vars ['padding--m'],
+   }],
+   ['.onboarding-modal-arrow', {
+      'height, width': 25,
+      'margin-top': '640%'
+
+   }],
+   // *** HOME VIEW ***
+   ['.button--purple', {
+       border: '1px solid #ec5bff',
+      'background-color': '#ec5bff',
+      color: '#fff',
+      cursor: 'pointer',
+      width: 200,
+      'padding-left': 50,
+      'margin-left': 25,
+   }],
+   media ('screen and (min-width: 1025px)', ['.button--purple:hover', {
+      'background-color': '#fff',
+      color: '#ec5bff',
+   }]),
+   ['.home-boxes-row', {
+      // width: 1,
+      'flex-wrap': 'wrap',
+      'display': 'inline-flex',
+      'margin-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-boxes-row', {
+      width: 1,
+      'margin-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-box', {
+      width: 290,
+      'min-width': 290,
+      height: 180,
+      'margin-right, margin-top': CSS.vars ['padding--xl'],
+      position: 'relative',
+      'cursor': 'pointer'
+   }],
+   ['.box-add', {
+      'border': 'dashed 1px' + CSS.vars ['color--one'],
+   }],
+   ['.box-add-circle', {
+      'position': 'absolute',
+      'top, bottom': .5,
+      'transform': 'translate(-50%, -50%)',
+      'height, width': 120,
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': 1,
+      'margin-left': 82,
+      'cursor': 'pointer',
+   }],
+   ['.box-add-plus', {
+      'position': 'absolute',
+      'top': .29,
+      'left': .29,
+      '--b': 4,
+      'width': 50,
+      'aspect-ratio': '1',
+      'background': 'conic-gradient(from 90deg at var(--b) var(--b),transparent 90deg,#5b6eff 0) calc(100% + var(--b)/2) calc(100% + var(--b)/2)/calc(50%  + var(--b))   calc(50%  + var(--b))',
+      'display': 'inline-block',
+   }],
+   ['.home-box-tag-name', {
+      'font-size': CSS.typography.spaceVer(1.5),
+      'font-weight': CSS.vars ['fontPrimarySemiBold'],
+      'line-height': CSS.typography.spaceVer (1.5),
+      position: 'absolute',
+      'bottom': 0,
+      'margin-bottom, margin-left, margin-right': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal', {
+      width: 600,
+      height: 650,
+      'margin-top': CSS.vars ['padding--xl'],
+      'margin-left, margin-right': 'auto',
+      'background-color': 'white',
+      'border': 'solid 1px' + CSS.vars ['color--one'],
+      'border-radius': CSS.vars ['border-radius--m'],
+   }],
+   ['.home-add-tag-modal-contents', {
+      display: 'inline-flex',
+      'width, height': 'inherit'
+   }],
+   ['.home-add-tag-modal-left-section', {
+      width: .5,
+      'padding-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-add-tags-section'],
+   ['.home-add-tag-modal-title', {
+      'padding-top': CSS.vars ['padding--m'],
+      'text-align': 'center',
+      'font-size': CSS.typography.spaceVer(1),
+      'font-weight': CSS.vars ['fontPrimaryMedium'],
+      'line-height': CSS.typography.spaceVer (1),
+   }],
+   ['.home-add-tag-modal-search-box', {
+      'margin-left, margin-right': 'auto',
+      'padding-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-tags-list', {
+      height: 500,
+      'overflow': 'auto',
+      'padding-right': CSS.vars ['padding--m'],
+      'margin-top': CSS.vars ['padding--s'],
+      'margin-right, margin-left': 'auto',
+   }],
+   ['.home-add-tag-modal-tags-list-ul', {
+
+   }],
+   ['.home-add-tag-modal-tags-list-li', {
+   }],
+   ['.home-add-tag-modal-tag-actions__item', {
+      height: 24,
+   }],
+   ['.home-add-tag-modal-tags-list-tag__title', {
+      mixin1: CSS.vars.fontPrimaryMedium,
+      'margin-right': CSS.vars ['padding--xs'],
+      width: 200
+   }],
+   ['.home-add-tag-modal-right-section', {
+      'border-left-style': 'solid',
+      'border-left-color':  CSS.vars ['grey--light'],
+      'border-left-width': '1px',
+      width: .5,
+      'padding-left': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-your-tags-section', {
+      height: .9
+   }],
+   ['.home-add-tag-modal-your-tags-list', {
+      // width: .7,
+      'padding-left, padding-right': CSS.vars ['padding--m'],
+      'margin-left, margin-right': 'auto',
+       height: 500,
+      'overflow': 'auto',
+      'margin-top': 78,
+   }],
+   ['.home-add-tag-modal-your-tags-list-ul'],
+   ['.home-add-tag-modal-your-tags-list-li', {
+      'height': '29.5px',
+   }],
+   ['.home-add-tag-modal-done-button', {
+      'float': 'right',
+      'margin-right': CSS.vars ['padding--m'],
+   }],
+   ['.home-add-tag-modal-your-tags-actions', {
+      'display': 'inline-flex',
+   }],
+   ['.tagBoxItem-icon', {
+      display: 'inline-block',
+      'width, height': 12,
+      'margin-right': CSS.vars ['padding--s'],
+   }],
+   ['.home-add-tag-modal-arrow-blue, .home-add-tag-modal-arrow-grey', {
+      'width, height': 18,
+      'margin-left': CSS.vars ['padding--s'],
+   }],
+   ['.home-add-tag-modal-your-tags-actions-left-arrow', {
+      transform: 'rotate(180deg)',
+      height: 18,
+      'margin-right': '-10px',
+   }],
+   ['.home-add-tag-modal-delete-box-icon', {
+      display: 'inline-block',
+      'width, height': 18,
+      'margin-right': 3,
+      'margin-left': CSS.vars ['padding--s'],
+   }],
    // *** page-header.scss ***
    ['.page-header', {
       'margin-top': CSS.typography.spaceVer (4),
@@ -820,6 +1107,33 @@ CSS.litc = [
       // color: 'white',
       'margin-left': CSS.vars ['padding--xs']
    }],
+   ['.see-more-years', {
+      'width, height': 'fit-content',
+      'margin-bottom': '-22px',
+      color: CSS.vars ['color--one'],
+      'cursor': 'pointer',
+   }],
+   ['.see-more-geo', {
+      'display': 'inline-flex',
+      'margin-bottom': '-22px',
+      color: CSS.vars ['color--one'],
+      'cursor': 'pointer',
+   }],
+   ['.see-more-years-icon svg, .see-more-geo-icon svg', {
+      stroke: CSS.vars ['color--one'],
+      'stroke-width': 2
+   }],
+   ['.see-more-geo-icon svg', {
+     'width, height': 16,
+     'stroke-width': 3
+   }],
+   ['.see-more-years-text, .see-more-geo-text', {
+      'vertical-align': 'text-bottom'
+   }],
+   ['.see-more-geo-text', {
+      width: 70,
+      'padding-top': 3,
+   }],
    // *** tag-list-extended.scss ***
    // Tag list extended
    ['.tag-list-extended', {
@@ -884,17 +1198,13 @@ CSS.litc = [
       'margin-bottom': CSS.typography.spaceVer (0.5),
    }],
    ['.sort-arrow', {
-      'margin-left': .8,
+      // 'margin-left': .8,
+      'margin-left': .63,
    }],
    // Tag list -- Sidebar -- Only selected tags
    ['.app-selected-tags .tag-list--sidebar', [
       ['.tag', {display: 'none'}],
       ['.tag--selected', {display: 'flex'}],
-   ]],
-   // Tag list -- Sidebar -- only attached tags (Untag)
-   ['.app-untag-tags .tag-list--attach', [
-      ['.tag', {display: 'none'}],
-      ['.tag--attached', {display: 'flex'}],
    ]],
    // *** tag.scss ***
    // Tag
@@ -922,6 +1232,29 @@ CSS.litc = [
       'margin-right': CSS.vars ['padding--xs'],
       width: 'inherit'
    }],
+   ['.tag__title-organized', {
+      color: CSS.vars ['color--organized']
+   }],
+   ['.videoIcon', {
+      'width': 20,
+      'margin-right': 3,
+      'margin-left': 4,
+      'display': 'inline-block',
+   }],
+   ['.to-organize-icon', {
+      display: 'inline-block',
+      width: 14,
+      height: 15,
+      'margin-right': 9,
+      'margin-left': 5,
+      'padding-top': '1px',
+   }],
+   ['.organized-icon, .organized-icon-white', {
+      display: 'inherit',
+      'height, width': 22,
+      'margin-right': 4,
+      'margin-left': 3,
+   }],
    // Tag title - amount
    ['.tag__title-amount', {
       'white-space': 'nowrap',
@@ -945,9 +1278,11 @@ CSS.litc = [
    // Tag actions
    ['.tag-actions', {
       position: 'absolute',
-      display: 'inline-block',
+      // display: 'inline-block',
+      display: 'inline-flex',
       top: 0.5,
-      right: 0,
+      // right: 0,
+      right: 15,
       transform: 'translateY(-50%)',
       'width, height': 24,
       'border-radius': 20,
@@ -990,6 +1325,12 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 24,
    }],
+   ['.tag-actions__item--view-query', {
+      'display': 'flex',
+      'background-color': CSS.vars ['grey'],
+      fill: '#fff',
+      'margin-right': CSS.vars ['padding--xs'],
+   }],
    // Tag actions -- View pictures
    ['.app-pictures', [
       // Selected tag
@@ -1019,14 +1360,14 @@ CSS.litc = [
          ['.tag-actions__item--attach', {display: 'none'}],
          ['.tag-actions__item--attached', {display: 'flex'}],
       ]],
-   ]],
-   // Tag actions -- Untag
-   ['.app-untag-tags', [
-      ['.tag-actions__item--attached', {display: 'flex'}],
-      ['.tag-actions:hover', [
+      ['.tag--attached:hover', [
          ['.tag-actions__item--attached', {display: 'none'}],
          ['.tag-actions__item--untag', {display: 'flex'}],
       ]],
+      ['.tag--unattached:hover', [
+         ['.tag-actions__item--attach', {display: 'none'}],
+         ['.tag-actions__item--attached', {display: 'flex'}],
+      ]]
    ]],
    // *** tag-share.scss ***
    // Tag shared
@@ -1161,7 +1502,7 @@ CSS.litc = [
    // *** dropdown.scss ***
    ['.dropdown', {
       position: 'relative',
-      margin:'auto'
+      margin: 'auto'
    }],
    ['.dropdown__button', {
 
@@ -1606,6 +1947,27 @@ CSS.litc = [
    ['.start-import-button:hover', {
       color: '#5b6eff',
       'background-color': '#fff',
+   }],
+   // GO BACK TO VIEW PICTURES
+   ['.go-back-to-view-pictures', {
+      display: 'inline-flex',
+      'margin-right': 'auto',
+      'margin-left': 'auto',
+      'margin-bottom': CSS.vars ['padding--l'],
+   }],
+   ['.go-back-to-view-pictures-p, .go-back-to-view-pictures-a', {
+      'font-size': CSS.typography.fontSize (1),
+   }],
+   ['.go-back-to-view-pictures-p', {
+      'margin-right': CSS.vars ['padding--xs'],
+   }],
+   ['.go-back-to-view-pictures-a', {
+      color: CSS.vars ['color--one'],
+      'text-decoration': 'underline',
+      'font-weight': CSS.vars ['fontPrimarySemiBold'],
+   }],
+   ['.go-back-to-view-pictures-a:hover', {
+      color: CSS.vars ['color--one'],
    }],
    // BOXED ALERTS
    ['.boxed-alert', {
@@ -2079,7 +2441,7 @@ CSS.litc = [
 
    }],
    ['.pictures-header__action-bar', {
-      'margin-top': CSS.typography.spaceVer (0.3),
+      // 'margin-top': CSS.typography.spaceVer (0.3),
       display: 'flex',
       width: 1,
       'align-items': 'center',
@@ -2180,6 +2542,25 @@ CSS.litc = [
       ['&:hover', {'background-color': 'rgba(' + CSS.toRGBA (CSS.vars ['color--remove']) + ', 0.1)'}],
       ['.organise-bar__button-icon path', {fill: 'rgba(' + CSS.toRGBA (CSS.vars ['color--remove']) + ', 0.7)'}],
    ]],
+   ['.organise-bar__button--organized .organized-icon', {
+      display: 'none'
+   }],
+   ['.organise-bar__button--organized', {
+      'background-color': CSS.vars ['color--organized'],
+      border: 'solid 1px' + CSS.vars ['color--organized'],
+      display: 'inline-flex',
+      'cursor': 'pointer',
+      'border-radius': 100,
+      color: 'white',
+      opacity: '1',
+      'margin-bottom': CSS.vars ['padding--xs'],
+      'padding-right': 24,
+   }, [
+      ['&:hover', {'background-color': 'white', color: CSS.vars ['color--organized'], border: 'solid 1px' + CSS.vars ['color--organized']}, [
+         ['.organized-icon-white', {display: 'none'}],
+         ['.organized-icon', {display: 'block'}]
+      ]],
+   ]],
    ['.organise-bar__button:hover', {opacity: '1'}],
    ['.organise-bar__button-title', {'margin-left': 4}],
    ['.organise-bar__button-icon-container', {
@@ -2192,6 +2573,10 @@ CSS.litc = [
       display: 'inline-block',
       'width, height': 24,
       fill: CSS.vars ['grey--darker'],
+   }],
+   ['.organise-bar__button-calendar-icon', {
+      width: 20,
+      'margin-right': 4,
    }],
    // *** selected-box.scss ***
    // Selected box (in organise bar)
@@ -2517,21 +2902,69 @@ CSS.litc = [
    ['.fullscreen__action:hover .fullscreen__action-text', {color: CSS.vars ['grey--lightest']}],
    ['.no-svg svg', {display: 'none'}],
    // FEEDBACK BOX
-   ['.feedback-box', {
+   ['.feedback-box-mask', {
+      'width, height': 1,
+      'background-color': 'rgb(0,0,255,0.3)',
+      position: 'fixed',
+      top: 0,
+      'z-index': '102'
    }],
-   ['.feedback-input-box', {
-
+   ['.feedback-box', {
+      position: 'fixed',
+      'top': 0.25,
+      'left': .3,
+      padding: 50
    }],
    ['.feedback-input-textarea', {
-      mixin1: CSS.vars.fontPrimaryItalic,
+      mixin1: CSS.vars.fontPrimaryMedium,
+      // width: window.innerWidth / 2,
       width: 582,
       height: 84,
       resize: 'none',
       'line-height': 20,
       border: '1px solid ' + CSS.vars ['border-color--dark'],
-      'border-radius': 25,
+      'border-radius': 10,
       'padding-left, padding-right': CSS.vars ['padding--s'],
-      'padding-top': CSS.vars ['padding--xs'],
+      'padding-top': CSS.vars ['padding--s'],
+   }],
+   // CHANGE DATE
+   ['.change-date', {
+      'position': 'fixed',
+      'left': .35,
+      'top': .2,
+      width: 500,
+   }],
+   ['.change-date-box', {
+      'text-align': 'center',
+      'background-color': 'white',
+      'font-size':   CSS.typography.fontSize (2.5),
+      'margin-bottom': 12,
+      'border-radius': CSS.vars ['padding--s'],
+      'border': '1px solid' + CSS.vars ['color--one']
+   }],
+   ['.change-date-box-title', {
+      'padding-top': CSS.vars ['padding--m'],
+      'margin-bottom': CSS.vars ['padding--m'],
+      // 'font-weight': CSS.vars.fontPrimaryMedium,
+   }],
+   ['.change-date-box-input-date', {
+      'padding-bottom': CSS.vars ['padding--m'],
+      // 'font-weight': CSS.vars.fontPrimarySemiBold,
+      'font-weight': CSS.vars.fontPrimaryMedium,
+      'display': 'inline-flex',
+      'cursor': 'text',
+   }],
+   // *** UPDATE QUERY BOX ***
+   ['.update-pivs-box', {
+      position: 'fixed',
+      bottom: 0,
+      'left': .4,
+      width: Math.round (window.innerWidth / 5),
+      height: 80,
+      'z-index': '102',
+      'border-top-left-radius, border-top-right-radius': 10,
+      'padding-bottom': CSS.vars ['padding--s'],
+      'background-color': 'white'
    }],
    // *** AUTH VIEWS ***
    ['.enter', {
@@ -2569,7 +3002,7 @@ CSS.litc = [
       }],
       ['.enter-form__input', {
          'border, background': 'none',
-         'border-bottom': '1px solid ' + CSS.vars ['grey--darkest'],
+         'border-bottom': '1px solid ' + CSS.vars ['grey--light'],
          'font-size': 16,
          width: 1,
          'padding-top, padding-bottom': CSS.typography.spaceVer (1),
@@ -2644,11 +3077,12 @@ CSS.litc = [
          display: 'flex',
          'flex-direction': 'column',
          'justify-content': 'center',
-         'background-color': CSS.vars ['highlight--selection'],
+         // 'background-color': CSS.vars ['highlight--selection'],
          'padding-top': CSS.typography.spaceVer (3),
          'padding-bottom': CSS.typography.spaceVer (3.5),
          'padding-left, padding-right': 60,
          'border-radius': CSS.vars ['border-radius--m'],
+         border: '1px solid ' + CSS.vars ['grey--light'],
       }],
       media ('screen and (max-width: 767px)', ['.auth-card__inner', {
          'padding-top': CSS.typography.spaceVer (2.25),
@@ -2685,6 +3119,7 @@ var svg = {
    sidebarSearch: '<svg class="sidebar-search__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>',
    searchTagIcon: '<svg class="tags-search-bar__search-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m19.9 18-4.2-4.2s0 0-.1 0c1.7-2.5 1.4-5.9-.8-8.2-2.5-2.5-6.7-2.5-9.2 0s-2.5 6.7 0 9.2 6.7 2.5 9.2 0c.1-.1.2-.2.2-.2l4.1 4.1c.2.2.5.2.7 0s.2-.5.1-.7zm-5.8-3.9c-2.1 2.1-5.6 2.1-7.8 0s-2.1-5.6 0-7.8 5.6-2.1 7.8 0 2.1 5.6 0 7.8z"/></svg>',
    tagAll: '<svg class="tag__icon tag__icon--all" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm0-6c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5zm-4.5-.5c0-.3-.2-.5-.5-.5h-1c-.3 0-.5.2-.5.5s.2.5.5.5h1c.3 0 .5-.2.5-.5zm10.5-3v-1c0-.3-.2-.5-.5-.5s-.5.2-.5.5v1h-2v-.5c0-.8-.6-1.5-1.3-1.5h-3.3c-.8 0-1.4.7-1.4 1.5v.5h-2.5c-1.9 0-3.5 1.6-3.5 3.5v5c0 1.9 1.6 3.5 3.5 3.5h11c1.9 0 3.5-1.6 3.5-3.5v-5c0-1.8-1.3-3.2-3-3.5zm-8-.5c0-.3.2-.5.3-.5h3.3c.2 0 .4.2.4.5v.5h-4zm10 9c0 1.4-1.1 2.5-2.5 2.5h-11c-1.4 0-2.5-1.1-2.5-2.5v-5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5z"/></svg>',
+   videoIcon: '<svg class="videoIcon" version="1.1" viewBox="0.0 0.0 22.0 22.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l22.0 0l0 22.0l-22.0 0l0 -22.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l22.0 0l0 22.0l-22.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.67729837 7.3124757l0 0c0 -1.0183125 0.8255052 -1.8438172 1.8438175 -1.8438172l11.290979 0c0.4890108 0 0.9579935 0.19425869 1.3037758 0.54004145c0.34578323 0.34578276 0.5400419 0.814765 0.5400419 1.3037758l0 7.375048c0 1.0183125 -0.82550526 1.8438177 -1.8438177 1.8438177l-11.290979 0c-1.0183122 0 -1.8438175 -0.82550526 -1.8438175 -1.8438177z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.67729837 7.3124757l0 0c0 -1.0183125 0.8255052 -1.8438172 1.8438175 -1.8438172l11.290979 0c0.4890108 0 0.9579935 0.19425869 1.3037758 0.54004145c0.34578323 0.34578276 0.5400419 0.814765 0.5400419 1.3037758l0 7.375048c0 1.0183125 -0.82550526 1.8438177 -1.8438177 1.8438177l-11.290979 0c-1.0183122 0 -1.8438175 -0.82550526 -1.8438175 -1.8438177z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m21.322702 7.074921l0 7.8501573l-5.6652994 -1.5700312l0 -4.7100945z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m21.322702 7.074921l0 7.8501573l-5.6652994 -1.5700312l0 -4.7100945z" fill-rule="evenodd"/></g></svg>',
    itemSelected: '<svg class="tag-actions__item-icon tag-actions__item-icon--selected tag-actions__selected-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 16.5c3.9 0 8-2.8 8-5s-4.1-5-8-5-8 2.8-8 5 4.1 5 8 5zm0-1c-3.4 0-7-2.5-7-4s3.6-4 7-4 7 2.5 7 4-3.6 4-7 4zm0-1c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>',
    itemDeselect: '<svg class="tag-actions__item-icon tag-actions__item-icon--deselect" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
    itemAttach: '<svg class="tag-actions__item-icon tag-actions__item-icon--attach" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.5 7h-1v4.5h-4.5v1h4.5v4.5h1v-4.5h4.5v-1h-4.5z"/></svg>',
@@ -2697,6 +3132,7 @@ var svg = {
    close: '<svg class="selected-box__close-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.9 8.8-.7-.7-3.2 3.2-3.2-3.2-.7.7 3.2 3.2-3.2 3.2.7.7 3.2-3.2 3.2 3.2.7-.7-3.2-3.2z"/></svg>',
    selectAll: '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m7.5 12c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zm0-4c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm7 0c0-.3-.2-.5-.5-.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5c.3 0 .5-.2.5-.5zm8.5-2c0-2.2-1.8-4-4-4-1.7 0-3.1 1-3.7 2.5h-9.3c-1.9 0-3.5 1.6-3.5 3.5v8c0 1.3.8 2.5 1.9 3.1l.1.1c.5.2 1 .3 1.5.3h12c1.9 0 3.5-1.6 3.5-3.5v-6.9c.9-.7 1.5-1.8 1.5-3.1zm-17 12.5c-.2 0-.5 0-.7-.1l3.1-3.1c.6-.6 1.5-.6 2.1 0l3.2 3.2zm12 0h-2.9l-3.7-3.7 2.3-2.3c.6-.6 1.6-.6 2.1 0l4.4 4.5c-.3.9-1.2 1.5-2.2 1.5zm2.5-2.6-4-4c-.9-.9-2.6-.9-3.5 0l-2.3 2.3c-.9-.5-2.2-.4-3 .4l-3.3 3.3c-.5-.5-.9-1.1-.9-1.9v-8c0-1.4 1.1-2.5 2.5-2.5h9.1c-.1.2-.1.3-.1.5 0 2.2 1.8 4 4 4 .5 0 1-.1 1.5-.3z"/></svg>',
    rotate: '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18.5 11.5c-.3 0-.5.2-.5.5 0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6c1.5 0 3 .6 4.1 1.6l-.7.7c-.1.1-.1.2-.1.3 0 .3.2.5.5.5l2.4.2c.3 0 .5-.2.4-.4l-.2-2.4c0-.1-.1-.2-.2-.3-.2-.2-.5-.2-.7 0l-.8.8c-1.2-1.3-2.9-2-4.7-2-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7c0-.3-.2-.5-.5-.5z"/></svg>',
+   calendarIcon:'<svg class="organise-bar__button-icon organise-bar__button-calendar-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="p.0"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m1.009305 6.937845l0 0c0 -1.8120098 1.4689243 -3.2809343 3.2809343 -3.2809343l15.419521 0c0.87015724 0 1.7046757 0.3456688 2.319971 0.96096325c0.6152935 0.61529493 0.9609642 1.4498134 0.9609642 2.319971l0 13.123344c0 1.8120098 -1.4689255 3.2809334 -3.2809353 3.2809334l-15.419521 0c-1.81201 0 -3.2809343 -1.4689236 -3.2809343 -3.2809334z" fill-rule="evenodd"/><path stroke="#8b8b8b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m1.009305 6.937845l0 0c0 -1.8120098 1.4689243 -3.2809343 3.2809343 -3.2809343l15.419521 0c0.87015724 0 1.7046757 0.3456688 2.319971 0.96096325c0.6152935 0.61529493 0.9609642 1.4498134 0.9609642 2.319971l0 13.123344c0 1.8120098 -1.4689255 3.2809334 -3.2809353 3.2809334l-15.419521 0c-1.81201 0 -3.2809343 -1.4689236 -3.2809343 -3.2809334z" fill-rule="evenodd" style="fill:#fff"/><path fill="#8b8b8b" d="m3.953942 3.8841665l16.109077 0c0.70510864 0 1.3813362 0.28010297 1.8799248 0.7786901c0.49858665 0.49858665 0.77868843 1.1748157 0.77868843 1.8799238l0 2.6586137c0 9.918213E-5 -8.010864E-5 1.783371E-4 -1.7738342E-4 1.783371E-4l-21.426126 -1.783371E-4l0 0c-9.858608E-5 0 -1.7857552E-4 -8.010864E-5 -1.7857552E-4 -1.783371E-4l1.7857552E-4 -2.6584353l0 0c0 -1.4683118 1.190302 -2.658614 2.6586137 -2.658614z" fill-rule="evenodd"/><path stroke="#8b8b8b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m3.953942 3.8841665l16.109077 0c0.70510864 0 1.3813362 0.28010297 1.8799248 0.7786901c0.49858665 0.49858665 0.77868843 1.1748157 0.77868843 1.8799238l0 2.6586137c0 9.918213E-5 -8.010864E-5 1.783371E-4 -1.7738342E-4 1.783371E-4l-21.426126 -1.783371E-4l0 0c-9.858608E-5 0 -1.7857552E-4 -8.010864E-5 -1.7857552E-4 -1.783371E-4l1.7857552E-4 -2.6584353l0 0c0 -1.4683118 1.190302 -2.658614 2.6586137 -2.658614z" fill-rule="evenodd" style="fill:#8b8b8b"/><path fill="#8b8b8b" d="m5.530863 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.5369158 0.10887414 0.7307129 0.3026713c0.19379711 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m5.530863 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.5369158 0.10887414 0.7307129 0.3026713c0.19379711 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m16.402369 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.53691673 0.10887414 0.7307129 0.3026713c0.19379807 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m16.402369 1.6912603l0 0c0 -0.57072234 0.46266174 -1.0333843 1.0333843 -1.0333843l0 0l0 0c0.27407074 0 0.53691673 0.10887414 0.7307129 0.3026713c0.19379807 0.19379711 0.30267143 0.4566425 0.30267143 0.730713l0 3.2504592c0 0.5707221 -0.46266174 1.0333843 -1.0333843 1.0333843l0 0l0 0c-0.5707226 0 -1.0333843 -0.46266222 -1.0333843 -1.0333843z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m9.63071 11.5798855l0 0c0 -0.43614197 0.3535633 -0.78970623 0.78970623 -0.78970623l3.1591682 0l0 0c0.20944309 0 0.41030788 0.08320141 0.55840683 0.23130035c0.14809895 0.14809799 0.2312994 0.34896278 0.2312994 0.5584059l0 3.1587296c0 0.43614292 -0.3535633 0.78970623 -0.78970623 0.78970623l-3.1591682 0c-0.43614292 0 -0.78970623 -0.3535633 -0.78970623 -0.78970623z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m16.117964 11.579808l0 0c0 -0.43614197 0.3535633 -0.7897053 0.7897072 -0.7897053l3.1591682 0l0 0c0.20944214 0 0.41030693 0.083200455 0.55840683 0.2312994c0.14809799 0.14809799 0.23129845 0.34896278 0.23129845 0.5584059l0 3.1587305c0 0.43614197 -0.3535633 0.78970623 -0.7897053 0.78970623l-3.1591682 0c-0.43614388 0 -0.7897072 -0.35356426 -0.7897072 -0.78970623z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m9.63071 17.459856l0 0c0 -0.43614197 0.3535633 -0.7897053 0.78970623 -0.7897053l3.1591682 0l0 0c0.20944309 0 0.41030788 0.083200455 0.55840683 0.23129845c0.14809895 0.1480999 0.2312994 0.3489647 0.2312994 0.55840683l0 3.1587296c0 0.43614388 -0.3535633 0.7897072 -0.78970623 0.7897072l-3.1591682 0c-0.43614292 0 -0.78970623 -0.3535633 -0.78970623 -0.7897072z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m16.117887 17.459856l0 0c0 -0.43614197 0.3535633 -0.7897053 0.7897053 -0.7897053l3.1591682 0l0 0c0.20944405 0 0.41030884 0.083200455 0.55840683 0.23129845c0.1480999 0.1480999 0.23130035 0.3489647 0.23130035 0.55840683l0 3.1587296c0 0.43614388 -0.3535633 0.7897072 -0.7897072 0.7897072l-3.1591682 0c-0.43614197 0 -0.7897053 -0.3535633 -0.7897053 -0.7897072z" fill-rule="evenodd"/><path fill="#8b8b8b" d="m3.143532 17.459856l0 0c0 -0.43614197 0.35356355 -0.7897053 0.78970623 -0.7897053l3.1591685 0l0 0c0.20944309 0 0.41030788 0.083200455 0.55840635 0.23129845c0.14809895 0.1480999 0.23129988 0.3489647 0.23129988 0.55840683l0 3.1587296c0 0.43614388 -0.3535638 0.7897072 -0.78970623 0.7897072l-3.1591685 0c-0.43614268 0 -0.78970623 -0.3535633 -0.78970623 -0.7897072z" fill-rule="evenodd"/></g></svg>',
    delete: '<svg class="organise-bar__button-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m17.5 6.5h-2.5v-.5c0-.8-.7-1.5-1.5-1.5h-3c-.8 0-1.5.7-1.5 1.5v.5h-2.5c-.3 0-.5.2-.5.5s.2.5.5.5h2.5 6 2.5c.3 0 .5-.2.5-.5s-.2-.5-.5-.5zm-7.5 0v-.5c0-.3.2-.5.5-.5h3c.3 0 .5.2.5.5v.5zm0 10.5c-.3 0-.5-.2-.5-.5v-6.5c0-.3.2-.5.5-.5s.5.2.5.5v6.5c0 .3-.2.5-.5.5zm2 0c-.3 0-.5-.2-.5-.5v-6.5c0-.3.2-.5.5-.5s.5.2.5.5v6.5c0 .3-.2.5-.5.5zm2 0c-.3 0-.5-.2-.5-.5v-6.5c0-.3.2-.5.5-.5s.5.2.5.5v6.5c0 .3-.2.5-.5.5zm3-8v7c0 1.9-1.6 3.5-3.5 3.5h-3c-1.9 0-3.5-1.6-3.5-3.5v-7c0-.3.2-.5.5-.5s.5.2.5.5v7c0 1.4 1.1 2.5 2.5 2.5h3c1.4 0 2.5-1.1 2.5-2.5v-7c0-.3.2-.5.5-.5s.5.2.5.5z"/></svg>',
    fullScreenClose: '<svg class="fullscreen__close-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" > <path d="M11.5,18.8c0,0.4-0.3,0.8-0.7,0.8c0,0,0,0-0.1,0c-0.4,0-0.7-0.3-0.7-0.7l-0.3-3.6l-6.8,6.8c-0.1,0.1-0.3,0.2-0.5,0.2 s-0.4-0.1-0.5-0.2c-0.3-0.3-0.3-0.8,0-1.1l6.8-6.8L5,14c-0.4,0-0.7-0.4-0.7-0.8c0-0.4,0.4-0.7,0.8-0.7l4.4,0.3 c0.4,0,0.8,0.2,1.1,0.5c0.3,0.3,0.5,0.7,0.5,1.1L11.5,18.8z M22.6,1.1c-0.3-0.3-0.8-0.3-1.1,0l-6.8,6.8l-0.3-3.6 c0-0.4-0.4-0.7-0.8-0.7c-0.4,0-0.7,0.4-0.7,0.8l0.3,4.4c0,0.4,0.2,0.8,0.5,1.1c0.3,0.3,0.7,0.5,1.1,0.5l4.4,0.3c0,0,0,0,0.1,0 c0.4,0,0.7-0.3,0.7-0.7c0-0.4-0.3-0.8-0.7-0.8L15.8,9l6.8-6.8C22.9,1.8,22.9,1.4,22.6,1.1z"/>',
    left: '<svg class="fullscreen__nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 36"> <path d="M1,36c-0.2,0-0.4,0-0.5-0.2c-0.5-0.3-0.6-0.9-0.3-1.4L10.5,18L0.2,1.6C-0.1,1.1,0,0.5,0.5,0.2C0.9-0.1,1.6,0,1.8,0.5 l10.4,16.4c0.4,0.6,0.4,1.5,0,2.1L1.8,35.5C1.7,35.8,1.3,36,1,36z"/> </svg>',
@@ -2724,17 +3160,31 @@ var svg = {
    chevron: '<svg class="chevron-svg" height="20" width="24" stroke="#484848"><line x1="0" y1="0" x2="10.5" y2="10" style="stroke-width:1.5" /><line x1="9.5" y1="10" x2="20" y2="00" style="stroke-width:1.5" /></svg>',
    selectedCircle: '<svg viewBox="0 0 100 100" fill="#5b6eff" width="12" height="12" style="margin-right: 6px; xmlns="http://www.w3.org/2000/svg"> <circle cx="50" cy="50" r="50"/></svg>',
    upAndDownArrows: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="12" height="12" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m-0.007874016 3.007874l3.007874 -3.007874l3.007874 3.007874l-2.561686 0l0 8.992126l-0.89237595 0l0 -8.992126z" fill-rule="evenodd"/><path fill="#484848" d="m12.0078745 8.9921255l-3.0078745 3.0078745l-3.007874 -3.0078745l2.561686 0l0 -8.9921255l0.89237595 0l0 8.9921255z" fill-rule="evenodd"/></g></svg>',
+   azIcon: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m3.9071805 3.9625196l1.6562498 -3.734375l0.859375 0l1.6718755 3.734375l-0.9062505 0l-1.375 -3.296875l0.34375 0l-1.359375 3.296875l-0.89062476 0zm0.82812476 -0.796875l0.234375 -0.65625l1.921875 0l0.234375 0.65625l-2.390625 0z" fill-rule="nonzero"/><path fill="#484848" d="m4.41027 10.36252l0 -0.5625l2.3125 -2.78125l0.09375 0.3125l-2.359375 0l0 -0.703125l3.140625 0l0 0.5625l-2.3125 2.78125l-0.109375 -0.3125l2.5 0l0 0.703125l-3.265625 0z" fill-rule="nonzero"/></g></svg>',
+   zeroNineIcon: '<svg version="1.1" viewBox="0.0 0.0 12.0 12.0" width="16" height="16" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m-0.005249344 -10.15748l12.0 0l0 32.31496l-12.0 0z" fill-rule="evenodd"/><path fill="#484848" d="m5.9983363 4.0250196q-0.46875 0 -0.828125 -0.21875q-0.359375 -0.234375 -0.578125 -0.65625q-0.203125 -0.4375 -0.203125 -1.046875q0 -0.6250001 0.203125 -1.0468751q0.21875 -0.43749994 0.578125 -0.65625q0.359375 -0.23437499 0.828125 -0.23437499q0.453125 0 0.8125 0.23437499q0.359375 0.21875003 0.5625 0.65625q0.21875 0.421875 0.21875 1.0468751q0 0.609375 -0.21875 1.046875q-0.203125 0.421875 -0.5625 0.65625q-0.359375 0.21875 -0.8125 0.21875zm0 -0.734375q0.21875 0 0.375 -0.109375q0.15625 -0.125 0.25 -0.390625q0.09375 -0.265625 0.09375 -0.6875q0 -0.42187512 -0.09375 -0.6875001q-0.09375 -0.265625 -0.25 -0.390625q-0.15625 -0.12499994 -0.375 -0.12499994q-0.21875 0 -0.390625 0.12499994q-0.15625 0.125 -0.25 0.390625q-0.09375 0.265625 -0.09375 0.6875001q0 0.421875 0.09375 0.6875q0.09375 0.265625 0.25 0.390625q0.171875 0.109375 0.390625 0.109375z" fill-rule="nonzero"/><path fill="#484848" d="m5.813354 6.565645q0.515625 0 0.890625 0.21875q0.375 0.203125 0.578125 0.625q0.203125 0.40625 0.203125 1.015625q0 0.640625 -0.25 1.09375q-0.234375 0.4375 -0.671875 0.671875q-0.421875 0.234375 -0.984375 0.234375q-0.296875 0 -0.5625 -0.0625q-0.265625 -0.0625 -0.46875 -0.1875l0.3125 -0.640625q0.15625 0.109375 0.328125 0.15625q0.1875 0.03125 0.375 0.03125q0.484375 0 0.765625 -0.28125q0.28125 -0.296875 0.28125 -0.875q0 -0.09375 0 -0.203125q0 -0.125 -0.03125 -0.25l0.234375 0.21875q-0.09375 0.21875 -0.265625 0.359375q-0.15625 0.140625 -0.375 0.21875q-0.21875 0.0625 -0.484375 0.0625q-0.359375 0 -0.65625 -0.140625q-0.28125 -0.140625 -0.453125 -0.40625q-0.171875 -0.265625 -0.171875 -0.609375q0 -0.390625 0.1875 -0.65625q0.1875 -0.28125 0.5 -0.4375q0.328125 -0.15625 0.71875 -0.15625zm0.0625 0.640625q-0.1875 0 -0.328125 0.078125q-0.140625 0.0625 -0.21875 0.1875q-0.078125 0.125 -0.078125 0.296875q0 0.25 0.171875 0.40625q0.171875 0.15625 0.453125 0.15625q0.1875 0 0.328125 -0.0625q0.15625 -0.078125 0.234375 -0.203125q0.078125 -0.140625 0.078125 -0.296875q0 -0.15625 -0.078125 -0.28125q-0.078125 -0.125 -0.21875 -0.203125q-0.140625 -0.078125 -0.34375 -0.078125z" fill-rule="nonzero"/></g></svg>',
    shareIcon: '<svg class="share-icon" fill="#fbfbfb" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="30px" height="30px"><path d="M 23 3 A 4 4 0 0 0 19 7 A 4 4 0 0 0 19.09375 7.8359375 L 10.011719 12.376953 A 4 4 0 0 0 7 11 A 4 4 0 0 0 3 15 A 4 4 0 0 0 7 19 A 4 4 0 0 0 10.013672 17.625 L 19.089844 22.164062 A 4 4 0 0 0 19 23 A 4 4 0 0 0 23 27 A 4 4 0 0 0 27 23 A 4 4 0 0 0 23 19 A 4 4 0 0 0 19.986328 20.375 L 10.910156 15.835938 A 4 4 0 0 0 11 15 A 4 4 0 0 0 10.90625 14.166016 L 19.988281 9.625 A 4 4 0 0 0 23 11 A 4 4 0 0 0 27 7 A 4 4 0 0 0 23 3 z"/></svg>',
    sharedWithMeSearchIcon: '<svg  class="tags-search-bar__shared-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    sharedWithMeSharedIcon: '<svg class="tag__status-icon tag__status-icon--shared" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15.5 10.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 4h-4c-1.3 0-2.4.8-2.8 2-.1 0-.1 0-.2 0h-4c-1.7 0-3 1.3-3 3v1.5c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-.5h5.5c.8 0 1.5-.7 1.5-1.5v-1.5c0-1.7-1.3-3-3-3zm-5 6.5c0 .3-.2.5-.5.5h-7c-.3 0-.5-.2-.5-.5v-1.5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2zm7-2c0 .3-.2.5-.5.5h-5.5c0-1.2-.8-2.3-1.8-2.8.3-.7 1-1.2 1.8-1.2h4c1.1 0 2 .9 2 2z"/></svg>',
    shareItemIcon: '<svg class="tag-share__item-icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m9.5 11.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm3.5 12h-7c-.8 0-1.5-.7-1.5-1.5v-1.5c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v1.5c0 .8-.7 1.5-1.5 1.5zm-5.5-5c-1.1 0-2 .9-2 2v1.5c0 .3.2.5.5.5h7c.3 0 .5-.2.5-.5v-1.5c0-1.1-.9-2-2-2zm13.5-4.5h-3v-3c0-.3-.2-.5-.5-.5s-.5.2-.5.5v3h-3c-.3 0-.5.2-.5.5s.2.5.5.5h3v3c0 .3.2.5.5.5s.5-.2.5-.5v-3h3c.3 0 .5-.2.5-.5s-.2-.5-.5-.5z"/></svg>',
-   tagSharedWithMe: '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="#5b6eff" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="#5b6eff" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>'
+   tagSharedWithMe: '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="#5b6eff" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="#5b6eff" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="#5b6eff" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>',
+   deleteHomeBoxIcon: '<svg class="home-add-tag-modal-delete-box-icon" height="18" width="18"><circle cx="8" cy="8" r="8" fill="#ff5b6eff" /><line x1="2" y1="8" x2="14" y2="8" style="stroke:white;stroke-width:2" /></svg>',
+   homeBoxModalArrowBlue: '<svg class="home-add-tag-modal-arrow-blue" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/><path stroke="#5b6eff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/></g></svg>',
+   homeBoxModalArrowGrey: '<svg class="home-add-tag-modal-arrow-grey" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m0.62992126 12.0l5.685039 0l0 -11.370079l11.370079 0l0 11.370079l5.6850395 0l-11.370079 11.370079z" fill-rule="evenodd"/></g></svg>',
+   triangle: '<svg class="onboarding-modal-arrow" version="1.1" viewBox="0.0 0.0 25.0 25.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l25.0 0l0 25.0l-25.0 0l0 -25.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l25.0 0l0 25.0l-25.0 0z" fill-rule="evenodd"/><path fill="#5b6eff" d="m0.015748031 0l21.606298 12.503937l-21.606298 12.503937z" fill-rule="evenodd"/></g></svg>',
+   cloudImport: '<svg class="cloudImport-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve"><path d="M82.451,37.699c0.033-0.488,0.049-0.969,0.049-1.449c0-13.096-10.654-23.75-23.75-23.75  c-9.847,0-18.659,6.215-22.146,15.201C33.453,25.943,29.879,25,26.25,25C14.533,25,5,34.533,5,46.25S14.533,67.5,26.25,67.5H42.5v-5  H26.25C17.29,62.5,10,55.209,10,46.25C10,37.289,17.29,30,26.25,30c3.746,0,7.27,1.246,10.191,3.604l3.142,2.535l0.87-3.943  C42.331,23.68,50.026,17.5,58.75,17.5c10.339,0,18.75,8.41,18.75,18.75c0,1.053-0.102,2.137-0.312,3.311L76.663,42.5H80  c5.514,0,10,4.486,10,10s-4.486,10-10,10H57.5v5H80c8.271,0,15-6.729,15-15C95,45.063,89.561,38.873,82.451,37.699z"></path><path d="M52.5,46.035l10.732,10.732C63.721,57.256,64.36,57.5,65,57.5s1.279-0.244,1.768-0.732c0.977-0.977,0.977-2.559,0-3.535  L51.771,38.235c-0.117-0.117-0.247-0.222-0.386-0.315c-0.056-0.037-0.116-0.062-0.174-0.094c-0.084-0.047-0.166-0.098-0.256-0.135  c-0.078-0.032-0.16-0.05-0.24-0.075c-0.075-0.022-0.148-0.051-0.226-0.067c-0.159-0.032-0.32-0.048-0.481-0.048  c-0.002,0-0.005-0.001-0.007-0.001l0,0c-0.165,0-0.328,0.017-0.49,0.049c-0.073,0.015-0.141,0.042-0.211,0.063  c-0.086,0.025-0.172,0.044-0.255,0.079c-0.084,0.035-0.161,0.083-0.241,0.126c-0.063,0.035-0.128,0.063-0.189,0.103  c-0.138,0.092-0.267,0.197-0.384,0.314L33.232,53.232c-0.977,0.977-0.977,2.559,0,3.535c0.976,0.977,2.56,0.977,3.535,0L47.5,46.035  V85c0,1.381,1.119,2.5,2.5,2.5s2.5-1.119,2.5-2.5V46.035z"></path></svg>',
+   pcUpload:'<svg class="pcUpload-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve"><g><path d="M41.8,70.3h16.3c0.8,0,1.5,0.6,1.8,1.3h34.2l-10.2-2.8v-42c0-1.1-0.9-2-2-2H18.1c-1.1,0-2,0.9-2,2v42L5.9,71.6h34.2   C40.3,70.8,41,70.3,41.8,70.3z M18.3,65.6V28.2c0-0.3,0.2-0.5,0.5-0.5h62.3c0.3,0,0.5,0.2,0.5,0.5v37.4c0,0.3-0.2,0.5-0.5,0.5H18.8   C18.6,66.1,18.3,65.8,18.3,65.6z"></path><path d="M58.2,73.9H41.8c-0.8,0-1.5-0.6-1.8-1.3h-36c0.2,1.5,1.5,2.6,3.1,2.6h85.5c1.6,0,2.9-1.1,3.1-2.6h-36   C59.7,73.4,59,73.9,58.2,73.9z"></path><path d="M58.2,71.3H41.8c-0.4,0-0.8,0.4-0.8,0.8c0,0.4,0.4,0.8,0.8,0.8h16.3c0.4,0,0.8-0.4,0.8-0.8C59,71.6,58.6,71.3,58.2,71.3z"></path></g></svg>',
+   toOrganizeIcon:'<svg class="to-organize-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m1.1679364 5.7221446l21.65556 0l0 16.230179l-21.65556 0z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m1.1679364 5.7221446l21.65556 0l0 16.230179l-21.65556 0z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m8.895797 9.087304l6.2060633 0l0 0c0.8130102 0 1.472086 0.692214 1.472086 1.5461025c0 0.85388947 -0.65907574 1.5461025 -1.472086 1.5461025l-6.2060633 0l0 0c-0.81301117 0 -1.4720869 -0.69221306 -1.4720869 -1.5461025c0 -0.8538885 0.65907574 -1.5461025 1.4720869 -1.5461025z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m8.895797 9.087304l6.2060633 0l0 0c0.8130102 0 1.472086 0.692214 1.472086 1.5461025c0 0.85388947 -0.65907574 1.5461025 -1.472086 1.5461025l-6.2060633 0l0 0c-0.81301117 0 -1.4720869 -0.69221306 -1.4720869 -1.5461025c0 -0.8538885 0.65907574 -1.5461025 1.4720869 -1.5461025z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m22.876385 5.8608932l-21.75277 0l4.350554 -3.8132172l13.051662 0z" fill-rule="evenodd"/><path stroke="#484848" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m22.876385 5.8608932l-21.75277 0l4.350554 -3.8132172l13.051662 0z" fill-rule="evenodd"/></g></svg>',
+   organizedIcon: '<svg class="organized-icon" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#00992b" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path fill="#00992b" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/></g></svg>',
+   organizedIconWhite: '<svg class="organized-icon-white" version="1.1" viewBox="0.0 0.0 24.0 24.0" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l24.0 0l0 24.0l-24.0 0l0 -24.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l24.0 0l0 24.0l-24.0 0z" fill-rule="evenodd"/><path fill="#ffffff" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.581408 20.58394l-7.3084 -6.37418l9.716469 -11.1453085l6.083316 0.40076232l1.2250843 5.973417z" fill-rule="evenodd"/><path fill="#ffffff" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m9.169348 18.3153l0 0c0 -2.788827 2.260522 -5.049618 5.049017 -5.049618l0 0c1.3390827 0 2.6233196 0.532012 3.5701942 1.4789991c0.9468746 0.94698715 1.4788227 2.2313776 1.4788227 3.5706186l0 0c0 2.788828 -2.260521 5.0496197 -5.049017 5.0496197l0 0c-2.788495 0 -5.049017 -2.2607918 -5.049017 -5.0496197z" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m11.856534 18.280182l1.7322836 1.7637787" fill-rule="evenodd"/><path fill="#000000" fill-opacity="0.0" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/><path stroke="#00992b" stroke-width="1.0" stroke-linejoin="round" stroke-linecap="butt" d="m13.3602915 20.52699l3.833024 -3.8334808" fill-rule="evenodd"/></g></svg>',
+   appStoreBadge: '<svg id="livetype" xmlns="http://www.w3.org/2000/svg" width="119.66407" height="40" viewBox="0 0 119.66407 40"><g><g><g><path d="M110.13477,0H9.53468c-.3667,0-.729,0-1.09473.002-.30615.002-.60986.00781-.91895.0127A13.21476,13.21476,0,0,0,5.5171.19141a6.66509,6.66509,0,0,0-1.90088.627A6.43779,6.43779,0,0,0,1.99757,1.99707,6.25844,6.25844,0,0,0,.81935,3.61816a6.60119,6.60119,0,0,0-.625,1.90332,12.993,12.993,0,0,0-.1792,2.002C.00587,7.83008.00489,8.1377,0,8.44434V31.5586c.00489.3105.00587.6113.01515.9219a12.99232,12.99232,0,0,0,.1792,2.0019,6.58756,6.58756,0,0,0,.625,1.9043A6.20778,6.20778,0,0,0,1.99757,38.001a6.27445,6.27445,0,0,0,1.61865,1.1787,6.70082,6.70082,0,0,0,1.90088.6308,13.45514,13.45514,0,0,0,2.0039.1768c.30909.0068.6128.0107.91895.0107C8.80567,40,9.168,40,9.53468,40H110.13477c.3594,0,.7246,0,1.084-.002.3047,0,.6172-.0039.9219-.0107a13.279,13.279,0,0,0,2-.1768,6.80432,6.80432,0,0,0,1.9082-.6308,6.27742,6.27742,0,0,0,1.6172-1.1787,6.39482,6.39482,0,0,0,1.1816-1.6143,6.60413,6.60413,0,0,0,.6191-1.9043,13.50643,13.50643,0,0,0,.1856-2.0019c.0039-.3106.0039-.6114.0039-.9219.0078-.3633.0078-.7246.0078-1.0938V9.53613c0-.36621,0-.72949-.0078-1.09179,0-.30664,0-.61426-.0039-.9209a13.5071,13.5071,0,0,0-.1856-2.002,6.6177,6.6177,0,0,0-.6191-1.90332,6.46619,6.46619,0,0,0-2.7988-2.7998,6.76754,6.76754,0,0,0-1.9082-.627,13.04394,13.04394,0,0,0-2-.17676c-.3047-.00488-.6172-.01074-.9219-.01269-.3594-.002-.7246-.002-1.084-.002Z" style="fill: #a6a6a6"/><path d="M8.44483,39.125c-.30468,0-.602-.0039-.90429-.0107a12.68714,12.68714,0,0,1-1.86914-.1631,5.88381,5.88381,0,0,1-1.65674-.5479,5.40573,5.40573,0,0,1-1.397-1.0166,5.32082,5.32082,0,0,1-1.02051-1.3965,5.72186,5.72186,0,0,1-.543-1.6572,12.41351,12.41351,0,0,1-.1665-1.875c-.00634-.2109-.01464-.9131-.01464-.9131V8.44434S.88185,7.75293.8877,7.5498a12.37039,12.37039,0,0,1,.16553-1.87207,5.7555,5.7555,0,0,1,.54346-1.6621A5.37349,5.37349,0,0,1,2.61183,2.61768,5.56543,5.56543,0,0,1,4.01417,1.59521a5.82309,5.82309,0,0,1,1.65332-.54394A12.58589,12.58589,0,0,1,7.543.88721L8.44532.875H111.21387l.9131.0127a12.38493,12.38493,0,0,1,1.8584.16259,5.93833,5.93833,0,0,1,1.6709.54785,5.59374,5.59374,0,0,1,2.415,2.41993,5.76267,5.76267,0,0,1,.5352,1.64892,12.995,12.995,0,0,1,.1738,1.88721c.0029.2832.0029.5874.0029.89014.0079.375.0079.73193.0079,1.09179V30.4648c0,.3633,0,.7178-.0079,1.0752,0,.3252,0,.6231-.0039.9297a12.73126,12.73126,0,0,1-.1709,1.8535,5.739,5.739,0,0,1-.54,1.67,5.48029,5.48029,0,0,1-1.0156,1.3857,5.4129,5.4129,0,0,1-1.3994,1.0225,5.86168,5.86168,0,0,1-1.668.5498,12.54218,12.54218,0,0,1-1.8692.1631c-.2929.0068-.5996.0107-.8974.0107l-1.084.002Z"/></g><g id="_Group_" data-name="&lt;Group&gt;"><g id="_Group_2" data-name="&lt;Group&gt;"><g id="_Group_3" data-name="&lt;Group&gt;"><path id="_Path_" data-name="&lt;Path&gt;" d="M24.76888,20.30068a4.94881,4.94881,0,0,1,2.35656-4.15206,5.06566,5.06566,0,0,0-3.99116-2.15768c-1.67924-.17626-3.30719,1.00483-4.1629,1.00483-.87227,0-2.18977-.98733-3.6085-.95814a5.31529,5.31529,0,0,0-4.47292,2.72787c-1.934,3.34842-.49141,8.26947,1.3612,10.97608.9269,1.32535,2.01018,2.8058,3.42763,2.7533,1.38706-.05753,1.9051-.88448,3.5794-.88448,1.65876,0,2.14479.88448,3.591.8511,1.48838-.02416,2.42613-1.33124,3.32051-2.66914a10.962,10.962,0,0,0,1.51842-3.09251A4.78205,4.78205,0,0,1,24.76888,20.30068Z" style="fill: #fff"/><path id="_Path_2" data-name="&lt;Path&gt;" d="M22.03725,12.21089a4.87248,4.87248,0,0,0,1.11452-3.49062,4.95746,4.95746,0,0,0-3.20758,1.65961,4.63634,4.63634,0,0,0-1.14371,3.36139A4.09905,4.09905,0,0,0,22.03725,12.21089Z" style="fill: #fff"/></g></g><g><path d="M42.30227,27.13965h-4.7334l-1.13672,3.35645H34.42727l4.4834-12.418h2.083l4.4834,12.418H43.438ZM38.0591,25.59082h3.752l-1.84961-5.44727h-.05176Z" style="fill: #fff"/><path d="M55.15969,25.96973c0,2.81348-1.50586,4.62109-3.77832,4.62109a3.0693,3.0693,0,0,1-2.84863-1.584h-.043v4.48438h-1.8584V21.44238H48.4302v1.50586h.03418a3.21162,3.21162,0,0,1,2.88281-1.60059C53.645,21.34766,55.15969,23.16406,55.15969,25.96973Zm-1.91016,0c0-1.833-.94727-3.03809-2.39258-3.03809-1.41992,0-2.375,1.23047-2.375,3.03809,0,1.82422.95508,3.0459,2.375,3.0459C52.30227,29.01563,53.24953,27.81934,53.24953,25.96973Z" style="fill: #fff"/><path d="M65.12453,25.96973c0,2.81348-1.50586,4.62109-3.77832,4.62109a3.0693,3.0693,0,0,1-2.84863-1.584h-.043v4.48438h-1.8584V21.44238H58.395v1.50586h.03418A3.21162,3.21162,0,0,1,61.312,21.34766C63.60988,21.34766,65.12453,23.16406,65.12453,25.96973Zm-1.91016,0c0-1.833-.94727-3.03809-2.39258-3.03809-1.41992,0-2.375,1.23047-2.375,3.03809,0,1.82422.95508,3.0459,2.375,3.0459C62.26711,29.01563,63.21438,27.81934,63.21438,25.96973Z" style="fill: #fff"/><path d="M71.71047,27.03613c.1377,1.23145,1.334,2.04,2.96875,2.04,1.56641,0,2.69336-.80859,2.69336-1.91895,0-.96387-.67969-1.541-2.28906-1.93652l-1.60937-.3877c-2.28027-.55078-3.33887-1.61719-3.33887-3.34766,0-2.14258,1.86719-3.61426,4.51855-3.61426,2.624,0,4.42285,1.47168,4.4834,3.61426h-1.876c-.1123-1.23926-1.13672-1.9873-2.63379-1.9873s-2.52148.75684-2.52148,1.8584c0,.87793.6543,1.39453,2.25488,1.79l1.36816.33594c2.54785.60254,3.60645,1.626,3.60645,3.44238,0,2.32324-1.85059,3.77832-4.79395,3.77832-2.75391,0-4.61328-1.4209-4.7334-3.667Z" style="fill: #fff"/><path d="M83.34621,19.2998v2.14258h1.72168v1.47168H83.34621v4.99121c0,.77539.34473,1.13672,1.10156,1.13672a5.80752,5.80752,0,0,0,.61133-.043v1.46289a5.10351,5.10351,0,0,1-1.03223.08594c-1.833,0-2.54785-.68848-2.54785-2.44434V22.91406H80.16262V21.44238H81.479V19.2998Z" style="fill: #fff"/><path d="M86.065,25.96973c0-2.84863,1.67773-4.63867,4.29395-4.63867,2.625,0,4.29492,1.79,4.29492,4.63867,0,2.85645-1.66113,4.63867-4.29492,4.63867C87.72609,30.6084,86.065,28.82617,86.065,25.96973Zm6.69531,0c0-1.9541-.89551-3.10742-2.40137-3.10742s-2.40039,1.16211-2.40039,3.10742c0,1.96191.89453,3.10645,2.40039,3.10645S92.76027,27.93164,92.76027,25.96973Z" style="fill: #fff"/><path d="M96.18606,21.44238h1.77246v1.541h.043a2.1594,2.1594,0,0,1,2.17773-1.63574,2.86616,2.86616,0,0,1,.63672.06934v1.73828a2.59794,2.59794,0,0,0-.835-.1123,1.87264,1.87264,0,0,0-1.93652,2.083v5.37012h-1.8584Z" style="fill: #fff"/><path d="M109.3843,27.83691c-.25,1.64355-1.85059,2.77148-3.89844,2.77148-2.63379,0-4.26855-1.76465-4.26855-4.5957,0-2.83984,1.64355-4.68164,4.19043-4.68164,2.50488,0,4.08008,1.7207,4.08008,4.46582v.63672h-6.39453v.1123a2.358,2.358,0,0,0,2.43555,2.56445,2.04834,2.04834,0,0,0,2.09082-1.27344Zm-6.28223-2.70215h4.52637a2.1773,2.1773,0,0,0-2.2207-2.29785A2.292,2.292,0,0,0,103.10207,25.13477Z" style="fill: #fff"/></g></g></g><g id="_Group_4" data-name="&lt;Group&gt;"><g><path d="M37.82619,8.731a2.63964,2.63964,0,0,1,2.80762,2.96484c0,1.90625-1.03027,3.002-2.80762,3.002H35.67092V8.731Zm-1.22852,5.123h1.125a1.87588,1.87588,0,0,0,1.96777-2.146,1.881,1.881,0,0,0-1.96777-2.13379h-1.125Z" style="fill: #fff"/><path d="M41.68068,12.44434a2.13323,2.13323,0,1,1,4.24707,0,2.13358,2.13358,0,1,1-4.24707,0Zm3.333,0c0-.97607-.43848-1.54687-1.208-1.54687-.77246,0-1.207.5708-1.207,1.54688,0,.98389.43457,1.55029,1.207,1.55029C44.57522,13.99463,45.01369,13.42432,45.01369,12.44434Z" style="fill: #fff"/><path d="M51.57326,14.69775h-.92187l-.93066-3.31641h-.07031l-.92676,3.31641h-.91309l-1.24121-4.50293h.90137l.80664,3.436h.06641l.92578-3.436h.85254l.92578,3.436h.07031l.80273-3.436h.88867Z" style="fill: #fff"/><path d="M53.85354,10.19482H54.709v.71533h.06641a1.348,1.348,0,0,1,1.34375-.80225,1.46456,1.46456,0,0,1,1.55859,1.6748v2.915h-.88867V12.00586c0-.72363-.31445-1.0835-.97168-1.0835a1.03294,1.03294,0,0,0-1.0752,1.14111v2.63428h-.88867Z" style="fill: #fff"/><path d="M59.09377,8.437h.88867v6.26074h-.88867Z" style="fill: #fff"/><path d="M61.21779,12.44434a2.13346,2.13346,0,1,1,4.24756,0,2.1338,2.1338,0,1,1-4.24756,0Zm3.333,0c0-.97607-.43848-1.54687-1.208-1.54687-.77246,0-1.207.5708-1.207,1.54688,0,.98389.43457,1.55029,1.207,1.55029C64.11232,13.99463,64.5508,13.42432,64.5508,12.44434Z" style="fill: #fff"/><path d="M66.4009,13.42432c0-.81055.60352-1.27783,1.6748-1.34424l1.21973-.07031v-.38867c0-.47559-.31445-.74414-.92187-.74414-.49609,0-.83984.18213-.93848.50049h-.86035c.09082-.77344.81836-1.26953,1.83984-1.26953,1.12891,0,1.76563.562,1.76563,1.51318v3.07666h-.85547v-.63281h-.07031a1.515,1.515,0,0,1-1.35254.707A1.36026,1.36026,0,0,1,66.4009,13.42432Zm2.89453-.38477v-.37646l-1.09961.07031c-.62012.0415-.90137.25244-.90137.64941,0,.40527.35156.64111.835.64111A1.0615,1.0615,0,0,0,69.29543,13.03955Z" style="fill: #fff"/><path d="M71.34816,12.44434c0-1.42285.73145-2.32422,1.86914-2.32422a1.484,1.484,0,0,1,1.38086.79h.06641V8.437h.88867v6.26074h-.85156v-.71143h-.07031a1.56284,1.56284,0,0,1-1.41406.78564C72.0718,14.772,71.34816,13.87061,71.34816,12.44434Zm.918,0c0,.95508.4502,1.52979,1.20313,1.52979.749,0,1.21191-.583,1.21191-1.52588,0-.93848-.46777-1.52979-1.21191-1.52979C72.72121,10.91846,72.26613,11.49707,72.26613,12.44434Z" style="fill: #fff"/><path d="M79.23,12.44434a2.13323,2.13323,0,1,1,4.24707,0,2.13358,2.13358,0,1,1-4.24707,0Zm3.333,0c0-.97607-.43848-1.54687-1.208-1.54687-.77246,0-1.207.5708-1.207,1.54688,0,.98389.43457,1.55029,1.207,1.55029C82.12453,13.99463,82.563,13.42432,82.563,12.44434Z" style="fill: #fff"/><path d="M84.66945,10.19482h.85547v.71533h.06641a1.348,1.348,0,0,1,1.34375-.80225,1.46456,1.46456,0,0,1,1.55859,1.6748v2.915H87.605V12.00586c0-.72363-.31445-1.0835-.97168-1.0835a1.03294,1.03294,0,0,0-1.0752,1.14111v2.63428h-.88867Z" style="fill: #fff"/><path d="M93.51516,9.07373v1.1416h.97559v.74854h-.97559V13.2793c0,.47168.19434.67822.63672.67822a2.96657,2.96657,0,0,0,.33887-.02051v.74023a2.9155,2.9155,0,0,1-.4834.04541c-.98828,0-1.38184-.34766-1.38184-1.21582v-2.543h-.71484v-.74854h.71484V9.07373Z" style="fill: #fff"/><path d="M95.70461,8.437h.88086v2.48145h.07031a1.3856,1.3856,0,0,1,1.373-.80664,1.48339,1.48339,0,0,1,1.55078,1.67871v2.90723H98.69v-2.688c0-.71924-.335-1.0835-.96289-1.0835a1.05194,1.05194,0,0,0-1.13379,1.1416v2.62988h-.88867Z" style="fill: #fff"/><path d="M104.76125,13.48193a1.828,1.828,0,0,1-1.95117,1.30273A2.04531,2.04531,0,0,1,100.73,12.46045a2.07685,2.07685,0,0,1,2.07617-2.35254c1.25293,0,2.00879.856,2.00879,2.27V12.688h-3.17969v.0498a1.1902,1.1902,0,0,0,1.19922,1.29,1.07934,1.07934,0,0,0,1.07129-.5459Zm-3.126-1.45117h2.27441a1.08647,1.08647,0,0,0-1.1084-1.1665A1.15162,1.15162,0,0,0,101.63527,12.03076Z" style="fill: #fff"/></g></g></g></svg>',
+   googlePlayBadge: '<svg class="googlePlayBadge" id="svg51" width="180" height="53.333" version="1.1" viewBox="0 0 180 53.333" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><metadata id="metadata9"><rdf:RDF><cc:Work rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/></cc:Work></rdf:RDF></metadata><path id="path11" d="m173.33 53.333h-166.66c-3.6666 0-6.6665-2.9999-6.6665-6.6665v-39.999c0-3.6666 2.9999-6.6665 6.6665-6.6665h166.66c3.6666 0 6.6665 2.9999 6.6665 6.6665v39.999c0 3.6666-2.9999 6.6665-6.6665 6.6665" fill="#100f0d" stroke-width=".13333"/><path id="path13" d="m173.33 1e-3h-166.66c-3.6666 0-6.6665 2.9999-6.6665 6.6665v39.999c0 3.6666 2.9999 6.6665 6.6665 6.6665h166.66c3.6666 0 6.6665-2.9999 6.6665-6.6665v-39.999c0-3.6666-2.9999-6.6665-6.6665-6.6665zm0 1.0661c3.0879 0 5.5999 2.5125 5.5999 5.6004v39.999c0 3.0879-2.5119 5.6004-5.5999 5.6004h-166.66c-3.0879 0-5.5993-2.5125-5.5993-5.6004v-39.999c0-3.0879 2.5114-5.6004 5.5993-5.6004h166.66" fill="#a2a2a1" stroke-width=".13333"/><path id="path35" d="m142.58 40h2.4879v-16.669h-2.4879zm22.409-10.664-2.8519 7.2264h-0.0853l-2.9599-7.2264h-2.6799l4.4399 10.1-2.5319 5.6185h2.5946l6.8412-15.718zm-14.11 8.7706c-0.81331 0-1.9506-0.40786-1.9506-1.4156 0-1.2865 1.416-1.7797 2.6373-1.7797 1.0933 0 1.6093 0.23546 2.2733 0.55732-0.19333 1.5442-1.5226 2.6379-2.9599 2.6379zm0.30133-9.1352c-1.8013 0-3.6666 0.79371-4.4386 2.5521l2.208 0.92184c0.47198-0.92184 1.3506-1.2218 2.2733-1.2218 1.2866 0 2.5946 0.77131 2.6159 2.1442v0.17133c-0.45066-0.25733-1.416-0.64318-2.5946-0.64318-2.3813 0-4.8039 1.3077-4.8039 3.7524 0 2.2302 1.952 3.6671 4.1386 3.6671 1.672 0 2.5959-0.75054 3.1732-1.6301h0.0867v1.2874h2.4026v-6.391c0-2.9593-2.2106-4.6103-5.0612-4.6103zm-15.376 2.3937h-3.5386v-5.7133h3.5386c1.86 0 2.9159 1.5396 2.9159 2.8566 0 1.2917-1.056 2.8567-2.9159 2.8567zm-0.064-8.0337h-5.9614v16.669h2.4869v-6.3149h3.4746c2.7573 0 5.4679-1.9958 5.4679-5.1765 0-3.1801-2.7106-5.1769-5.4679-5.1769zm-32.507 14.778c-1.7188 0-3.1573-1.4396-3.1573-3.415 0-1.9984 1.4385-3.4583 3.1573-3.4583 1.6969 0 3.0286 1.46 3.0286 3.4583 0 1.9754-1.3317 3.415-3.0286 3.415zm2.8567-7.8403h-0.086c-0.55826-0.66572-1.6328-1.2672-2.9853-1.2672-2.8359 0-5.4348 2.4921-5.4348 5.6925 0 3.1786 2.5989 5.6488 5.4348 5.6488 1.3525 0 2.427-0.6016 2.9853-1.2885h0.086v0.81558c0 2.1703-1.1598 3.3296-3.0286 3.3296-1.5245 0-2.4697-1.0953-2.8567-2.0188l-2.1691 0.90206c0.62238 1.503 2.2759 3.351 5.0259 3.351 2.9218 0 5.392-1.7188 5.392-5.9077v-10.181h-2.3634zm4.0822 9.7304h2.4906v-16.669h-2.4906zm6.164-5.4988c-0.0641-2.1911 1.6978-3.3078 2.9645-3.3078 0.98851 0 1.8254 0.49425 2.1057 1.2026zm7.7326-1.8906c-0.47238-1.2666-1.9114-3.6082-4.8541-3.6082-2.9218 0-5.3488 2.2983-5.3488 5.6707 0 3.1791 2.4062 5.6707 5.6275 5.6707 2.5989 0 4.1031-1.589 4.7264-2.513l-1.9333-1.289c-0.64465 0.94531-1.5249 1.5682-2.7931 1.5682-1.2666 0-2.1692-0.58012-2.7483-1.7186l7.5815-3.1359zm-60.409-1.8682v2.4057h5.7565c-0.17186 1.3532-0.62292 2.3411-1.3104 3.0286-0.83798 0.83745-2.1483 1.7614-4.4462 1.7614-3.5443 0-6.315-2.8567-6.315-6.4009s2.7707-6.4013 6.315-6.4013c1.9118 0 3.3077 0.75198 4.3388 1.7186l1.6974-1.6973c-1.4396-1.3745-3.351-2.427-6.0362-2.427-4.8552 0-8.9363 3.9524-8.9363 8.807 0 4.8541 4.0811 8.8066 8.9363 8.8066 2.6202 0 4.5967-0.85932 6.143-2.4702 1.5896-1.5896 2.0838-3.8234 2.0838-5.628 0-0.55785-0.04333-1.0734-0.1292-1.5032zm14.772 7.3675c-1.7188 0-3.201-1.4177-3.201-3.4368 0-2.0406 1.4822-3.4364 3.201-3.4364 1.7181 0 3.2003 1.3958 3.2003 3.4364 0 2.0191-1.4822 3.4368-3.2003 3.4368zm0-9.1075c-3.137 0-5.6927 2.3842-5.6927 5.6707 0 3.265 2.5557 5.6707 5.6927 5.6707 3.1358 0 5.692-2.4057 5.692-5.6707 0-3.2865-2.5562-5.6707-5.692-5.6707zm12.417 9.1075c-1.7176 0-3.2003-1.4177-3.2003-3.4368 0-2.0406 1.4828-3.4364 3.2003-3.4364 1.7188 0 3.2005 1.3958 3.2005 3.4364 0 2.0191-1.4817 3.4368-3.2005 3.4368zm0-9.1075c-3.1358 0-5.6915 2.3842-5.6915 5.6707 0 3.265 2.5557 5.6707 5.6915 5.6707 3.137 0 5.6927-2.4057 5.6927-5.6707 0-3.2865-2.5557-5.6707-5.6927-5.6707" fill="#fff" stroke-width=".13333"/><path id="path37" d="m27.622 25.899-14.194 15.066c5.34e-4 0.0031 0.0016 0.0057 0.0021 0.0089 0.43532 1.636 1.9296 2.8406 3.703 2.8406 0.70892 0 1.3745-0.19166 1.9453-0.52812l0.04533-0.02656 15.978-9.22-7.479-8.141" fill="#eb3131" stroke-width=".13333"/><path id="path39" d="m41.983 23.334-0.0136-0.0093-6.8982-3.999-7.7717 6.9156 7.7987 7.7977 6.8618-3.9592c1.203-0.64945 2.0197-1.9177 2.0197-3.3802 0-1.452-0.80571-2.7139-1.9968-3.3655" fill="#f6b60b" stroke-width=".13333"/><path id="path41" d="m13.426 12.37c-0.08533 0.31466-0.13018 0.64425-0.13018 0.98651v26.623c0 0.34162 0.04432 0.67233 0.13072 0.98587l14.684-14.681-14.684-13.914" fill="#5778c5" stroke-width=".13333"/><path id="path43" d="m27.727 26.668 7.3473-7.3451-15.96-9.2534c-0.58012-0.34746-1.2572-0.54799-1.9817-0.54799-1.7734 0-3.2697 1.2068-3.7051 2.8447-5.34e-4 0.0016-5.34e-4 0.0027-5.34e-4 0.0041l14.3 14.298" fill="#3bad49" stroke-width=".13333"/><path id="path33" d="m63.193 13.042h-3.8895v0.96251h2.9146c-0.0792 0.78545-0.39172 1.4021-0.91878 1.85-0.52705 0.44799-1.2 0.67292-1.9958 0.67292-0.87291 0-1.6125-0.30413-2.2186-0.90824-0.59385-0.61665-0.89584-1.3792-0.89584-2.2979 0-0.91864 0.30199-1.6812 0.89584-2.2978 0.60612-0.60412 1.3457-0.90624 2.2186-0.90624 0.44799 0 0.87504 0.07707 1.2666 0.24586 0.39172 0.16866 0.70625 0.40412 0.95211 0.70625l0.73958-0.73958c-0.33546-0.38132-0.76038-0.67292-1.2876-0.88544-0.52705-0.21253-1.077-0.31453-1.6708-0.31453-1.1645 0-2.1519 0.40412-2.9582 1.2104-0.80625 0.80825-1.2104 1.8041-1.2104 2.9811 0 1.177 0.40412 2.175 1.2104 2.9813 0.80625 0.80611 1.7937 1.2104 2.9582 1.2104 1.2229 0 2.1979-0.39172 2.9479-1.1876 0.66038-0.66238 0.99784-1.5582 0.99784-2.679 0-0.1896-0.02293-0.39172-0.05627-0.60425zm1.5068-3.7332v8.0249h4.6852v-0.98544h-3.654v-2.5457h3.2958v-0.96251h-3.2958v-2.5437h3.654v-0.98758zm11.255 0.98758v-0.98758h-5.5145v0.98758h2.2417v7.0373h1.0312v-7.0373zm4.9925-0.98758h-1.0312v8.0249h1.0312zm6.8066 0.98758v-0.98758h-5.5144v0.98758h2.2415v7.0373h1.0312v-7.0373zm10.406 0.05626c-0.79585-0.81877-1.7708-1.2229-2.9354-1.2229-1.1666 0-2.1415 0.40412-2.9374 1.2104-0.79585 0.79585-1.1874 1.7937-1.1874 2.9811s0.39159 2.1854 1.1874 2.9813c0.79585 0.80611 1.7708 1.2104 2.9374 1.2104 1.1541 0 2.1395-0.40426 2.9354-1.2104 0.79585-0.79585 1.1874-1.7938 1.1874-2.9813 0-1.177-0.39159-2.1729-1.1874-2.9686zm-5.1332 0.67078c0.59372-0.60412 1.3229-0.90624 2.1978-0.90624 0.87291 0 1.6021 0.30213 2.1854 0.90624 0.59372 0.59372 0.88531 1.3686 0.88531 2.2978 0 0.93131-0.29159 1.7041-0.88531 2.2979-0.58332 0.60412-1.3125 0.90824-2.1854 0.90824-0.87491 0-1.6041-0.30413-2.1978-0.90824-0.58132-0.60625-0.87291-1.3666-0.87291-2.2979 0-0.92918 0.29159-1.6916 0.87291-2.2978zm8.7706 1.3125-0.0437-1.548h0.0437l4.0791 6.5457h1.077v-8.0249h-1.0312v4.6957l0.0437 1.548h-0.0437l-3.8999-6.2437h-1.2562v8.0249h1.0312z" fill="#fff" stroke="#fff" stroke-miterlimit="10" stroke-width=".26666"/></svg>'
 }
 
 dale.go (CSS.vars.tagColors, function (color) {
    svg ['tagItem' + color] = '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>';
    svg ['tagItemHorizontal' + color] = '<svg class="tag__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="' + color + '" d="m18.6 10.8c0 .5-.1 1.1-.5 1.5l-5 5.9c-.4.5-1 .7-1.5.7s-.9-.2-1.3-.5l-3.8-3.2c-.8-.7-.9-2-.2-2.8l5-5.9c.3-.4.8-.7 1.3-.7l3.5-.3c1.1-.1 2.1.7 2.2 1.8z"/></svg>';
    svg ['tagSharedWithMe' + color] = '<svg viewBox="0.0 0.0 12.0 12.0" width="17" height="15" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><clipPath id="p.0"><path d="m0 0l12.0 0l0 12.0l-12.0 0l0 -12.0z" clip-rule="nonzero"/></clipPath><g clip-path="url(#p.0)"><path fill="#000000" fill-opacity="0.0" d="m0 0l12.0 0l0 12.0l-12.0 0z" fill-rule="evenodd"/><path fill="' + color + '" d="m6.1472383 2.3476114l0 0c0 -1.2340425 0.98982143 -2.2344315 2.2108283 -2.2344315l0 0c0.5863476 0 1.1486807 0.23541263 1.5632915 0.6544498c0.41461086 0.41903716 0.6475363 0.98737365 0.6475363 1.5799818l0 0c0 1.2340424 -0.98982143 2.2344313 -2.2108278 2.2344313l0 0c-1.2210069 0 -2.2108283 -1.0003889 -2.2108283 -2.2344313z" fill-rule="evenodd"/><path fill="' + color + '" d="m6.909059 5.6999073l2.8811774 0l0 0c0.5861368 0 1.1482677 0.23284197 1.5627289 0.6473031c0.41446114 0.4144616 0.6473026 0.9765916 0.6473026 1.5627284l0 2.258831c0 3.4332275E-5 -2.670288E-5 6.1035156E-5 -6.0081482E-5 6.1035156E-5l-7.3011804 -6.1035156E-5l0 0c-3.385544E-5 0 -6.1035156E-5 -2.670288E-5 -6.1035156E-5 -6.0081482E-5l6.1035156E-5 -2.258771l0 0c0 -1.2205667 0.98946476 -2.2100315 2.2100315 -2.2100315z" fill-rule="evenodd"/><path fill="' + color + '" d="m1.4481676 4.0693617l0 0c0 -1.2320263 0.9896877 -2.2307808 2.2105293 -2.2307808l0 0c0.58626866 0 1.1485255 0.23502803 1.5630805 0.65338063c0.4145546 0.4183526 0.647449 0.98576045 0.647449 1.5774002l0 0c0 1.2320261 -0.9896879 2.230781 -2.2105296 2.230781l0 0c-1.2208416 0 -2.2105293 -0.998755 -2.2105293 -2.230781z" fill-rule="evenodd"/><path fill="' + color + '" d="m2.0676901 7.4253793l3.166024 0l0 0c0.54839087 0 1.0743213 0.21784782 1.4620924 0.60561895c0.38777113 0.38777065 0.6056185 0.91370106 0.6056185 1.4620924l0 2.3938503c0 3.33786E-5 -2.7179718E-5 6.1035156E-5 -6.1035156E-5 6.1035156E-5l-7.3013844 -6.1035156E-5l0 0c-3.3603974E-5 0 -6.084538E-5 -2.670288E-5 -6.084538E-5 -6.1035156E-5l6.084538E-5 -2.3937893l0 0c0 -1.1419659 0.92574567 -2.0677114 2.0677106 -2.0677114z" fill-rule="evenodd"/></g></svg>';
+   svg ['tagBoxItem' + color] = '<svg class="tagBoxItem-icon" width="12" height="12"><rect width="12" height="12" style="fill:' + color + '" /></svg>'
 });
 
 // *** HELPERS ***
@@ -2756,9 +3206,11 @@ H.formatDate = function (d) {
    return H.pad (d.getUTCDate ()) + '/' + H.pad (d.getUTCMonth () + 1) + '/' + d.getUTCFullYear ();
 }
 
-H.formatChunkDates = function (d1, d2) {
+H.formatChunkDates = function (d1, d2, shortMonths) {
+   if (! d1 || ! d2) return '';
    var m = new Date (Math.min (d1, d2)), M = new Date (Math.max (d1, d2));
-   var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+   if (shortMonths) var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+   else             var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
    // Formats: 1) m d, y ; 2) m d - d, y ; 3) m d - m d, y ; 4) m d, y - m d, y
    if (m.getUTCFullYear () !== M.getUTCFullYear ()) return [months [m.getUTCMonth ()], m.getUTCDate () + ',', m.getUTCFullYear (), '-', months [M.getUTCMonth ()], M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
    if (m.getUTCMonth () !== M.getUTCMonth ()) return [months [m.getUTCMonth ()], m.getUTCDate (), '-', months [M.getUTCMonth ()], M.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
@@ -2766,9 +3218,10 @@ H.formatChunkDates = function (d1, d2) {
    return [months [m.getUTCMonth ()], m.getUTCDate () + ',', M.getUTCFullYear ()].join (' ');
 }
 
-H.tagColor = function (tag, a) {
+H.tagColor = function (tag) {
    if (tag === 'u::') return 'untagged';
    if (H.isDateTag (tag)) return 'time';
+   if (tag.match (/ \(new tag\)$/)) tag = tag.replace (/ \(new tag\)$/, '');
    var r = dale.acc (tag.split (''), tag [0].charCodeAt (), function (a, b) {
       return a + b.charCodeAt ();
    });
@@ -2809,7 +3262,8 @@ H.isUserTag = function (tag) {
 }
 
 H.makeRegex = function (filter) {
-   return new RegExp (filter.replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
+   if (filter === '' || filter === undefined) return new RegExp ('.*', 'i');
+   return new RegExp (filter.trim ().replace (/[-[\]{}()*+?.,\\^$|#]/g, '\\$&'), 'i');
 }
 
 H.isMobile = function () {
@@ -2842,7 +3296,7 @@ H.hash = function (file, cb) {
    freader.readAsArrayBuffer (file);
    freader.onerror = function () {cb (true)}
    freader.onload = function () {
-      cb (null, murmur.v3 (new Uint8Array (freader.result)));
+      cb (null, murmur.v3 (new Uint8Array (freader.result)) + ':' + file.size);
    }
 }
 
@@ -2886,7 +3340,9 @@ H.computeChunks = function (x, pivs) {
             rows++;
          }
          else width += piv.frame.width + 16;
-         piv.start = chunk.start + 55 + (rows - 1) * CSS.pivWidths [1];
+         // For first piv, we set the start to the chunk start since when we want to focus the first piv of a chunk, we also want to see the chunk header
+         if (k === 0) piv.start = chunk.start;
+         else         piv.start = chunk.start + 55 + (rows - 1) * CSS.pivWidths [1];
       });
 
       return 55 + rows * CSS.pivWidths [1];
@@ -3039,6 +3495,14 @@ B.mrespond ([
       B.call (x, 'reset',    'store');
       B.call (x, 'retrieve', 'csrf');
       B.mount ('body', views.base);
+
+      // With profuse thanks to https://matcha.fyi/keep-screen-awake-javascript/
+      B.call (x, 'set', ['State', 'uploadRefresh'], setInterval (function () {
+         if (! (B.get ('State', 'upload', 'queue') || []).length) return;
+         requestAnimationFrame (function () {document.body.style.background = 'white'});
+      }, 1000));
+
+      if (sessionStorage.getItem ('testFrom')) B.call (x, 'test', []);
    }],
    ['reset', 'store', function (x, logout) {
       if (logout) {
@@ -3073,12 +3537,20 @@ B.mrespond ([
       }
       c.ajax (x.verb, path, headers, body, function (error, rs) {
          B.call (x, 'ajax ' + x.verb, path, {t: Date.now () - t, code: error ? error.status : rs.xhr.status});
-         var authPath = path === 'csrf' || path.match (/^auth/);
+         var authPath = path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
          if (! authPath && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
             B.call (x, 'goto', 'page', 'login');
             return B.call (x, 'snackbar', 'red', 'Your session has expired. Please login again.');
+         }
+         if (x.verb === 'post' && inc (['upload', 'error'], x.path [0]) && error && error.status === 0) {
+            body.retry = true;
+            body.originalTime = Date.now ();
+            // Retry to send POST /upload or POST /error after ten seconds if there's a connection error
+            return setTimeout (function () {
+               B.call (x, x.verb, x.path, headers, body, cb);
+            }, 30 * 1000);
          }
          if (cb) cb (x, error, rs);
       });
@@ -3086,43 +3558,47 @@ B.mrespond ([
    ['error', [], {match: H.matchVerb}, function (x) {
       // We ignore all errors thrown by Chrome when entering text on the console. The error refers to the root page (not a script inside it), so we don't know what we can possibly do about it. Note the error happens in the HTML, not in client.js.
       if (type (arguments [2]) === 'string' && arguments [2].match ('https://altocode.nl/dev/pic/app/#/')) return;
+      // Safari complains if we update the URL too often in the case of fast scrolling, so we also ignore this error.
+      if (arguments [1] === 'SecurityError: Attempt to use history.replaceState() more than 100 times per 30 seconds') return;
 
-      B.call (x, 'post', 'error', {}, {log: B.r.log, error: dale.go (arguments, teishi.str).slice (1)});
+      var store = teishi.copy (B.store);
+      dale.go (store, function (v, k) {
+         dale.go (v, function (v2, k2) {
+            if (JSON.stringify (v2).length > 500) v [k2] = dale.keys (v2).length + ' keys';
+         });
+      });
+      B.call (x, 'post', 'error', {}, {error: dale.go (arguments, function (v) {return v}).slice (1), store: store, log: B.r.log.slice (-20)});
+      if (B.prod) return B.call (x, 'snackbar', 'red', 'There was an unexpected error. Please refresh the browser.');
+      console.log (arguments);
       // We report the ResizeObserver error, but we don't show the eventlog table.
       if (arguments [1] !== 'ResizeObserver loop limit exceeded') B.eventlog ();
    }],
-   ['read', 'hash', function (x) {
+   ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
-      if (page === 'signup') {
-         if (hash [1]) {
-            B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
-         }
-      }
-      if (page === 'reset') {
-         if (hash [1] && hash [2]) {
-            B.call (x, 'set', ['Data', 'reset'], {token: decodeURIComponent (hash [1]), username: decodeURIComponent (hash [2])});
-         }
-      }
-      if (page === 'import') {
-         if (hash [1] === 'success' && hash [2]) {
-            B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'], true);
-         }
+      if (page === 'signup' && hash [1]) B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
+
+      if (page === 'reset' && hash [1] && hash [2]) B.call (x, 'set', ['Data', 'reset'], {
+         token:    decodeURIComponent (hash [1]),
+         username: decodeURIComponent (hash [2])
+      });
+
+      if (page === 'import' && hash [2]) {
+         if (hash [1] === 'success') B.call (x, 'set', ['State', 'imports', hash [2], 'authOK'],    true);
+         if (hash [1] === 'error'  ) B.call (x, 'set', ['State', 'imports', hash [2], 'authError'], true);
       }
 
-      if (page === 'pics' && hash [1]) B.call (x, 'set', ['State', 'queryURL'], hash [1]);
+      if (B.get ('Data', 'csrf') && (! page || page === 'pics')) B.call (x, 'set', ['State', 'queryURL'], hash [1] || 'home');
 
-      B.call (x, 'goto', 'page', page);
+      B.call (x, 'goto', 'page', page, true);
    }],
-   ['goto', 'page', function (x, page) {
+   ['goto', 'page', {id: 'goto page'}, function (x, page, fromHash) {
       var pages = {
          logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
-      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) {
-         page = pages.logged [0];
-      }
+      if (! inc (pages.logged, page) && ! inc (pages.unlogged, page)) page = pages.logged [0];
 
       var logged = B.get ('Data', 'csrf');
 
@@ -3130,19 +3606,34 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'redirect'], page);
          return B.call (x, 'goto', 'page', pages.unlogged [0]);
       }
-      if (logged && inc (pages.unlogged, page)) {
-         return B.call (x, 'goto', 'page', pages.logged [0]);
-      }
+
+      if (logged && inc (pages.unlogged, page)) return B.call (x, 'goto', 'page', pages.logged [0]);
+
       if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
 
       document.title = ['ac;pic', page].join (' - ');
 
-      if (page !== B.get ('State', 'page')) B.call (x, 'set', ['State', 'page'], page);
-
-      if (page === 'pics' && B.get ('State', 'queryURL')) page = 'pics/' + B.get ('State', 'queryURL');
+      if (page === 'pics') {
+         if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
+            B.call (x, 'set', ['State', 'queryURL'], 'home');
+            return B.call (x, 'set', ['State', 'page'], page);
+         }
+         page = 'pics/' + B.get ('State', 'queryURL');
+      }
+      B.call (x, 'set', ['State', 'page'], page.replace (/\/.+/, ''));
 
       if (window.location.hash !== '#/' + page) window.location.hash = '#/' + page;
    }],
+   ['send', 'feedback', function (x) {
+      var feedback = B.get ('State', 'feedback');
+      if (! feedback) return B.call (x, 'snackbar', 'yellow', 'Please enter some feedback :).');
+      B.call (x, 'post', 'feedback', {}, {message: feedback}, function (x, error) {
+         if (error) return B.call (x, 'snackbar', 'red', 'We experienced a technical issue; could you please email us with your feedback instead?');
+         B.call (x, 'rem', 'State', 'feedback');
+         B.call (x, 'snackbar', 'green', 'Your feedback was successfully sent!');
+      });
+   }],
+
    ['test', [], function (x) {
       c.loadScript ('testclient.js');
    }],
@@ -3154,6 +3645,7 @@ B.mrespond ([
          if (error && error.status !== 403) return B.call (x, 'snackbar', 'red', 'Connection or server error.');
          B.call (x, 'set', ['Data', 'csrf'], error ? false : rs.body.csrf);
          B.call (x, 'read', 'hash');
+         if (! error) B.call (x, 'query', 'account');
       });
    }],
    ['login', [], function (x) {
@@ -3165,6 +3657,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'clear', 'authInputs');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3181,7 +3674,8 @@ B.mrespond ([
       if (username.match ('@')) return B.call (x, 'snackbar', 'yellow', 'Your username cannot be an email or contain an @ symbol.');
       if (username.length < 3)  return B.call (x, 'snackbar', 'yellow', 'Your username must be at least 3 characters long.');
       if (password.length < 6)  return B.call (x, 'snackbar', 'yellow', 'Your password must be at least 6 characters long.');
-      if (c ('#auth-password').value !== c ('#auth-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated password does not match.');
+      if (c ('#auth-username').value !== c ('#auth-username-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated username does not match.');
+      if (c ('#auth-password').value !== c ('#auth-password-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated password does not match.');
       B.call (x, 'post', 'auth/signup', {}, {
          email: B.get ('Data', 'signup', 'email'),
          token: B.get ('Data', 'signup', 'token'),
@@ -3196,6 +3690,7 @@ B.mrespond ([
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
          }
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
+         B.call (x, 'query', 'account');
          B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
       });
    }],
@@ -3228,6 +3723,7 @@ B.mrespond ([
    }],
    ['delete', 'account', function (x) {
       var conf = prompt ('Are you sure you want to delete your account? You cannot revert this action! If you wish to proceed, please enter the text "DELETE MY ACCOUNT"');
+      if (conf === null) return B.call (x, 'snackbar', 'green', 'Phew!');
       if (conf !== 'DELETE MY ACCOUNT') return B.call (x, 'snackbar', 'yellow', 'Invalid confirmation message.');
       B.call (x, 'post', 'auth/delete', {}, {}, function (x, error) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting your account.');
@@ -3254,27 +3750,23 @@ B.mrespond ([
 
    // *** PICS RESPONDERS ***
 
-   ['change', ['State', 'page'], {priority: -10000, match: B.changeResponder}, function (x) {
-      // If the State object itself changes, don't respond to that.
-      if (x.path.length < 2) return;
+   ['change', ['State', 'page'], {id: 'change State.page -> pics'}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
 
-      if (! B.get ('State', 'query')) B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest'});
-      else B.call (x, 'query', 'pivs', true);
+      if (B.get ('State', 'query', 'updateLimit') < Date.now () - 10) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'change', ['State', 'selected']);
    }],
-   ['change', ['State', 'query'], {match: B.changeResponder}, function (x) {
-      // If the State object itself changes, or the path is State.query.recentlyTaggged, don't respond to that.
-      if (x.path.length < 2 || x.path [2] === 'recentlyTagged') return;
+   ['change', ['State', 'query'], {id: 'change State.query', match: B.changeResponder}, function (x, newValue, oldValue) {
+      if (x.path.length < 2 || inc (['recentlyTagged', 'update'], x.path [2])) return;
 
-      if (inc (['tags', 'sort'], x.path [2])) B.rem (['State', 'query'], 'fromDate');
+      if (inc (['tags', 'sort', 'home'], x.path [2])) B.rem (['State', 'query'], 'fromDate', 'update', 'updateLimit');
+
+      if (inc ([true, undefined], B.get ('State', 'query', 'updateLimit'))) B.set (['State', 'query', 'updateLimit'], Date.now ());
 
       B.call (x, 'update', 'queryURL', x.path [2] === 'fromDate');
 
       if (x.path [2] === 'fromDate') {
-         // if total pivs we have brought from the query is equal to the total pivs on the query itself, we don't do anything.
          if (B.get ('Data', 'pivs').length === B.get ('Data', 'pivTotal')) return;
          var chunks = B.get ('State', 'chunks');
          if (chunks.length) {
@@ -3282,12 +3774,11 @@ B.mrespond ([
             dale.go (chunks, function (chunk, k) {
                if (chunk.userVisible) lastVisibleChunkIndex = k;
             });
-            // If last visible chunk is the last or the next-to-last last chunk, we load more pivs. Otherwise, we don't.
             if (lastVisibleChunkIndex + 1 < chunks.length - 1) return;
          }
       }
 
-      B.call (x, 'query', 'pivs', true);
+      B.call (x, 'query', 'pivs', {noScroll: x.path [2] === 'updateLimit' || x.path [2] === 'fromDate' && oldValue});
    }],
    ['change', ['State', 'selected'], {match: B.changeResponder}, function (x) {
       if (B.get ('State', 'page') !== 'pics') return;
@@ -3302,7 +3793,7 @@ B.mrespond ([
       var selectedPivs = dale.keys (selected).length > 0;
       var classes = {
          browse:   ['app-pictures',  'app-all-tags'],
-         organise: ['app-organise', 'app-show-organise-bar', B.get ('State', 'untag') ? 'app-untag-tags' : 'app-attach-tags'],
+         organise: ['app-organise', 'app-show-organise-bar', 'app-attach-tags'],
       }
       var target = c ('.pics-target') [0];
       if (! target) return;
@@ -3318,29 +3809,28 @@ B.mrespond ([
          });
       }, 0);
 
-      if (B.get ('State', 'untag') && ! selectedPivs) B.call (x, 'rem', 'State', 'untag');
+      // In Safari, overflow-x is basically broken. This fixes it. 50ms is the shortest amount of time that seems to sidestep the problem.
+      if (! selectedPivs) {
+         c.set ('.sidebar__footer', {display: 'none'}, true);
+         setTimeout (function () {
+            c.set ('.sidebar__footer', {display: 'flex'}, true);
+         }, 50);
+      }
 
       if (! selectedPivs && B.get ('State', 'query', 'recentlyTagged')) {
          B.call (x, 'rem', ['State', 'query'], 'recentlyTagged');
          B.call (x, 'snackbar', 'green', 'You can find your pictures under the tags you just used.');
       }
    }],
-   ['change', ['State', 'untag'], {match: B.changeResponder}, function (x) {
-      var untag = B.get ('State', 'untag');
-      var target = c ('.pics-target') [0];
-      if (! target) return;
-      target.classList.remove (untag ? 'app-attach-tags' : 'app-untag-tags');
-      if (dale.keys (B.get ('State', 'selected')).length) target.classList.add (untag ? 'app-untag-tags'  : 'app-attach-tags');
-   }],
-   ['query', 'pivs', function (x, updateSelected, retry) {
-      // We copy the query onto a new object so that we can check whether State.query changed after the ajax call returns.
+   ['query', 'pivs', function (x, options) {
+      options = options || {};
+      // We copy the query onto a new object so that if other events change the object after the ajax call, we will still have access to the original values.
       var query = teishi.copy (B.get ('State', 'query'));
 
       if (! query) return;
-      if (! retry) {
-         if (B.get ('State', 'querying')) return;
-         B.call (x, 'set', ['State', 'querying'], true);
-      }
+      var t = Date.now ();
+      if (! options.retry && B.get ('State', 'querying')) return B.call (x, 'set', ['State', 'querying'], {t: t, options: options});
+      else                                                       B.call (x, 'set', ['State', 'querying'], {t: t, options: options});
 
       var timeout = B.get ('State', 'queryRefresh');
       if (timeout) {
@@ -3359,14 +3849,49 @@ B.mrespond ([
          maxdate = parseInt (rangeTag.replace ('r::', '').split (':') [1]);
       }
 
-      B.call (x, 'post', 'query', {}, {tags: dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}), sort: query.sort, from: query.fromDate ? undefined : 1, fromDate: query.fromDate, to: teishi.last (H.chunkSizes) * 3, recentlyTagged: query.recentlyTagged, mindate: mindate, maxdate: maxdate}, function (x, error, rs) {
-         if (! teishi.eq ({tags: query.tags, sort: query.sort}, {tags: B.get ('State', 'query', 'tags'), sort: B.get ('State', 'query', 'sort')})) {
-            return B.call (x, 'query', 'pivs', updateSelected, true);
-         }
-         B.call (x, 'set', ['State', 'querying'], false);
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
-         B.call (x, 'query', 'tags');
+      var noPivsYet = eq (B.get ('Data', 'pivs'), []);
+      var updateLimit = (query.update === 'auto' || noPivsYet || query.home) ? undefined : query.updateLimit;
 
+      var selectedPivs = dale.keys (B.get ('State', 'selected')).length;
+      if (selectedPivs) {
+         var farthestSelectedDate = query.sort === 'oldest' ? 0 : Date.now ();
+         dale.go (B.get ('State', 'selected'), function (piv) {
+            var date = piv [query.sort === 'upload' ? 'dateup' : 'date'];
+            if (farthestSelectedDate === undefined) return farthestSelectedDate = date;
+            if (query.sort === 'oldest' && date > farthestSelectedDate) farthestSelectedDate = date;
+            if (query.sort !== 'oldest' && date < farthestSelectedDate) farthestSelectedDate = date;
+         });
+         if (! query.fromDate) var fromDate = farthestSelectedDate;
+         else                  var fromDate = Math [query.sort !== 'oldest' ? 'min' : 'max'] (query.fromDate, farthestSelectedDate);
+      }
+
+      B.call (x, 'post', 'query', {}, {
+         tags:           dale.fil (query.tags, undefined, function (tag) {if (! H.isRangeTag (tag)) return tag}),
+         sort:           query.sort,
+         from:           (query.fromDate || selectedPivs) ? undefined : 1,
+         fromDate:       selectedPivs ? fromDate : query.fromDate,
+         to:             options.selectAll ? 1000000000 : teishi.last (H.chunkSizes) * 3,
+         recentlyTagged: query.recentlyTagged,
+         mindate:        mindate,
+         maxdate:        maxdate,
+         refresh:        options.refresh,
+         updateLimit:    updateLimit
+      }, function (x, error, rs) {
+         var querying = B.get ('State', 'querying');
+         if (t !== querying.t) {
+            querying.options.retry = true;
+            return B.call (x, 'query', 'pivs', querying.options);
+         }
+         B.call (x, 'rem', 'State', 'querying');
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
+
+         if (rs.body.total === 0 && query.tags.length) return B.call (x, 'set', ['State', 'query', 'tags'], []);
+
+         if (query.update === undefined && rs.body.refreshQuery   && ! noPivsYet && ! query.home) B.call (x, 'set', ['State', 'query', 'update'], 'manual');
+         if (query.update !== undefined && ! rs.body.refreshQuery && (updateLimit === undefined || t - updateLimit < 10)) B.call (x, 'rem', ['State', 'query'], 'update');
+         if (noPivsYet && rs.body.pivs.length) B.call (x, 'set', ['State', 'query', 'updateLimit'], Date.now ());
+
+         B.call (x, 'query', 'tags');
          B.call (x, 'set', ['Data', 'queryTags'], rs.body.tags);
          B.call (x, 'set', ['Data', 'pivTotal'],  rs.body.total);
 
@@ -3384,68 +3909,70 @@ B.mrespond ([
 
          // Set timeout for refreshing query if refreshQuery is true
          if (rs.body.refreshQuery) B.call (x, 'set', ['State', 'queryRefresh'], setTimeout (function () {
-            B.call (x, 'query', 'pivs');
+            B.call (x, 'query', 'pivs', {refresh: true});
          }, 1500));
 
-         if (updateSelected) {
-            var selected = B.get ('State', 'selected') || {};
-            // If `updateSelected` is passed, update the selection to only include pivs that are returned in the current query
-            B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
-               if (selected [piv.id]) return [piv.id, true];
-            }));
+         // Perform mute updates
+         var selected = B.get ('State', 'selected') || {};
+         // Update the selection to only include pivs that are returned in the current query
+         B.set (['State', 'selected'], dale.obj (rs.body.pivs, function (piv) {
+            if (options.selectAll || selected [piv.id]) return [piv.id, {id: piv.id, date: piv.date, dateup: piv.dateup}];
+         }));
+         // Four types of queries with respect to scroll: go to top (new query), load more (from scroll - here, options.noScroll will be set), first load with link (go to specified fromDate), refresh. Only in the last one the offset makes sense.
+         var offset = ! options.refresh ? 0 : dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
+            if (piv.start + CSS.pivWidths [1] >= window.scrollY) return window.scrollY - piv.start;
+         });
+         B.set (['Data', 'pivs'], rs.body.pivs);
+         B.set (['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
+
+         if (options.refresh) query.fromDate = B.get ('State', 'query', 'fromDate');
+
+         if (options.noScroll)      var scrollTo = -1;
+         else if (! query.fromDate) var scrollTo = 0;
+         else                       var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
+            // The < and > are there in case the date requested is not held by any pivs that match the query
+            if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start + offset : undefined;
+            else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start + offset : undefined;
+            else                              return query.fromDate >= piv.dateup ? piv.start + offset : undefined;
+         });
+         B.call ('scroll', [], scrollTo);
+
+         if (options.selectAll) {
+            B.call (x, 'clear', 'snackbar');
+            B.call (x, 'change', ['State', 'selected']);
          }
 
-         B.call (x, 'set', ['State', 'chunks'], H.computeChunks (x, rs.body.pivs));
-         B.call (x, 'scroll', []);
-         if (! query.fromDate) window.scrollTo (0, 0);
-         else {
-            var scrollTo = dale.stopNot (rs.body.pivs, undefined, function (piv) {
-               // The < and > are there in case the date requested is not held by any pivs that match the query
-               if      (query.sort === 'oldest') return query.fromDate <= piv.date   ? piv.start : undefined;
-               else if (query.sort === 'newest') return query.fromDate >= piv.date   ? piv.start : undefined;
-               else                              return query.fromDate >= piv.dateup ? piv.start : undefined;
-            });
-            if (scrollTo && scrollTo > window.scrollY + CSS.pivWidths [1]) setTimeout (function () {
-               window.scrollTo (0, scrollTo);
-            }, 0);
-         }
+         var open = B.get ('State', 'open');
 
-         if (B.get ('State', 'open') === undefined) {
-            B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
-            return;
-         }
+         // Changes on State.selected will be performed by the scroll responder, same with State.chunks
+         if (! open) return B.call (x, 'change', ['Data', 'pivs'], rs.body.pivs);
 
-         var open = B.get ('Data', 'pivs') [B.get ('State', 'open')];
          var newOpen = dale.stopNot (rs.body.pivs, undefined, function (piv, k) {
-            if (piv.id === open.id) return k;
+            if (piv.id === open.id) return {id: piv.id, k: k};
          });
          // If opened piv is no longer in query, exit open.
-         if (newOpen === undefined) {
-            B.call (x, 'set', ['Data', 'pivs'], rs.body.pivs);
-            if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
+         if (! newOpen) {
+            B.call (x, 'rem', 'State', 'open');
+            B.call (x, 'change', ['Data', 'pivs'], rs.body.pivs);
             B.call (x, 'exit', 'fullscreen');
-            return;
          }
-         // Otherwise, update the index of the opened piv.
-         // We first set the values, then trigger the change event, to prevent the piv flickering.
-         B.set (['State', 'open'], newOpen);
-         B.set (['Data', 'pivs'], rs.body.pivs);
-         B.call (x, 'change', ['State', 'open']);
-         B.call (x, 'change', ['Data', 'pivs']);
-         if (updateSelected) B.call (x, 'change', ['State', 'selected'], B.get ('State', 'selected'));
+         // Otherwise, update the index of the opened piv. We first set the values, then trigger the change event, to prevent the piv flickering.
+         else {
+            B.call (x, 'set', ['State', 'open'], newOpen);
+            B.call (x, 'change', ['Data', 'pivs']);
+         }
       });
    }],
-   ['click', 'piv', function (x, id, k, ev) {
+   ['click', 'piv', function (x, piv, k, ev) {
       var last = B.get ('State', 'lastClick') || {time: 0};
       // If the last click was also on this piv and happened less than 500ms ago, we open the piv in fullscreen.
-      if (last.id === id && Date.now () - last.time < 500) {
-         B.call (x, 'rem', ['State', 'selected'], id);
-         B.call (x, 'set', ['State', 'open'], k);
+      if (last.id === piv.id && Date.now () - last.time < 500) {
+         B.call (x, 'rem', ['State', 'selected'], piv.id);
+         B.call (x, 'set', ['State', 'open'], {id: piv.id, k: k});
          return;
       }
 
-      B.call (x, 'set', ['State', 'lastClick'], {id: id, time: Date.now ()});
+      B.call (x, 'set', ['State', 'lastClick'], {id: piv.id, time: Date.now ()});
 
       var lastIndex = dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
          if (piv.id === last.id) return k;
@@ -3453,95 +3980,116 @@ B.mrespond ([
 
       // Single select/unselect (either no shift or the last click wasn't on a piv that we currently have or the last clicked piv is deselected)
       if (! ev.shiftKey || lastIndex === undefined || ! B.get ('State', 'selected', last.id)) {
-         if (! B.get ('State', 'selected', id)) return B.call (x, 'set', ['State', 'selected', id], true);
-         else                                   return B.call (x, 'rem', ['State', 'selected'], id);
+         if (! B.get ('State', 'selected', piv.id)) return B.call (x, 'set', ['State', 'selected', piv.id], {id: piv.id, date: piv.date, dateup: piv.dateup});
+         else                                       return B.call (x, 'rem', ['State', 'selected'], piv.id);
       }
       // Multiple select/unselect
       dale.go (dale.times (Math.max (lastIndex, k) - Math.min (lastIndex, k) + 1, Math.min (lastIndex, k)), function (k) {
          // Instead of triggering events for each piv, we directly override the value (to avoid triggering n redraws for n pivs).
-         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], true);
+         B.set (['State', 'selected', B.get ('Data', 'pivs', k, 'id')], {id: piv.id, date: piv.date, dateup: piv.dateup});
       });
       // We manually trigger the change event.
       B.call (x, 'change', ['State', 'selected']);
    }],
    ['key', /down|up/, function (x, keyCode) {
-      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.call (x, 'tag', 'pivs', true);
+      if (keyCode === 13 && document.activeElement === c ('#newTag'))    B.call (x, 'tag', 'pivs', B.get ('State', 'newTag'));
       if (keyCode === 13 && document.activeElement === c ('#uploadTag')) B.call (x, 'upload', 'tag', true);
       if (x.path [0] === 'down' && (keyCode === 46 || keyCode === 8) && dale.keys (B.get ('State', 'selected')).length && (document.activeElement|| {}).tagName !== 'INPUT') B.call (x, 'delete', 'pivs');
    }],
-   ['toggle', 'tag', function (x, tag) {
-      if (B.get ('State', 'querying')) return;
-      var index = B.get ('State', 'query', 'tags').indexOf (tag);
+   ['toggle', 'tag', {id: 'toggle tag'}, function (x, tag, addOnly) {
 
-      // Tag is removed
-      if (index > -1) {
+      if (inc (B.get ('State', 'query', 'tags'), tag)) {
+         if (addOnly) return;
          if (tag === 'u::' && B.get ('State', 'query', 'recentlyTagged')) B.rem (['State', 'query'], 'recentlyTagged');
-         if (! H.isYearTag (tag)) return B.call (x, 'rem', ['State', 'query', 'tags'], index);
-         return B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
-            if (existingTag === tag) return;
-            if (H.isMonthTag (existingTag)) return;
-            return existingTag;
-         }));
+
+         var resultingTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
+            if (! (existingTag === tag || (H.isYearTag (tag) && H.isMonthTag (existingTag)))) return existingTag;
+         });
+         if (resultingTags.length === 0 && dale.keys (B.get ('State', 'selected')).length) B.call (x, 'rem', 'State', 'selected');
+         return B.call (x, 'set', ['State', 'query', 'tags'], resultingTags);
       }
 
-      // Tag is added
-      var isNormalTag = ! H.isDateTag (tag) && ! H.isGeoTag (tag);
+      if (B.get ('State', 'query', 'home')) B.set (['State', 'query', 'home'], false);
+      if (B.get ('Data', 'account', 'onboarding') && B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
+
       B.call (x, 'set', ['State', 'query', 'tags'], dale.fil (B.get ('State', 'query', 'tags'), undefined, function (existingTag) {
-         if (existingTag === 'u::' && isNormalTag) return;
-         if (tag === 'u::'         && (! H.isDateTag (existingTag) && ! H.isGeoTag (existingTag))) return;
-         if (H.isRangeTag (tag) && H.isDateTag (existingTag)) return;
-         if (H.isMonthTag (tag) && H.isMonthTag (existingTag)) return;
+         if (existingTag === 'o::' && tag === 't::'     || existingTag === 't::'     && tag === 'o::') return;
+         if (existingTag === 'u::' && H.isUserTag (tag) || H.isUserTag (existingTag) && tag === 'u::') return;
+         if ((H.isDateTag (existingTag) || H.isRangeTag (existingTag)) && H.isRangeTag (tag)) return;
+         if (H.isMonthTag (existingTag) && H.isMonthTag (tag)) return;
          return existingTag;
       }).concat (tag));
-      if (H.isUserTag (tag)) B.call (x, 'rem', 'State', 'filter');
+      if (H.isUserTag (tag) && B.get ('State', 'filter')) B.call (x, 'rem', 'State', 'filter');
+   }],
+   ['toggle', 'hometag', {id: 'toggle hometag'}, function (x, hometag) {
+      var index = B.get ('Data', 'hometags').indexOf (hometag);
+
+      if (index > -1) B.rem (['Data', 'hometags'], index);
+      else B.add (['Data', 'hometags'], hometag);;
+
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
+   }],
+   ['shift', 'hometag', {id: 'shift hometag'}, function (x, from, to) {
+      var fromtag = B.get ('Data', 'hometags', from);
+      var totag   = B.get ('Data', 'hometags', to);
+      B.set (['Data', 'hometags', from], totag);
+      B.set (['Data', 'hometags', to], fromtag);
+      B.call (x, 'post', 'hometags', {}, {hometags: B.get ('Data', 'hometags')}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error updating your home tags.');
+         B.call (x, 'query', 'tags');
+         B.call (x, 'change', ['Data', 'hometags']);
+      });
    }],
    ['select', 'all', function (x) {
-      var query = B.get ('State', 'query');
-      // query.sort, query.from and query.to are irrelevant, we just send them for the request to be valid.
-      B.call (x, 'post', 'query', {}, {idsOnly: true, tags: query.tags, sort: query.sort, from: 1, to: 1000000000, recentlyTagged: query.recentlyTagged}, function (x, error, rs) {
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your pictures.');
-         B.call (x, 'set', ['State', 'selected'], dale.obj (rs.body, function (id) {return [id, true]}));
-      });
+      B.call (x, 'set', ['State', 'selected'], dale.obj (B.get ('Data', 'pivs'), function (piv) {
+         return [piv.id, {piv: piv.id, date: piv.date, dateup: piv.dateup}];
+      }));
+      if (B.get ('Data', 'pivTotal') > 2000) B.call (x, 'snackbar', 'yellow', 'Selecting all, please wait...', true);
+      B.call (x, 'query', 'pivs', {selectAll: true});
    }],
    ['query', 'tags', function (x) {
       B.call (x, 'get', 'tags', {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your tags.');
-         B.call (x, 'set', ['Data', 'tags'], rs.body);
+         B.call (x, 'set', ['Data', 'tags'],     rs.body.tags);
+         B.call (x, 'set', ['Data', 'hometags'], rs.body.hometags);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (tag === 'u::' || H.isRangeTag (tag)) return tag;
-            if (inc (rs.body, tag)) return tag;
+            if (inc (['u::', 'o::', 't::'], tag) || H.isRangeTag (tag)) return tag;
+            if (inc (rs.body.tags, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
          B.call (x, 'set', ['State', 'query', 'tags'], filterRemovedTags);
       });
    }],
-   ['tag', 'pivs', function (x, tag, del, ev) {
-      if (ev) ev.stopPropagation ();
-      if (tag === true) tag = B.get ('State', 'newTag');
+   ['tag', 'pivs', {id: 'tag pivs'}, function (x, tag, del) {
       if (! tag) return;
       if (del && ! confirm ('Are you sure you want to remove the tag ' + tag + ' from all selected pictures?')) return;
-      if (! H.isUserTag (tag)) return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
+      if (! H.isUserTag (tag) && tag !== 'o::') return B.call (x, 'snackbar', 'yellow', 'Sorry, you cannot use that tag.');
 
-      var ids = dale.keys (B.get ('State', 'selected'));
-      if (ids.length === 0) return;
+      var ids = dale.keys (B.get ('State', 'selected')), query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
 
-      var query = B.get ('State', 'query'), pivTotal = B.get ('Data', 'pivTotal');
-      if (! del && inc (query.tags, 'u::')) {
-         dale.go (ids, function (id) {
-            if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
-         });
-      }
-      var payload = {tag: tag, ids: ids, del: del}
-      B.call (x, 'post', 'tag', {}, payload, function (x, error, rs) {
+      if (! del && inc (query.tags, 'u::')) dale.go (ids, function (id) {
+         if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
+      });
+
+      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
-         if (! del) B.call (x, 'snackbar', 'green', 'Just tagged ' + dale.keys (B.get ('State', 'selected')).length + ' picture(s) with tag ' + tag);
-         if (del) {
-            if (ids.length === pivTotal) {
-               B.call (x, 'query', 'tags');
-               return B.call (x, 'rem', ['State', 'query', 'tags'], B.get ('State', 'query', 'tags').indexOf (tag));
-            }
+         if (! del && H.isUserTag (tag) && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
+
+         if (del && ids.length === pivTotal) return B.call (x, 'rem', ['State', 'query', 'tags'], query.tags.indexOf (tag));
+
+         if (! del & H.isUserTag (tag)) B.call (x, 'snackbar', 'green', 'Just tagged ' + ids.length + ' picture(s) with tag ' + tag + '.');
+         else if (! del)                B.call (x, 'snackbar', 'green', 'Just marked ' + ids.length + ' picture(s) as ' + (tag === 'o::' ? 'Organized' : 'To Organize ') + '.');
+
+         if (tag === 'o::' && ids.length === pivTotal) {
+            var toRemove = del ? 'o::' : 't::';
+            if (inc (query.tags, toRemove)) return B.call (x, 'rem', ['State', 'query', 'tags'], query.tags.indexOf (toRemove));
          }
+
          B.call (x, 'query', 'pivs');
          if (tag === B.get ('State', 'newTag')) B.call (x, 'rem', 'State', 'newTag');
       });
@@ -3551,6 +4099,16 @@ B.mrespond ([
       if (pivs.length === 0) return;
       B.call (x, 'post', 'rotate', {}, {deg: deg, ids: pivs}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error rotating the picture(s).');
+         B.call (x, 'query', 'pivs');
+      });
+   }],
+   ['date', 'pivs', function (x) {
+      var date = new Date (B.get ('State', 'date', 'y') + '-' + H.pad (parseInt (B.get ('State', 'date', 'm')) || 0) + '-' + H.pad (parseInt (B.get ('State', 'date', 'd')) || 0)).getTime ();
+      if (isNaN (date) || date < 0 || date > 4133980799999) return B.call (x, 'snackbar', 'yellow', 'Please enter a valid date.');
+      var pivs = dale.keys (B.get ('State', 'selected'));
+      B.call (x, 'post', 'date', {}, {ids: pivs, date: date}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error setting the date of the picture(s).');
+         B.call (x, 'rem', 'State', 'date');
          B.call (x, 'query', 'pivs');
       });
    }],
@@ -3567,18 +4125,16 @@ B.mrespond ([
          operationComplete = true;
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting the picture(s).');
          if (timeoutFired) B.call (x, 'clear', 'snackbar');
-         B.call (x, 'query', 'pivs', true);
+         B.call (x, 'query', 'pivs');
       });
-   }],
-   ['goto', 'tag', function (x, tag) {
-      B.call (x, 'set', ['State', 'selected'], {});
-      B.call (x, 'set', ['State', 'query', 'tags'], [tag]);
    }],
    ['scroll', [], function (x, to) {
       if (B.get ('State', 'page') !== 'pics') return;
-      var lastScroll = B.get ('State', 'lastScroll');
-      if (lastScroll && (Date.now () - lastScroll.time < 10)) return;
-      var y = to || window.scrollY;
+      if (to === undefined) {
+         var lastScroll = B.get ('State', 'lastScroll');
+         if (lastScroll && (Date.now () - lastScroll.time < 50)) return;
+      }
+      var y = (to === undefined || to === -1) ? window.scrollY : to;
       B.call (x, 'set', ['State', 'lastScroll'], {y: y, time: Date.now ()});
 
       var visibleGridHeight = window.innerHeight - CSS.typography.spaceVerPx (3) + 1 + CSS.vars ['padding--s'] + CSS.typography.spaceVerPx (2) + CSS.typography.spaceVerPx (7);
@@ -3587,20 +4143,26 @@ B.mrespond ([
       var maxDOMVisible  = y + visibleGridHeight + bufferSize;
       var minUserVisible = y;
       var maxUserVisible = y + visibleGridHeight;
+      var changes;
       dale.go (B.get ('State', 'chunks'), function (chunk, k) {
+         var DOMVisible = chunk.DOMVisible, userVisible = chunk.userVisible;
          if (chunk.end < minDOMVisible || chunk.start > maxDOMVisible) chunk.DOMVisible = false;
          else chunk.DOMVisible = true;
          if (chunk.end <= minUserVisible || chunk.start >= maxUserVisible) chunk.userVisible = false;
          else chunk.userVisible = true;
+         if (DOMVisible !== chunk.DOMVisible || userVisible !== chunk.userVisible) changes = k + 1;
       });
-      B.call (x, 'change', ['State', 'chunks']);
-      B.call (x, 'change', ['State', 'selected']);
+      if (changes) {
+         B.call (x, 'change', ['State', 'selected']);
+         B.call (x, 'change', ['State', 'chunks']);
+      }
 
       var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
-      dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv) {
-         if (y < piv.start) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
+      dale.stopNot (B.get ('Data', 'pivs'), undefined, function (piv, k) {
+         if (piv.start + CSS.pivWidths [1] >= y) return B.call (x, 'set', ['State', 'query', 'fromDate'], piv [dateField]);
       });
-      if (to) setTimeout (function () {
+      // We do this as a timeout to allow the HTML to be updated before we scroll to it. This is necessary when the part we want to scroll to is not drawn yet.
+      if (to !== undefined && to !== -1) setTimeout (function () {
          window.scrollTo (0, to);
       }, 0);
    }],
@@ -3625,35 +4187,38 @@ B.mrespond ([
    ['stop', 'propagation', function (x, ev) {
       ev.stopPropagation ();
    }],
-   ['update', 'queryURL', function (x, dontAlterHistory) {
-      var query = teishi.copy (B.get ('State', 'query'));
-      if (! query) return;
-      // We don't add recentlyTagged to avoid going over 2k characters
-      delete query.recentlyTagged;
-      try {
-         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
-         setTimeout (function () {
-            if (dontAlterHistory) {
-               history.replaceState (undefined, undefined, '#/pics/' + hash);
-               B.set (['State', 'queryURL'], hash);
-            }
-            else window.location.hash = '#/pics/' + hash;
-         }, 0);
-      }
-      catch (error) {
-         B.call (x, 'post', 'error', {}, {error: 'Update queryURL error', query: B.get ('State', 'query')});
-      }
-   }],
-   ['change', ['State', 'queryURL'], function (x) {
-      if (! B.get ('State', 'queryURL')) return;
+   ['change', ['State', 'queryURL'], {id: 'change State.queryURL'}, function (x) {
+      var queryURL = B.get ('State', 'queryURL');
+      if (queryURL === 'home') return B.call (x, 'set', ['State', 'query'], {tags: [], sort: 'newest', updateLimit: Date.now (), home: true});
+      if (B.get ('State', 'onboarding') !== false) B.call (x, 'set', ['State', 'onboarding'], false);
       try {
          var query = JSON.parse (decodeURIComponent (atob (B.get ('State', 'queryURL'))));
-         if (B.get ('State', 'query', 'recentlyTagged')) query.recentlyTagged = B.get ('State', 'query', 'recentlyTagged');
-         B.call (x, 'set', ['State', 'query'], query);
+         var changes, oldValue = teishi.copy (B.get ('State', 'query'));
+         dale.go (['tags', 'sort', 'fromDate'], function (k) {
+            if (eq (query [k], B.get ('State', 'query', k))) return;
+            changes = true;
+            B.set (['State', 'query', k], query [k]);
+         });
+         if (changes) B.set (['State', 'query', 'home'], false);
+         if (changes) B.call (x, 'change', ['State', 'query'], B.get ('State', 'query'), oldValue);
       }
       catch (error) {
          B.call (x, 'post', 'error', {}, {error: 'Change queryURL error', queryURL: B.get ('State', 'queryURL')});
       }
+   }],
+   ['update', 'queryURL', {id: 'update queryURL'}, function (x, dontAlterHistory) {
+      if (B.get ('State', 'query', 'home')) var hash = 'home';
+      else {
+         var query = dale.obj (B.get ('State', 'query'), function (v, k) {
+            if (inc (['tags', 'sort', 'fromDate'], k)) return [k, v];
+         });
+         var hash = btoa (encodeURIComponent (JSON.stringify (query)));
+      }
+      if (window.location.hash === '#/pics/' + hash) return;
+
+      if (! dontAlterHistory) return window.location.hash = '#/pics/' + hash;
+      history.replaceState (undefined, undefined, '#/pics/' + hash);
+      B.set (['State', 'queryURL'], hash);
    }],
 
    // *** OPEN RESPONDERS ***
@@ -3692,10 +4257,10 @@ B.mrespond ([
    }],
    ['open', /prev|next/, function (x) {
       var open = B.get ('State', 'open');
-      var targetPiv = B.get ('Data', 'pivs', open + (x.path [0] === 'prev' ? -1 : 1));
+      var targetPiv = B.get ('Data', 'pivs', open.k + (x.path [0] === 'prev' ? -1 : 1));
       if (! targetPiv) return;
 
-      B.call (x, 'set', ['State', 'open'], open + (x.path [0] === 'prev' ? -1 : 1));
+      B.call (x, 'set', ['State', 'open'], {id: targetPiv.id, k: open.k + (x.path [0] === 'prev' ? -1 : 1)});
       window.scrollTo (0, targetPiv.start);
    }],
    ['touch', 'start', function (x, ev) {
@@ -3712,17 +4277,16 @@ B.mrespond ([
       if (ev.changedTouches [0].pageX > lastTouch.x) B.call (x, 'open', 'prev');
       else                                           B.call (x, 'open', 'next');
    }],
-   ['open', 'location', function (x, piv) {
-      var url = 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
+   ['open', 'location', function (x, piv, url) {
+      url = url || 'https://www.google.com/maps/place/' + piv.loc [0] + ',' + piv.loc [1];
       var loc = window.open (url, '_blank');
       loc.focus ();
    }],
 
    // *** UPLOAD RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'upload') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       if (! B.get ('Data', 'tags'))    B.call (x, 'query', 'tags');
       if (! B.get ('Data', 'uploads')) B.call (x, 'query', 'uploads');
    }],
@@ -3758,8 +4322,8 @@ B.mrespond ([
          B.call (x, 'set', ['State', 'upload', 'wait', rs.body.id + ''], {
             lastActivity: Date.now (),
             interval: setInterval (function () {
-               // We put the check condition at 9 minutes (instead of the 10 of the stalled condition) to have some extra time to send the wait event.
-               if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 * 9 < Date.now ()) {
+               // We put the check condition after a minute of activity (instead of the 10 of the stalled condition) to have some extra time to send the wait event and also keep track of long uploads.
+               if (B.get ('State', 'upload', 'wait', rs.body.id + '', 'lastActivity') + 1000 * 60 < Date.now ()) {
                   B.call (x, 'upload', 'wait', rs.body.id);
                }
             }, 1000 * 15)
@@ -3775,7 +4339,7 @@ B.mrespond ([
                   if (H.isUserTag (folder)) fileTags = fileTags.concat (folder);
                });
             }
-            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags.concat (fileTags), lastInUpload: k + 1 === files.length});
+            B.add (['State', 'upload', 'queue'], {id: rs.body.id, file: file, tags: tags.concat (fileTags)});
          });
          B.call (x, 'rem', ['State', 'upload'], 'new');
          B.call (x, 'change', ['State', 'upload', 'queue']);
@@ -3837,6 +4401,7 @@ B.mrespond ([
          if (file.uploading) return uploading++;
          file.uploading = true;
          uploading++;
+         B.call (x, 'set', ['State', 'upload', 'count', file.id], (B.get ('State', 'upload', 'count', file.id) || 0) + 1);
 
          var uploadFile = function () {
             var f = new FormData ();
@@ -3873,16 +4438,17 @@ B.mrespond ([
                   // If piv is invalid and we get a 400, carry on.
                }
 
-               // If file is the last in the upload, complete the upload.
-               if (file.lastInUpload && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
+               B.call (x, 'set', ['State', 'upload', 'count', file.id], B.get ('State', 'upload', 'count', file.id) - 1);
+               if (B.get ('State', 'upload', 'count', file.id) === 0 && dale.stop (B.get ('Data', 'uploads'), true, function (v) {
                   return v.id === file.id && v.status === 'uploading';
                })) B.call (x, 'upload', 'complete', file.id);
             });
          }
 
          H.hash (file.file, function (error, hash) {
-            if (error) return B.call (x, 'upload', 'error', file.id, false, false, {type: 'Hash error', error: error.toString ()});
-            B.call (x, 'post', 'uploadCheck', {}, {hash: hash, id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
+            if (error) B.call (x, 'post', 'error', {}, {error: 'hash error', keys: dale.keys (error), details: error.toString ()});
+
+            B.call (x, 'post', 'uploadCheck', {}, {hash: hash || '', id: file.id, name: file.file.name, tags: file.tags, size: file.file.size, lastModified: file.file.lastModified || file.file.lastModifiedDate || new Date ().getTime ()}, function (x, error, rs) {
 
                // If the upload was already cancelled or errored by another file, cancel the upload on the client but don't report it to the server.
                if (error && error.status === 409 && error.responseText.match (/status/)) return B.call (x, 'upload', 'cancel', file.id, true);
@@ -3890,25 +4456,28 @@ B.mrespond ([
                if (error) return B.call (x, 'upload', 'error', file.id, true);
 
                if (! rs.body.repeated) return uploadFile ();
-               // If an identical file is already uploaded, remove from queue and if it is the last from the upload, complete the upload.
+
+               // If an identical file is already uploaded, remove from queue
                dale.stop (B.get ('State', 'upload', 'queue'), true, function (v, i) {
                   if (v !== file) return;
                   B.call (x, 'rem', ['State', 'upload', 'queue'], i);
-                  if (! file.lastInUpload) return true;
+                  return true;
+               });
 
+               B.call (x, 'set', ['State', 'upload', 'count', file.id], B.get ('State', 'upload', 'count', file.id) - 1);
+               if (B.get ('State', 'upload', 'count', file.id) > 0) return;
+
+               var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
+                  if (upload.id === file.id) return upload;
+               });
+               // Depending on the timing of the interval that retrieves upload data, if the last file is an alreadyUploaded one and the whole upload takes very little time, we might not still have an upload entry. In that case, we wait a couple seconds until we do, to complete the upload.
+               if (! upload) setTimeout (function () {
                   var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
                      if (upload.id === file.id) return upload;
                   });
-                  // Depending on the timing of the interval that retrieves upload data, if the last file is an alreadyUploaded one and the whole upload takes very little time, we might not still have an upload entry. In that case, we wait a couple seconds until we do, to complete the upload.
-                  if (! upload) setTimeout (function () {
-                     var upload = dale.stopNot (B.get ('Data', 'uploads'), undefined, function (upload) {
-                        if (upload.id === file.id) return upload;
-                     });
-                     if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
-                  }, 2000);
-                  else if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
-                  return true;
-               });
+                  if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
+               }, 2000);
+               else if (upload.status === 'uploading') B.call (x, 'upload', 'complete', upload.id);
             });
          });
       });
@@ -3916,14 +4485,17 @@ B.mrespond ([
 
    // *** IMPORT RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       var page = B.get ('State', 'page');
       if (page !== 'import') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
       dale.go (['google'], function (provider) {
          if (B.get ('State', 'imports', provider, 'authOK')) {
             B.call (x, 'rem', ['State', 'imports', provider], 'authOK');
             return B.call (x, 'import', 'list', provider);
+         }
+         if (B.get ('State', 'imports', provider, 'authError')) {
+            B.call (x, 'snackbar', 'red', 'Authentication failed. Please provide access to all requested scopes.');
+            B.call (x, 'rem', ['State', 'imports', provider], 'authError');
          }
          if (! B.get ('Data', 'imports', provider)) B.call (x, 'query', 'imports', provider);
       });
@@ -3988,9 +4560,8 @@ B.mrespond ([
 
    // *** ACCOUNT RESPONDERS ***
 
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+   ['change', ['State', 'page'], function (x) {
       if (B.get ('State', 'page') !== 'account') return;
-      if (! B.get ('Data', 'account')) B.call (x, 'query', 'account');
    }],
 
    ['query', 'account', function (x, cb) {
@@ -4050,26 +4621,10 @@ B.mrespond ([
       B.call (x, 'get', 'admin/debug/' + id, {}, '', function (x, error, rs) {
          var text;
          if (error) text = error.responseText;
-         else {
-            // Returns ms >= 0 if valid or -1 if not valid.
-            var parseDate = function (date) {
-               var d = new Date (date);
-               if (d.getTime () && d.getTime () >= 0) return d.toISOString ();
-               d = new Date (date.replace (':', '-').replace (':', '-'));
-               if (d.getTime () && d.getTime () >= 0) return d.toISOString ();
-               return -1;
-            }
-            // Convert dates into readable dates
-            rs.body.db.date = parseDate (rs.body.db.date);
-            rs.body.db.dateup = parseDate (rs.body.db.dateup);
-            rs.body.db.dates = dale.obj (JSON.parse (rs.body.db.dates), function (v, k) {
-               return [k, parseDate (v) + ' // ' + v];
-            });
-            text = JSON.stringify (rs.body, null, '   ');
-         }
-         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'position: absolute; top: 0; left: 0; z-index: 100000; background-color: white; padding: 10px;'}, [
+         else text = JSON.stringify (rs.body, null, '   ');
+         document.body.innerHTML += lith.g (['div', {id: 'debug-info', style: 'font-size: 16px; font-family: monospace; position: fixed; top: 0; left: 0; z-index: 100000; background-color: white; padding: 10px;'}, [
             ['a', {href: '#', onclick: 'document.body.removeChild (c ("#debug-info"))', style: 'font-weight: bold; font-size: 28px'}, 'X'],
-            ['pre', {style: 'width: 600px; height: 600px; overflow-y: scroll;'}, text]
+            ['pre', {style: 'width: 900px; height: 600px; overflow-y: scroll;'}, text]
          ]]);
       });
    }]
@@ -4090,6 +4645,9 @@ views.base = function () {
    return [
       ['style', CSS.litc],
       views.snackbar (),
+      views.feedback (),
+      views.date (),
+      views.manageHome (),
       B.view (['State', 'page'], function (page) {
          if (! views [page]) return ['div'];
          return views [page] ();
@@ -4164,6 +4722,129 @@ views.snackbar = function () {
    ];
 }
 
+// *** CHANGE DATE MODAL ***
+
+views.date = function () {
+   return B.view ([['State', 'date'], ['State', 'selected']], function (date, selected) {
+      if (! date) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'change-date'}, [
+            ['div', {class: 'change-date-box'}, [
+               ['div', {class: 'change-date-box-title'}, [
+                  ['span', 'Change the date of the '],
+                  ['span', dale.keys (selected).length],
+                  ['span', ' selected pics to:']
+               ]],
+               ['div', {class: 'change-date-box-input-date'}, [
+                  ['span', {style: style ({'width': 30, 'margin-right': '-2px'})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'd']), placeholder: 'DD'}]
+                  ]],
+                  ['span', '/'],
+                  ['span', {style: style ({'width': 30})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'm']), placeholder: 'MM'}]
+                  ]],
+                  ['span', '/'],
+                  ['span', {style: style ({'width': 50})}, [
+                     ['input', {style: style ({'text-decoration': 'underline'}), oninput: B.ev ('set', ['State', 'date', 'y']), placeholder: 'YYYY'}],
+                  ]]
+               ]],
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6}), onclick: B.ev ('rem', 'State', 'date')}, 'Cancel'],
+               ['a', {href: '', class: 'button button--one', onclick: B.ev ('date', 'pivs')}, 'Change']
+            ]]
+         ]]
+      ]];
+   });
+}
+
+// *** MANAGE HOME VIEW ***
+
+views.manageHome = function () {
+   return B.view ([['State', 'manageHome'], ['Data', 'tags'], ['Data', 'hometags']], function (manageHome, tags, hometags) {
+      if (manageHome === undefined) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'home-add-tag-modal'}, [
+            ['div', {class: 'home-add-tag-modal-contents'}, [
+               ['div', {class: 'home-add-tag-modal-left-section'}, [
+                  B.view (['State', 'homefilter'], function (homefilter) {
+                     var filterRegex = H.makeRegex (homefilter);
+                     var filteredTags = dale.fil (tags, undefined, function (tag) {
+                        if (inc (hometags, tag) || ! H.isUserTag (tag)) return;
+                        if (tag.match (filterRegex)) return tag;
+                     });
+                     return ['div', {class: 'home-add-tag-modal-add-tags-section'}, [
+                        ['div', {class: 'home-add-tag-modal-title'}, 'Add tags'],
+                        ['div', {class: 'home-add-tag-modal-search-box'}, [
+                           ['input', {id: 'addTag', class: 'attach-form__input attach-input', type: 'text', name: 'notASearchField', placeholder: 'Search tag to add', oninput: B.ev ('set', ['State', 'homefilter']), onchange: B.ev ('set', ['State', 'homefilter'])}]
+                        ]],
+                        ['div', {class: 'home-add-tag-modal-tags-list'}, [
+                           ['ul', {class: 'tag-list tag-list--attach home-add-tag-modal-tags-list-ul'}, dale.go (filteredTags, function (tag) {
+                              return ['li', {class: 'tag-list__item tag home-add-tag-modal-tags-list-li', onclick: B.ev ('toggle', 'hometag', tag)}, [
+                                 H.putSvg ('tagItem' + H.tagColor (tag)),
+                                 ['span', {class: 'home-add-tag-modal-tags-list-tag__title'}, tag],
+                                 ['div', {class: 'tag-actions'}, [
+                                    ['div', {class: 'home-add-tag-modal-tag-actions__item tag-actions__item tag-actions__item--attach', style: style ({'display': 'block'})}, H.putSvg ('itemAttach', 24)]
+                                 ]]
+                              ]];
+                           })]
+                        ]]
+                     ]];
+                  }),
+               ]],
+               ['div', {class: 'home-add-tag-modal-right-section'}, [
+                  ['div', {class: 'home-add-tag-modal-your-tags-section'}, [
+                     ['div', {class: 'home-add-tag-modal-title'}, 'Your home tags'],
+                     ['div', {class: 'home-add-tag-modal-your-tags-list'}, [
+                        ['ul', {class: 'tag-list tag-list--attach home-add-tag-modal-your-tags-list-ul'}, dale.go (hometags, function (hometag, k) {
+                           return ['li', {class: 'tag-list__item tag home-add-tag-modal-your-tags-list-li'}, [
+                              H.putSvg ('tagBoxItem' + H.tagColor (hometag)),
+                              ['span', {class: 'home-add-tag-modal-tags-list-tag__title'}, hometag],
+                              ['div', {class: 'home-add-tag-modal-your-tags-actions'}, [
+                                 H.if (k === 0,
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-left-arrow'}, H.putSvg ('homeBoxModalArrowGrey', 24)],
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-left-arrow', onclick: B.ev ('shift', 'hometag', k, k - 1)}, H.putSvg ('homeBoxModalArrowBlue', 24)]
+                                 ),
+                                 H.if (k === hometags.length - 1,
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-right-arrow'}, H.putSvg ('homeBoxModalArrowGrey', 24)],
+                                    ['span', {class: 'home-add-tag-modal-your-tags-actions-right-arrow', onclick: B.ev ('shift', 'hometag', k, k + 1)}, H.putSvg ('homeBoxModalArrowBlue', 24)],
+                                 ),
+                                 ['span', {onclick: B.ev ('toggle', 'hometag', hometag)}, H.putSvg ('deleteHomeBoxIcon', 24)]
+
+                              ]]
+                           ]];
+                        })]
+                     ]]
+                  ]],
+                  ['div', {class: 'home-add-tag-modal-done-button', onclick: B.ev (['rem', 'State', 'manageHome'], ['rem', 'State', 'homefilter'])}, [
+                     ['a', {href: '', class: 'button button--one'}, 'Done']
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]];
+   });
+}
+
+// *** FEEDBACK VIEW ***
+
+views.feedback = function () {
+   return B.view (['State', 'feedback'], function (feedback) {
+      if (feedback === undefined) return ['div'];
+      return ['div', {class: 'feedback-box-mask'}, [
+         ['div', {class: 'feedback-box'}, [
+            ['div', {class: 'feedback-input-box'}, [
+               ['textarea', {class: 'feedback-input-textarea', autocomplete: 'off', type: 'text', placeholder: 'What things would you like us to change or fix…?', oninput: B.ev ('set', ['State', 'feedback'])}]
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {href: '', class: 'button button--two', style: style ({'margin-right': 6}), onclick: B.ev ('rem', 'State', 'feedback')}, 'Cancel'],
+               ['a', {href: '', class: 'button button--one', onclick: B.ev ('send', 'feedback')}, 'Send']
+            ]]
+         ]]
+      ]];
+   });
+}
+
 // *** LOGIN VIEW ***
 
 views.login = function () {
@@ -4173,7 +4854,7 @@ views.login = function () {
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
-                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+                  ['p', {class: 'auth-card__header-text'}, 'Your life’s journey, organized.'],
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'text', class: 'enter-form__input', placeholder: 'Username or email'}],
@@ -4197,13 +4878,15 @@ views.signup = function () {
             ['div', {class: 'auth-card__inner'}, [
                ['div', {class: 'auth-card__header'}, [
                   ['p', {class: 'auth-card__header-logo'}, views.logo (28)],
-                  ['p', {class: 'auth-card__header-text'}, 'A home for your pictures'],
+                  ['p', {class: 'auth-card__header-text'}, 'Your life’s journey, organized.'],
                ]],
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
+                  ['input', {id: 'auth-username-confirm', type: 'username', class: 'enter-form__input', placeholder: 'Repeat username'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
-                  ['input', {id: 'auth-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
+                  ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
+                  ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('request', 'invite')}, 'Don\'t have an account? Request an invite.'],
                ]]
             ]]
          ]],
@@ -4259,19 +4942,27 @@ views.reset = function () {
 views.header = function (showUpload, showImport) {
    return ['header', {class: 'header'}, [
       ['div', {class: 'header__brand'}, [
-         ['div', {class: 'logo'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, views.logo (24)]],
+         ['div', {class: 'logo'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, views.logo (24)]],
       ]],
       // MAIN MENU
       ['div', {class: 'header__menu'}, [
-         ['ul', {class: 'main-menu'}, [
-            ['li', {class: 'main-menu__item main-menu__item--pictures'}, ['a', {onclick: B.ev ('goto', 'page', 'pics'), class: 'main-menu__item-link'}, 'View pictures']],
-         ]]
+         B.view (['State', 'page'], function (page) {
+            if (page === 'pics') return ['ul', {class: 'main-menu'}, [
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why ac;pic?']],
+            ]];
+            return ['ul', {class: 'main-menu'}, [
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
+            ]];
+         }),
       ]],
       //FEEDBACK BUTTON
-      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href:'', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'IMPLEMENT BOX'])}, 'Give us feedback!']],
+      ['div', {class: 'header__feedback-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '', class: 'button button--feedback', onclick: B.ev (H.stopPropagation, ['set', ['State', 'feedback'], ''])}, 'Give us feedback!']],
       // ACCOUNT MENU
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
+            B.view (['Data', 'account'], function (user) {
+               return ['li', {class: 'username'}, user ? user.username : ''];
+            }),
             ['li', {class: 'account-menu__item'}, [
                H.putSvg ('accountMenu'),
                ['ul', {class: 'account-sub-menu'}, [
@@ -4282,26 +4973,18 @@ views.header = function (showUpload, showImport) {
          ]],
       ]],
       //SHARE BUTTON
-      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/share', class: 'button button--green'}, 'Share']],
-      //IMPORT BUTTON
-      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, ['a', {href: '#/import', class: 'button button--one'}, 'Import']],
-      // UPLOAD BUTTON
-      ['div', {class: 'header__upload-button', style: style ({opacity: showUpload ? '1' : '0'})}, ['a', {href: '#/upload', class: 'button button--one'}, 'Upload']],
-   ]];
-}
-
-// *** FEEDBACK BOX VIEW ***
-
-views.feedback = function(){
-   return ['div', {class: 'feedback-box'} [
-      ['div', {class: 'feedback-input-box'}, [
-         ['textarea', {class: 'feedback-input-textarea', autocomplete: 'off', type: 'text', placeholder: 'What things would you like us to change or fix…?'}]
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
+         ['a', {href: '', class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
       ]],
-      ['div', {style: style ({'float': 'right'})}, [
-         ['a', {href: '', class: 'button button--two', style: style ({'margin-right': '6px'})}, 'Cancel'],
-         ['a', {href: '', class: 'button button--one'}, 'Send']
-      ]]
-   ]]
+      //IMPORT BUTTON
+      ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
+         ['a', {href: '#/import', class: 'button button--one'}, [H.putSvg ('cloudImport'),'Import']],
+      ]],
+      // UPLOAD BUTTON
+      ['div', {class: 'header__upload-button', style: style ({opacity: showUpload ? '1' : '0'})}, [
+         ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'),'Upload']],
+      ]],
+   ]];
 }
 
 // *** EMPTY VIEW ***
@@ -4322,11 +5005,12 @@ views.empty = function () {
                   ['img', {class: 'tip__icon', src: 'img/icon-tip.svg'}],
                   ['h5', {class: 'tip__title'}, 'Tip!'],
                ]],
-               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {href: '#/upload'}, 'Upload'], ' some photos and add some tags.']],
+               // TODO: fix redraw bug that carries through click to anchor
+               ['p', {class: 'tip__text'}, ['You have no tags yet. ', ['a', {onclick: B.ev ('goto', 'page', 'upload')}, 'Upload'], ' some photos and add some tags.']],
             ]],
          ]],
          ['div', {class: 'sidebar__footer'}, [
-            ['div', {class: 'sidebar-search'}, [
+            ['div', {class: 'sidebar-search', style: style ({display: 'none'})}, [
                ['input', {class: 'sidebar-search__input search-input', type: 'text', placeholder: 'Search for tag'}],
                H.putSvg ('sidebarSearch'),
             ]],
@@ -4335,19 +5019,114 @@ views.empty = function () {
       // MAIN
       ['div', {class: 'main'}, [
          ['div', {class: 'main__inner'}, [
-            // GUIDE
             ['div', {class: 'guide'}, [
                ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg'}],
                ['h2', {class: 'guide__title'}, 'Start organising and backing up your pictures.'],
                ['p', {class: 'guide__text'}, 'Click the buttons below and start adding pictures.'],
                ['div', [
-                  ['a', {href: '#/import', class: 'button button--one', style: style({'margin-right': '10px'})}, 'Import pictures'],
-                  ['a', {href: '#/upload', class: 'button button--one'}, 'Upload pictures'],
+                  ['a', {href: '#/import', class: 'button button--one', style: style ({'margin-right': '10px'})}, [H.putSvg ('cloudImport'), 'Import pictures']],
+                  ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'), 'Upload pictures']],
                ]],
+               ['p', {class: 'guide__text', style: style ({'margin-top': '20px'})}, 'Or download any of the mobile uploaders.'],
+               ['div', [
+                  ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, H.putSvg ('appStoreBadge')],
+                  ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, H.putSvg ('googlePlayBadge')],
+               ]]
             ]],
          ]],
       ]],
    ]];
+}
+
+// *** ONBOARDING VIEW ***
+
+views.onboarding = function () {
+   return B.view ([['State', 'onboarding'], ['Data', 'account']], function (page, account) {
+      if (! account) return ['div'];
+      if (page === false || ! account.onboarding) return ['div'];
+      if (page === undefined) page = 1;
+
+      var pages = [
+         ['Go to Everything', 'On the left sidebar, click on Everything. All your pics and videos are there.'],
+         ['One click to select', 'Select the pictures and videos you want to tag with one click.'],
+         ['Create tag', 'On the left sidebar, write the tag name you want for your selected pictures.'],
+         ['Or reuse tag', 'If there’s already a tag created and you want to add the selected pictures to it, just click on the “+”.'],
+         ['How to untag', 'If you want to ‘untag’, then hover on the check mark, you’ll find the scissors to untag those pics.'],
+         ['It\'s organized when you say so', 'Once you\'ve tagged your pics and videos, on the lower left, mark them as organized, so you know you\'ve got it done!'],
+         ['Home is easy access', 'In Home you can pin your favorite tags, so you can easily access them.'],
+         ['Use tags to find anything', 'You’ll find your tags on the left sidebar, together with your Year and Geo Tags, which will help you drill down into your collection.'],
+         ['No constraints', ['Tag your pics & videos with as many tags as you want. Combine tags to find what you\'re looking for.', ['br'], 'Vacations with friends or vacations with family?']],
+      ];
+      return ['div', [
+         ['div', {class: 'guide'}, [
+            ['span', {style: style ({display: 'inline-flex'})}, [
+               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, '!']
+            ]],
+            ['p', {class: 'guide__text', style: style ({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
+         ]],
+         ['div', {class: 'onboarding-modal-container'}, [
+            ['div', {class: 'onboarding-modal'}, [
+               ['div', {class: 'onboarding-modal-text-div'}, [
+                  ['div', {class: 'onboarding-modal-text-container'}, [
+                     ['p', {class: 'onboarding-modal-title'}, page + '/9'],
+                     ['p', {class: 'onboarding-modal-title'}, pages [page - 1] [0]],
+                     ['p', {class: 'onboarding-modal-text'},  pages [page - 1] [1]]
+                  ]],
+               ]],
+               ['div', {class: 'onboarding-modal-arrow-div'}, [
+                  ['span', H.putSvg ('triangle')]
+               ]],
+               ['div', {class: 'onboarding-modal-gif-div'}, [
+                  ['img', {class: 'onboarding-modal-gif', src: 'assets/img/' + page + '.gif'}],
+               ]]
+            ]],
+            ['div', {style: style ({float: 'right'})}, [
+               ['a', {class: 'button button--two',  style: style ({'margin-right': 6}), onclicK: B.ev ('set', ['State', 'onboarding'], false)}, 'Skip tour'],
+               H.if (page > 1, ['a', {class: 'button button--four', style: style ({'margin-right': 6}), onclick: B.ev ('set', ['State', 'onboarding'], page - 1)}, 'Previous']),
+               H.if (page < pages.length,
+                  ['a', {class: 'button button--one', onclick: B.ev ('set', ['State', 'onboarding'], page + 1)}, 'Next'],
+                  ['a', {class: 'button button--one', onclick: B.ev ('set', ['State', 'onboarding'], false)}, 'Finish'],
+               )
+            ]]
+         ]],
+      ]];
+   });
+}
+
+// *** HOME VIEW ***
+
+views.home = function () {
+   return B.view ([['Data', 'hometags'], ['Data', 'account']], function (hometags, account) {
+      if (! account) return ['div'];
+      return ['div', [
+         ['div', {class: 'guide'}, [
+            ['span', {style: style ({display: 'inline-flex'})}, [
+               ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
+               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, '!']
+            ]],
+            ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
+         ]],
+         ['div', {class: 'home-boxes'}, [
+            ['div', {class: 'home-boxes-row'}, [
+               dale.go (hometags, function (hometag) {
+                  return ['div', {class: 'home-box', style: style ({'background-color': H.tagColor (hometag)}), onclick: B.ev ('toggle', 'tag', hometag)}, [
+                     ['p', {class: 'home-box-tag-name'}, hometag]
+                  ]];
+               })
+            ]],
+            ['div', {class: 'home-add-boxes-row'}, [
+               ['div', {class: 'home-box box-add', onclick: B.ev ('set', ['State', 'manageHome'], true)}, [
+                  ['div', {class: 'box-add-circle'}, [
+                     ['div', {class: 'box-add-plus'}]
+                  ]]
+               ]]
+            ]]
+         ]]
+      ]];
+   });
 }
 
 // *** PICS VIEW ***
@@ -4356,7 +5135,20 @@ views.pics = function () {
    return ['div', {class: 'pics-target app-pictures app-all-tags', onclick: B.ev ('rem', 'State', 'selected')}, [
       views.header (true, true),
       views.open (),
-      B.view (['Data', 'pivs'], function (pivs) {
+      B.view (['State', 'query', 'update'], function (update) {
+         if (! update) return ['div'];
+         return ['div', {class: 'update-pivs-box', onclick: B.ev (H.stopPropagation)}, [
+            update === 'auto' ? [
+               ['span', {class: 'action', onclick: B.ev (['set', ['State', 'query', 'update'], 'manual'], ['set', ['State', 'query', 'updateLimit'], true]), style: style ({'font-size': '16px', cursor: 'pointer', 'text-decoration': 'underline', color: '#5b6eff', display: 'table', margin: '0 auto','padding-top': '33px'})}, 'Pause auto-update'],
+            ] : [
+               ['div', {class: 'cross-button', style: style ({'float': 'right'}), onclick: B.ev ('set', ['State', 'query', 'update'], false)}, ['span', {class: 'cross-button__cross'}]],
+               ['p',{style: style ({'padding-top': '10px', 'padding-left': '30px', 'text-align': 'center', 'font-size': '16px', 'padding-bottom': '10px'})}, 'New pics available'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'updateLimit'], true), style: style ({'float': 'left', 'padding-top': '10px', 'padding-left': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Update now'],
+               ['span', {class: 'action', onclick: B.ev ('set', ['State', 'query', 'update'], 'auto'), style: style ({'float': 'right', 'padding-top': '10px','padding-right': '20px','font-size': '16px', 'cursor': 'pointer', 'text-decoration': 'underline', 'color': '#5b6eff'})}, 'Auto-update'],
+            ]
+         ]];
+      }),
+      B.view ([['Data', 'pivs'], ['State', 'query', 'home']], function (pivs, home) {
          if (! pivs) return ['div'];
          if (B.get ('Data', 'queryTags', 'a::') === 0) return views.empty ();
          return ['div', [
@@ -4376,35 +5168,40 @@ views.pics = function () {
                   ['div', {class: 'sidebar__inner-section'}, [
                      ['div', {class: 'sidebar__header'}, [
                         ['div', {class: 'sidebar-header'}, [
-                           ['h1', {class: 'sidebar-header__title'}, 'View pictures'],
-                           ['div', {class: 'sidebar-header__filter-selected'}],
+                           ! home ? ['a', {class: 'button button--purple', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back home'] : [
+                              ['h1', {class: 'sidebar-header__title'}, 'Explore'],
+                              ['div', {class: 'sidebar-header__filter-selected'}],
+                           ]
                         ]],
                      ]],
                      // *** QUERY LIST ***
-                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'reverseTagOrder']], function (filter, selected, queryTags, monthTags, account, showNTags, reverseTagOrder) {
+                     B.view ([['State', 'filter'], ['State', 'query', 'tags'], ['Data', 'queryTags'], ['Data', 'monthTags'], ['Data', 'account'], ['State', 'showNTags'], ['State', 'tagOrder'], ['State', 'expandCountries'], ['State', 'expandYears']], function (filter, selected, queryTags, monthTags, account, showNTags, tagOrder, expandCountries, expandYears) {
                         if (! account || ! selected) return ['ul'];
+                        if (! tagOrder) tagOrder = {field: 'n'};
                         monthTags = monthTags || [];
-                        filter = H.trim (filter || '');
                         showNTags = showNTags || 75;
 
                         var geotagSelected = dale.stop (selected, true, H.isGeoTag);
                         var firstGeo = true, filterRegex = H.makeRegex (filter);
 
-                        // Pseudo-tag `f::` for arrow to switch sorting order.
                         queryTags = teishi.copy (queryTags);
-                        queryTags ['f::'] = 0;
+
+                        // Add pseudo-tag `e::` for See more/less countries.
+                        queryTags ['e::'] = 0;
+                        // Add pseudo-tag `f::` for arrow to switch sorting order, but only if we have user tags to show.
+                        if (dale.stop (queryTags, true, function (v, tag) {
+                           if (tag.match (filterRegex)) return H.isUserTag (tag);
+                        })) queryTags ['f::'] = 0;
 
                         var yearlist = dale.fil (queryTags, undefined, function (n, tag) {
                            if (! H.isYearTag (tag)) return;
                            if (inc (selected, tag)) return tag;
-                           if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (H.isDateTag (tag) || tag === 'a::' || tag === 'u::') return;
+                           if (H.isDateTag (tag) || inc (['a::', 'u::', 'o::', 't::'], tag)) return;
                            if (inc (selected, tag)) return tag;
-                           if (! filter) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
                            var ac = H.isCountryTag (a), bc = H.isCountryTag (b);
@@ -4417,36 +5214,64 @@ views.pics = function () {
                            if (ag && ! bg) return -1;
                            if (! ag && bg) return 1;
 
+                           if (a === 'e::') return -1;
+                           if (b === 'e::') return 1;
                            if (a === 'f::') return -1;
                            if (b === 'f::') return 1;
 
                            var aSelected = inc (selected, a);
                            var bSelected = inc (selected, b);
                            if (aSelected !== bSelected) return aSelected ? -1 : 1;
-                           var aN = queryTags [a], bN = queryTags [b];
-                           if (aN !== bN) return reverseTagOrder ? aN - bN : bN - aN;
-
-                           if (reverseTagOrder) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
-                           else                 return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           if (tagOrder.field === 'n') {
+                              var aN = queryTags [a], bN = queryTags [b];
+                              if (aN !== bN) return tagOrder.reverse ? aN - bN : bN - aN;
+                              if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
+                              else                  return a.toLowerCase () > b.toLowerCase () ? 1 : -1;
+                           }
+                           else {
+                              if (tagOrder.reverse) return a.toLowerCase () < b.toLowerCase () ? 1 : -1;
+                              else                  return a.toLowerCase () < b.toLowerCase () ? -1 : 1;
+                           }
                         });
 
-                        var all      = teishi.eq (selected, []);
-                        var untagged = inc (selected, 'u::');
+                        var countryCount = dale.acc (taglist, 0, function (n, tag) {
+                           return n += (H.isCountryTag (tag) ? 1 : 0);
+                        });
+                        if (! expandCountries && countryCount > 3) {
+                           var shownCountries = 0;
+                           taglist = dale.fil (taglist, undefined, function (tag) {
+                              if (! H.isCountryTag (tag)) return tag;
+                              if (shownCountries++ < 3) return tag;
+                           });
+                        }
+
+                        var all      = eq (selected, []);
                         var makeTag  = function (which) {
                            // Ignore geotags for cities if no other (country) geotag is selected.
                            if (H.isGeoTag (which) && ! H.isCountryTag (which) && ! geotagSelected) return;
 
                            var tag = which;
-                           var action = ['toggle', 'tag', tag];
+                           var action = ['toggle', 'tag', tag], action2;
                            if (which === 'a::') {
-                              var Class = 'tag-list__item tag tag--all-pictures' + (all ? ' tag--selected' : '');
-                              tag = 'All pictures';
-                              action = ['set', ['State', 'query', 'tags'], []];
+                              var Class = 'tag-list__item tag tag--all-pictures' + (all && ! home ? ' tag--selected' : '');
+                              tag = 'Everything';
+                              action  = ['set', ['State', 'query', 'home'], false];
+                              action2 = ['set', ['State', 'query', 'tags'], []];
                            }
                            else if (which === 'u::') {
-                              var Class = 'tag-list__item tag tag-list__item--untagged' + (untagged ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
                               var tag = 'Untagged';
                               var action = ['toggle', 'tag', 'u::'];
+                           }
+                           else if (which === 't::') {
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
+                              var tag = 'To Organize';
+                              var action = ['toggle', 'tag', 't::'];
+                           }
+                           else if (which === 'o::') {
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
+                              var tag = 'Organized';
+                              var action = ['toggle', 'tag', 'o::'];
                            }
                            else if (H.isYearTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
@@ -4469,41 +5294,54 @@ views.pics = function () {
                               }
                               else {
                                  var Class = 'tag-list__item tag tag-list__item--geo-city';
-                                 if (inc (selected, which)) Class += ' tag--selected';
+                                 if (inc (selected, which) && ! home) Class += ' tag--selected';
                               }
+                           }
+                           else if (which === 'e::') {
+                              var Class = 'tag-list__item tag';
                            }
                            else if (which === 'f::') {
                               var Class = 'tag-list__item tag sort-arrow';
-                              var action = ['set', ['State', 'reverseTagOrder'], ! reverseTagOrder];
                            }
                            else {
-                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) ? ' tag--selected' : '');
+                              var Class = 'tag-list__item tag tag-list__item--' + H.tagColor (which) + (inc (selected, which) && ! home ? ' tag--selected' : '');
                            }
                            var numberOfPivs;
-                           if (! H.isDateTag (which) && which !== 'f::') numberOfPivs = ' ' + queryTags [which];
+                           if (! H.isDateTag (which) && ! inc (['f::', 'e::'], which)) numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
-                           var disabledUntagged = which === 'u::' && queryTags ['u::'] === 0;
-                           var blankMonth = H.isMonthTag (which) && ! inc (monthTags, which);
-                           var disabledTag = disabledUntagged || blankMonth;
+                           var disabledTag = (inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0) || inc (['f::', 'e::'], which);
+                           if (H.isMonthTag (which) && ! inc (monthTags, which)) disabledTag = true;
 
                            var showName = tag.replace (/^[a-z]::/, '');
-                           if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
+                           if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]), true);
                            if (H.isMonthTag (which)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
 
-                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action)}, [
-                              H.if (which === 'a::', H.putSvg ('tagAll')),
+                           // TODO: replace ['foo', 'bar'] by true no-op (`[]`) after gotoB 2.3.0 upgrade
+                           return ['li', {class: Class, style: disabledTag ? 'cursor: default' : undefined, onclick: disabledTag ? B.ev (H.stopPropagation) : B.ev (H.stopPropagation, action, action2 || ['foo', 'bar'])}, [
+                              H.if (which === 'a::', H.putSvg ('tagAll', 24)),
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
+                              H.if (which === 't::', H.putSvg ('toOrganizeIcon')),
+                              H.if (which === 'o::', H.putSvg ('organizedIcon')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
                               H.if (H.isUserTag (which), H.putSvg ('tagItem' + H.tagColor (which))),
-                              H.if (which === 'f::', H.putSvg ('upAndDownArrows')),
+                              H.if (which === 'e::' && countryCount > 3, ['div', {style: style ({'margin-left': '-2px'})}, [
+                                 ['div', {class: 'see-more-geo', onclick: B.ev (H.stopPropagation, ['set', ['State', 'expandCountries'], ! expandCountries])}, [
+                                    ['span', {class: 'see-more-geo-icon'}, H.putSvg ('geotagOpen')],
+                                    ['span', {class: 'see-more-years-text'}, 'See ' + (expandCountries ? 'less' : 'more')]
+                                 ]]
+                              ]]),
+                              H.if (which === 'f::', ['div', {style: style ({display: 'inline-flex'})}, [
+                                 ['div', {style: style ({display: 'inline-flex'}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'a', reverse: tagOrder.field === 'a' ? ! tagOrder.reverse : false})}, [H.putSvg ('azIcon', 24), H.putSvg ('upAndDownArrows')]],
+                                 ['div', {style: style ({display: 'inline-flex', 'margin-left': 15}), onclick: B.ev ('set', ['State', 'tagOrder'], {field: 'n', reverse: tagOrder.field === 'n' ? ! tagOrder.reverse : false})}, H.putSvg ('upAndDownArrows')]
+                              ]]),
                               // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
-                              ['span', {class: 'tag__title'}, [' ', showName]],
-                              ['span', {class: 'number_of_pivs'}, numberOfPivs],
+                              ['span', {class: 'tag__title' + (which === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
+                              ['span', {class: 'number_of_pivs' + (which === 'o::' ? ' tag__title-organized' : '')}, numberOfPivs],
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
-                                 which === 'f::' ? [] : ['div', {class: 'tag-actions'}, [
+                                 inc (['f::', 'e::'], which) ? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
@@ -4521,10 +5359,17 @@ views.pics = function () {
                         return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
-                           dale.go (yearlist, makeTag),
-                           ['br'], ['br'],
-                           dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
-                           ! rangeTag ? [] : makeTag (rangeTag),
+                           makeTag ('t::'),
+                           makeTag ('o::'),
+                           ! rangeTag ? [
+                              dale.go (yearlist, makeTag).slice (expandYears ? 0 : -3),
+                              H.if (yearlist.length > 3, ['div', {class: 'see-more-years', onclick: B.ev (H.stopPropagation, ['set', ['State', 'expandYears'], ! expandYears])}, [
+                                 ['span', {class: 'see-more-years-icon', style: style ({'stroke-width': '2px'})}, H.putSvg ('itemTime')],
+                                 ['span', {class: 'see-more-years-text'}, 'See ' + (expandYears ? 'less' : 'more')]
+                              ]]),
+                              ['br'], ['br'],
+                              dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
+                           ] : makeTag (rangeTag),
                            H.if (account.suggestGeotagging, [
                               ['p', {class: 'suggest-geotagging'}, [
                                  ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
@@ -4549,65 +5394,38 @@ views.pics = function () {
                         ['div', {class: 'sidebar-header'}, [
                            B.view (['State', 'selected'], function (selected) {
                               return ['h1', {class: 'sidebar-header__title'}, [
-                                 'Organize pictures ',
+                                 'Organize ',
                                  ['span', ['(', ['em', dale.keys (selected).length], ')']],
                               ]];
                            }),
                         ]],
                      ]],
-                     ['div', {class: 'sidebar__switch'}, [
-                        // Switch
-                        ['div', {class: 'switch'}, [
-                           ['ul', {class: 'switch-list'}, [
-                              ['li', {class: 'switch-list__item', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'untag'])}, [
-                                 ['div', {class: 'switch-list__button switch-list__button--attach'}, [
-                                    H.putSvg ('buttonAttach'),
-                                    ['span', {class: 'switch-list__button-text'}, 'Attach tag'],
-                                 ]],
-                              ]],
-                              ['li', {class: 'switch-list__item', style: style ({width: 110}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'untag'], true])}, [
-                                 ['div', {class: 'switch-list__button switch-list__button--untag'}, [
-                                    H.putSvg ('buttonUntag'),
-                                    ['span', {class: 'switch-list__button-text'}, 'Untag '],
-                                    ['span', {class: 'switch-list__button-text-amount'}, ' '],
-                                 ]],
-                              ]],
-                           ]],
-                        ]],
-                     ]],
-                     ['div', {class: 'sidebar__attach-form', onclick: B.ev ('stop', 'propagation', {raw: 'event'})}, [
+                     ['div', {class: 'sidebar__attach-form', onclick: B.ev (H.stopPropagation)}, [
                         B.view ([['State', 'newTag'], ['Data', 'tags'], ['State', 'selected']], function (newTag, tags, selected) {
                            if (! selected) return ['div'];
                            // We filter out tags that are already in all of the pivs of the current selection.
                            // We might have to move this to a responder so we calculate it less often, since it can be expensive.
                            tags = dale.fil (tags, undefined, function (tag) {
-                              if (! H.isUserTag (tag)) return;
-                              var tagAbsent = ! dale.stop (pivs, false, function (piv) {
-                                 if (! selected [piv.id]) return true;
-                                 return inc (piv.tags, tag);
-                              });
-                              if (tagAbsent) return tag;
+                              if (H.isUserTag (tag)) return tag;
                            });
 
                            newTag = H.trim (newTag === undefined ? '' : newTag);
-                           var maxTags = 5, showTags = [], filterRegex = H.makeRegex (newTag);
-                           dale.stop (tags, true, function (tag) {
+                           var showTags = [], filterRegex = H.makeRegex (newTag);
+                           dale.go (tags, function (tag) {
                               if (newTag === undefined || newTag.length === 0) return;
-                              if (tag.match (filterRegex)) {
-                                 showTags.push (tag);
-                                 if (showTags.length === maxTags) return true;
-                              }
+                              if (tag.match (filterRegex)) showTags.push (tag);
                            });
                            if (newTag && ! inc (tags, newTag) && H.isUserTag (newTag)) showTags.unshift (newTag + ' (new tag)');
 
                            return ['div', {class: 'attach-form'}, [
 
                               ['h4', {class: 'sidebar__section-title'}, 'Attach new tag'],
-                              ['input', {id: 'newTag', class: 'attach-form__input attach-input', type: 'text', placeholder: 'Add tag name', value: newTag, oninput: B.ev ('set', ['State', 'newTag'])}],
+                              // The `name` attribute is to avoid Safari from providing autocomplete suggestions
+                              ['input', {id: 'newTag', class: 'attach-form__input attach-input', type: 'text', name: 'notASearchField', placeholder: 'Add tag name', value: newTag, oninput: B.ev ('set', ['State', 'newTag'])}],
                               ['div', {class: 'attach-form__dropdown'}, [
                                  // TAG LIST DROPDOWN
                                  ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
-                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', true])}, [
+                                    return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev (H.stopPropagation, ['set', ['State', 'newTag'], tag === newTag + ' (new tag)' ? newTag : tag], ['tag', 'pivs', tag === newTag + ' (new tag)' ? newTag : tag])}, [
                                        ['div', {class: 'tag tag-list__item--' + H.tagColor (tag)}, [
                                           H.putSvg ('tagItem' + H.tagColor (tag)),
                                           ['span', {class: 'tag__title'}, tag]
@@ -4618,8 +5436,7 @@ views.pics = function () {
                            ]];
                         }),
                      ]],
-                     B.view ([['State', 'untag'], ['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (untag, filter, selected, showNSelectedTags, tags) {
-                        filter = H.trim (filter === undefined ? '' : filter);
+                     B.view ([['State', 'filter'], ['State', 'selected'], ['State', 'showNSelectedTags'], ['Data', 'tags']], function (filter, selected, showNSelectedTags, tags) {
                         showNSelectedTags = showNSelectedTags || 75;
                         var selectedTags = {}, filterRegex = H.makeRegex (filter);
                         if (selected) dale.go (B.get ('Data', 'pivs'), function (piv) {
@@ -4631,7 +5448,7 @@ views.pics = function () {
                         });
                         var editTags = dale.fil (tags, undefined, function (tag) {
                            if (! H.isUserTag (tag)) return;
-                           if (filter && ! tag.match (filterRegex)) return;
+                           if (! tag.match (filterRegex)) return;
                            if (! selectedTags [tag]) selectedTags [tag] = 0;
                            return tag;
                         }).sort (function (a, b) {
@@ -4643,14 +5460,15 @@ views.pics = function () {
                            ['h4', {class: 'sidebar__section-title sidebar__section-title--untag'}, 'Remove current tags'],
                            // *** TAG/UNTAG LIST ***
                            ['ul', {class: 'tag-list tag-list--attach'}, dale.go (editTags.slice (0, showNSelectedTags), function (tag) {
-                              var attached = untag ? selectedTags [tag] : selectedTags [tag] === dale.keys (selected).length;
-                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ''), onclick: B.ev (H.stopPropagation, ['goto', 'tag', tag])}, [
+                              var attached = selectedTags [tag] === dale.keys (selected).length;
+                              return ['li', {class: 'tag-list__item tag tag-list__item--' + H.tagColor (tag) + (attached ? ' tag--attached' : ' tag--unattached'), onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                  H.putSvg ('tagItem' + H.tagColor (tag)),
-                                 ['span', {class: 'tag__title'}, tag],
-                                 ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, untag, {raw: 'event'}])}, [
+                                 ['span', {class: 'tag__title', style: style ({'width': 200})}, tag],
+                                 ['div', {class: 'tag__actions', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', tag, attached])}, [
                                     ['div', {class: 'tag-actions'}, [
                                        ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
+                                       ['div', {class: 'tag-actions__item tag-actions__item--view-query', onclick: B.ev (H.stopPropagation, ['toggle', 'tag', tag, true])}, H.putSvg ('itemSelected', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
                                        ['div', {class: 'tag-actions__item tag-actions__item--untag'},    H.putSvg ('itemUntag', 24)],
@@ -4668,14 +5486,18 @@ views.pics = function () {
                // SIDEBAR SEARCH
                B.view ([['State', 'query'], ['State', 'filter'], ['State', 'selected']], function (query, filter, selected) {
                   var tags = query ? query.tags : [];
-                  var doneTagging = inc (tags, 'u::') && dale.keys (selected).length;
-                  return ['div', {class: 'sidebar__footer', style: ! doneTagging ? undefined : style ({height: 114}), onclick: B.ev (H.stopPropagation)}, [
+                  var markAsOrganized = dale.keys (selected).length;
+                  return ['div', {class: 'sidebar__footer', style: ! markAsOrganized ? undefined : style ({height: 100}), onclick: B.ev (H.stopPropagation)}, [
                      ['div', {class: 'sidebar-search'}, [
-                        ['input', {class: 'sidebar-search__input search-input', type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
+                        ['input', {class: 'sidebar-search__input search-input', style: style ({border: 'solid 1px #5b6eff', 'border-radius': 25}), type: 'text', value: filter, placeholder: tags.length ? 'Filter tags' : 'Search for tag', oninput: B.ev (['rem', 'State', 'showNTags'], ['rem', 'State', 'showNSelectedTags'], ['set', ['State', 'filter']])}],
                         H.putSvg ('sidebarSearch')
                      ]],
                      // DONE TAGGING BUTTON
-                     H.if (doneTagging, ['div', {class: 'done-tagging-button button', onclick: B.ev (H.stopPropagation, ['rem', 'State', 'selected'])}, 'Done tagging'], [])
+                     H.if (markAsOrganized, ['div', {class: 'organise-bar__button--organized button', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 'o::'], ['rem', 'State', 'selected'])}, [
+                        H.putSvg ('organizedIcon'),
+                        H.putSvg ('organizedIconWhite'),
+                        'Mark as organized'
+                     ]])
                   ]];
                }),
             ]],
@@ -4703,9 +5525,17 @@ views.pics = function () {
                      H.putSvg ('selectAll'),
                      ['span', {class: 'organise-bar__button-title'}, 'Unselect all'],
                   ]],
+                  ['div', {class: 'organise-bar__button organise-bar__button--change-date'}, [
+                     H.putSvg ('calendarIcon'),
+                     ['span', {class: 'organise-bar__button-title', onclick: B.ev (H.stopPropagation, ['set', ['State', 'date'], {}])}, 'Change date'],
+                  ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--download', onclick: B.ev (H.stopPropagation, ['download', []])}, [
                      H.putSvg ('download'),
                      ['span', {class: 'organise-bar__button-title'}, 'Download'],
+                  ]],
+                  ['div', {class: 'organise-bar__button organise-bar__button--to-organize', onclick: B.ev (H.stopPropagation, ['tag', 'pivs', 'o::', true])}, [
+                     ['span', {style: style ({'padding-top': '1px'})}, H.putSvg ('toOrganizeIcon')],
+                     ['span', {class: 'organise-bar__button-title', style: style ({'margin-left': '-2px'})}, 'Mark as To Organize'],
                   ]],
                   ['div', {class: 'organise-bar__button organise-bar__button--delete', onclick: B.ev (H.stopPropagation, ['delete', 'pivs'])}, [
                      H.putSvg ('delete'),
@@ -4717,7 +5547,7 @@ views.pics = function () {
             ['div', {class: 'main main--pictures'}, [
                ['div', {class: 'main__inner'}, [
                   B.view ([['State', 'selected'], ['State', 'chunks'], ['State', 'query', 'sort']], function (selected, chunks, sort) {
-                     if (! sort) return ['div'];
+                     if (! sort || home) return ['div'];
                      selected = dale.keys (selected).length;
                      var dateField = B.get ('State', 'query', 'sort') === 'upload' ? 'dateup' : 'date';
                      var d1, d2, firstUserVisible, prev, next;
@@ -4767,29 +5597,37 @@ views.pics = function () {
                            ]],
                            ['div', {class: 'pictures-header__action-bar'}, [
                               ['div', {class: 'pictures-header__selected-tags'}, [
-                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal']], function (tags, pivTotal) {
+                                 B.view ([['State', 'query', 'tags'], ['Data', 'pivTotal'], ['State', 'querying']], function (tags, pivTotal, querying) {
                                     return ['ul', {class: 'tag-list-horizontal'}, dale.go (['a::', 's::'].concat (tags), function (tag) {
-                                       if (B.get ('State', 'querying')) pivTotal = '...';
+                                       if (querying) {
+                                          pivTotal = '...';
+                                          if (querying.options && querying.options.selectAll) selected = '...';
+                                       }
                                        if (selected === 0 && tag === 's::') return;
                                        var Class = 'tag tag-list-horizontal__item ';
                                        if (H.isGeoTag (tag)) Class += H.isCountryTag (tag) ? 'tag-list__item--geo-country' : 'tag-list__item--geo-city';
                                        else                  Class += 'tag-list-horizontal__item--' + H.tagColor (tag);
 
                                        var showName = tag.replace (/^[a-z]::/, '');
-                                       if (tag === 'a::') showName = (tags.length === 0 ? 'All pictures ' : '') + '(' + pivTotal + ')';
+                                       if (tag === 'a::') showName = (tags.length === 0 ? 'Everything ' : '') + '(' + pivTotal + ')';
                                        if (tag === 'u::') showName = 'Untagged';
+                                       if (tag === 't::') showName = 'To Organize';
+                                       if (tag === 'o::') showName = 'Organized';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
                                        if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
                                        return ['li', {class: Class}, [
-                                          H.if (tag === 'a::', H.putSvg ('tagAll')),
+                                          H.if (tag === 'a::', H.putSvg ('tagAll', 24)),
                                           H.if (tag === 'u::', H.putSvg ('itemUntagged')),
+                                          H.if (tag === 't::', H.putSvg ('toOrganizeIcon')),
+                                          H.if (tag === 'o::', H.putSvg ('organizedIcon')),
                                           H.if (tag === 's::', H.putSvg ('selectedCircle')),
                                           H.if (H.isDateTag (tag), H.putSvg ('itemTime')),
                                           H.if (H.isGeoTag (tag) && ! H.isCountryTag (tag), H.putSvg ('geoCity')),
                                           H.if (H.isCountryTag (tag), H.putSvg ('geoCountry')),
                                           H.if (H.isUserTag (tag), H.putSvg ('tagItem' + H.tagColor (tag))),
-                                          ['span', {class: 'tag__title'}, showName],
+                                          // We put a space in case the tag is an HTML tag, so that lith won't interpret it like an HTML tag
+                                          ['span', {class: 'tag__title' + (tag === 'o::' ? ' tag__title-organized' : '')}, [' ', showName]],
                                           tag === 'a::' ? [] : ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                              ['div', {class: 'tag-actions'}, [
                                                 ['div', {class: 'tag-actions__item tag-actions__item--deselect', style: style ({height: 24}), onclick: B.ev (H.stopPropagation, tag === 's::' ? ['rem', 'State', 'selected'] : ['toggle', 'tag', tag])}, H.putSvg ('itemDeselect')],
@@ -4807,11 +5645,11 @@ views.pics = function () {
                            return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
                               ['div', {class: 'boxed-alert', style: style ({'background-color': 'white'})}, [
                                  ['div', {class: 'space-alert__image'}, [
-                                    ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style({transform: 'scale(.4)', 'margin-bottom': 0})}],
+                                    ['img', {class: 'guide__image', src: 'img/icon-guide--upload.svg', style: style ({transform: 'scale(.4)', 'margin-bottom': 0})}],
                                  ]],
                                  ['div', {class: 'boxed-alert__main'}, [
-                                    ['div', {class: 'upload-box__section', style: style({'margin-bottom': 0})}, [
-                                       ['p', {class: 'boxed-alert-message', style: style({'font-size': CSS.typography.fontSize (1.75)})}, [
+                                    ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
+                                       ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
                                           ['span', {class: 'upload-progress__default-text'}, 'How to select and open pictures?']
                                        ]],
                                        ['div', {class: 'progress-bar'}],
@@ -4819,10 +5657,10 @@ views.pics = function () {
                                     ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                                        ['div', {class: 'listing-progress'}, [
                                           ['div', {class: 'files-found-so-far'}, [
-                                             ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Single click to select.'],
+                                             ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, 'Single click to select.'],
                                           ]],
                                           ['div', {class: 'folders-found-so-far'}, [
-                                             ['div',{style: style({'font-size': CSS.typography.fontSize (1)})}, 'Double click to open.'],
+                                             ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, 'Double click to open.'],
                                           ]],
                                        ]],
                                        ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('dismiss', 'selection')}, 'Got it']
@@ -4833,8 +5671,11 @@ views.pics = function () {
                         }),
                      ]];
                   }),
-                  // PIVS GRID
-                  ['div', {class: 'pictures-grid'}, views.grid ()],
+                  B.view ([['State', 'onboarding'], ['Data', 'account']], function (onboarding, account) {
+                     if (! account) return ['div'];
+                     if (onboarding !== false && account.onboarding) return ['div', views.onboarding ()];
+                     return home ? ['div', views.home ()] : ['div', {class: 'pictures-grid'}, views.grid ()];
+                  }),
                ]],
             ]],
          ]];
@@ -4862,22 +5703,22 @@ views.grid = function () {
             'font-size': CSS.typography.fontSize (-1),
             transition: 'opacity',
          }],
-         ['.share-icon-button', {
-            'width, height': 22,
-            outline: 0,
-            'border-radius': 100,
-            display: 'inline-flex',
-            'align-items': 'center',
-            'text-align': 'center',
-            transition: CSS.vars.easeOutQuart,
-            border: '1px solid #fbfbfb',
-            'margin-top': '-1px'
-         }],
-         ['.caption .share-icon', {
-            'width, height': 16,
-            'margin-top': 6,
-            'margin-left': '1px'
-         }],
+         // ['.share-icon-button', {
+         //    'width, height': 22,
+         //    outline: 0,
+         //    'border-radius': 100,
+         //    display: 'inline-flex',
+         //    'align-items': 'center',
+         //    'text-align': 'center',
+         //    transition: CSS.vars.easeOutQuart,
+         //    border: '1px solid #fbfbfb',
+         //    'margin-top': '-1px'
+         // }],
+         // ['.caption .share-icon', {
+         //    'width, height': 16,
+         //    'margin-top': 6,
+         //    'margin-left': '1px'
+         // }],
          ['.pictures-grid__item-picture .mask', {
             'background-color': '#5b6eff',
             opacity: '0',
@@ -4927,7 +5768,7 @@ views.grid = function () {
                         ['div', {
                            class: 'pictures-grid__item-picture',
                            id: piv.id,
-                           onclick: B.ev (H.stopPropagation, ['click', 'piv', piv.id, piv.index, {raw: 'event'}])
+                           onclick: B.ev (H.stopPropagation, ['click', 'piv', {id: piv.id, date: piv.date, dateup: piv.dateup}, piv.index, {raw: 'event'}])
                         }, [
                            ['div', {
                               class: 'inner',
@@ -4949,11 +5790,11 @@ views.grid = function () {
                            piv.vid ? ['div', {class: 'video-playback'}, H.putSvg ('videoPlayback')] : [],
                            ['div', {class: 'mask'}],
                            ['div', {class: 'caption'}, [
-                              ['span', {style: style ({position: 'absolute', left: 5})}, [
-                                 ['span', {class: 'share-icon-button'}, [
-                                    H.putSvg ('shareIcon')
-                                 ]]
-                              ]],
+                              // ['span', {style: style ({position: 'absolute', left: 5})}, [
+                              //    ['span', {class: 'share-icon-button'}, [
+                              //       H.putSvg ('shareIcon')
+                              //    ]]
+                              // ]],
                               ['span', {style: style ({position: 'absolute', right: 5})}, H.formatDate (piv.date)],
                            ]],
                         ]],
@@ -4971,7 +5812,7 @@ views.grid = function () {
 views.open = function () {
    return B.view ([['State', 'open'], ['Data', 'pivs']], function (open, pivs) {
       if (open === undefined) return ['div'];
-      var piv = pivs [open], next = pivs [open + 1];
+      var piv = pivs [open.k], next = pivs [open.k + 1];
 
       var askance = piv.deg === 90 || piv.deg === -90;
       var rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], function (v) {
@@ -4997,10 +5838,10 @@ views.open = function () {
             return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true}];
          }) ()],
          ['div', {class: 'fullscreen__actions'}, [
-               ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
-                  ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
-                  ['div', {class: 'fullscreen__action-text'}, 'Share'],
-               ]],
+               // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
+               //    ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
+               //    ['div', {class: 'fullscreen__action-text'}, 'Share'],
+               // ]],
             H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
                ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
                ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
@@ -5009,10 +5850,10 @@ views.open = function () {
                ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
                ['div', {class: 'fullscreen__action-text'}, 'Location'],
             ]],
-            ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
+            B.prod ? [] : ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info']
          ]],
          ['div', {class: 'fullscreen__count'}, [
-            ['span', {class: 'fullscreen__count-current'}, open + 1],
+            ['span', {class: 'fullscreen__count-current'}, open.k + 1],
             '/',
             ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pivTotal')],
          ]],
@@ -5064,7 +5905,7 @@ views.share = function () {
             ['ul', {class: 'tag-list-extended'}, [
                // NOT SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      H.putSvg ('tagItem' + H.tagColor ('b'), 24),
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Tristan da Cunha',
@@ -5090,7 +5931,7 @@ views.share = function () {
                ]],
                // NOT SHARED TAG EMAIL TEXTAREA
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      H.putSvg ('tagItem' + H.tagColor ('b'), 24),
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Greenland',
@@ -5117,7 +5958,7 @@ views.share = function () {
                            ]]
                         ]],
                      ]],
-                     ['div', {class: 'tag-list-extended__item-info-buttons', style: style({display: 'none'})}, [
+                     ['div', {class: 'tag-list-extended__item-info-buttons', style: style ({display: 'none'})}, [
                         ['a', {href: '', class: 'button button--one'}, 'See pictures'],
                         ['a', {href: '', class: 'button button--three'}, 'Rename tag']
                      ]]
@@ -5125,7 +5966,7 @@ views.share = function () {
                ]],
                // SHARED TAG
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      H.putSvg ('tagItem' + H.tagColor ('c'), 24),
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
                         'Whatsapp',
@@ -5210,8 +6051,8 @@ views.share = function () {
                ]],
                // SHARED WITH ME
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
-                     ['span', {style: style({'margin-right, margin-left': '5px'})},
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
+                     ['span', {style: style ({'margin-right, margin-left': '5px'})},
                      H.putSvg ('tagSharedWithMe' + H.tagColor ('b'), 24),
                      ],
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
@@ -5237,7 +6078,7 @@ views.share = function () {
                ]],
                // SHARED PIV
                ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
-                  ['div', {class: 'tag tag--shared tag--hidden', style: style({width: 1})}, [
+                  ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                      ['span', {class: 'shared-box__image'}, [
                         H.putSvg ('uploadImage', 24)]],
                      ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
@@ -5275,7 +6116,7 @@ views.share = function () {
             ['div', {class: 'page-section'}, [
                // BACK LINK
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -5298,7 +6139,7 @@ views.upload = function () {
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Once your upload starts, you can go to other areas of ac;pic, but don\'t browse away or close the browser!'],
             ]],
             ['div', {class: 'page-section'}, [
                // UPLOAD BOX
@@ -5362,15 +6203,11 @@ views.upload = function () {
                                        return ['div', {class: 'upload-box__section'}, [
                                           ['h3', {class: 'upload-box__section-title'}, 'Attach tags'],
                                           B.view ([['Data', 'tags'], ['State', 'upload', 'tag']], function (tags, filter) {
-                                             filter = H.trim (filter === undefined ? '' : filter);
-                                             var maxTags = 10, showTags = [], filterRegex = H.makeRegex (filter);
-                                             dale.stop (tags, true, function (tag) {
+                                             var showTags = [], filterRegex = H.makeRegex (filter);
+                                             dale.go (tags, function (tag) {
                                                 if (! H.isUserTag (tag)) return;
                                                 if (inc (B.get ('State', 'upload', 'new', 'tags') || [], tag)) return;
-                                                if (filter === undefined || filter.length === 0 || tag.match (filterRegex)) {
-                                                   showTags.push (tag);
-                                                   if (showTags.length === maxTags) return true;
-                                                }
+                                                if (tag.match (filterRegex)) showTags.push (tag);
                                              });
                                              if (filter && ! inc (tags, filter)) {
                                                 if (H.isUserTag (filter)) showTags.unshift (filter + ' (new tag)');
@@ -5424,6 +6261,10 @@ views.upload = function () {
                            ]]
                         ]],
                      ]],
+                     ['div', {class: 'go-back-to-view-pictures'}, [
+                        ['p', {class: 'go-back-to-view-pictures-p'}, 'Want to go back to your pics?'],
+                        ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back to View Pictures.']
+                     ]],
                      // PENDING UPLOADS
                      dale.go (uploads, function (upload) {
                         if (upload.status !== 'uploading') return;
@@ -5455,7 +6296,7 @@ views.upload = function () {
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
                                           'Error:',
-                                          ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
+                                          teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error
                                        ]])
                                     ]],
                                     // UPLOAD BAR
@@ -5520,8 +6361,8 @@ views.upload = function () {
                                     ]],
                                     ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
                                        H.if (upload.error, ['span', {class: 'upload-progress__default-text'}, [
-                                          'Error:',
-                                          ['ul', ['li', teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error]]
+                                          'Error: ',
+                                          teishi.complex (upload.error) ? JSON.stringify (upload.error) : upload.error
                                        ]])
                                     ]]
                                  ]],
@@ -5544,7 +6385,7 @@ views.upload = function () {
             ['div', {class: 'page-section'}, [
                // BACK LINK
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -5574,7 +6415,7 @@ views.noSpace = function () {
                ['div', {class: 'progress-bar'}],
             ]],
             ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
-               ['div', {class: 'boxed-alert-button-left button'}, ['a', {onclick: B.ev ('goto', 'page', 'pics')}, 'Delete some files']],
+               ['div', {class: 'boxed-alert-button-left button'}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Delete some files']],
                ['div', {class: 'boxed-alert-button-right button'}, ['a', {href: '#/upgrade'}, 'Upgrade your account']],
             ]],
          ]],
@@ -5586,10 +6427,46 @@ views.noSpace = function () {
 
 views.import = function () {
 
+   var importLeaveBox = function (status, provider) {
+      var className = provider === 'google' ? 'google-drive' : provider;
+      return B.view (['State', 'import', 'hideLeaveBox'], function (hide) {
+         if (hide) return ['div'];
+         return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
+            ['div', {class: 'boxed-alert', style: style ({'background-color': 'white', 'z-index': '2', 'margin-top': '-190px'})}, [
+               ['div', {class: 'space-alert__image'}, [
+                  ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+               ]],
+               ['div', {class: 'boxed-alert__main'}, [
+                  ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
+                     ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
+                        ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+                        ['span', {class: 'upload-progress__default-text'}, (status === 'listing' ? 'We’re listing your files' : 'Your pics and videos are being imported')]
+                     ]],
+                     ['div', {class: 'progress-bar'}],
+                  ]],
+                  ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                     ['div', {class: 'listing-progress'}, [
+                        ['div', {class: 'files-found-so-far', style: style ({'padding-top': '10px'})}, [
+                           ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, [
+                              ['p', {style: style ({display: 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos. ')],
+                              ['p', {style: style ({display: 'contents', 'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold})}, (status === 'listing' ? '' : 'Please note that all your imported folders will turn to tags, so you know where to find your pics in ac;pic.')],
+                              ['p', {style: style ({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many photos and videos you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
+                        ]],
+                     ]],
+                     ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: B.ev ('set', ['State', 'import', 'hideLeaveBox'], true)}, 'Got it']
+                  ]],
+               ]],
+            ]]
+         ]];
+      });
+   }
+
+
    var boxMaker = function (status, provider, data) {
       var className = provider === 'google' ? 'google-drive' : provider;
 
       if (status === 'listing') return ['div', {class: 'listing-in-process'}, [
+         importLeaveBox (status, provider),
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
                ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)]
@@ -5634,14 +6511,14 @@ views.import = function () {
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', {class: 'boxed-alert-button-left button', onclick: B.ev ('import', 'cancel', provider)}, 'Delete list'],
-                  ['div', {class: 'boxed-alert-button-right button', onclick: B.ev ('set', ['State', 'imports', provider, 'showFolders'], true)}, 'Select folders'],
+                  ['div', {class: 'boxed-alert-button-right button', onclick: B.ev (['set', ['State', 'imports', provider, 'showFolders'], true], ['set', ['State', 'import', 'hideLeaveBox'], false])}, 'Select folders'],
                ]],
             ]],
          ]],
       ]];
 
       if (status === 'error' || status === 'stalled') return ['div', {class: 'listing-in-process'}, [
-         ['div', {class: 'boxed-alert', style: style({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
+         ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
                ['div', {class: 'space-alert-icon'}, H.putSvg ('spaceAlert')],
             ]],
@@ -5649,7 +6526,7 @@ views.import = function () {
                ['div', {class: 'upload-box__section'}, [
                   ['p', {class: 'boxed-alert-message'}, [
                      ['span', {class: 'space-alert-icon-small'}, H.putSvg ('spaceAlert')],
-                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : data.error)]]
+                     ['span', {class: 'upload-progress__default-text'}, ['There was an error listing your files: ' + (status === 'stalled' ? 'An upload took too long' : teishi.complex (data.error) ? JSON.stringify (data.error) : data.error)]]
                   ]],
                   ['div', {class: 'progress-bar'}],
                ]],
@@ -5661,6 +6538,7 @@ views.import = function () {
       ]];
 
       if (status === 'uploading') return ['div', {class: 'listing-in-process'}, [
+         importLeaveBox (status, provider),
          ['div', {class: 'boxed-alert', style: style ({'margin-top, margin-bottom': CSS.vars ['padding--s']})}, [
             ['div', {class: 'space-alert__image'}, [
                ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
@@ -5671,7 +6549,10 @@ views.import = function () {
                      ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
                      ['span', {class: 'upload-progress__default-text'}, 'Your pics & vids are being imported...']
                   ]],
-                  ['div', {class: 'progress-bar'}],
+                  ['div', {class: 'progress-bar'}, (function () {
+                     var done = (data.ok || 0) + (data.alreadyUploaded || 0) + (data.repeated || []).length + (data.invalid || []).length + (data.tooLarge || []).length;
+                     return ['span', {class: 'progress-bar__progress', style: style ({width: Math.round (100 * done / data.total) + '%'})}];
+                  }) ()],
                ]],
                ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
                   ['div', {class: 'listing-progress'}, [
@@ -5687,7 +6568,6 @@ views.import = function () {
             ]],
          ]],
       ]];
-
    }
 
    return ['div', [
@@ -5698,7 +6578,7 @@ views.import = function () {
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Import pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Start organizing your pictures']
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Once your listing or import starts, you can browse away or even close the browser. We\'ll send you an email when it\'s done!']
             ]],
             B.view ([['Data', 'imports'], ['State', 'imports']], function (importData, importState) {
                if (! importData) return ['div'];
@@ -5707,6 +6587,44 @@ views.import = function () {
                });
                if (showFolders) return views.importFolders (importState [showFolders], importData [showFolders]);
                return ['div', {class: 'page-section'}, [
+                  // *** NOTIFY USER WHAT PERMISSIONS ARE NEEDED IN GOOGLE DRIVE ***
+                  B.view ([['State', 'import', 'googleOAuthBox'], ['State', 'upload', 'queue']], function (box, queue) {
+                     if (! box) return ['div'];
+                     var provider = 'google', className = provider === 'google' ? 'google-drive' : provider;
+                     // We consider only the first import entry for the provider.
+                     var providerData = (importData [provider] || []) [0] || {};
+                     return ['div', {class: 'click-double-click-alert main-centered__inner max-width--m'}, [
+                        ['div', {class: 'boxed-alert', style: style ({'background-color': 'white', 'z-index': '2', 'margin-top': '-20px'})}, [
+                           ['div', {class: 'space-alert__image'}, [
+                              ['div', {class: className + '-icon'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+                           ]],
+                           ['div', {class: 'boxed-alert__main'}, [
+                              ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
+                                 ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
+                                    ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
+                                    ['span', {class: 'upload-progress__default-text'}, 'How to give ac;pic access to your Google Drive?']
+                                 ]],
+                                 ['div', {class: 'progress-bar'}],
+                              ]],
+                              ['div', {class: 'upload-box__section', style: style ({display: 'inline-block'})}, [
+                                 ['div', {class: 'listing-progress'}, [
+                                    ['div', {class: 'files-found-so-far', style: style ({'padding-top': '10px'})}, [
+                                       ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, [
+                                          ['p', {style: style ({display: 'contents'})}, 'After you log in to your Google Account, '],
+                                          ['p', {style: style ({'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold, display: 'contents'})}, 'please check all the boxes that Google shows you.'],
+                                          ['p', {style: style ({display: 'contents'})}, 'Otherwise, you won’t be able to import.'],
+                                          ['p', {style: style ({'margin-top': '10px'})}, 'We’ll only ask for what we need to get your photos and videos to ac;pic.']]],
+                                    ]],
+                                    ['div', {class: 'folders-found-so-far'}, [
+                                       ['img', {src: 'assets/img/google-drive-access.png'}]
+                                    ]],
+                                 ]],
+                                 ['div', {class: 'boxed-alert-button-right button', style: style ({float: 'right'}), onclick: 'window.open ("' + providerData.redirect + '"' + (queue && queue.length ? ', "_blank"' : ', "_self"') + ')'}, 'Got it']
+                              ]],
+                           ]],
+                        ]]
+                     ]];
+                  }),
                   // IMPORT BOX SECTION
                   ['div', {class: 'upload-box'}, [
                      ['div', {class: 'upload-box__image'}, H.putSvg ('uploadImage')],
@@ -5718,27 +6636,26 @@ views.import = function () {
                               ['div', {class: 'drag-and-drop-import'}, [
                                  ['div', dale.go ([{provider: 'google', class: 'google-drive-logo'}, {provider: 'dropbox', class: 'dropbox-logo', svg: H.putSvg ('dropboxLogo')}], function (provider) {
 
-                                    // We consider only the first import entry for the provider.
-                                    var providerData = (importData [provider.provider] || []) [0] || {};
 
                                     var attrs = function (ev) {
                                        return {style: style ({position: 'relative', cursor: 'pointer', float: 'left', display: 'inline-block', 'margin-right': 35}), class: provider.class, onclick: ev ? B.ev (ev) : undefined};
                                     }
-                                    // No space left, just show the bare div.
-                                    if (noSpace) return ['div', attrs (), provider.svg];
 
                                     // If there's no implemented OAuth flow yet, put a button to let the user know.
-                                    if (teishi.eq (providerData, {})) return ['div', attrs (['snackbar', 'green', 'Coming soon, hang tight!']), [
+                                    if (! importData [provider.provider]) return ['div', attrs (['snackbar', 'green', 'Coming soon, hang tight!']), [
                                        provider.svg
                                     ]];
 
+                                    // We consider only the first import entry for the provider.
+                                    var providerData = (importData [provider.provider] || []) [0] || {};
+
+                                    // No space left, just show the bare div.
+                                    if (noSpace) return ['div', attrs (), provider.svg];
+
                                     // If the OAuth flow hasn't been started yet, offer a link to start it.
-                                    if (providerData.redirect) return ['div', attrs (), [
-                                       provider.svg,
-                                       ['a', {href: providerData.redirect}, [
-                                          ['span', {style: style ({position: 'absolute', width: 1, height: 1, top: 0, left: 0})}],
-                                       ]],
-                                    ]];
+                                    if (providerData.redirect) {
+                                       return ['div', attrs (['set', ['State', 'import', 'googleOAuthBox'], true]), provider.svg];
+                                    }
 
                                     // If there's an error, print an error on click.
                                     if (providerData.status === 'error' || providerData.status === 'stalled') return ['div', attrs (['snackbar', 'red', 'There was an error retrieving the list of files, please retry.']), provider.svg];
@@ -5766,12 +6683,16 @@ views.import = function () {
                   })
                ]];
             }),
+            ['div', {class: 'go-back-to-view-pictures'}, [
+               ['p', {class: 'go-back-to-view-pictures-p'}, 'Want to go back to your pics?'],
+               ['a', {class: 'go-back-to-view-pictures-a', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, 'Go back to View Pictures.']
+            ]],
             // RECENT IMPORTS
             ['h2', {class: 'recent-imports__title'}, 'Recent imports'],
             B.view (['Data', 'imports'], function (providers) {
                return ['div', dale.go (providers, function (v, provider) {
                   return dale.go (v, function (v2) {
-                     if (! inc (['complete', 'error'], v2.status)) return;
+                     if (! inc (['complete', 'error', 'cancelled'], v2.status)) return;
                      var repeated = (v2.repeated || []).length + (v2.alreadyImported || 0);
                      return ['div', {class: 'upload-box upload-box--recent-uploads', style: style ({'margin-bottom': CSS.typography.spaceVer (1)})}, [
                         ['div', {class: 'space-alert__image'}, [
@@ -5782,40 +6703,40 @@ views.import = function () {
                               ['p', {class: 'upload-progress'}, [
                                  H.putSvg ('uploadProgress'),
                                  ['span', {class: 'upload-progress__amount-uploaded'}, v2.ok || 0],
-                                 ['span', {class: 'upload-progress__default-text'}, ' pics imported.'],
                                  ['LITERAL', '&nbsp'],
+                                 ['span', {class: 'upload-progress__default-text'}, 'pics imported'],
                                  ! v2.alreadyUploaded ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.alreadyUploaded],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.alreadyUploaded],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded)']
+                                    ['span', {class: 'upload-progress__default-text'}, 'already uploaded']
                                  ],
                                  ! repeated ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + repeated],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, repeated],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'repeated,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'repeated']
                                  ],
                                  ! v2.invalid ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.invalid.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.invalid.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'invalid,']
+                                    ['span', {class: 'upload-progress__default-text'}, 'invalid']
                                  ],
                                  ! v2.tooLarge ? [] : [
+                                    ['span', {class: 'upload-progress__amount-uploaded'}, ', ' + v2.tooLarge.length],
                                     ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.tooLarge.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, ' too big,']
-                                 ],
-                                 ! v2.providerErrors ? [] : [
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + v2.providerErrors.length],
-                                    ['LITERAL', '&nbsp'],
-                                    ['span', {class: 'upload-progress__default-text'}, 'could not be retrieved.']
+                                    ['span', {class: 'upload-progress__default-text'}, 'too large']
                                  ],
                                  ['LITERAL', '&nbsp'],
-                                 ['span', {class: 'upload-progress__amount-uploaded'}, ' ' + H.ago (Date.now () - v2.end) + ' ago.'],
+                                 ['span', {class: 'upload-progress__amount-uploaded'}, '(' + v2.status + ', ' + H.ago (Date.now () - v2.end) + ' ago)'],
+                                 ['LITERAL', '&nbsp'],
+                              ]],
+                              ['p', {class: 'upload-progress no-svg', style: style ({color: 'red'})}, [
+                                 H.if (v2.error, ['span', {class: 'upload-progress__default-text'}, [
+                                    'Error: ',
+                                    teishi.complex (v2.error) ? JSON.stringify (v2.error) : v2.error
+                                 ]]),
+                                 H.if (v2.providerErrors, ['span', {class: 'upload-progress__default-text'}, [
+                                    (v2.providerErrors || []).length + ' files could not be retrieved!'
+                                 ]])
                               ]],
                            ]],
                         ]],
@@ -5826,7 +6747,7 @@ views.import = function () {
             // BACK LINK
             ['div', {class: 'page-section'}, [
                ['div', {class: 'back-link back-link--uploads'}, [
-                  ['a', {class: 'back-link__link', onclick: B.ev ('goto', 'page', 'pics')}, [
+                  ['a', {class: 'back-link__link', onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics'])}, [
                      H.putSvg ('backLink'),
                      ['span', {class: 'back-link__link-text'}, 'See all photos'],
                   ]],
@@ -5840,9 +6761,10 @@ views.import = function () {
 views.importFolders = function (importState, importData) {
    importData = importData [0];
    var folderList = ! importState.currentFolder ? importData.data.roots : importData.data.folders [importState.currentFolder].children;
+   folderList = dale.fil (folderList, undefined, function (id) {
+       if (importData.data.folders [id]) return id;
+    });
    folderList.sort (function (a, b) {
-      // If child is a file, ignore.
-      if (! importData.data.folders [a]) return 0;
       var nameA = importData.data.folders [a].name;
       var nameB = importData.data.folders [b].name;
       return nameA.toLowerCase () > nameB.toLowerCase () ? 1 : -1;
@@ -5949,8 +6871,9 @@ views.importFolders = function (importState, importData) {
                   ]],
                   ['div', {class: 'import-process-box-list-folders', style: style ({height: ! importState.currentFolder ? 210 : 163})}, dale.go (folderList, function (id) {
                      var folder = importData.data.folders [id];
+                     // If folder only has unsupported files, do not show it (unless it is the root).
+                     if (folder.count === 0 && ! inc (importData.data.roots, id)) return;
                      var selected = !! selection [id];
-                     if (! folder) return;
                      return ['div', {class: 'import-process-box-list-folders-row'}, [
                         ['div', {class: 'select-folder-box pointer'}, [
                            ['label', {class: 'checkbox-container'}, [
@@ -5959,7 +6882,7 @@ views.importFolders = function (importState, importData) {
                            ]],
                         ]],
                         ['div', {class: 'folder-icon'}, H.putSvg ('folderIcon')],
-                        ['div', {title: folder.name, class: 'import-folder-name pointer', onclick: folder.children ? '' : B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], id)}, folder.name],
+                        ['div', {title: folder.name, class: 'import-folder-name pointer', onclick: folder.children ? B.ev ('set', ['State', 'imports', importData.provider, 'currentFolder'], id) : ''}, folder.name],
                         ['div', {class: 'import-folder-files'}, '(' + folder.count + ' files)']
                      ]];
                   })],
@@ -6113,10 +7036,8 @@ views.account = function () {
                               ]],
                            ]
                         ]],
-                        free ? ['div', {class: 'cancel-account', onclick: B.ev ('delete', 'accounts')}, [
+                        ['div', {class: 'cancel-account', onclick: B.ev ('delete', 'account')}, [
                            ['a', {href: ''}, 'Delete my account']
-                        ]] : ['div', {class: 'cancel-account'}, [
-                           ['a', {href: ''}, 'Downgrade your subscription']
                         ]]
                      ]]
                   ]],
@@ -6252,7 +7173,7 @@ views.upgrade = function () {
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'We charge a lineal fee based on how much space you use. We charge you at cost, no markup.']
+                                    ['span', {class: 'hover-text'}, 'We charge a linear fee based on how much space you use. We charge you at cost, no markup.']
                                  ]],
                               ]],
                            ]],

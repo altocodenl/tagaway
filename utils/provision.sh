@@ -60,6 +60,7 @@ ssh $HOST 'find /usr/local/etc/ImageMagick-*/policy.xml -type f -exec sed -i '\'
 
 ssh $HOST mkdir /root/files
 ssh $HOST mkdir /root/files/acpic
+ssh $HOST mkdir /root/files/acpic/invalid
 # Note: this command is for using ac;log, but can ignored in a standalone ac;pic server
 ssh $HOST mkdir /root/files/aclog
 

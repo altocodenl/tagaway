@@ -25,7 +25,7 @@
          "d::2018",
          "d::M9"
       ],
-      "hash": 2989754675
+      "hash": "2989754675:892698"
    },
    "benin": {
       "name": "benin.tif",
@@ -47,7 +47,7 @@
          "d::1999",
          "d::M2"
       ],
-      "hash": 743013579
+      "hash": "743013579:2694281"
    },
    "boat": {
       "name": "boat.3gp",
@@ -69,7 +69,7 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 3748825687
+      "hash": "3748825687:1271681"
    },
    "circus": {
       "name": "circus.MOV",
@@ -99,7 +99,7 @@
          "d::2019",
          "d::M9"
       ],
-      "hash": 3086668155
+      "hash": "3086668155:12829011"
    },
    "deer": {
       "name": "deer.bmp",
@@ -120,7 +120,7 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 2383897131
+      "hash": "2383897131:124986"
    },
    "drumming": {
       "name": "drumming.avi",
@@ -142,7 +142,7 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 113721823
+      "hash": "113721823:3843158"
    },
    "dunkerque": {
       "name": "dunkerque.jpg",
@@ -170,7 +170,7 @@
          "d::2018",
          "d::M3"
       ],
-      "hash": 245638445
+      "hash": "245638445:1731981"
    },
    "empty": {
       "name": "empty.jpg",
@@ -198,14 +198,42 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 1696501751
+      "hash": "1696501751:644986"
    },
    "invalid": {
-      "name": "invalid.mp4",
-      "path": "test/invalid.mp4",
+      "name": "invalid.jpg",
+      "path": "test/invalid.jpg",
+      "size": 465,
+      "mtime": 1647462085000,
+      "invalid": true
+   },
+   "invalidvid": {
+      "name": "invalidvid.mp4",
+      "path": "test/invalidvid.mp4",
       "size": 1000,
       "mtime": 1647462085000,
       "invalid": true
+   },
+   "kiss": {
+      "name": "kiss.webp",
+      "path": "test/kiss.webp",
+      "size": 135668,
+      "mtime": 1665070461000,
+      "dates": {
+         "upload:lastModified": 1665070461000
+      },
+      "mimetype": "image/webp",
+      "format": "webp",
+      "dimw": 512,
+      "dimh": 512,
+      "date": 1665070461000,
+      "dateSource": "upload:lastModified",
+      "humanReadableDate": "2022-10-06T15:34:21.000Z",
+      "dateTags": [
+         "d::2022",
+         "d::M10"
+      ],
+      "hash": "669978907:135668"
    },
    "large": {
       "name": "large.jpeg",
@@ -229,7 +257,7 @@
          "d::2014",
          "d::M7"
       ],
-      "hash": 2526606026
+      "hash": "2526606026:3495794"
    },
    "location": {
       "name": "location.svg",
@@ -258,7 +286,7 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 3972466237
+      "hash": "3972466237:10160"
    },
    "medium": {
       "name": "medium.jpg",
@@ -279,7 +307,7 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 194393043
+      "hash": "194393043:22644"
    },
    "rotate": {
       "name": "rotate.jpg",
@@ -304,7 +332,7 @@
          "d::2017",
          "d::M3"
       ],
-      "hash": 1001643281
+      "hash": "1001643281:874494"
    },
    "rotatemedium": {
       "name": "rotatemedium.jpg",
@@ -329,7 +357,7 @@
          "d::2017",
          "d::M3"
       ],
-      "hash": 1441551623
+      "hash": "1441551623:208948"
    },
    "rotatesmall": {
       "name": "rotatesmall.jpg",
@@ -354,7 +382,7 @@
          "d::2017",
          "d::M3"
       ],
-      "hash": 2864754819
+      "hash": "2864754819:23171"
    },
    "small-meta": {
       "name": "small-meta.png",
@@ -378,7 +406,7 @@
          "d::2013",
          "d::M5"
       ],
-      "hash": 3659108096
+      "hash": "3659108096:3413"
    },
    "small": {
       "name": "small.png",
@@ -400,7 +428,7 @@
          "d::2014",
          "d::M5"
       ],
-      "hash": 2011409414
+      "hash": "2011409414:3370"
    },
    "sunrise": {
       "name": "sunrise.HEIC",
@@ -425,7 +453,51 @@
          "d::2020",
          "d::M8"
       ],
-      "hash": 581334427
+      "hash": "581334427:915319"
+   },
+   "test": {
+      "name": "test.flv",
+      "path": "test/test.flv",
+      "size": 174983,
+      "mtime": 1665335728000,
+      "dates": {
+         "upload:lastModified": 1665335728000
+      },
+      "mimetype": "video/x-flv",
+      "isVid": true,
+      "format": "flv:aac/h264",
+      "dimw": 240,
+      "dimh": 240,
+      "date": 1665335728000,
+      "dateSource": "upload:lastModified",
+      "humanReadableDate": "2022-10-09T17:15:28.000Z",
+      "dateTags": [
+         "d::2022",
+         "d::M10"
+      ],
+      "hash": "2264836858:174983"
+   },
+   "train": {
+      "name": "train.mpg",
+      "path": "test/train.mpg",
+      "size": 26972160,
+      "mtime": 1664007048000,
+      "dates": {
+         "upload:lastModified": 1664007048000
+      },
+      "mimetype": "video/mpeg",
+      "isVid": true,
+      "format": "mpeg:mp2/mpeg1video",
+      "dimw": 1080,
+      "dimh": 1920,
+      "date": 1664007048000,
+      "dateSource": "upload:lastModified",
+      "humanReadableDate": "2022-09-24T08:10:48.000Z",
+      "dateTags": [
+         "d::2022",
+         "d::M9"
+      ],
+      "hash": "2000133484:26972160"
    },
    "tram": {
       "name": "tram.mp4",
@@ -454,7 +526,7 @@
          "d::2018",
          "d::M12"
       ],
-      "hash": 3173476963
+      "hash": "3173476963:13062990"
    },
    "tumbleweed": {
       "name": "tumbleweed.GIF",
@@ -475,6 +547,6 @@
          "d::2022",
          "d::M3"
       ],
-      "hash": 3943946902
+      "hash": "3943946902:405166"
    }
 }
