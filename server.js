@@ -585,7 +585,7 @@ H.deletePiv = function (s, id, username) {
          multi.hdel ('hashorig:'    + s.piv.owner, s.piv.originalHash);
          multi.sadd ('hashdel:'     + s.piv.owner, s.piv.hash);
          multi.sadd ('hashorigdel:' + s.piv.owner, s.piv.originalHash);
-         multi.srem ('hashids:'     + s.piv.hash,  s.piv.id);
+         multi.srem ('hashid:'     + s.piv.hash,  s.piv.id);
          if (s.piv.providerHash) {
             var providerHash = s.piv.providerHash.split (':');
             multi.srem ('hash:'    + s.piv.owner + ':' + providerHash [0], providerHash [1]);
@@ -1428,7 +1428,7 @@ redis.script ('load', [
    '            end',
    '         end',
    '         for k, v in ipairs (redis.call ("smembers", KEYS [1] .. "-hashes")) do',
-   '            redis.sadd (KEYS [1] .. "-hashids", unpack (redis.smembers ("hashids:" .. v)));',
+   '            redis.sadd (KEYS [1] .. "-hashids", unpack (redis.smembers ("hashid:" .. v)));',
    '         end',
    '         redis.call ("sinterstore", KEYS [1] .. "-sharedIds", KEYS [1] .. "-sharedIds", KEYS [1] .. "-hashids");',
    '         redis.call ("del", KEYS [1] .. "-hashids", KEYS [1] .. "-hashes");',
@@ -2828,7 +2828,7 @@ var routes = [
             multi.hset ('hashorig:' + rq.user.username, piv.originalHash, piv.id);
             multi.srem ('hashdel:'     + rq.user.username, piv.hash);
             multi.srem ('hashdelorig:' + rq.user.username, piv.originalHash);
-            multi.sadd ('hashids:'     + piv.hash, piv.id);
+            multi.sadd ('hashid:'     + piv.hash, piv.id);
 
             if (importData) {
                var providerKey = {google: 'g', dropbox: 'd'} [importData.provider];

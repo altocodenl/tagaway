@@ -54,9 +54,6 @@ Mono
       - server: investigate bug with piv with location but no geotags
    --------------
    - small tasks
-      - Merge share:
-         - script to add hashids
-         - script to remove t:: from all pivs
       - server/client: remove invites
       - server/client: add login flow with Google and Facebook
       - server/client: add maximum amount of possible users and wait list and notification
@@ -822,7 +819,7 @@ All the routes below require an admin user to be logged in.
 
 - hashdel:USERNAME:PROVIDER (set): contains hashes of the pivs deleted by an user, to check for repetition when re-importing files that were deleted. The hashed quantity is `ID:MODIFIED_TIME`. This field is not in use yet.
 
-- hashids:HASH (set): contains a list of piv ids that have the given HASH
+- hashid:HASH (set): contains a list of piv ids that have the given HASH
 
 - raceConditionHash:USERNAME:HASH (string): contains the id of a piv currently being uploaded by the user, to serve as a check to avoid a race condition between simultaneous uploads of pivs with identical content.
 
@@ -3188,7 +3185,7 @@ We iterate the items in `QID-hashes` to get all its corresponding ids (that is, 
 
 ```javascript
    '         for k, v in ipairs (redis.call ("smembers", KEYS [1] .. "-hashes")) do',
-   '            redis.sadd (KEYS [1] .. "-hashids", unpack (redis.smembers ("hashids:" .. v)));',
+   '            redis.sadd (KEYS [1] .. "-hashids", unpack (redis.smembers ("hashid:" .. v)));',
    '         end',
 ```
 
