@@ -1985,6 +1985,7 @@ suites.delete = function () {
          return true;
       }],
       ['query pivs after deletion', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
+         delete rs.body.perf;
          if (H.stop ('body', rs.body, {total: 0, pivs: [], tags: {'a::': 0, 'u::': 0, 'o::': 0, 't::': 0}, refreshQuery: true})) return false;
          return true;
       }],
