@@ -3877,6 +3877,7 @@ B.mrespond ([
          refresh:        options.refresh,
          updateLimit:    updateLimit
       }, function (x, error, rs) {
+         clog ('DEBUG PERF', rs.body.perf);
          var querying = B.get ('State', 'querying');
          if (t !== querying.t) {
             querying.options.retry = true;

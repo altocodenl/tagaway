@@ -50,7 +50,7 @@ Tom
 Mono
    - bugs
       - client: fix issue with phantom selection when scrolling large selection
-      - client: refresh always in upload, import and pics, remove refresh query/field from query // check if `_blank` oauth flow issue will be fixed in old tab
+      - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
       - server: investigate bug with piv with location but no geotags
    --------------
    - small tasks
@@ -96,7 +96,7 @@ Mono
       - server: set up prod mirror
       - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
       - server: add dedicated keys for uploads in order to improve getUploads performance
-      - server: improve performance of POST /query endpoint, especially focusing on getting piv and tag info in less time
+      - server: improve performance of POST /query endpoint (start by profiling sections within Lua)
       - server/client: set location
       - Recompute pricing
          - Investigate Glacier lifecycle.

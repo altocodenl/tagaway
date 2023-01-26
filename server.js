@@ -858,9 +858,10 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
                if (maxResults && completed === maxResults) return true;
             }
             else if (log.type === 'ok') {
+               if (! upload.lastPiv) upload.lastPiv = {id: log.pivId, deg: log.deg};
                if (! upload.lastActivity) upload.lastActivity = log.t;
-               if (! upload.ok) upload.ok = [];
-               upload.ok.push ({id: log.pivId, deg: log.deg});
+               if (! upload.ok) upload.ok = 0;
+               upload.ok++;
                // Uploaded files go into the alreadyUploaded list to properly track repeated vs alreadyUploaded within the upload
                if (listAlreadyUploaded) upload.listAlreadyUploaded.push (log.pivId);
             }
@@ -889,30 +890,25 @@ H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) 
          }));
       },
       function (s) {
-         var uploads = s.last, exists = {};
-         dale.go (uploads, function (upload) {
-            dale.go (upload.ok, function (piv) {
-               exists [piv.id] = false;
-            });
-         });
-         var existsArray = dale.keys (exists);
+         s.uploads = s.last;
          var multi = redis.multi ();
-         dale.go (existsArray, function (pivId) {
-            multi.exists ('piv:' + pivId);
+         s.checkExists = dale.fil (s.uploads, undefined, function (upload) {
+            if (! upload.lastPiv) return;
+            multi.exists ('piv:' + upload.lastPiv.id);
+            return upload.lastPiv.id;
          });
-         multi.exec (function (error, data) {
-            if (error) return s.next (null, error);
-            dale.go (data, function (v, k) {
-               exists [existsArray [k]] = !! v;
+         mexec (s, multi);
+      },
+      function (s) {
+         if (s.checkExists.length) {
+            var exists = dale.obj (s.checkExists, function (v, k) {
+               return [v, !! s.last [k]];
             });
-            dale.go (uploads, function (upload) {
-               upload.lastPiv = dale.stopNot (upload.ok, undefined, function (piv) {
-                  if (exists [piv.id]) return piv;
-               });
-               upload.ok = upload.ok ? upload.ok.length : undefined;
+            dale.go (s.uploads, function (upload) {
+               if (upload.lastPiv && ! exists [upload.lastPiv.id]) delete upload.lastPiv;
             });
-            s.next (uploads);
-         });
+         }
+         s.next (s.uploads);
       }
    ]);
 }
@@ -3271,11 +3267,13 @@ var routes = [
             });
 
             var multi = redis.multi ();
+            s.luaperf = Date.now ();
             multi.set (qid, JSON.stringify (query));
             multi.evalsha (H.query, 1, qid);
             mexec (s, multi);
          },
          function (s) {
+            s.luaperf = Date.now () - s.luaperf;
             var output = JSON.parse (s.last [1]);
             if (b.idsOnly) return reply (rs, 200, output.ids);
             output.tags = dale.obj (output.tags, function (v, k) {
@@ -3313,7 +3311,7 @@ var routes = [
                   format:     ! ENV ? piv.format             : undefined
                };
             });
-            reply (rs, 200, {refreshQuery: s.refreshQuery || undefined, total: output.total, tags: output.tags, pivs: output.pivs});
+            reply (rs, 200, {refreshQuery: s.refreshQuery || undefined, total: output.total, tags: output.tags, pivs: output.pivs, perf: {lua: s.luaperf, node: Date.now () - s.luaperf - rs.log.startTime}});
          }
       ]);
    }],

@@ -1330,7 +1330,8 @@ suites.upload.uploadCheck = function () {
       }],
       suites.auth.out (tk.users.user1),
 
-      // *** CHECK THAT UPLOAD.LASTPIV IS THE LAST PIV UPLOADED THAT WASN'T YET DELETED ***
+      // *** CHECK THAT UPLOAD.LASTPIV IS THE LAST PIV UPLOADED ***
+      // Formerly we kept looking for pivs until we found one that wasn't deleted, but this is prohibitively expensive for large uploads and a performant way would require dedicated keys only for this purpose. It's not worth it.
 
       suites.auth.in  (tk.users.user1),
       ['start upload', 'post', 'upload', {}, {op: 'start', total: 2}, 200, function (s, rq, rs) {
@@ -1338,7 +1339,7 @@ suites.upload.uploadCheck = function () {
          return true;
       }],
       dale.go (['small', 'rotate'], function (piv) {
-         return ['upload piv with Date/Time Original field to test uploadCheck', 'post', 'piv', {}, function (s) {return {multipart: [
+         return ['upload piv with to test lastPiv query', 'post', 'piv', {}, function (s) {return {multipart: [
             {type: 'file',  name: 'piv',          path:  tk.pivs [piv].path},
             {type: 'field', name: 'id',           value: s.uploadId},
             {type: 'field', name: 'lastModified', value: tk.pivs [piv].mtime},
@@ -1362,17 +1363,7 @@ suites.upload.uploadCheck = function () {
          if (H.stop ('upload', rs.body [0], {
             id: s.uploadId,
             ok: 2,
-            lastPiv: {id: s.small},
-            status: 'uploading',
-            total: 2
-         })) return false;
-         return true;
-      }],
-      ['delete first piv from upload', 'post', 'delete', {}, function (s) {return {ids: [s.small]}}, 200],
-      ['get uploads after deleting the last piv', 'get', 'uploads', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('upload', rs.body [0], {
-            id: s.uploadId,
-            ok: 2,
+            // no `lastPiv` field
             status: 'uploading',
             total: 2
          })) return false;
