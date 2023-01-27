@@ -1401,6 +1401,7 @@ H.stat.r = function (s) {
 // The annotated source code for this script is in the section of the endpoint `POST /query`.
 
 redis.script ('load', [
+   'redis.call ("rpush", KEYS [1] .. "-perf", "init", unpack (redis.call ("time")));',
    'local query = cjson.decode (redis.call ("get", KEYS [1]));',
    'if #query.query.tags == 0 then',
    '   redis.call ("sunionstore", KEYS [1] .. "-ids", "tag:" .. query.username .. ":a::", unpack (query.sharedTagsPre));',
@@ -1450,6 +1451,7 @@ redis.script ('load', [
    '   redis.call ("del", KEYS [1] .. "-recent", KEYS [1] .. "-all");',
    'end',
    'local ids = redis.call ("smembers", KEYS [1] .. "-ids");',
+   'redis.call ("rpush", KEYS [1] .. "-perf", "ids", unpack (redis.call ("time")));',
    'local sortField = query.query.sort == "upload" and "dateup" or "date";',
    'for k, v in ipairs (ids) do',
    '   local dates = redis.call ("hmget", "piv:" .. v, sortField, "dateup");',
@@ -1462,6 +1464,7 @@ redis.script ('load', [
    '   redis.call ("del", KEYS [1] .. "-ids");',
    '   if #ids > 0 then redis.call ("sadd", KEYS [1] .. "-ids", unpack (ids)) end',
    'end',
+   'redis.call ("rpush", KEYS [1] .. "-perf", "sort", unpack (redis.call ("time")));',
    'local output = {};',
    'if not query.query.idsOnly then',
    '   for k, v in ipairs (ids) do',
@@ -1481,6 +1484,7 @@ redis.script ('load', [
    '         end',
    '      end',
    '   end',
+   '   redis.call ("rpush", KEYS [1] .. "-perf", "hashes", unpack (redis.call ("time")));',
    '   output.total = redis.call ("scard", KEYS [1] .. "-hashes");',
    '   for k, v in ipairs (redis.call ("smembers", KEYS [1] .. "-hashes")) do',
    '      for k2, v2 in ipairs (redis.call ("smembers", KEYS [1] .. "-tags-" .. v)) do',
@@ -1488,6 +1492,7 @@ redis.script ('load', [
    '      end',
    '     redis.call ("del", KEYS [1] .. "-tags-" .. v);',
    '   end',
+   '   redis.call ("rpush", KEYS [1] .. "-perf", "usertags", unpack (redis.call ("time")));',
    '   if #query.query.tags == 0 and not query.query.mindate and not query.query.maxdate and not query.toOrganize then',
    '      redis.call ("hset", KEYS [1] .. "-tags", "a::", output.total);',
    '   else',
@@ -1500,6 +1505,7 @@ redis.script ('load', [
    '   redis.call ("hset", KEYS [1] .. "-tags", "u::", #redis.call ("sinter", KEYS [1] .. "-ids", "tag:" .. query.username .. ":u::"));',
    '   local organized = redis.call ("hget", KEYS [1] .. "-tags", "o::") or 0;',
    '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized));',
+   '   redis.call ("rpush", KEYS [1] .. "-perf", "systags", unpack (redis.call ("time")));',
    '   output.tags = redis.call ("hgetall", KEYS [1] .. "-tags");',
    '   redis.call ("del", KEYS [1] .. "-hashes", KEYS [1] .. "-tags");',
    'end',
@@ -1559,7 +1565,9 @@ redis.script ('load', [
    '      table.insert (output.pivs, piv);',
    '   end',
    'end',
-   'redis.call ("del", KEYS [1], KEYS [1] .. "-ids", KEYS [1] .. "-sort", KEYS [1] .. "-sortFiltered", KEYS [1] .. "-tags");',
+   'redis.call ("rpush", KEYS [1] .. "-perf", "pivs", unpack (redis.call ("time")));',
+   'output.perf = redis.call ("lrange", KEYS [1] .. "-perf", 0, -1);',
+   'redis.call ("del", KEYS [1], KEYS [1] .. "-ids", KEYS [1] .. "-sort", KEYS [1] .. "-sortFiltered", KEYS [1] .. "-tags", KEYS [1] .. "-perf");',
    'return cjson.encode (output);'
 ].join ('\n'), function (error, sha) {
    if (error) return notify (a.creat (), {priority: 'critical', type: 'Redis script loading error', error: error});
@@ -3267,14 +3275,21 @@ var routes = [
             });
 
             var multi = redis.multi ();
-            s.luaperf = Date.now ();
+            s.startLua = Date.now ();
             multi.set (qid, JSON.stringify (query));
             multi.evalsha (H.query, 1, qid);
             mexec (s, multi);
          },
          function (s) {
-            s.luaperf = Date.now () - s.luaperf;
             var output = JSON.parse (s.last [1]);
+            var lastTimeEntry = s.startLua;
+            var perf = dale.obj (output.perf, {total: Date.now () - s.startLua}, function (v, k) {
+               if (k % 3 !== 0) return;
+               var date = parseInt (output.perf [k + 1] + output.perf [k + 2].slice (0, 3));
+               var total = date - lastTimeEntry;
+               lastTimeEntry = date;
+               return [v, total];
+            });
             if (b.idsOnly) return reply (rs, 200, output.ids);
             output.tags = dale.obj (output.tags, function (v, k) {
                if (k % 2 === 0) return [v, parseInt (output.tags [k + 1])];
@@ -3311,7 +3326,13 @@ var routes = [
                   format:     ! ENV ? piv.format             : undefined
                };
             });
-            reply (rs, 200, {refreshQuery: s.refreshQuery || undefined, total: output.total, tags: output.tags, pivs: output.pivs, perf: {lua: s.luaperf, node: Date.now () - s.luaperf - rs.log.startTime}});
+            reply (rs, 200, {
+               refreshQuery: s.refreshQuery || undefined,
+               total:        output.total,
+               tags:         output.tags,
+               pivs:         output.pivs,
+               perf:         {total: Date.now () - rs.log.startTime, node: Date.now () - perf.total - rs.log.startTime, lua: perf}
+            });
          }
       ]);
    }],

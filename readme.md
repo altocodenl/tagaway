@@ -54,9 +54,10 @@ Mono
       - server: investigate bug with piv with location but no geotags
    --------------
    - small tasks
-      - server/client: remove invites
+      - server/client: remove invites, add verifyEmail flow
       - server/client: add login flow with Google and Facebook
       - server/client: add maximum amount of possible users and wait list and notification
+      - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.
       - client: see info of piv
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
       - server: fix: exclude WA from hour in parse date
@@ -3054,10 +3055,11 @@ Now, if there were no shared tags requested in the query, the relevant users are
             });
 ```
 
-We now define a `multi` operation. We start by setting the stringified query in the key `qid`.
+We now define a `multi` operation. We will set the current time in `s.startLua` for performance tracking purposes. We then set the stringified query in the key `qid`.
 
 ```javascript
             var multi = redis.multi ();
+            s.startLua = Date.now ();
             multi.set (qid, JSON.stringify (query));
 ```
 
@@ -3069,7 +3071,13 @@ While we'd like to only load the script if we're on the master process of Node, 
 redis.script ('load', [
 ```
 
-Before we start, it's useful to understand what information we are trying to get. If the `idsOnly` flag is passed, we only want a list of all the piv ids that match the query. If the flag is not passed, then we want three things: `total` (the number of pivs matched by the query), `tags` (the tags for all of the matched pivs, except for those tags in shared pivs to which the querying user has no access); and `pivs`, an array of objects, each with all the piv information, of the requested subset of pivs that match the query.
+We start by pushing entries into `QID-perf`, to track the performance of the different parts of the script.
+
+```javascript
+   'redis.call ("rpush", KEYS [1] .. "-perf", "init", unpack (redis.call ("time")));',
+```
+
+Before we start with the script proper, it's useful to understand what information we are trying to get. If the `idsOnly` flag is passed, we only want a list of all the piv ids that match the query. If the flag is not passed, then we want three things: `total` (the number of pivs matched by the query), `tags` (the tags for all of the matched pivs, except for those tags in shared pivs to which the querying user has no access); and `pivs`, an array of objects, each with all the piv information, of the requested subset of pivs that match the query.
 
 The script will be invoked after we have stored the `query` object constructed above in the key `qid` - this key will be passed to the script as its only argument (accessible at `KEYS [1]`).
 
@@ -3272,6 +3280,12 @@ We bring all the ids in `QID-ids` to a local variable `ids`.
    'local ids = redis.call ("smembers", KEYS [1] .. "-ids");',
 ```
 
+We add an entry labelled `'ids'` to `QID-perf`, since the work done so far got us a list of ids that match the query. Note we also add the result of invoking the `TIME` command on Redis, which will give us the current time in seconds, plus a microseconds (!) offset. We will also invoke `TIME` every time we add a subsequent performance entry.
+
+```javascript
+   'redis.call ("rpush", KEYS [1] .. "-perf", "ids", unpack (redis.call ("time")));',
+```
+
 We now will add all the ids into a sorted set at key `QID-sort`, which will sort it for us. We start by determining the proper sort field (`dateup` if sort is `upload` and `date` otherwise) and storing it in a variable `sortField`.
 
 ```javascript
@@ -3301,6 +3315,12 @@ If one or more pivs in were removed because of the requested date range, we upda
    '   redis.call ("del", KEYS [1] .. "-ids");',
    '   if #ids > 0 then redis.call ("sadd", KEYS [1] .. "-ids", unpack (ids)) end',
    'end',
+```
+
+We add an entry labelled `'sort'` to `QID-perf`, since the work since the last performance entry was done to sort the pivs using a sorted set.
+
+```javascript
+   'redis.call ("rpush", KEYS [1] .. "-perf", "sort", unpack (redis.call ("time")));',
 ```
 
 We now define a list `output` which we'll use to return data back to Javascript.
@@ -3381,6 +3401,12 @@ Otherwise, we don't count the tag. We close everything up to the external `for` 
    '   end',
 ```
 
+We add an entry labelled `'hashes'` to `QID-perf`, since the work since the last performance entry was done to get a set of hashes for all matching pivs.
+
+```javascript
+   '   redis.call ("rpush", KEYS [1] .. "-perf", "hashes", unpack (redis.call ("time")));',
+```
+
 Before we continue with the tags, we can now figure out the total amount of pivs that match the query and set it in `output.total`. As we do with tags, we count the total amount of unique hashes from pivs that match the query, since we don't want to double count pivs that have the same hashes.
 
 ```javascript
@@ -3411,6 +3437,12 @@ We delete the `QID-tags-HASH` entries since we don't need it anymore.
 ```javascript
    '     redis.call ("del", KEYS [1] .. "-tags-" .. v);',
    '   end',
+```
+
+We add an entry labelled `'usertags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per user tag.
+
+```javascript
+   '   redis.call ("rpush", KEYS [1] .. "-perf", "usertags", unpack (redis.call ("time")));',
 ```
 
 We now have to compute the number of all the available pivs to the user (`'a::'`), without double counting pivs that have the same hash. If the query has no tags and we have no minimum or maximum date range specified, *and* `query.toOrganize` is not enabled, we already have this number - it is `output.total`, since the query intends to match all available pivs. In this case, we set it on the proper entry at `QID-tags`.
@@ -3453,6 +3485,12 @@ We then set an entry for `'o::'` (this will only make a difference if there was 
 
 ```javascript
    '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized));',
+```
+
+We add an entry labelled `'systags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per "system" tags (`a::`, `u::`, `o::` and `t::`).
+
+```javascript
+   '   redis.call ("rpush", KEYS [1] .. "-perf", "systags", unpack (redis.call ("time")));',
 ```
 
 We read `QID-tags` onto `output.tags` and then delete `QID-tags` since we don't need it anymore.
@@ -3706,10 +3744,19 @@ We close the conditional branch that picks the pivs to be sent to the user. We a
    'end',
 ```
 
-We do all the remaining cleanup, by deleting `QID-ids`, `QID-sort`, `QID-sortFiltered` and `QID-tags`. `QID-sortFiltered` won't be set if `idsOnly` is passed, but in this case that deletion will be a no-op.
+We add an entry labelled `'pivs'` to `QID-perf`, since the work since the last performance entry was done to select collect a list of pivs (with the exception of the `idsOnly` case, in which case we'll have compiled instead a list of ids).
+
+We get `QID-perf` in its entirety and store it in `output.perf`.
 
 ```javascript
-   'redis.call ("del", KEYS [1], KEYS [1] .. "-ids", KEYS [1] .. "-sort", KEYS [1] .. "-sortFiltered", KEYS [1] .. "-tags");',
+   'redis.call ("rpush", KEYS [1] .. "-perf", "pivs", unpack (redis.call ("time")));',
+   'output.perf = redis.call ("lrange", KEYS [1] .. "-perf", 0, -1);',
+```
+
+We do all the remaining cleanup, by deleting `QID-ids`, `QID-sort`, `QID-sortFiltered`, `QID-tags` and `QID-perf`. `QID-sortFiltered` won't be set if `idsOnly` is passed, but in this case that deletion will be a no-op.
+
+```javascript
+   'redis.call ("del", KEYS [1], KEYS [1] .. "-ids", KEYS [1] .. "-sort", KEYS [1] .. "-sortFiltered", KEYS [1] .. "-tags", KEYS [1] .. "-perf");',
 ```
 
 `output` will be now ready; in the case of `idsOnly`, it will contain only a key `ids` with a list of values. Otherwise, it will contain three keys: `total`, `tags` and `pivs`.
@@ -3752,6 +3799,39 @@ The output of the script will be in `s.last [1]` (since we used the same `multi`
 ```javascript
          function (s) {
             var output = JSON.parse (s.last [1]);
+```
+
+We will now process `output.perf` to construct an object of the shape `{LABEL1: INT, ...}`, where each performance segment gets a number in milliseconds that represents its execution time. We will store the result in a variable `perf`. We start initializing it to `{total: INT}`, using as value the current time minus `s.startLua`, which was the time at which the Lua script started executing.
+
+```javascript
+            var lastTimeEntry = s.startLua;
+            var perf = dale.obj (output.perf, {total: Date.now () - s.startLua}, function (v, k) {
+```
+
+`output.perf` is a list of the shape `[LABEL, SECONDS, MICROSECONDS, ...]`. We need to see every third entry, and then retrieve the associated seconds & milliseconds values. This conditional will avoid us processing any entry that's not a label.
+
+```javascript
+               if (k % 3 !== 0) return;
+```
+
+We compute the `date` for the label, getting the seconds entry (the one after the label) and concatenating it with the first three digits of the microseconds entry.
+
+```javascript
+               var date = parseInt (output.perf [k + 1] + output.perf [k + 2].slice (0, 3));
+```
+
+We compute the time difference between the current date and the `lastTimeEntry`. We then update `lastTimeEntry` to this date.
+
+```javascript
+               var total = date - lastTimeEntry;
+               lastTimeEntry = date;
+```
+
+We return the label as key, plus the `total` processing time as a value. This concludes the iteration to construct `perf`.
+
+```javascript
+               return [v, total];
+            });
 ```
 
 If `b.idsOnly` is set, we merely reply with `output.ids`.
@@ -3867,12 +3947,20 @@ This concludes the data manipulation on `output.pivs`.
             });
 ```
 
-We reply with an object of the shape `{total: INT, tags: {...}, pivs: [{...}, ...]}`. This concludes the endpoint.
+We reply with an object of the shape `{total: INT, tags: {...}, pivs: [{...}, ...], refreshQuery: TRUE|UNDEFINED, perf: {...}}`. This concludes the endpoint.
 
 Note: the `refreshQuery` parameter will be soon removed.
 
+The `perf` object in the output has three fields: `total`, which is the total processing time for the entire request, `node`, which is all the processing of the request minus the time that Lua spent processing, and `lua`, which will be an object with the labels and associated lengths, including `total`, which will be equal to the total execution time of the Lua script.
+
 ```javascript
-            reply (rs, 200, {refreshQuery: s.refreshQuery || undefined, total: output.total, tags: output.tags, pivs: output.pivs});
+            reply (rs, 200, {
+               refreshQuery: s.refreshQuery || undefined,
+               total:        output.total,
+               tags:         output.tags,
+               pivs:         output.pivs,
+               perf:         {total: Date.now () - rs.log.startTime, node: Date.now () - perf.total - rs.log.startTime, lua: perf}
+            });
          }
       ]);
    }],
