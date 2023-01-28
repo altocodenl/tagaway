@@ -50,21 +50,23 @@ Tom
 Mono
    - bugs
       - client: fix issue with phantom selection when scrolling large selection
-      - client: refresh always in upload, import and pics // check if `_blank` oauth flow issue will be fixed in old tab
+      - client: refresh always in upload, import and pics // check that `_blank` oauth flow issue is fixed in old tab
       - server: investigate bug with piv with location but no geotags
+      - server: exclude WA from hour in parse date
    --------------
    - small tasks
       - server/client: remove invites, add verifyEmail flow
       - server/client: add login flow with Google and Facebook
       - server/client: add maximum amount of possible users and wait list and notification
+      - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete), SETEX 60s for share changes
       - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.
       - client: see info of piv
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-      - server: fix: exclude WA from hour in parse date
       - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
       - server/client: videos pseudo-tag
-      - client: upgrade pop up notice or email when running out of free space.
+      - client: upgrade pop up notice or email when running out of free space
       - client: upload: retry upload button
+      - server/client: set location
    --------------
    - small internal tasks
       - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
@@ -78,7 +80,36 @@ Mono
       - server: script to rename username
    --------------
    - large tasks
-      - mobile: mobile version
+      - mobile: mobile version logic
+         - general
+            - function for JSON request
+            - function for multipart request
+         - home view
+            - get hometags and draw
+            - on change of hometags, submit hometags update
+         - local view
+            - get tag info for existing pivs:
+               - query on ids as u:: + recentlyTagged but only for ids on the relevant half year
+               - overwrite with local object of pendingTags to show it up to date
+            - get all user tags
+            - tag
+               - for each entry in pendingTags:
+                  - if local piv has an entry with id on the idMap, just tag it.
+                  - if local piv has an entry with 'pending' on the idMap, put entry on pendingTags (create/append)
+               - invoke function every second and put a lock that doesn't allow more than one simultaneous execution
+            - upload
+               - if there's no current upload (as per lastUseDate), create one
+               - create 'pending' entry on idMap
+               - if upload busy, put piv on queue
+               - when at the beginning of the queue, remove from queue and upload piv
+               - after done, if error, report, and remove entry from idMap
+               - whether repeated or not, get returned id and put it on the idMap hash that maps local ids to server ids
+               - put entry (or append to entry) on pendingTags
+            - UI
+               - current tag (if any)
+               - number with current tag (gotten from get tag info from existing pivs)
+         - uploaded view
+
       - server/client: Share & manage
          - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
          - server: remove home tags in H.tagCleanup if lose the tag because it was only on shared pivs
@@ -97,8 +128,7 @@ Mono
       - server: set up prod mirror
       - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
       - server: add dedicated keys for uploads in order to improve getUploads performance
-      - server: improve performance of POST /query endpoint (start by profiling sections within Lua)
-      - server/client: set location
+      - server: improve performance of POST /query endpoint
       - Recompute pricing
          - Investigate Glacier lifecycle.
          - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
