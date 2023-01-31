@@ -617,11 +617,11 @@ suites.auth = {
             return {username: user.username, password: user.password, timezone: user.timezone};
          }, 403, H.cBody ({error: 'verify'})],
          ['verify user with invalid token', 'get', function (s) {return 'auth/verify/' + s.verificationToken + 'foo'}, {}, '', 302, function (s, rq, rs) {
-            if (H.stop ('location header', rs.headers.location, 'https://' + CONFIG.domain + '#/login/badtoken')) return false;
+            if (H.stop ('location header', rs.headers.location, CONFIG.domain + '#/login/badtoken')) return false;
             return true;
          }],
          ['verify user', 'get', function (s) {return 'auth/verify/' + s.verificationToken}, {}, '', 302, function (s, rq, rs) {
-            if (H.stop ('location header', rs.headers.location, 'https://' + CONFIG.domain + '#/login/verified')) return false;
+            if (H.stop ('location header', rs.headers.location, CONFIG.domain + '#/login/verified')) return false;
             return true;
          }],
          ['login after verification', 'post', 'auth/login', {}, {username: user.username, password: user.password, timezone: user.timezone}, 200, function (s, rq, rs) {
