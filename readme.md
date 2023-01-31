@@ -55,9 +55,15 @@ Mono
       - server: exclude WA from hour in parse date
    --------------
    - small tasks
-      - server/client: remove invites, add verifyEmail flow
+      - server/client: remove invites and allow signups
+         - server: remove invites from code
+         - server/client: enable verification flow
+         - server: set user list, limit user creation if maximum is passed & notify
+         - client: add email field on signup page
+         - db: script to add user list & delete all invites
+         - remove from home
       - server/client: add login flow with Google and Facebook
-      - server/client: add maximum amount of possible users and wait list and notification
+
       - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete), SETEX 60s for share changes
       - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.
       - client: see info of piv
@@ -81,9 +87,6 @@ Mono
    --------------
    - large tasks
       - mobile: mobile version logic
-         - general
-            - function for JSON request
-            - function for multipart request
          - home view
             - get hometags and draw
             - on change of hometags, submit hometags update
@@ -278,7 +281,7 @@ Mono
 
 - Account & payment
    - Login/logout.
-   - Signup with invite.
+   - Signup.
    - Store auth log.
    - Enable/disable geotagging.
    - Change password.
@@ -307,7 +310,6 @@ Mono
 
 - Admin
    - Block further uploads if storage limits are exceeded.
-   - See & send invites.
 
 - Other
    - S3 & SES setup.
@@ -411,11 +413,6 @@ If a cookie with valid signature but that has already expired is sent along, the
 
 All POST requests (unless marked otherwise) must contain a `csrf` field equivalent to the `csrf` provided by a successfull call to `POST /auth/login`. This requirement is for CSRF prevention. In the case of `POST /piv`, the `csrf` field must be present as a field within the `multipart/form-data` form. If this condition is not met, a 403 error will be sent.
 
-#### Request invite
-
-- `POST /requestInvite`.
-   - Body must be `{email: STRING}`, otherwise a 400 will be sent.
-
 #### Auth routes
 
 - `GET /auth/csrf`.
@@ -432,10 +429,9 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /auth/signup`.
    - Does not require the user to be logged in.
-   - Body must be `{username: STRING, password: STRING, email: STRING, token: STRING}`. The email must be a valid email. If not, a 400 code will be returned with body `{error: ...}`.
+   - Body must be `{username: STRING, password: STRING, email: STRING}`. The email must be a valid email. If not, a 400 code will be returned with body `{error: ...}`.
    - Both `username` and `email` are lowercased and leading & trailing space is removed from them (and intermediate spaces or space-like characters are reduced to a single space). `username` cannot contain any `@` or `:` characters.
    - The trimmed `username` must have at least 3 characters and `password` must have at least 6 characters.
-   - If there's no invite associated with the token, a 403 is returned with body `{error: 'token'}`.
    - If there's already an account with that email, a 403 is returned with body `{error: 'email'}`.
    - If there's already an account with that username, a 403 is returned with body `{error: 'username'}`.
 
@@ -713,15 +709,6 @@ All the routes below require an admin user to be logged in.
 
 #### Admin routes
 
-`POST /admin/invites`
-   - Body must be `{email: STRING, firstName: STRING}` and `body.email` must be an email, otherwise a 400 is returned with body `{error: ...}`.
-
-`GET /admin/invites`
-   - Returns an object where each key is an email and each value is an object of the form `{token: STRING, firstName: STRING, sent: INT, accepted: INT|undefined}`.
-
-`POST /admin/invites/delete`
-   - Body must be `{email: STRING}`.
-
 `GET /admin/users`
    - Returns an array of users.
 
@@ -828,11 +815,11 @@ All the routes below require an admin user to be logged in.
    suggestGeotagging: 1|undefined
    suggestSelection: 1|undefined
 
+- users (set): all the usernames that exist in the system
+
 - geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
 - email:EMAIL (string): key is email, value is username
-
-- invite:EMAIL (string): key is email, value is {email: STRING, firstName: STRING, token: STRING, sent: INT (date), accepted: UNDEFINED|INT (date)}
 
 - verifytoken:TOKEN (string): key is token, value is email. Used to verify email addresses after a signup. Deleted after usage.
 
@@ -1130,7 +1117,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
       - `path` is the HTTP path (the first path member, the rest is ignored and actually shouldn't be there).
       - Takes `headers`, `body` and optional `cb`.
       - Removes last log to excise password or token information from `B.r.log`.
-      - Adds `Data.csrf` to all `POST` requests except `/requestInvite`, `/auth/login` and `/auth/signup`.
+      - Adds `Data.csrf` to all `POST` requests except `/auth/login`, `/auth/signup`, `/auth/recover` and `/auth/reset`.
       - If by the time the response from the server is received, the user has just logged out (judging by `lastLogout`), and the request is not an auth request, the callback will not be executed.
       - If 403 is received and it is not an auth route or `GET csrf`, calls `reset store true` (with truthy `logout` argument), `goto page login` and `snackbar`.
    6. `error`: submits browser errors (from `window.onerror`) to the server through `post /error`.
@@ -1147,8 +1134,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    6. `recover`: calls `post /auth/recover`. In case of error, only calls `snackbar`; otherwise, it calls `clear authInputs`, invokes `goto page login` and invokes `snackbar`.
    7. `reset`: calls `post /auth/reset`. In case of error, only calls `snackbar`; otherwise it calls `rem Data.tokens`, `clear authInputs`, `goto page login` and `snackbar`.
    8. `delete account`: calls `post /auth/delete`. In case of error, only calls `snackbar`; otherwise it calls `reset store true`, `goto page login` and `snackbar`.
-   9. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`) to an empty string.
-   10. `request invite`: calls `post /requestInvite`. Calls `snackbar` with either an error or a success message.
+   9. `clear authInputs`: sets the values of all possible auth inputs (`#auth-username`, `#auth-password` and `#auth-confirm`, plus their `-confirm` counterparts) to an empty string.
 
 4. Pics
    1. `change State.page`: see annotated source code.
@@ -1346,7 +1332,6 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    - `pivTotal`': UNDEFINED|INTEGER, with the total number of pivs matched by the current query; comes from `body.total` from `query pivs`.
    - `queryTags`: `{'a::': INTEGER, 'u::': INTEGER, tag1: ..., ...}`; comes from `body.tags` from `query pivs`.
    - `reset`: if present, has the form `{token: STRING, username: STRING}`. Used to reset password.
-   - `signup`: `{username: STRING, token: STRING, email: STRING}`. Sent from invitation link and used by `signup []`.
    - `tags`: `[TAG1, TAG2, ...]`. Only includes tags created by the user.
    - `uploads`: `[{id: INTEGER (also functions as start time), total: INTEGER, status: uploading|complete|cancelled|stalled|error, unsupported: UNDEFINED|[STRING, ...], alreadyImported: INTEGER|UNDEFINED (only for uploads of imports), alreadyUploaded: INTEGER|UNDEFINED, tags: [STRING, ...]|UNDEFINED, end: INTEGER|UNDEFINED, ok: INTEGER|UNDEFINED, repeated: [STRING, ...]|UNDEFINED, repeatedSize: INTEGER|UNDEFINED, invalid: [STRING, ...]|UNDEFINED, tooLarge: [STRING, ...]|UNDEFINED, lastPiv: {id: STRING, deg: UNDEFINED|90|-90|180}, error: UNDEFINED|STRING|OBJECT, providerErrors: UNDEFINED|[STRING|OBJECT, ...]}, ...]`.
 
@@ -1359,14 +1344,7 @@ Only things that differ from client are noted.
 **Pages**:
 
 1. `views.dashboard`
-2. `views.invites`
-   - Depends on: `Data.invites`, `State.newInvite`
-   - Events:
-      - `click -> create invite`
-      - `click -> delete invite`
-      - `change -> set State.newInvite.ID`
-      - `click -> del State.newInvite`
-3. `views.users`
+2. `views.users`
    - Depends on: `Data.users`
    - Events:
       - `click -> delete user USERNAME`
@@ -1378,31 +1356,23 @@ Only things that differ from client are noted.
 
 ### Responders
 
-1. Invites
-   1. `retrieve invites`: invokes `get admin/invites`.
-   2. `create invite`: invokes `post admin/invites` with `State.newInvite`; if successful, invokes `retrieve invites` and `rem State.newInvite`. It also invokes `snackbar`.
-   3. `delete invite`: invokes `delete admin/invites/EMAIL`; if successful, invokes `retrieve invites`. It also invokes `snackbar`.
-   4. `change State.page`: if current page is `invites` and there's no `Data.invites`, it invokes `retrieve invites`.
-
-2. Users
+1. Users
    1. `retrieve users`: invokes `get admin/users`.
    2. `delete user`: invokes `post auth/delete`; if successful, invokes `retrieve users`. It also invokes `snackbar`.
    3. `change State.page`: if current page is `users` and there's no `Data.users`, it invokes `retrieve users`.
 
-3. Users
+2. Users
    1. `retrieve logs`: invokes `get admin/logs/USERNAME`, where `USERNAME` is `State.logs.username`; set `Data.logs` and optionally `Data.allLogs`.
    2. `change State.page`: if current page is `logs` and there's no `Data.logs`, it invokes `retrieve logs`.
 
-4. Deploy
+3. Deploy
    1. `deploy client`: invokes `post admin/deploy` and `snackbar`.
 
 ### Store
 
 - `State`:
-   - `newInvite`: `{email: STRING, firstName: STRING}`.
 
 - `Data`:
-   - `invites`: `{EMAIL: {firstName: STRING, token: STRING, sent: INT, accepted: INT|UNDEFINED}, ...}`.
    - `users`: `[...]`.
    - `logs`: `[...]`.
    - `allLogs`: `[...]` - only set if last logs query had more than 2k entries.
@@ -1432,10 +1402,10 @@ We start by taking `window.location.hash`, splitting it into parts and storing i
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 ```
 
-If `page` is `'signup'` and there is a second part in the hash, we decode and parse it and `set` its output into `Data.signup`. This allows us to get the signup data from the URL into javascript for signup purposes.
+If `page` is `'login'` and there is a second part in the hash equal to `'verified'`, we print a welcoming message.
 
 ```javascript
-      if (page === 'signup' && hash [1]) B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
+      if (page === 'login' && hash [1]) B.call (x, 'snackbar', 'green', 'Your email is now verified. Please log in!');
 ```
 
 If `page` is `'reset'` and there are both a second and a third part of the hash, we `set Data.reset.token` to the second part of the hash and `Data.reset.username` to the third one.

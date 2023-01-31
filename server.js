@@ -1649,27 +1649,6 @@ var routes = [
       ]]
    ])],
 
-   // *** REQUEST INVITE ***
-
-   ['post', 'requestInvite', function (rq, rs) {
-
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['body', b, 'object'],
-         ['keys of body', dale.keys (b), ['email'], 'eachOf', teishi.test.equal],
-         function () {return [
-            ['body.email', b.email, 'string'],
-            ['body.email', b.email, H.email, teishi.test.match],
-         ]},
-      ])) return;
-
-      astop (rs, [
-         ! ENV ? [] : [sendmail, {to1: 'Altocode', to2: CONFIG.email.address, subject: 'Request for ac;pic invite', message: ['p', [new Date ().toISOString (), ' ', b.email]]}],
-         [reply, rs, 200, {success: true}],
-      ]);
-   }],
-
    // *** CLIENT ERRORS (FROM NON-LOGGED IN USERS) ***
 
    ['post', 'error', function (rq, rs) {
@@ -1758,9 +1737,9 @@ var routes = [
 
       if (stop (rs, [
          ['body', b, 'object'],
-         ['keys of body', dale.keys (b), ['username', 'password', 'email', 'token'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['username', 'password', 'email'], 'eachOf', teishi.test.equal],
          function () {return [
-            dale.go (['username', 'password', 'email', 'token'], function (key) {
+            dale.go (['username', 'password', 'email'], function (key) {
                return ['body.' + key, b [key], 'string']
             }),
          ]},
@@ -1777,66 +1756,57 @@ var routes = [
       b.email = H.trim (b.email.toLowerCase ());
 
       var multi = redis.multi ();
-      multi.get    ('invite:'  + b.email);
+      multi.scard  ('users');
       multi.get    ('email:'   + b.email);
       multi.exists ('users:'   + b.username);
       astop (rs, [
          [mexec, multi],
          function (s) {
-            s.invite = teishi.parse (s.last [0]);
-            if (! s.invite || s.invite.token !== b.token) return reply (rs, 403, {error: 'token'});
+            if (CONFIG.maxUsers && s.last [0] >= CONFIG.maxUsers) {
+               if (ENV) notify (a.creat (), {priority: 'important', type: 'User limit reached on signup', user: b.username, email: b.email, limit: CONFIG.maxUsers});
+               return reply (rs, 420, {error: 'Too many users'});
+            }
             if (s.last [1]) return reply (rs, 403, {error: 'email'});
             if (s.last [2]) return reply (rs, 403, {error: 'username'});
             s.next ();
          },
          // logs are deleted in case a deleted user with the same username existed, in which case there will be a `destroy` log.
          [Redis, 'del', 'ulog:' + b.username],
-         ! ENV ? [a.set, 'verifytoken', [a.make (require ('bcryptjs').genSalt), 20]] : [],
+         [a.set, 'verifytoken', [a.make (require ('bcryptjs').genSalt), 20]],
          // TODO: don't do check to users, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
             var multi = redis.multi ();
-            // email verification happens only when testing, since now all users come through invites.
-            if (! ENV) multi.set ('verifytoken:' + s.verifytoken, b.email);
+            multi.set ('verifytoken:' + s.verifytoken, b.email);
             multi.set ('email:' + b.email, b.username);
             multi.hmset ('users:' + b.username, {
                username:            b.username,
                email:               b.email,
                created:             Date.now (),
+               verificationPending: true,
                suggestGeotagging:   1,
                suggestSelection:    1,
-               onboarding:          1
+               onboarding:          1,
             });
-            // email verification happens only when testing, since now all users come through invites.
-            // when this changes, the verificationPending flag should be set for all users
-            if (! ENV) multi.hmset ('users:' + b.username, 'verificationPending', true);
-            s.invite.accepted = Date.now ();
-            s.invite.token = undefined;
-            multi.set ('invite:' + b.email, JSON.stringify (s.invite));
+            multi.sadd ('users', b.username);
             mexec (s, multi);
          },
-         ! ENV ? [
-            [H.stat.w, 'flow', 'users', 1],
-            [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
-            [a.get, reply, rs, 200, {token: '@verifytoken'}],
-         ] : [
-            [sendmail, {
-               to1:     b.username,
-               to2:     b.email,
-               subject: CONFIG.etemplates.welcome.subject,
-               message: CONFIG.etemplates.welcome.message (b.username)
+         [H.stat.w, 'flow', 'users', 1],
+         [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
+         ! ENV ? [] : [
+            [function (s) {
+               sendmail (s, {
+                  to1:     b.username,
+                  to2:     b.email,
+                  subject: CONFIG.etemplates.verify.subject,
+                  message: CONFIG.etemplates.verify.message (b.username, s.verifytoken)
+               });
             }],
-            [a.set, 'session', [a.make (giz.login), b.username, b.password]],
-            [a.set, 'csrf', [a.make (require ('bcryptjs').genSalt), 20]],
-            function (s) {
-               Redis (s, 'setex', 'csrf:' + s.session, giz.config.expires, s.csrf);
-            },
-            [H.stat.w, 'flow', 'users', 1],
-            [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
-            function (s) {
-               reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
-            },
+            [notify, {priority: 'important', type: 'New user', user: b.username, email: b.email}]
          ],
+         function (s) {
+            reply (rs, 200, {token: ENV ? undefined : s.verifytoken});
+         }
       ]);
    }],
 
@@ -1847,13 +1817,13 @@ var routes = [
       var token = rq.data.params [0];
 
       astop (rs, [
-         [a.cond, [a.set, 'verifytoken', [Redis, 'get', 'verifytoken:' + token], true], {
+         [a.cond, [a.set, 'email', [Redis, 'get', 'verifytoken:' + token], true], {
             null: [
                [notify, {priority: 'important', type: 'bad verify token', token: token, ip: rq.origin, userAgent: rq.headers ['user-agent']}],
-               [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/badtoken'}],
+               [reply, rs, 302, '', {location: CONFIG.domain + '#/login/badtoken'}],
             ],
          }],
-         [a.set, 'username', [a.get, Redis, 'get', 'email:@verifytoken']],
+         [a.set, 'username', [a.get, Redis, 'get', 'email:@email']],
          function (s) {
             var multi = redis.multi ();
             multi.hdel ('users:' + s.username, 'verificationPending');
@@ -1863,11 +1833,18 @@ var routes = [
          function (s) {
             notify (s, {type: 'verify', user: s.username});
          },
-         ! ENV ? [] : [sendmail, {to1: username, to2: email, subject: CONFIG.etemplates.welcome.subject, message: CONFIG.etemplates.welcome.message (username)}],
+         ! ENV ? [] : function (s) {
+            sendmail (s, {
+               to1: s.username,
+               to2: s.email,
+               subject: CONFIG.etemplates.welcome.subject,
+               message: CONFIG.etemplates.welcome.message (s.username)
+            });
+         },
          function (s) {
             H.log (s, s.username, {ev: 'auth', type: 'verify', ip: rq.origin, userAgent: rq.headers ['user-agent']});
          },
-         [reply, rs, 302, '', {location: 'https://' + CONFIG.server + '#/login/verified'}],
+         [reply, rs, 302, '', {location: CONFIG.domain + '#/login/verified'}],
       ]);
    }],
 
@@ -1964,10 +1941,6 @@ var routes = [
       if (rq.url.match (/^\/redmin/) && ! ENV) return rs.next ();
 
       if (rq.method === 'get'  && rq.url === '/stats') return rs.next ();
-      if (rq.method === 'post' && rq.url === '/admin/invites') {
-         if (! ENV)                                                        return rs.next ();
-         if (eq (rq.body, {email: SECRET.admins [0], firstName: 'admin'})) return rs.next ();
-      }
 
       if (! rq.data.cookie)                               return reply (rs, 403, {error: 'nocookie'});
       if (! rq.data.cookie [CONFIG.cookieName]) {
@@ -2011,10 +1984,6 @@ var routes = [
    ['post', '*', function (rq, rs) {
 
       if (rq.url.match (/^\/redmin/)) return rs.next ();
-      if (rq.method === 'post' && rq.url === '/admin/invites') {
-         if (! ENV)                                                        return rs.next ();
-         if (eq (rq.body, {email: SECRET.admins [0], firstName: 'admin'})) return rs.next ();
-      }
 
       var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
@@ -2075,7 +2044,6 @@ var routes = [
                   var multi = redis.multi ();
                   if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
                   multi.del ('email:'  + user.email);
-                  multi.del ('invite:' + user.email);
                   multi.del ('tags:' + user.username);
                   multi.del ('hometags:' + user.username);
 
@@ -2091,6 +2059,7 @@ var routes = [
                   multi.del ('shm:'   + user.username);
                   multi.del ('sho:'   + user.username);
                   multi.del ('ulog:'  + user.username);
+                  multi.srem ('users', user.username);
                   dale.go (s.hashtags.concat (s.taghashes), function (v) {multi.del (v)});
                   mexec (s, multi);
                },
@@ -4375,89 +4344,13 @@ var routes = [
    ['get', 'redmin/client.js',    cicek.file, 'node_modules/redmin/client.js'],
    ['get', 'redmin/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
-   // *** ADMIN: INVITES ***
-
-   ['get', 'admin/invites', function (rq, rs) {
-      astop (rs, [
-         [redis.keyscan, 'invite:*'],
-         function (s) {
-            var multi = redis.multi ();
-            dale.go (s.last, function (invite) {
-               multi.get (invite);
-            });
-            mexec (s, multi);
-         },
-         function (s) {
-            reply (rs, 200, dale.obj (s.last, function (invite) {
-               invite = JSON.parse (invite);
-               return [invite.email, invite];
-            }));
-         }
-      ]);
-   }],
-
-   ['post', 'admin/invites/delete', function (rq, rs) {
-
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
-         ['body.email', b.email, 'string'],
-         ['body.email', b.email, H.email, teishi.test.match],
-      ])) return;
-
-      astop (rs, [
-         [Redis, 'del', 'invite:' + rq.body.email],
-         [reply, rs, 200],
-      ]);
-   }],
-
-   ['post', 'admin/invites', function (rq, rs) {
-
-      var b = rq.body;
-
-      if (stop (rs, [
-         ['body', b, 'object'],
-         ['keys of body', dale.keys (b), ['email', 'firstName'], 'eachOf', teishi.test.equal],
-         ['body.email', b.email, 'string'],
-         ['body.email', b.email, H.email, teishi.test.match],
-         ['body.firstName', b.firstName, 'string'],
-      ])) return;
-
-      b.email = H.trim (b.email.toLowerCase ());
-
-      astop (rs, [
-         [a.set, 'user', [Redis, 'get', 'email:' + b.email]],
-         function (s) {
-            if (s.user) return reply (rs, 400, {error: 'User already exists'});
-            s.next ();
-         },
-         [a.set, 'token', [a.make (require ('bcryptjs').genSalt), 20]],
-         function (s) {
-            Redis (s, 'set', 'invite:' + b.email, JSON.stringify ({email: b.email, firstName: b.firstName, token: s.token, sent: Date.now ()}));
-         },
-         // When running locally, the token is returned instead of being sent to the associated email address. This also avoids the bootstrap invite being sent when running the server locally.
-         // Interestingly enough, when running node without cluster turned on, v8 throws an error when `a.get` processes `rs` (more precisely, `rs.onread`, which is `undefined` (not that that should generate any issues, but it does)
-         ENV ? [] : [a.get, reply, rs, 200, {token: '@token'}],
-         function (s) {
-            sendmail (s, {
-               to1:     b.firstName,
-               to2:     b.email,
-               subject: CONFIG.etemplates.invite.subject,
-               message: CONFIG.etemplates.invite.message (b.firstName, s.token, b.email)
-            });
-         },
-         [reply, rs, 200],
-      ]);
-   }],
-
    ['get', 'admin/users', function (rq, rs) {
       astop (rs, [
-         [redis.keyscan, 'users:*'],
+         [Redis, 'smembers', 'users'],
          function (s) {
             var multi = redis.multi ();
             dale.go (s.last, function (username) {
-               multi.hgetall (username);
+               multi.hgetall ('users:' + username);
             });
             mexec (s, multi);
          },
@@ -4850,20 +4743,6 @@ if (cicek.isMaster && ENV && ! mode) setInterval (function () {
       },
    ]);
 }, 1000 * 60);
-
-// *** BOOTSTRAP FIRST ADMIN USER ***
-
-if (cicek.isMaster && ENV && ! mode) setTimeout (function () {
-   a.stop ([
-      [Redis, 'get', 'invite:' + SECRET.admins [0]],
-      function (s) {
-         if (s.last) return;
-         a.make (hitit.one) (s, {}, {timeout: 15, port: CONFIG.port, method: 'post', path: 'admin/invites', body: {email: SECRET.admins [0], firstName: 'admin'}});
-      },
-   ], function (s, error) {
-      notify (s, {priority: 'critical', type: 'bootstrap invite error', error: error});
-   });
-}, 3000);
 
 // *** CHECK CONSISTENCY OF FILES BETWEEN DB, FS AND S3 ***
 

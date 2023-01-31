@@ -286,14 +286,14 @@ B.mrespond ([
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
    [/^(get|post)$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
-      var t = Date.now (), path = x.path [0], noCSRF = path === 'requestInvite' || (path.match (/^auth/) && ['auth/logout', 'auth/delete', 'auth/changePassword'].indexOf (path) === -1);
-      if (x.verb === 'post' && ! noCSRF) {
+      var t = Date.now (), path = x.path [0];
+      if (x.verb === 'post' && ! inc (['auth/login', 'auth/signup', 'auth/recover', 'auth/reset'], path)) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
-      c.ajax (x.verb, x.path [0], headers, body, function (error, rs) {
-         B.call (x, 'ajax', x.verb, x.path, Date.now () - t);
-         var authPath = path === 'csrf' || path.match (/^auth/);
+      c.ajax (x.verb, path, headers, body, function (error, rs) {
+         B.call (x, 'ajax ' + x.verb, path, {t: Date.now () - t, code: error ? error.status : rs.xhr.status});
+         var authPath = path.match (/^auth/);
          if (! authPath && B.get ('lastLogout') && B.get ('lastLogout') > t) return;
          if (! authPath && error && error.status === 403) {
             B.call (x, 'reset', 'store', true);
@@ -312,7 +312,7 @@ B.mrespond ([
    }],
    ['goto', 'page', function (x, page, subpage) {
       var pages = {
-         logged:   ['dashboard', 'invites', 'users', 'logs', 'deploy'],
+         logged:   ['dashboard', 'users', 'logs', 'deploy'],
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
@@ -365,42 +365,6 @@ B.mrespond ([
          B.call (x, 'reset', 'store', true);
          B.call (x, 'goto', 'page', 'login');
       });
-   }],
-
-   // *** INVITE RESPONDERS ***
-
-   ['retrieve', 'invites', function (x) {
-      B.call (x, 'get', 'admin/invites', {}, '', function (x, error, rs) {
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error retrieving data.');
-         B.call (x, 'set', ['Data', 'invites'], rs.body);
-      });
-   }],
-   ['create', 'invite', function (x) {
-      B.call (x, 'post', 'admin/invites', {}, B.get ('State', 'newInvite'), function (x, error, rs) {
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error creating the invite.');
-         B.call (x, 'snackbar', 'green', 'Invite sent!');
-         B.call (x, 'rem', 'State', 'newInvite');
-         B.call (x, 'retrieve', 'invites');
-      });
-   }],
-   ['delete', 'invite', function (x, email) {
-      if (! confirm ('Are you sure you want to delete the invite?')) return;
-      B.call (x, 'post', 'admin/invites/delete', {}, {email: email}, function (x, error, rs) {
-         if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting the invite.');
-         B.call (x, 'snackbar', 'green', 'Invite deleted successfully.');
-         B.call (x, 'retrieve', 'invites');
-      });
-   }],
-   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
-      if (B.get ('State', 'page') === 'invites') {
-         if (! B.get ('Data', 'invites')) B.call (x, 'retrieve', 'invites');
-      }
-      if (B.get ('State', 'page') === 'users') {
-         if (! B.get ('Data', 'users')) B.call (x, 'retrieve', 'users');
-      }
-      if (B.get ('State', 'page') === 'logs') {
-         B.call (x, 'retrieve', 'logs');
-      }
    }],
 
    // *** USERS RESPONDERS ***
@@ -723,8 +687,6 @@ views.dashboard = function (x) {
    return ['div', {style: style ({padding: 60})}, [
       ['h2', {class: 'page-title'}, 'ac;pic admin'],
       ['br'],
-      ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/invites'}, 'Invites']],
-      ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/users'}, 'Users']],
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: '#/logs/all'}, 'See recent logs']],
@@ -737,45 +699,6 @@ views.dashboard = function (x) {
       ['br'],
       ['h3', {style: style ({'font-size': CSS.typography.fontSize (4)})}, ['a', {href: 'stats'}, 'See public stats']],
    ]];
-}
-
-// *** INVITES VIEW ***
-
-views.invites = function () {
-   return B.view (['Data', 'invites'], function (invites) {
-      return ['div', {style: style ({padding: 60})}, [
-         ['h3', 'Invites'],
-         ['table', {class: 'pure-table pure-table-striped'}, [
-            ['tr', dale.go (['email', 'firstName', 'token', 'sent', 'accepted', 'delete'], function (v) {return ['th', v]})],
-            dale.go (Data.invites, function (invite, email) {
-               return ['tr', [
-                  ['td', email],
-                  ['td', invite.firstName],
-                  ['td', invite.token],
-                  ['td', new Date (invite.sent).toISOString ()],
-                  ['td', invite.accepted ? new Date (invite.accepted).toISOString () : ''],
-                  ['td', ['span', {class: 'action', onclick: B.ev ('delete', 'invite', email)}, 'Delete']],
-               ]];
-            }),
-         ]],
-         ['br'],
-         B.view (['State', 'newInvite'], function (newInvite) {
-            if (! newInvite) return ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('set', ['State', 'newInvite'], {email: '', firstName: ''})}, 'Create invite'];
-            return ['div', [
-               ['input', {placeholder: 'email', value: newInvite.email, onchange: B.ev ('set', ['State', 'newInvite', 'email'])}],
-               ['br'],
-               ['br'],
-               ['input', {placeholder: 'name', value: newInvite.firstName, onchange: B.ev ('set', ['State', 'newInvite', 'firstName'])}],
-               ['br'],
-               ['br'],
-               ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('create', 'invite')}, 'Create invite'],
-               ['br'],
-               ['br'],
-               ['span', {class: 'action', onclick: B.ev ('rem', 'State', 'newInvite')}, 'Cancel'],
-            ]];
-         }),
-      ]];
-   });
 }
 
 // *** USERS VIEW ***

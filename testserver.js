@@ -540,14 +540,11 @@ suites.auth = {
    },
    in: function (user) {
       return [
-         ['create invite for ' + user.username, 'post', 'admin/invites', {}, {firstName: user.firstName, email: user.email}, 200, function (s, rq, rs) {
-            s.inviteToken = rs.body.token;
-            return true;
-         }],
          ['signup ' + user.username, 'post', 'auth/signup', {}, function (s) {
-            return {username: user.username, password: user.password, token: s.inviteToken, email: user.email};
+            return {username: user.username, password: user.password, email: user.email};
          }, 200, function (s, rq, rs) {
             s.validationToken = rs.body.token;
+            if (rs.headers ['set-cookie']) return clog ('Signup should not log you in.');
             return true;
          }],
          ['verify ' + user.username, 'get', function (s) {return 'auth/verify/' + s.validationToken}, {}, '', 302],
@@ -569,8 +566,8 @@ suites.auth = {
       return [
          H.invalidTestMaker ('signup', 'auth/signup', [
             [[], 'object'],
-            [[], 'keys', ['username', 'password', 'email', 'token']],
-            dale.go (['username', 'password', 'email', 'token'], function (key) {
+            [[], 'keys', ['username', 'password', 'email']],
+            dale.go (['username', 'password', 'email'], function (key) {
                return [[key], 'string']
             }),
             [['email'], 'values', [tk.users.user1.email]],
@@ -601,55 +598,30 @@ suites.auth = {
             [['password'], 'string'],
             [['token'],    'string'],
          ]),
-         H.invalidTestMaker ('create invite', 'admin/invites', [
-            [[], 'object'],
-            [[], 'keys', ['email', 'firstName']],
-            [['email'], 'string'],
-            [['email'], 'values', [tk.users.user1.email]],
-            [['firstName'], 'string'],
-            [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
-         ]),
-         ['create invite', 'post', 'admin/invites', {}, {firstName: user.username, email: user.email}, 200, function (s, rq, rs) {
-            s.inviteToken = rs.body.token;
-            return true;
-         }],
-         ['signup with invalid token', 'post', 'auth/signup', {}, function (s) {
-            return {token: s.inviteToken + 'foo', username: user.username, password: user.password, email: user.email};
-         }, 403, H.cBody ({error: 'token'})],
-         ['try to signup with token that corresponds to another email', 'post', 'auth/signup', {}, function (s) {
-            return {username: user.username, password: user.password, email: user.email + 'foo', token: s.inviteToken};
-         }, 403, H.cBody ({error: 'token'})],
          ['signup', 'post', 'auth/signup', {}, function (s) {
-            return {token: s.inviteToken, username: user.username, password: user.password, email: user.email};
+            return {username: user.username, password: user.password, email: user.email};
          }, 200, function (s, rq, rs) {
             if (! rs.body.token) return clog ('No token returned after signup', rs.body);
             s.verificationToken = rs.body.token;
             return true;
          }],
-         ['create another invite', 'post', 'admin/invites', {}, {firstName: user.username, email: user.email + 'foo'}, 200, function (s, rq, rs) {
-            s.inviteToken2 = rs.body.token;
-            return true;
-         }],
          ['try to signup with existing username', 'post', 'auth/signup', {}, function (s) {
-            return {username: user.username, password: user.password, email: user.email + 'foo', token: s.inviteToken2};
+            return {username: user.username, password: user.password, email: user.email + 'foo'};
          }, 403, H.cBody ({error: 'username'})],
-         // existing email check cannot happen if we signup by invite because invite is looked up by email
-         ['try to signup with same token again', 'post', 'auth/signup', {}, function (s) {
-            // We delete the "another invite" created two tests ago
-            redis.del ('invite:' + user.email + 'foo', function () {});
-            return {username: user.username, password: user.password, email: user.email, token: s.inviteToken};
-         }, 403, H.cBody ({error: 'token'})],
+         ['try to signup with existing email', 'post', 'auth/signup', {}, function (s) {
+            return {username: user.username + 'foo', password: user.password, email: user.email};
+         }, 403, H.cBody ({error: 'email'})],
          ['login with invalid password', 'post', 'auth/login', {}, {username: user.username, password: user.password + 'foo', timezone: user.timezone}, 403, H.cBody ({error: 'auth'})],
          ['login with invalid username', 'post', 'auth/login', {}, {username: user.username, password: user.password + 'foo', timezone: user.timezone}, 403, H.cBody ({error: 'auth'})],
          ['login before verification', 'post', 'auth/login', {}, function (s) {
             return {username: user.username, password: user.password, timezone: user.timezone};
          }, 403, H.cBody ({error: 'verify'})],
          ['verify user with invalid token', 'get', function (s) {return 'auth/verify/' + s.verificationToken + 'foo'}, {}, '', 302, function (s, rq, rs) {
-            if (H.stop ('location header', rs.headers.location, 'https://' + CONFIG.server + '#/login/badtoken')) return false;
+            if (H.stop ('location header', rs.headers.location, 'https://' + CONFIG.domain + '#/login/badtoken')) return false;
             return true;
          }],
          ['verify user', 'get', function (s) {return 'auth/verify/' + s.verificationToken}, {}, '', 302, function (s, rq, rs) {
-            if (H.stop ('location header', rs.headers.location, 'https://' + CONFIG.server + '#/login/verified')) return false;
+            if (H.stop ('location header', rs.headers.location, 'https://' + CONFIG.domain + '#/login/verified')) return false;
             return true;
          }],
          ['login after verification', 'post', 'auth/login', {}, {username: user.username, password: user.password, timezone: user.timezone}, 200, function (s, rq, rs) {
@@ -780,23 +752,13 @@ suites.public = function () {
       }),
       ['get app root', 'get', '/', {}, '', 200],
       ['get admin root', 'get', 'admin', {}, '', 200],
-      H.invalidTestMaker ('request invite', 'requestInvite', [
-         [[], 'object'],
-         [[], 'keys', ['email']],
-         [['email'], 'string'],
-         // Taken from https://help.xmatters.com/ondemand/trial/valid_email_format.htm
-         [['email'],    'invalidValues', ['abc@mail-.com', 'abcdef@m..ail.com', '.abc@mail.com', 'abc#def@mail.com', 'abc.def@mail.c', 'abc.def@mail#archive.com	', 'abc.def@mail', 'abc.def@mail..com']],
-      ]),
-      H.invalidTestMaker ('submit error', 'requestInvite', [
-         [[], ['object', 'array']],
-      ]),
       ['submit error (array)', 'post', 'error', {}, [1], 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', user: 'PUBLIC', error: [1]})],
       ['submit error (object)', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', user: 'PUBLIC', error: {sin: 'sobresaltos'}})],
       suites.auth.in (tk.users.user1),
       ['submit error as logged in user', 'post', 'error', {}, {sin: 'sobresaltos'}, 200, H.cBody ({priority: 'critical', type: 'client error in browser', ip: '::ffff:127.0.0.1', user: 'user1', error: {sin: 'sobresaltos'}})],
       suites.auth.out (tk.users.user1),
       ['get public stats', 'get', 'stats', {}, '', 200, H.cBody ({byfs: '0', bys3: '0', pics: '0', vids: '0', pivs: '0', thumbS: '0', thumbM: '0', users: '0'})],
-      ['check that regular user cannot reach the admin', 'get', 'admin/invites', {}, '', 403],
+      ['check that regular user cannot reach the admin', 'get', 'admin/users', {}, '', 403],
    ];
 }
 
@@ -3543,7 +3505,7 @@ H.tryTimeout (10, 1000, function (cb) {
             if (! s.headers || ! s.headers.cookie) return b;
 
             // Skip CSRF token for these routes
-            if (inc (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset', 'requestInvite', 'admin/invites'], test [2])) return b;
+            if (inc (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset'], test [2])) return b;
 
             var b2 = teishi.copy (b);
             if (b2.multipart) b2.multipart.push ({type: 'field', name: 'csrf', value: s.csrf});

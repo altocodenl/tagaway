@@ -40,6 +40,7 @@ module.exports = {
    domain: DOMAIN,
    cookieName: 'acpic' + (ENV ? '-' + ENV : ''),
    allowedFormats: ['image/jpeg', 'image/png', 'image/bmp', 'image/heic', 'image/heif', 'image/gif', 'image/tiff', 'image/webp', 'video/mp4', 'video/quicktime', 'video/3gpp', 'video/avi', 'video/x-msvideo', 'video/webm', 'video/x-ms-wmv', 'video/x-m4v', 'video/mpeg', 'video/x-flv'],
+   maxUsers: 50,
    thumbSizes: {S: 300, M: 900},
    port: ENV ? 1427 : 8000,
    basepath: ENV ? '/root/files/acpic' : '/tmp',
@@ -71,18 +72,6 @@ module.exports = {
                'For your record, this is what we received:',
                ['br'],
                feedback,
-            ]);
-         }
-      },
-      invite: {
-         subject: 'Your invitation to join ac;pic',
-         message: function (username, token, email) {
-            return TEMPLATE (username, [
-               'You have been officially invited to join ac;pic. You’ll be sent to our website. When you get there, please click on the “Have an invite?” button on the upper right and follow the instructions. ',
-               ['img', {src: DOMAIN + 'assets/img/click-here-600x200.png'}],
-               ['br'],
-               'Ready? ',
-               ['a', {href: DOMAIN.replace (/app\/$/, '') + '#/signup/' + encodeURIComponent (JSON.stringify ({token: token, email: email}))}, 'Please click on this link to create your account.'],
             ]);
          }
       },

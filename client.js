@@ -3531,7 +3531,7 @@ B.mrespond ([
    }],
    [/^(get|post)$/, [], {match: H.matchVerb}, function (x, headers, body, cb) {
       var t = Date.now (), path = x.path [0];
-      if (x.verb === 'post' && ! inc (['requestInvite', 'auth/login', 'auth/signup', 'auth/recover', 'auth/reset'], path)) {
+      if (x.verb === 'post' && ! inc (['auth/login', 'auth/signup', 'auth/recover', 'auth/reset'], path)) {
          if (type (body, true) === 'formdata') body.append ('csrf', B.get ('Data', 'csrf'));
          else                                  body.csrf = B.get ('Data', 'csrf');
       }
@@ -3550,7 +3550,7 @@ B.mrespond ([
             // Retry to send POST /upload or POST /error after ten seconds if there's a connection error
             return setTimeout (function () {
                B.call (x, x.verb, x.path, headers, body, cb);
-            }, 30 * 1000);
+            }, 10 * 1000);
          }
          if (cb) cb (x, error, rs);
       });
@@ -3576,7 +3576,7 @@ B.mrespond ([
    ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
-      if (page === 'signup' && hash [1]) B.call (x, 'set', ['Data', 'signup'], teishi.parse (decodeURIComponent (hash [1])));
+      if (page === 'login' && hash [1]) B.call (x, 'snackbar', 'green', 'Your email is now verified. Please log in!');
 
       if (page === 'reset' && hash [1] && hash [2]) B.call (x, 'set', ['Data', 'reset'], {
          token:    decodeURIComponent (hash [1]),
@@ -3654,6 +3654,7 @@ B.mrespond ([
          password: c ('#auth-password').value,
          timezone: new Date ().getTimezoneOffset ()
       }, function (x, error, rs) {
+         if (error && error.responseText.match ('verify')) return B.call (x, 'snackbar', 'yellow', 'Please verify your email before logging in.');
          if (error) return B.call (x, 'snackbar', 'red', 'Please submit valid credentials.');
          B.call (x, 'clear', 'authInputs');
          B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
@@ -3669,29 +3670,31 @@ B.mrespond ([
       });
    }],
    ['signup', [], function (x) {
+      var email    = H.trim (c ('#auth-email').value);
       var username = H.trim (c ('#auth-username').value);
       var password = c ('#auth-password').value;
       if (username.match ('@')) return B.call (x, 'snackbar', 'yellow', 'Your username cannot be an email or contain an @ symbol.');
       if (username.length < 3)  return B.call (x, 'snackbar', 'yellow', 'Your username must be at least 3 characters long.');
+      if (! email.match (H.email)) return B.call (x, 'snackbar', 'yellow', 'Your email must be valid.');
       if (password.length < 6)  return B.call (x, 'snackbar', 'yellow', 'Your password must be at least 6 characters long.');
       if (c ('#auth-username').value !== c ('#auth-username-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated username does not match.');
+      if (c ('#auth-email').value !== c ('#auth-email-confirm').value)       return B.call (x, 'snackbar' ,'red', 'The repeated email does not match.');
       if (c ('#auth-password').value !== c ('#auth-password-confirm').value) return B.call (x, 'snackbar' ,'red', 'The repeated password does not match.');
       B.call (x, 'post', 'auth/signup', {}, {
-         email: B.get ('Data', 'signup', 'email'),
-         token: B.get ('Data', 'signup', 'token'),
+         email:    email,
          username: username,
          password: password
       }, function (x, error, rs) {
          B.call (x, 'clear', 'authInputs');
          if (error) {
             var parsedError = teishi.parse (error.responseText);
+            if (parsedError && parsedError.error === 'Too many users') return B.call (x, 'snackbar', 'red', 'Our apologies, we have too many users! We\'ll contact you as soon as we make some more room.');
             if (parsedError && parsedError.error === 'email')    return B.call (x, 'snackbar', 'red', 'That email is already in use.');
             if (parsedError && parsedError.error === 'username') return B.call (x, 'snackbar', 'red', 'That username is already in use.');
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
          }
-         B.call (x, 'set', ['Data', 'csrf'], rs.body.csrf);
-         B.call (x, 'query', 'account');
-         B.call (x, 'goto', 'page', B.get ('State', 'redirect'));
+         B.call (x, 'goto', 'page', 'login');
+         B.call (x, 'snackbar', 'green', 'Done! Please check your inbox.');
       });
    }],
    ['recover', [], function (x) {
@@ -3733,18 +3736,11 @@ B.mrespond ([
       });
    }],
    ['clear', 'authInputs', function (x) {
-      dale.go (['username', 'password', 'confirm'], function (v) {
+      dale.go (['username', 'password', 'email'], function (v) {
          var target = c ('#auth-' + v);
          if (target) target.value = '';
-      });
-   }],
-   ['request', 'invite', function (x) {
-      var email = prompt ('Send us your email and we\'ll send you an invite link to create your account! We will *only* use your email to send you an invite.');
-      if (! email) return;
-      if (! email.match (/^(([a-zA-Z0-9_\.\-]+)@([\da-zA-Z\.\-]+)\.([a-zA-Z\.]{2,6})\s*)$/)) return B.call (x, 'snackbar', 'red', 'Please enter a valid email address.');
-      B.call (x, 'post', 'requestInvite', {}, {email: email}, function (x, error) {
-         if (error) B.call (x, 'snackbar', 'red', 'There was an error processing your request. Please write us to info@altocode.nl instead.');
-         else       B.call (x, 'snackbar', 'green', 'We received your request successfully, hang tight!');
+         var target = c ('#auth-' + v + '-confirm');
+         if (target) target.value = '';
       });
    }],
 
@@ -4862,7 +4858,7 @@ views.login = function () {
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in', onclick: B.ev ('login', [])}],
                   ['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
-                  ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('request', 'invite')}, 'Don\'t have an account? Request an invite.'],
+                  ['a', {href: '#/signup',  class: 'enter-form__forgot-password'}, 'Don\'t have an account? Create an account.'],
                ]]
             ]]
          ]],
@@ -4884,10 +4880,12 @@ views.signup = function () {
                ['form', {onsubmit: 'event.preventDefault ()', class: 'enter-form auth-card__form'}, [
                   ['input', {id: 'auth-username', type: 'username', class: 'enter-form__input', placeholder: 'Username'}],
                   ['input', {id: 'auth-username-confirm', type: 'username', class: 'enter-form__input', placeholder: 'Repeat username'}],
+                  ['input', {id: 'auth-email', type: 'email', class: 'enter-form__input', placeholder: 'Email'}],
+                  ['input', {id: 'auth-email-confirm', type: 'email', class: 'enter-form__input', placeholder: 'Repeat email'}],
                   ['input', {id: 'auth-password', type: 'password', class: 'enter-form__input', placeholder: 'Password'}],
                   ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
-                  ['a', {class: 'enter-form__forgot-password', onclick: B.ev ('request', 'invite')}, 'Don\'t have an account? Request an invite.'],
+                  ['a', {class: 'enter-form__forgot-password', href: '#/login'}, 'Already have an account? Log in.'],
                ]]
             ]]
          ]],
