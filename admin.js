@@ -369,6 +369,10 @@ B.mrespond ([
 
    // *** USERS RESPONDERS ***
 
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+      if (B.get ('State', 'page') === 'users') B.call (x, 'retrieve', 'users');
+   }],
+
    ['delete', 'user', function (x, username) {
       if (! confirm ('Are you sure you want to delete the user ' + username + '?')) return;
       B.call (x, 'post', 'auth/delete', {}, {username: username}, function (x, error, rs) {
@@ -386,6 +390,10 @@ B.mrespond ([
    }],
 
    // *** LOGS RESPONDERS ***
+
+   ['change', ['State', 'page'], {match: B.changeResponder}, function (x) {
+      if (B.get ('State', 'page') === 'logs') B.call (x, 'retrieve', 'logs');
+   }],
 
    ['retrieve', 'logs', function (x) {
       var username = B.get (['State', 'logs', 'username']);
