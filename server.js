@@ -1764,7 +1764,7 @@ var routes = [
          function (s) {
             if (CONFIG.maxUsers && s.last [0] >= CONFIG.maxUsers) {
                if (ENV) notify (a.creat (), {priority: 'important', type: 'User limit reached on signup', user: b.username, email: b.email, limit: CONFIG.maxUsers});
-               return reply (rs, 420, {error: 'Too many users'});
+               return reply (rs, 418, {error: 'Too many users'});
             }
             if (s.last [1]) return reply (rs, 403, {error: 'email'});
             if (s.last [2]) return reply (rs, 403, {error: 'username'});
@@ -4602,7 +4602,8 @@ cicek.apres = function (rs) {
       logs.push (['flow', 'rq-bad', 1]);
       var ignore = dale.stop ([
          ['/auth/csrf',   403],
-         ['/favicon.ico', 403]
+         ['/favicon.ico', 403],
+         ['/auth/signup', 418],
       ], true, function (toIgnore) {
          return rs.log.url === toIgnore [0] && rs.log.code === toIgnore [1];
       });

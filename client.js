@@ -3688,7 +3688,7 @@ B.mrespond ([
          B.call (x, 'clear', 'authInputs');
          if (error) {
             var parsedError = teishi.parse (error.responseText);
-            if (parsedError && parsedError.error === 'Too many users') return B.call (x, 'snackbar', 'red', 'Our apologies, we have too many users! We\'ll contact you as soon as we make some more room.');
+            if (parsedError && parsedError.error === 'Too many users') return B.call (x, 'snackbar', 'yellow', 'Our apologies, we have too many users! We\'ll contact you as soon as we make some more room.');
             if (parsedError && parsedError.error === 'email')    return B.call (x, 'snackbar', 'red', 'That email is already in use.');
             if (parsedError && parsedError.error === 'username') return B.call (x, 'snackbar', 'red', 'That username is already in use.');
             return B.call (x, 'snackbar', 'red', 'There was an error creating your account.');
@@ -3728,6 +3728,7 @@ B.mrespond ([
       var conf = prompt ('Are you sure you want to delete your account? You cannot revert this action! If you wish to proceed, please enter the text "DELETE MY ACCOUNT"');
       if (conf === null) return B.call (x, 'snackbar', 'green', 'Phew!');
       if (conf !== 'DELETE MY ACCOUNT') return B.call (x, 'snackbar', 'yellow', 'Invalid confirmation message.');
+      B.call (x, 'snackbar', 'yellow', 'Deleting your account, please wait.', true);
       B.call (x, 'post', 'auth/delete', {}, {}, function (x, error) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting your account.');
          B.call (x, 'reset', 'store', true);
