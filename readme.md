@@ -43,11 +43,11 @@ Tom
    - mobile: mobile version
    - server/client: show checkbox on tags that are organized
    - server/client: sharebox (investigate how to create preview of thumbnail in whatsapp)
-   - Change logo to ac✓pic
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
+   - rename to tagaway! repos, homepage
    - bugs
       - client: fix issue with phantom selection when scrolling large selection
       - client: refresh always in upload, import and pics // check that `_blank` oauth flow issue is fixed in old tab
@@ -55,8 +55,8 @@ Mono
       - server: exclude WA from hour in parse date
    --------------
    - small tasks
-      - server/client: add login flow with Google and Facebook
-      - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete), SETEX 60s for share changes
+      - mobile: add login flow with Google and Facebook
+      - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
       - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.
       - client: see info of piv
       - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
