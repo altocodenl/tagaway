@@ -1885,8 +1885,6 @@ var routes = [
          ],
          [a.set, 'user', [a.get, Redis, 'hgetall', 'users:@username']],
          function (s) {
-            // Even when URI encoded, two or more forward slashes will be converted to just one by the browser, so we replace them altogether by dashes.
-            s.token = s.token.replace (/\//g, '-');
             sendmail (s, {
                to1:     s.user.username,
                to2:     s.user.email,

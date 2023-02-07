@@ -65,6 +65,7 @@ Mono
       - client: upgrade pop up notice or email when running out of free space
       - client: upload: retry upload button
       - server/client: set location
+      - other: set automatic backup from Google Drive to altofile
    --------------
    - small internal tasks
       - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
