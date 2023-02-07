@@ -1776,6 +1776,8 @@ var routes = [
          // TODO: don't do check to users, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
+            // Even when URI encoded, two or more forward slashes will be converted to just one by the browser, so we replace them altogether by dashes.
+            s.verifytoken = s.verifytoken.replace (/\//g, '-');
             var multi = redis.multi ();
             multi.set ('verifytoken:' + s.verifytoken, b.email);
             multi.set ('email:' + b.email, b.username);
@@ -1883,6 +1885,8 @@ var routes = [
          ],
          [a.set, 'user', [a.get, Redis, 'hgetall', 'users:@username']],
          function (s) {
+            // Even when URI encoded, two or more forward slashes will be converted to just one by the browser, so we replace them altogether by dashes.
+            s.token = s.token.replace (/\//g, '-');
             sendmail (s, {
                to1:     s.user.username,
                to2:     s.user.email,
