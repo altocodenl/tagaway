@@ -333,7 +333,7 @@ Mono
    - Set account space limit.
    - Change email.
    - Export/import all data.
-   - Log me out of all sessions.
+   - Log me out of all sessions (also after password change).
    - Freeze me out (includes log me out of all sessions).
    - Show/hide paid space in account.
    - Retrieve data on payment cycle.
