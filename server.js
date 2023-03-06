@@ -2705,7 +2705,8 @@ var routes = [
             a.stop ([
                [Redis, 'hset', 'proc:vid', piv.id, Date.now ()],
                // TODO: add queuing to allow a maximum of N simultaneous conversions.
-               [k, 'ffmpeg', '-i', newpath, '-vcodec', 'h264', '-acodec', 'mp2', Path.join (Path.dirname (newpath), id + '.mp4')],
+               // The AAC codec and the audio rate of 48000 seem to have the most compatibility with the mobile devices we tested
+               [k, 'ffmpeg', '-i', newpath, '-vcodec', 'h264', '-brand', 'mp42', '-ar', '48000', '-codec:a', 'aac', Path.join (Path.dirname (newpath), id + '.mp4')],
                [a.make (fs.rename), Path.join (Path.dirname (newpath), id + '.mp4'), Path.join (Path.dirname (newpath), id)],
                [a.set, 'bymp4', [a.make (fs.stat), Path.join (Path.dirname (newpath), id)]],
                [Redis, 'hdel', 'proc:vid', piv.id],
