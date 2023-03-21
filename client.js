@@ -4633,7 +4633,7 @@ B.mrespond ([
 
 views.logo = function (size) {
    return [
-      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, ''],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'tagaway'],
    ];
 }
 
@@ -4948,7 +4948,7 @@ views.header = function (showUpload, showImport) {
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why tagaway?']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '145px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why tagaway?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
