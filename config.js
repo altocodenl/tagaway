@@ -86,7 +86,7 @@ module.exports = {
       },
       welcome: {
          subject: 'Welcome to ac;pic!',
-         message: function (username, token) {
+         message: function (username) {
             return TEMPLATE (username, [
                'Welcome to ac;pic! We are thrilled to have you with us.',
                ['br'],

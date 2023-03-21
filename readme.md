@@ -55,6 +55,7 @@ Mono
       - server: exclude WA from hour in parse date
    --------------
    - small tasks
+      - server: script to reconvert mp4 videos using the new ffmpeg options
       - mobile: add login flow with Google and Facebook
       - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
       - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.
@@ -65,6 +66,7 @@ Mono
       - client: upgrade pop up notice or email when running out of free space
       - client: upload: retry upload button
       - server/client: set location
+      - other: set automatic backup from Google Drive to altofile
    --------------
    - small internal tasks
       - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
@@ -332,7 +334,7 @@ Mono
    - Set account space limit.
    - Change email.
    - Export/import all data.
-   - Log me out of all sessions.
+   - Log me out of all sessions (also after password change).
    - Freeze me out (includes log me out of all sessions).
    - Show/hide paid space in account.
    - Retrieve data on payment cycle.

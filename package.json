@@ -5,9 +5,9 @@
    "dependencies": {
       "cicek":   "3.4.3",
       "dale":    "6.0.2",
-      "gotob":   "2.2.0",
+      "gotob":   "2.3.0",
       "giz":     "0.3.1",
-      "hitit":   "1.2.7",
+      "hitit":   "1.2.8",
       "lith":    "6.0.7",
       "redis":   "3.1.2",
       "redmin":  "0.1.1",
@@ -35,6 +35,6 @@
    },
    "bugs": {
       "url": "http://github.com/altocodenl/acpic/issues",
-      "email": "fpereiro@gmail.com"
+      "email": "info@altocode.nl"
    }
 }
