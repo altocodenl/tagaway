@@ -3611,7 +3611,7 @@ B.mrespond ([
 
       if (logged && B.get ('State', 'redirect')) B.call (x, 'rem', 'State', 'redirect');
 
-      document.title = ['ac;pic', page].join (' - ');
+      document.title = ['tagaway', page].join (' - ');
 
       if (page === 'pics') {
          if (! fromHash && B.get ('State', 'queryURL') !== 'home') {
@@ -3733,7 +3733,7 @@ B.mrespond ([
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting your account.');
          B.call (x, 'reset', 'store', true);
          B.call (x, 'goto', 'page', 'login');
-         B.call (x, 'snackbar', 'green', 'So long, and thank you for using ac;pic!');
+         B.call (x, 'snackbar', 'green', 'So long, and thank you for using tagaway!');
       });
    }],
    ['clear', 'authInputs', function (x) {
@@ -4633,7 +4633,7 @@ B.mrespond ([
 
 views.logo = function (size) {
    return [
-      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, 'ac;pic'],
+      ['span', {style: style ({'font-weight': 'bold', color: '#5b6eff', 'font-size': size})}, ''],
    ];
 }
 
@@ -4948,7 +4948,7 @@ views.header = function (showUpload, showImport) {
       ['div', {class: 'header__menu'}, [
          B.view (['State', 'page'], function (page) {
             if (page === 'pics') return ['ul', {class: 'main-menu'}, [
-               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why ac;pic?']],
+               ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['open', 'location', undefined, 'https://altocode.nl/pic']), class: 'button button--feedback'}, 'Why tagaway?']],
             ]];
             return ['ul', {class: 'main-menu'}, [
                ['li', {class: 'main-menu__item main-menu__item--pictures', style: style ({width: '136.55px'})}, ['a', {onclick: B.ev (H.stopPropagation, ['goto', 'page', 'pics']), class: 'button button--purple-header'}, 'Go home']],
@@ -5064,7 +5064,7 @@ views.onboarding = function () {
                ['h2', {class: 'guide__title'}, account.username],
                ['h2', {class: 'guide__title'}, '!']
             ]],
-            ['p', {class: 'guide__text', style: style ({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining ac;pic. Are you ready to start organizing your digital memories?'],
+            ['p', {class: 'guide__text', style: style ({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining tagaway. Are you ready to start organizing your digital memories?'],
          ]],
          ['div', {class: 'onboarding-modal-container'}, [
             ['div', {class: 'onboarding-modal'}, [
@@ -6139,7 +6139,7 @@ views.upload = function () {
             // PAGE HEADER
             ['div', {class: 'page-header'}, [
                ['h1', {class: 'page-header__title page-title'}, 'Upload pictures'],
-               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Once your upload starts, you can go to other areas of ac;pic, but don\'t browse away or close the browser!'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Once your upload starts, you can go to other areas of tagaway, but don\'t browse away or close the browser!'],
             ]],
             ['div', {class: 'page-section'}, [
                // UPLOAD BOX
@@ -6449,7 +6449,7 @@ views.import = function () {
                         ['div', {class: 'files-found-so-far', style: style ({'padding-top': '10px'})}, [
                            ['div',{style: style ({'font-size': CSS.typography.fontSize (1)})}, [
                               ['p', {style: style ({display: 'contents'})}, (status === 'listing' ? 'We’re listing your photos and videos, so you can pick and choose what you want to import.' : 'We’re importing your photos and videos. ')],
-                              ['p', {style: style ({display: 'contents', 'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold})}, (status === 'listing' ? '' : 'Please note that all your imported folders will turn to tags, so you know where to find your pics in ac;pic.')],
+                              ['p', {style: style ({display: 'contents', 'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold})}, (status === 'listing' ? '' : 'Please note that all your imported folders will turn to tags, so you know where to find your pics in tagaway.')],
                               ['p', {style: style ({'margin-top': '10px'})}, (status === 'listing' ? 'This will take a few minutes. You can browse away or even close the browser. We\'ll send you an email when it\'s done!' : 'Depending on how many photos and videos you chose, this can take a while. You can browse away or even close the browser. We\'ll send you an email when it\'s done!')]]],
                         ]],
                      ]],
@@ -6602,7 +6602,7 @@ views.import = function () {
                               ['div', {class: 'upload-box__section', style: style ({'margin-bottom': 0})}, [
                                  ['p', {class: 'boxed-alert-message', style: style ({'font-size': CSS.typography.fontSize (1.75)})}, [
                                     ['span', {class: className + '-icon-small'}, H.putSvg (provider === 'google' ? 'googleDriveIcon' : dropboxIcon)],
-                                    ['span', {class: 'upload-progress__default-text'}, 'How to give ac;pic access to your Google Drive?']
+                                    ['span', {class: 'upload-progress__default-text'}, 'How to give tagaway access to your Google Drive?']
                                  ]],
                                  ['div', {class: 'progress-bar'}],
                               ]],
@@ -6613,7 +6613,7 @@ views.import = function () {
                                           ['p', {style: style ({display: 'contents'})}, 'After you log in to your Google Account, '],
                                           ['p', {style: style ({'text-decoration': 'underline', 'font-weight': CSS.vars.fontPrimarySemiBold, display: 'contents'})}, 'please check all the boxes that Google shows you.'],
                                           ['p', {style: style ({display: 'contents'})}, 'Otherwise, you won’t be able to import.'],
-                                          ['p', {style: style ({'margin-top': '10px'})}, 'We’ll only ask for what we need to get your photos and videos to ac;pic.']]],
+                                          ['p', {style: style ({'margin-top': '10px'})}, 'We’ll only ask for what we need to get your photos and videos to tagaway.']]],
                                     ]],
                                     ['div', {class: 'folders-found-so-far'}, [
                                        ['img', {src: 'assets/img/google-drive-access.png'}]
@@ -7158,7 +7158,7 @@ views.upgrade = function () {
                               ['span', {class: 'upgrade-table-info'}, [
                                  ['span', {class: 'upgrade-table-info-icon'}, 'ⓘ'],
                                  ['span', {class: 'upgrade-table-info-comment'}, [
-                                    ['span', {class: 'hover-text'}, 'Your monthly subscription enables us to create and maintain ac;pic.']
+                                    ['span', {class: 'hover-text'}, 'Your monthly subscription enables us to create and maintain tagaway.']
                                  ]],
                               ]],
                            ]],
