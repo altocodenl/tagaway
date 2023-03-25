@@ -49,13 +49,15 @@ Tom
 Mono
    - rename to tagaway! repos, homepage
    - bugs
+      - server/client/mobile: require csrf token for logging out (also ac;log)
+      - server: test and deploy for empty idsOnly that returns {} rather than []
       - client: fix issue with phantom selection when scrolling large selection
       - client: refresh always in upload, import and pics // check that `_blank` oauth flow issue is fixed in old tab
       - server: investigate bug with piv with location but no geotags
       - server: exclude WA from hour in parse date
    --------------
    - small tasks
-      - server: script to reconvert mp4 videos using the new ffmpeg options
+      - server: script to reconvert mp4 videos using the new ffmpeg options // add logic for reconverting mp4s that don't have the right codecs (48000 aac mp42)
       - mobile: add login flow with Google and Facebook
       - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
       - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.

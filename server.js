@@ -3262,7 +3262,7 @@ var routes = [
                lastTimeEntry = date;
                return [v, total];
             });
-            if (b.idsOnly) return reply (rs, 200, output.ids);
+            if (b.idsOnly) return reply (rs, 200, teishi.eq (output.ids, {}) ? [] : output.ids);
             output.tags = dale.obj (output.tags, function (v, k) {
                if (k % 2 === 0) return [v, parseInt (output.tags [k + 1])];
             });
