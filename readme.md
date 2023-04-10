@@ -40,21 +40,21 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 Tom
-   - mobile: mobile version
    - server/client: show checkbox on tags that are organized
    - server/client: sharebox (investigate how to create preview of thumbnail in whatsapp)
    - mobile: ios background upload
    - Submission Google Drive
 
 Mono
-   - rename to tagaway! repos, homepage
+   - rename to tagaway! folders, references.
    - bugs
+      - DOC: autoOrganize and timHeader
+      - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
       - server/client/mobile: require csrf token for logging out (also ac;log)
-      - server: test and deploy for empty idsOnly that returns {} rather than []
-      - client: fix issue with phantom selection when scrolling large selection
-      - client: refresh always in upload, import and pics // check that `_blank` oauth flow issue is fixed in old tab
-      - server: investigate bug with piv with location but no geotags
-      - server: exclude WA from hour in parse date
+      - client bug: fix with phantom selection when scrolling large selection
+      - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
+      - server bug: investigate bug with piv with location but no geotags
+      - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
    --------------
    - small tasks
       - server: script to reconvert mp4 videos using the new ffmpeg options // add logic for reconverting mp4s that don't have the right codecs (48000 aac mp42)
@@ -82,33 +82,6 @@ Mono
       - server: script to rename username
    --------------
    - large tasks
-      - mobile: mobile version logic
-         - home view
-            - get hometags and draw
-            - on change of hometags, submit hometags update
-         - local view
-            - get tag info for existing pivs:
-               - query on ids as u:: + recentlyTagged but only for ids on the relevant half year
-               - overwrite with local object of pendingTags to show it up to date
-            - get all user tags
-            - tag
-               - for each entry in pendingTags:
-                  - if local piv has an entry with id on the idMap, just tag it.
-                  - if local piv has an entry with 'pending' on the idMap, put entry on pendingTags (create/append)
-               - invoke function every second and put a lock that doesn't allow more than one simultaneous execution
-            - upload
-               - if there's no current upload (as per lastUseDate), create one
-               - create 'pending' entry on idMap
-               - if upload busy, put piv on queue
-               - when at the beginning of the queue, remove from queue and upload piv
-               - after done, if error, report, and remove entry from idMap
-               - whether repeated or not, get returned id and put it on the idMap hash that maps local ids to server ids
-               - put entry (or append to entry) on pendingTags
-            - UI
-               - current tag (if any)
-               - number with current tag (gotten from get tag info from existing pivs)
-         - uploaded view
-
       - server/client: Share & manage
          - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
          - server: remove home tags in H.tagCleanup if lose the tag because it was only on shared pivs
@@ -2447,16 +2420,17 @@ We create a shorthand `b` for the request's body.
       var b = rq.body;
 ```
 
-The body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`. `ids` should have at least one tag in it. If any of these requirements is not met, a 400 will be returned with the corresponding validation error.
+The body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined, autoOrganized: true|false|undefined}`. `ids` should have at least one tag in it. If any of these requirements is not met, a 400 will be returned with the corresponding validation error.
 
 ```javascript
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tag', 'ids', 'del'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tag', 'ids', 'del', 'autoOrganize'], 'eachOf', teishi.test.equal],
          ['body.tag', b.tag, 'string'],
          ['body.ids', b.ids, 'array'],
          ['body.ids', b.ids, 'string', 'each'],
          function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
          ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
+         ['body.autoOrganize', b.autoOrganize, [true, false, undefined], 'oneOf', teishi.test.equal],
       ])) return;
 ```
 
@@ -2608,6 +2582,13 @@ If the piv is not owned by the user, we will add `b.tag` to `hashtag:USERNAME:HA
                   if (piv.owner !== rq.user.username) {
                      multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
                      multi.sadd ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
+```
+
+If `b.autoOrganize` is passed, we also mark the piv as organized.
+
+```javascript
+                     if (b.autoOrganize) multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, 'o::');
+                     if (b.autoOrganize) multi.sadd ('taghash:' + rq.user.username + ':' + 'o::',    piv.hash);
                   }
 ```
 
@@ -2617,6 +2598,13 @@ If the piv is owned by the user, we add `b.tag` to `pivt:ID`, as well as `piv.id
                   else {
                      multi.sadd ('pivt:' + piv.id, b.tag);
                      multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+```
+
+If `b.autoOrganize` is passed, we also mark the piv as organized.
+
+```javascript
+                     if (b.autoOrganize) multi.sadd ('pivt:' + piv.id, 'o::');
+                     if (b.autoOrganize) multi.sadd ('tag:'  + rq.user.username + ':' + 'o::', piv.id);
 ```
 
 Finally, we remove the piv's id from `tag:USERNAME:u::`, which is the list of untagged pivs. If the piv already had an user tag, this will be a no-op. Note we don't do this for pivs that are not owned by the user, since they will not be inside the `tag:USERNAME:u::` entry (or in any `tag:USERNAME:...` entry, for that matter).
@@ -2643,6 +2631,13 @@ If we're here, we're dealing with an untagging operation. We check whether the t
                if (! inc (s.last [k], b.tag)) return;
 ```
 
+We define an `autoOrganize` variable, which will be true if `b.autoOrganize` is set, and if there is only one user tag left on the piv. If this is indeed the last tag on the piv and `autoOrganize` is set, we will mark the piv as not organized.
+
+```javascript
+               var autoOrganize = b.autoOrganize && dale.fil (s.last [k], undefined, function (v) {if (H.isUserTag (v)) return v}).length === 1;
+```
+
+
 If the piv is not owned by the user, we will remove the tag from the user's hashtag entry for a piv with that hash. Since the user doesn't own a piv with that hash, then we know the user must have a hashtag entry for it. And as we saw above, the list of tags for this piv came from the hashtag entry, not a regular `pivt:USERNAME` entry.
 
 We also remove the hash from the taghash entry for the tag (`taghash:USERNAME:TAG`).
@@ -2651,6 +2646,13 @@ We also remove the hash from the taghash entry for the tag (`taghash:USERNAME:TA
                if (piv.owner !== rq.user.username) {
                   multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
                   multi.srem ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
+```
+
+We mark the piv as not organized if `autoOrganize` is set.
+
+```javascript
+                  if (autoOrganize) multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, 'o::');
+                  if (autoOrganize) multi.srem ('taghash:' + rq.user.username + ':' + 'o::',    piv.hash);
                }
 ```
 
@@ -2670,6 +2672,13 @@ We remove the tag from `pivt:ID` and the id from `tag:USERNAME:TAG`.
 ```javascript
                   multi.srem ('pivt:' + piv.id, b.tag);
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+```
+
+We mark the piv as not organized if `autoOrganize` is set.
+
+```javascript
+                  if (autoOrganize) multi.srem ('pivt:' + piv.id, 'o::');
+                  if (autoOrganize) multi.srem ('tag:'  + rq.user.username + ':' + 'o::', piv.id);
 ```
 
 If there's only one user tag left on the piv and we're not removing the `'o::'` tag, then we are removing the last user piv from the piv. In that case, we add the piv to the `untagged` set (`tag:USERNAME:u::`.
@@ -2855,6 +2864,7 @@ Here are the requirements for the body (taken from the documentation of `POST /q
    to: INT,
    recentlyTagged: [STRING, ...]|UNDEFINED,
    idsOnly: BOOLEAN|UNDEFINED,
+   timeHeader: BOOLEAN|UNDEFINED,
    refresh: BOOLEAN|UNDEFINED,
    updateLimit: INT|UNDEFINED
 }
@@ -2865,7 +2875,7 @@ Here are the requirements for the body (taken from the documentation of `POST /q
 
 ```javascript
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly', 'timeHeader', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -2884,6 +2894,7 @@ Here are the requirements for the body (taken from the documentation of `POST /q
          ],
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
+         ['body.timeHeader', b.timeHeader, ['undefined', 'boolean'], 'oneOf'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf']
          ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
          ['body.updateLimit', b.updateLimit, ['undefined', 'integer'], 'oneOf'],
@@ -3325,6 +3336,12 @@ We now define a list `output` which we'll use to return data back to Javascript.
    'local output = {};',
 ```
 
+If the `timeHeader` flag is passed, we will initialize `output.timeHeader` to a list.
+
+```javascript
+   'if query.query.timeHeader then output ["timeHeader"] = {} end;',
+```
+
 We will now have the list of all the piv ids that match the query and respect the requested date range. We will now get the tag information for all of these pivs; if `idsOnly` is set, we don't need to do so (since we only want the piv ids) so we can skip this section.
 
 ```javascript
@@ -3343,6 +3360,12 @@ We get the `hash` and `owner` of the piv and store it in a variable `piv`.
    '      local piv = redis.call ("hmget", "piv:" .. v, "hash", "owner");',
 ```
 
+We will do the same with the tags belonging to the piv.
+
+```javascript
+   '      local tags = redis.call ("smembers", "pivt:" .. v);',
+```
+
 We will also add the hash of the piv to a set in the key `QID-hashes`. Earlier we created another set at the same key, but we already deleted it, so here we start from scratch collecting the hashes of all the pivs that match the query.
 
 ```javascript
@@ -3357,21 +3380,21 @@ We will collect the tags belonging to a certain hash in the set `QID-tags-HASH`.
 
 ```javascript
    '      if piv [2] == query.username then',
-   '         redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (redis.call ("smembers", "pivt:" .. v)));',
+   '         redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (tags));',
 ```
 
 If the piv is not owned by the querying user, but rather shared by some other user, we first add any tags in `hashtag:USERNAME:HASH` to `QID-tags-HASH`. These will be tags applied by the user to one or more pivs with this particular hash. Note that we only do this if there are tags in `QID-tags-HASH`, otherwise the `sadd` will throw an error if there are no arguments passed to it.
 
 ```javascript
    '      else',
-   '         local tags = redis.call ("smembers", "hashtag:" .. query.username .. ":" .. piv [1]);',
-   '         if #tags > 0 then redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (tags)) end;',
+   '         local hashtags = redis.call ("smembers", "hashtag:" .. query.username .. ":" .. piv [1]);',
+   '         if #hashtags > 0 then redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (hashtags)) end;',
 ```
 
 Now we need to decide which of the piv's own tags will be seen in the query. We iterate the tags.
 
 ```javascript
-   '         for k2, v2 in ipairs (redis.call ("smembers", "pivt:" .. v)) do',
+   '         for k2, v2 in ipairs (tags) do',
 ```
 
 If the tag is in `sharedTags`, an object we sent from Javascript of the form `{SHAREDTAG1: true, ...}`, then the tag is shared with the user, so we will let tag through.
@@ -3388,12 +3411,70 @@ If the tag is a date or geo tag, we also add it to the set.
    '               redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], v2);',
 ```
 
-Otherwise, we don't count the tag. We close everything up to the external `for` loop - the one that iterated piv ids.
+Otherwise, we don't count the tag. We are now done getting the tags for this piv.
 
 ```javascript
    '            end',
    '         end',
    '      end',
+```
+
+If `query.query.timeHeader` is requested, we need to add (or overwrite) an entry on `output.timeHeader` with the information from this piv.
+
+```javascript
+   '      if query.query.timeHeader then',
+```
+
+We initialize three local variables: `month`, `year` and `organized`. The latter will be initialized to `t`, which stands for "to organize" (that is, the opposite of "organized". The other two are for holding the year and the month of the piv.
+
+```javascript
+   '         local month = "";',
+   '         local year = "";',
+   '         local organized = "t";',
+```
+
+If the piv does not belong to the querying user, then we overwrite `tags` with the tags set at `QID-tags-ID`, since we want to see if this piv is organized or not for the querying user, not for the owner of the piv.
+
+```javascript
+   '         if piv [2] ~= query.username then tags = redis.call ("smembers", KEYS [1] .. "-tags-" .. piv [1]) end;',
+```
+
+We iterate the tags of the piv:
+
+```javascript
+   '         for k, tag in ipairs (tags) do',
+```
+
+If we find a year or month tag, we put it in the local variable.
+
+```javascript
+   '           if string.sub (tag, 0, 3) == "d::" then',
+   '              if #tag == 7 then year = string.sub (tag, 4) else month = string.sub (tag, 5) end',
+   '           end',
+```
+
+If the tag is `o::`, then the piv is organized. We then overwrite the `organized` variable with `'o'`.
+
+```javascript
+   '           if tag == "o::" then organized = "o" end',
+   '         end',
+```
+
+We construct a key of the form `YEAR:MONTH:o` if the piv is organized, or `YEAR:MONTH:t`, if the piv is not organized. We set that key to `true` in `output.timeHeader. Note that we might be overwriting already said key if it exists, which is perfectly fine. The `timeHeader` only cares if there's an organized piv (and an unorganized piv) on a given month & year combination. Note only that there could be a key for organized pivs and one for not organized pivs on the same month & year combination.
+
+```javascript
+   '         output.timeHeader [year .. ":" .. month .. ":" .. organized] = true;',
+```
+
+This concludes the computation of the `timeHeader` for this piv.
+
+```javascript
+   '      end',
+```
+
+We close the external `for` loop - the one that iterated piv ids.
+
+```javascript
    '   end',
 ```
 
@@ -3830,10 +3911,10 @@ We return the label as key, plus the `total` processing time as a value. This co
             });
 ```
 
-If `b.idsOnly` is set, we merely reply with `output.ids`.
+If `b.idsOnly` is set, we merely reply with `output.ids`; however, if `output.ids` is empty, it will be an object rather than an array (because Lua will have sent it as an empty list, which Javascript will interpret as an empty object, in which case, we reply with an empty array rather than an empty object.
 
 ```javascript
-            if (b.idsOnly) return reply (rs, 200, output.ids);
+            if (b.idsOnly) return reply (rs, 200, teishi.eq (output.ids, {}) ? [] : output.ids);
 ```
 
 If we're here, we'll have to return `total`, `tags` and `pivs`.
@@ -3947,6 +4028,8 @@ We reply with an object of the shape `{total: INT, tags: {...}, pivs: [{...}, ..
 
 Note: the `refreshQuery` parameter will be soon removed.
 
+The `timeHeader` key will be added only if `b.timeHeader` is set. For setting this object, we use the information brought to us from the Lua query. The only processing we do is that if, for a given month, there's both organized and unorganized pivs, we consider that month to be unorganized (`'t'` takes precedence over `'o'`).
+
 The `perf` object in the output has three fields: `total`, which is the total processing time for the entire request, `node`, which is all the processing of the request minus the time that Lua spent processing, and `lua`, which will be an object with the labels and associated lengths, including `total`, which will be equal to the total execution time of the Lua script.
 
 ```javascript
@@ -3955,6 +4038,10 @@ The `perf` object in the output has three fields: `total`, which is the total pr
                total:        output.total,
                tags:         output.tags,
                pivs:         output.pivs,
+               timeHeader:   ! b.timeHeader ? undefined : dale.obj (output.timeHeader, function (v, k) {
+                  if (k.slice (-1) === 't') return [k.slice (0, -2), false];
+                  if (! output.timeHeader [k.replace ('o', 't')]) return [k.slice (0, -2), true];
+               }),
                perf:         {total: Date.now () - rs.log.startTime, node: Date.now () - perf.total - rs.log.startTime, lua: perf}
             });
          }
