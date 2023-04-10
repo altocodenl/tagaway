@@ -1466,22 +1466,37 @@ redis.script ('load', [
    'end',
    'redis.call ("rpush", KEYS [1] .. "-perf", "sort", unpack (redis.call ("time")));',
    'local output = {};',
+   'if query.query.timeHeader then output ["timeHeader"] = {} end;',
    'if not query.query.idsOnly then',
    '   for k, v in ipairs (ids) do',
    '      local piv = redis.call ("hmget", "piv:" .. v, "hash", "owner");',
+   '      local tags = redis.call ("smembers", "pivt:" .. v);',
    '      redis.call ("sadd", KEYS [1] .. "-hashes", piv [1]);',
    '      if piv [2] == query.username then',
-   '         redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (redis.call ("smembers", "pivt:" .. v)));',
+   '         redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (tags));',
    '      else',
-   '         local tags = redis.call ("smembers", "hashtag:" .. query.username .. ":" .. piv [1]);',
-   '         if #tags > 0 then redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (tags)) end;',
-   '         for k2, v2 in ipairs (redis.call ("smembers", "pivt:" .. v)) do',
+   '         local hashtags = redis.call ("smembers", "hashtag:" .. query.username .. ":" .. piv [1]);',
+   '         if #hashtags > 0 then redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], unpack (hashtags)) end;',
+   '         for k2, v2 in ipairs (tags) do',
    '            if query.sharedTags [piv [2] .. ":" .. v2] then',
    '               redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], piv [2] .. ":" .. v2);',
    '            elseif string.sub (v2, 0, 3) == "d::" or string.sub (v2, 0, 3) == "g::" then',
    '               redis.call ("sadd", KEYS [1] .. "-tags-" .. piv [1], v2);',
    '            end',
    '         end',
+   '      end',
+   '      if query.query.timeHeader then',
+   '         local month = "";',
+   '         local year = "";',
+   '         local organized = "t";',
+   '         if piv [2] ~= query.username then tags = redis.call ("smembers", KEYS [1] .. "-tags-" .. piv [1]) end;',
+   '         for k, tag in ipairs (tags) do',
+   '           if string.sub (tag, 0, 3) == "d::" then',
+   '              if #tag == 7 then year = string.sub (tag, 4) else month = string.sub (tag, 5) end',
+   '           end',
+   '           if tag == "o::" then organized = "o" end',
+   '         end',
+   '         output.timeHeader [year .. ":" .. month .. ":" .. organized] = true;',
    '      end',
    '   end',
    '   redis.call ("rpush", KEYS [1] .. "-perf", "hashes", unpack (redis.call ("time")));',
@@ -2999,12 +3014,13 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tag', 'ids', 'del'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tag', 'ids', 'del', 'autoOrganize'], 'eachOf', teishi.test.equal],
          ['body.tag', b.tag, 'string'],
          ['body.ids', b.ids, 'array'],
          ['body.ids', b.ids, 'string', 'each'],
          function () {return ['body.ids length', b.ids.length, {min: 1}, teishi.test.range]},
          ['body.del', b.del, [true, false, undefined], 'oneOf', teishi.test.equal],
+         ['body.autoOrganize', b.autoOrganize, [true, false, undefined], 'oneOf', teishi.test.equal],
       ])) return;
 
       b.tag = H.trim (b.tag);
@@ -3062,24 +3078,33 @@ var routes = [
                   if (piv.owner !== rq.user.username) {
                      multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
                      multi.sadd ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
+                     if (b.autoOrganize) multi.sadd ('hashtag:' + rq.user.username + ':' + piv.hash, 'o::');
+                     if (b.autoOrganize) multi.sadd ('taghash:' + rq.user.username + ':' + 'o::',    piv.hash);
                   }
                   else {
                      multi.sadd ('pivt:' + piv.id, b.tag);
                      multi.sadd ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+                     if (b.autoOrganize) multi.sadd ('pivt:' + piv.id, 'o::');
+                     if (b.autoOrganize) multi.sadd ('tag:'  + rq.user.username + ':' + 'o::', piv.id);
                      if (b.tag !== 'o::') multi.srem ('tag:'  + rq.user.username + ':u::', piv.id);
                   }
                   return;
                }
 
                if (! inc (s.last [k], b.tag)) return;
+               var autoOrganize = b.autoOrganize && dale.fil (s.last [k], undefined, function (v) {if (H.isUserTag (v)) return v}).length === 1;
                if (piv.owner !== rq.user.username) {
                   multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, b.tag);
                   multi.srem ('taghash:' + rq.user.username + ':' + b.tag,    piv.hash);
+                  if (autoOrganize) multi.srem ('hashtag:' + rq.user.username + ':' + piv.hash, 'o::');
+                  if (autoOrganize) multi.srem ('taghash:' + rq.user.username + ':' + 'o::',    piv.hash);
                }
                else {
                   s.ids.push (piv.id);
                   multi.srem ('pivt:' + piv.id, b.tag);
                   multi.srem ('tag:'  + rq.user.username + ':' + b.tag, piv.id);
+                  if (autoOrganize) multi.srem ('pivt:' + piv.id, 'o::');
+                  if (autoOrganize) multi.srem ('tag:'  + rq.user.username + ':' + 'o::', piv.id);
                   if (b.tag !== 'o::' && dale.fil (s.last [k], false, H.isUserTag).length === 1) multi.sadd ('tag:' + rq.user.username + ':u::', piv.id);
                }
             });
@@ -3151,7 +3176,7 @@ var routes = [
       var b = rq.body;
 
       if (stop (rs, [
-         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
+         ['keys of body', dale.keys (b), ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly', 'timeHeader', 'refresh', 'updateLimit'], 'eachOf', teishi.test.equal],
          ['body.tags',    b.tags, 'array'],
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
@@ -3171,6 +3196,7 @@ var routes = [
          ['body.recentlyTagged', b.recentlyTagged, ['undefined', 'array'], 'oneOf'],
          ['body.recentlyTagged', b.recentlyTagged, 'string', 'each'],
          ['body.idsOnly', b.idsOnly, ['undefined', 'boolean'], 'oneOf'],
+         ['body.timeHeader', b.timeHeader, ['undefined', 'boolean'], 'oneOf'],
          ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
          ['body.updateLimit', b.updateLimit, ['undefined', 'integer'], 'oneOf'],
          b.updateLimit === undefined ? [] : ['body.updateLimit', b.updateLimit, {min: 1}, teishi.test.range],
@@ -3303,6 +3329,10 @@ var routes = [
                total:        output.total,
                tags:         output.tags,
                pivs:         output.pivs,
+               timeHeader:   ! b.timeHeader ? undefined : dale.obj (output.timeHeader, function (v, k) {
+                  if (k.slice (-1) === 't') return [k.slice (0, -2), false];
+                  if (! output.timeHeader [k.replace ('o', 't')]) return [k.slice (0, -2), true];
+               }),
                perf:         {total: Date.now () - rs.log.startTime, node: Date.now () - perf.total - rs.log.startTime, lua: perf}
             });
          }

@@ -2110,12 +2110,13 @@ suites.tag = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('tag pivs', 'tag', [
          [[], 'object'],
-         [[], 'keys', ['tag', 'ids', 'del']],
+         [[], 'keys', ['tag', 'ids', 'del', 'autoOrganize']],
          [[], 'invalidKeys', ['foo']],
          [['tag'], 'string'],
          [['ids'], 'array'],
          [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
          [['del'], 'type', ['boolean', 'undefined'], 'body.del should be equal to one of \\[true,false,null\\] but instead is .+'],
+         [['autoOrganize'], 'type', ['boolean', 'undefined'], 'body.autoOrganize should be equal to one of \\[true,false,null\\] but instead is .+'],
          [['tag'], 'invalidValues', ['a::', ' a::', 'u::', ' u::', 'u:: ', 'g::a', 'd::2021', 'x::'], 'tag'],
          [['ids'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
       ]),
@@ -2262,14 +2263,16 @@ suites.tag = function () {
          if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).sort ())) return false;
          return true;
       }],
-      ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false, '2022:3': false})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 0, 't::': 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags))  return false;
          return true;
       }],
       ['mark piv as organized', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.mediumId]}}, 200],
-      ['query pivs after marking piv as organized', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query pivs after marking piv as organized', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false, '2022:3': true})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags)) return false;
@@ -2283,43 +2286,82 @@ suites.tag = function () {
          return true;
       }],
       ['mark unorganized piv as unorganized (no-op)', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId], del: true}}, 200],
-      ['query pivs after marking piv as organized (no-op)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query pivs after marking piv as organized (no-op)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false, '2022:3': true})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags)) return false;
          return true;
       }],
-      ['query organized pivs', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query organized pivs', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2022:3': true})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 0})) return false;
          if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
          return true;
       }],
-      ['query unorganized pivs', 'post', 'query', {}, {tags: ['t::'], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query unorganized pivs', 'post', 'query', {}, {tags: ['t::'], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 0, 't::': 1})) return false;
          if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.small.dateTags))  return false;
          return true;
       }],
-      ['query organized pivs with a tag that they have', 'post', 'query', {}, {tags: ['o::', tk.pivs.medium.dateTags [0]], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query organized pivs with a tag that they have', 'post', 'query', {}, {tags: ['o::', tk.pivs.medium.dateTags [0]], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2022:3': true})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 0})) return false;
          if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
          return true;
       }],
-      ['query organized pivs with a tag that they do not have', 'post', 'query', {}, {tags: ['o::', tk.pivs.small.dateTags [0]], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query organized pivs with a tag that they do not have', 'post', 'query', {}, {tags: ['o::', tk.pivs.small.dateTags [0]], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {})) return false;
          if (H.stop ('tags', rs.body.tags, {'a::': 2, 'u::': 0, 'o::': 0, 't::': 0})) return false;
          if (H.stop ('body.total', rs.body.total, 0)) return false;
          return true;
       }],
       ['delete organized piv', 'post', 'delete', {}, function (s) {return {ids: [s.mediumId]}}, 200],
-      ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false})) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 1, 'u::': 1, 'o::': 0, 't::': 1})) return false;
          return true;
       }],
       ['delete unorganized piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
-      ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
+      ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body.timeHeader, {})) return false;
          if (H.stop ('tags', rs.body.tags, {'a::': 0, 'u::': 0, 'o::': 0, 't::': 0})) return false;
+         return true;
+      }],
+      ['query pivs after deleting organized piv (idsOnly)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, idsOnly: true}, 200, function (s, rq, rs) {
+         if (H.stop ('timeHeader', rs.body, [])) return false;
+         return true;
+      }],
+      ['upload small piv to test autoOrganize', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['tag unorganized piv with autoOrganize', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId], autoOrganize: true}}, 200],
+      ['query piv, check it is organized', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 1, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs length', rs.body.pivs.length, 1)) return false;
+         return true;
+      }],
+      ['tag unorganized piv with autoOrganize again', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId], autoOrganize: true}}, 200],
+      ['query piv, check it is still organized', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 1, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs length', rs.body.pivs.length, 1)) return false;
+         return true;
+      }],
+      ['untag organized piv with autoOrganize, still should remain organized because it still has user tags', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId], autoOrganize: true, del: true}}, 200],
+      ['query piv, check it is still organized', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 1, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs length', rs.body.pivs.length, 1)) return false;
+         return true;
+      }],
+      ['untag organized piv with autoOrganize, should be marked as not organized', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId], autoOrganize: true, del: true}}, 200],
+      ['query piv, check it is still organized', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 1, timeHeader: true}, 200, function (s, rq, rs) {
+         if (H.stop ('pivs length', rs.body.pivs.length, 0)) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -2331,7 +2373,7 @@ suites.query = function () {
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('query pivs', 'query', [
          [[], 'object'],
-         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly', 'refresh', 'updateLimit']],
+         [[], 'keys', ['tags', 'mindate', 'maxdate', 'sort', 'from', 'fromDate', 'to', 'recentlyTagged', 'idsOnly', 'timeHeader', 'refresh', 'updateLimit']],
          [[], 'invalidKeys', ['foo']],
          [['tags'], 'array'],
          [['tags', 0], 'type', 'string', 'each of the body.tags should have as type string but one of .+ is .+ with type'],
@@ -2354,6 +2396,7 @@ suites.query = function () {
          [['recentlyTagged'], ['undefined', 'array']],
          [['recentlyTagged', 0], 'type', 'string', 'each of the body.recentlyTagged should have as type string but one of .+ is .+ with type'],
          [['idsOnly'], ['undefined', 'boolean']],
+         [['timeHeader'], ['undefined', 'boolean']],
          [['tags'], 'invalidValues', [['a::']], 'all'],
          [['tags'], 'invalidValues', [['u::', 'foo', 'bar', 'foo']], 'repeated'],
          [['recentlyTagged'], 'values', [['foo']]],
