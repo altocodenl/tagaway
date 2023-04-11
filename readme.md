@@ -1,8 +1,8 @@
-# ac;pic :: all your photos and videos in one place
+# tagaway :: all your photos and videos in one place
 
 ## About
 
-ac;pic is an application that allows you to store and manage your pictures and videos (pivs). ac;pic is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
+tagaway is an application that allows you to store and manage your pictures and videos (pivs). tagaway is built by [Altocode](https://altocode.nl). While the service itself is paid, Altocode freely shares the code for all purposes, including commercial ones.
 
 To understand why we're sharing the source code of a commercial product, please read [our manifesto](http://federicopereiro.com/manifesto). If that's too long to read, in a nutshell: we want to share our code so that others can learn from it and contribute to us. Sharing is the way to progress.
 
@@ -10,7 +10,7 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-ac;pic is currently in private beta.
+tagaway is currently in private beta.
 
 The authors wish to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
@@ -46,9 +46,7 @@ Tom
    - Submission Google Drive
 
 Mono
-   - rename to tagaway! folders, references.
    - bugs
-      - DOC: autoOrganize and timHeader
       - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
       - server/client/mobile: require csrf token for logging out (also ac;log)
       - client bug: fix with phantom selection when scrolling large selection
@@ -57,6 +55,7 @@ Mono
       - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
    --------------
    - small tasks
+      - client/server: rename everything to tagaway: folders, references.
       - server: script to reconvert mp4 videos using the new ffmpeg options // add logic for reconverting mp4s that don't have the right codecs (48000 aac mp42)
       - mobile: add login flow with Google and Facebook
       - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
@@ -114,7 +113,7 @@ Mono
             - shut down after all are done
             - stop new ones
             - save progress on what's already done
-      - Add notes on self-hosted ac;pic
+      - Add notes on self-hosted tagaway
          - Turn off/on S3
          - Docker
          - Documentation
@@ -522,12 +521,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - On each of the pivs, if the existing `date` field has a positive offset from UTC midnight, this offset will be added to the provided `date`.
 
 - `POST /tag`
-   - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined}`
+   - Body must be of the form `{tag: STRING, ids: [STRING, ...], del: true|false|undefined, autoOrganize: true|false|undefined}`
    - `tag` will be trimmed (any whitespace at the beginning or end of the string will be eliminated; space-like characters in the middle will be replaced with a single space).
    - After trimmed, `tag` cannot start with `[a-z]::`.
    - If `del` is `true`, the tag will be removed, otherwise it will be added.
    - All pivs must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - There should be no repeated tags on the body, otherwise a 400 is returned.
+   - If `autoOrganize` is set to `true`, if this is a tagging operation, the piv will be marked as organized. And if `autoOrganize` is set to `true` and this is an untagging operation that removes the *last user tag* from a piv, the piv will be marked as unorganized instead.
    - If successful, returns a 200.
 
 - `GET /tags`
@@ -553,6 +553,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    to: INT,
    recentlyTagged: [STRING, ...]|UNDEFINED,
    idsOnly: BOOLEAN|UNDEFINED,
+   timeHeader: BOOLEAN|UNDEFINED,
    refresh: BOOLEAN|UNDEFINED,
    updateLimit: INT|UNDEFINED
 }
@@ -574,6 +575,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The only exception is `a::`, which indicate the *total* amount of all pivs, irrespective of the query. `u::` stands for untagged pivs, `o::` for pivs marked as organized, and `t::` for pivs not yet marked as organized.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned (`{ids: [...]}`). This enables the "select all" functionality.
+   - If `body.timeHeader` is present, a `timeHeader` field will be sent along with the other fields, having the form `{YYYYMM: true|false...}`; if a year + month combination is set to `true`, that month will have all its pivs organized; if an entry is set to `false`, it will have one or more unorganized pivs. Months for which there is no entry have no pivs.
 
 - `POST /sho` (for sharing or unsharing) and `POST /shm` (for accepting or removing a tag shared with the user).
    - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`. `whom` must be the `email`, not the `username` of the target user.
@@ -4378,6 +4380,6 @@ TODO: add annotated source code from here to the end of the file.
 
 ## License
 
-ac;pic is written by [Altocode](https://altocode.nl) and released into the public domain.
+tagaway is written by [Altocode](https://altocode.nl) and released into the public domain.
 
 The geographical information data file at `utils/cities500.txt` comes straight from the [GeoNames geographical database](http://www.geonames.org/), more precisely, [this file](http://download.geonames.org/export/dump/cities500.zip). We're very grateful to the GeoNames team for making this information available.
