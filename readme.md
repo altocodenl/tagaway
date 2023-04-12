@@ -39,84 +39,80 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-Tom
+- bugs
+   - **server: investigate 502 nginx error**
+   - **server: script to reconvert mp4s that don't have the right codecs (48000 aac mp42)**
+   - **server: investigate bug with piv with location but no geotags**
+   - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
+   - server/client/mobile: require csrf token for logging out (also ac;log)
+   - client: fix phantom selection when scrolling with a large selection
+   - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
+   - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
+--------------
+- small tasks
+   - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
+   - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
+   - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
+   - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
+   - server/client: videos pseudo-tag
+   - server/client: set location
+   - client: see info of piv
+   - client: upgrade pop up notice or email when running out of free space
+   - client: retry upload button
    - server/client: show checkbox on tags that are organized
-   - server/client: sharebox (investigate how to create preview of thumbnail in whatsapp)
-   - mobile: ios background upload
-   - Submission Google Drive
-
-Mono
-   - bugs
-      - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
-      - server/client/mobile: require csrf token for logging out (also ac;log)
-      - client bug: fix with phantom selection when scrolling large selection
-      - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
-      - server bug: investigate bug with piv with location but no geotags
-      - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
-   --------------
-   - small tasks
-      - client/server: rename everything to tagaway: folders, references.
-      - server: script to reconvert mp4 videos using the new ffmpeg options // add logic for reconverting mp4s that don't have the right codecs (48000 aac mp42)
-      - mobile: add login flow with Google and Facebook
-      - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
-      - server/client: rethink need for refreshQuery entry, if we are constantly updating the query.
-      - client: see info of piv
-      - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-      - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
-      - server/client: videos pseudo-tag
-      - client: upgrade pop up notice or email when running out of free space
-      - client: upload: retry upload button
-      - server/client: set location
-      - other: set automatic backup from Google Drive to altofile
-   --------------
-   - small internal tasks
-      - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
-      - server: on uncaughtException, close the server, then destroy all sockets
-      - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
-      - server: rename b to rq.body throughout
-      - server: get rid of thu entries, use id of piv + suffix
-      - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
-      - server: review format errors with files that have a jpg extension
-      - admin: add set of users for fast access rather than scanning db
-      - server: script to rename username
-   --------------
-   - large tasks
-      - server/client: Share & manage
-         - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
-         - server: remove home tags in H.tagCleanup if lose the tag because it was only on shared pivs
-         - server: Finish server test of queries and tagging, in particular:
-            - Cleanup of taghashes/hashtags after owner untagging/deletion
-            - Combine organized/to organize with shared pivs.
-            - Don't return duplicated pivs and give priority to own pivs
-            - Don't double-count tags but do count all tags with duplicated pivs
-         - server: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
-         - client: share & manage UI
-         - client: In main view, see tags shared with me with a different icon than own tags.
-      - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
-      - server/client: opt-in face recognition powered by AI
-      - server/client: opt-in OCR recognition
-      - server/client: rotate videos
-      - server: set up prod mirror
-      - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
-      - server: add dedicated keys for uploads in order to improve getUploads performance
-      - server: improve performance of POST /query endpoint
-      - Recompute pricing
-         - Investigate Glacier lifecycle.
-         - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
-         - Include price of PUT requests
-         - Check new price of servers & price of large disk
-         - Check balance between disk and RAM and compare to actual RAM usage
-      - server: deploy to prod while there are processes going on!
-         - background processes: upload, import, geotagging switch, mp4 conversions
-         - incremental steps to solution:
-            - don't shut down if there's something going on
-            - shut down after all are done
-            - stop new ones
-            - save progress on what's already done
-      - Add notes on self-hosted tagaway
-         - Turn off/on S3
-         - Docker
-         - Documentation
+--------------
+- small internal tasks
+   - server/client: rename everything to tagaway: folders, references.
+   - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
+   - server: on uncaughtException, close the server, then destroy all sockets
+   - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
+   - server: rename b to rq.body throughout
+   - server: get rid of thu entries, use id of piv + suffix
+   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
+   - server: review format errors with files that have a jpg extension
+   - admin: add set of users for fast access rather than scanning db
+   - server: script to rename username
+   - other: set automatic backup from Google Drive to altofile
+--------------
+- large tasks
+   - other: Submission Google Drive (Tom)
+   - server/client: Share & manage
+      - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
+      - server: remove home tags in H.tagCleanup if lose the tag because it was only on shared pivs
+      - server: Finish server tests of queries and tagging, in particular:
+         - Cleanup of taghashes/hashtags after owner untagging/deletion
+         - Combine organized/to organize with shared pivs.
+         - Don't return duplicated pivs and give priority to own pivs
+         - Don't double-count tags but do count all tags with duplicated pivs
+      - server: If user A shares a tag with user B and user B doesn't have an account or is not logged in: signup, login, or go straight if there's a session. On signup, resolve shares.
+      - client: share & manage UI
+      - client: In main view, see tags shared with me with a different icon than own tags.
+   - server/client: opt-in near-duplicates recognition powered by AI: Deep Image Search
+   - server/client: opt-in face recognition powered by AI
+   - server/client: opt-in OCR recognition
+   - server/client: rotate videos
+   - server/client: investigate sharebox concept (web-reachable space where for N days any user can upload and download pivs)
+   - server: set up prod mirror
+   - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
+   - server: add dedicated keys for uploads in order to improve getUploads performance
+   - server: improve performance of POST /query endpoint
+   - Recompute pricing
+      - Investigate Glacier lifecycle.
+      - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
+      - Include price of PUT requests
+      - Check new price of servers & price of large disk
+      - Check balance between disk and RAM and compare to actual RAM usage
+   - server: deploy to prod while there are processes going on!
+      - background processes: upload, import, geotagging switch, mp4 conversions
+      - incremental steps to solution:
+         - don't shut down if there's something going on
+         - shut down after all are done
+         - stop new ones
+         - save progress on what's already done
+   - Add notes on self-hosted tagaway
+      - Turn off/on S3
+      - Docker
+      - Documentation
 
 ### Already implemented
 
