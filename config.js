@@ -60,7 +60,7 @@ module.exports = {
    },
    email: {
       address: 'info@altocode.nl',
-      name:    'acpic'
+      name:    'tagaway'
    },
    etemplates: {
       feedback: {
@@ -79,23 +79,24 @@ module.exports = {
          subject: 'Please verify your email',
          message: function (username, token) {
             return TEMPLATE (username, [
-               'Welcome to ac;pic! Please verify your email by clicking on the following link: ',
+               'Welcome to tagaway! Please verify your email by clicking on the following link: ',
                ['a', {href: DOMAIN + 'auth/verify/' + encodeURIComponent (token)}, 'Verify your email'],
             ]);
          }
       },
       welcome: {
-         subject: 'Welcome to ac;pic!',
+         subject: 'Welcome to tagaway!',
          message: function (username) {
             return TEMPLATE (username, [
-               'Welcome to ac;pic! We are thrilled to have you with us.',
-               ['br'],
-               'If you want to start uploading pics from your phones and tablets you can download the ',
-               ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, 'Mobile Uploader for iOS'],
-               ' or the ',
-               ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, 'Mobile Uploader for Android. '],
-               ['br'],
-               'ac;pic is just getting started; we would love to have your feedback. Feel free to tell us how we can make ac;pic work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
+               'Welcome to tagaway! We are thrilled to have you with us.',
+               // TOM FIX THIS
+               // ['br'],
+               // 'If you want to start uploading pics from your phones and tablets you can download the ',
+               // ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, 'Mobile Uploader for iOS'],
+               // ' or the ',
+               // ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, 'Mobile Uploader for Android. '],
+               // ['br'],
+               'tagaway is just getting started; we would love to have your feedback. Feel free to tell us how we can make ac;pic work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
             ]);
          }
       },
