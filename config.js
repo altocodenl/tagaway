@@ -1,12 +1,12 @@
 var ENV = process.argv [2] === 'local' ? undefined : process.argv [2];
 
 var DOMAIN = {
-   dev:  'https://altocode.nl/dev/pic/app/',
-   prod: 'https://altocode.nl/pic/app/',
+   dev:  'https://tagaway.nl/dev/app/',
+   prod: 'https://tagaway.nl/app/',
    // For local testing
    //test: 'http://localhost:8000/'
    // For testing on dev server
-   test: 'https://altocode.nl/test/pic/app/'
+   test: 'https://tagaway.nl/test/app/'
 } [ENV || 'test'];
 
 var TEMPLATE = function (username, content) {
