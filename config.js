@@ -25,7 +25,7 @@ var TEMPLATE = function (username, content) {
             ['br'], ['br'],
             'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ['br'],
-            ['span', {class: 'bold'}, 'The ac;pic team']
+            ['span', {class: 'bold'}, 'The tagaway team']
          ]]
       ]],
    ];
@@ -96,7 +96,7 @@ module.exports = {
                // ' or the ',
                // ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, 'Mobile Uploader for Android. '],
                // ['br'],
-               'tagaway is just getting started; we would love to have your feedback. Feel free to tell us how we can make ac;pic work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
+               'tagaway is just getting started; we would love to have your feedback. Feel free to tell us how we can make tagaway work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
             ]);
          }
       },
@@ -124,7 +124,7 @@ module.exports = {
          return {
             subject: 'Your files from ' + provider + ' are ready to be imported',
             message: TEMPLATE (username, [
-               ['Your ' + provider + ' files are fully listed. You can now ', ['a', {href: DOMAIN + '#/import'}, 'select the folders'], ' you want to import to ac;pic.'],
+               ['Your ' + provider + ' files are fully listed. You can now ', ['a', {href: DOMAIN + '#/import'}, 'select the folders'], ' you want to import to tagaway.'],
             ])
          }
       },
@@ -132,7 +132,7 @@ module.exports = {
          return {
             subject: 'Your files from ' + provider + ' were imported',
             message: TEMPLATE (username, [
-               ['Your ' + provider + ' files are now in ac;pic! You can find them in ', ['a', {href: DOMAIN + '#/pics'}, '"View Pictures"'], '.'],
+               ['Your ' + provider + ' files are now in tagaway! You can find them in ', ['a', {href: DOMAIN + '#/pics'}, '"View Pictures"'], '.'],
             ])
          }
       },
