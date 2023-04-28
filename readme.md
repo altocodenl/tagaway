@@ -1902,7 +1902,7 @@ If this was not an untagging operation, we invoke `snackbar`; note we use a diff
          else if (! del)                B.call (x, 'snackbar', 'green', 'Just marked ' + ids.length + ' picture(s) as ' + (tag === 'o::' ? 'Organized' : 'To Organize ') + '.');
 ```
 
-Now for some delightful application logic. If we are marking pivs as Organized or To Organize, and the complement tag (To Organize if we are marking pivs as Organized, or Organized if we aer marking pivs as To Organize) is present in the query, we remove the complement tag from the query to avoid a ronin (empty) query. We won't do anything else, since this will indirectly invoke `query pivs`.
+Now for some delightful application logic. If we are marking pivs as Organized or To Organize, and the complement tag (To Organize if we are marking pivs as Organized, or Organized if we are marking pivs as To Organize) is present in the query, we remove the complement tag from the query to avoid a ronin (empty) query. We won't do anything else, since this will indirectly invoke `query pivs`.
 
 ```javascript
          if (tag === 'o::' && ids.length === pivTotal) {

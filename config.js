@@ -25,7 +25,7 @@ var TEMPLATE = function (username, content) {
             ['br'], ['br'],
             'Have an amazing ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] [new Date ().getDay ()] + '!',
             ['br'],
-            ['span', {class: 'bold'}, 'The tagaway team']
+            ['span', {class: 'bold'}, 'The Altocode team']
          ]]
       ]],
    ];
