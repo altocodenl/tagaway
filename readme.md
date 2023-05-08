@@ -41,7 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - bugs
    - **server: investigate 502 nginx error**
-   - **server: script to reconvert mp4s that don't have the right codecs (48000 aac mp42)**
    - **server: investigate bug with piv with location but no geotags**
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
