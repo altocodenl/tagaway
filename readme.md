@@ -39,9 +39,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+
 - bugs
-   - **server: investigate 502 nginx error**
    - **server: investigate bug with piv with location but no geotags**
+   - server: investigate 502 nginx error
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
    - client: fix phantom selection when scrolling with a large selection
@@ -49,7 +50,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
 --------------
 - small tasks
-   - server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags
+   - **review whether we should have separate accounts for both stores**
+   - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
+   - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
+   - **server: process to review unsupported formats, invalid pivs and errored mp4 conversions**
+   - server: review format errors with files that have a jpg extension
    - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
    - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
    - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
@@ -67,8 +72,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: change keys from imp:PROVIDER:... to imp:USERNAME:..., same with oa:PROVIDER keys
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
-   - server: view to review unsupported formats, invalid pivs and errored mp4 conversions
-   - server: review format errors with files that have a jpg extension
    - admin: add set of users for fast access rather than scanning db
    - server: script to rename username
    - other: set automatic backup from Google Drive to altofile
