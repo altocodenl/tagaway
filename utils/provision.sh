@@ -34,7 +34,7 @@ ssh $HOST apt-get install -y certbot python3-certbot-nginx
 # Image processing tools
 ssh $HOST apt-get install -y exiv2 libimage-exiftool-perl
 ssh $HOST apt-get install -y ffmpeg
-ssh $HOST apt-get install -y libde265-dev libheif-dev libjpeg-dev libpng-dev libraw-dev libtiff-dev libwebp-dev autotools-dev automake pkg-config libtool
+ssh $HOST apt-get install -y libde265-dev libx265-dev libheif-dev libavcodec-dev libavutil-dev libavformat-dev libswscale-dev libavresample-dev libbrotli-dev libjpeg-dev libpng-dev libraw-dev libtiff-dev libwebp-dev autotools-dev automake cmake pkg-config libtool
 ssh $HOST 'cd /root && git clone https://github.com/strukturag/libde265'
 ssh $HOST 'cd /root/libde265 && ./autogen.sh'
 ssh $HOST 'cd /root/libde265 && ./configure'
@@ -42,10 +42,10 @@ ssh $HOST 'cd /root/libde265 && make -j $(getconf _NPROCESSORS_ONLN)'
 ssh $HOST 'cd /root/libde265 && make install'
 ssh $HOST rm -rf /root/libde265
 ssh $HOST 'cd /root && git clone https://github.com/strukturag/libheif'
-ssh $HOST 'cd /root/libheif && ./autogen.sh'
-ssh $HOST 'cd /root/libheif && ./configure'
-ssh $HOST 'cd /root/libheif && make -j $(getconf _NPROCESSORS_ONLN)'
-ssh $HOST 'cd /root/libheif && make install'
+ssh $HOST 'mkdir /root/libheif/build'
+ssh $HOST 'cd /root/libheif/build && cmake ..'
+ssh $HOST 'cd /root/libheif/build && make'
+ssh $HOST 'cd /root/libheif/build && make install'
 ssh $HOST rm -rf /root/libheif
 # The build-dep command is required for png support in ImageMagick
 ssh $HOST 'cd /root && git clone https://github.com/imagemagick/imagemagick'

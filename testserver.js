@@ -1540,8 +1540,6 @@ suites.upload.piv = function () {
                      function (s) {
                         var percentage = Math.min (Math.round (CONFIG.thumbSizes [size] / max * 100), 100);
                         var askanceThumb = piv.mimetype.match ('video') && (piv.deg === 90 || piv.deg === -90);
-                        // In some versions of heif-convert (for example the one that comes through Homebrew), sunrise.heic will be rotated when converted, which throws off our assertions. The code expects the jpg to be converted with the same dimensions and the same orientation header.
-                        // If you install heif-convert like it is specified in utils/provision.sh, this should not happen.
                         if (H.stop ('thumb' + size + ' width',  askanceThumb ? s.last.dimh : s.last.dimw, Math.round (piv.dimw * percentage / 100))) return next (true);
                         if (H.stop ('thumb' + size + ' height', askanceThumb ? s.last.dimw : s.last.dimh, Math.round (piv.dimh * percentage / 100))) return next (true);
                         var targetFormat = 'jpeg';

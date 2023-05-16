@@ -2769,7 +2769,13 @@ var routes = [
             // If heic, convert to jpg to later make the thumbnails
             if (piv.format !== 'heic') return s.next ();
             s.heic_jpg = Path.join ((os.tmpdir || os.tmpDir) (), piv.id + '.jpeg');
-            invalidHandler (s, [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg]);
+            invalidHandler (s, [
+               [k, 'heif-convert', '-q', '100', newpath, s.heic_jpg],
+               // In versions of heif-convert (libheif) after October 2022, pivs with Orientation metadata will be rotated when converted, which throws off our assertions. The code expects the jpg to be converted with the same dimensions and the same orientation header.
+               // This is intended by the author, see: https://github.com/strukturag/libheif/issues/227#issuecomment-1281283463
+               // For this reason, we need to rotate the piv again to make it respect the original rotation of the picture
+               ! piv.deg ? [] : [k, 'mogrify', '-rotate', {90: -90, '-90': 90, 180: 180} [piv.deg], s.heic_jpg]
+            ]);
          },
          function (s) {
             a.seq (s, piv.vid ? [H.thumbVid, invalidHandler, piv, newpath] : [H.thumbPic, invalidHandler, piv, newpath, s.heic_jpg]);
