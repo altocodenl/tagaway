@@ -2222,24 +2222,26 @@ suites.tag = function () {
          if (H.stop ('last log', log, {ev: 'tag', type: 'untag', ids: [s.smallId, s.mediumId], tag: 'tag9'})) return false;
          return true;
       }],
-      ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
+      ['tag piv with a second tag', 'post', 'tag', {}, function (s) {return {tag: 'Tag2', ids: [s.mediumId]}}, 200],
       ['get tags after second tagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat (['tag1', 'tag2']).sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat (['tag1', 'Tag2']).sort (function (a, b) {
+            return a.toLowerCase ().localeCompare (b.toLowerCase ());
+         }))) return false;
          return true;
       }],
       ['query pivs after second tagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2}, 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, tag2: 1, 'o::': 0, 't::': 2})) return false;
-         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 'tag2']).sort ())) return false;
+         if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 0, tag1: 2, Tag2: 1, 'o::': 0, 't::': 2})) return false;
+         if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat (['tag1', 'Tag2']).sort ())) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat  (['tag1']).sort ()))  return false;
          return true;
       }],
       ['get logs after second tagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          var log = teishi.last (rs.body.logs);
          delete log.t;
-         if (H.stop ('last log', log, {ev: 'tag', type: 'tag', ids: [s.mediumId], tag: 'tag2'})) return false;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'tag', ids: [s.mediumId], tag: 'Tag2'})) return false;
          return true;
       }],
-      ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
+      ['untag second tag', 'post', 'tag', {}, function (s) {return {tag: 'Tag2', ids: [s.smallId, s.mediumId], del: true}}, 200],
       ['get tags after untagging', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('tags', rs.body.tags, tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag1').sort ())) return false;
          return true;
@@ -2253,7 +2255,7 @@ suites.tag = function () {
       ['get logs after untagging', 'get', 'account', {}, '', 200, function (s, rq, rs) {
          var log = teishi.last (rs.body.logs);
          delete log.t;
-         if (H.stop ('last log', log, {ev: 'tag', type: 'untag', ids: [s.smallId, s.mediumId], tag: 'tag2'})) return false;
+         if (H.stop ('last log', log, {ev: 'tag', type: 'untag', ids: [s.smallId, s.mediumId], tag: 'Tag2'})) return false;
          return true;
       }],
       ['untag first tag', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId], del: true}}, 200],

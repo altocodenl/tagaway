@@ -39,7 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-
 - bugs
    - **server: investigate bug with piv with location but no geotags**
    - server: investigate 502 nginx error
@@ -2766,10 +2765,12 @@ We iterate the list of tags shared with the user; for each of them, we prepend i
 ```
 
 
-We sort the resulting array and put it in the key `tags` of the output object. We then set the `hometags` key to either the parsed value of `s.hometags`, or default to an empty array if there were no home tags. This concludes the endpoint.
+We sort the resulting array and put it in the key `tags` of the output object - the sorting is case insensitive. We then set the `hometags` key to either the parsed value of `s.hometags`, or default to an empty array if there were no home tags. This concludes the endpoint.
 
 ```javascript
-            reply (rs, 200, {tags: s.last [0].sort (), hometags: JSON.parse (s.hometags || '[]')});
+            reply (rs, 200, {tags: s.last [0].sort (function (a, b) {
+               return a.toLowerCase ().localeCompare (b.toLowerCase ());
+            }), hometags: JSON.parse (s.hometags || '[]')});
          }
       ]);
    }],
