@@ -1809,7 +1809,9 @@ var routes = [
             mexec (s, multi);
          },
          [H.stat.w, 'flow', 'users', 1],
-         [H.log, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
+         function (s) {
+            H.log (s, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], verifyToken: s.verifyToken});
+         },
          ! ENV ? [] : [
             [function (s) {
                sendmail (s, {
@@ -1819,7 +1821,7 @@ var routes = [
                   message: CONFIG.etemplates.verify.message (b.username, s.verifytoken)
                });
             }],
-            [notify, {priority: 'important', type: 'New user', user: b.username, email: b.email}]
+            [notify, {priority: 'important', type: 'New user', user: b.username, email: b.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, verifyToken: s.verifyToken}]
          ],
          function (s) {
             reply (rs, 200, {token: ENV ? undefined : s.verifytoken});
@@ -2082,7 +2084,7 @@ var routes = [
                },
                // TODO: delete all sessions and CSRF tokens belonging to the user
                b.username === undefined ? [a.make (giz.logout), rq.data.cookie [CONFIG.cookieName]] : [],
-               [notify, {priority: 'important', type: 'delete', user: rq.user.username, ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
+               [notify, {priority: 'important', type: 'delete', user: b.username || rq.user.username, ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
                [H.log, user.username, {ev: 'auth', type: 'delete', ip: rq.origin, userAgent: rq.headers ['user-agent'], triggeredByAdmin: b.username !== undefined ? true : undefined}],
                [reply, rs, 200, '', b.username === undefined ? {'set-cookie': cicek.cookie.write (CONFIG.cookieName, false, {httponly: true, samesite: 'Lax', path: '/'})} : {}],
             ]);

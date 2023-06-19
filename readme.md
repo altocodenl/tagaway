@@ -49,6 +49,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
 --------------
 - small tasks
+   - **server: when deleting a user as admin, put the username of the deleted user in the log**
    - **review whether we should have separate accounts for both stores**
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
@@ -859,7 +860,7 @@ All the routes below require an admin user to be logged in.
 - ulog:USERNAME (list): stringified log objects with user activity. Leftmost is most recent.
    - For login:           {t: INT, ev: 'auth', type: 'login',          ip: STRING, userAgent: STRING, timezone: INTEGER}
    - For logout:          {t: INT, ev: 'auth', type: 'logout',         ip: STRING, userAgent: STRING}
-   - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING}
+   - For signup:          {t: INT, ev: 'auth', type: 'signup',         ip: STRING, userAgent: STRING, verifyToken: STRING}
    - For verify:          {t: INT, ev: 'auth', type: 'verify',         ip: STRING, userAgent: STRING}
    - For recover:         {t: INT, ev: 'auth', type: 'recover',        ip: STRING, userAgent: STRING}
    - For reset:           {t: INT, ev: 'auth', type: 'reset',          ip: STRING, userAgent: STRING}
