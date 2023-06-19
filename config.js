@@ -85,18 +85,16 @@ module.exports = {
          }
       },
       welcome: {
-         subject: 'Welcome to tagaway!',
+         subject: 'Welcome to Tagaway!',
          message: function (username) {
             return TEMPLATE (username, [
                'Welcome to tagaway! We are thrilled to have you with us.',
-               // TOM FIX THIS
-               // ['br'],
-               // 'If you want to start uploading pics from your phones and tablets you can download the ',
-               // ['a', {href: 'https://apps.apple.com/gb/app/ac-pic/id6443709273?uo=2', target: '_blank'}, 'Mobile Uploader for iOS'],
-               // ' or the ',
-               // ['a', {href: 'https://play.google.com/store/apps/details?id=com.altocode.acpic&hl=en_US&gl=US', target: '_blank'}, 'Mobile Uploader for Android. '],
-               // ['br'],
-               'tagaway is just getting started; we would love to have your feedback. Feel free to tell us how we can make tagaway work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
+               ['br'],
+               'This is Federico and Tom, creators of Tagaway. Thank you so much for giving our app a try.'
+               ['br'],
+               'Tagaway is just getting started, so you might find some bugs and incomplete features. But every week we’ll be releasing new versions to improve Tagaway. If you find any bugs or you feel that you need a particular feature, please let us know! One of the many benefits of being among the first few users!'
+               ['br'],
+               'Feel free to tell us how we can make tagaway work better for you. When you have a moment, just hit "reply" to this email and let us know what you think.',
             ]);
          }
       },
