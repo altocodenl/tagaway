@@ -1823,10 +1823,10 @@ var routes = [
             });
          },
          function (s) {
-            H.log (s, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], verifytoken: s.verifytoken});
+            H.log (s, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], verifyToken: s.verifytoken});
          },
          function (s) {
-            notify (s, {priority: 'important', type: 'New user', user: b.username, email: b.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, verifytoken: s.verifytoken});
+            notify (s, {priority: 'important', type: 'New user', user: b.username, email: b.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, verifyToken: s.verifytoken});
          },
          function (s) {
             reply (rs, 200, {token: ENV ? undefined : s.verifytoken});
@@ -2049,8 +2049,9 @@ var routes = [
             var user = s.last;
             a.seq (s, [
                [a.set, 'allPivs',   [Redis, 'smembers', 'tag:' + user.username + ':a::']],
-               [a.set, 'hashtags',  [redis.keyscan, 'hashtag:' + rq.user.username + ':*']],
-               [a.set, 'taghashes', [redis.keyscan, 'taghash:' + rq.user.username + ':*']],
+               // TODO: add this logic back after enabling sharing! These lookups are expensive, so we temporarily turn them off. These will be replaced by sets of keys with hashtags and taghashes.
+               ENV ? [] : [a.set, 'hashtags',  [redis.keyscan, 'hashtag:' + rq.user.username + ':*']],
+               ENV ? [] : [a.set, 'taghashes', [redis.keyscan, 'taghash:' + rq.user.username + ':*']],
                [a.make (giz.destroy), user.username],
                function (s) {
                   a.fork (s, s.allPivs, function (piv) {
@@ -2078,7 +2079,8 @@ var routes = [
                   multi.del ('sho:'   + user.username);
                   multi.del ('ulog:'  + user.username);
                   multi.srem ('users', user.username);
-                  dale.go (s.hashtags.concat (s.taghashes), function (v) {multi.del (v)});
+                  // TODO: add this logic back after enabling sharing! These lookups are expensive, so we temporarily turn them off. These will be replaced by sets of keys with hashtags and taghashes.
+                  if (! ENV) dale.go (s.hashtags.concat (s.taghashes), function (v) {multi.del (v)});
                   mexec (s, multi);
                },
                // TODO: delete all sessions and CSRF tokens belonging to the user

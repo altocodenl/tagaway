@@ -41,7 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - bugs
    - server: give verify token a 1h ttl
-   - server: when deleting user, ignore taghashes & hashtags when in non-test environment for performance issues
    - **server: investigate bug with piv with location but no geotags**
    - server: investigate 502 nginx error
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
