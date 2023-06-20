@@ -40,6 +40,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
+   - server: trim hometags
+   - server: give verify token a 1h ttl
+   - server: when deleting user, ignore taghashes & hashtags when in non-test environment for performance issues
    - **server: investigate bug with piv with location but no geotags**
    - server: investigate 502 nginx error
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
@@ -49,8 +52,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
 --------------
 - small tasks
-   - **server: when deleting a user as admin, put the username of the deleted user in the log**
-   - **review whether we should have separate accounts for both stores**
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
    - **server: process to review unsupported formats, invalid pivs and errored mp4 conversions**
@@ -81,6 +82,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server/client: Share & manage
       - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
       - server: remove home tags in H.tagCleanup if lose the tag because it was only on shared pivs
+      - server: add lists of hashtags and taghashes to avoid expensive keyscans when deleting user
       - server: Finish server tests of queries and tagging, in particular:
          - Cleanup of taghashes/hashtags after owner untagging/deletion
          - Combine organized/to organize with shared pivs.
@@ -850,6 +852,8 @@ All the routes below require an admin user to be logged in.
 - tag:USERNAME:TAG (set): piv ids that belong to that tag.
 
 - tags:USERNAME (set): list of all tags created by the user. Does not include tags shared with the user, nor `a::` or `u::`, but it does include geotags and date tags.
+
+- hometags:USERNAME (string): stringified array of the form `[TAG1, ...]`, containing all the home tags of the user.
 
 - shm:USERNAME (set): USERNAMEA:TAG, USERNAMEB:TAG (shared with me)
 

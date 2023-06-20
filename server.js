@@ -166,13 +166,18 @@ process.on ('uncaughtException', function (error, origin) {
 var sendmail = function (s, o) {
    o.from1 = o.from1 || CONFIG.email.name;
    o.from2 = o.from2 || CONFIG.email.address;
-   mailer.sendMail ({
+   var parameters = {
       from:    o.from1 + ' <' + o.from2 + '>',
       to:      o.to1   + ' <' + o.to2   + '>',
       replyTo: o.from2,
       subject: o.subject,
       html:    lith.g (o.message),
-   }, function (error) {
+   };
+   if (! ENV) {
+      clog (new Date ().toISOString (), 'sendmail', parameters);
+      return s.next ();
+   }
+   mailer.sendMail (parameters, function (error) {
       if (error) notify (s, {priority: 'critical', type: 'mailer error', error: error, options: o});
       else       s.next ();
    });
@@ -1778,7 +1783,7 @@ var routes = [
          [mexec, multi],
          function (s) {
             if (CONFIG.maxUsers && s.last [0] >= CONFIG.maxUsers) {
-               if (ENV) notify (a.creat (), {priority: 'important', type: 'User limit reached on signup', user: b.username, email: b.email, limit: CONFIG.maxUsers});
+               notify (a.creat (), {priority: 'important', type: 'User limit reached on signup', user: b.username, email: b.email, limit: CONFIG.maxUsers});
                return reply (rs, 418, {error: 'Too many users'});
             }
             if (s.last [1]) return reply (rs, 403, {error: 'email'});
@@ -1810,19 +1815,19 @@ var routes = [
          },
          [H.stat.w, 'flow', 'users', 1],
          function (s) {
-            H.log (s, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], verifyToken: s.verifyToken});
+            sendmail (s, {
+               to1:     b.username,
+               to2:     b.email,
+               subject: CONFIG.etemplates.verify.subject,
+               message: CONFIG.etemplates.verify.message (b.username, s.verifytoken)
+            });
          },
-         ! ENV ? [] : [
-            [function (s) {
-               sendmail (s, {
-                  to1:     b.username,
-                  to2:     b.email,
-                  subject: CONFIG.etemplates.verify.subject,
-                  message: CONFIG.etemplates.verify.message (b.username, s.verifytoken)
-               });
-            }],
-            [notify, {priority: 'important', type: 'New user', user: b.username, email: b.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, verifyToken: s.verifyToken}]
-         ],
+         function (s) {
+            H.log (s, b.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], verifytoken: s.verifytoken});
+         },
+         function (s) {
+            notify (s, {priority: 'important', type: 'New user', user: b.username, email: b.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, verifytoken: s.verifytoken});
+         },
          function (s) {
             reply (rs, 200, {token: ENV ? undefined : s.verifytoken});
          }
@@ -1850,9 +1855,6 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            notify (s, {type: 'verify', user: s.username});
-         },
-         ! ENV ? [] : function (s) {
             sendmail (s, {
                to1: s.username,
                to2: s.email,
@@ -1862,6 +1864,9 @@ var routes = [
          },
          function (s) {
             H.log (s, s.username, {ev: 'auth', type: 'verify', ip: rq.origin, userAgent: rq.headers ['user-agent']});
+         },
+         function (s) {
+            notify (s, {type: 'verify', user: s.username});
          },
          [reply, rs, 302, '', {location: CONFIG.domain + '#/login/verified'}],
       ]);
@@ -1894,12 +1899,6 @@ var routes = [
             if (type (error) === 'string') reply (rs, 403, {error: 'auth'});
             else                           reply (rs, 500, {error: error});
          }],
-         ENV ? [] : [
-            [function (s) {
-               H.log (s, s.username, {ev: 'auth', type: 'recover', ip: rq.origin, userAgent: rq.headers ['user-agent']});
-            }],
-            [a.get, reply, rs, 200, {token: '@token'}],
-         ],
          [a.set, 'user', [a.get, Redis, 'hgetall', 'users:@username']],
          function (s) {
             sendmail (s, {
@@ -1909,10 +1908,10 @@ var routes = [
                message: CONFIG.etemplates.recover.message (s.user.username, s.token)
             });
          },
-         [function (s) {
+         function (s) {
             H.log (s, s.username, {ev: 'auth', type: 'recover', ip: rq.origin, userAgent: rq.headers ['user-agent']});
-         }],
-         [reply, rs, 200],
+         },
+         [a.get, reply, rs, 200, ENV ? undefined : {token: '@token'}]
       ]);
    }],
 
@@ -1938,16 +1937,16 @@ var routes = [
             else                           reply (rs, 500, {error: error});
          }],
          [a.set, 'user', [Redis, 'hgetall', 'users:' + b.username]],
-         ! ENV ? [] : function (s) {
+         function (s) {
+            H.log (s, s.user.username, {ev: 'auth', type: 'reset', ip: rq.origin, userAgent: rq.headers ['user-agent']});
+         },
+         function (s) {
             sendmail (s, {
                to1:     s.user.username,
                to2:     s.user.email,
                subject: CONFIG.etemplates.reset.subject,
                message: CONFIG.etemplates.reset.message (s.user.username)
             });
-         },
-         function (s) {
-            H.log (s, s.user.username, {ev: 'auth', type: 'reset', ip: rq.origin, userAgent: rq.headers ['user-agent']});
          },
          [reply, rs, 200],
       ]);
@@ -2184,7 +2183,6 @@ var routes = [
 
       astop (rs, [
          [notify, {priority: 'important', type: 'feedback', user: rq.user.username, message: b.message}],
-         ENV ? [] : [reply, rs, 200],
          [sendmail, {
             to1:     rq.user.username,
             to2:     rq.user.email,
@@ -4025,7 +4023,7 @@ var routes = [
                         Redis (s, 'hmset', 'imp:g:' + rq.user.username, {status: 'ready', data: JSON.stringify (data)});
                      },
                      [H.log, rq.user.username, {ev: 'import', type: 'listEnd', provider: 'google', id: s.id}],
-                     ! ENV ? [] : function (s) {
+                     function (s) {
                         var email = CONFIG.etemplates.importList ('Google', rq.user.username);
                         sendmail (s, {
                            to1:     rq.user.username,
@@ -4053,7 +4051,7 @@ var routes = [
             }],
             [H.log, rq.user.username, {ev: 'import', type: 'listError', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'important', type: 'import list error', provider: 'google', user: rq.user.username, error: error}],
-            ! ENV ? [] : function (s) {
+            function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
                   to1:     rq.user.username,
@@ -4242,7 +4240,7 @@ var routes = [
                      if (index === s.ids.length) return a.seq (s, [
                         [Redis, 'del', 'imp:g:' + rq.user.username],
                         [H.log, rq.user.username, {ev: 'upload', type: 'complete', id: s.id, provider: 'google'}],
-                        ! ENV ? [] : function (s) {
+                        function (s) {
                            var email = CONFIG.etemplates.importUpload ('Google', rq.user.username);
                            sendmail (s, {
                               to1:     rq.user.username,
@@ -4357,7 +4355,7 @@ var routes = [
             },
             [H.log, rq.user.username, {ev: 'import', type: 'error', provider: 'google', id: s.id, error: error}],
             [notify, {priority: 'important', type: 'import upload error', error: error, user: rq.user.username, provider: 'google', id: s.id}],
-            ! ENV ? [] : function (s) {
+            function (s) {
                var email = CONFIG.etemplates.importError ('Google', rq.user.username);
                sendmail (s, {
                   to1:     rq.user.username,
