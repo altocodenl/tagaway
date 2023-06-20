@@ -624,6 +624,10 @@ suites.auth = {
             if (H.stop ('location header', rs.headers.location, CONFIG.domain + '#/login/verified')) return false;
             return true;
          }],
+         ['verify user again', 'get', function (s) {return 'auth/verify/' + s.verificationToken}, {}, '', 302, function (s, rq, rs) {
+            if (H.stop ('location header', rs.headers.location, CONFIG.domain + '#/login/verified')) return false;
+            return true;
+         }],
          ['login after verification', 'post', 'auth/login', {}, {username: user.username, password: user.password, timezone: user.timezone}, 200, function (s, rq, rs) {
             if (! rs.headers ['set-cookie'] || rs.headers ['set-cookie'].length !== 1) return clog ('Invalid cookie header', rs.headers ['set-cookie']);
             var cookie = rs.headers ['set-cookie'] [0];
