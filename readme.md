@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
-   - server: trim hometags
    - server: give verify token a 1h ttl
    - server: when deleting user, ignore taghashes & hashtags when in non-test environment for performance issues
    - **server: investigate bug with piv with location but no geotags**
@@ -538,6 +537,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Each of the tags must be a string that does not start with `[a-z]::`.
    - All the tags must exist and user must be owner of the pivs, otherwise a 404 is returned.
    - There should be no repeated tags on the query, otherwise a 400 is returned.
+   - All tags will be automatically trimmed.
    - If successful, returns a 200.
 
 - `POST /query`

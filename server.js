@@ -3155,6 +3155,7 @@ var routes = [
       ])) return;
 
       var multi = redis.multi (), seen = {};
+      b.hometags = dale.go (b.hometags, H.trim);
       var invalidTag = dale.stopNot (b.hometags, undefined, function (hometag) {
          seen [hometag] = true;
          if (! H.isUserTag (hometag)) return hometag;

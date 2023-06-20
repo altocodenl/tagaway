@@ -2655,7 +2655,7 @@ suites.hometags = function () {
          return true;
       }],
       ['tag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId]}}, 200],
-      ['add existing tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 200],
+      ['add existing tag to hometags (including trailing whitespace)', 'post', 'hometags', {}, {hometags: ['foo ']}, 200],
       ['get hometags, that see list has the added tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5', 'foo'], hometags: ['foo']})],
       ['tag piv with another tag', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId]}}, 200],
       ['add both tags to hometags', 'post', 'hometags', {}, {hometags: ['foo', 'bar']}, 200],
