@@ -538,6 +538,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - All tags will be automatically trimmed.
    - If successful, returns a 200.
 
+- `POST /idsFromHashes`
+   - Body must be of the form `{hashes: [STRING, ...]}`.
+   - The endpoint will return an object `{HASH: PIVID|null, ...}` that maps the requested hashes to a piv id.
+
 - `POST /query`
    - Body must be of the form:
 ```
@@ -2838,6 +2842,57 @@ If we're here, the input is valid. We merely stringify `b.hometags` and store it
             Redis (s, 'set', 'hometags:' + rq.user.username, JSON.stringify (b.hometags));
          },
          [reply, rs, 200]
+      ]);
+   }],
+```
+
+We now define `POST /idsFromHashes`, an endpoint used to match a set of hashes to a set of corresponding piv ids.
+
+```javascript
+   ['post', 'idsFromHashes', function (rq, rs) {
+```
+
+We create a shorthand `b` for the request's body.
+
+```javascript
+      var b = rq.body;
+```
+
+The body of the request must have a single key, `hashes`, with an array of strings.
+
+```javascript
+      if (stop (rs, [
+         ['body.hashes', b.hashes, 'array'],
+         ['body.hashes', b.hashes, 'string', 'each'],
+      ])) return;
+```
+
+If `b.hashes` is empty, we merely return an empty object.
+
+```javascript
+      if (b.hashes.length === 0) return reply (rs, 200, {});
+```
+
+We get each of the hashes from `hashorig:USERNAME`.
+
+```javascript
+      a.seq ([
+         [Redis, 'hmget', 'hashorig:' + rq.user.username, b.hashes],
+```
+
+We create an object `{HASH: PIVID|null, ...}` and return it.
+
+```javascript
+         function (s) {
+            reply (rs, 200, dale.obj (s.last, function (v, k) {
+               return [b.hashes [k], v];
+            }));
+         }
+```
+
+This concludes the endpoint.
+
+```javascript
       ]);
    }],
 ```

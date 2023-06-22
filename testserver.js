@@ -2632,6 +2632,84 @@ suites.query = function () {
    ];
 }
 
+suites.idsFromHashes = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('get ids from hashes', 'idsFromHashes', [
+         [[], 'object'],
+         [[], 'keys', ['hashes']],
+         [['hashes'], 'array'],
+         [['hashes', 0], 'type', 'string', 'each of the body.hashes should have as type string but one of .+ is .+ with type'],
+      ]),
+      ['empty list of hashes', 'post', 'idsFromHashes', {}, {hashes: []}, 200, H.cBody ({})],
+      ['start upload to test sharing', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+         {type: 'field', name: 'tags',         value: JSON.stringify (['small', 'shared'])},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload medium piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+         {type: 'field', name: 'tags',         value: JSON.stringify (['medium', 'shared'])},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['upload large piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+         {type: 'field', name: 'tags',         value: JSON.stringify (['large', 'shared'])},
+      ]}}, 200, function (s, rq, rs) {
+         s.largeId = rs.body.id;
+         return true;
+      }],
+      ['empty list of hashes', 'post', 'idsFromHashes', {}, {hashes: []}, 200, H.cBody ({})],
+      ['list of hashes', 'post', 'idsFromHashes', {}, function (s) {
+         return {hashes: [
+            tk.pivs.small.hash,
+            tk.pivs.medium.hash,
+            tk.pivs.large.hash,
+         ]};
+      }, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {
+            [tk.pivs.small.hash]: s.smallId,
+            [tk.pivs.medium.hash]: s.mediumId,
+            [tk.pivs.large.hash]: s.largeId
+         })) return false;
+         return true;
+      }],
+      ['list of hashes with non-existing entries', 'post', 'idsFromHashes', {}, function (s) {
+         return {hashes: [
+            tk.pivs.small.hash,
+            'foo',
+            tk.pivs.medium.hash,
+            'bar',
+            tk.pivs.large.hash,
+         ]};
+      }, 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {
+            [tk.pivs.small.hash]: s.smallId,
+            'foo': null,
+            [tk.pivs.medium.hash]: s.mediumId,
+            'bar': null,
+            [tk.pivs.large.hash]: s.largeId
+         })) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 suites.hometags = function () {
    return [
       suites.auth.in (tk.users.user1),

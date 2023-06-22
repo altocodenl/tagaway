@@ -3184,6 +3184,28 @@ var routes = [
       ]);
    }],
 
+   ['post', 'idsFromHashes', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['hashes'], 'eachOf', teishi.test.equal],
+         ['body.hashes', b.hashes, 'array'],
+         ['body.hashes', b.hashes, 'string', 'each'],
+      ])) return;
+
+      if (b.hashes.length === 0) return reply (rs, 200, {});
+
+      a.seq ([
+         [Redis, 'hmget', 'hashorig:' + rq.user.username, b.hashes],
+         function (s) {
+            reply (rs, 200, dale.obj (s.last, function (v, k) {
+               return [b.hashes [k], v];
+            }));
+         }
+      ]);
+   }],
+
    // *** QUERY ***
 
    ['post', 'query', function (rq, rs) {
