@@ -2607,7 +2607,7 @@ var routes = [
             // In the very unlikely case that this piv belongs to a different upload, we would be losing the tags from this piv. A future improvement could leave those tags in Redis temporarily so they could be picked up by the other identical piv once its upload is finished.
             if (! s.last [0] && s.last [1]) return a.seq (s, [
                [H.log, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.last [1], tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true}],
-               [reply, rs, 200, {id: s.last [1], repeated: true}]
+               [reply, rs, 200, {id: s.last [1], repeated: true, hash: s.hashorig}]
             ]);
 
             // If we are here, this user already has an identical piv already uploaded.
@@ -2631,7 +2631,7 @@ var routes = [
                   else                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated',        id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true});
                },
                function (s) {
-                  reply (rs, 200, {id: s.piv.id, alreadyUploaded: s.alreadyUploaded ? true : undefined, repeated: s.alreadyUploaded ? undefined : true});
+                  reply (rs, 200, {id: s.piv.id, alreadyUploaded: s.alreadyUploaded ? true : undefined, repeated: s.alreadyUploaded ? undefined : true, hash: s.hashorig});
                }
             ]);
          },
@@ -2685,7 +2685,7 @@ var routes = [
             if (! s.last [0] && s.last [1]) return a.seq (s, [
                ! s.raceConditionHashorig ? [] : [Redis, 'del', 'raceConditionHashorig:' + rq.user.username + ':' + s.hashorig],
                [H.log, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.last [1], tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: true}],
-               [reply, rs, 200, {id: s.last [1], repeated: true}],
+               [reply, rs, 200, {id: s.last [1], repeated: true, hash: s.hashorig}],
 
             ]);
 
@@ -2706,7 +2706,7 @@ var routes = [
                   H.log (s, rq.user.username, {ev: 'upload', type: 'repeated', id: rq.data.fields.id, provider: importData ? importData.provider : undefined, pivId: s.piv.id, tags: tags.length ? tags : undefined, lastModified: lastModified, name: piv.name, size: s.byfs.size, identical: false, dates: piv.dates});
                },
                function (s) {
-                  reply (rs, 200, {id: s.piv.id, repeated: true});
+                  reply (rs, 200, {id: s.piv.id, repeated: true, hash: s.hashorig});
                }
             ]);
          },
@@ -2879,7 +2879,7 @@ var routes = [
             })));
          },
          function (s) {
-            reply (rs, 200, {id: piv.id, deg: piv.deg});
+            reply (rs, 200, {id: piv.id, deg: piv.deg, hash: s.hashorig});
          }
       ], function (s, error) {
          a.seq (s, [
@@ -3477,10 +3477,10 @@ var routes = [
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tag:'     + rq.user.username + ':' + b.from);
-            multi.exists   ('tag:'     + rq.user.username + ':' + b.to);
-            multi.smembers ('sho:'     + rq.user.username);
-            multi.smembers ('taghash:' + rq.user.username + ':' + b.from);
+            multi.smembers ('tag:'      + rq.user.username + ':' + b.from);
+            multi.exists   ('tag:'      + rq.user.username + ':' + b.to);
+            multi.smembers ('sho:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
@@ -3488,7 +3488,7 @@ var routes = [
             if (s.last [1])          return reply (rs, 409, {error: 'exists'});
 
             var tagIsShared = dale.stop (s.last [2], true, function (shared) {
-               return b.to === shared.split (':').slice (1).join (':');
+               return b.from === shared.split (':').slice (1).join (':');
             });
             if (tagIsShared) return reply (rs, 409, {error: 'shared'});
 
@@ -3500,13 +3500,54 @@ var routes = [
                multi.srem ('pivt:' + id, b.from);
                multi.sadd ('pivt:' + id, b.to);
             });
-            if (s.last [3].length) {
-               multi.rename ('taghash:' + rq.user.username + ':' + b.from, 'taghash:' + rq.user.username + ':' + b.to);
-               dale.go (s.last [3], function (hash) {
-                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.from);
-                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.to);
-               });
-            }
+
+            var hometags = dale.go (teishi.parse (s.last [3]) || [], function (hometag) {
+                return hometag === b.from ? b.to : hometag;
+            });
+            multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
+            mexec (s, multi);
+         },
+         [reply, rs, 200]
+      ]);
+   }],
+
+   ['post', 'deleteTag', function (rq, rs) {
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['tag'], 'eachOf', teishi.test.equal],
+         ['body.tag', b.tag, 'string'],
+      ])) return;
+
+      if (! H.isUserTag (b.tag)) return reply (rs, 400, {error: 'tag'});
+
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            multi.smembers ('tag:'      + rq.user.username + ':' + b.tag);
+            multi.smembers ('sho:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
+            mexec (s, multi);
+         }],
+         function (s) {
+            if (! s.last [0].length) return reply (rs, 404, {error: 'tag'});
+
+            var tagIsShared = dale.stop (s.last [1], true, function (shared) {
+               return b.tag === shared.split (':').slice (1).join (':');
+            });
+            if (tagIsShared) return reply (rs, 409, {error: 'shared'});
+
+            var multi = redis.multi ();
+            multi.del ('tag:' + rq.user.username + ':' + b.tag);
+            multi.srem ('tags:' + rq.user.username, b.tag);
+            dale.go (s.last [0], function (id) {
+               multi.srem ('pivt:' + id, b.tag);
+            });
+
+            var hometags = dale.fil (teishi.parse (s.last [2]) || [], undefined, function (hometag) {
+                if (hometag !== b.tag) return hometag;
+            });
+            multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
             mexec (s, multi);
          },
          [reply, rs, 200]

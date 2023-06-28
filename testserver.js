@@ -1670,7 +1670,7 @@ suites.upload.piv = function () {
          {type: 'field', name: 'tags', value: JSON.stringify (['foo'])},
          {type: 'field', name: 'lastModified', value: new Date ('2000-01-01').getTime ()},
       ]}}, 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {id: s.smallId, repeated: true})) return false;
+         if (H.stop ('body', rs.body, {id: s.smallId, repeated: true, hash: tk.pivs.small.hash})) return false;
          return true;
       }],
       ['get piv metadata after repeated piv with lastModified', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -1705,7 +1705,7 @@ suites.upload.piv = function () {
                {type: 'field', name: 'id',           value: s.uploadId},
                {type: 'field', name: 'lastModified', value: tk.pivs [testCase [0]].mtime},
             ]}}, 200, function (s, rq, rs) {
-               if (H.stop ('keys of body', dale.keys (rs.body), ['id'])) return false;
+               if (H.stop ('keys of body', dale.keys (rs.body), ['id', 'hash'])) return false;
                s.repeatedId = rs.body.id;
                return true;
             }],
@@ -1715,7 +1715,7 @@ suites.upload.piv = function () {
                {type: 'field', name: 'tags',         value: JSON.stringify (['foo'])},
                {type: 'field', name: 'lastModified', value: new Date ('2000-01-01').getTime ()},
             ]}}, 200, function (s, rq, rs) {
-               if (H.stop ('body', rs.body, {id: s.repeatedId, repeated: true})) return false;
+               if (H.stop ('body', rs.body, {id: s.repeatedId, repeated: true, hash: tk.pivs [testCase [1]].hash})) return false;
                return true;
             }],
             ['get ' + testCase [0] + ' piv metadata after uploading piv with different metadata', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs) {
@@ -2752,7 +2752,7 @@ suites.hometags = function () {
    ];
 }
 
-// *** SHARE & RENAME ***
+// *** SHARE ***
 
 suites.share = function () {
    return [
@@ -3056,6 +3056,106 @@ suites.share = function () {
       suites.auth.out (tk.users.user3),
    ];
 }
+
+// *** RENAME ***
+
+suites.rename = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      suites.auth.in (tk.users.user2),
+      suites.auth.login (tk.users.user1),
+      H.invalidTestMaker ('rename', 'rename', [
+         [[], 'object'],
+         [[], 'keys', ['from', 'to']],
+         [[], 'invalidKeys', ['foo']],
+         [['from'], 'string'],
+         [['to'], 'string'],
+         [['to'], 'invalidValues', ['a::', ' a::', 'u::', ' u::', ' u::', 'g::a', 'd::2021', 'x::'], 'tag'],
+      ]),
+      ['rename nonexisting tag', 'post', 'rename', {}, {from: 'foo', to: 'bar'}, 404, H.cBody ({error: 'tag'})],
+      ['start upload to test renaming', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test renaming', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['tag piv to test renaming', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId]}}, 200],
+      ['share tag', 'post', 'sho', {}, {tag: 'tag1',  whom: tk.users.user2.email}, 200],
+      ['rename shared tag', 'post', 'rename', {}, {from: 'tag1', to: 'bar'}, 409, H.cBody ({error: 'shared'})],
+      ['unshare tag', 'post', 'sho', {}, {tag: 'tag1',  whom: tk.users.user2.email, del: true}, 200],
+      ['add tag to hometags', 'post', 'hometags', {}, {hometags: ['tag1']}, 200],
+      ['rename tag', 'post', 'rename', {}, {from: 'tag1', to: 'tag2'}, 200],
+      ['query pivs after renaming tag, with old tag name', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      ['query pivs after renaming tag, with new tag name', 'post', 'query', {}, {tags: ['tag2'], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 1)) return false;
+         if (H.stop ('body.pivs [0].tags', rs.body.pivs [0].tags, tk.pivs.small.dateTags.concat ('tag2'))) return false;
+         return true;
+      }],
+      ['get tags after renaming', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags.concat ('tag2'), hometags: ['tag2']})) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.out (tk.users.user2),
+   ];
+}
+
+// *** DELETE TAG ***
+
+suites.deleteTag = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      suites.auth.in (tk.users.user2),
+      suites.auth.login (tk.users.user1),
+      H.invalidTestMaker ('delete tag', 'deleteTag', [
+         [[], 'object'],
+         [[], 'keys', ['tag']],
+         [[], 'invalidKeys', ['foo']],
+         [['tag'], 'string'],
+         [['tag'], 'invalidValues', ['a::', ' a::', 'u::', ' u::', ' u::', 'g::a', 'd::2021', 'x::'], 'tag'],
+      ]),
+      ['delete nonexisting tag', 'post', 'deleteTag', {}, {tag: 'foo'}, 404, H.cBody ({error: 'tag'})],
+      ['start upload to test deletion', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test deletion', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['tag piv to test deletion', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId]}}, 200],
+      ['share tag', 'post', 'sho', {}, {tag: 'tag1',  whom: tk.users.user2.email}, 200],
+      ['delete shared tag', 'post', 'deleteTag', {}, {tag: 'tag1'}, 409, H.cBody ({error: 'shared'})],
+      ['unshare tag', 'post', 'sho', {}, {tag: 'tag1',  whom: tk.users.user2.email, del: true}, 200],
+      ['add tag to hometags', 'post', 'hometags', {}, {hometags: ['tag1']}, 200],
+      ['delete tag', 'post', 'deleteTag', {}, {tag: 'tag1'}, 200],
+      ['query pivs after deleting tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      ['get tags after deleting ', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags, hometags: []})) return false;
+         return true;
+      }],
+      suites.auth.out (tk.users.user1),
+      suites.auth.out (tk.users.user2),
+   ];
+}
+
+// *** DOWNLOAD ***
 
 suites.download = function () {
    return [

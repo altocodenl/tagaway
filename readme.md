@@ -492,10 +492,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - The file must be at most 2GB bytes (otherwise, 400 with body `{error: 'tooLarge'}`).
    - If the file is not a valid piv, a 400 is returned with body `{error: 'Invalid piv', data: {...}}`.
    - If a file exists for that user that is both identical to an existing one and also having the same name, a 200 is returned with body `{alreadyUploaded: true, id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
-   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 200 is returned with body `{repeated: true, id: STRING}`, where `ID` is the ID of the identical piv that is already uploaded.
+   - If a file exists for that user that is either identical but has a different name than an existing one, or that is the same after stripping the metadata and without regard to the original name, a 200 is returned with body `{repeated: true, id: ID, hash: STRING}`, where `ID` is the ID of the identical piv that is already uploaded, and where `hash` is the hash computed for the piv itself by the server.
    - In the case for both repeated or already uploaded, and `lastModified` and/or a date parsed from the `name` is a date not held by the metadata of the piv already present, those dates will be added to it.
    - If the storage capacity for that user is exceeded, a 409 is returned with body `{error: 'capacity'}`.
-   - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined}`, where `ID` is the ID of the piv just uploaded and `deg` is the rotation automatically applied to the piv based on its metadata.
+   - If the upload is successful, a 200 is returned with body `{id: ID, deg: 90|180|-90|undefined, hash: STRING}`, where `ID` is the ID of the piv just uploaded and `deg` is the rotation automatically applied to the piv based on its metadata and  where `hash` is the hash computed for the piv itself by the server.
 
 - `POST /delete`
    - Body must be of the form `{ids: [STRING, ...]}` (otherwise, 400 with body `{error: ...}`).
@@ -598,6 +598,13 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If the user has no `from` tag, a 404 is returned with body `{error: 'tag'}`.
    - If the user already has a `to` tag, a 409 is returned with body `{error: 'exists'}`, to avoid overlapping two tags through a rename.
    - If the `from` tag is shared with one or more users, a 409 is returned with body `{error: 'shared'}`.
+   - If successful, returns a 200.
+
+- `POST /deleteTag`
+   - Body must be of the form `{tag: STRING}`, where `tag` is an user tag.
+   - If `tag` is not a user tag, a 400 is returned with body `{error: 'tag'}`.
+   - If the user has no such tag, a 404 is returned with body `{error: 'tag'}`.
+   - If the tag is shared with one or more users, a 409 is returned with body `{error: 'shared'}`.
    - If successful, returns a 200.
 
 - `POST /download`
@@ -4350,7 +4357,7 @@ The `from` should be trimmed and a valid user tag - we'll check for this in a mi
       if (! H.isUserTag (b.to)) return reply (rs, 400, {error: 'tag'});
 ```
 
-We check for the existence of `tag:USERNAME:FROM`, `tag:USERNAME:TO`; also, we get the list of all tags shared by the user, as well as all the user's taghashes.
+We check for the existence of `tag:USERNAME:FROM`, `tag:USERNAME:TO`; also, we get the list of all tags shared by the user, as well as their hometags.
 
 ```javascript
       astop (rs, [
@@ -4359,7 +4366,7 @@ We check for the existence of `tag:USERNAME:FROM`, `tag:USERNAME:TO`; also, we g
             multi.smembers ('tag:'     + rq.user.username + ':' + b.from);
             multi.exists   ('tag:'     + rq.user.username + ':' + b.to);
             multi.smembers ('sho:'     + rq.user.username);
-            multi.smembers ('taghash:' + rq.user.username + ':' + b.from);
+            multi.get      ('hometags:' + rq.user.username);
             mexec (s, multi);
          }],
 ```
@@ -4381,7 +4388,7 @@ If the tag is shared with one or more users, we return a 409 with body `{error: 
 
 ```javascript
             var tagIsShared = dale.stop (s.last [2], true, function (shared) {
-               return b.to === shared.split (':').slice (1).join (':');
+               return b.from === shared.split (':').slice (1).join (':');
             });
             if (tagIsShared) return reply (rs, 409, {error: 'shared'});
 ```
@@ -4411,17 +4418,21 @@ For each of the pivs that have the `from` tag, we remove the `from` tag and add 
             });
 ```
 
-If there are taghashes of the form `taghash:USERNAME:FROM`, we rename `taghash:USERNAME:FROM` to `taghash:USERNAME:TO` and iterate the entries inside `taghash:USERNAME:TO` to remove `from` and add `to` to the `hashtag:USERNAME:HASH` entries that contain `from`.
+We first start by parsing the existing hometags; if no hometags exist, we will instead create an empty array. We will then iterate the array of hometags and create a new one, where `b.from` will be replaced by `b.to`. If the array is empty, or `b.from` is not there, the new array will be the same to the old one.
 
 ```javascript
-            if (s.last [3].length) {
-               multi.rename ('taghash:' + rq.user.username + ':' + b.from, 'taghash:' + rq.user.username + ':' + b.to);
-               dale.go (s.last [3], function (hash) {
-                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.from);
-                  multi.srem ('hashtag:' + rq.user.username + ':' + hash, b.to);
-               });
-            }
+            var hometags = dale.go (teishi.parse (s.last [3]) || [], function (hometag) {
+                return hometag === b.from ? b.to : hometag;
+            });
 ```
+
+We will now update the array of hometags.
+
+```javascript
+            multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
+```
+
+Taghashes and hashtags are not affected, since only an own tag can be renamed. And if the tag is shared with others, then it cannot be renamed.
 
 We execute the operations and return a 200 if the operation is successful. This concludes the endpoint.
 
@@ -4431,6 +4442,109 @@ We execute the operations and return a 200 if the operation is successful. This 
          [reply, rs, 200]
       ]);
    }],
+```
+
+We now define `POST /deleteTag`, the endpoint responsible for deleting a tag.
+
+```javascript
+   ['post', 'deleteTag', function (rq, rs) {
+```
+
+We create a shorthand `b` for the request's body.
+
+```javascript
+      var b = rq.body;
+```
+
+The body must be of the form `{tag: STRING}`, where `tag` is the name of the tag to be deleted.
+
+```javascript
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['tag'], 'eachOf', teishi.test.equal],
+         ['body.tag', b.tag, 'string'],
+      ])) return;
+```
+
+If `b.tag` is not a user tag, we will return a 400 with body `{error: 'tag'}`. This allows us to prevent the user from deleting a non-user tag, such as `'a::'`.
+
+```javascript
+      if (! H.isUserTag (b.to)) return reply (rs, 400, {error: 'tag'});
+```
+
+We check for the existence of `tag:USERNAME:TAG`; also, we get the list of all tags shared by the user, as well as their hometags.
+
+```javascript
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            multi.smembers ('tag:'      + rq.user.username + ':' + b.tag);
+            multi.smembers ('sho:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
+            mexec (s, multi);
+         }],
+```
+
+If the tag `from` doesn't exist for the user, we return a 404 with body `{error: 'tag'}`.
+
+```javascript
+         function (s) {
+            if (! s.last [0].length) return reply (rs, 404, {error: 'tag'});
+```
+
+If the tag is shared with one or more users, we return a 409 with body `{error: 'shared'}`. We do not want shared tags to be renamed because this can cause confusion for users with whom tags are shared.
+
+```javascript
+            var tagIsShared = dale.stop (s.last [1], true, function (shared) {
+               return b.tag === shared.split (':').slice (1).join (':');
+            });
+            if (tagIsShared) return reply (rs, 409, {error: 'shared'});
+```
+
+If we're here, all validations have passed and we are ready to perform the tag deletion.
+
+We delete `tag:USERNAME:TAG`.
+
+```javascript
+            var multi = redis.multi ();
+            multi.del ('tag:' + rq.user.username + ':' + b.tag);
+```
+
+We remove `b.tag` from `pivt:USERNAMe`.
+
+```javascript
+            multi.srem ('tags:' + rq.user.username, b.tag);
+```
+
+For each of the pivs tagged with `b.tag`, we remove `b.tag` from `pivt:PIVID`.
+
+```javascript
+            dale.go (s.last [0], function (id) {
+               multi.srem ('pivt:' + id, b.tag);
+            });
+```
+
+We first start by parsing the existing hometags; if no hometags exist, we will instead create an empty array. We will then iterate the array of hometags and create a new one, where `b.tag` will be omitted. If the array is empty, or `b.tag` is not there, the new array will be the same to the old one.
+
+```javascript
+            var hometags = dale.fil (teishi.parse (s.last [2]) || [], undefined, function (hometag) {
+                if (hometag !== b.tag) return hometag;
+            });
+```
+
+We will now update the array of hometags.
+
+```javascript
+            multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
+```
+
+We execute the operations and return a 200 if the operation is successful. This concludes the endpoint.
+
+```javascript
+            mexec (s, multi);
+         },
+         [reply, rs, 200]
+      ]);
+   }]
 ```
 
 TODO: add annotated source code from here to the end of the file.
