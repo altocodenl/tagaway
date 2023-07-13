@@ -40,6 +40,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
+   - **server: fix ERR_CONTENT_LENGTH_MISMATCH 206**
+      - script for fixing bymp4 on reconverted pivs, as well as stats
+      - figure out why checkConsistency didn't account for this
    - **server: investigate bug with piv with location but no geotags**
    - server: investigate 502 nginx error
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
@@ -49,6 +52,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
 --------------
 - small tasks
+   - **server/config**: fix google drive import
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
    - **server: process to review unsupported formats, invalid pivs and errored mp4 conversions**
@@ -791,6 +795,7 @@ All the routes below require an admin user to be logged in.
    email: STRING
    type: STRING (one of tier1|tier2)
    created: INT
+   lastActivity: INT
    geo: 1|undefined
    suggestGeotagging: 1|undefined
    suggestSelection: 1|undefined

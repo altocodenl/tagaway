@@ -1987,8 +1987,9 @@ var routes = [
                ['unique', 'active',    user.username],
                ['flow',   'rq-user-' + user.username, 1],
             ]],
-            [Redis, 'expire', 'csrf:' + rq.data.cookie [CONFIG.cookieName], giz.config.expires],
-            [Redis, 'get',    'csrf:' + rq.data.cookie [CONFIG.cookieName]],
+            [Redis, 'hset',   'users:' + user.username, 'lastActivity', Date.now ()],
+            [Redis, 'expire', 'csrf:'  + rq.data.cookie [CONFIG.cookieName], giz.config.expires],
+            [Redis, 'get',    'csrf:'  + rq.data.cookie [CONFIG.cookieName]],
             function (s) {
                rq.user.csrf = s.last;
                rs.next ();
@@ -4466,6 +4467,14 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
+            s.last.sort (function (a, b) {
+               a = a.lastActivity;
+               b = b.lastActivity;
+               if (! a && ! b) return 1;
+               if (! a && b) return 1;
+               if (a && ! b) return -1;
+               if (a && b) return parseInt (b) - parseInt (a);
+            });
             reply (rs, 200, dale.go (s.last, function (user) {
                delete user.password;
                return user;

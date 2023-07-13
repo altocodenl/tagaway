@@ -713,7 +713,7 @@ views.dashboard = function (x) {
 
 views.users = function () {
    return B.view (['Data', 'users'], function (users) {
-      var columns = ['username', 'email', 'type', 'created', 'actions'];
+      var columns = ['username', 'email', 'type', 'lastActivity', 'created', 'actions'];
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Users'],
          ['table', {class: 'pure-table pure-table-striped'}, [
@@ -729,7 +729,7 @@ views.users = function () {
                      ['br'], ['br'],
                      ['span', {class: 'action', onclick: B.ev ('delete', 'user', user.username)}, 'Delete user'],
                   ]];
-                  if (k === 'created') return ['td', new Date (parseInt (user [k])).toISOString ()];
+                  if (k === 'created' || (k === 'lastActivity' && user [k])) return ['td', new Date (parseInt (user [k])).toISOString ()];
                   return ['td', user [k]];
                })];
             }),
