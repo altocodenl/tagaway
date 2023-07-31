@@ -546,6 +546,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{hashes: [STRING, ...]}`.
    - The endpoint will return an object `{HASH: PIVID|null, ...}` that maps the requested hashes to a piv id.
 
+- `POST /organized`
+   - Body must be of the form `{ids: [STRING, ...]}`.
+   - The endpoint will return an array of ids: `[STRING, ...]` of *organized* pivs owned by the user that were also present in `body.ids`.
+
 - `POST /query`
    - Body must be of the form:
 ```
@@ -2870,7 +2874,7 @@ We create a shorthand `b` for the request's body.
       var b = rq.body;
 ```
 
-The body of the request must have a single key, `hashes`, with an array of strings.
+The body of the request must have a single key, `hashes`, containing an array of strings.
 
 ```javascript
       if (stop (rs, [
@@ -2903,6 +2907,60 @@ We create an object `{HASH: PIVID|null, ...}` and return it.
 ```
 
 This concludes the endpoint.
+
+```javascript
+      ]);
+   }],
+```
+
+We now define `POST /organized`, an endpoint used to determine which ids belong to pivs mark as organized. This endpoint looks exclusivel for own pivs that are organized.
+
+```javascript
+   ['post', 'organized', function (rq, rs) {
+```
+
+We create a shorthand `b` for the request's body.
+
+```javascript
+      var b = rq.body;
+```
+
+The body of the request must have a single key, `ids`, containing an array of strings.
+
+```javascript
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+      ])) return;
+```
+
+We create an object to hold each of the ids as a key, for quick lookup, and overwrite `b.ids` with it.
+
+```javascript
+      b.ids = dale.obj (b.ids, function (id) {
+         return [id, true];
+      });
+```
+
+We retrieve all the organized pivs of the user.
+
+```javascript
+      a.seq ([
+         [Redis, 'smembers', 'tag:' + rq.user.username + 'o::'],
+```
+
+We iterate the organized pivs; if the id of an organized piv is also in `b.ids`, then we will return it. The result will be an array of all the ids that were originally in `b.ids` and which also belong to an organized piv. Note we sort `s.last` so that the returned list of ids will be in alphabetical order.
+
+```javascript
+         function (s) {
+            reply (rs, 200, dale.fil (s.last.sort (), undefined, function (v, k) {
+               if (b.ids [v]) return v;
+            }));
+         }
+```
+
+ This concludes the funciton.
 
 ```javascript
       ]);

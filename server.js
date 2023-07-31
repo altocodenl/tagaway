@@ -3185,6 +3185,8 @@ var routes = [
       ]);
    }],
 
+   // *** QUERY ***
+
    ['post', 'idsFromHashes', function (rq, rs) {
 
       var b = rq.body;
@@ -3207,7 +3209,29 @@ var routes = [
       ]);
    }],
 
-   // *** QUERY ***
+   ['post', 'organized', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['ids'], 'eachOf', teishi.test.equal],
+         ['body.ids', b.ids, 'array'],
+         ['body.ids', b.ids, 'string', 'each'],
+      ])) return;
+
+      b.ids = dale.obj (b.ids, function (id) {
+         return [id, true];
+      });
+
+      a.seq ([
+         [Redis, 'smembers', 'tag:' + rq.user.username + ':o::'],
+         function (s) {
+            reply (rs, 200, dale.fil (s.last.sort (), undefined, function (v, k) {
+               if (b.ids [v]) return v;
+            }));
+         }
+      ]);
+   }],
 
    ['post', 'query', function (rq, rs) {
 

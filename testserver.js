@@ -143,7 +143,7 @@ var H = {
    },
    cBody: function (value) {
       return function (s, rq, rs) {
-         return ! H.stop ('body', rs.body, value);
+         return ! H.stop ('body', rs.body, type (value) === 'function' ? value (s) : value);
       }
    },
    dateFromName: function (name) {
@@ -2706,6 +2706,62 @@ suites.idsFromHashes = function () {
          })) return false;
          return true;
       }],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
+suites.organized = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      H.invalidTestMaker ('organized', 'organized', [
+         [[], 'object'],
+         [[], 'keys', ['ids']],
+         [['ids'], 'array'],
+         [['ids', 0], 'type', 'string', 'each of the body.ids should have as type string but one of .+ is .+ with type'],
+      ]),
+      ['empty list of ids', 'post', 'organized', {}, {ids: []}, 200, H.cBody ([])],
+      ['start upload to test sharing', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
+         s.uploadId = rs.body.id;
+         return true;
+      }],
+      ['upload small piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
+         {type: 'field', name: 'tags',         value: JSON.stringify (['small', 'shared'])},
+      ]}}, 200, function (s, rq, rs) {
+         s.smallId = rs.body.id;
+         return true;
+      }],
+      ['upload medium piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+         {type: 'field', name: 'tags',         value: JSON.stringify (['medium', 'shared'])},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['upload large piv to test sharing', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.large.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.large.mtime},
+         {type: 'field', name: 'tags',         value: JSON.stringify (['large', 'shared'])},
+      ]}}, 200, function (s, rq, rs) {
+         s.largeId = rs.body.id;
+         return true;
+      }],
+      ['send ids of all three pivs, none of them is organized yet', 'post', 'organized', {}, function (s) {
+         return {ids: [s.smallId, s.mediumId, s.largeId]};
+      }, 200, H.cBody ([])],
+      ['send non-existing ids', 'post', 'organized', {}, {ids: ['foo', 'bar']}, 200, H.cBody ([])],
+      ['mark two pivs as organized', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId, s.largeId]}}, 200],
+      ['send ids of all three pivs, get back two', 'post', 'organized', {}, function (s) {
+         return {ids: [s.smallId, s.mediumId, s.largeId]};
+      }, 200, H.cBody (function (s) {return [s.smallId, s.largeId].sort ()})],
+      ['send ids of all three pivs as well as a nonexisting id and a repeated one, get back two', 'post', 'organized', {}, function (s) {
+         return {ids: [s.smallId, s.mediumId, s.largeId, 'foo', s.largeId]};
+      }, 200, H.cBody (function (s) {return [s.smallId, s.largeId].sort ()})],
       suites.auth.out (tk.users.user1),
    ];
 }
