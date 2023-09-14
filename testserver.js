@@ -2269,6 +2269,7 @@ suites.tag = function () {
       }],
       ['query pivs after second untagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false, '2022:3': false})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2022:3', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 0, 't::': 2})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags))  return false;
@@ -2277,6 +2278,7 @@ suites.tag = function () {
       ['mark piv as organized', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.mediumId]}}, 200],
       ['query pivs after marking piv as organized', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false, '2022:3': true})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2022:3', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags)) return false;
@@ -2292,6 +2294,7 @@ suites.tag = function () {
       ['mark unorganized piv as unorganized (no-op)', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId], del: true}}, 200],
       ['query pivs after marking piv as organized (no-op)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false, '2022:3': true})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2022:3', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, [tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 2, 'o::': 1, 't::': 1})) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
          if (H.stop ('piv.tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags)) return false;
@@ -2299,6 +2302,7 @@ suites.tag = function () {
       }],
       ['query organized pivs', 'post', 'query', {}, {tags: ['o::'], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2022:3': true})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2022:3', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 0})) return false;
          if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
@@ -2306,6 +2310,7 @@ suites.tag = function () {
       }],
       ['query unorganized pivs', 'post', 'query', {}, {tags: ['t::'], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2014:5', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 0, 't::': 1})) return false;
          if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.small.dateTags))  return false;
@@ -2313,6 +2318,7 @@ suites.tag = function () {
       }],
       ['query organized pivs with a tag that they have', 'post', 'query', {}, {tags: ['o::', tk.pivs.medium.dateTags [0]], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2022:3': true})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2022:3', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.medium.dateTags [0]]: 1, [tk.pivs.medium.dateTags [1]]: 1, 'a::': 2, 'u::': 1, 'o::': 1, 't::': 0})) return false;
          if (H.stop ('body.total', rs.body.total, 1)) return false;
          if (H.stop ('piv.tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('o::'))) return false;
@@ -2320,6 +2326,7 @@ suites.tag = function () {
       }],
       ['query organized pivs with a tag that they do not have', 'post', 'query', {}, {tags: ['o::', tk.pivs.small.dateTags [0]], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, undefined)) return false;
          if (H.stop ('tags', rs.body.tags, {'a::': 2, 'u::': 0, 'o::': 0, 't::': 0})) return false;
          if (H.stop ('body.total', rs.body.total, 0)) return false;
          return true;
@@ -2327,17 +2334,20 @@ suites.tag = function () {
       ['delete organized piv', 'post', 'delete', {}, function (s) {return {ids: [s.mediumId]}}, 200],
       ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {'2014:5': false})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, ['2014:5', 1])) return false;
          if (H.stop ('tags', rs.body.tags, {[tk.pivs.small.dateTags [0]]: 1, [tk.pivs.small.dateTags [1]]: 1, 'a::': 1, 'u::': 1, 'o::': 0, 't::': 1})) return false;
          return true;
       }],
       ['delete unorganized piv', 'post', 'delete', {}, function (s) {return {ids: [s.smallId]}}, 200],
       ['query pivs after deleting organized piv', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, timeHeader: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body.timeHeader, {})) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, undefined)) return false;
          if (H.stop ('tags', rs.body.tags, {'a::': 0, 'u::': 0, 'o::': 0, 't::': 0})) return false;
          return true;
       }],
       ['query pivs after deleting organized piv (idsOnly)', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 2, idsOnly: true}, 200, function (s, rq, rs) {
          if (H.stop ('timeHeader', rs.body, [])) return false;
+         if (H.stop ('lastMonth', rs.body.lastMonth, undefined)) return false;
          return true;
       }],
       ['upload small piv to test autoOrganize', 'post', 'piv', {}, function (s) {return {multipart: [

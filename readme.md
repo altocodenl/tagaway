@@ -68,6 +68,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server/client: show checkbox on tags that are organized
 --------------
 - small internal tasks
+   - remove critical notification for:"error": "response.connection.writable passed to cicek.file should be equal to true but instead is false",
    - server/client: rename everything to tagaway: folders, references.
    - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
    - server: on uncaughtException, close the server, then destroy all sockets
@@ -585,7 +586,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The only exception is `a::`, which indicate the *total* amount of all pivs, irrespective of the query. `u::` stands for untagged pivs, `o::` for pivs marked as organized, and `t::` for pivs not yet marked as organized.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned (`{ids: [...]}`). This enables the "select all" functionality.
-   - If `body.timeHeader` is present, a `timeHeader` field will be sent along with the other fields, having the form `{YYYYMM: true|false...}`; if a year + month combination is set to `true`, that month will have all its pivs organized; if an entry is set to `false`, it will have one or more unorganized pivs. Months for which there is no entry have no pivs.
+   - If `body.timeHeader` is present, a `timeHeader` field will be sent along with the other fields, having the form `{YYYY:MM: true|false, ...}`; each key is a year + month combination, and each value is set to `true` if that month will have all its pivs organized and set to `false` if that the year+month has one or more unorganized pivs. Months for which there is no entry have no pivs for the given query.
+   - If `body.timeHeader` is present, a `lastMonth` field will also be present, in the form `['YYYY:MM', INT]`, which contains the last month of the query and the number of pivs that are in the last month for the given query.
 
 - `POST /sho` (for sharing or unsharing) and `POST /shm` (for accepting or removing a tag shared with the user).
    - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`. `whom` must be the `email`, not the `username` of the target user.
@@ -3577,22 +3579,22 @@ We iterate the tags of the piv:
 If we find a year or month tag, we put it in the local variable.
 
 ```javascript
-   '           if string.sub (tag, 0, 3) == "d::" then',
-   '              if #tag == 7 then year = string.sub (tag, 4) else month = string.sub (tag, 5) end',
-   '           end',
+   '            if string.sub (tag, 0, 3) == "d::" then',
+   '               if #tag == 7 then year = string.sub (tag, 4) else month = string.sub (tag, 5) end',
+   '            end',
 ```
 
 If the tag is `o::`, then the piv is organized. We then overwrite the `organized` variable with `'o'`.
 
 ```javascript
-   '           if tag == "o::" then organized = "o" end',
+   '            if tag == "o::" then organized = "o" end',
    '         end',
 ```
 
-We construct a key of the form `YEAR:MONTH:o` if the piv is organized, or `YEAR:MONTH:t`, if the piv is not organized. We set that key to `true` in `output.timeHeader. Note that we might be overwriting already said key if it exists, which is perfectly fine. The `timeHeader` only cares if there's an organized piv (and an unorganized piv) on a given month & year combination. Note only that there could be a key for organized pivs and one for not organized pivs on the same month & year combination.
+We construct a key of the form `YEAR:MONTH:o` if the piv is organized, or `YEAR:MONTH:t`, if the piv is not organized. We set and increment that key in `output.timeHeader. The result will be that for each year+month, we will know how many organized and unorganized pivs are, for this query. Note only that there could be a key for organized pivs and one for not organized pivs on the same month & year combination.
 
 ```javascript
-   '         output.timeHeader [year .. ":" .. month .. ":" .. organized] = true;',
+   '         output.timeHeader [year .. ":" .. month .. ":" .. organized] = output.timeHeader [year .. ":" .. month .. ":" .. organized] and output.timeHeader [year .. ":" .. month .. ":" .. organized] + 1 or 1;',
 ```
 
 This concludes the computation of the `timeHeader` for this piv.
@@ -4153,13 +4155,63 @@ This concludes the data manipulation on `output.pivs`.
             });
 ```
 
-We reply with an object of the shape `{total: INT, tags: {...}, pivs: [{...}, ...], refreshQuery: TRUE|UNDEFINED, perf: {...}}`. This concludes the endpoint.
+If `b.timeHeader` is present, we will potentially add a `lastMonth` entry to `output`.
+
+```javascript
+            if (b.timeHeader) {
+```
+
+This entry should be of the form `['YYYY:MM', INT]`, indicating the last month for which the query has pivs, as well as the total number of pivs in the last month that match the query. This is strictly needed in the mobile version of the app; because the mobile version is the only client that uses the `timeHeader` option, it is safe to assume that the `lastMonth` will also be required by the same clients.
+
+Most of the logic for this is concerned from getting the last month from the time header keys we already have. We get it from here rather than from the pivs because we might not have the last piv that matches the query if the sorting order is either `upload` or `oldest`.
+
+We start by setting a `lastMonth` initialized to January of the year 0.
+
+```javascript
+               var lastMonth = [0, 1];
+```
+
+We iterate the time header. For each of the keys, we split it in two and parse it into integers.
+
+```javascript
+               dale.go (output.timeHeader, function (v, k) {
+                  k = k.split (':');
+                  k = [parseInt (k [0]), parseInt (k [1])];
+```
+
+If the year entry (the first one) is greater than that of `lastMonth`, we overwrite `lastMonth` with the month we're seeing here.\
+
+```javascript
+                  if (lastMonth [0] < k [0]) return lastMonth = k;
+```
+
+If the year entry is the same as that of `lastMonth`, but the month is higher, we also replace `lastMonth` with this year + month combination.
+
+```javascript
+                  if (lastMonth [0] == k [0] && lastMonth [1] < k [1]) lastMonth = k;
+               });
+```
+
+If there's no pivs in the query, we will have still `lastMonth` equalling `[0, 1]`. If that's the case, we don't want any last month.
+
+But if we have a `lastMonth`, then we will place it in `output.lastMonth`. Note we sum both the piv amount from both `YYYY:MM:t` (unorganized pivs) and `YYYY:MM:o` (organized pivs).
+
+```javascript
+               if (! eq (lastMonth, [0, 1])) {
+                  var totalPivs = (output.timeHeader [lastMonth.join (':') + ':t'] || 0) + (output.timeHeader [lastMonth.join (':') + ':o'] || 0);
+                  output.lastMonth = [lastMonth.join (':'), totalPivs];
+               }
+```
+
+This concludes the logic for computing `output.lastMonth`.
+
+```javascript
+            }
+```
+
+We pass a few parameters to the output object:
 
 Note: the `refreshQuery` parameter will be soon removed.
-
-The `timeHeader` key will be added only if `b.timeHeader` is set. For setting this object, we use the information brought to us from the Lua query. The only processing we do is that if, for a given month, there's both organized and unorganized pivs, we consider that month to be unorganized (`'t'` takes precedence over `'o'`).
-
-The `perf` object in the output has three fields: `total`, which is the total processing time for the entire request, `node`, which is all the processing of the request minus the time that Lua spent processing, and `lua`, which will be an object with the labels and associated lengths, including `total`, which will be equal to the total execution time of the Lua script.
 
 ```javascript
             reply (rs, 200, {
@@ -4167,16 +4219,29 @@ The `perf` object in the output has three fields: `total`, which is the total pr
                total:        output.total,
                tags:         output.tags,
                pivs:         output.pivs,
+               lastMonth:    output.lastMonth,
+```
+
+The `timeHeader` key will be added only if `b.timeHeader` is set. For setting this object, we use the information brought to us from the Lua query. If for a given month, there's both organized and unorganized pivs, we consider that month to be unorganized (`'t'` takes precedence over `'o'`).
+
+```javascript
                timeHeader:   ! b.timeHeader ? undefined : dale.obj (output.timeHeader, function (v, k) {
                   if (k.slice (-1) === 't') return [k.slice (0, -2), false];
                   if (! output.timeHeader [k.replace ('o', 't')]) return [k.slice (0, -2), true];
                }),
+```
+
+The `perf` object in the output has three fields: `total`, which is the total processing time for the entire request, `node`, which is all the processing of the request minus the time that Lua spent processing, and `lua`, which will be an object with the labels and associated lengths, including `total`, which will be equal to the total execution time of the Lua script.
+
+```javascript
                perf:         {total: Date.now () - rs.log.startTime, node: Date.now () - perf.total - rs.log.startTime, lua: perf}
             });
          }
       ]);
    }],
 ```
+
+This concludes the endpoint.
 
 We now define `POST /sho` and `POST /shm`. Because of the similarities in the code for both endpoints, we define them within one function. These endpoints handle four operations:
 

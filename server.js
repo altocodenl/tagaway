@@ -1496,12 +1496,12 @@ redis.script ('load', [
    '         local organized = "t";',
    '         if piv [2] ~= query.username then tags = redis.call ("smembers", KEYS [1] .. "-tags-" .. piv [1]) end;',
    '         for k, tag in ipairs (tags) do',
-   '           if string.sub (tag, 0, 3) == "d::" then',
-   '              if #tag == 7 then year = string.sub (tag, 4) else month = string.sub (tag, 5) end',
-   '           end',
-   '           if tag == "o::" then organized = "o" end',
+   '            if string.sub (tag, 0, 3) == "d::" then',
+   '               if #tag == 7 then year = string.sub (tag, 4) else month = string.sub (tag, 5) end',
+   '            end',
+   '            if tag == "o::" then organized = "o" end',
    '         end',
-   '         output.timeHeader [year .. ":" .. month .. ":" .. organized] = true;',
+   '         output.timeHeader [year .. ":" .. month .. ":" .. organized] = output.timeHeader [year .. ":" .. month .. ":" .. organized] and output.timeHeader [year .. ":" .. month .. ":" .. organized] + 1 or 1;',
    '      end',
    '   end',
    '   redis.call ("rpush", KEYS [1] .. "-perf", "hashes", unpack (redis.call ("time")));',
@@ -3386,11 +3386,25 @@ var routes = [
                   format:     ! ENV ? piv.format             : undefined
                };
             });
+            if (b.timeHeader) {
+               var lastMonth = [0, 1];
+               dale.go (output.timeHeader, function (v, k) {
+                  k = k.split (':');
+                  k = [parseInt (k [0]), parseInt (k [1])];
+                  if (lastMonth [0] < k [0]) return lastMonth = k;
+                  if (lastMonth [0] == k [0] && lastMonth [1] < k [1]) lastMonth = k;
+               });
+               if (! eq (lastMonth, [0, 1])) {
+                  var totalPivs = (output.timeHeader [lastMonth.join (':') + ':t'] || 0) + (output.timeHeader [lastMonth.join (':') + ':o'] || 0);
+                  output.lastMonth = [lastMonth.join (':'), totalPivs];
+               }
+            }
             reply (rs, 200, {
                refreshQuery: s.refreshQuery || undefined,
                total:        output.total,
                tags:         output.tags,
                pivs:         output.pivs,
+               lastMonth:    output.lastMonth,
                timeHeader:   ! b.timeHeader ? undefined : dale.obj (output.timeHeader, function (v, k) {
                   if (k.slice (-1) === 't') return [k.slice (0, -2), false];
                   if (! output.timeHeader [k.replace ('o', 't')]) return [k.slice (0, -2), true];
