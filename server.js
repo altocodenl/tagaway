@@ -690,7 +690,7 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
          });
          var error = dale.stopNot (s.last, undefined, function (line) {
             if (line.match (/^Warning\s+:/)) {
-               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated'].join ('|'));
+               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated', 'Invalid atom size'].join ('|'));
                if (line.match (exceptions)) return;
                return line;
             }
