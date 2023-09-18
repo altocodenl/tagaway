@@ -1806,7 +1806,7 @@ var routes = [
                email:               b.email,
                created:             Date.now (),
                verificationPending: true,
-               suggestGeotagging:   1,
+               geo:                 1,
                suggestSelection:    1,
                onboarding:          1,
             });

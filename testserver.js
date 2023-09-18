@@ -642,7 +642,7 @@ suites.auth = {
             delete rs.body.logs;
             if (type (rs.body.created) !== 'integer' || Math.abs (Date.now () - rs.body.created) > 5000) return clog ('Invalid created field', rs.body.created);
             delete rs.body.created;
-            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, suggestGeotagging: true, suggestSelection: true, onboarding: true})) return false;
+            if (H.stop ('body', rs.body, {username: user.username, email: user.email, usage: {limit: CONFIG.freeSpace, byfs: 0, bys3: 0}, geo: true, suggestSelection: true, onboarding: true})) return false;
             return true;
          }],
          ['get CSRF token without being logged in', 'get', 'auth/csrf', {cookie: ''}, '', 403, H.cBody ({error: 'nocookie'})],
@@ -1491,10 +1491,12 @@ suites.upload.piv = function () {
                if (H.stop ('id type', type (upiv.id), 'string')) return false;
                if (H.stop ('dateup type', type (upiv.dateup), 'integer')) return false;
                if (upiv.dateup > Date.now () || Date.now () - upiv.dateup > 4000) return clog ('dateup must be less than 4000ms away from the current time but instead is ' + (Date.now () - upiv.dateup) + 'ms');
+               var expectedTags = tags.concat (tk.pivs [name].dateTags);
+               if (piv.name === 'dunkerque.jpg') expectedTags = expectedTags.concat (['g::Dunkerque', 'g::FR']);
                if (dale.stop ({
                   owner: 'user1',
                   name: piv.name,
-                  tags: tags.concat (tk.pivs [name].dateTags).sort (),
+                  tags: expectedTags.sort (),
                   date: piv.date,
                   dates: piv.dates,
                   dimw: piv.dimw,
@@ -2539,6 +2541,7 @@ suites.query = function () {
          if (H.stop ('body.refreshQuery', rs.body.refreshQuery, undefined)) return false;
          return true;
       }],
+      ['disable geo', 'post', 'geo', {}, {operation: 'disable'}, 200],
       ['enable geo', 'post', 'geo', {}, {operation: 'enable'}, 200],
       ['query pivs with refreshQuery activated by geotagging', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 1}, 200, function (s, rq, rs, next) {
          if (H.stop ('body', rs.body.refreshQuery, true)) return false;
@@ -3321,7 +3324,7 @@ suites.dismiss = function () {
          [['operation'], 'invalidValues', ['foo', 'bar', 'geo']],
          [['operation'], 'values', ['geotagging', 'selection']],
       ]),
-      dale.go (['geotagging', 'selection'], function (op) {
+      dale.go (['selection'], function (op) {
          return [
             ['get account before dismissing suggestion', 'get', 'account', {}, '', 200, function (s, rq, rs) {
                var fieldName = 'suggest' + op [0].toUpperCase () + op.slice (1);
@@ -3382,6 +3385,7 @@ suites.dismiss = function () {
 suites.geo = function () {
    return [
       suites.auth.in (tk.users.user1),
+      ['disable geo', 'post', 'geo', {}, {operation: 'disable'}, 200],
       H.invalidTestMaker ('geo', 'geo', [
          [[], 'object'],
          [[], 'keys', ['operation']],
