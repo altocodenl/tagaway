@@ -4913,20 +4913,22 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       s.next ();
    }],
    // Get list of files from S3
+   // Final shape will be {PATH: SIZE, ...}
    [H.s3list, ''],
    function (s) {
-      s.s3files = dale.obj (s.last, function (v) {
+      s.s3Files = dale.obj (s.last, function (v) {
          return [v.key, v.size];
       });
       s.next ();
    },
    // Get list of files from FS
+   // Final shape will be {PATH: SIZE, ...}
    [a.make (fs.readdir), CONFIG.basepath],
    [a.get, a.fork, '@last', function (dir) {
       return [
          [a.stop, [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)], function (s, error) {
             if (ENV) return s.next (null, error);
-            // If errors happen locally, ignore them.
+            // If errors happen when running the script locally, ignore them.
             if (error) return s.next (false);
          }],
          function (s) {
@@ -4938,15 +4940,23 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       ];
    }, {max: os.cpus ().length}],
    function (s) {
-      s.fsfiles = {};
-      dale.go (s.last, function (folder) {
-         dale.go (folder, function (file) {
-            s.fsfiles [file] = true;
-         });
-      });
-      s.next ();
+      var fsFiles = {};
+      a.seq (s, [
+         [a.fork, s.last, function (s, file) {
+            [a.make (fs.stat), file],
+            function (s) {
+               fsFiles [path] = s.last.size;
+               s.next ();
+            };
+         }],
+         function (s) {
+            s.last = fsFiles;
+            s.next ();
+         }
+      ]);
    },
-   // Get list of pivs and thumbs
+   // Get list of pivs (which include also thumb information)
+   // Final shape will be {'PATH': [SIZE, piv|thumb|mp4], ...}
    [redis.keyscan, 'piv:*'],
    function (s) {
       var multi = redis.multi ();
@@ -4956,49 +4966,55 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       mexec (s, multi);
    },
    function (s) {
-      s.dbfiles = {};
+      s.dbFiles = {};
       dale.go (s.last, function (piv) {
          var prefix = H.hash (piv.owner) + '/';
-         s.dbfiles [prefix + piv.id] = piv.byfs;
-         if (piv.thumbS) s.dbfiles [prefix + piv.thumbS] = 'thumb';
-         if (piv.thumbM) s.dbfiles [prefix + piv.thumbM] = 'thumb';
-         if (piv.vid && piv.vid !== '1') s.dbfiles [prefix + piv.vid] = 'thumb';
+         s.dbFiles [prefix + piv.id] = ['piv', piv.byfs];
+         if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [piv.bythumbS, 'thumb'];
+         if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [piv.bythumbM, 'thumb'];
+         if (piv.vid && piv.vid !== '1') s.dbFiles [prefix + piv.vid] = [piv.bymp4, 'mp4'];
       });
       s.next ();
    },
    // Check consistency. DB data is the measure of everything, the single source of truth.
    function (s) {
-      // Note: All file lists (s.s3files, s.fsfiles, s.dbfiles) were initialized as objects for quick lookups; if stored as arrays instead, we'd be iterating the array N times when performing the checks below.
+      // Note: All file lists (s.s3Files, s.fsFiles, s.dbFiles) were initialized as objects for quick lookups; if stored as arrays instead, we'd be iterating the array N times when performing the checks below.
 
-      s.fsextra   = [];
-      s.fsmissing = [];
-      s.s3extra   = [];
-      s.s3missing = [];
+      s.fsExtra     = [];
+      s.fsMissing   = [];
+      s.fsWrongSize = [];
+      s.s3Extra     = [];
+      s.s3Missing   = [];
       s.s3WrongSize = [];
 
-      dale.go (s.dbfiles, function (typeOrSize, dbfile) {
+      dale.go (s.dbFiles, function (data, dbFile) {
          // S3 only holds original pivs
-         if (typeOrSize !== 'thumb') {
-            if (! s.s3files [dbfile]) s.s3missing.push (dbfile);
+         if (typeOrSize === 'piv') {
+            if (! s.s3Files [dbFile]) s.s3Missing.push (dbFile);
             // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
-            else if (s.s3files [dbfile] - typeOrSize !== 32) s.s3WrongSize.push (dbfile);
+            else if (s.s3Files [dbFile] - data [1] !== 32) s.s3WrongSize.push (dbFile);
          }
          // FS holds both original pivs and thumbnails. Ignore pending or errored conversions to mp4.
-         if (! dbfile.match (/(pending|error)/) && ! s.fsfiles [dbfile]) s.fsmissing.push (dbfile);
+         if (! dbFile.match (/(pending|error)/)) {
+            if (! s.fsFiles [dbFile]) s.fsMissing.push (dbFile);
+            else if (s.fsFiles [dbFile] !== dbFile [1]) s.fsWrongSize.push (dbFile);
+         }
       });
-      dale.go (s.s3files, function (v, s3file) {
-         if (! s.dbfiles [s3file]) s.s3extra.push (s3file);
+
+      dale.go (s.s3Files, function (v, s3file) {
+         if (! s.dbFiles [s3file]) s.s3Extra.push (s3file);
       });
-      dale.go (s.fsfiles, function (v, fsfile) {
-         if (! s.dbfiles [fsfile] && ! fsfile.match (/^invalid/)) s.fsextra.push (fsfile);
+      dale.go (s.fsFiles, function (v, fsfile) {
+         if (! s.dbFiles [fsfile] && ! fsfile.match (/^invalid/)) s.fsExtra.push (fsfile);
       });
 
       // We only show the first 100 items to avoid making the email too big.
-      if (s.s3extra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in S3 error', n: s.s3extra.length,   files: s.s3extra.slice (0, 100)});
-      if (s.fsextra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in FS error', n: s.fsextra.length,   files: s.fsextra.slice (0, 100)});
-      if (s.s3missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3missing.length, files: s.s3missing.slice (0, 100)});
-      if (s.fsmissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsmissing.length, files: s.fsmissing.slice (0, 100)});
+      if (s.s3Extra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in S3 error', n: s.s3Extra.length,   files: s.s3Extra.slice (0, 100)});
+      if (s.fsExtra.length)   notify (a.creat (), {priority: 'critical', type: 'extraneous files in FS error', n: s.fsExtra.length,   files: s.fsExtra.slice (0, 100)});
+      if (s.s3Missing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in S3 error',    n: s.s3Missing.length, files: s.s3Missing.slice (0, 100)});
+      if (s.fsMissing.length) notify (a.creat (), {priority: 'critical', type: 'missing files in FS error',    n: s.fsMissing.length, files: s.fsMissing.slice (0, 100)});
       if (s.s3WrongSize.length) notify (a.creat (), {priority: 'critical', type: 'Files of incorrect size in S3 error', n: s.s3WrongSize.length,   files: s.s3WrongSize.slice (0, 100)});
+      if (s.fsWrongSize.length) notify (a.creat (), {priority: 'critical', type: 'Files of incorrect size in FS error', n: s.fsWrongSize.length,   files: s.fsWrongSize.slice (0, 100)});
 
       // We delete the list of pivs from the stack so that it won't be copied by a.fork below in case there are extraneous FS files to delete.
       s.last = undefined;
@@ -5007,18 +5023,18 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       else a.seq (s, [
          // Extraneous S3 files: delete. Don't update the statistics.
          [function (s) {
-            H.s3del (s, s.s3extra);
+            H.s3del (s, s.s3Extra);
          }],
          function (s) {
             // Extraneous FS files: delete. Don't update the statistics.
-            a.fork (s, s.fsextra, function (v) {
+            a.fork (s, s.fsExtra, function (v) {
                return [H.unlink, Path.join (CONFIG.basepath, v)];
             }, {max: os.cpus ().length});
          },
          function (s) {
-            // Missing S3 files or S3 files of incorrect size: upload them to S3 if they are in the FS.
-            a.fork (s, s.s3missing.concat (s.s3WrongSize), function (file) {
-               if (inc (s.fsmissing, file)) {
+            // Missing S3 files or S3 files of incorrect size: upload them to S3 if they are in the FS and have the right size
+            a.fork (s, s.s3Missing.concat (s.s3WrongSize), function (file) {
+               if (inc (s.fsMissing.concat (s.fsWrongSize), file)) {
                   notOK.push (file);
                   return [];
                }
@@ -5026,9 +5042,9 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
             }, {max: os.cpus ().length});
          },
          function (s) {
-            // Missing FS files: download them from S3 if they are there.
-            a.fork (s, s.fsmissing, function (file) {
-               if (inc (s.s3missing, file)) {
+            // Missing FS files or FS files of incorrect size: download them from S3 if they are there and have the right size
+            a.fork (s, s.fsMissing.concat (s.fsWrongSize), function (file) {
+               if (inc (s.s3Missing.concat (s.s3WrongSize), file)) {
                   notOK.push (file);
                   return [];
                }
@@ -5040,7 +5056,7 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
          },
          function (s) {
             var messageType = notOK.length === 0 ? 'File consistency operation success.' : 'File consistency operation failure: missing S3 and/or FS files.';
-            var message = dale.obj (['s3extra', 'fsextra', 's3missing', 'fsmissing'], {priority: notOK.length === 0 ? 'important' : 'critical', type: messageType}, function (k) {
+            var message = dale.obj (['s3Extra', 'fsExtra', 's3Missing', 'fsMissing', 's3WrongSize', 'fsWrongSize'], {priority: notOK.length === 0 ? 'important' : 'critical', type: messageType}, function (k) {
                if (s [k].length) return [k, s [k]];
             });
             message.ms = Date.now () - s.start;
@@ -5095,6 +5111,7 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       mexec (s, multi);
    },
    function (s) {
+      // The source of truth are the piv entries
       var actual = {TOTAL: {s3: 0, fs: 0}};
       if (! s ['s3:files']) s ['s3:files'] = {};
       var extraneousS3 = teishi.copy (s ['s3:files']), missingS3 = {}, invalidS3 = {}, proper = {};
