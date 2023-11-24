@@ -3341,7 +3341,11 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            var output = JSON.parse (s.last [1]);
+            var output = teishi.parse (s.last [1]);
+            if (output === false) {
+               if (error) notify (a.creat (), {priority: 'important', type: 'Redis query error', user: rq.user.username, body: b, error: s.last [1]});
+               return reply (rs, 500, {error: 'Query error'});
+            }
             var lastTimeEntry = s.startLua;
             var perf = dale.obj (output.perf, {total: Date.now () - s.startLua}, function (v, k) {
                if (k % 3 !== 0) return;

@@ -44,7 +44,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - **server: fix ERR_CONTENT_LENGTH_MISMATCH 206**
       - script for fixing bymp4 on reconverted pivs, as well as stats
       - figure out why checkConsistency didn't account for this
-   - **server: line 3344, if Redis doesn't return JSON, throw error but do not crash**
    - **server: investigate bug with piv with location but no geotags**
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
@@ -4007,7 +4006,16 @@ The output of the script will be in `s.last [1]` (since we used the same `multi`
 
 ```javascript
          function (s) {
-            var output = JSON.parse (s.last [1]);
+            var output = teishi.parse (s.last [1]);
+```
+
+It is possible that the Lua script might throw an error, in which case we will not get a JSON, but instead an error message. If this is the case, `s.last [1]` will not be a stringified object, and then `teishi.parse` (which is a wrapper around `JSON.stringify`) will return `false`. If this is the case, we notify the error and then return a 500 error to the user.
+
+```javascript
+            if (output === false) {
+               if (error) notify (a.creat (), {priority: 'important', type: 'Redis query error', user: rq.user.username, body: b, error: s.last [1]});
+               return reply (rs, 500, {error: 'Query error'});
+            }
 ```
 
 We will now process `output.perf` to construct an object of the shape `{LABEL1: INT, ...}`, where each performance segment gets a number in milliseconds that represents its execution time. We will store the result in a variable `perf`. We start initializing it to `{total: INT}`, using as value the current time minus `s.startLua`, which was the time at which the Lua script started executing.
