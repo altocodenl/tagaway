@@ -4505,10 +4505,10 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            s.last.sort (function (a, b) {
-               a = a.lastActivity;
-               b = b.lastActivity;
-               if (! a && ! b) return 1;
+            s.last.sort (function (A, B) {
+               a = A.lastActivity;
+               b = B.lastActivity;
+               if (! a && ! b) return parseInt (B.created) - parseInt (A.created);
                if (! a && b) return 1;
                if (a && ! b) return -1;
                if (a && b) return parseInt (b) - parseInt (a);
