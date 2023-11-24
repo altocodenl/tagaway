@@ -4506,8 +4506,8 @@ var routes = [
          },
          function (s) {
             s.last.sort (function (A, B) {
-               a = A.lastActivity;
-               b = B.lastActivity;
+               var a = A.lastActivity;
+               var b = B.lastActivity;
                if (! a && ! b) return parseInt (B.created) - parseInt (A.created);
                if (! a && b) return 1;
                if (a && ! b) return -1;
