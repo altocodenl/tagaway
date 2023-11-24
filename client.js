@@ -3291,12 +3291,24 @@ H.ago = function (ms) {
    return Math.floor (ms / (1000 * 60 * 60 * 24)) + ' days';
 }
 
+H.fileReaders = [];
+
 H.hash = function (file, cb) {
-   var freader = new FileReader (), hash = false;
-   freader.readAsArrayBuffer (file);
-   freader.onerror = function () {cb (true)}
-   freader.onload = function () {
-      cb (null, murmur.v3 (new Uint8Array (freader.result)) + ':' + file.size);
+   var fileReader = dale.stopNot (H.fileReaders, undefined, function (fileReader) {
+      if (! fileReader.inUse) return fileReader;
+   });
+   if (! fileReader) {
+      fileReader = new FileReader ();
+      H.fileReaders.push (fileReader);
+   }
+   fileReader.inUse = true;
+
+   var hash = false;
+   fileReader.readAsArrayBuffer (file);
+   fileReader.onerror = function () {cb (true)}
+   fileReader.onload = function () {
+      cb (null, murmur.v3 (new Uint8Array (fileReader.result)) + ':' + file.size);
+      fileReader.inUse = false;
    }
 }
 
