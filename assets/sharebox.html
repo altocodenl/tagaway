@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+   </head>
+   <body>
+      Picture
+      <input type="file" accept="image/*" capture="camera" id="cameraInput">
+      <br><br>
+      Video
+      <input type="file" accept="video/*" capture="camcorder" id="videoInput">
+
+<script>
+  const input = document.getElementById('cameraInput');
+
+  input.addEventListener('change', function() {
+    const file = input.files[0];
+    // Now you can use the file, for example, to display it
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    document.body.appendChild(img);
+  });
+
+  const input2 = document.getElementById('videoInput');
+
+input2.addEventListener('change', function() {
+  const file = input2.files[0];
+  // Create a video element to play the video
+  const video = document.createElement('video');
+  video.src = URL.createObjectURL(file);
+  video.controls = true;
+  document.body.appendChild(video);
+});
+</script>
+   </body>
+</html>
