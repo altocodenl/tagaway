@@ -40,16 +40,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
+   - **server: if verify token for user that does not exist, check and throw 403**
    - **server: fix ERR_CONTENT_LENGTH_MISMATCH 206**
       - script for fixing bymp4 on reconverted pivs, as well as stats
       - figure out why checkConsistency didn't account for this
+   - **server: line 3344, if Redis doesn't return JSON, throw error but do not crash**
    - **server: investigate bug with piv with location but no geotags**
-   - server: investigate 502 nginx error
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
    - client: fix phantom selection when scrolling with a large selection
    - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
+   - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
    - **server/config**: fix google drive import
@@ -101,7 +103,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: set up prod mirror
    - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
    - server: add dedicated keys for uploads in order to improve getUploads performance
-   - server: improve performance of POST /query endpoint
    - Recompute pricing
       - Investigate Glacier lifecycle.
       - Variable cost with maximum per GB? Minimum/maximum range, based on S3 usage.
