@@ -2768,13 +2768,31 @@ suites.organized = function () {
          return {ids: [s.smallId, s.mediumId, s.largeId]};
       }, 200, H.cBody ([])],
       ['send non-existing ids', 'post', 'organized', {}, {ids: ['foo', 'bar']}, 200, H.cBody ([])],
+      ['get tags, see that organized count is 0', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.organized', rs.body.organized, 0)) return false;
+         return true;
+      }],
       ['mark two pivs as organized', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId, s.largeId]}}, 200],
+      ['get tags, see that organized count is 2', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.organized', rs.body.organized, 2)) return false;
+         return true;
+      }],
       ['send ids of all three pivs, get back two', 'post', 'organized', {}, function (s) {
          return {ids: [s.smallId, s.mediumId, s.largeId]};
       }, 200, H.cBody (function (s) {return [s.smallId, s.largeId].sort ()})],
       ['send ids of all three pivs as well as a nonexisting id and a repeated one, get back two', 'post', 'organized', {}, function (s) {
          return {ids: [s.smallId, s.mediumId, s.largeId, 'foo', s.largeId]};
       }, 200, H.cBody (function (s) {return [s.smallId, s.largeId].sort ()})],
+      ['set piv as unorganized', 'post', 'tag', {}, function (s) {return {tag: 'o::', ids: [s.smallId], del: true}}, 200],
+      ['get tags, see that organized count is 1', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.organized', rs.body.organized, 1)) return false;
+         return true;
+      }],
+      ['delete organized piv', 'post', 'delete', {}, function (s) {return {ids: [s.largeId]}}, 200],
+      ['get tags, see that organized count is 0', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.organized', rs.body.organized, 0)) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
    ];
 }
@@ -2790,9 +2808,9 @@ suites.hometags = function () {
          [['hometags'], 'invalidValues', [['a::', '2021', 'g::Leiden']], {error: 'tag', tag: 'a::'}],
          [['hometags'], 'invalidValues', [['foo', 'bar', 'foo']], 'repeated'],
       ]),
-      ['get hometags, that see list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
+      ['get hometags, see that list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: [], organized: 0})],
       ['add nonexisting tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 404, H.cBody ({tag: 'foo'})],
-      ['get hometags, that see list is still empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
+      ['get hometags, see that list is still empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: [], organized: 0})],
       ['start upload to test hometags', 'post', 'upload', {}, {op: 'start', total: 0}, 200, function (s, rq, rs) {
          s.uploadId = rs.body.id;
          return true;
@@ -2807,16 +2825,16 @@ suites.hometags = function () {
       }],
       ['tag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId]}}, 200],
       ['add existing tag to hometags (including trailing whitespace)', 'post', 'hometags', {}, {hometags: ['foo ']}, 200],
-      ['get hometags, that see list has the added tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5', 'foo'], hometags: ['foo']})],
+      ['get hometags, see that list has the added tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5', 'foo'], hometags: ['foo'], organized: 0})],
       ['tag piv with another tag', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId]}}, 200],
       ['add both tags to hometags', 'post', 'hometags', {}, {hometags: ['foo', 'bar']}, 200],
-      ['get hometags, that see list has the second tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['foo', 'bar']})],
+      ['get hometags, see that list has the second tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['foo', 'bar'], organized: 0})],
       ['change order of hometags', 'post', 'hometags', {}, {hometags: ['bar', 'foo']}, 200],
-      ['get hometags, that see list has the tags in the right order', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['bar', 'foo']})],
+      ['get hometags, see that list has the tags in the right order', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['bar', 'foo'], organized: 0})],
       ['untag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId], del: true}}, 200],
-      ['get hometags, that see list has no reference to the deleted tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5'], hometags: ['bar']})],
+      ['get hometags, see that list has no reference to the deleted tag', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['bar', 'd::2014', 'd::M5'], hometags: ['bar'], organized: 0})],
       ['untag piv again', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId], del: true}}, 200],
-      ['get hometags, that see list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5'], hometags: []})],
+      ['get hometags, see that list is empty', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['d::2014', 'd::M5'], hometags: [], organized: 0})],
       suites.auth.out (tk.users.user1),
    ];
 }
@@ -2956,7 +2974,7 @@ suites.share = function () {
          if (H.stop ('body.tags', rs.body.tags, {'a::': 3, 'u::': 0, 'o::': 0, 't::': 3, 'd::M7': 1, 'd::2022': 1, 'user1:shared': 3, 'd::M3': 1, 'd::M5': 1, 'd::2014': 2})) return false;
          return true;
       }],
-      ['query tags after accepting share', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['s::user1:shared'], hometags: []})],
+      ['query tags after accepting share', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['s::user1:shared'], hometags: [], organized: 0})],
       ['accept share again (no-op)', 'post', 'shm', {}, {tag: 'shared', whom: tk.users.user1.email}, 200],
       ['get shares after accepting share again (no-op)', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: [['user1', 'shared']]})) return false;
@@ -2992,7 +3010,7 @@ suites.share = function () {
          if (log.ev !== 'auth') return clog ('No-op accept share created a log entry');
          return true;
       }],
-      ['get tags after being unshared', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: []})],
+      ['get tags after being unshared', 'get', 'tags', {}, '', 200, H.cBody ({tags: [], hometags: [], organized: 0})],
       ['accept share again', 'post', 'shm', {}, {tag: 'shared', whom: tk.users.user1.email}, 200],
       ['get shares after accepting share', 'get', 'share', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {sho: [], shm: [['user1', 'shared']]})) return false;
@@ -3086,7 +3104,7 @@ suites.share = function () {
          if (H.stop ('piv ids', ids, [s.mediumId, s.smallId])) return false;
          return true;
       }],
-      ['get tags after being shared two pivs', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['s::user1:foo'], hometags: []})],
+      ['get tags after being shared two pivs', 'get', 'tags', {}, '', 200, H.cBody ({tags: ['s::user1:foo'], hometags: [], organized: 0})],
       dale.go (['small', 'medium', 'large'], function (v, k) {
          var id = v + 'Id';
          var sharedStatus = v === 'large' ? 'unshared' : 'shared';
@@ -3170,7 +3188,7 @@ suites.rename = function () {
          return true;
       }],
       ['get tags after renaming', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags.concat ('tag2'), hometags: ['tag2']})) return false;
+         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags.concat ('tag2'), hometags: ['tag2'], organized: 0})) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -3216,7 +3234,7 @@ suites.deleteTag = function () {
          return true;
       }],
       ['get tags after deleting ', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags, hometags: []})) return false;
+         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags, hometags: [], organized: 0})) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),

@@ -533,7 +533,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an array of the form `['tag1', 'tag2', ...]`. This list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`.
+   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user.
 
 - `POST /hometags`
    - Body must be of the form `{hometags: [STRING, ...]}`.
@@ -2760,27 +2760,26 @@ We now define `GET /tags`. This endpoint will return all the tags set by the use
       astop (rs, [
 ```
 
-We start by getting all the home tags from the user and setting them in `s.hometags` through `a.set`.
-
-```javascript
-         [a.set, 'hometags', [Redis, 'get', 'hometags:' + rq.user.username]],
-```
-
 The endpoint needs to get the list of members of `tags:USERNAME`, as well as all the tags shared with the user (located at `shm:USERNAME`).
 
 Interestingly enough, the only reason that this endpoint returns all tags and not only user tags (and consequently, that `tags:USERNAME` stores all tags, not just user tags) is that one of the client responders, `query tags`, needs to have the full list of existing tags, in order to filter out tags that no longer exist after any modifications. If it wasn't for this requirement, we would only store and return user tags on this endpoint, since the rest of the interface *always* filter out the non-user tags from the list of tags.
 
+We will also get the `hometags` of the user (which exist at `hometags:USERNAME`; finally, we will also get the number of organized pivs for the user, which is at `tag:USERNAME:o::`.
+
+Note we have to wrap the function into an array to let astack know that this function is itself an astep and it should be executed on its own.
+
 ```javascript
-         function (s) {
+         [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tags:' + rq.user.username);
-            multi.smembers ('shm:'  + rq.user.username);
+            multi.smembers ('tags:'     + rq.user.username);
+            multi.smembers ('shm:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
+            multi.scard    ('tag:'      + rq.user.username + ':o::');
             mexec (s, multi);
-         },
+         }],
 ```
 
 We iterate the list of tags shared with the user; for each of them, we prepend it with `s::` to denote that they are shared tags; we then add them to the list of tags belonging to the user itself.
-
 
 ```javascript
          function (s) {
@@ -2790,12 +2789,16 @@ We iterate the list of tags shared with the user; for each of them, we prepend i
 ```
 
 
-We sort the resulting array and put it in the key `tags` of the output object - the sorting is case insensitive. We then set the `hometags` key to either the parsed value of `s.hometags`, or default to an empty array if there were no home tags. This concludes the endpoint.
+We sort the resulting array and put it in the key `tags` of the output object - the sorting is case insensitive. We then set the `hometags` key to either the hometags, or default to an empty array if there were no home tags. Finally, we add the count of organized pivs in the key `organized`. This concludes the endpoint.
 
 ```javascript
-            reply (rs, 200, {tags: s.last [0].sort (function (a, b) {
-               return a.toLowerCase ().localeCompare (b.toLowerCase ());
-            }), hometags: JSON.parse (s.hometags || '[]')});
+            reply (rs, 200, {
+               tags: s.last [0].sort (function (a, b) {
+                  return a.toLowerCase ().localeCompare (b.toLowerCase ());
+               }),
+               hometags: JSON.parse (s.last [2] || '[]'),
+               organized: parseInt (s.last [3])
+            });
          }
       ]);
    }],

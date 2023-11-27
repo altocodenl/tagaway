@@ -3134,20 +3134,25 @@ var routes = [
 
    ['get', 'tags', function (rq, rs) {
       astop (rs, [
-         [a.set, 'hometags', [Redis, 'get', 'hometags:' + rq.user.username]],
-         function (s) {
+         [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tags:' + rq.user.username);
-            multi.smembers ('shm:'  + rq.user.username);
+            multi.smembers ('tags:'     + rq.user.username);
+            multi.smembers ('shm:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
+            multi.scard    ('tag:'      + rq.user.username + ':o::');
             mexec (s, multi);
-         },
+         }],
          function (s) {
             dale.go (s.last [1], function (share) {
                s.last [0].push ('s::' + share);
             });
-            reply (rs, 200, {tags: s.last [0].sort (function (a, b) {
-               return a.toLowerCase ().localeCompare (b.toLowerCase ());
-            }), hometags: JSON.parse (s.hometags || '[]')});
+            reply (rs, 200, {
+               tags: s.last [0].sort (function (a, b) {
+                  return a.toLowerCase ().localeCompare (b.toLowerCase ());
+               }),
+               hometags: JSON.parse (s.last [2] || '[]'),
+               organized: parseInt (s.last [3])
+            });
          }
       ]);
    }],
