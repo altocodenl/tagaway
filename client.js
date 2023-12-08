@@ -1340,6 +1340,15 @@ CSS.litc = [
          ['.tag-actions__item--selected', {display: 'none'}],
          ['.tag-actions__item--deselect', {display: 'flex'}],
       ]],
+      ['.edit-icon', {
+         display: 'none',
+         cursor: 'pointer',
+         'border-radius': 100,
+         'height': 22, 
+         'width': 24, 
+         'margin-left': 5,
+         'margin-top': 3,
+      }],
       // All pictures tag
       // (has no hover because you can't deselect it)
       ['.tag--all-pictures.tag--selected:hover', [
@@ -5357,7 +5366,7 @@ views.pics = function () {
                               ['div', {class: 'tag__actions', style: style ({height: 24})}, [
                                  inc (['f::', 'e::'], which) ? [] : ['div', {class: 'tag-actions'}, [
                                     ['div', {class: 'tag-actions__item tag-actions__item--selected'}, H.putSvg ('itemSelected', 24)],
-                                    ['div', {class: 'tag-actions__item'}, H.putSvg ('itemEditIcon', 24)],
+                                    ['div', H.putSvg ('itemEditIcon', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--deselect'}, H.putSvg ('itemDeselect', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attach'},   H.putSvg ('itemAttach', 24)],
                                     ['div', {class: 'tag-actions__item tag-actions__item--attached'}, H.putSvg ('itemAttached', 24)],
