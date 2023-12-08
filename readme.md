@@ -2090,10 +2090,10 @@ We show a prompt with the existing tag name and give the user the option to ente
       var newTag = prompt ('Rename "' + tag + '" tag to', tag);
 ```
 
-If there's no new tag entered, we assume that the user cancelled the operation. We do nothing else.
+If there's no new tag entered, we assume that the user cancelled the operation, so we do nothing else. Same goes for the case where the user did not change the tag, we simply don't do anything.
 
 ```javascript
-      if (newTag === null) return;
+      if (newTag === null || tag === newTag) return;
 ```
 
 If the user added an invalid (non-user) tag, we invoke `snackbar` with an error message.

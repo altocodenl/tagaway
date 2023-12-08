@@ -4246,7 +4246,7 @@ B.mrespond ([
    }],
    ['rename', 'tag', function (x, tag) {
       var newTag = prompt ('Rename "' + tag + '" tag to', tag);
-      if (newTag === null) return;
+      if (newTag === null || tag === newTag) return;
       if (! H.isUserTag (newTag)) return B.call (x, 'snackbar', 'yellow', 'Please enter a valid tag');
       B.call (x, 'post', 'rename', {}, {from: tag, to: newTag}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error renaming your tag.');
