@@ -1192,6 +1192,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    18. `stop propagation`: stops propagation of the `ev` passed as an argument.
    19. `change State.queryURL`: see annotated source code.
    20. `update queryURL`: see annotated source code.
+   21. `rename tag`: see annotated source code.
 
 5. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
@@ -2074,6 +2075,64 @@ In this case, we will directly set `State.queryURL`. We do this without triggeri
 This concludes the responder.
 
 ```javascript
+   }],
+```
+
+We now define the responder for `rename tag`. This responder is in charge of calling `POST /rename` in order to rename a user tag. It takes a single `tag` as its argument.
+
+```javascript
+   ['rename', 'tag', function (x, tag) {
+```
+
+We show a prompt with the existing tag name and give the user the option to enter a new tag name, which we'll capture in the `newTag` variable.
+
+```javascript
+      var newTag = prompt ('Rename "' + tag + '" tag to', tag);
+```
+
+If there's no new tag entered, we assume that the user cancelled the operation. We do nothing else.
+
+```javascript
+      if (newTag === null) return;
+```
+
+If the user added an invalid (non-user) tag, we invoke `snackbar` with an error message.
+
+```javascript
+      if (! H.isUserTag (newTag)) return B.call (x, 'snackbar', 'yellow', 'Please enter a valid tag');
+```
+
+If we're here, we're ready to rename the tag. We invoke `POST /rename`.
+
+```javascript
+      B.call (x, 'post', 'rename', {}, {from: tag, to: newTag}, function (x, error, rs) {
+```
+
+If there was an error, we invoke `snackbar` and do not do anything else.
+
+```javascript
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error renaming your tag.');
+```
+
+If `tag` is inside `State.query.tags`, we replace it with the new tag. This is important in case the renamed tag is in the current query.
+
+```javascript
+         var queryTags = B.get ('State', 'query', 'tags');
+         if (queryTags.includes (tag)) B.call (x, 'set', ['State', 'query', 'tags'], dale.go (queryTags, function (Tag) {
+            return Tag === tag ? newTag : Tag;
+         }));
+```
+
+We invoke `query pivs`, to refresh the tags and the query.
+
+```javascript
+         B.call (x, 'query', 'pivs');
+```
+
+This concludes the responder.
+
+```javascript
+      });
    }],
 ```
 
