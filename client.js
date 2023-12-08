@@ -4088,7 +4088,7 @@ B.mrespond ([
          if (! inc (query.recentlyTagged || [], id)) B.add (['State', 'query', 'recentlyTagged'], id);
       });
 
-      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del}, function (x, error, rs) {
+      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del, autoOrganize: true}, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error ' + (del ? 'untagging' : 'tagging') + ' the picture(s).');
          if (! del && H.isUserTag (tag) && B.get ('Data', 'hometags').length === 0) B.call (x, 'toggle', 'hometag', tag);
 

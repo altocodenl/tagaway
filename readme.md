@@ -1897,10 +1897,10 @@ If tagging (and not untagging) and `'u::'` is in `State.query.tags`, it adds eac
       });
 ```
 
-We invoke `post tag`.
+We invoke `post tag`. Note we pass the `autoOrganize` tag, which will mark as organized any piv we are tagging, and that will also mark as to organize any piv for which we remove its last tag.
 
 ```javascript
-      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del}, function (x, error, rs) {
+      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del, autoOrganize: true}, function (x, error, rs) {
 ```
 
 If there was an error, we invoke `snackbar` and do not do anything else.
