@@ -3146,13 +3146,37 @@ var routes = [
             dale.go (s.last [1], function (share) {
                s.last [0].push ('s::' + share);
             });
-            reply (rs, 200, {
+            var output = {
                tags: s.last [0].sort (function (a, b) {
                   return a.toLowerCase ().localeCompare (b.toLowerCase ());
                }),
                hometags: JSON.parse (s.last [2] || '[]'),
-               organized: parseInt (s.last [3])
+               organized: parseInt (s.last [3]),
+               homeThumbs: {}
+            };
+
+            if (output.hometags.length === 0) return reply (rs, 200, output);
+
+            var multi = redis.multi ();
+            dale.go (output.hometags, function (hometag) {
+               multi.srandmember ('tag:' + rq.user.username + ':' + hometag);
             });
+            s.output = output;
+            mexec (s, multi);
+         },
+         function (s) {
+            s.output.homeThumbs = s.last;
+            var multi = redis.multi ();
+            dale.go (s.output.homeThumbs, function (id) {
+               multi.hget ('piv:' + id, 'deg');
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
+               return [s.output.hometags [k], {id: homeThumb, deg: s.last [k] ? parseInt (s.last [k]) : undefined}];
+            });
+            reply (rs, 200, s.output);
          }
       ]);
    }],

@@ -533,7 +533,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user.
+   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {HOMETAG1: {id: ID, deg: INT|UNDEFINED, ...}}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per hometag, containing the id (and optional rotation in `deg`) of a random piv belonging to that tag.
 
 - `POST /hometags`
    - Body must be of the form `{hometags: [STRING, ...]}`.
@@ -2847,17 +2847,77 @@ We iterate the list of tags shared with the user; for each of them, we prepend i
             });
 ```
 
-
-We sort the resulting array and put it in the key `tags` of the output object - the sorting is case insensitive. We then set the `hometags` key to either the hometags, or default to an empty array if there were no home tags. Finally, we add the count of organized pivs in the key `organized`. This concludes the endpoint.
+We create an `output` object with the following keys:
+- `tags`, which contains all the tags. The array is sorted in a case insensitive way
+- `hometags`, which will be either the hometags or default to an empty array if there are no home tags.
+- `organized`, which contains the count of organized pivs.
+- `homeThumbs`, an object which will contain the ids and potential rotations `deg` of a random piv belonging to each hometag. We initialize it to an empty object.
 
 ```javascript
-            reply (rs, 200, {
+            var output = {
                tags: s.last [0].sort (function (a, b) {
                   return a.toLowerCase ().localeCompare (b.toLowerCase ());
                }),
                hometags: JSON.parse (s.last [2] || '[]'),
-               organized: parseInt (s.last [3])
+               organized: parseInt (s.last [3]),
+               homeThumbs: {}
+            };
+```
+
+If there are no hometags, there's nothing else to do, so we return `output`.
+
+```javascript
+            if (output.hometags.length === 0) return reply (rs, 200, output);
+```
+
+If we're here, there are hometags, so we need to retrieve the homeThumbs. The rest of this function will be dedicated to this. We start by getting, for each of the hometags, the id of a random piv tagged with it.
+
+```javascript
+            var multi = redis.multi ();
+            dale.go (output.hometags, function (hometag) {
+               multi.srandmember ('tag:' + rq.user.username + ':' + hometag);
             });
+```
+
+We set the output in `s.output` so it's available to the next async function.
+
+```javascript
+            s.output = output;
+            mexec (s, multi);
+         },
+```
+
+We take the list of ids and set it in `s.output.homeThumbs`. This will just be temporary.
+
+```javascript
+         function (s) {
+            s.output.homeThumbs = s.last;
+```
+
+We go over the ids and get the `deg` property for each of their corresponding pivs. This rotation information is necessary to show the thumbnails correclty in the client.
+
+```javascript
+            var multi = redis.multi ();
+            dale.go (s.output.homeThumbs, function (id) {
+               multi.hget ('piv:' + id, 'deg');
+            });
+            mexec (s, multi);
+         },
+```
+
+We iterate the `homeThumbs` (which are the random ids picked for each hometag) and construct an object of the form `{TAG: {id: STRING, deg: INT|UNDEFIND}, ...}`. We then store it in `s.output.homeThumbs`.
+
+```javascript
+         function (s) {
+            s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
+               return [s.output.hometags [k], {id: homeThumb, deg: s.last [k] ? parseInt (s.last [k]) : undefined}];
+            });
+```
+
+We're now done constructing the `homeThumbs` key. We return `s.output` and close the function.
+
+```javascript
+            reply (rs, 200, s.output);
          }
       ]);
    }],
