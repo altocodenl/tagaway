@@ -59,7 +59,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - **server: process to review unsupported formats, invalid pivs and errored mp4 conversions**
    - server: review format errors with files that have a jpg extension
    - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-   - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
    - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
    - server/client: videos pseudo-tag
    - server/client: set location
@@ -81,6 +80,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - other: set automatic backup from Google Drive to altofile
 --------------
 - large tasks
+   - improve query performance
+      - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
+      - server: improve performance of sorting within lua
    - other: Submission Google Drive (Tom)
    - server/client: Share & manage
       - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
@@ -533,7 +535,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {HOMETAG1: {id: ID, deg: INT|UNDEFINED, ...}}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per hometag, containing the id (and optional rotation in `deg`) of a random piv belonging to that tag.
+   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {HOMETAG1: {id: ID, currentMonth: [INT, INT], deg: INT|UNDEFINED, ...}}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per hometag, containing the id (and optional rotation in `deg`) of a random piv belonging to that tag - in addition, it contains `currentMonth`, which is the year + month to which the piv belongs.
 
 - `POST /hometags`
    - Body must be of the form `{hometags: [STRING, ...]}`.
@@ -587,7 +589,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned (`{ids: [...]}`). This enables the "select all" functionality.
    - If `body.timeHeader` is present, a `timeHeader` field will be sent along with the other fields, having the form `{YYYY:MM: true|false, ...}`; each key is a year + month combination, and each value is set to `true` if that month will have all its pivs organized and set to `false` if that the year+month has one or more unorganized pivs. Months for which there is no entry have no pivs for the given query.
-   - If `body.timeHeader` is present, a `lastMonth` field will also be present, in the form `['YYYY:MM', INT]`, which contains the last month of the query and the number of pivs that are in the last month for the given query.
+   - If `body.timeHeader` is present, a `lastMonth` field will also be present, in the form `['YYYY:MM', INT]`, which contains the last month of the query and the number of pivs that are in the last month for the given query. The exception is if the query is empty; in that case, no `lastMonth` field will be present.
 
 - `POST /sho` (for sharing or unsharing) and `POST /shm` (for accepting or removing a tag shared with the user).
    - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`. `whom` must be the `email`, not the `username` of the target user.
@@ -2851,7 +2853,7 @@ We create an `output` object with the following keys:
 - `tags`, which contains all the tags. The array is sorted in a case insensitive way
 - `hometags`, which will be either the hometags or default to an empty array if there are no home tags.
 - `organized`, which contains the count of organized pivs.
-- `homeThumbs`, an object which will contain the ids and potential rotations `deg` of a random piv belonging to each hometag. We initialize it to an empty object.
+- `homeThumbs`, an object which will contain the ids, the `currentMonth` (combination of year + month to which the piv belongs) and potential rotation `deg` of a random piv belonging to each hometag. We initialize it to an empty object.
 
 ```javascript
             var output = {
@@ -2900,17 +2902,49 @@ We go over the ids and get the `deg` property for each of their corresponding pi
             var multi = redis.multi ();
             dale.go (s.output.homeThumbs, function (id) {
                multi.hget ('piv:' + id, 'deg');
+```
+
+We also get the piv's tags, to get its year & month from the date tags.
+
+```javascript
+               multi.smembers ('pivt:' + id);
             });
             mexec (s, multi);
          },
 ```
 
-We iterate the `homeThumbs` (which are the random ids picked for each hometag) and construct an object of the form `{TAG: {id: STRING, deg: INT|UNDEFIND}, ...}`. We then store it in `s.output.homeThumbs`.
+We iterate the `homeThumbs` (which are the random ids picked for each hometag) and construct an object of the form `{TAG: {id: STRING, deg: INT|UNDEFINED}, ...}`. We then store it in `s.output.homeThumbs`.
 
 ```javascript
          function (s) {
             s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
-               return [s.output.hometags [k], {id: homeThumb, deg: s.last [k] ? parseInt (s.last [k]) : undefined}];
+                  id: homeThumb,
+                  deg: s.last [k * 2] ? parseInt (s.last [k * 2]) : undefined,
+```
+
+We now set the `currentMonth` property for the thumb, which will have the shape `[YEAR, MONTH]`. We do this by iterating the tags for this piv (which will be available at index `k * 2 + 1` from the last query).
+
+```javascript
+                  currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {
+```
+
+If this is a month tag, we remove the first four characters (`d::M`) and return the parsed month number.
+
+```javascript
+                     if (tag.match (/d::M/)) return parseInt (tag.slice (4));
+```
+
+If this is a year tag, we remove the first three characters (`d::`) and return the parsed year number.
+
+```javascript
+                     if (tag.match (/d::/)) return parseInt (tag.slice (3));
+```
+
+We sort the result, which will only contain the year and the month, putting the largest number first (which will be the year, since we don't accept pivs with dates where the year is below 1970).
+
+```javascript
+                  }).sort (function (a, b) {return b - a})
+               }];
             });
 ```
 
@@ -3817,7 +3851,7 @@ We then set an entry for `'o::'` (this will only make a difference if there was 
    '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized));',
 ```
 
-We add an entry labelled `'systags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per "system" tags (`a::`, `u::`, `o::` and `t::`).
+We add an entry labelled `'systags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per "system" tag (`a::`, `u::`, `o::` and `t::`).
 
 ```javascript
    '   redis.call ("rpush", KEYS [1] .. "-perf", "systags", unpack (redis.call ("time")));',

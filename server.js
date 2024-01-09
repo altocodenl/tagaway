@@ -3169,12 +3169,20 @@ var routes = [
             var multi = redis.multi ();
             dale.go (s.output.homeThumbs, function (id) {
                multi.hget ('piv:' + id, 'deg');
+               multi.smembers ('pivt:' + id);
             });
             mexec (s, multi);
          },
          function (s) {
             s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
-               return [s.output.hometags [k], {id: homeThumb, deg: s.last [k] ? parseInt (s.last [k]) : undefined}];
+               return [s.output.hometags [k], {
+                  id: homeThumb,
+                  deg: s.last [k * 2] ? parseInt (s.last [k * 2]) : undefined,
+                  currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {
+                     if (tag.match (/d::M/)) return parseInt (tag.slice (4));
+                     if (tag.match (/d::/)) return parseInt (tag.slice (3));
+                  }).sort (function (a, b) {return b - a})
+               }];
             });
             reply (rs, 200, s.output);
          }
