@@ -3152,14 +3152,15 @@ var routes = [
                }),
                hometags: JSON.parse (s.last [2] || '[]'),
                organized: parseInt (s.last [3]),
+               // TODO: rename to thumbs
                homeThumbs: {}
             };
 
-            if (output.hometags.length === 0) return reply (rs, 200, output);
+            if (output.tags.length === 0) return reply (rs, 200, output);
 
             var multi = redis.multi ();
-            dale.go (output.hometags, function (hometag) {
-               multi.srandmember ('tag:' + rq.user.username + ':' + hometag);
+            dale.go (output.tags, function (tag) {
+               multi.srandmember ('tag:' + rq.user.username + ':' + tag);
             });
             s.output = output;
             mexec (s, multi);
@@ -3175,7 +3176,8 @@ var routes = [
          },
          function (s) {
             s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
-               return [s.output.hometags [k], {
+               if (s.output.tags [k].match (/^s::/)) return;
+               return [s.output.tags [k], {
                   id: homeThumb,
                   deg: s.last [k * 2] ? parseInt (s.last [k * 2]) : undefined,
                   currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {

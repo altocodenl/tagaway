@@ -535,7 +535,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {HOMETAG1: {id: ID, currentMonth: [INT, INT], deg: INT|UNDEFINED, ...}}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per hometag, containing the id (and optional rotation in `deg`) of a random piv belonging to that tag - in addition, it contains `currentMonth`, which is the year + month to which the piv belongs.
+   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {TAG1: {id: ID, currentMonth: [INT, INT], deg: INT|UNDEFINED, ...}}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per **tag** (we will rename `homeThumbs` to `thumbs` in the near future), containing the id (and optional rotation in `deg`) of a random piv belonging to that tag - in addition, it contains `currentMonth`, which is the year + month to which the piv belongs.
 
 - `POST /hometags`
    - Body must be of the form `{hometags: [STRING, ...]}`.
@@ -2853,7 +2853,7 @@ We create an `output` object with the following keys:
 - `tags`, which contains all the tags. The array is sorted in a case insensitive way
 - `hometags`, which will be either the hometags or default to an empty array if there are no home tags.
 - `organized`, which contains the count of organized pivs.
-- `homeThumbs`, an object which will contain the ids, the `currentMonth` (combination of year + month to which the piv belongs) and potential rotation `deg` of a random piv belonging to each hometag. We initialize it to an empty object.
+- `homeThumbs`, an object which will contain the ids, the `currentMonth` (combination of year + month to which the piv belongs) and potential rotation `deg` of a random piv belonging to each tag (we need to rename this to `thumbs` in the near future - for now it is kept like this for backward compatibility purposes with the mobile app). We initialize it to an empty object.
 
 ```javascript
             var output = {
@@ -2866,18 +2866,18 @@ We create an `output` object with the following keys:
             };
 ```
 
-If there are no hometags, there's nothing else to do, so we return `output`.
+If there are no tags, there's nothing else to do, so we return `output`.
 
 ```javascript
-            if (output.hometags.length === 0) return reply (rs, 200, output);
+            if (output.tags.length === 0) return reply (rs, 200, output);
 ```
 
-If we're here, there are hometags, so we need to retrieve the homeThumbs. The rest of this function will be dedicated to this. We start by getting, for each of the hometags, the id of a random piv tagged with it.
+If we're here, there are tags, so we need to retrieve the homeThumbs. The rest of this function will be dedicated to this. We start by getting, for each of the tags, the id of a random piv tagged with it.
 
 ```javascript
             var multi = redis.multi ();
-            dale.go (output.hometags, function (hometag) {
-               multi.srandmember ('tag:' + rq.user.username + ':' + hometag);
+            dale.go (output.tags, function (tag) {
+               multi.srandmember ('tag:' + rq.user.username + ':' + tag);
             });
 ```
 
@@ -2918,11 +2918,23 @@ We iterate the `homeThumbs` (which are the random ids picked for each hometag) a
 ```javascript
          function (s) {
             s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
+```
+
+If this is a shared tag, we create no thumb for it. This is because we will remove shared tags in the near future (they are currently implemented but not allowed).
+
+```javascript
+               if (s.output.tags [k].match (/^s::/)) return;
+```
+
+We return the tag itself as key, and a couple of fields (`id` and `deg`).
+
+```javascript
+               return [s.output.tags [k], {
                   id: homeThumb,
                   deg: s.last [k * 2] ? parseInt (s.last [k * 2]) : undefined,
 ```
 
-We now set the `currentMonth` property for the thumb, which will have the shape `[YEAR, MONTH]`. We do this by iterating the tags for this piv (which will be available at index `k * 2 + 1` from the last query).
+Finally, we set the `currentMonth` property for the thumb, which will have the shape `[YEAR, MONTH]`. We do this by iterating the tags for this piv (which will be available at index `k * 2 + 1` from the last query).
 
 ```javascript
                   currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {
@@ -2940,7 +2952,7 @@ If this is a year tag, we remove the first three characters (`d::`) and return t
                      if (tag.match (/d::/)) return parseInt (tag.slice (3));
 ```
 
-We sort the result, which will only contain the year and the month, putting the largest number first (which will be the year, since we don't accept pivs with dates where the year is below 1970).
+We sort the result, which will only contain the year and the month, putting the largest number first (which will be the year, since we don't accept pivs with dates where the year is before 1970).
 
 ```javascript
                   }).sort (function (a, b) {return b - a})
