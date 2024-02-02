@@ -535,7 +535,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {TAG1: {id: ID, currentMonth: [INT, INT], deg: INT|UNDEFINED, ...}}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per **tag** (we will rename `homeThumbs` to `thumbs` in the near future), containing the id (and optional rotation in `deg`) of a random piv belonging to that tag - in addition, it contains `currentMonth`, which is the year + month to which the piv belongs.
+   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {TAG1: {id: ID, currentMonth: [INT, INT], deg: INT|UNDEFINED, date: INT, vid: true|undefined, tags: [...]}, ...}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per **tag** (we will rename `homeThumbs` to `thumbs` in the near future), containing the following fields: `id`, `deg`, `vid`, `date`, `tags` and `currentMonth` - `currenttMonth` contains the year + month to which the piv belongs.
 
 - `POST /hometags`
    - Body must be of the form `{hometags: [STRING, ...]}`.
@@ -2896,12 +2896,12 @@ We take the list of ids and set it in `s.output.homeThumbs`. This will just be t
             s.output.homeThumbs = s.last;
 ```
 
-We go over the ids and get the `deg` property for each of their corresponding pivs. This rotation information is necessary to show the thumbnails correclty in the client.
+We go over the ids and get the `deg` property for each of their corresponding pivs. This rotation information is necessary to show the thumbnails correclty in the client. We also get the `date` and `vid` properties, which are useful to display the date of the thumbnail, as well as to indicate whether the thumbnail belongs to a video.
 
 ```javascript
             var multi = redis.multi ();
             dale.go (s.output.homeThumbs, function (id) {
-               multi.hget ('piv:' + id, 'deg');
+               multi.hmget ('piv:' + id, ['deg', 'date', 'vid']);
 ```
 
 We also get the piv's tags, to get its year & month from the date tags.
@@ -2931,7 +2931,15 @@ We return the tag itself as key, and a couple of fields (`id` and `deg`).
 ```javascript
                return [s.output.tags [k], {
                   id: homeThumb,
-                  deg: s.last [k * 2] ? parseInt (s.last [k * 2]) : undefined,
+                  deg: s.last [k * 2] [0] ? parseInt (s.last [k * 2] [0]) : undefined,
+```
+
+We add `date`, `tags` and `vid`. Note that with `vid`, we set it to `true` if the value we get back from redis is truthy, and to `undefined` otherwise. Note also that we sort `tags` for it to have a consistent order.
+
+```javascript
+                  date: parseInt (s.last [k * 2] [1]),
+                  tags: s.last [k * 2 + 1].sort (),
+                  vid: s.last [k * 2] [2] ? true : undefined,
 ```
 
 Finally, we set the `currentMonth` property for the thumb, which will have the shape `[YEAR, MONTH]`. We do this by iterating the tags for this piv (which will be available at index `k * 2 + 1` from the last query).

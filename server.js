@@ -803,6 +803,7 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
 H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) {
    filters = filters || {};
    a.seq (s, [
+      // This function is very expensive because of the call below.
       [Redis, 'lrange', 'ulog:' + username, 0, -1],
       function (s) {
          var uploads = {}, completed = 0;
@@ -3169,7 +3170,7 @@ var routes = [
             s.output.homeThumbs = s.last;
             var multi = redis.multi ();
             dale.go (s.output.homeThumbs, function (id) {
-               multi.hget ('piv:' + id, 'deg');
+               multi.hmget ('piv:' + id, ['deg', 'date', 'vid']);
                multi.smembers ('pivt:' + id);
             });
             mexec (s, multi);
@@ -3179,7 +3180,10 @@ var routes = [
                if (s.output.tags [k].match (/^s::/)) return;
                return [s.output.tags [k], {
                   id: homeThumb,
-                  deg: s.last [k * 2] ? parseInt (s.last [k * 2]) : undefined,
+                  deg: s.last [k * 2] [0] ? parseInt (s.last [k * 2] [0]) : undefined,
+                  date: parseInt (s.last [k * 2] [1]),
+                  tags: s.last [k * 2 + 1].sort (),
+                  vid: s.last [k * 2] [2] ? true : undefined,
                   currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {
                      if (tag.match (/d::M/)) return parseInt (tag.slice (4));
                      if (tag.match (/d::/)) return parseInt (tag.slice (3));
@@ -3312,27 +3316,29 @@ var routes = [
       var qid = 'query-' + uuid ();
 
       astop (rs, [
-         // TODO: remove the refreshQuery functionality. This section is not annotated since it won't last and is kept for compatibility purposes.
-         [Redis, 'get', 'geo:' + rq.user.username],
-         function (s) {
-            // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
-            if (s.last) {
-               s.refreshQuery = true;
-               return s.next ();
-            }
-            var data = s.last;
-            a.seq (s, [
-               // We assume that any ongoing uploads must be found in the first 20
-               [H.getUploads, rq.user.username, {}, 20],
-               function (s) {
-                  s.refreshQuery = dale.stop (s.last, true, function (v) {
-                     return v.status === 'uploading';
-                  });
-                  s.next (data);
+         // TODO: remove the refreshQuery functionality. This section is not annotated since it won't last and is merely kept for compatibility purposes.
+         rq.headers ['user-agent'] && rq.headers ['user-agent'].match (/^Dart/) ? [] : [
+            [Redis, 'get', 'geo:' + rq.user.username],
+            function (s) {
+               // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
+               if (s.last) {
+                  s.refreshQuery = true;
+                  return s.next ();
                }
-            ]);
-         },
-         // End of the refreshQuery functionality
+               var data = s.last;
+               a.seq (s, [
+                  // We assume that any ongoing uploads must be found in the first 20
+                  [H.getUploads, rq.user.username, {}, 20],
+                  function (s) {
+                     s.refreshQuery = dale.stop (s.last, true, function (v) {
+                        return v.status === 'uploading';
+                     });
+                     s.next (data);
+                  }
+               ]);
+            },
+            // End of the refreshQuery functionality
+         ],
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
             var forbidden = dale.stopNot (b.tags, undefined, function (tag) {

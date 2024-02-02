@@ -2824,17 +2824,39 @@ suites.hometags = function () {
          return true;
       }],
       ['tag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId]}}, 200],
+      ['get tags, see that homethumbs are correctly returned', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         var innerThumb = {id: s.smallId, currentMonth: [2014, 5], date: tk.pivs.small.date, tags: ['d::2014', 'd::M5', 'foo']};
+
+         if (H.stop ('body.homeThumbs', rs.body.homeThumbs, {foo: innerThumb, 'd::2014': innerThumb, 'd::M5': innerThumb})) return false;
+
+         return true;
+      }],
       ['add existing tag to hometags (including trailing whitespace)', 'post', 'hometags', {}, {hometags: ['foo ']}, 200],
-      ['get hometags, see that list has the added tag', 'get', 'tags', {}, '', 200, H.cBody (function (s) {return {tags: ['d::2014', 'd::M5', 'foo'], hometags: ['foo'], organized: 0, homeThumbs: {foo: {id: s.smallId, currentMonth: [2014, 5]}, 'd::2014': {id: s.smallId, currentMonth: [2014, 5]}, 'd::M5': {id: s.smallId, currentMonth: [2014, 5]}}}})],
+      ['get hometags, see that list has the added tag', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.hometags', rs.body.hometags, ['foo'])) return false;
+         return true;
+      }],
       ['tag piv with another tag', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId]}}, 200],
       ['add both tags to hometags', 'post', 'hometags', {}, {hometags: ['foo', 'bar']}, 200],
-      ['get hometags, see that list has the second tag', 'get', 'tags', {}, '', 200, H.cBody (function (s) {return {tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['foo', 'bar'], organized: 0, homeThumbs: {bar: {id: s.smallId, currentMonth: [2014, 5]}, foo: {id: s.smallId, currentMonth: [2014, 5]}, 'd::2014': {id: s.smallId, currentMonth: [2014, 5]}, 'd::M5': {id: s.smallId, currentMonth: [2014, 5]}}}})],
+      ['get hometags, see that list has the second tag', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.hometags', rs.body.hometags, ['foo', 'bar'])) return false;
+         return true;
+      }],
       ['change order of hometags', 'post', 'hometags', {}, {hometags: ['bar', 'foo']}, 200],
-      ['get hometags, see that list has the tags in the right order', 'get', 'tags', {}, '', 200, H.cBody (function (s) {return {tags: ['bar', 'd::2014', 'd::M5', 'foo'], hometags: ['bar', 'foo'], organized: 0, homeThumbs: {bar: {id: s.smallId, currentMonth: [2014, 5]}, foo: {id: s.smallId, currentMonth: [2014, 5]}, 'd::2014': {id: s.smallId, currentMonth: [2014, 5]}, 'd::M5': {id: s.smallId, currentMonth: [2014, 5]}}}})],
+      ['get hometags, see that list has the tags in the right order', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.hometags', rs.body.hometags, ['bar', 'foo'])) return false;
+         return true;
+      }],
       ['untag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.smallId], del: true}}, 200],
-      ['get hometags, see that list has no reference to the deleted tag', 'get', 'tags', {}, '', 200, H.cBody (function (s) {return {tags: ['bar', 'd::2014', 'd::M5'], hometags: ['bar'], organized: 0, homeThumbs: {bar: {id: s.smallId, currentMonth: [2014, 5]}, 'd::2014': {id: s.smallId, currentMonth: [2014, 5]}, 'd::M5': {id: s.smallId, currentMonth: [2014, 5]}}}})],
+      ['get hometags, see that list has no reference to the deleted tag', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.hometags', rs.body.hometags, ['bar'])) return false;
+         return true;
+      }],
       ['untag piv again', 'post', 'tag', {}, function (s) {return {tag: 'bar', ids: [s.smallId], del: true}}, 200],
-      ['get hometags, see that list is empty', 'get', 'tags', {}, '', 200, H.cBody (function (s) {return {tags: ['d::2014', 'd::M5'], hometags: [], organized: 0, homeThumbs: {'d::2014': {id: s.smallId, currentMonth: [2014, 5]}, 'd::M5': {id: s.smallId, currentMonth: [2014, 5]}}}})],
+      ['get hometags, see that list is empty', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.hometags', rs.body.hometags, [])) return false;
+         return true;
+      }],
       ['upload rotate piv to test hometags', 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv',          path:  tk.pivs.rotate.path},
          {type: 'field', name: 'id',           value: s.uploadId},
@@ -2846,7 +2868,7 @@ suites.hometags = function () {
       ['tag piv', 'post', 'tag', {}, function (s) {return {tag: 'foo', ids: [s.rotateId]}}, 200],
       ['add existing tag to hometags', 'post', 'hometags', {}, {hometags: ['foo']}, 200],
       ['get hometags, see that list has the added tag with rotation information in the homeThumbs', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body.homeThumbs.foo', rs.body.homeThumbs.foo, {id: s.rotateId, deg: tk.pivs.rotate.deg, currentMonth: [2017, 3]})) return false;
+         if (H.stop ('body.homeThumbs.foo', rs.body.homeThumbs.foo, {id: s.rotateId, deg: tk.pivs.rotate.deg, currentMonth: [2017, 3], date: tk.pivs.rotate.date, tags: ['d::2017', 'd::M3', 'foo']})) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
@@ -3202,7 +3224,8 @@ suites.rename = function () {
          return true;
       }],
       ['get tags after renaming', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags.concat ('tag2'), hometags: ['tag2'], organized: 0, homeThumbs: {tag2: {id: s.smallId, currentMonth: [2014, 5]}, 'd::2014': {id: s.smallId, currentMonth: [2014, 5]}, 'd::M5': {id: s.smallId, currentMonth: [2014, 5]}}})) return false;
+         var innerThumb = {id: s.smallId, currentMonth: [2014, 5], date: tk.pivs.small.date, tags: ['d::2014', 'd::M5', 'tag2']};
+         if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags.concat ('tag2'), hometags: ['tag2'], organized: 0, homeThumbs: {tag2: innerThumb, 'd::2014': innerThumb, 'd::M5': innerThumb}})) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),
