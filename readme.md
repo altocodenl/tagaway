@@ -44,7 +44,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - **server: fix ERR_CONTENT_LENGTH_MISMATCH 206**
       - script for fixing bymp4 on reconverted pivs, as well as stats
       - figure out why checkConsistency didn't account for this
-   - **server: line 3344, if Redis doesn't return JSON, throw error but do not crash**
    - **server: investigate bug with piv with location but no geotags**
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
@@ -54,13 +53,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
+   - **server**: tag L:404
+   - **server**: rename a tag X to an existing tag Y
    - **server/config**: fix google drive import
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
    - **server: process to review unsupported formats, invalid pivs and errored mp4 conversions**
    - server: review format errors with files that have a jpg extension
    - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-   - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
    - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
    - server/client: videos pseudo-tag
    - server/client: set location
@@ -82,6 +82,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - other: set automatic backup from Google Drive to altofile
 --------------
 - large tasks
+   - improve query performance
+      - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
+      - server: improve performance of sorting within lua
    - other: Submission Google Drive (Tom)
    - server/client: Share & manage
       - server: add support for adding a shared tag to home tags (validate tag type, check if in shm:)
@@ -534,7 +537,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If successful, returns a 200.
 
 - `GET /tags`
-   - Returns an array of the form `['tag1', 'tag2', ...]`. This list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`.
+   - Returns an object of the form `{tags: ['tag1', 'tag2', ...], hometags: ['hometag1', 'hometag2', ...], organized: INT, homeThumbs: {TAG1: {id: ID, currentMonth: [INT, INT], deg: INT|UNDEFINED, date: INT, vid: true|undefined, tags: [...]}, ...}`. The `tags` list includes user tags, as well as year tags and geotags; it also includes tags shared with the user by other users, each of them in the form `'s::USERNAME:tag'`. The `hometags` array returns all hometags; the `organized` key contains the number of organized pivs for the user. The `homeThumbs` object has one entry per **tag** (we will rename `homeThumbs` to `thumbs` in the near future), containing the following fields: `id`, `deg`, `vid`, `date`, `tags` and `currentMonth` - `currenttMonth` contains the year + month to which the piv belongs.
 
 - `POST /hometags`
    - Body must be of the form `{hometags: [STRING, ...]}`.
@@ -588,7 +591,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned (`{ids: [...]}`). This enables the "select all" functionality.
    - If `body.timeHeader` is present, a `timeHeader` field will be sent along with the other fields, having the form `{YYYY:MM: true|false, ...}`; each key is a year + month combination, and each value is set to `true` if that month will have all its pivs organized and set to `false` if that the year+month has one or more unorganized pivs. Months for which there is no entry have no pivs for the given query.
-   - If `body.timeHeader` is present, a `lastMonth` field will also be present, in the form `['YYYY:MM', INT]`, which contains the last month of the query and the number of pivs that are in the last month for the given query.
+   - If `body.timeHeader` is present, a `lastMonth` field will also be present, in the form `['YYYY:MM', INT]`, which contains the last month of the query and the number of pivs that are in the last month for the given query. The exception is if the query is empty; in that case, no `lastMonth` field will be present.
 
 - `POST /sho` (for sharing or unsharing) and `POST /shm` (for accepting or removing a tag shared with the user).
    - Body must be of the form `{tag: STRING, whom: ID, del: BOOLEAN|UNDEFINED}`. `whom` must be the `email`, not the `username` of the target user.
@@ -1193,6 +1196,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    18. `stop propagation`: stops propagation of the `ev` passed as an argument.
    19. `change State.queryURL`: see annotated source code.
    20. `update queryURL`: see annotated source code.
+   21. `rename tag`: see annotated source code.
 
 5. Open
    1. `key down`: if `State.open` is set, invokes `open prev` (if `keyCode` is 37) or `open next` (if `keyCode` is 39).
@@ -1898,10 +1902,10 @@ If tagging (and not untagging) and `'u::'` is in `State.query.tags`, it adds eac
       });
 ```
 
-We invoke `post tag`.
+We invoke `post tag`. Note we pass the `autoOrganize` tag, which will mark as organized any piv we are tagging, and that will also mark as to organize any piv for which we remove its last tag.
 
 ```javascript
-      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del}, function (x, error, rs) {
+      B.call (x, 'post', 'tag', {}, {tag: tag, ids: ids, del: del, autoOrganize: true}, function (x, error, rs) {
 ```
 
 If there was an error, we invoke `snackbar` and do not do anything else.
@@ -2075,6 +2079,64 @@ In this case, we will directly set `State.queryURL`. We do this without triggeri
 This concludes the responder.
 
 ```javascript
+   }],
+```
+
+We now define the responder for `rename tag`. This responder is in charge of calling `POST /rename` in order to rename a user tag. It takes a single `tag` as its argument.
+
+```javascript
+   ['rename', 'tag', function (x, tag) {
+```
+
+We show a prompt with the existing tag name and give the user the option to enter a new tag name, which we'll capture in the `newTag` variable.
+
+```javascript
+      var newTag = prompt ('Rename "' + tag + '" tag to', tag);
+```
+
+If there's no new tag entered, we assume that the user cancelled the operation, so we do nothing else. Same goes for the case where the user did not change the tag, we simply don't do anything.
+
+```javascript
+      if (newTag === null || tag === newTag) return;
+```
+
+If the user added an invalid (non-user) tag, we invoke `snackbar` with an error message.
+
+```javascript
+      if (! H.isUserTag (newTag)) return B.call (x, 'snackbar', 'yellow', 'Please enter a valid tag');
+```
+
+If we're here, we're ready to rename the tag. We invoke `POST /rename`.
+
+```javascript
+      B.call (x, 'post', 'rename', {}, {from: tag, to: newTag}, function (x, error, rs) {
+```
+
+If there was an error, we invoke `snackbar` and do not do anything else.
+
+```javascript
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error renaming your tag.');
+```
+
+If `tag` is inside `State.query.tags`, we replace it with the new tag. This is important in case the renamed tag is in the current query.
+
+```javascript
+         var queryTags = B.get ('State', 'query', 'tags');
+         if (queryTags.includes (tag)) B.call (x, 'set', ['State', 'query', 'tags'], dale.go (queryTags, function (Tag) {
+            return Tag === tag ? newTag : Tag;
+         }));
+```
+
+We invoke `query pivs`, to refresh the tags and the query.
+
+```javascript
+         B.call (x, 'query', 'pivs');
+```
+
+This concludes the responder.
+
+```javascript
+      });
    }],
 ```
 
@@ -2761,27 +2823,26 @@ We now define `GET /tags`. This endpoint will return all the tags set by the use
       astop (rs, [
 ```
 
-We start by getting all the home tags from the user and setting them in `s.hometags` through `a.set`.
-
-```javascript
-         [a.set, 'hometags', [Redis, 'get', 'hometags:' + rq.user.username]],
-```
-
 The endpoint needs to get the list of members of `tags:USERNAME`, as well as all the tags shared with the user (located at `shm:USERNAME`).
 
 Interestingly enough, the only reason that this endpoint returns all tags and not only user tags (and consequently, that `tags:USERNAME` stores all tags, not just user tags) is that one of the client responders, `query tags`, needs to have the full list of existing tags, in order to filter out tags that no longer exist after any modifications. If it wasn't for this requirement, we would only store and return user tags on this endpoint, since the rest of the interface *always* filter out the non-user tags from the list of tags.
 
+We will also get the `hometags` of the user (which exist at `hometags:USERNAME`; finally, we will also get the number of organized pivs for the user, which is at `tag:USERNAME:o::`.
+
+Note we have to wrap the function into an array to let astack know that this function is itself an astep and it should be executed on its own.
+
 ```javascript
-         function (s) {
+         [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tags:' + rq.user.username);
-            multi.smembers ('shm:'  + rq.user.username);
+            multi.smembers ('tags:'     + rq.user.username);
+            multi.smembers ('shm:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
+            multi.scard    ('tag:'      + rq.user.username + ':o::');
             mexec (s, multi);
-         },
+         }],
 ```
 
 We iterate the list of tags shared with the user; for each of them, we prepend it with `s::` to denote that they are shared tags; we then add them to the list of tags belonging to the user itself.
-
 
 ```javascript
          function (s) {
@@ -2790,13 +2851,129 @@ We iterate the list of tags shared with the user; for each of them, we prepend i
             });
 ```
 
-
-We sort the resulting array and put it in the key `tags` of the output object - the sorting is case insensitive. We then set the `hometags` key to either the parsed value of `s.hometags`, or default to an empty array if there were no home tags. This concludes the endpoint.
+We create an `output` object with the following keys:
+- `tags`, which contains all the tags. The array is sorted in a case insensitive way
+- `hometags`, which will be either the hometags or default to an empty array if there are no home tags.
+- `organized`, which contains the count of organized pivs.
+- `homeThumbs`, an object which will contain the ids, the `currentMonth` (combination of year + month to which the piv belongs) and potential rotation `deg` of a random piv belonging to each tag (we need to rename this to `thumbs` in the near future - for now it is kept like this for backward compatibility purposes with the mobile app). We initialize it to an empty object.
 
 ```javascript
-            reply (rs, 200, {tags: s.last [0].sort (function (a, b) {
-               return a.toLowerCase ().localeCompare (b.toLowerCase ());
-            }), hometags: JSON.parse (s.hometags || '[]')});
+            var output = {
+               tags: s.last [0].sort (function (a, b) {
+                  return a.toLowerCase ().localeCompare (b.toLowerCase ());
+               }),
+               hometags: JSON.parse (s.last [2] || '[]'),
+               organized: parseInt (s.last [3]),
+               homeThumbs: {}
+            };
+```
+
+If there are no tags, there's nothing else to do, so we return `output`.
+
+```javascript
+            if (output.tags.length === 0) return reply (rs, 200, output);
+```
+
+If we're here, there are tags, so we need to retrieve the homeThumbs. The rest of this function will be dedicated to this. We start by getting, for each of the tags, the id of a random piv tagged with it.
+
+```javascript
+            var multi = redis.multi ();
+            dale.go (output.tags, function (tag) {
+               multi.srandmember ('tag:' + rq.user.username + ':' + tag);
+            });
+```
+
+We set the output in `s.output` so it's available to the next async function.
+
+```javascript
+            s.output = output;
+            mexec (s, multi);
+         },
+```
+
+We take the list of ids and set it in `s.output.homeThumbs`. This will just be temporary.
+
+```javascript
+         function (s) {
+            s.output.homeThumbs = s.last;
+```
+
+We go over the ids and get the `deg` property for each of their corresponding pivs. This rotation information is necessary to show the thumbnails correclty in the client. We also get the `date` and `vid` properties, which are useful to display the date of the thumbnail, as well as to indicate whether the thumbnail belongs to a video.
+
+```javascript
+            var multi = redis.multi ();
+            dale.go (s.output.homeThumbs, function (id) {
+               multi.hmget ('piv:' + id, ['deg', 'date', 'vid']);
+```
+
+We also get the piv's tags, to get its year & month from the date tags.
+
+```javascript
+               multi.smembers ('pivt:' + id);
+            });
+            mexec (s, multi);
+         },
+```
+
+We iterate the `homeThumbs` (which are the random ids picked for each hometag) and construct an object of the form `{TAG: {id: STRING, deg: INT|UNDEFINED}, ...}`. We then store it in `s.output.homeThumbs`.
+
+```javascript
+         function (s) {
+            s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
+```
+
+If this is a shared tag, we create no thumb for it. This is because we will remove shared tags in the near future (they are currently implemented but not allowed).
+
+```javascript
+               if (s.output.tags [k].match (/^s::/)) return;
+```
+
+We return the tag itself as key, and a couple of fields (`id` and `deg`).
+
+```javascript
+               return [s.output.tags [k], {
+                  id: homeThumb,
+                  deg: s.last [k * 2] [0] ? parseInt (s.last [k * 2] [0]) : undefined,
+```
+
+We add `date`, `tags` and `vid`. Note that with `vid`, we set it to `true` if the value we get back from redis is truthy, and to `undefined` otherwise. Note also that we sort `tags` for it to have a consistent order.
+
+```javascript
+                  date: parseInt (s.last [k * 2] [1]),
+                  tags: s.last [k * 2 + 1].sort (),
+                  vid: s.last [k * 2] [2] ? true : undefined,
+```
+
+Finally, we set the `currentMonth` property for the thumb, which will have the shape `[YEAR, MONTH]`. We do this by iterating the tags for this piv (which will be available at index `k * 2 + 1` from the last query).
+
+```javascript
+                  currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {
+```
+
+If this is a month tag, we remove the first four characters (`d::M`) and return the parsed month number.
+
+```javascript
+                     if (tag.match (/d::M/)) return parseInt (tag.slice (4));
+```
+
+If this is a year tag, we remove the first three characters (`d::`) and return the parsed year number.
+
+```javascript
+                     if (tag.match (/d::/)) return parseInt (tag.slice (3));
+```
+
+We sort the result, which will only contain the year and the month, putting the largest number first (which will be the year, since we don't accept pivs with dates where the year is before 1970).
+
+```javascript
+                  }).sort (function (a, b) {return b - a})
+               }];
+            });
+```
+
+We're now done constructing the `homeThumbs` key. We return `s.output` and close the function.
+
+```javascript
+            reply (rs, 200, s.output);
          }
       ]);
    }],
@@ -3696,7 +3873,7 @@ We then set an entry for `'o::'` (this will only make a difference if there was 
    '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized));',
 ```
 
-We add an entry labelled `'systags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per "system" tags (`a::`, `u::`, `o::` and `t::`).
+We add an entry labelled `'systags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per "system" tag (`a::`, `u::`, `o::` and `t::`).
 
 ```javascript
    '   redis.call ("rpush", KEYS [1] .. "-perf", "systags", unpack (redis.call ("time")));',
@@ -4007,7 +4184,16 @@ The output of the script will be in `s.last [1]` (since we used the same `multi`
 
 ```javascript
          function (s) {
-            var output = JSON.parse (s.last [1]);
+            var output = teishi.parse (s.last [1]);
+```
+
+It is possible that the Lua script might throw an error, in which case we will not get a JSON, but instead an error message. If this is the case, `s.last [1]` will not be a stringified object, and then `teishi.parse` (which is a wrapper around `JSON.stringify`) will return `false`. If this is the case, we notify the error and then return a 500 error to the user.
+
+```javascript
+            if (output === false) {
+               if (error) notify (a.creat (), {priority: 'important', type: 'Redis query error', user: rq.user.username, body: b, error: s.last [1]});
+               return reply (rs, 500, {error: 'Query error'});
+            }
 ```
 
 We will now process `output.perf` to construct an object of the shape `{LABEL1: INT, ...}`, where each performance segment gets a number in milliseconds that represents its execution time. We will store the result in a variable `perf`. We start initializing it to `{total: INT}`, using as value the current time minus `s.startLua`, which was the time at which the Lua script started executing.

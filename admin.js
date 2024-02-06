@@ -713,13 +713,14 @@ views.dashboard = function (x) {
 
 views.users = function () {
    return B.view (['Data', 'users'], function (users) {
-      var columns = ['username', 'email', 'type', 'lastActivity', 'created', 'actions'];
+      var columns = ['#', 'username', 'email', 'type', 'lastActivity', 'created', 'actions'];
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Users'],
          ['table', {class: 'pure-table pure-table-striped'}, [
             ['tr', dale.go (columns, function (v) {return ['th', v]})],
-            dale.go (Data.users, function (user) {
+            dale.go (Data.users, function (user, userIndex) {
                return ['tr', dale.go (columns, function (k) {
+                  if (k === '#') return ['td', userIndex + 1];
                   if (k === 'actions') return ['td', [
                      ['span', {class: 'action'}, ['a', {href: '#/logs/' + user.username}, 'See logs']],
                      ['br'], ['br'],

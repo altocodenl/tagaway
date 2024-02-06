@@ -690,7 +690,7 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
          });
          var error = dale.stopNot (s.last, undefined, function (line) {
             if (line.match (/^Warning\s+:/)) {
-               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated', 'Invalid atom size'].join ('|'));
+               var exceptions = new RegExp (['minor', 'Invalid EXIF text encoding', 'Bad IFD1 directory', 'Bad IFD2 directory', 'Bad length ICC_Profile', 'Invalid CanonCameraSettings data', 'Truncated', 'Invalid atom size', 'Non-standard header for APP1 XMP segment'].join ('|'));
                if (line.match (exceptions)) return;
                return line;
             }
@@ -803,6 +803,7 @@ H.getMetadata = function (s, path, onlyLocation, lastModified, name) {
 H.getUploads = function (s, username, filters, maxResults, listAlreadyUploaded) {
    filters = filters || {};
    a.seq (s, [
+      // This function is very expensive because of the call below.
       [Redis, 'lrange', 'ulog:' + username, 0, -1],
       function (s) {
          var uploads = {}, completed = 0;
@@ -3134,20 +3135,62 @@ var routes = [
 
    ['get', 'tags', function (rq, rs) {
       astop (rs, [
-         [a.set, 'hometags', [Redis, 'get', 'hometags:' + rq.user.username]],
-         function (s) {
+         [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tags:' + rq.user.username);
-            multi.smembers ('shm:'  + rq.user.username);
+            multi.smembers ('tags:'     + rq.user.username);
+            multi.smembers ('shm:'      + rq.user.username);
+            multi.get      ('hometags:' + rq.user.username);
+            multi.scard    ('tag:'      + rq.user.username + ':o::');
             mexec (s, multi);
-         },
+         }],
          function (s) {
             dale.go (s.last [1], function (share) {
                s.last [0].push ('s::' + share);
             });
-            reply (rs, 200, {tags: s.last [0].sort (function (a, b) {
-               return a.toLowerCase ().localeCompare (b.toLowerCase ());
-            }), hometags: JSON.parse (s.hometags || '[]')});
+            var output = {
+               tags: s.last [0].sort (function (a, b) {
+                  return a.toLowerCase ().localeCompare (b.toLowerCase ());
+               }),
+               hometags: JSON.parse (s.last [2] || '[]'),
+               organized: parseInt (s.last [3]),
+               // TODO: rename to thumbs
+               homeThumbs: {}
+            };
+
+            if (output.tags.length === 0) return reply (rs, 200, output);
+
+            var multi = redis.multi ();
+            dale.go (output.tags, function (tag) {
+               multi.srandmember ('tag:' + rq.user.username + ':' + tag);
+            });
+            s.output = output;
+            mexec (s, multi);
+         },
+         function (s) {
+            s.output.homeThumbs = s.last;
+            var multi = redis.multi ();
+            dale.go (s.output.homeThumbs, function (id) {
+               multi.hmget ('piv:' + id, ['deg', 'date', 'vid']);
+               multi.smembers ('pivt:' + id);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            s.output.homeThumbs = dale.obj (s.output.homeThumbs, function (homeThumb, k) {
+               if (s.output.tags [k].match (/^s::/)) return;
+               return [s.output.tags [k], {
+                  id: homeThumb,
+                  deg: s.last [k * 2] [0] ? parseInt (s.last [k * 2] [0]) : undefined,
+                  date: parseInt (s.last [k * 2] [1]),
+                  tags: s.last [k * 2 + 1].sort (),
+                  vid: s.last [k * 2] [2] ? true : undefined,
+                  currentMonth: dale.fil (s.last [k * 2 + 1], undefined, function (tag) {
+                     if (tag.match (/d::M/)) return parseInt (tag.slice (4));
+                     if (tag.match (/d::/)) return parseInt (tag.slice (3));
+                  }).sort (function (a, b) {return b - a})
+               }];
+            });
+            reply (rs, 200, s.output);
          }
       ]);
    }],
@@ -3273,27 +3316,29 @@ var routes = [
       var qid = 'query-' + uuid ();
 
       astop (rs, [
-         // TODO: remove the refreshQuery functionality. This section is not annotated since it won't last and is kept for compatibility purposes.
-         [Redis, 'get', 'geo:' + rq.user.username],
-         function (s) {
-            // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
-            if (s.last) {
-               s.refreshQuery = true;
-               return s.next ();
-            }
-            var data = s.last;
-            a.seq (s, [
-               // We assume that any ongoing uploads must be found in the first 20
-               [H.getUploads, rq.user.username, {}, 20],
-               function (s) {
-                  s.refreshQuery = dale.stop (s.last, true, function (v) {
-                     return v.status === 'uploading';
-                  });
-                  s.next (data);
+         // TODO: remove the refreshQuery functionality. This section is not annotated since it won't last and is merely kept for compatibility purposes.
+         rq.headers ['user-agent'] && rq.headers ['user-agent'].match (/^Dart/) ? [] : [
+            [Redis, 'get', 'geo:' + rq.user.username],
+            function (s) {
+               // If geotagging is ongoing, refreshQuery will be already set to true so there's no need to query uploads to determine it.
+               if (s.last) {
+                  s.refreshQuery = true;
+                  return s.next ();
                }
-            ]);
-         },
-         // End of the refreshQuery functionality
+               var data = s.last;
+               a.seq (s, [
+                  // We assume that any ongoing uploads must be found in the first 20
+                  [H.getUploads, rq.user.username, {}, 20],
+                  function (s) {
+                     s.refreshQuery = dale.stop (s.last, true, function (v) {
+                        return v.status === 'uploading';
+                     });
+                     s.next (data);
+                  }
+               ]);
+            },
+            // End of the refreshQuery functionality
+         ],
          [Redis, 'smembers', 'shm:' + rq.user.username],
          function (s) {
             var forbidden = dale.stopNot (b.tags, undefined, function (tag) {
@@ -3341,7 +3386,11 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            var output = JSON.parse (s.last [1]);
+            var output = teishi.parse (s.last [1]);
+            if (output === false) {
+               notify (a.creat (), {priority: 'important', type: 'Redis query error', user: rq.user.username, body: b, error: s.last [1]});
+               return reply (rs, 500, {error: 'Query error'});
+            }
             var lastTimeEntry = s.startLua;
             var perf = dale.obj (output.perf, {total: Date.now () - s.startLua}, function (v, k) {
                if (k % 3 !== 0) return;
@@ -4505,10 +4554,10 @@ var routes = [
             mexec (s, multi);
          },
          function (s) {
-            s.last.sort (function (a, b) {
-               a = a.lastActivity;
-               b = b.lastActivity;
-               if (! a && ! b) return 1;
+            s.last.sort (function (A, B) {
+               var a = A.lastActivity;
+               var b = B.lastActivity;
+               if (! a && ! b) return parseInt (B.created) - parseInt (A.created);
                if (! a && b) return 1;
                if (a && ! b) return -1;
                if (a && b) return parseInt (b) - parseInt (a);
