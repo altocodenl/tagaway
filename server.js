@@ -4975,10 +4975,12 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
    [a.make (fs.readdir), CONFIG.basepath],
    [a.get, a.fork, '@last', function (dir) {
       return [
+         // Read all files. Important assumption: inside CONFIG.basepath, there are folders and inside them, there are files.
+         // There should be no nested folders inside these folders.
          [a.stop, [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)], function (s, error) {
             if (ENV) return s.next (null, error);
-            // If errors happen when running the script locally, ignore them.
-            if (error) return s.next (false);
+            // Errors can happen when running the script locally. Ignore them and continue.
+            return s.next (false);
          }],
          function (s) {
             if (s.last === false) s.next ([]);
@@ -5004,7 +5006,7 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
          }
       ]);
    },
-   // Get list of pivs (which include also thumb information)
+   // Get list of pivs from DB (which include also thumb information)
    // Final shape will be {'PATH': [SIZE, piv|thumb|mp4], ...}
    [redis.keyscan, 'piv:*'],
    function (s) {
@@ -5038,23 +5040,21 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
 
       dale.go (s.dbFiles, function (data, dbFile) {
          // S3 only holds original pivs
-         if (typeOrSize === 'piv') {
+         if (data [0] === 'piv') {
             if (! s.s3Files [dbFile]) s.s3Missing.push (dbFile);
             // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
             else if (s.s3Files [dbFile] - data [1] !== 32) s.s3WrongSize.push (dbFile);
          }
-         // FS holds both original pivs and thumbnails. Ignore pending or errored conversions to mp4.
-         if (! dbFile.match (/(pending|error)/)) {
-            if (! s.fsFiles [dbFile]) s.fsMissing.push (dbFile);
-            else if (s.fsFiles [dbFile] !== dbFile [1]) s.fsWrongSize.push (dbFile);
-         }
+         // FS holds both original pivs and thumbnails.
+         if (! s.fsFiles [dbFile]) s.fsMissing.push (dbFile);
+         else if (s.fsFiles [dbFile] !== data [1]) s.fsWrongSize.push (dbFile);
       });
 
       dale.go (s.s3Files, function (v, s3file) {
          if (! s.dbFiles [s3file]) s.s3Extra.push (s3file);
       });
       dale.go (s.fsFiles, function (v, fsfile) {
-         if (! s.dbFiles [fsfile] && ! fsfile.match (/^invalid/)) s.fsExtra.push (fsfile);
+         if (! s.dbFiles [fsfile]) s.fsExtra.push (fsfile);
       });
 
       // We only show the first 100 items to avoid making the email too big.
