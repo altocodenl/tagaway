@@ -53,6 +53,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
+   - **server**: tag L:404
+   - **server**: rename a tag X to an existing tag Y
    - **server/config**: fix google drive import
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
