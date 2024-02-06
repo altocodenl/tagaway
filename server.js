@@ -4991,17 +4991,26 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       ];
    }, {max: os.cpus ().length}],
    function (s) {
+      var files = [];
+      dale.go (s.last, function (dir) {
+         dale.go (dir, function (file) {
+            files.push (file);
+         });
+      });
       var fsFiles = {};
       a.seq (s, [
-         [a.fork, s.last, function (s, file) {
-            [a.make (fs.stat), file],
-            function (s) {
-               fsFiles [path] = s.last.size;
-               s.next ();
-            };
-         }],
+         [a.fork, files, function (file) {
+            return [
+               [a.make (fs.stat), Path.join (CONFIG.basepath, file)],
+               function (s) {
+                  if (s.error) return s.next (null, s.error);
+                  fsFiles [file] = s.last.size;
+                  s.next ();
+               }
+            ];
+         }, {max: os.cpus ().length}],
          function (s) {
-            s.last = fsFiles;
+            s.fsFiles = fsFiles;
             s.next ();
          }
       ]);
@@ -5020,10 +5029,10 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       s.dbFiles = {};
       dale.go (s.last, function (piv) {
          var prefix = H.hash (piv.owner) + '/';
-         s.dbFiles [prefix + piv.id] = ['piv', piv.byfs];
-         if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [piv.bythumbS, 'thumb'];
-         if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [piv.bythumbM, 'thumb'];
-         if (piv.vid && piv.vid !== '1') s.dbFiles [prefix + piv.vid] = [piv.bymp4, 'mp4'];
+         s.dbFiles [prefix + piv.id] = [parseInt (piv.byfs), 'piv'];
+         if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [parseInt (piv.bythumbS), 'thumb'];
+         if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [parseInt (piv.bythumbM), 'thumb'];
+         if (piv.vid && piv.vid !== '1') s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
       });
       s.next ();
    },
@@ -5040,20 +5049,22 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
 
       dale.go (s.dbFiles, function (data, dbFile) {
          // S3 only holds original pivs
-         if (data [0] === 'piv') {
+         if (data [1] === 'piv') {
             if (! s.s3Files [dbFile]) s.s3Missing.push (dbFile);
             // The H.encrypt function, used to encrypt files before uploading them to S3, increases file size by 32 bytes.
-            else if (s.s3Files [dbFile] - data [1] !== 32) s.s3WrongSize.push (dbFile);
+            else if (s.s3Files [dbFile] - data [0] !== 32) s.s3WrongSize.push (dbFile);
          }
-         // FS holds both original pivs and thumbnails.
+            // FS holds both original pivs and thumbnails.
          if (! s.fsFiles [dbFile]) s.fsMissing.push (dbFile);
-         else if (s.fsFiles [dbFile] !== data [1]) s.fsWrongSize.push (dbFile);
+         else if (s.fsFiles [dbFile] !== data [0]) s.fsWrongSize.push (dbFile);
       });
 
       dale.go (s.s3Files, function (v, s3file) {
          if (! s.dbFiles [s3file]) s.s3Extra.push (s3file);
       });
       dale.go (s.fsFiles, function (v, fsfile) {
+         // Ignore folders with invalid files
+         if (fsfile.match (/^invalid/)) return;
          if (! s.dbFiles [fsfile]) s.fsExtra.push (fsfile);
       });
 
