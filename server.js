@@ -5037,7 +5037,7 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
          if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [parseInt (piv.bythumbS), 'thumb'];
          if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [parseInt (piv.bythumbM), 'thumb'];
          // piv.vid will point to a mp4 video only if 1) the original video is not a mp4; 2) the conversion didn't end up in error.
-         if (piv.vid && piv.vid !== '1' && piv.vid.match (/error/)) s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
+         if (piv.vid && piv.vid !== '1' && ! piv.vid.match (/error/)) s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
       });
       s.next ();
    },
