@@ -451,7 +451,6 @@ H.s3del = function (s, keys) {
 H.s3list = function (s, prefix) {
    var output = [];
    var fetch = function (marker) {
-      clog ('S3 LIST', marker);
       s3.listObjects ({Prefix: prefix, Marker: marker}, function (error, data) {
          if (error) return s.next (null, error);
          output = output.concat (data.Contents);
@@ -4971,7 +4970,6 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       });
       s.next ();
    },
-   [a.log, 'Done with S3'],
    // Get list of files from FS
    // Final shape will be {PATH: SIZE, ...}
    [a.make (fs.readdir), CONFIG.basepath],
@@ -4992,7 +4990,6 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
          }
       ];
    }, {max: os.cpus ().length}],
-   [a.log, 'Done with files 1'],
    function (s) {
       var files = [];
       dale.go (s.last, function (dir) {
@@ -5004,10 +5001,9 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       var s3Files = s.s3Files;
       s.s3Files = null;
       var fsFiles = {};
-      a.seq (s, [
+      a.seq ([
          [a.fork, files, function (file) {
             return [
-               [a.log, 'stat: ' + file],
                [a.make (fs.stat), Path.join (CONFIG.basepath, file)],
                function (s) {
                   if (s.error) return s.next (null, s.error);
@@ -5016,14 +5012,13 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
                }
             ];
          }, {max: os.cpus ().length}],
-         function (s) {
+         function (S) {
             s.fsFiles = fsFiles;
             s.s3Files = s3Files;
             s.next ();
          }
       ]);
    },
-   [a.log, 'Done with files 2'],
    // Get list of pivs from DB (which include also thumb information)
    // Final shape will be {'PATH': [SIZE, piv|thumb|mp4], ...}
    [redis.keyscan, 'piv:*'],
@@ -5041,11 +5036,11 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
          s.dbFiles [prefix + piv.id] = [parseInt (piv.byfs), 'piv'];
          if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [parseInt (piv.bythumbS), 'thumb'];
          if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [parseInt (piv.bythumbM), 'thumb'];
-         if (piv.vid && piv.vid !== '1') s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
+         // piv.vid will point to a mp4 video only if 1) the original video is not a mp4; 2) the conversion didn't end up in error.
+         if (piv.vid && piv.vid !== '1' && piv.vid.match (/error/)) s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
       });
       s.next ();
    },
-   [a.log, 'Done with pivs'],
    // Check consistency. DB data is the measure of everything, the single source of truth.
    function (s) {
       // Note: All file lists (s.s3Files, s.fsFiles, s.dbFiles) were initialized as objects for quick lookups; if stored as arrays instead, we'd be iterating the array N times when performing the checks below.
