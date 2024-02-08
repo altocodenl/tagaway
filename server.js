@@ -5142,8 +5142,7 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
 
 // *** CHECK CONSISTENCY OF STORED SIZES IN DB ***
 
-// TODO: remove
-if (false && cicek.isMaster && ENV && mode !== 'script') a.stop ([
+if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
    [function (s) {
       s.start = Date.now ();
       s.next ();
