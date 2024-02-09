@@ -4961,86 +4961,90 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       s.start = Date.now ();
       s.next ();
    }],
-   // Get list of files from S3
-   // Final shape will be {PATH: SIZE, ...}
-   [H.s3list, ''],
-   function (s) {
-      s.s3Files = dale.obj (s.last, function (v) {
-         return [v.key, v.size];
-      });
-      s.next ();
-   },
-   // Get list of files from FS
-   // Final shape will be {PATH: SIZE, ...}
-   [a.make (fs.readdir), CONFIG.basepath],
-   [a.get, a.fork, '@last', function (dir) {
-      return [
-         // Read all files. Important assumption: inside CONFIG.basepath, there are folders and inside them, there are files.
-         // There should be no nested folders inside these folders.
-         [a.stop, [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)], function (s, error) {
-            if (ENV) return s.next (null, error);
-            // Errors can happen when running the script locally. Ignore them and continue.
-            return s.next (false);
-         }],
+   [a.fork, [
+      [
+         // Get list of files from S3
+         // Final shape will be {PATH: SIZE, ...}
+         [H.s3list, ''],
          function (s) {
-            if (s.last === false) s.next ([]);
-            s.next (dale.go (s.last, function (file) {
-               return Path.join (dir, file);
-            }));
-         }
-      ];
-   }, {max: os.cpus ().length}],
-   function (s) {
-      var files = [];
-      dale.go (s.last, function (dir) {
-         dale.go (dir, function (file) {
-            files.push (file);
-         });
-      });
-      // Remove s3Files from the stack, to avoid copying them n times
-      var s3Files = s.s3Files;
-      s.s3Files = null;
-      var fsFiles = {};
-      a.seq ([
-         [a.fork, files, function (file) {
+            s.s3Files = dale.obj (s.last, function (v) {
+               return [v.key, v.size];
+            });
+            s.next ();
+         },
+      ],
+      [
+         // Get list of files from FS
+         // Final shape will be {PATH: SIZE, ...}
+         [a.make (fs.readdir), CONFIG.basepath],
+         [a.get, a.fork, '@last', function (dir) {
             return [
-               [a.make (fs.stat), Path.join (CONFIG.basepath, file)],
+               // Read all files. Important assumption: inside CONFIG.basepath, there are folders and inside them, there are files.
+               // There should be no nested folders inside these folders.
+               [a.stop, [a.make (fs.readdir), Path.join (CONFIG.basepath, dir)], function (s, error) {
+                  if (ENV) return s.next (null, error);
+                  // Errors can happen when running the script locally. Ignore them and continue.
+                  return s.next (false);
+               }],
                function (s) {
-                  if (s.error) return s.next (null, s.error);
-                  fsFiles [file] = s.last.size;
-                  s.next ();
+                  if (s.last === false) s.next ([]);
+                  s.next (dale.go (s.last, function (file) {
+                     return Path.join (dir, file);
+                  }));
                }
             ];
          }, {max: os.cpus ().length}],
-         function (S) {
-            s.fsFiles = fsFiles;
-            s.s3Files = s3Files;
+         function (s) {
+            var files = [];
+            dale.go (s.last, function (dir) {
+               dale.go (dir, function (file) {
+                  files.push (file);
+               });
+            });
+            var fsFiles = {};
+            a.seq ([
+               [a.fork, files, function (file) {
+                  return [
+                     [a.make (fs.stat), Path.join (CONFIG.basepath, file)],
+                     function (s) {
+                        if (s.error) return s.next (null, s.error);
+                        fsFiles [file] = s.last.size;
+                        s.next ();
+                     }
+                  ];
+               }, {max: os.cpus ().length}],
+               function (S) {
+                  s.fsFiles = fsFiles;
+                  s.next ();
+               }
+            ]);
+         },
+      ],
+      [
+         // Get list of pivs from DB (which include also thumb information)
+         // Final shape will be {'PATH': [SIZE, piv|thumb|mp4], ...}
+         [redis.keyscan, 'piv:*'],
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (s.last, function (id) {
+               multi.hgetall (id);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            s.dbFiles = {};
+            dale.go (s.last, function (piv) {
+               var prefix = H.hash (piv.owner) + '/';
+               s.dbFiles [prefix + piv.id] = [parseInt (piv.byfs), 'piv'];
+               if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [parseInt (piv.bythumbS), 'thumb'];
+               if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [parseInt (piv.bythumbM), 'thumb'];
+               // piv.vid will point to a mp4 video only if 1) the original video is not a mp4; 2) the conversion didn't end up in error.
+               if (piv.vid && piv.vid !== '1') s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
+            });
             s.next ();
-         }
-      ]);
-   },
-   // Get list of pivs from DB (which include also thumb information)
-   // Final shape will be {'PATH': [SIZE, piv|thumb|mp4], ...}
-   [redis.keyscan, 'piv:*'],
-   function (s) {
-      var multi = redis.multi ();
-      dale.go (s.last, function (id) {
-         multi.hgetall (id);
-      });
-      mexec (s, multi);
-   },
-   function (s) {
-      s.dbFiles = {};
-      dale.go (s.last, function (piv) {
-         var prefix = H.hash (piv.owner) + '/';
-         s.dbFiles [prefix + piv.id] = [parseInt (piv.byfs), 'piv'];
-         if (piv.thumbS) s.dbFiles [prefix + piv.thumbS] = [parseInt (piv.bythumbS), 'thumb'];
-         if (piv.thumbM) s.dbFiles [prefix + piv.thumbM] = [parseInt (piv.bythumbM), 'thumb'];
-         // piv.vid will point to a mp4 video only if 1) the original video is not a mp4; 2) the conversion didn't end up in error.
-         if (piv.vid && piv.vid !== '1' && ! piv.vid.match (/error/)) s.dbFiles [prefix + piv.vid] = [parseInt (piv.bymp4), 'mp4'];
-      });
-      s.next ();
-   },
+         },
+      ]
+   ], function (v) {return v}],
    // Check consistency. DB data is the measure of everything, the single source of truth.
    function (s) {
       // Note: All file lists (s.s3Files, s.fsFiles, s.dbFiles) were initialized as objects for quick lookups; if stored as arrays instead, we'd be iterating the array N times when performing the checks below.
@@ -5053,6 +5057,8 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
       s.s3WrongSize = [];
 
       dale.go (s.dbFiles, function (data, dbFile) {
+         // Omit errored mp4 conversions
+         if (data [1] === 'mp4' && dbFile.match (/error/)) return;
          // S3 only holds original pivs
          if (data [1] === 'piv') {
             if (! s.s3Files [dbFile]) s.s3Missing.push (dbFile);
@@ -5068,8 +5074,8 @@ if (cicek.isMaster && ENV && mode !== 'script') a.stop ([
          if (! s.dbFiles [s3file]) s.s3Extra.push (s3file);
       });
       dale.go (s.fsFiles, function (v, fsfile) {
-         // Ignore folders with invalid files
-         if (fsfile.match (/^invalid/)) return;
+         // Ignore folders with invalid files, or errored mp4 conversions
+         if (fsfile.match (/^invalid/) || fsfile.match (/^error/)) return;
          if (! s.dbFiles [fsfile]) s.fsExtra.push (fsfile);
       });
 
