@@ -1,5 +1,4 @@
-// This script will reconvert all the existing mp4 versions of non-mp4 videos in the system.
-// This is because we recently changed the way we encode them to make them compatible with Apple phones.
+// This script will fix the sizes of mp4 reconverted by a previous script
 // The script is idempotent.
 
 var t = Date.now ();
