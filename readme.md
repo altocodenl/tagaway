@@ -41,9 +41,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - bugs
    - **server: if verify token for user that does not exist, check and throw 403**
-   - **server: fix ERR_CONTENT_LENGTH_MISMATCH 206**
-      - script for fixing bymp4 on reconverted pivs, as well as stats
-      - figure out why checkConsistency didn't account for this
    - **server: investigate bug with piv with location but no geotags**
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
