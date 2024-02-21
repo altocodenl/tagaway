@@ -53,7 +53,7 @@ module.exports = {
       nonceLength: 16,
       tagLength: 16,
    },
-   freeSpace: 5 * 1000 * 1000 * 1000,
+   freeSpace: 500 * 1000 * 1000,
    backup: {
       frequency: 10,
       path: '/var/lib/redis/dump.rdb',
