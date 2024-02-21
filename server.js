@@ -4550,11 +4550,22 @@ var routes = [
             var multi = redis.multi ();
             dale.go (s.last, function (username) {
                multi.hgetall ('users:' + username);
+               multi.scard ('tag:' + username + ':a::');
+               multi.scard ('tags:' + username);
+               multi.get ('stat:f:byfs-' + username);
             });
             mexec (s, multi);
          },
          function (s) {
-            s.last.sort (function (A, B) {
+            var users = dale.fil (s.last, undefined, function (user, k) {
+               if (k % 4 !== 0) return;
+               delete user.pass;
+               user.pivs = s.last [k + 1];
+               user.tags = s.last [k + 2];
+               user.bytes = s.last [k + 3];
+               return user;
+            });
+            users.sort (function (A, B) {
                var a = A.lastActivity;
                var b = B.lastActivity;
                if (! a && ! b) return parseInt (B.created) - parseInt (A.created);
@@ -4562,10 +4573,7 @@ var routes = [
                if (a && ! b) return -1;
                if (a && b) return parseInt (b) - parseInt (a);
             });
-            reply (rs, 200, dale.go (s.last, function (user) {
-               delete user.password;
-               return user;
-            }));
+            reply (rs, 200, users);
          }
       ]);
    }],

@@ -713,7 +713,7 @@ views.dashboard = function (x) {
 
 views.users = function () {
    return B.view (['Data', 'users'], function (users) {
-      var columns = ['#', 'username', 'email', 'type', 'lastActivity', 'created', 'actions'];
+      var columns = ['#', 'username', 'email', 'lastActivity', 'created', 'verified', 'pivs', 'tags', 'MB', 'actions'];
       return ['div', {style: style ({padding: 60})}, [
          ['h3', 'Users'],
          ['table', {class: 'pure-table pure-table-striped'}, [
@@ -721,6 +721,8 @@ views.users = function () {
             dale.go (Data.users, function (user, userIndex) {
                return ['tr', dale.go (columns, function (k) {
                   if (k === '#') return ['td', userIndex + 1];
+                  if (k === 'verified') return ['td', user.verificationPending ? ['strong', 'NO'] : '✓'];
+                  if (k === 'MB') return ['td', Math.round (user.bytes / 1000000)];
                   if (k === 'actions') return ['td', [
                      ['span', {class: 'action'}, ['a', {href: '#/logs/' + user.username}, 'See logs']],
                      ['br'], ['br'],
