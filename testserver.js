@@ -741,6 +741,19 @@ suites.auth = {
             s.headers = {};
             return true;
          }],
+         ['signup again to verify deleted user', 'post', 'auth/signup', {}, function (s) {
+            return {username: user.username, password: user.password, email: user.email};
+         }, 200, function (s, rq, rs) {
+            s.verificationToken = rs.body.token;
+            return true;
+         }],
+         ['verify user', 'get', function (s) {return 'auth/verify/' + s.verificationToken}, {}, '', 302],
+         ['login again to create a separate session', 'post', 'auth/login', {}, {username: tk.users.user1.username, password: tk.users.user1.password, timezone: 0}, 200, H.setCredentials],
+         ['delete account', 'post', 'auth/delete', {}, {}, 200, function (s, rq, rs) {
+            delete s.headers.cookie;
+            return true;
+         }],
+         ['verify deleted user', 'get', function (s) {return 'auth/verify/' + s.verificationToken}, {}, '', 403, H.cBody ({error: 'auth'})],
       ];
    }
 }

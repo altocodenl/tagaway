@@ -46,7 +46,7 @@
 	- Account is created:
 		- Green snackbar of "Your account has been created." should appear.
 	- On invite-requesting email inbox, the user should receive an "Welcome to ac;pic!" email.
-	- Log out. 
+	- Log out.
 
 ## Log In
 	- Click 'log in' with empty form:
@@ -82,7 +82,7 @@
 	- Repeat new passoword
 	- Click on 'Reset password'
 	- You should be taken to Log In page.
-	- Log in with new credentials. 
+	- Log in with new credentials.
 	- Log out.
 	- On log in page, click on 'Forgot password?'
 	- Insert username used to create account
@@ -93,7 +93,7 @@
 	- Repeat new passoword
 	- Click on 'Reset password'
 	- You should be taken to Log In page.
-	- Log in with new credentials. 
+	- Log in with new credentials.
 	- Log out.
 
 ## Change password
@@ -181,7 +181,7 @@
 			- When uploading finished - and not sooner -, green snackbar of "Upload completed successfully. You can see the pictures in the "View Pictures" section." should appear.
 			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
-			- Go back to upload view.  
+			- Go back to upload view.
 			- Choose "upload files".
 			- Select a video for upload.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of pictures.
@@ -191,7 +191,7 @@
 			- Click on 'ac;pic' logo.
 			- Check if uploaded video is available in View Pictures > 'all pictures' and 'untagged'.
 			- In your device, duplicate the same video as the previous batch, making sure it has different filenames.
-			- Go back to upload view.  
+			- Go back to upload view.
 			- Choose 'upload files'
 			- Select the same video with different name.
 			- The interface shows amount of files selected "x pictures selected" where 'x' is amount of files.
@@ -223,7 +223,7 @@
 			- Repeated files should not be uploaded. On "Recent uploads" list it should appear as "X pictures uploaded (X repeated)".
 			- Click on header "View Pictures" and go to gallery.
 			- Check that files were tagged correctly.
-			- Go back to upload view.  
+			- Go back to upload view.
 			- Select 'upload folder'
 			- Select the second folder.
 			- Broser prompt should appear:
@@ -300,18 +300,18 @@ Not developed yet
 	Email when import done or stopped.
 
 ## Enabling Geo Tagging
-	- Enable geotagging from sidebar: 
+	- Enable geotagging from sidebar:
 		- On first batch of files uploaded/imported, on sidebar left, below the 'Years' semi tags:
 			- Enable Geotagging 	Maybe later
 			- 'Enable Geotagging' color: #5b6eff; text-decoration: underlined;
 			- 'Maybe later' color: #484848; text-decoration: underlined;
 		- If click on 'Maybe later'
 			- Green snackbar: 'Understood! You can always enable geotagging from My Account.'
-			- Both messages dissapear. That space is replaced with regular tags. 
+			- Both messages dissapear. That space is replaced with regular tags.
 		- If click on 'Enable Geotagging':
 			- Green snackbar: 'Geotagging enabled successfully. You can always change this from My Account'
 			- Both messages dissapear. Are replaced by location icons.
-				- Location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.) 
+				- Location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.)
 
 	- Enable geotagging from 'My acount' > see section for 'My account'
 
@@ -381,7 +381,7 @@ Not developed yet
 			- The interface should return to 'navigation mode'.
 			- Select a thumbnail again.
 			- Interface should turn to 'organize view'.
-			- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'. 
+			- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'.
 			- The interface should return to 'navigation mode'.
 		- Select multiple files:
 			- Select multiple files by clicking each one:
@@ -407,7 +407,7 @@ Not developed yet
 				- The interface should return to 'navigation mode'.
 				- Select thumbnails again.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnails by clicking on any part of the interface where the cursor is NOT 'pointer'. 
+				- Unselect thumbnails by clicking on any part of the interface where the cursor is NOT 'pointer'.
 				- The interface should return to 'navigation mode'.
 			- Select multiple images by using shift:
 				- Select a thumbnail.
@@ -434,7 +434,7 @@ Not developed yet
 				- The interface should return to 'navigation mode'.
 				- Select thumbnails again using the same methodology with 'shift'.
 				- Interface should turn to 'organize view'.
-				- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'. 
+				- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'.
 				- The interface should return to 'navigation mode'.
 			- Select multiple images by using 'select all' option
 				- Select a thumbnail.
@@ -467,7 +467,7 @@ Not developed yet
 				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
 					- All thumbnails must be unselected.
 				- From 'Organize bar' click on 'select all'.
-				- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'. 
+				- Unselect thumbnail by clicking on any part of the interface where the cursor is NOT 'pointer'.
 				- The interface should return to 'navigation mode'.
 				- If amount of thumbnails is such that thumbnails are left below the fold, scroll down to bottom of gallery.
 					- All thumbnails must be unselected.
@@ -605,7 +605,7 @@ Not developed yet
 			- Thumbnail(s) should be untagged of removed tag.
 			- Tag should dissapear from list under 'Remove current tags'.
 			- If there are no thumbnails tagged with a particular tag, that tag should be eliminated from interface. From both sidebar left in 'navigation mode' as well as 'organize mode'.
-	- **Navigation with tags** 
+	- **Navigation with tags**
 		- From 'view pictures' view, with files uploaded and tagged, and geotagging enabled (and files with geotags)
 			- Default option should be 'all pictures' unless navigation occured before.
 			- On sidebar left, click on 'untagged'
@@ -744,21 +744,21 @@ Not developed yet
 			- Should be back to 'all pictures'.
 COUNTRY>CITY
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 					- Regular tags are below the column of geo CITY tags.
-			- On sidebar left, click on a geo CITY tag. 
+			- On sidebar left, click on a geo CITY tag.
 			- Gallery should display the thumbnails for files that were geo tagged in this CITY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
-				- On sidebar left, years and regular tags with positive intersections should be available. 
+				- On sidebar left, years and regular tags with positive intersections should be available.
 					- There should NOT be any other COUNTRY and CITY tags visible, other than the selected ones.
 			- Click on icon with 'x' on CITY tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tag
@@ -776,14 +776,14 @@ COUNTRY>CITY
 			- Should be back to 'all pictures'.
 COUNTRY>YEAR>CITY
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a year semi tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ YEAR).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
@@ -791,12 +791,12 @@ COUNTRY>YEAR>CITY
 				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ YEAR ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags with positive intersections should be available.
 			- Click on icon with 'x' on CITY tag below the title.
-			- Gallery should show thumbnails corresponding to COUNTRY and year semi tags. 
+			- Gallery should show thumbnails corresponding to COUNTRY and year semi tags.
 			- Click on icon with 'x' on year tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tags.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -815,17 +815,17 @@ COUNTRY>YEAR>CITY
 			- Should be back to 'all pictures'.
 COUNTRY>CITY>YEAR
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
@@ -836,7 +836,7 @@ COUNTRY>CITY>YEAR
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags with positive intersections should be available.
 			- Click on icon with 'x' on 'year' semi tag below the title.
-			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY. 
+			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY.
 			- Click on icon with 'x' on CITY tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tags.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -858,18 +858,18 @@ YEAR>COUNTRY>CITY
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the year semi tag must be in #5b6eff.
-				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags). 
+				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags).
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right and the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY ∩ CITY).
-				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags with positive intersections should be available.
@@ -893,17 +893,17 @@ YEAR>COUNTRY>CITY
 			- Should be back to 'all pictures'.
 COUNTRY>CITY>TAG
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
@@ -914,7 +914,7 @@ COUNTRY>CITY>TAG
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag and tag.
 				- On sidebar left, other regular tags and year semi tags with positive intersections should be available.
 			- Click on icon with 'x' on regular tag below the title.
-			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY tags. 
+			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY tags.
 			- Click on icon with 'x' on CITY tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tag.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -933,13 +933,13 @@ COUNTRY>CITY>TAG
 			- Should be back to 'all pictures'.
 COUNTRY>TAG>CITY
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ tag).
@@ -954,7 +954,7 @@ COUNTRY>TAG>CITY
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag and CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
 			- Click on icon with 'x' on the CITY tag below the title.
-			- Gallery should show thumbnails corresponding to COUNTRY ∩ tag. 
+			- Gallery should show thumbnails corresponding to COUNTRY ∩ tag.
 			- Click on icon with 'x' on regular tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tag.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -978,14 +978,14 @@ TAG>COUNTRY>CITY
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 				- On sidebar left, COUNTRY tags, regular tags and year semi tags with positive intersections should be available.
 			- On sidebar left, click on a geo tag.
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ COUNTRY).
 				- Below title, the tag with its corresponding color, 'tag name' and with 'x' to its right, and the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (tag ∩ COUNTRY ∩ CITY).
@@ -994,7 +994,7 @@ TAG>COUNTRY>CITY
 				- On sidebar left, the 'eye' icon must be visible next to the selected tag and CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
 			- Click on icon with 'x' on the CITY tag below the title.
-			- Gallery should show thumbnails corresponding to tag ∩ COUNTRY. 
+			- Gallery should show thumbnails corresponding to tag ∩ COUNTRY.
 			- Click on icon with 'x' on COUNTRY tag below the title.
 			- Gallery should show thumbnails corresponding to regular tag.
 			- Click on icon with 'x' on regular tag below the title.
@@ -1013,17 +1013,17 @@ TAG>COUNTRY>CITY
 			- Should be back to 'all pictures'.
 COUNTRY>CITY>UNTAGGED
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
@@ -1034,7 +1034,7 @@ COUNTRY>CITY>UNTAGGED
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, year semi tags with positive intersections should be available.
 			- Click on icon with 'x' on untagged below the title.
-			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY tags. 
+			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY tags.
 			- Click on icon with 'x' on CITY tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tag.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -1053,13 +1053,13 @@ COUNTRY>CITY>UNTAGGED
 			- Should be back to 'all pictures'.
 COUNTRY>UNTAGGED>CITY
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on 'untagged'.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ untagged).
@@ -1073,7 +1073,7 @@ COUNTRY>UNTAGGED>CITY
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, years semi tags with positive intersections should be available.
 			- Click on icon with 'x' on CITY tag below the title.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged'.
 			- Click on icon with 'x' on untagged below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY tag.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -1085,7 +1085,7 @@ COUNTRY>UNTAGGED>CITY
 			- On sidebar left, select the same COUNTRY ∩ untagged ∩ CITY as before.
 			- Should be back to 'COUNTRY ∩ untagged ∩ CITY' tag view.
 			- On sidebar left, click on the same CITY geo tag.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged'.
 			- On sidebar left, click on the 'untagged' tag.
 			- Should be back to 'COUNTRY' view.
 			- On sidebar left, click on the same COUNTRY geo tag
@@ -1101,7 +1101,7 @@ UNTAGGED>COUNTRY>CITY
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (untagged ∩ COUNTRY ∩ CITY).
 				- Below title, the 'untagged' with a white icon tag and with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right.
@@ -1109,7 +1109,7 @@ UNTAGGED>COUNTRY>CITY
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the CITY geo tag.
 			- Click on icon with 'x' on the CITY tag below the title.
-			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY'. 
+			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY'.
 			- Click on icon with 'x' on COUNTRY tag below the title.
 			- Gallery should show thumbnails corresponding to untagged.
 			- Click on icon with 'x' on untagged below the title.
@@ -1128,17 +1128,17 @@ UNTAGGED>COUNTRY>CITY
 			- Should be back to 'all pictures'.
 COUNTRY>CITY>YEAR>UNTAGGED
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
@@ -1154,7 +1154,7 @@ COUNTRY>CITY>YEAR>UNTAGGED
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on untagged below the title.
-			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY ∩ year. 
+			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY ∩ year.
 			- Click on icon with 'x' on 'year' tag below the title.
 			- Gallery should show thumbnails corresponding to COUNTRY ∩ CITY tags.
 			- Click on icon with 'x' on CITY tag below the title.
@@ -1177,17 +1177,17 @@ COUNTRY>CITY>YEAR>UNTAGGED
 			- Should be back to 'all pictures'.
 COUNTRY>CITY>UNTAGGED>YEAR
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags and years semi tags with positive intersections should be available.
@@ -1203,7 +1203,7 @@ COUNTRY>CITY>UNTAGGED>YEAR
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on 'year' semi tag below the title.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ CITY ∩ untagged'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ CITY ∩ untagged'.
 			- Click on icon with 'x' on 'untagged' below the title.
 			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ CITY' tag.
 			- Click on icon with 'x' on CITY tag below the title.
@@ -1217,22 +1217,22 @@ COUNTRY>CITY>UNTAGGED>YEAR
 			- On sidebar left, select the same 'COUNTRY ∩ CITY ∩ untagged ∩ year' as before.
 			- Should be back to 'COUNTRY ∩ CITY ∩ untagged ∩ year' tag view.
 			- On sidebar left, click on 'year'
-			- Should be back to to 'COUNTRY ∩ CITY ∩ untagged' view. 
+			- Should be back to to 'COUNTRY ∩ CITY ∩ untagged' view.
 			- On sidebar left, click on 'untagged'.
-			- Should be back to to 'COUNTRY ∩ CITY' view. 
+			- Should be back to to 'COUNTRY ∩ CITY' view.
 			- On sidebar left, click on the same CITY geo tag
 			- Should be back to 'COUNTRY' view.
 			- On sidebar left, click on the same COUNTRY geo tag
 			- Should be back to 'all pictures'.
 COUNTRY>UNTAGGED>CITY>YEAR
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on 'untagged'.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ untagged).
@@ -1249,9 +1249,9 @@ COUNTRY>UNTAGGED>CITY>YEAR
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ untagged ∩ CITY ∩ year).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
-				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.			
+				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on the 'year' semi tag below the title.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged ∩ CITY'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged ∩ CITY'.
 			- Click on icon with 'x' on CITY tag below the title.
 			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged' tag.
 			- Click on icon with 'x' on untagged below the title.
@@ -1273,13 +1273,13 @@ COUNTRY>UNTAGGED>CITY>YEAR
 			- Should be back to 'all pictures'.
 COUNTRY>UNTAGGED>YEAR>CITY
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on 'untagged'.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ untagged).
@@ -1290,14 +1290,14 @@ COUNTRY>UNTAGGED>YEAR>CITY
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ untagged ∩ year).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
-				- On sidebar left, geo CITY tags with positive intersections should be available.		
+				- On sidebar left, geo CITY tags with positive intersections should be available.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ untagged ∩ year ∩ CITY).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on CITY tag below the title.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged ∩ year'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged ∩ year'.
 			- Click on icon with 'x' on 'year' below the title.
 			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged'.
 			- Click on icon with 'x' on 'untagged' below the title.
@@ -1311,23 +1311,23 @@ COUNTRY>UNTAGGED>YEAR>CITY
 			- On sidebar left, select the same 'COUNTRY ∩ untagged ∩ year ∩ CITY' as before.
 			- Should be back to 'COUNTRY ∩ untagged ∩ year ∩ CITY' tag view.
 			- On sidebar left, click on the same CITY geo tag.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged ∩ year'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ untagged ∩ year'.
 			- On sidebar left, click on the 'year' semi tag.
-			- Should be back to 'COUNTRY ∩ untagged' view.			
+			- Should be back to 'COUNTRY ∩ untagged' view.
 			- On sidebar left, click on the 'untagged' tag.
 			- Should be back to 'COUNTRY' view.
 			- On sidebar left, click on the same COUNTRY geo tag
 			- Should be back to 'all pictures'.
 COUNTRY>YEAR>UNTAGGED>CITY
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a year semi tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ year).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
@@ -1337,14 +1337,14 @@ COUNTRY>YEAR>UNTAGGED>CITY
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ year ∩ untagged).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, and the 'untagged' with a white icon tag and with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
-				- On sidebar left, geo CITY tags with positive intersections should be available.			
+				- On sidebar left, geo CITY tags with positive intersections should be available.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ year ∩ untagged ∩ CITY).
-				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on CITY tag below the title.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ year ∩ untagged'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ year ∩ untagged'.
 			- Click on icon with 'x' on untagged below the title.
 			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ year'.
 			- Click on icon with 'x' on 'year' below the title.
@@ -1367,14 +1367,14 @@ COUNTRY>YEAR>UNTAGGED>CITY
 			- Should be back to 'all pictures'.
 COUNTRY>YEAR>CITY>UNTAGGED
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
-			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY. 
+			- Gallery should display the thumbnails for files that were geo tagged in this COUNTRY.
 				- Title with 'x pictures' where 'x' is amount of thumbails available for the selected geo tag.
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a year semi tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ year).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
@@ -1390,9 +1390,9 @@ COUNTRY>YEAR>CITY>UNTAGGED
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (COUNTRY ∩ year ∩ CITY ∩ untagged).
 				- Below title, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, and the 'untagged' with a white icon tag and with 'x' to its right.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
-				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.	
+				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 			- Click on icon with 'x' on the 'untagged' tag below the title.
-			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ year ∩ CITY'. 
+			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ year ∩ CITY'.
 			- Click on icon with 'x' on the CITY tag below the title.
 			- Gallery should show thumbnails corresponding to 'COUNTRY ∩ year'.
 			- Click on icon with 'x' on the 'year' semi tag below the title.
@@ -1418,18 +1418,18 @@ YEAR>COUNTRY>CITY>UNTAGGED
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the year semi tag must be in #5b6eff.
-				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags). 
+				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags).
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right and the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY ∩ CITY).
-				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 				- On sidebar left, regular tags with positive intersections should be available.
@@ -1465,15 +1465,15 @@ YEAR>COUNTRY>UNTAGGED>CITY
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the year semi tag must be in #5b6eff.
-				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags). 
+				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags).
 			- On sidebar left, click on a geo tag. All geotags on sidebar left must be in COUNTRY format (US for United States, IT for Italy, JP for Japan, etc.).
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right and the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, regular tags and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
-					- Regular tags are below the column of geo CITY tags.		
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
+					- Regular tags are below the column of geo CITY tags.
 			- On sidebar left, click on 'untagged'.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY ∩ untagged).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, and the 'untagged' with a white icon tag and with 'x' to its right.
@@ -1481,7 +1481,7 @@ YEAR>COUNTRY>UNTAGGED>CITY
 				- On sidebar left, geo CITY tags with positive intersections should be available.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ COUNTRY ∩ untagged ∩ CITY).
-				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, 
+				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right,
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on the CITY tag below the title.
@@ -1511,7 +1511,7 @@ YEAR>UNTAGGED>COUNTRY>CITY
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category.
 				- Below title, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the year semi tag must be in #5b6eff.
-				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags). 
+				- On sidebar left, only the year selected and tags with positive results should be available (geo COUNTRY semi tags and/or tags).
 			- On sidebar left, click on 'untagged'.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ untagged).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right and the 'untagged' with a white icon tag and with 'x' to its right.
@@ -1523,7 +1523,7 @@ YEAR>UNTAGGED>COUNTRY>CITY
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (year ∩ untagged ∩ COUNTRY ∩ CITY).
 				- Below title, the 'year' semi-tag with a 'clock' icon with 'x' to its right, the 'untagged' with a white icon tag and with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right.
@@ -1550,7 +1550,7 @@ YEAR>UNTAGGED>COUNTRY>CITY
 			- On sidebar left, click on the 'untagged' tag.
 			- Should be back to 'year' view.
 			- On sidebar left, click on the 'year' semi tag.
-			- Should be back to 'all pictures'.		
+			- Should be back to 'all pictures'.
 UNTAGGED>YEAR>COUNTRY>CITY
 			- On sidebar left, click on 'untagged'.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in untagged.
@@ -1567,14 +1567,14 @@ UNTAGGED>YEAR>COUNTRY>CITY
 				- On sidebar left, the COUNTRY geo tag and the year semi tag must be in #5b6eff.
 				- On sidebar left, geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (untagged ∩ year ∩ COUNTRY ∩ CITY).
 				- Below title, the 'untagged' with a white icon tag and with 'x' to its right, the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and the year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the CITY geo tag.
 			- Click on icon with 'x' on the CITY tag below the title.
-			- Gallery should show thumbnails corresponding to 'untagged ∩ year ∩ COUNTRY'. 
+			- Gallery should show thumbnails corresponding to 'untagged ∩ year ∩ COUNTRY'.
 			- Click on icon with 'x' on COUNTRY tag below the title.
 			- Gallery should show thumbnails corresponding to 'untagged ∩ year'.
 			- Click on icon with 'x' on 'year' below the title.
@@ -1606,7 +1606,7 @@ UNTAGGED>COUNTRY>YEAR>CITY
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 			- On sidebar left, click on a year semi tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (untagged ∩ COUNTRY ∩ year).
 				- Below title, the 'untagged' with a white icon tag and with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
@@ -1618,7 +1618,7 @@ UNTAGGED>COUNTRY>YEAR>CITY
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
 				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on CITY tag below the title.
-			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY ∩ year'. 
+			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY ∩ year'.
 			- Click on icon with 'x' on year tag below the title.
 			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY'.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -1650,20 +1650,20 @@ UNTAGGED>COUNTRY>CITY>YEAR
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
 				- On sidebar left, years and geo CITY tags with positive intersections should be available.
 					- Geo CITY tags icons have a filled black icon.
-					- Geo CITY tags icons are columned in alphabetical order from top to bottom. 
+					- Geo CITY tags icons are columned in alphabetical order from top to bottom.
 			- On sidebar left, click on a CITY tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (untagged ∩ COUNTRY ∩ CITY).
 				- Below title, the 'untagged' with a white icon tag and with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, and the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right.
 				- On sidebar left, years semi tags with positive intersections should be available.
 				- On sidebar left, the COUNTRY geo tag must be in #5b6eff.
-				- On sidebar left, the 'eye' icon must be visible next to the CITY geo tag.			
+				- On sidebar left, the 'eye' icon must be visible next to the CITY geo tag.
 			- On sidebar left, click on a year semi tag.
 				- Title with 'x pictures' where 'x' is amount of thumbails available in this category intersection (untagged ∩ COUNTRY ∩ CITY ∩ year).
 				- Below title, the 'untagged' with a white icon tag and with 'x' to its right, the COUNTRY 'geo' semi-tag with a 'pin' icon with 'x' to its right, the CITY 'geo' semi-tag with a black 'pin' icon with 'x' to its right, and the 'year' semi-tag with a 'clock' icon and icon with 'x' to its right.
 				- On sidebar left, the COUNTRY geo tag and year semi tag must be in #5b6eff.
-				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.				
+				- On sidebar left, the 'eye' icon must be visible next to the selected CITY geo tag.
 			- Click on icon with 'x' on the 'year' tag below the title.
-			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY ∩ CITY'. 
+			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY ∩ CITY'.
 			- Click on icon with 'x' on CITY tag below the title.
 			- Gallery should show thumbnails corresponding to 'untagged ∩ COUNTRY'.
 			- Click on icon with 'x' on COUNTRY tag below the title.
@@ -1689,7 +1689,7 @@ UNTAGGED>COUNTRY>CITY>YEAR
 
 
 
-			- Geo alone 	COUNTRY>CITY) 				✔		
+			- Geo alone 	COUNTRY>CITY) 				✔
 			- Geo and year 	COUNTRY>YEAR>CITY, 			✔
 							COUNTRY>CITY>YEAR, 			✔
 							YEAR>COUNTRY>CITY			✔
@@ -1712,21 +1712,21 @@ UNTAGGED>COUNTRY>CITY>YEAR
 							YEAR>UNTAGGED>COUNTRY>CITY	✔
 							UNTAGGED>YEAR>COUNTRY>CITY  ✔
 							UNTAGGED>COUNTRY>YEAR>CITY 	✔
-							UNTAGGED>COUNTRY>CITY>YEAR	✔		 	
-			- Geo and year and tag 
-							COUNTRY>CITY>YEAR>TAG, 
-							COUNTRY>CITY>TAG>YEAR, 
-							COUNTRY>TAG>CITY>YEAR, 
-							COUNTRY>TAG>YEAR>CITY, 
-							COUNTRY>YEAR>CITY>TAG, 
-							COUNTRY>YEAR>TAG>CITY, 
+							UNTAGGED>COUNTRY>CITY>YEAR	✔
+			- Geo and year and tag
+							COUNTRY>CITY>YEAR>TAG,
+							COUNTRY>CITY>TAG>YEAR,
+							COUNTRY>TAG>CITY>YEAR,
+							COUNTRY>TAG>YEAR>CITY,
+							COUNTRY>YEAR>CITY>TAG,
+							COUNTRY>YEAR>TAG>CITY,
 							YEAR>COUNTRY>CITY>TAG,
-							YEAR>COUNTRY>TAG>CITY 
+							YEAR>COUNTRY>TAG>CITY
 							YEAR>TAG>COUNTRY>CITY,
-							TAG>YEAR>COUNTRY>CITY, 
+							TAG>YEAR>COUNTRY>CITY,
 							TAG>COUNTRY>CITY>YEAR
 							TAG>COUNTRY>YEAR>CITY
-			
+
 
 	- **Search tag**
 		- From 'all pictures'
@@ -1791,16 +1791,16 @@ Not developed yet
 		- Layout from top to bottom, left to right:
 		- Title: 'My account'
 		- Subtitle: 'Manage your settings and usage'
-		- 'Enable geotagging' to the left of the table, switch off/on to the right. 
+		- 'Enable geotagging' to the left of the table, switch off/on to the right.
 			- By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
-				- If slide to right, 'on': 
-				- background-color: #5b6eff. 
+				- If slide to right, 'on':
+				- background-color: #5b6eff.
 				- Green snackbar. 'Geotagging enabled succesfully. You can always turn off with the same switch'
 				- Geotagging should be on.
-					- In 'view pictures view', location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.) 
-		- 'Password' to the left, 'Change password' button to the right. 
+					- In 'view pictures view', location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.)
+		- 'Password' to the left, 'Change password' button to the right.
 			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
-		- Click 'Change password' button. 
+		- Click 'Change password' button.
 		- A form should open below with the following placeholders:
 			- Enter your current password
 			- Enter your new password
@@ -1808,8 +1808,8 @@ Not developed yet
 			- 'Change password' button, background color '#5b6eff' color '#fff'. On hover background color '#fff' color: '#5b6eff'.
 			- 'Cancel' button, background color '#fff' color: '#484848'. On hover background color '#484848' color '#fff'.
 		- Title 'Usage and account type'
-		- Usage % of the free space on the left, Usage: X% (2 GB) Of your free 2 GB. Usage bar to the right. 
-		- 'Space limit'. 'You can set your monthly limit up to 100 GB.' to the left. Placeholder with '100' to the right. 
+		- Usage % of the free space on the left, Usage: X% (2 GB) Of your free 2 GB. Usage bar to the right.
+		- 'Space limit'. 'You can set your monthly limit up to 100 GB.' to the left. Placeholder with '100' to the right.
 		- 'Account type: Free'. To the right 'Upgrade your account' link, which takes to /upgrade view. color '#5b6eff'; text-decoration:underlined; cursor:pointer;
 	- Paid account:
 		- On header, hover on 'user' icon, a dropdown of options should be displayed: 'My account' and 'Log out'.
@@ -1817,16 +1817,16 @@ Not developed yet
 		- Layout from top to bottom, left to right:
 		- Title: 'My account'
 		- Subtitle: 'Manage your settings and usage'
-		- 'Enable geotagging' to the left of the table, switch off/on to the right. 
+		- 'Enable geotagging' to the left of the table, switch off/on to the right.
 			- By default the swith is in 'off' (selector to the left), background-color: #dedede. When turned 'on', background-color: #5b6eff.
-				- If slide to right, 'on': 
-				- background-color: #5b6eff. 
+				- If slide to right, 'on':
+				- background-color: #5b6eff.
 				- Green snackbar. 'Geotagging enabled succesfully. You can always turn off with the same switch'
 				- Geotagging should be on.
-					- In 'view pictures view', location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.) 
-		- 'Password' to the left, 'Change password' button to the right. 
+					- In 'view pictures view', location icons gradullay start to appear in navigation left. These are in COUNTRY formats (US for United States, IT for Italy, JP for Japan, etc.)
+		- 'Password' to the left, 'Change password' button to the right.
 			- Button is background color '#fff', color '#484848'. On hover, background color '#484848', color '#fff'.
-		- Click 'Change password' button. 
+		- Click 'Change password' button.
 		- A form should open below with the following placeholders:
 			- Enter your current password
 			- Enter your new password
@@ -1834,25 +1834,25 @@ Not developed yet
 			- 'Change password' button, background color '#5b6eff' color '#fff'. On hover background color '#fff' color: '#5b6eff'.
 			- 'Cancel' button, background color '#fff' color: '#484848'. On hover background color '#484848' color '#fff'.
 		- Title 'Usage and account type'
-		- Usage % of the free space on the left, Usage: X% (2 GB) Of your free 2 GB. Usage bar to the right. 
-		- 'Space limit'. 'You can set your monthly limit up to 100 GB.' to the left. Placeholder with '100' to the right. 
-		- 'Account type: Paid'. In case account was turned paid in the middle of a particular month, during that month, there should be the text 'This month you pay for X days.'. In all cases, the text 'Monthly cost is € 4.00'. To the right, the amount of the fixed cost '€ x / Month', where 'x' is the fixed amount charged by Altocode - during first month is the corresponding amount on days of service accrued.  
+		- Usage % of the free space on the left, Usage: X% (2 GB) Of your free 2 GB. Usage bar to the right.
+		- 'Space limit'. 'You can set your monthly limit up to 100 GB.' to the left. Placeholder with '100' to the right.
+		- 'Account type: Paid'. In case account was turned paid in the middle of a particular month, during that month, there should be the text 'This month you pay for X days.'. In all cases, the text 'Monthly cost is € 4.00'. To the right, the amount of the fixed cost '€ x / Month', where 'x' is the fixed amount charged by Altocode - during first month is the corresponding amount on days of service accrued.
 		- '▶' icon to the left of 'Paid space used: X GB'. cursor: pointer;
-		- 'Paid space used: X GB', where X is the average space used and current use. Text 'Based on your average space used and your current use.' should be below on the left. To the right, the  expected cost for the space used '€ x / Month', where 'x' is the expected cost. 
-			- Click on the '▶'. The icon should turn to '▼' and 2 rows display. 
-			- Both rows have 'padding-left': 5%, hence being a child of previous row. 
+		- 'Paid space used: X GB', where X is the average space used and current use. Text 'Based on your average space used and your current use.' should be below on the left. To the right, the  expected cost for the space used '€ x / Month', where 'x' is the expected cost.
+			- Click on the '▶'. The icon should turn to '▼' and 2 rows display.
+			- Both rows have 'padding-left': 5%, hence being a child of previous row.
 				- 'Average paid space used: x GB' where x is the amount of paid GB used on the current month. Below, text 'Average amount of GB you used this month so far.'. To the right '€ x / Month' where x is the cost of paid GB used in the current month.
-				- 'Paid space currently using: x GB' where x is the amount of GB currently being used by the paid user. Below the text 'x GB * Y remaining days this month. Each GB is € 0.05.' where x is the amount of GB currently being used by the paid user and Y is the amount of remaining days of the current month. To the right '€ x / Month' where x is the cost of the current space being used. 
-		- 'Total estimated cost for this month:' to the left and '€ X' where X is the total estimated cost of the current month. 
-		- 'Cancel your account' link, cursor:pointer; text-decoration: underlined; 
+				- 'Paid space currently using: x GB' where x is the amount of GB currently being used by the paid user. Below the text 'x GB * Y remaining days this month. Each GB is € 0.05.' where x is the amount of GB currently being used by the paid user and Y is the amount of remaining days of the current month. To the right '€ x / Month' where x is the cost of the current space being used.
+		- 'Total estimated cost for this month:' to the left and '€ X' where X is the total estimated cost of the current month.
+		- 'Cancel your account' link, cursor:pointer; text-decoration: underlined;
 
 
-## 5GB limit reached
+## Space limit reached
 	- Space alert (upload & import). INCLUDE
 	- Upgrade view
 
 ## Cancel account
-	- 'My account' paid account. EMAIL TO USER AND US. 
+	- 'My account' paid account. EMAIL TO USER AND US.
 
 ## Payment process
 Not developed yet

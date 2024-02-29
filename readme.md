@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
-   - **server: if verify token for user that does not exist, check and throw 403**
    - **server: investigate bug with piv with location but no geotags**
    - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
    - server/client/mobile: require csrf token for logging out (also ac;log)
@@ -50,7 +49,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
-   - **server**: tag L:404
+   - **server**: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
    - **server**: rename a tag X to an existing tag Y
    - **server/config**: fix google drive import
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**

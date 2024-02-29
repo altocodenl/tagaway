@@ -1852,10 +1852,11 @@ var routes = [
          [a.set, 'user', [a.get, Redis, 'hgetall', 'users:@username']],
          function (s) {
             var multi = redis.multi ();
+            if (! s.user) return reply (rs, 403, {error: 'auth'});
             if (! s.user.verificationPending) return reply (rs, 302, '', {location: CONFIG.domain + '#/login/verified'});
 
             multi.hdel ('users:' + s.username, 'verificationPending');
-            // We let the expire token live for another hour in case the user wants to re-verify, but not in test environments.
+            // We let the expire token live for another hour in case the user wants to re-verify, but not in test environments, where it will just live for a second
             multi.expire ('verifytoken:' + token, ENV ? 60 * 60 : 1);
             mexec (s, multi);
          },
