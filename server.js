@@ -3567,32 +3567,30 @@ var routes = [
          [function (s) {
             var multi = redis.multi ();
             multi.smembers ('tag:'      + rq.user.username + ':' + b.from);
-            multi.exists   ('tag:'      + rq.user.username + ':' + b.to);
             multi.smembers ('sho:'      + rq.user.username);
             multi.get      ('hometags:' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
             if (! s.last [0].length) return reply (rs, 404, {error: 'tag'});
-            if (s.last [1])          return reply (rs, 409, {error: 'exists'});
 
-            var tagIsShared = dale.stop (s.last [2], true, function (shared) {
+            var tagIsShared = dale.stop (s.last [1], true, function (shared) {
                return b.from === shared.split (':').slice (1).join (':');
             });
             if (tagIsShared) return reply (rs, 409, {error: 'shared'});
 
             var multi = redis.multi ();
-            multi.rename ('tag:' + rq.user.username + ':' + b.from, 'tag:' + rq.user.username + ':' + b.to);
+            multi.del ('tag:' + rq.user.username + ':' + b.from);
             multi.srem ('tags:' + rq.user.username, b.from);
             multi.sadd ('tags:' + rq.user.username, b.to);
             dale.go (s.last [0], function (id) {
+               multi.sadd ('tag:' + rq.user.username + ':' + b.to, id);
                multi.srem ('pivt:' + id, b.from);
                multi.sadd ('pivt:' + id, b.to);
             });
 
-            var hometags = dale.go (teishi.parse (s.last [3]) || [], function (hometag) {
-                return hometag === b.from ? b.to : hometag;
-            });
+            var hometags = teishi.parse (s.last [2]) || [];
+            if (inc (hometags, b.from) && ! inc (hometags, b.to)) hometags [hometags.indexOf (b.from)] = b.to;
             multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
             mexec (s, multi);
          },

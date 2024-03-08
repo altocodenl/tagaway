@@ -41,7 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - bugs
    - **server: investigate bug with piv with location but no geotags**
-   - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time
+   - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function
    - server/client/mobile: require csrf token for logging out (also ac;log)
    - client: fix phantom selection when scrolling with a large selection
    - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
@@ -4668,14 +4668,13 @@ The `from` should be trimmed and a valid user tag - we'll check for this in a mi
       if (! H.isUserTag (b.to)) return reply (rs, 400, {error: 'tag'});
 ```
 
-We check for the existence of `tag:USERNAME:FROM`, `tag:USERNAME:TO`; also, we get the list of all tags shared by the user, as well as their hometags.
+We check for the existence of `tag:USERNAME:FROM`; also, we get the list of all tags shared by the user, as well as their hometags.
 
 ```javascript
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
             multi.smembers ('tag:'     + rq.user.username + ':' + b.from);
-            multi.exists   ('tag:'     + rq.user.username + ':' + b.to);
             multi.smembers ('sho:'     + rq.user.username);
             multi.get      ('hometags:' + rq.user.username);
             mexec (s, multi);
@@ -4689,52 +4688,49 @@ If the tag `from` doesn't exist for the user, we return a 404 with body `{error:
             if (! s.last [0].length) return reply (rs, 404, {error: 'tag'});
 ```
 
-If the tag `to` already exists for the user, we return a 409 with body `{error: 'exists'}`. This avoids merging an existing tag onto a new tag through a rename operation.
-
-```javascript
-            if (s.last [1])          return reply (rs, 409, {error: 'exists'});
-```
-
 If the tag is shared with one or more users, we return a 409 with body `{error: 'shared'}`. We do not want shared tags to be renamed because this can cause confusion for users with whom tags are shared.
 
 ```javascript
-            var tagIsShared = dale.stop (s.last [2], true, function (shared) {
+            var tagIsShared = dale.stop (s.last [1], true, function (shared) {
                return b.from === shared.split (':').slice (1).join (':');
             });
             if (tagIsShared) return reply (rs, 409, {error: 'shared'});
 ```
 
-If we're here, all validations have passed and we are ready to perform the tag renaming.
-
-We rename `tag:USERNAME:FROM` to `tag:USERNAME:TO`.
+If we're here, all validations have passed and we are ready to perform the tag renaming. We start by deleting `tag:USERNAME:FROM`.
 
 ```javascript
             var multi = redis.multi ();
-            multi.rename ('tag:' + rq.user.username + ':' + b.from, 'tag:' + rq.user.username + ':' + b.to);
+            multi.del ('tag:' + rq.user.username + ':' + b.from);
 ```
 
-We remove `from` and add `to` to `tags:USERNAME`.
+We remove `from` and add `to` to `tags:USERNAME`. If the `to` tag is already in `tags:username`, this will be a no-op since `tags:USERNAME` is a set.
 
 ```javascript
             multi.srem ('tags:' + rq.user.username, b.from);
             multi.sadd ('tags:' + rq.user.username, b.to);
 ```
 
-For each of the pivs that have the `from` tag, we remove the `from` tag and add `to` in each `pivt:ID` entry.
+For each of the pivs that have the `from` tag, we add an entry for it in `tag:USERNAME:TO`; we also remove the `from` tag and add `to` in each `pivt:ID` entry.
 
 ```javascript
             dale.go (s.last [0], function (id) {
+               multi.sadd ('tag:' + rq.user.username + ':' + b.to, id);
                multi.srem ('pivt:' + id, b.from);
                multi.sadd ('pivt:' + id, b.to);
             });
 ```
 
-We first start by parsing the existing hometags; if no hometags exist, we will instead create an empty array. We will then iterate the array of hometags and create a new one, where `b.from` will be replaced by `b.to`. If the array is empty, or `b.from` is not there, the new array will be the same to the old one.
+We now move to the hometags. We parse the hometags retrieved from the DB; if there were none, we initialize them to an empty array.
 
 ```javascript
-            var hometags = dale.go (teishi.parse (s.last [3]) || [], function (hometag) {
-                return hometag === b.from ? b.to : hometag;
-            });
+            var hometags = teishi.parse (s.last [2]) || [];
+```
+
+If the hometags contained the `from` tag, and the `to` tag is not there yet, we replace the `from` entry with the `to` entry.
+
+```javascript
+            if (inc (hometags, b.from) && ! inc (hometags, b.to)) hometags [hometags.indexOf (b.from)] = b.to;
 ```
 
 We will now update the array of hometags.
