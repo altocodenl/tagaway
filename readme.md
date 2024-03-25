@@ -50,7 +50,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 --------------
 - small tasks
    - **server**: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
-   - **server**: rename a tag X to an existing tag Y
    - **server/config**: fix google drive import
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
@@ -99,6 +98,14 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server/client: opt-in OCR recognition
    - server/client: rotate videos
    - server/client: investigate sharebox concept (web-reachable space where for N days any user can upload and download pivs)
+      - Create
+      - Edit name
+      - List all shareboxes
+      - List/see one sharebox (anyone with the link)
+      - Upload (anyone with the link)
+      - Delete piv (anyone with the link)
+      - Delete sharebox
+      - Autodelete after N days
    - server: set up prod mirror
    - server: Investigate soft deletion with different credentials in S3 for 7 days for programmatic errors or security breaches. https://d0.awsstatic.com/whitepapers/protecting-s3-against-object-deletion.pdf
    - server: add dedicated keys for uploads in order to improve getUploads performance

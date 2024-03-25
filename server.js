@@ -604,7 +604,7 @@ H.deletePiv = function (s, id, username) {
             multi.sadd ('taghash:' + username + ':' + tag, s.piv.hash);
          });
 
-         dale.go (s.tags.concat (['a::', 'u::', 'o::']), function (tag) {
+         dale.go (s.tags.concat (['a::', 'u::', 'o::', 'v::']), function (tag) {
             multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
          mexec (s, multi);
