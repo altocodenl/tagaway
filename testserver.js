@@ -3241,6 +3241,34 @@ suites.rename = function () {
          if (H.stop ('tags', rs.body, {tags: tk.pivs.small.dateTags.concat ('tag2'), hometags: ['tag2'], organized: 0, homeThumbs: {tag2: innerThumb, 'd::2014': innerThumb, 'd::M5': innerThumb}})) return false;
          return true;
       }],
+      ['upload medium piv to test merging of tags', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['tag piv to test merging', 'post', 'tag', {}, function (s) {return {tag: 'tag3', ids: [s.mediumId]}}, 200],
+      ['rename tag (merge tag2 onto tag3)', 'post', 'rename', {}, {from: 'tag2', to: 'tag3'}, 200],
+      ['get tags after renaming', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
+         var innerThumb = {id: s.smallId, currentMonth: [2014, 5], date: tk.pivs.small.date, tags: ['d::2014', 'd::M5', 'tag3']};
+         var tags = tk.pivs.small.dateTags.concat (tk.pivs.medium.dateTags).concat ('tag3');
+         tags.sort ();
+         if (H.stop ('tags', rs.body.tags, tags)) return false;
+         if (H.stop ('hometags', rs.body.hometags, ['tag3'])) return false;
+         return true;
+      }],
+      ['query pivs after renaming tag, with old tag name', 'post', 'query', {}, {tags: ['tag2'], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 0)) return false;
+         return true;
+      }],
+      ['query pivs after renaming tag, with new tag name', 'post', 'query', {}, {tags: ['tag3'], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 2)) return false;
+         if (H.stop ('body.pivs [0].tags', rs.body.pivs [0].tags, tk.pivs.medium.dateTags.concat ('tag3'))) return false;
+         if (H.stop ('body.pivs [1].tags', rs.body.pivs [1].tags, tk.pivs.small.dateTags.concat ('tag3'))) return false;
+         return true;
+      }],
       suites.auth.out (tk.users.user1),
       suites.auth.out (tk.users.user2),
    ];
