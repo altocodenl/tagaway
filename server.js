@@ -3287,7 +3287,7 @@ var routes = [
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
          ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
-         ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.sort',    b.sort, ['newest', 'oldest', 'upload', 'random'], 'oneOf', teishi.test.equal],
          ['body.from',    b.from, ['undefined', 'integer'], 'oneOf'],
          ['body.to',      b.to, 'integer'],
          b.from === undefined ? [
@@ -3306,6 +3306,8 @@ var routes = [
          ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
          ['body.updateLimit', b.updateLimit, ['undefined', 'integer'], 'oneOf'],
          b.updateLimit === undefined ? [] : ['body.updateLimit', b.updateLimit, {min: 1}, teishi.test.range],
+         ['body.limit',   b.limit, ['undefined', 'integer'], 'oneOf'],
+         b.limit === undefined ? [] : ['body.limit', b.limit, {min: 0}, teishi.test.range],
       ])) return;
 
       if (inc (b.tags, 'a::')) return reply (rs, 400, {error: 'all'});
@@ -3409,6 +3411,7 @@ var routes = [
                   if (k % 2 === 0) return [v, piv [k + 1]];
                });
             });
+            if (b.limit !== undefined) output.pivs = output.pivs.slice (0, b.limit);
             output.pivs = dale.go (output.pivs, function (piv) {
                var vid = piv.vid ? true : undefined;
                if (piv.vid && piv.vid.match ('pending')) vid = 'pending';
@@ -3436,6 +3439,7 @@ var routes = [
                   format:     ! ENV ? piv.format             : undefined
                };
             });
+            if (b.sort === 'random') H.shuffleArray (output.pivs);
             if (b.timeHeader) {
                var lastMonth = [0, 1];
                dale.go (output.timeHeader, function (v, k) {

@@ -565,7 +565,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    tags: [STRING, ...],
    mindate: INT|UNDEFINED,
    maxdate: INT|UNDEFINED,
-   sort: newest|oldest|upload,
+   sort: newest|oldest|upload|random,
    from: INT|UNDEFINED,
    fromDate: INT|UNDEFINED,
    to: INT,
@@ -573,7 +573,8 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    idsOnly: BOOLEAN|UNDEFINED,
    timeHeader: BOOLEAN|UNDEFINED,
    refresh: BOOLEAN|UNDEFINED,
-   updateLimit: INT|UNDEFINED
+   updateLimit: INT|UNDEFINED,
+   limit: INT|UNDEFINED,
 }
 ```
    Otherwise, a 400 is returned with body `{error: ...}`.
@@ -583,9 +584,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - `untagged` can be included on `body.tags` to retrieve untagged pivs. Untagged pivs are those that have no user tags on them - tags added automatically by the server (such as year/month tags or geotags) don't count as tags in this regard.
    - Each of the returned pivs will have all the tags present in `body.tags`. The only exception to this rule are year tags, on which the query returns pivs that contain at least one of the given date tags. For example, the query `['d::2018', 'd::2019']` will return pivs from both 2018 and 2019.
    - If defined, `body.mindate` & `body.maxdate` must be UTC dates in milliseconds.
-   - `body.sort` determines whether sorting is done by `newest`, `oldest`, or `upload`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
+   - `body.sort` determines whether sorting is done by `newest`, `oldest`, `upload` or `random`. The first two criteria use the *earliest* date that can be retrieved from the metadata of the piv, or the `lastModified` field. In the case of the `upload`, the sorting is by *newest* upload date; there's no option to sort by oldest upload.
    - If `body.recentlyTagged` is present, the `'untagged'` tag must be on the query. `recentlyTagged` is a list of ids that, if they are ids of piv owned by the user (or to which the user has access through a shared tag), will be included as a result of the query, even if they are not untagged pivs.
    - If `body.updateLimit` is set to an integer, no pivs uploaded after that date will be considered in the query.
+   - If `body.limit` is set to an integer, only the first `body.limit` pivs will be returned. This is equivalent to setting `from` to 0 and `to` to `body.limit`.
    - If `body.refresh` is set to `true`, this will be considered as a request triggered by an automatic refresh by the client. This only makes a difference for statistical purposes.
    - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, 'o::': INT, 'u::': 0, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
@@ -3192,7 +3194,7 @@ Here are the requirements for the body (taken from the documentation of `POST /q
          ['body.tags',    b.tags, 'string', 'each'],
          ['body.mindate', b.mindate,  ['undefined', 'integer'], 'oneOf'],
          ['body.maxdate', b.maxdate,  ['undefined', 'integer'], 'oneOf'],
-         ['body.sort',    b.sort, ['newest', 'oldest', 'upload'], 'oneOf', teishi.test.equal],
+         ['body.sort',    b.sort, ['newest', 'oldest', 'upload', 'random'], 'oneOf', teishi.test.equal],
          ['body.from',    b.from, ['undefined', 'integer'], 'oneOf'],
          ['body.to',      b.to, 'integer'],
          b.from === undefined ? [
@@ -3211,6 +3213,8 @@ Here are the requirements for the body (taken from the documentation of `POST /q
          ['body.refresh', b.refresh, ['undefined', 'boolean'], 'oneOf'],
          ['body.updateLimit', b.updateLimit, ['undefined', 'integer'], 'oneOf'],
          b.updateLimit === undefined ? [] : ['body.updateLimit', b.updateLimit, {min: 1}, teishi.test.range],
+         ['body.limit',   b.limit, ['undefined', 'integer'], 'oneOf'],
+         b.limit === undefined ? [] : ['body.limit', b.limit, {min: 0}, teishi.test.range],
       ])) return;
 ```
 
@@ -3611,7 +3615,7 @@ We now will add all the ids into a sorted set at key `QID-sort`, which will sort
    'local sortField = query.query.sort == "upload" and "dateup" or "date";',
 ```
 
-We now iterate the pivi ids; for each piv, we get its date and its `dateup` (uploaded date).
+We now iterate the piv ids; for each piv, we get its date and its `dateup` (uploaded date).
 
 If the date is inside the range requested by the query, and the `dateup` field of the piv is not greater than `query.query.updateLimit` (if `updateLimit` is present), we add it to `QID-sort` with its date (the date being the score of the ZSET entry).
 
@@ -4260,6 +4264,12 @@ We do the same thing for each of the pivs in `output.pivs`; `output.pivs` has th
             });
 ```
 
+If `b.limit` is passed, we truncate `output.pivs` to the desired length.
+
+```javascript
+            if (b.limit !== undefined) output.pivs = output.pivs.slice (0, b.limit);
+```
+
 We now iterate the pivs to apply some modifications to them.
 
 ```javascript
@@ -4343,6 +4353,12 @@ This concludes the data manipulation on `output.pivs`.
 ```javascript
                };
             });
+```
+
+If the sort parameter is set to `random`, we shuffle `output.pivs`.
+
+```javascript
+            if (b.sort === 'random') H.shuffleArray (output.pivs);
 ```
 
 If `b.timeHeader` is present, we will potentially add a `lastMonth` entry to `output`.
