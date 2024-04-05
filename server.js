@@ -3411,7 +3411,10 @@ var routes = [
                   if (k % 2 === 0) return [v, piv [k + 1]];
                });
             });
+
+            if (b.sort === 'random') H.shuffleArray (output.pivs);
             if (b.limit !== undefined) output.pivs = output.pivs.slice (0, b.limit);
+
             output.pivs = dale.go (output.pivs, function (piv) {
                var vid = piv.vid ? true : undefined;
                if (piv.vid && piv.vid.match ('pending')) vid = 'pending';
@@ -3439,7 +3442,6 @@ var routes = [
                   format:     ! ENV ? piv.format             : undefined
                };
             });
-            if (b.sort === 'random') H.shuffleArray (output.pivs);
             if (b.timeHeader) {
                var lastMonth = [0, 1];
                dale.go (output.timeHeader, function (v, k) {

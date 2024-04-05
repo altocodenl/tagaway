@@ -4264,6 +4264,12 @@ We do the same thing for each of the pivs in `output.pivs`; `output.pivs` has th
             });
 ```
 
+If the sort parameter is set to `random`, we shuffle `output.pivs`.
+
+```javascript
+            if (b.sort === 'random') H.shuffleArray (output.pivs);
+```
+
 If `b.limit` is passed, we truncate `output.pivs` to the desired length.
 
 ```javascript
@@ -4353,12 +4359,6 @@ This concludes the data manipulation on `output.pivs`.
 ```javascript
                };
             });
-```
-
-If the sort parameter is set to `random`, we shuffle `output.pivs`.
-
-```javascript
-            if (b.sort === 'random') H.shuffleArray (output.pivs);
 ```
 
 If `b.timeHeader` is present, we will potentially add a `lastMonth` entry to `output`.
