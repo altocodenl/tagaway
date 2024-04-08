@@ -269,6 +269,7 @@ H.isUserTag = function (tag) {
 }
 
 H.shuffleArray = function (array) {
+   if (array.length === 0) return array;
    dale.go (dale.times (array.length - 1, array.length - 1, -1), function (k) {
       var randomIndex = Math.floor (Math.random () * (k + 1));
       var temp = array [k];
