@@ -608,6 +608,8 @@ H.deletePiv = function (s, id, username) {
          dale.go (s.tags.concat (['a::', 'u::', 'o::', 'v::']), function (tag) {
             multi.srem ('tag:' + s.piv.owner + ':' + tag, s.piv.id);
          });
+
+         multi.del ('querycache:' + username);
          mexec (s, multi);
       },
       [a.get, H.tagCleanup, username, '@tags', [id], '@sho'],
@@ -999,6 +1001,7 @@ H.addTags = function (s, tags, username, id) {
       multi.sadd ('tags:' + username, tag);
    });
    if (tags.length > 0) multi.srem ('tag:' + username + ':u::', id);
+   if (tags.length > 0) multi.del ('querycache:' + username);
    mexec (s, multi);
 }
 
@@ -1054,6 +1057,8 @@ H.updateDates = function (s, repeatedOrAlreadyUploaded, piv, name, lastModified,
    var multi = redis.multi ();
    // If there are new dates with different values than the ones already held, add them to the dates object.
    if (updateDates) multi.hset ('piv:' + piv.id, 'dates', JSON.stringify (dates));
+
+   multi.del ('querycache:' + piv.owner);
 
    // If the picture has a valid Date/Time Original date, keep the date and move on.
    if (piv.dateSource === 'Date/Time Original') return mexec (s, multi);
@@ -1138,6 +1143,9 @@ H.tagCleanup = function (s, username, tags, ids, sho, unshare) {
          dale.go (tags, function (tag) {
             multi.exists ('tag:'     + username + ':' + tag);
             multi.exists ('taghash:' + username + ':' + tag);
+         });
+         dale.go (sho, function (user) {
+            multi.del ('querycache:' + user.split (':') [0]);
          });
          multi.get ('hometags:' + username);
          mexec (s, multi);
@@ -2083,9 +2091,10 @@ var routes = [
                      multi.del ('oa:' + v + ':ref:' + user.username);
                      multi.del ('imp:' + v + ':' + user.username);
                   });
-                  multi.del ('shm:'   + user.username);
-                  multi.del ('sho:'   + user.username);
-                  multi.del ('ulog:'  + user.username);
+                  multi.del ('shm:'        + user.username);
+                  multi.del ('sho:'        + user.username);
+                  multi.del ('ulog:'       + user.username);
+                  multi.del ('querycache:' + user.username);
                   multi.srem ('users', user.username);
                   // TODO: add this logic back after enabling sharing! These lookups are expensive, so we temporarily turn them off. These will be replaced by sets of keys with hashtags and taghashes.
                   if (! ENV) dale.go (s.hashtags.concat (s.taghashes), function (v) {multi.del (v)});
@@ -2747,6 +2756,7 @@ var routes = [
                   s.bymp4 = s.bymp4.size;
                   var multi = redis.multi ();
                   multi.hmset ('piv:' + piv.id, {vid: id, bymp4: s.bymp4});
+                  multi.del ('querycache:' + rq.user.username);
                   mexec (s, multi);
                },
                function (s) {
@@ -2864,6 +2874,8 @@ var routes = [
                multi.srem ('taghash:' + rq.user.username + ':' + hashtag, s.hash);
             });
 
+            multi.del ('querycache:' + rq.user.username);
+
             mexec (s, multi);
          },
          function (s) {
@@ -2946,6 +2958,7 @@ var routes = [
          [mexec, multi],
          function (s) {
             var multi = redis.multi ();
+            multi.del ('querycache:' + rq.user.username);
 
             if (dale.stop (s.last, true, function (piv) {
                if (piv === null || piv.owner !== rq.user.username) {
@@ -2997,6 +3010,7 @@ var routes = [
          [mexec, multi],
          function (s) {
             var multi = redis.multi ();
+            multi.del ('querycache:' + rq.user.username);
 
             if (dale.stop (s.last, true, function (piv) {
                if (piv === null || piv.owner !== rq.user.username) {
@@ -3072,7 +3086,7 @@ var routes = [
                }
             ]);
          },
-         ! b.del ? [] : function (s) {
+         ! b.del ? [Redis, 'smembers', 'sho:' + rq.user.username] : function (s) {
             var multi = redis.multi ();
             dale.go (s.pivs, function (piv) {
                if (piv.owner === rq.user.username) multi.smembers ('pivt:' + piv.id);
@@ -3083,10 +3097,16 @@ var routes = [
          },
          function (s) {
             var multi = redis.multi ();
+            multi.del ('querycache:' + rq.user.username);
             if (b.del) {
                s.sho = teishi.last (s.last);
                s.ids = [];
             }
+            else s.sho = s.last;
+
+            dale.go (s.sho, function (userAndTag) {
+               multi.del ('querycache:' + userAndTag.split (':') [0]);
+            });
 
             dale.go (s.pivs, function (piv, k) {
                if (! b.del) {
@@ -3343,51 +3363,66 @@ var routes = [
             },
             // End of the refreshQuery functionality
          ],
-         [Redis, 'smembers', 'shm:' + rq.user.username],
+         [Redis, 'hget', 'querycache:' + rq.user.username, teishi.str (b)],
          function (s) {
-            var forbidden = dale.stopNot (b.tags, undefined, function (tag) {
-               if (tag.match (/^s::/) && ! inc (s.last, tag.replace ('s::', ''))) return tag;
-            });
-            if (forbidden) return reply (rs, 403, {tag: forbidden});
+            if (s.last) return s.next ([null, s.last]);
+            a.seq (s, [
+               [Redis, 'smembers', 'shm:' + rq.user.username],
+               function (s) {
+                  var forbidden = dale.stopNot (b.tags, undefined, function (tag) {
+                     if (tag.match (/^s::/) && ! inc (s.last, tag.replace ('s::', ''))) return tag;
+                  });
+                  if (forbidden) return reply (rs, 403, {tag: forbidden});
 
-            var query = {
-               username: rq.user.username,
-               query:    b,
-               dateGeoTags: dale.fil (b.tags, undefined, function (tag) {
-                  if (H.isGeoTag (tag) || H.isDateTag (tag)) return tag;
-               }),
-               userTags: dale.fil (b.tags, undefined, function (tag) {
-                  if (inc (['u::', 'o::'], tag) || H.isUserTag (tag)) return tag;
-               }),
-               ownTagsPre:    dale.fil (b.tags, undefined, function (tag) {
-                  if (! tag.match (/^s::/) && tag !== 't::') return 'tag:' + rq.user.username + ':' + tag;
-               }),
-               sharedTags:    dale.obj (s.last, function (v)   {return [v, true]}),
-               sharedTagsPre: dale.go  (s.last, function (tag) {return 'tag:' + tag}),
-               relevantUsers: {},
-               untagged:      inc (b.tags, 'u::'),
-               toOrganize:    inc (b.tags, 't::')
-            };
+                  var query = {
+                     username: rq.user.username,
+                     query:    b,
+                     dateGeoTags: dale.fil (b.tags, undefined, function (tag) {
+                        if (H.isGeoTag (tag) || H.isDateTag (tag)) return tag;
+                     }),
+                     userTags: dale.fil (b.tags, undefined, function (tag) {
+                        if (inc (['u::', 'o::'], tag) || H.isUserTag (tag)) return tag;
+                     }),
+                     ownTagsPre:    dale.fil (b.tags, undefined, function (tag) {
+                        if (! tag.match (/^s::/) && tag !== 't::') return 'tag:' + rq.user.username + ':' + tag;
+                     }),
+                     sharedTags:    dale.obj (s.last, function (v)   {return [v, true]}),
+                     sharedTagsPre: dale.go  (s.last, function (tag) {return 'tag:' + tag}),
+                     relevantUsers: {},
+                     untagged:      inc (b.tags, 'u::'),
+                     toOrganize:    inc (b.tags, 't::')
+                  };
 
-            b.tags = dale.fil (b.tags, 't::', function (v) {return v});
+                  b.tags = dale.fil (b.tags, 't::', function (v) {return v});
 
-            if (! query.untagged) dale.go (b.tags, function (tag) {
-               if (! tag.match (/^s::/)) return;
-               tag = tag.replace ('s::', '').split (':');
-               if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
-               query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
-            });
-            if (! query.untagged && ! dale.keys (query.relevantUsers).length) dale.go (s.last, function (tag) {
-               tag = tag.split (':');
-               if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
-               query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
-            });
+                  if (! query.untagged) dale.go (b.tags, function (tag) {
+                     if (! tag.match (/^s::/)) return;
+                     tag = tag.replace ('s::', '').split (':');
+                     if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
+                     query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
+                  });
+                  if (! query.untagged && ! dale.keys (query.relevantUsers).length) dale.go (s.last, function (tag) {
+                     tag = tag.split (':');
+                     if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
+                     query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
+                  });
 
-            var multi = redis.multi ();
-            s.startLua = Date.now ();
-            multi.set (qid, JSON.stringify (query));
-            multi.evalsha (H.query, 1, qid);
-            mexec (s, multi);
+                  var multi = redis.multi ();
+                  s.startLua = Date.now ();
+                  multi.set (qid, JSON.stringify (query));
+                  multi.evalsha (H.query, 1, qid);
+                  mexec (s, multi);
+               },
+               function (s) {
+                  var result = s.last;
+                  a.seq (s, [
+                     [Redis, 'hset', 'querycache:' + rq.user.username, teishi.str (b), result [1]],
+                     function (s) {
+                        s.next (result);
+                     }
+                  ]);
+               }
+            ]);
          },
          function (s) {
             var output = teishi.parse (s.last [1]);
@@ -3508,13 +3543,14 @@ var routes = [
             if (! s.last && action === 'sho') return reply (rs, 404, {error: 'tag'});
             if (! s.last && action === 'shm') return reply (rs, 403);
             var multi = redis.multi ();
+            multi.del ('querycache:' + rq.user.username);
             multi [b.del ? 'srem' : 'sadd'] (action + ':' + rq.user.username, b.whom + ':' + b.tag);
             if (action === 'sho' && b.del) multi.srem ('shm:' + b.whom, rq.user.username + ':' + b.tag);
             if (b.del) multi.smembers ('tag:' + (action === 'sho' ? rq.user.username : b.whom) + ':' + b.tag);
             mexec (s, multi);
          },
          function (s) {
-            if (! s.last [0]) return reply (rs, 200);
+            if (! s.last [1]) return reply (rs, 200);
             s.next ();
          },
          ! b.del ? [] : [
@@ -3573,9 +3609,10 @@ var routes = [
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tag:'      + rq.user.username + ':' + b.from);
-            multi.smembers ('sho:'      + rq.user.username);
-            multi.get      ('hometags:' + rq.user.username);
+            multi.smembers ('tag:'        + rq.user.username + ':' + b.from);
+            multi.smembers ('sho:'        + rq.user.username);
+            multi.get      ('hometags:'   + rq.user.username);
+            multi.del      ('querycache:' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
@@ -3621,6 +3658,7 @@ var routes = [
             multi.smembers ('tag:'      + rq.user.username + ':' + b.tag);
             multi.smembers ('sho:'      + rq.user.username);
             multi.get      ('hometags:' + rq.user.username);
+            multi.del      ('querycache:' + rq.user.username);
             mexec (s, multi);
          }],
          function (s) {
@@ -3794,6 +3832,7 @@ var routes = [
             },
             function (s) {
                var multi = redis.multi ();
+               multi.del ('querycache:' + rq.user.username);
                dale.go (s.last, function (tags, k) {
                   multi.hdel ('piv:' + s.allPivs [k], 'loc');
                   dale.go (tags, function (tag) {
@@ -3809,8 +3848,12 @@ var routes = [
             [H.log, rq.user.username, {ev: 'geotagging', type: b.operation}],
             [reply, rs, 200]
          ] : [
-            [Redis, 'set', 'geo:' + rq.user.username, Date.now ()],
-            [Redis, 'hset', 'users:' + rq.user.username, 'geo', 1],
+            [function (s) {
+               var multi = redis.multi ();
+               multi.set ('geo:' + rq.user.username, Date.now ());
+               multi.hset ('users:' + rq.user.username, 'geo', 1);
+               mexec (s, multi);
+            }],
             [H.log, rq.user.username, {ev: 'geotagging', type: b.operation}],
             function (s) {
                // We don't wait for the process to be completed to respond to the request.
@@ -3859,6 +3902,7 @@ var routes = [
                            multi.sadd ('pivt:' + piv,                          tag);
                            multi.sadd ('tags:' + rq.user.username, tag);
                         });
+                        multi.del ('querycache:' + rq.user.username);
                         multi.exec (cb);
                      }
                   ], function (s, error) {

@@ -40,8 +40,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
-   - **server: investigate bug with piv with location but no geotags**
-   - server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function
+   - **server: line 2270 add check for start <= end**
+   - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
+   - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**
    - server/client/mobile: require csrf token for logging out (also ac;log)
    - client: fix phantom selection when scrolling with a large selection
    - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
@@ -49,9 +50,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
-   - **server**: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
-   - **server/config**: fix google drive import
    - **server: add cache for query that works on the last query, delete it on any user operation (tag|rotate|upload|delete|mp4conv|share accept/remove), SETEX 60s for changes on shared tags**
+   - **server: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds**
+   - **server/config: fix google drive import**
    - **Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.**
    - **server: process to review unsupported formats, invalid pivs and errored mp4 conversions**
    - server: review format errors with files that have a jpg extension
