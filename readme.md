@@ -40,10 +40,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
-   - **server: remove all non alphanumeric characters from verify tokens**
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
    - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**
-   - server/client/mobile: require csrf token for logging out (also ac;log)
    - client: fix phantom selection when scrolling with a large selection
    - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour

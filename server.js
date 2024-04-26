@@ -1806,8 +1806,8 @@ var routes = [
          // TODO: don't do check to users, verify type of error returned by giz directly to distinguish 403 from 500
          [a.make (giz.signup), b.username, b.password],
          function (s) {
-            // Even when URI encoded, two or more forward slashes will be converted to just one by the browser, so we replace them altogether by dashes.
-            s.verifytoken = s.verifytoken.replace (/\//g, '-');
+            // Even when URI encoded, users sometimes experience mangling of the verify token. Therefore, we just remove all non-alphanumeric characters from the token.
+            s.verifytoken = s.verifytoken.replace (/[^a-z0-9]/gi, '');
             var multi = redis.multi ();
             multi.set ('verifytoken:' + s.verifytoken, b.email);
             multi.set ('email:' + b.email, b.username);
