@@ -41,6 +41,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 - bugs
    - **server: line 2270 add check for start <= end**
+   - **server: remove all non alphanumeric characters from verify tokens**
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
    - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**
    - server/client/mobile: require csrf token for logging out (also ac;log)
@@ -2282,6 +2283,8 @@ Note we wrap the afunction in an array, to indicate astack that this is a single
 
 Note also that if `unshare` is present, we skip this asynchronous function.
 
+Note also we delete the `querycache` key for all of the users contained in the `sho` argument.
+
 ```javascript
       [function (s) {
          if (unshare) return s.next ();
@@ -2289,6 +2292,9 @@ Note also that if `unshare` is present, we skip this asynchronous function.
          dale.go (tags, function (tag) {
             multi.exists ('tag:'     + username + ':' + tag);
             multi.exists ('taghash:' + username + ':' + tag);
+         });
+         dale.go (sho, function (user) {
+            multi.del ('querycache:' + user.split (':') [0]);
          });
          multi.get ('hometags:' + username);
          mexec (s, multi);
@@ -2618,8 +2624,10 @@ This concludes the asynchronous detour of `sharedPivs`.
 
 If we're performing an untagging operation, we iterate through `s.pivs` and, for each piv that is owned by the user, we return its list of tags. We also do so for each piv not owned by the user but potentially tagged. While we don't need the list of tags in the case of shared pivs, we have added the call anyway to have one entry per piv, as well as to make the code more illustrative than doing a dummy call `multi.get ('foo')` - the difference in performance should be negligible.
 
+If we're performing a tagging operation, we simply get all the entries in `sho:USERNAME`.
+
 ```javascript
-         ! b.del ? [] : function (s) {
+         ! b.del ? [Redis, 'smembers', 'sho:' + rq.user.username] : function (s) {
             var multi = redis.multi ();
             dale.go (s.pivs, function (piv) {
                if (piv.owner === rq.user.username) multi.smembers ('pivt:' + piv.id);
@@ -2642,13 +2650,30 @@ We create another `multi` operation.
             var multi = redis.multi ();
 ```
 
+We delete the querycache key for the user.
+
+```javascript
+            multi.del ('querycache:' + rq.user.username);
+```
+
 If this is an untagging operation, we store the last operation from the last set of operations (the `smembers` call to `sho:USERNAME`) in `s.sho`. We then set up, `s.ids` an array of ids of pivs that are necessary for performing hashtag cleanup and will be passed to `H.tagCleanup` later.
+
+If this is a tagging operation, we simply get `s.sho` from the last call we made to redis before.
 
 ```javascript
             if (b.del) {
                s.sho = teishi.last (s.last);
                s.ids = [];
             }
+            else s.sho = s.last;
+```
+
+For each of the users with which the user is sharing tags, we remove their querycache keys, since the changes to the user's own tags can potentially affect the result of a query for those with whom the user shares tags.
+
+```javascript
+            dale.go (s.sho, function (userAndTag) {
+               multi.del ('querycache:' + userAndTag.split (':') [0]);
+            });
 ```
 
 We start iterating the pivs.
@@ -3244,20 +3269,34 @@ We define a variable `qid` to serve as a prefix for some temporary keys we will 
       var qid = 'query-' + uuid ();
 ```
 
-We start the query process, invoking `astop`. We first bring all the tags shared with the user.
+We start the query process, invoking `astop`. We first get the `querycache:USERNAME` key, in case the query we want to serve is already cached. Note that the key for the cached query will be the entire stringified body.
 
 ```javascript
       astop (rs, [
-         [Redis, 'smembers', 'shm:' + rq.user.username],
+         [Redis, 'hget', 'querycache:' + rq.user.username, teishi.str (b)],
+```
+
+If we actually found an entry in the query cache for this particular query, we will pass it to the next afunction as an array of the shape `[null, RESULT]`. This is so because this is the same format in which the Lua script that performs the query (if the query is not cached) returns the result.
+
+```javascript
+         function (s) {
+            if (s.last) return s.next ([null, s.last]);
+```
+
+If we're here, we will need to execute the query. We start by getting the list of tags shared with the user.
+
+```javascript
+            a.seq (s, [
+               [Redis, 'smembers', 'shm:' + rq.user.username],
 ```
 
 We iterate the tags from the query to find any shared tags (which start with `'s::'`) that are actually not shared with the user. If we find one, we stop the iteration and we return a 403 with body `{tag: TAG}`.
 
 ```javascript
-            var forbidden = dale.stopNot (b.tags, undefined, function (tag) {
-               if (tag.match (/^s::/) && ! inc (s.last, tag.replace ('s::', ''))) return tag;
-            });
-            if (forbidden) return reply (rs, 403, {tag: forbidden});
+                  var forbidden = dale.stopNot (b.tags, undefined, function (tag) {
+                     if (tag.match (/^s::/) && ! inc (s.last, tag.replace ('s::', ''))) return tag;
+                  });
+                  if (forbidden) return reply (rs, 403, {tag: forbidden});
 ```
 
 If we're here, the query is valid.
@@ -3269,102 +3308,101 @@ The query endpoint is the core read operation of the app and is constantly invok
 Lua, however, is a significantly more limited language than Javascript, so pre-processing some information in Javascript can save us considerable code. This is exactly what we're going to do now within the `query` variable.
 
 ```javascript
-         function (s) {
-            var query = {
+                  var query = {
 ```
 
 We pass the `username` of the querying user, as well as the entire query.
 
 ```javascript
-               username: rq.user.username,
-               query:    b,
+                     username: rq.user.username,
+                     query:    b,
 ```
 
 We group all the requested geo and date tags into `dateGeoTags`.
 
 ```javascript
-               dateGeoTags: dale.fil (b.tags, undefined, function (tag) {
-                  if (H.isGeoTag (tag) || H.isDateTag (tag)) return tag;
-               }),
+                     dateGeoTags: dale.fil (b.tags, undefined, function (tag) {
+                        if (H.isGeoTag (tag) || H.isDateTag (tag)) return tag;
+                     }),
 ```
 
 We group all the requested own user tags (rather than user tags that were shared by other users, which are prepended by `'s::'`) into `userTags`. We also include `'u::'` (the tag for untagged pivs) and `'o::'` as well.
 
 ```javascript
-               userTags: dale.fil (b.tags, undefined, function (tag) {
-                  if (inc (['u::', 'o::'], tag) || H.isUserTag (tag)) return tag;
-               }),
+                     userTags: dale.fil (b.tags, undefined, function (tag) {
+                        if (inc (['u::', 'o::'], tag) || H.isUserTag (tag)) return tag;
+                     }),
 ```
 
 We group all non-shared tags into `ownTagsPre`, which will contain all the tags in the query that are not tags shared with the user, and which will be prepended with `'tag:USERNAME:'`. These can be directly used in calls to Redis without processing in Lua. Note we also avoid passing `'t::'`, since that's only a pseudo-tag to mark pivs that are not organized, and for which the query script will search by finding the *negation* of those pivs that have the tag `'o::'`.
 
 ```javascript
-               ownTagsPre:    dale.fil (b.tags, undefined, function (tag) {
-                  if (! tag.match (/^s::/) && tag !== 't::') return 'tag:' + rq.user.username + ':' + tag;
-               }),
+                     ownTagsPre:    dale.fil (b.tags, undefined, function (tag) {
+                        if (! tag.match (/^s::/) && tag !== 't::') return 'tag:' + rq.user.username + ':' + tag;
+                     }),
 ```
 
 We build an object `sharedTags` of the form `{SHAREDTAG1: true, ...}`, for easy lookup of whether a shared tag is shared with the user. Note we build it from `s.last`, which is the result from the call we did earlier to read all the tags shared with the user.
 
 ```javascript
-               sharedTags:    dale.obj (s.last, function (v)   {return [v, true]}),
+                     sharedTags:    dale.obj (s.last, function (v)   {return [v, true]}),
 ```
 
 We build an array `sharedTagsPre`, which will contain all the tags shared with the user, prepended with the prefix `'tag:'`. These can be directly used in calls to Redis without processing in Lua.
 
 ```javascript
-               sharedTagsPre: dale.go  (s.last, function (tag) {return 'tag:' + tag}),
+                     sharedTagsPre: dale.go  (s.last, function (tag) {return 'tag:' + tag}),
 ```
 
 We add a (for now) empty object `relevantUsers` that will group information from users that shared one or more tags with the user and which are relevant to the current query. We will populate this object in a moment.
 
 ```javascript
-               relevantUsers: {},
+                     relevantUsers: {},
 ```
 
 We set a flag `untagged` to indicate whether we want to query untagged pivs. This is very useful because if that's the case, then no shared pivs will be matched by the query (since shares are only done through tags).
 
 ```javascript
-               untagged: inc (b.tags, 'u::')
+                     untagged:      inc (b.tags, 'u::'),
 ```
 
 Finally, we set a property `toOrganize`, which will be `true` if `'t::'` is in the list of tags.
 
 ```javascript
-               toOrganize:    inc (b.tags, 't::')
-            };
+                     toOrganize:    inc (b.tags, 't::')
+                  };
 ```
 
 We remove `'t::'` from `b.tags`, since we want the script to avoid interpreting that tag as a user tag on the query.
 
 ```javascript
-            b.tags = dale.fil (b.tags, 't::', function (v) {return v});
+                  b.tags = dale.fil (b.tags, 't::', function (v) {return v});
 ```
 
 We iterate the tags of the query, only looking at shared tags. We only do this if `'u::'` is absent from the list of tags.
 
 ```javascript
-            if (! query.untagged) dale.go (b.tags, function (tag) {
-               if (! tag.match (/^s::/)) return;
+                  if (! query.untagged) dale.go (b.tags, function (tag) {
+                     if (! tag.match (/^s::/)) return;
 ```
 
 If this is indeed a shared tag, we remove its prefix (`s::`) and split it by its colons. These tags are of the form `USERNAME:TAGNAME`, so by splitting it by a colon we can access the username of the user that shared the tag with the querying user.
 
 ```javascript
-               tag = tag.replace ('s::', '').split (':');
+                     tag = tag.replace ('s::', '').split (':');
 ```
 
 If there's no entry in `relevantUsers` for the user sharing this tag, we initialize it to an empty array.
 
 ```javascript
-               if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
+                     if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
 ```
 
 We push the tag, prepended with `tag:` and including username, into the entry for this user inside `relevantUsers`.
 
 ```javascript
-               query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
-            });
+                     query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
+                  });
 ```
 
 If there were any shared tags requested on the query, then `relevantUsers` will look like this: `{USER1: ['tag:USER1:TAG1', ...], ...}`.
@@ -3372,19 +3410,19 @@ If there were any shared tags requested on the query, then `relevantUsers` will 
 Now, if there were no shared tags requested in the query, the relevant users are *all* of the users that shared tags with the querying user. So we iterate `s.last` (which is the list of all the tags shared with the querying user) and do the same operation. The only difference is that we don't remove the `s::` prefix since the tags brought from the database don't contain it. We only do this if `'u::'` is absent from the list of tags.
 
 ```javascript
-            if (! query.untagged && ! dale.keys (query.relevantUsers).length) dale.go (s.last, function (tag) {
-               tag = tag.split (':');
-               if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
-               query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
-            });
+                  if (! query.untagged && ! dale.keys (query.relevantUsers).length) dale.go (s.last, function (tag) {
+                     tag = tag.split (':');
+                     if (! query.relevantUsers [tag [0]]) query.relevantUsers [tag [0]] = [];
+                     query.relevantUsers [tag [0]].push ('tag:' + tag.join (':'));
+                  });
 ```
 
 We now define a `multi` operation. We will set the current time in `s.startLua` for performance tracking purposes. We then set the stringified query in the key `qid`.
 
 ```javascript
-            var multi = redis.multi ();
-            s.startLua = Date.now ();
-            multi.set (qid, JSON.stringify (query));
+                  var multi = redis.multi ();
+                  s.startLua = Date.now ();
+                  multi.set (qid, JSON.stringify (query));
 ```
 
 We will now start defining the Lua script! Or rather, we should say we will start now to *annotate* it. The script is actually defined earlier in `server.js`, before defining the routes, so the Lua script can be preloaded. We annotate the script here, since its natural context is the `POST /query` endpoint.
@@ -4173,7 +4211,7 @@ We concatenate the script lines into a single string, with each line separated b
 And with that, we're back on the `POST /query` endpoint and ready to invoke the script. Which we do, passing `1` (the number of keys) as an argument, as well as `qid` proper.
 
 ```javascript
-            multi.evalsha (H.query, 1, qid);
+                  multi.evalsha (H.query, 1, qid);
 ```
 
 Now, it is squarely unorthodox to write a Redis script that reads and writes keys that are not directly passed as arguments. Normally, these keys have to be passed, one by one, to the script. This restriction is absolutely impossible to work with in this case, where we don't even know some of the keys that we might have to access (for example, which `piv:ID` keys should we access?).
@@ -4185,7 +4223,29 @@ Our future plans to create a consistent partitioned Redis architecture will, how
 One final note: while the script reads all sorts of keys, it only writes keys with a certain prefix (starting with `qid`).
 
 ```javascript
-            mexec (s, multi);
+                  mexec (s, multi);
+               },
+```
+
+We now have to store the result of the query in `querycache`. We'll merely set, within `querycache:USERNAME`, the stringified body as key and as value, the second element returned by the lua script, which is an already stringified query result.
+
+```javascript
+               function (s) {
+                  var result = s.last;
+                  a.seq (s, [
+                     [Redis, 'hset', 'querycache:' + rq.user.username, teishi.str (b), result [1]],
+```
+
+We return the result to the next afunction. We then close all the afunctions that we opened when we were checking whether we had to query or not.
+
+```javascript
+                     function (s) {
+                        s.next (result);
+                     }
+                  ]);
+               }
+            ]);
+         },
 ```
 
 The output of the script will be in `s.last [1]` (since we used the same `multi` operation to set `qid`). We'll place it in the variable `output`.
@@ -4548,10 +4608,11 @@ If the user is attempting to accept/remove a share that hasn't been provided by 
 
 If we're here, we have performed all validations and are ready to perform the operation in question.
 
-If this is a share/unshare operation, we will add/remove the entry `WHOM:TAG` to/from `sho:USERNAME`. If it is an accept/remove share operation, we will add/remove the entry `WHOM:TAG` to/from `shm:USERNAME`.
+We will start by deleting the querycache key. Then, if this is a share/unshare operation, we will add/remove the entry `WHOM:TAG` to/from `sho:USERNAME`. If it is an accept/remove share operation, we will add/remove the entry `WHOM:TAG` to/from `shm:USERNAME`.
 
 ```javascript
             var multi = redis.multi ();
+            multi.del ('querycache:' + rq.user.username);
             multi [b.del ? 'srem' : 'sadd'] (action + ':' + rq.user.username, b.whom + ':' + b.tag);
 ```
 
@@ -4573,7 +4634,7 @@ If the adding/removing of the entry `WHOM:TAG` was a no-op (which means that the
 
 ```javascript
          function (s) {
-            if (! s.last [0]) return reply (rs, 200);
+            if (! s.last [1]) return reply (rs, 200);
 ```
 
 ```javascript
@@ -4692,15 +4753,16 @@ The `from` should be trimmed and a valid user tag - we'll check for this in a mi
       if (! H.isUserTag (b.to)) return reply (rs, 400, {error: 'tag'});
 ```
 
-We check for the existence of `tag:USERNAME:FROM`; also, we get the list of all tags shared by the user, as well as their hometags.
+We check for the existence of `tag:USERNAME:FROM`; also, we get the list of all tags shared by the user, as well as their hometags. We also delete the querycache key.
 
 ```javascript
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tag:'     + rq.user.username + ':' + b.from);
-            multi.smembers ('sho:'     + rq.user.username);
-            multi.get      ('hometags:' + rq.user.username);
+            multi.smembers ('tag:'        + rq.user.username + ':' + b.from);
+            multi.smembers ('sho:'        + rq.user.username);
+            multi.get      ('hometags:'   + rq.user.username);
+            multi.del      ('querycache:' + rq.user.username);
             mexec (s, multi);
          }],
 ```
@@ -4808,9 +4870,10 @@ We check for the existence of `tag:USERNAME:TAG`; also, we get the list of all t
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tag:'      + rq.user.username + ':' + b.tag);
-            multi.smembers ('sho:'      + rq.user.username);
-            multi.get      ('hometags:' + rq.user.username);
+            multi.smembers ('tag:'        + rq.user.username + ':' + b.tag);
+            multi.smembers ('sho:'        + rq.user.username);
+            multi.get      ('hometags:'   + rq.user.username);
+            multi.del      ('querycache:' + rq.user.username);
             mexec (s, multi);
          }],
 ```

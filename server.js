@@ -3655,9 +3655,9 @@ var routes = [
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.smembers ('tag:'      + rq.user.username + ':' + b.tag);
-            multi.smembers ('sho:'      + rq.user.username);
-            multi.get      ('hometags:' + rq.user.username);
+            multi.smembers ('tag:'        + rq.user.username + ':' + b.tag);
+            multi.smembers ('sho:'        + rq.user.username);
+            multi.get      ('hometags:'   + rq.user.username);
             multi.del      ('querycache:' + rq.user.username);
             mexec (s, multi);
          }],
