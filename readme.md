@@ -40,7 +40,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - bugs
-   - **server: line 2270 add check for start <= end**
    - **server: remove all non alphanumeric characters from verify tokens**
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
    - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**

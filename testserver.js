@@ -1867,8 +1867,8 @@ suites.upload.stream = function () {
                   }}, cb);
                }, next);
             }],
-            dale.go (['1', '1:2', '-1-0', '-2--1', '0-0', '1-1', '3-1', '0.1-0.5'], function (invalidRange) {
-               return ['request piv with invalid range header', 'get', function (s) {return 'piv/' + s [piv].id}, {range: 'bytes=' + invalidRange}, '', 400, H.cBody ({error: 'Invalid range'})];
+            dale.go ({noEnd: '1', noDash: '1:2', negative1: '-1-0', negative2: '-2--1', zero: '0-0', same: '1-1', inverted: '3-1', nonInteger: '0.1-0.5', outOfRange: '100000000-200000000'}, function (invalidRange, name) {
+               return ['request piv with invalid range header (' + name + ')', 'get', function (s) {return 'piv/' + s [piv].id}, {range: 'bytes=' + invalidRange}, '', 400, H.cBody ({error: 'Invalid range'})];
             }),
             dale.go (['0-', '0-100000', '0-1000000', 'lastPart'], function (range, k) {
                return ['request with range ' + range, 'get', function (s) {return 'piv/' + s [piv].id + (k === 0 ? '?original=1' : '')}, function (s) {

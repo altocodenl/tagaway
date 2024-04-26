@@ -2268,6 +2268,8 @@ var routes = [
             }
             else var path = Path.join (CONFIG.basepath, H.hash (s.piv.owner), s.piv.id), size = s.piv.byfs;
 
+            if (start >= size) return reply (rs, 400, {error: 'Invalid range'});
+
             var defaultChunkSize = 3000000;
             if (isNaN (end)) end = Math.min (size - 1, start + defaultChunkSize - 1);
             if (end > size - 1)  end = size - 1;
