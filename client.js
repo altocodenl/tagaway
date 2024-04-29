@@ -4082,7 +4082,7 @@ B.mrespond ([
          B.call (x, 'set', ['Data', 'hometags'], rs.body.hometags);
          if (! B.get ('State', 'query', 'tags')) return;
          var filterRemovedTags = dale.fil (B.get ('State', 'query', 'tags'), undefined, function (tag) {
-            if (inc (['u::', 'o::', 't::'], tag) || H.isRangeTag (tag)) return tag;
+            if (inc (['u::', 'o::', 't::', 'v::'], tag) || H.isRangeTag (tag)) return tag;
             if (inc (rs.body.tags, tag)) return tag;
          });
          if (filterRemovedTags.length === B.get ('State', 'query', 'tags').length) return;
@@ -5239,7 +5239,7 @@ views.pics = function () {
                         }).sort (function (a, b) {return a.slice (3) - b.slice (3)});
 
                         var taglist = dale.fil (queryTags, undefined, function (n, tag) {
-                           if (H.isDateTag (tag) || inc (['a::', 'u::', 'o::', 't::'], tag)) return;
+                           if (H.isDateTag (tag) || inc (['a::', 'u::', 'o::', 't::', 'v::'], tag)) return;
                            if (inc (selected, tag)) return tag;
                            if (tag.match (filterRegex)) return tag;
                         }).sort (function (a, b) {
@@ -5312,6 +5312,11 @@ views.pics = function () {
                               var tag = 'Organized';
                               var action = ['toggle', 'tag', 'o::'];
                            }
+                           else if (which === 'v::') {
+                              var Class = 'tag-list__item tag tag-list__item--untagged' + (inc (selected, which) ? ' tag--selected' : '');
+                              var tag = 'Videos';
+                              var action = ['toggle', 'tag', 'v::'];
+                           }
                            else if (H.isYearTag (which)) {
                               var Class = 'tag-list__item tag tag-list__item--time' + (inc (selected, which) ? ' tag--bolded' : '');
                            }
@@ -5351,7 +5356,7 @@ views.pics = function () {
                            if (! H.isDateTag (which) && ! inc (['f::', 'e::'], which)) numberOfPivs = ' ' + queryTags [which];
                            // Don't show nPivs for country tags if the tag itself is not selected.
                            if (H.isCountryTag (which) && ! inc (selected, which)) numberOfPivs = undefined;
-                           var disabledTag = (inc (['u::', 'o::', 't::'], which) && queryTags [which] === 0) || inc (['f::', 'e::'], which);
+                           var disabledTag = (inc (['u::', 'o::', 't::', 'v::'], which) && queryTags [which] === 0) || inc (['f::', 'e::'], which);
                            if (H.isMonthTag (which) && ! inc (monthTags, which)) disabledTag = true;
 
                            var showName = tag.replace (/^[a-z]::/, '');
@@ -5364,6 +5369,7 @@ views.pics = function () {
                               H.if (which === 'u::', H.putSvg ('itemUntagged')),
                               H.if (which === 't::', H.putSvg ('toOrganizeIcon')),
                               H.if (which === 'o::', H.putSvg ('organizedIcon')),
+                              H.if (which === 'v::', H.putSvg ('videoIcon')),
                               H.if (H.isDateTag (which), H.putSvg ('itemTime')),
                               H.if (H.isGeoTag (which) && ! H.isCountryTag (which), H.putSvg ('geoCity')),
                               H.if (H.isCountryTag (which), H.putSvg ('geoCountry')),
@@ -5401,6 +5407,7 @@ views.pics = function () {
                         return ['div', {class: 'sidebar__tags no-active-selection'}, ['ul', {class: 'tag-list tag-list--sidebar tag-list--view'}, [
                            makeTag ('a::'),
                            makeTag ('u::'),
+                           makeTag ('v::'),
                            makeTag ('t::'),
                            makeTag ('o::'),
                            ! rangeTag ? [
@@ -5655,6 +5662,7 @@ views.pics = function () {
                                        if (tag === 'u::') showName = 'Untagged';
                                        if (tag === 't::') showName = 'To Organize';
                                        if (tag === 'o::') showName = 'Organized';
+                                       if (tag === 'v::') showName = 'Videos';
                                        if (tag === 's::') showName = 'Selected (' + selected + ')';
                                        if (H.isRangeTag (tag)) showName = H.formatChunkDates (parseInt (tag.split (':') [2]), parseInt (tag.split (':') [3]));
                                        if (H.isMonthTag (tag)) showName = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] [showName.replace ('M', '')];
@@ -5663,6 +5671,7 @@ views.pics = function () {
                                           H.if (tag === 'u::', H.putSvg ('itemUntagged')),
                                           H.if (tag === 't::', H.putSvg ('toOrganizeIcon')),
                                           H.if (tag === 'o::', H.putSvg ('organizedIcon')),
+                                          H.if (tag === 'v::', H.putSvg ('videoIcon')),
                                           H.if (tag === 's::', H.putSvg ('selectedCircle')),
                                           H.if (H.isDateTag (tag), H.putSvg ('itemTime')),
                                           H.if (H.isGeoTag (tag) && ! H.isCountryTag (tag), H.putSvg ('geoCity')),

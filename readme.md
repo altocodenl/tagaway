@@ -48,7 +48,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
-   - **server/client: videos pseudo-tag**
    - **server/client: set location**
    - server: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
    - server/config: fix google drive import
@@ -586,10 +585,10 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - If `body.updateLimit` is set to an integer, no pivs uploaded after that date will be considered in the query.
    - If `body.limit` is set to an integer, only the first `body.limit` pivs will be returned. This is equivalent to setting `from` to 0 and `to` to `body.limit`.
    - If `body.refresh` is set to `true`, this will be considered as a request triggered by an automatic refresh by the client. This only makes a difference for statistical purposes.
-   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, 'o::': INT, 'u::': 0, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
+   - If the query is successful, a 200 is returned with body `pivs: [{...}], total: INT, tags: {'a::': INT, 'u::': INT, 't::': INT, 'o::': INT, 'v::': INT, otherTag1: INT, ...}, refreshQuery: true|UNDEFINED}`.
       - Each element within `body.pivs` is an object corresponding to a piv and contains these fields: `{date: INT, dateup: INT, id: STRING,  owner: STRING, name: STRING, dimh: INT, dimw: INT, tags: [STRING, ...], deg: INT|UNDEFINED, vid: UNDEFINED|'pending'|'error'|true}`.
       - `body.total` contains the number of total pivs matched by the query (notice it can be larger than the amount of pivs in `body.pivs`).
-      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The only exception is `a::`, which indicate the *total* amount of all pivs, irrespective of the query. `u::` stands for untagged pivs, `o::` for pivs marked as organized, and `t::` for pivs not yet marked as organized.
+      - `body.tags` is an object where every key is one of the tags relevant to the current query - if any of these tags is added to the tags sent on the request body, the result of the query will be non-empty. The values for each key indicate how many pivs within the query have that tag. The only exception is `a::`, which indicate the *total* amount of all pivs, irrespective of the query. `u::` stands for untagged pivs, `o::` for pivs marked as organized, and `t::` for pivs not yet marked as organized. `v::` stands for videos.
       - `body.refreshQuery`, if set, indicates that there's either an upload ongoing or a geotagging process ongoing or a video conversion to mp4 for one of the requested pivs (or multiple of them at the same time), in which case it makes sense to repeat the query after a short amount of time to update the results.
    - If `body.idsOnly` is present, only a list of ids will be returned (`{ids: [...]}`). This enables the "select all" functionality.
    - If `body.timeHeader` is present, a `timeHeader` field will be sent along with the other fields, having the form `{YYYY:MM: true|false, ...}`; each key is a year + month combination, and each value is set to `true` if that month will have all its pivs organized and set to `false` if that the year+month has one or more unorganized pivs. Months for which there is no entry have no pivs for the given query.
@@ -3908,10 +3907,16 @@ We need to add entries for `'o::'` and `'t::'`. We start by getting the number o
    '   local organized = redis.call ("hget", KEYS [1] .. "-tags", "o::") or 0;',
 ```
 
-We then set an entry for `'o::'` (this will only make a difference if there was there was no entry for it, in which case we'll place a `0`) and an entry for `'t::'` which will be the total pivs of the query minus the organized ones.
+We get the total amount of videos in our query. If we have none, we initialize it to 0.
 
 ```javascript
-   '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized));',
+   '   local videos    = redis.call ("hget", KEYS [1] .. "-tags", "v::") or 0;',
+```
+
+We then set an entry for `'o::'` (this will only make a difference if there was there was no entry for it, in which case we'll place a `0`) and an entry for `'t::'` which will be the total pivs of the query minus the organized ones. We will also set an entry for `v::`, which will be a no-op unless there are no videos, in which case we'll set the value to 0.
+
+```javascript
+   '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized), "v::", videos);',
 ```
 
 We add an entry labelled `'systags'` to `QID-perf`, since the work since the last performance entry was done to compute the amount of pivs per "system" tag (`a::`, `u::`, `o::` and `t::`).
@@ -4367,10 +4372,10 @@ We put the fields `id`, `name` and `owner` as they appear.
                   owner:   piv.owner,
 ```
 
-We sort the `tags` array and then put it.
+We sort the `tags` array and then place it. We only remove `v::` from the list, which the client already knows because of the `vid` field below.
 
 ```javascript
-                  tags:    piv.tags.sort (),
+                  tags:    dale.fil (piv.tags, 'v::', function (v) {return v}).sort (),
 ```
 
 We convert the following fields to integer and then place them: `date`, `dateup`, `dimh`, `dimw`.

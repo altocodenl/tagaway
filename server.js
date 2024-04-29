@@ -1534,7 +1534,8 @@ redis.script ('load', [
    '   end',
    '   redis.call ("hset", KEYS [1] .. "-tags", "u::", #redis.call ("sinter", KEYS [1] .. "-ids", "tag:" .. query.username .. ":u::"));',
    '   local organized = redis.call ("hget", KEYS [1] .. "-tags", "o::") or 0;',
-   '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized));',
+   '   local videos    = redis.call ("hget", KEYS [1] .. "-tags", "v::") or 0;',
+   '   redis.call ("hmset", KEYS [1] .. "-tags", "o::", organized, "t::", output.total - tonumber (organized), "v::", videos);',
    '   redis.call ("rpush", KEYS [1] .. "-perf", "systags", unpack (redis.call ("time")));',
    '   output.tags = redis.call ("hgetall", KEYS [1] .. "-tags");',
    '   redis.call ("del", KEYS [1] .. "-hashes", KEYS [1] .. "-tags");',
@@ -2857,6 +2858,10 @@ var routes = [
                piv.providerHash = providerKey + ':' + providerHash;
             }
             multi.sadd ('tag:' + rq.user.username + ':a::', piv.id);
+            if (piv.vid) {
+               multi.sadd ('tag:' + rq.user.username + ':v::', piv.id);
+               multi.sadd ('pivt:' + piv.id, 'v::');
+            }
 
             dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (s.geotags), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
@@ -3464,7 +3469,7 @@ var routes = [
                   id:      piv.id,
                   name:    piv.name,
                   owner:   piv.owner,
-                  tags:    piv.tags.sort (),
+                  tags:    dale.fil (piv.tags, 'v::', function (v) {return v}).sort (),
                   date:    parseInt (piv.date),
                   dateup:  parseInt (piv.dateup),
                   dimh:    parseInt (piv.dimh),
