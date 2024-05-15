@@ -10,7 +10,7 @@ All non-code documents related to the project are published in this [open folder
 
 ## Status
 
-tagaway is currently in private beta.
+tagaway is currently in public beta.
 
 The authors wish to thank [Browserstack](https://browserstack.com) for providing tools to test cross-browser compatibility.
 
@@ -42,6 +42,8 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 - bugs
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
    - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**
+   - **server: in GET /piv/ID, if conversion is in progress or errored but the original is requested, serve the original**
+   - server: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
    - client: fix phantom selection when scrolling with a large selection
    - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
    - server: prevent Whatsapp filenames with count that can be parsed into hour from being parsed as hour
@@ -49,7 +51,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 --------------
 - small tasks
    - **server/client: set location**
-   - server: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
    - server/config: fix google drive import
    - Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.
    - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
@@ -879,6 +880,8 @@ All the routes below require an admin user to be logged in.
 - tags:USERNAME (set): list of all tags created by the user. Does not include tags shared with the user, nor `a::` or `u::`, but it does include geotags and date tags.
 
 - hometags:USERNAME (string): stringified array of the form `[TAG1, ...]`, containing all the home tags of the user.
+
+- querycache:USERNAME (hash): each key is a stringified request body; the value is what the Lua query script last returned for that query.
 
 - shm:USERNAME (set): USERNAMEA:TAG, USERNAMEB:TAG (shared with me)
 
