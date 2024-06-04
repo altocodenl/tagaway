@@ -805,18 +805,22 @@ All the routes below require an admin user to be logged in.
    pass: STRING
    username: STRING
    email: STRING
-   type: STRING (one of tier1|tier2)
+   firstName: STRING|undefined
+   lastName: STRING|undefined
+   googleId: STRING|undefined (id from Google OAuth)
    created: INT
    lastActivity: INT
    geo: 1|undefined
-   suggestGeotagging: 1|undefined
    suggestSelection: 1|undefined
+   verificationPending: true|undefined
 
 - users (set): all the usernames that exist in the system
 
 - geo:USERNAME: INT|undefined, depending on whether there's an ongoing process to enable geotagging for the user.
 
 - email:EMAIL (string): key is email, value is username
+
+- oauth:PROVIDER:ID (string): PROVIDER is google|apple, value is username
 
 - verifytoken:TOKEN (string): key is token, value is email. Used to verify email addresses after a signup. Deleted after usage.
 

@@ -5,12 +5,12 @@ var teishi = require ('teishi');
 
 var noAuth        = dale.stop (process.argv, true, function (v) {return v === 'noAuth'});
 var noUpload      = dale.stop (process.argv, true, function (v) {return v === 'noUpload'});
-var noImport      = dale.stop (process.argv, true, function (v) {return v === 'noImport'});
+var noManual      = dale.stop (process.argv, true, function (v) {return v === 'noManual'});
 var debuggingMode = dale.stop (process.argv, true, function (v) {return v === 'debug'});
 
 var toRun = process.argv [2];
 process.argv [2] = undefined;
-if (teishi.inc (['noAuth', 'noUpload', 'noImport', 'debug'], toRun)) toRun = undefined;
+if (teishi.inc (['noAuth', 'noUpload', 'noManual', 'debug'], toRun)) toRun = undefined;
 
 // *** SETUP ***
 
@@ -35,7 +35,7 @@ var tk = {
    pivPath: 'test/',
    pivDataPath: 'test/pivdata.json',
    users: {
-      user1: {username: 'user1', password: 'foobar',            firstName: 'name1', email: 'user1@example.com', timezone:  240},
+      user1: {username: 'user1', password: 'foobar',            firstName: 'name1', email: 'info@altocode.nl', timezone:  240},
       user2: {username: 'user2', password: Math.random () + '', firstName: 'name2', email: 'user2@example.com', timezone: -240},
       user3: {username: 'user3', password: Math.random () + '', firstName: 'name3', email: 'user3@example.com', timezone: 0},
    }
@@ -532,8 +532,6 @@ var split = function (n) {
 
 var suites = {};
 
-// *** AUTH SUITES ***
-
 suites.auth = {
    login: function (user) {
       return ['login ' + user.username, 'post', 'auth/login', {}, function () {return {username: user.username, password: user.password, timezone: user.timezone}}, 200, H.setCredentials]
@@ -692,7 +690,7 @@ suites.auth = {
             s.recoveryToken1 = rs.body.token;
             return true;
          }],
-         ['recover password again to generate a new token', 'post', 'auth/recover', {}, {username: user.username}, 200, function (s, rq, rs) {
+         ['recover password again with email to generate a new token', 'post', 'auth/recover', {}, {username: user.email}, 200, function (s, rq, rs) {
             s.recoveryToken2 = rs.body.token;
             return true;
          }],
@@ -757,6 +755,178 @@ suites.auth = {
       ];
    }
 }
+
+suites.oauth = function () {
+   if (noManual) return [];
+   return [
+      H.invalidTestMaker ('google mobile signin', 'auth/signin/mobile/google', [
+         [[], 'object'],
+         [[], 'keys', ['token', 'platform', 'testToken']],
+         [['token'], 'string'],
+         [['platform'], 'values', ['android', 'ios']],
+         [['testToken'], 'object'],
+      ]),
+      ['dummy request before starting OAuth flow requiring manual input', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
+
+         var googleClientId = '764404427753-v129e6ckia1eebpra59bmv648pidtjma.apps.googleusercontent.com';
+         var googleRedirectURI = CONFIG.domain + 'auth/signin/web/google';
+         var googleURI = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + googleClientId + '&redirect_uri=' + googleRedirectURI + '&response_type=code&scope=openid%20email%20profile';
+         clog ('LOGIN NOW INTO GOOGLE', googleURI);
+
+         // Try for 20 seconds every second to see if the oauth flow is complete
+         H.tryTimeout (10, 2000, function (cb) {
+            redis.get ('oauth-token', function (error, user) {
+               if (error) return cb (null, null, error);
+               if (! user) return cb ('No user yet');
+               s.oauthToken = JSON.parse (user);
+               redis.get ('oauth-cookie', function (error, cookie) {
+                  if (error) return cb (null, null, error);
+                  if (! cookie) return cb ('No cookie yet');
+                  s.headers = {cookie: cookie};
+                  redis.get ('oauth-csrf', function (error, csrf) {
+                     if (error) return cb (null, null, error);
+                     if (! csrf) return cb ('No csrf token yet');
+                     s.csrf = csrf;
+
+                     var multi = redis.multi ();
+                     // Cleanup test keys
+                     multi.del ('oauth-token', 'oauth-cookie', 'oauth-csrf');
+                     multi.exec (function (error) {
+                        if (error) return cb (null, null, error);
+                        cb ();
+                     });
+                  });
+               });
+            });
+         }, next);
+      }],
+      // Note: we haven't add tests that send a malformed token, or a tampered one.
+      ['get account after creating user with oauth', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('type of body', type (rs.body), 'object')) return false;
+         if (H.stop ('type of logs', type (rs.body.logs), 'array')) return false;
+
+         if (type (rs.body.created) !== 'integer' || Math.abs (Date.now () - rs.body.created) > 5000) return clog ('Invalid created field', rs.body.created);
+
+         var error = dale.stopNot (['username', 'email', 'firstName', 'lastName', 'googleId'], undefined, function (field) {
+            if (type (rs.body [field]) !== 'string') return 'Invalid ' + field + ' field, must be string', rs.body [field];
+         });
+         if (error) return clog (error);
+
+         error = dale.stopNot (['geo', 'suggestSelection', 'onboarding'], undefined, function (field) {
+            if (rs.body [field] !== true) return 'Invalid ' + field + ' field, must be true', rs.body [field];
+         });
+         if (error) return clog (error);
+
+         if (H.stop ('type of body.logs', type (rs.body.logs), 'array')) return false;
+         if (H.stop ('body.logs length', rs.body.logs.length, 1)) return false;
+         if (H.stop ('body.logs [0].type', rs.body.logs [0].type, 'signup')) return false;
+
+         delete rs.body.logs;
+         s.oauthUser = rs.body;
+
+         s.headers = {};
+
+         return true;
+      }],
+      ['recover password as user that already did oauth login', 'post', 'auth/recover', {}, function (s) {return {username: s.oauthUser.email}}, 200, function (s, rq, rs) {
+         s.recoveryToken = rs.body.token;
+         return true;
+      }],
+      ['reset password', 'post', 'auth/reset', {}, function (s) {return {username: s.oauthUser.email, password: 'foobar', token: s.recoveryToken}}, 200],
+      ['login with username and password for the first time with user that was created through oauth', 'post', 'auth/login', {}, function (s) {return {username: s.oauthUser.email, password: 'foobar', timezone: 0}}, 200, H.setCredentials],
+      ['get account after logging in with username & password and check that it is the same user than the one created by oauth', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('type of body', type (rs.body), 'object')) return false;
+         if (H.stop ('type of logs', type (rs.body.logs), 'array')) return false;
+
+         if (type (rs.body.created) !== 'integer' || Math.abs (Date.now () - rs.body.created) > 5000) return clog ('Invalid created field', rs.body.created);
+
+         if (H.stop ('body.logs length', rs.body.logs.length, 4)) return false;
+         if (H.stop ('body.logs [0].type', rs.body.logs [0].type, 'signup')) return false;
+         if (H.stop ('body.logs [1].type', rs.body.logs [1].type, 'recover')) return false;
+         if (H.stop ('body.logs [2].type', rs.body.logs [2].type, 'reset')) return false;
+         if (H.stop ('body.logs [3].type', rs.body.logs [3].type, 'login')) return false;
+         delete rs.body.logs;
+
+         if (H.stop ('body', rs.body, s.oauthUser)) return false;
+
+         return true;
+      }],
+      ['delete account', 'post', 'auth/delete', {}, {}, 200, function (s, rq, rs) {
+         delete s.headers.cookie;
+         return true;
+      }],
+      // Lack of abstraction doesn't allow me here to user suites.auth.in passing as email `s.oauthToken.email`
+      ['create user anew using email from oauth but just using email/password', 'post', 'auth/signup', {}, function (s) {return {username: 'pacodelucia', email: s.oauthToken.email, password: 'foobar'}}, 200, function (s, rq, rs) {
+         s.validationToken = rs.body.token;
+         return true;
+      }],
+      ['verify new user', 'get', function (s) {return 'auth/verify/' + s.validationToken}, {}, '', 302],
+      ['login with username and password with user that was created through email', 'post', 'auth/login', {}, function (s) {return {username: s.oauthToken.email, password: 'foobar', timezone: 0}}, 200, H.setCredentials],
+      ['get account after creating user with username/password', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+
+         delete rs.body.logs;
+         s.emailUser = rs.body;
+         return true;
+      }],
+      ['login with oauth using token', 'post', 'auth/signin/mobile/google', {}, function (s) {return {token: 'DUMMY', testToken: s.oauthToken, platform: 'android'}}, 200, H.setCredentials],
+      ['get account after logging in with oauth to previously existing user', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body.logs length', rs.body.logs.length, 4)) return false;
+         if (H.stop ('body.logs [0].type', rs.body.logs [0].type, 'signup')) return false;
+         if (H.stop ('body.logs [1].type', rs.body.logs [1].type, 'verify')) return false;
+         if (H.stop ('body.logs [2].type', rs.body.logs [2].type, 'login')) return false;
+         if (H.stop ('body.logs [5].type', rs.body.logs [3].type, 'login')) return false;
+         delete rs.body.logs;
+
+         // Add firstName and lastName to email user, as the server should have done after the login with oauth
+         s.emailUser.firstName = s.oauthToken.given_name;
+         s.emailUser.lastName = s.oauthToken.family_name;
+         // Add googleId
+         s.emailUser.googleId = s.oauthToken.sub;
+
+         if (H.stop ('body', rs.body, s.emailUser)) return false;
+
+         // Change email in token to trigger an email change on the next login
+         s.changedOAuthToken = teishi.copy (s.oauthToken);
+         s.changedOAuthToken.email = 'foo@bar.com';
+         return true;
+      }],
+      ['login with oauth using token with different email', 'post', 'auth/signin/mobile/google', {}, function (s) {return {token: 'DUMMY', testToken: s.changedOAuthToken, platform: 'android'}}, 200, H.setCredentials],
+      ['get account after having logged in with oauth with different email, check that email was indeed changed on the same user', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+
+         delete rs.body.logs;
+         delete rs.body.usage;
+         s.emailUser.email = 'foo@bar.com';
+         delete s.emailUser.usage;
+
+         if (H.stop ('body', rs.body, s.emailUser)) return false;
+         return true;
+      }],
+      ['login with new email and check that it associates to the existing account', 'post', 'auth/login', {}, function (s) {return {username: s.changedOAuthToken.email, password: 'foobar', timezone: 0}}, 200, H.setCredentials],
+      ['get account after having logged in with changed email to see if the account is still the same', 'get', 'account', {}, '', 200, function (s, rq, rs) {
+         delete rs.body.logs;
+         delete rs.body.usage;
+         if (H.stop ('body', rs.body, s.emailUser)) return false;
+         return true;
+      }],
+      ['signup with username/password using the email that is no longer used, to prove that the email was changed and freed up', 'post', 'auth/signup', {}, function (s) {return {username: 'another', email: s.oauthToken.email, password: 'foobar2'}}, 200, function (s, rq, rs) {
+         s.validationToken = rs.body.token;
+         return true;
+      }],
+      ['verify new user', 'get', function (s) {return 'auth/verify/' + s.validationToken}, {}, '', 302],
+      ['login with username and password with user that was created through email freed up by changing the email in the older user', 'post', 'auth/login', {}, function (s) {return {username: 'another', password: 'foobar2', timezone: 0}}, 200, H.setCredentials],
+      ['attempt to login with token that uses an email that doesn\'t belong to it yet, but it is already taken', 'post', 'auth/signin/mobile/google', {}, function (s) {return {token: 'DUMMY', testToken: s.oauthToken, platform: 'android'}}, 409, H.cBody ({error: 'Another user already exists with that email'})],
+      ['delete account with email but no oauth', 'post', 'auth/delete', {}, {}, 200],
+      ['login to account with email & oauth', 'post', 'auth/login', {}, function (s) {return {username: s.changedOAuthToken.email, password: 'foobar', timezone: 0}}, 200, H.setCredentials],
+      ['delete account with email & oauth', 'post', 'auth/delete', {}, {}, 200, function (s, rq, rs, next) {
+         delete s.headers.cookie;
+         redis.del ('oauth-token', 'oauth-cookie', 'oauth-csrf', function (error) {
+            if (error) return next (error);
+            next ();
+         });
+      }],
+   ];
+}
+
 
 suites.public = function () {
    return [
@@ -3657,7 +3827,7 @@ suites.geo = function () {
 }
 
 suites.import = function () {
-   if (noImport) return [];
+   if (noManual) return [];
    return [
       suites.auth.in (tk.users.user1),
       H.invalidTestMaker ('import selection', 'import/select/google', [
@@ -3913,7 +4083,7 @@ H.tryTimeout (10, 1000, function (cb) {
             if (! s.headers || ! s.headers.cookie) return b;
 
             // Skip CSRF token for these routes
-            if (inc (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset'], test [2])) return b;
+            if (inc (['auth/signup', 'auth/login', 'auth/recover', 'auth/reset', 'auth/signin/web/google', 'auth/signin/mobile/google'], test [2])) return b;
 
             var b2 = teishi.copy (b);
             if (b2.multipart) b2.multipart.push ({type: 'field', name: 'csrf', value: s.csrf});

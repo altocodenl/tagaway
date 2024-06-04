@@ -1,7 +1,7 @@
 {
-   "name": "acpic",
+   "name": "tagaway",
    "version": "0.1.0",
-   "description": "A home for your pictures",
+   "description": "Quality time with your pivs",
    "dependencies": {
       "cicek":   "3.4.3",
       "dale":    "6.0.2",
@@ -15,6 +15,7 @@
       "teishi":  "5.1.0",
       "archiver":                 "5.3.0",
       "aws-sdk":                  "2.1092.0",
+      "jsonwebtoken":             "9.0.2",
       "mime":                     "3.0.0",
       "murmurhash":               "2.0.0",
       "nodemailer":               "6.7.2",
@@ -26,15 +27,15 @@
    "contributors": ["Ruben Meines (http://rubenmeines.com)"],
    "license": [{
       "type": "Public Domain",
-      "url": "http://github.com/altocodenl/acpic#license"
+      "url": "http://github.com/altocodenl/tagaway#license"
    }],
    "keywords": ["pictures", "tags"],
    "repository" : {
       "type": "git",
-      "url": "http://github.com/altocodenl/acpic.git"
+      "url": "http://github.com/altocodenl/tagaway.git"
    },
    "bugs": {
-      "url": "http://github.com/altocodenl/acpic/issues",
+      "url": "http://github.com/altocodenl/tagaway/issues",
       "email": "info@altocode.nl"
    }
 }

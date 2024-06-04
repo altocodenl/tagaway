@@ -181,8 +181,18 @@ module.exports = {
          key: 'KEY'
       },
       oauth: {
-         client: 'CLIENTID',
-         secret: 'SECRET'
+         // These credentials are for login with Google
+         login: {
+            androidClientId: 'CLIENTID',
+            iosClientId:     'CLIENTID',
+            webClientId:     'CLIENTID',
+            webSecret:       'SECRET',
+         },
+         // These credentials are for access to Google Drive
+         gdrive: {
+            webClientId: 'CLIENTID',
+            webSecret:   'SECRET'
+         }
       }
    },
    aclog: {

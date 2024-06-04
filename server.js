@@ -36,6 +36,7 @@ var mailer   = require ('nodemailer').createTransport (require ('nodemailer-ses-
 var hash     = require ('murmurhash').v3;
 var mime     = require ('mime');
 var archiver = require ('archiver');
+var jwt      = require ('jsonwebtoken');
 
 var type   = teishi.type, clog = console.log, eq = teishi.eq, last = teishi.last, inc = teishi.inc, reply = cicek.reply, stop = function (rs, rules) {
    return teishi.stop (rules, function (error) {
@@ -58,6 +59,16 @@ var debug = function () {clog.apply (null, ['DEBUG'].concat (dale.go (arguments,
 
 giz.redis          = redis;
 giz.config.expires = 7 * 24 * 60 * 60;
+
+// TODO: add this to giz
+giz.loginOAuth = function (user, callback) {
+   require ('bcryptjs').genSalt (20, function (error, result) {
+      if (error) return callback (error);
+      giz.db.set ('session', result, user, function (error) {
+         callback (error, result);
+      });
+   });
+}
 
 // *** REDIS EXTENSIONS ***
 
@@ -934,7 +945,7 @@ H.getImports = function (s, rq, rs, provider, maxResults) {
                      'https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=' + encodeURIComponent (CONFIG.domain + 'import/oauth/google'),
                      'prompt=consent',
                      'response_type=code',
-                     'client_id=' + SECRET.google.oauth.client,
+                     'client_id=' + SECRET.google.oauth.gdrive.webClientId,
                      // https://developers.google.com/identity/protocols/oauth2/scopes
                      '&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.photos.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.metadata.readonly',
                      'access_type=offline',
@@ -1249,12 +1260,12 @@ H.getGoogleToken = function (S, username) {
          // No access or refresh token, report an error to (optionally) restart authentication with provider.
          if (! s.last) return S.next (null, {errorCode: 1, error: 'No access or refresh token.'});
          var body = [
-            'client_id='     + SECRET.google.oauth.client,
-            'client_secret=' + SECRET.google.oauth.secret,
+            'client_id='     + SECRET.google.oauth.gdrive.webClientId,
+            'client_secret=' + SECRET.google.oauth.gdrive.webSecret,
             'grant_type='    + 'refresh_token',
             'refresh_token=' + encodeURIComponent (s.last),
          ].join ('&');
-         hitit.one ({}, {https: true, timeout: 15, host: 'oauth2.googleapis.com', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.oauth.secret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.oauth.client, code: '*', apres: function (s, rq, rs) {
+         hitit.one ({}, {https: true, timeout: 15, host: 'oauth2.googleapis.com', method: 'post', path: 'token', headers: {'content-type': 'application/x-www-form-urlencoded'}, body: 'client_secret=' + encodeURIComponent (SECRET.google.oauth.gdrive.webSecret) + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent (s.last) + '&client_id=' + SECRET.google.oauth.gdrive.webClientId, code: '*', apres: function (s, rq, rs) {
             // If the refresh token failed
             if (rs.code !== 200) return a.stop (S, [
                // Delete refresh token
@@ -1279,6 +1290,145 @@ H.getGoogleToken = function (S, username) {
    ], function (s, error) {
       S.next (null, error);
    });
+}
+
+H.getGooglePublicKeys = function (s) {
+  hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'www.googleapis.com', path: 'oauth2/v1/certs', code: '*', apres: function (S, RQ, RS) {
+     if (RS.code !== 200) return s.next (null, {code: RS.code, error: RS.body});
+     return s.next (RS.body);
+  }});
+}
+
+// Apple: https://forums.developer.apple.com/forums/thread/132223
+H.googleSignin = function (rq, rs, redirect) {
+
+   var user = rs.oauthUser;
+
+   if (stop (rs, [
+      ['user', user, 'object'],
+      function () {return [
+         ['sub', user.sub, 'string'],
+         ['email', user.email, H.email, teishi.test.match],
+         ['given_name', user.given_name, 'string'],
+         ['family_name', user.family_name, 'string'],
+      ]},
+   ])) return;
+
+   var login = function (s, username, noLoginEvent) {
+      s.username = username;
+      a.seq (s, [
+         [a.set, 'session', [a.make (giz.loginOAuth), s.username]],
+         [a.set, 'csrf', [a.make (require ('bcryptjs').genSalt), 20]],
+         function (s) {
+            Redis (s, 'setex', 'csrf:' + s.session, giz.config.expires, s.csrf);
+         },
+         noLoginEvent ? [] : [a.get, H.log, '@username', {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
+         // Update names
+         [Redis, 'hmset', 'users:' + s.username, {firstName: user.given_name, lastName: user.family_name}],
+         ENV ? [] : function (s) {
+            // Only for tests
+            var multi = redis.multi ();
+            multi.set ('oauth-cookie', cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)}));
+            multi.set ('oauth-csrf', s.csrf);
+            mexec (s, multi);
+         },
+         function (s) {
+            if (! redirect) reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+            else           reply (rs, 302, {}, {location: CONFIG.domain + '#/pics', 'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+         }
+      ]);
+   }
+
+   a.seq ([
+      ENV ? [] : [Redis, 'set', 'oauth-token', JSON.stringify (user)],
+      [function (s) {
+         var multi = redis.multi ();
+         multi.get ('oauth:google:' + user.sub);
+         multi.get ('email:' + user.email);
+         mexec (s, multi);
+      }],
+      function (s) {
+         var usernameOAuth = s.last [0];
+         var usernameEmail = s.last [1];
+
+         if (usernameOAuth && usernameEmail) {
+            if (usernameOAuth !== usernameEmail) return a.seq ([
+               [notify, {priority: 'important', type: 'Mismatch between username from oauth and username from email', usernameOAuth: usernameOAuth, usernameEmail: usernameEmail, oauthUser: user, provider: 'google'}],
+               [reply, rs, 409, {error: 'Another user already exists with that email'}],
+            ]);
+
+            // User exists and had already previously logged in through oauth
+            return a.seq ([login, usernameOAuth]);
+         }
+
+         // New user
+         if (! usernameOAuth && ! usernameEmail) return a.seq ([
+            [function (s) {
+               s.username = uuid ();
+               var multi = redis.multi ();
+               multi.hmset ('users:' + s.username, {
+                  username:            s.username,
+                  email:               user.email,
+                  firstName:           user.given_name,
+                  lastName:            user.family_name,
+                  googleId:            user.sub,
+                  created:             Date.now (),
+                  geo:                 1,
+                  suggestSelection:    1,
+                  onboarding:          1,
+               });
+               multi.sadd ('users', s.username);
+               multi.set ('oauth:google:' + user.sub,    s.username);
+               multi.set ('email:'        + user.email, s.username);
+               mexec (s, multi);
+            }],
+            [H.stat.w, 'flow', 'users', 1],
+            function (s) {
+               sendmail (s, {
+                  to1:     s.username,
+                  to2:     user.email,
+                  subject: CONFIG.etemplates.welcome.subject,
+                  message: CONFIG.etemplates.welcome.message (user.given_name || user.email)
+               });
+            },
+            function (s) {
+               H.log (s, s.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], provider: 'google'});
+            },
+            function (s) {
+               notify (s, {priority: 'important', type: 'New user', user: s.username, email: user.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, provider: 'google'});
+            },
+            function (s) {
+               login (s, s.username, true);
+            },
+         ]);
+
+         // User had created username/password email and is now logging with oauth for the first time
+         if (usernameEmail && ! usernameOAuth) return a.seq ([
+            [function (s) {
+               var multi = redis.multi ();
+               multi.set ('oauth:google:' + user.sub, usernameEmail);
+               multi.hset ('users:' + usernameEmail, 'googleId', user.sub);
+               mexec (s, multi);
+            }],
+            [login, usernameEmail],
+         ]);
+
+         // User changed email bound to their oauth provider and there's no conflict, so we can change it
+         if (usernameOAuth && ! usernameEmail) return a.seq ([
+            [Redis, 'hgetall', 'users:' + usernameOAuth],
+            function (s) {
+               var existingUser = s.last;
+
+               var multi = redis.multi ();
+               multi.hset ('users:' + usernameOAuth, 'email', user.email);
+               multi.set ('email:' + user.email, usernameOAuth);
+               multi.del ('email:' + existingUser.email);
+               mexec (s, multi);
+            },
+            [login, usernameOAuth],
+         ]);
+      },
+   ]);
 }
 
 // *** STATISTICS ***
@@ -1921,7 +2071,7 @@ var routes = [
                to1:     s.user.username,
                to2:     s.user.email,
                subject: CONFIG.etemplates.recover.subject,
-               message: CONFIG.etemplates.recover.message (s.user.username, s.token)
+               message: CONFIG.etemplates.recover.message (s.user.firstName || s.user.username, s.token)
             });
          },
          function (s) {
@@ -1948,11 +2098,19 @@ var routes = [
 
       // username is not trimmed because it is read from the token, which is generated by the server
       astop (rs, [
-         [a.stop, [a.make (giz.reset), b.username, b.token, b.password], function (s, error) {
+         [a.set, 'username', function (s) {
+            if (! b.username.match ('@')) return s.next (b.username);
+            a.cond (s, [Redis, 'get', 'email:' + b.username], {
+               null: [reply, rs, 403, {error: 'auth'}],
+            });
+         }],
+         [a.stop, [a.get, a.make (giz.reset), '@username', b.token, b.password], function (s, error) {
             if (type (error) === 'string') reply (rs, 403, {error: 'token'});
             else                           reply (rs, 500, {error: error});
          }],
-         [a.set, 'user', [Redis, 'hgetall', 'users:' + b.username]],
+         function (s) {
+            a.seq (s, [a.set, 'user', [Redis, 'hgetall', 'users:' + s.username]]);
+         },
          function (s) {
             H.log (s, s.user.username, {ev: 'auth', type: 'reset', ip: rq.origin, userAgent: rq.headers ['user-agent']});
          },
@@ -1961,10 +2119,91 @@ var routes = [
                to1:     s.user.username,
                to2:     s.user.email,
                subject: CONFIG.etemplates.reset.subject,
-               message: CONFIG.etemplates.reset.message (s.user.username)
+               message: CONFIG.etemplates.reset.message (s.user.firstName || s.user.username)
             });
          },
          [reply, rs, 200],
+      ]);
+   }],
+
+   // *** SIGNUP/LOGIN WITH GOOGLE ***
+
+   ['get', 'auth/signin/web/google', function (rq, rs) {
+
+      var reportError = function (error) {
+         notify (a.creat (), {priority: 'important', type: 'signin-google', ip: rq.origin, userAgent: rq.headers ['user-agent'], error: error});
+         return reply (rs, 302, {}, {location: CONFIG.domain + '#/login/google/error'});
+      }
+
+      if (! rq.data.query || ! rq.data.query.code) return reportError ('No code in the query parameters');
+
+      a.seq ([
+         [function (s) {
+            hitit.one ({}, {timeout: 15, https: true, method: 'post', host: 'oauth2.googleapis.com', path: 'token', code: '*', body: {
+               code:          rq.data.query.code,
+               client_id:     SECRET.google.oauth.login.webClientId,
+               client_secret: SECRET.google.oauth.login.webSecret,
+               redirect_uri:  CONFIG.domain + 'auth/signin/web/google',
+               grant_type:    'authorization_code'
+            }, apres: function (S, RQ, RS) {
+               if (RS.code !== 200) return s.next (null, {code: RS.code, error: RS.body});
+               return s.next (RS.body);
+           }});
+         }],
+         function (s) {
+            if (s.error) return reportError (s.error);
+
+            s.idToken = s.last.id_token;
+
+            if (! s.idToken) return reportError ('No id token');
+
+            hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'oauth2.googleapis.com', path: 'tokeninfo?id_token=' + s.idToken, code: '*', apres: function (S, RQ, RS) {
+               if (RS.code !== 200) return reportError (null, {code: RS.code, error: RS.body});
+
+               if (RS.body.aud !== SECRET.google.oauth.login.webClientId) return reportError ('Audience mismatch: expected ' + SECRET.google.oauth.login.webClientId + ', got ' + RS.body.aud);
+
+               rs.oauthUser = RS.body;
+               H.googleSignin (rq, rs, true);
+           }});
+         }
+      ]);
+   }],
+
+   ['post', 'auth/signin/mobile/google', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ENV ? ['token', 'platform'] : ['token', 'platform', 'testToken'], 'eachOf', teishi.test.equal],
+         ['body.token', b.token, 'string'],
+         ENV ? [] : ['body.testToken', b.testToken, 'object'],
+         ['body.platform', b.platform, ['android', 'ios'], 'oneOf', teishi.test.equal],
+      ])) return;
+
+      if (! ENV && b.testToken) {
+         rs.oauthUser = b.testToken;
+         return H.googleSignin (rq, rs);
+      }
+
+      a.seq ([
+         [H.getGooglePublicKeys],
+         function (s) {
+            if (s.error) return reply (rs, 500, {error: 'Could not retrieve the Google Auth keys', details: s.error});
+
+            var keys = s.last;
+            var decodedHeader = jwt.decode (b.token, {complete: true});
+            var key = keys [decodedHeader.header.kid];
+
+            if (! key) return reply (rs, 401, {error: 'Invalid token'});
+
+            var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
+
+            if (! user) return reply (rs, 401, {error: 'Invalid user', user: user});
+
+            rs.oauthUser = user;
+            H.googleSignin (rq, rs);
+         }
       ]);
    }],
 
@@ -2080,6 +2319,7 @@ var routes = [
                   var multi = redis.multi ();
                   if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
                   multi.del ('email:'  + user.email);
+                  multi.del ('oauth:google:'+ user.googleId);
                   multi.del ('tags:' + user.username);
                   multi.del ('hometags:' + user.username);
 
@@ -2170,9 +2410,12 @@ var routes = [
             if (ENV !== 'prod' && inc (SECRET.admins, rq.user.email)) limit = 1000 * 1000 * 1000 * 1000;
 
             reply (rs, 200, {
-               username: rq.user.username,
-               email:    rq.user.email,
-               created:  parseInt (rq.user.created),
+               username:  rq.user.username,
+               email:     rq.user.email,
+               firstName: rq.user.firstName,
+               lastName:  rq.user.lastName,
+               googleId:  rq.user.googleId,
+               created:   parseInt (rq.user.created),
                usage:    {
                   limit:  limit,
                   byfs: parseInt (s.last [0]) || 0,
@@ -2180,7 +2423,6 @@ var routes = [
                },
                geo:               rq.user.geo               ? true : undefined,
                geoInProgress:     s.last [2]                ? true : undefined,
-               suggestGeotagging: rq.user.suggestGeotagging ? true : undefined,
                suggestSelection:  rq.user.suggestSelection  ? true : undefined,
                onboarding:        rq.user.onboarding        ? true : undefined,
                // We only return logs for testing purposes
@@ -3951,8 +4193,8 @@ var routes = [
       }
       var body = [
          'code='          + rq.data.query.code,
-         'client_id='     + SECRET.google.oauth.client,
-         'client_secret=' + SECRET.google.oauth.secret,
+         'client_id='     + SECRET.google.oauth.gdrive.webClientId,
+         'client_secret=' + SECRET.google.oauth.gdrive.webSecret,
          'grant_type='    + 'authorization_code',
          'redirect_uri='  + encodeURIComponent (CONFIG.domain + 'import/oauth/google')
       ].join ('&');

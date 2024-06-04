@@ -3602,7 +3602,11 @@ B.mrespond ([
    ['read', 'hash', {id: 'read hash'}, function (x) {
       var hash = window.location.hash.replace ('#/', '').split ('/'), page = hash [0];
 
-      if (page === 'login' && hash [1]) B.call (x, 'snackbar', 'green', 'Your email is now verified. Please log in!');
+      if (page === 'login' && hash [1]) {
+         if (hash [1] === 'verify' && hash [2] === 'verified') B.call (x, 'snackbar', 'green', 'Your email is now verified. Please log in!');
+         if (hash [1] === 'verify' && hash [2] === 'badtoken') B.call (x, 'snackbar', 'red', 'There was an error verifying your email');
+         if (hash [1] === 'google' && hash [2] === 'error')    B.call (x, 'snackbar', 'red', 'There was an error logging in with Google');
+      }
 
       if (page === 'reset' && hash [1] && hash [2]) B.call (x, 'set', ['Data', 'reset'], {
          token:    decodeURIComponent (hash [1]),
@@ -4885,6 +4889,9 @@ views.feedback = function () {
 // *** LOGIN VIEW ***
 
 views.login = function () {
+   var googleClientId = '764404427753-v129e6ckia1eebpra59bmv648pidtjma.apps.googleusercontent.com';
+   var googleRedirectURI = window.location.origin + window.location.pathname + 'auth/signin/web/google';
+   var googleURI = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + googleClientId + '&redirect_uri=' + googleRedirectURI + '&response_type=code&scope=openid%20email%20profile';
    return ['div', [
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
@@ -4899,6 +4906,7 @@ views.login = function () {
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in', onclick: B.ev ('login', [])}],
                   ['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
                   ['a', {href: '#/signup',  class: 'enter-form__forgot-password'}, 'Don\'t have an account? Create an account.'],
+                  ['a', {href: googleURI}, 'Sign in with Google'],
                ]]
             ]]
          ]],
@@ -5419,13 +5427,6 @@ views.pics = function () {
                               ['br'], ['br'],
                               dale.acc (selected, 0, function (n, tag) {return n += (H.isYearTag (tag) ? 1 : 0)}) !== 1 ? [] : dale.go (dale.go (dale.times (12), function (n) {return 'd::M' + n}), makeTag),
                            ] : makeTag (rangeTag),
-                           H.if (account.suggestGeotagging, [
-                              ['p', {class: 'suggest-geotagging'}, [
-                                 ['a', {class: 'suggest-geotagging-enable', onclick: B.ev ('toggle', 'geo', true)}, 'Turn on geotagging'],
-                                 ['a', {class: 'suggest-geotagging-dismiss', onclick: B.ev ('dismiss', 'geotagging')}, 'Maybe later'],
-                              ]],
-                              ['br'],
-                           ]),
                            dale.go (taglist.slice (0, showNTags), makeTag),
                            ['br'],
                            H.if (showNTags < taglist.length, ['div', {class: 'show-more-tags button', onclick: B.ev ('set', ['State', 'showNTags'], showNTags + 20)}, 'Show more tags'])
