@@ -2128,6 +2128,13 @@ var routes = [
 
    // *** SIGNUP/LOGIN WITH GOOGLE ***
 
+   ['get', 'auth/signin/credentials/google', function (rq, rs) {
+      reply (rs, 200, {
+         android: SECRET.google.oauth.login.androidClientId,
+         ios: SECRET.google.oauth.login.iosClientId,
+      });
+   }],
+
    ['get', 'auth/signin/web/google', function (rq, rs) {
 
       var reportError = function (error) {

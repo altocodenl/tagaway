@@ -51,6 +51,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 --------------
 - small tasks
    - **server/client: set location**
+   - server: move to backblaze
    - server/config: fix google drive import
    - Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.
    - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
@@ -437,6 +438,21 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `POST /auth/changePassword`.
    - Body must be `{old: STRING, new: STRING}`.
+
+#### OAuth routes
+
+`GET /auth/signin/credentials/google`
+   - Returns an object `{android: CLIENT_KEY, ios: CLIENT_KEY}` with the client keys for doing the oauth flow with google.
+
+`GET /auth/signin/web/google`
+   - This endpoint will be executed after the user has successfully authenticated with Google and is redirected back to tagaway
+   - Receives a query parameter `code`
+   - If successful, the endpoint either logs in (if the user already had logged in with that Google account or with an email connected with that Google account) or creates an account.
+
+`POST /auth/signin/mobile/google`
+   - Receives a body `{platform: android|ios, token: STRING}`.
+   - The `token` should be a string that contains an id token obtained from Google.
+   - If successful, the endpoint either logs in (if the user already had logged in with that Google account or with an email connected with that Google account) or creates an account.
 
 #### App routes
 

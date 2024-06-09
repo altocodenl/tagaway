@@ -766,6 +766,10 @@ suites.oauth = function () {
          [['platform'], 'values', ['android', 'ios']],
          [['testToken'], 'object'],
       ]),
+      ['get oauth client ids', 'get', 'auth/signin/credentials/google', {}, '', 200, H.cBody ({
+         android: SECRET.google.oauth.login.androidClientId,
+         ios: SECRET.google.oauth.login.iosClientId,
+      })],
       ['dummy request before starting OAuth flow requiring manual input', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
 
          var googleClientId = '764404427753-v129e6ckia1eebpra59bmv648pidtjma.apps.googleusercontent.com';
