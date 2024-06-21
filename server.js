@@ -1299,18 +1299,31 @@ H.getGooglePublicKeys = function (s) {
   }});
 }
 
-// Apple: https://forums.developer.apple.com/forums/thread/132223
-H.googleSignin = function (rq, rs, redirect) {
+H.getApplePublicKeys = function (s) {
+  hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'appleid.apple.com', path: 'auth/keys', code: '*', apres: function (S, RQ, RS) {
+     if (RS.code !== 200) return s.next (null, {code: RS.code, error: RS.body});
+     return s.next (RS.body.keys);
+  }});
+}
 
-   var user = rs.oauthUser;
+// Apple: https://forums.developer.apple.com/forums/thread/132223
+H.oauthSignin = function (rq, rs, provider, redirect) {
+
+   var user = {
+      id:        rs.oauthUser [{google: 'sub',         apple: '???'} [provider]],
+      email:     rs.oauthUser [{google: 'email',       apple: '???'} [provider]],
+      firstName: rs.oauthUser [{google: 'given_name',  apple: '???'} [provider]],
+      lastName:  rs.oauthUser [{google: 'family_name', apple: '???'} [provider]],
+   }
 
    if (stop (rs, [
+      ['provider', provider, ['google', 'apple'], teishi.test.equal, 'oneOf'],
       ['user', user, 'object'],
       function () {return [
-         ['sub', user.sub, 'string'],
+         ['id', user.id, 'string'],
          ['email', user.email, H.email, teishi.test.match],
-         ['given_name', user.given_name, 'string'],
-         ['family_name', user.family_name, 'string'],
+         ['firstName', user.firstName, 'string'],
+         ['lastName', user.lastName, 'string'],
       ]},
    ])) return;
 
@@ -1324,7 +1337,7 @@ H.googleSignin = function (rq, rs, redirect) {
          },
          noLoginEvent ? [] : [a.get, H.log, '@username', {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
          // Update names
-         [Redis, 'hmset', 'users:' + s.username, {firstName: user.given_name, lastName: user.family_name}],
+         [Redis, 'hmset', 'users:' + s.username, {firstName: user.firstName, lastName: user.lastName}],
          ENV ? [] : function (s) {
             // Only for tests
             var multi = redis.multi ();
@@ -1343,7 +1356,7 @@ H.googleSignin = function (rq, rs, redirect) {
       ENV ? [] : [Redis, 'set', 'oauth-token', JSON.stringify (user)],
       [function (s) {
          var multi = redis.multi ();
-         multi.get ('oauth:google:' + user.sub);
+         multi.get ('oauth:' + provider + ':' + user.id);
          multi.get ('email:' + user.email);
          mexec (s, multi);
       }],
@@ -1353,7 +1366,7 @@ H.googleSignin = function (rq, rs, redirect) {
 
          if (usernameOAuth && usernameEmail) {
             if (usernameOAuth !== usernameEmail) return a.seq ([
-               [notify, {priority: 'important', type: 'Mismatch between username from oauth and username from email', usernameOAuth: usernameOAuth, usernameEmail: usernameEmail, oauthUser: user, provider: 'google'}],
+               [notify, {priority: 'important', type: 'Mismatch between username from oauth and username from email', usernameOAuth: usernameOAuth, usernameEmail: usernameEmail, oauthUser: user, provider: provider}],
                [reply, rs, 409, {error: 'Another user already exists with that email'}],
             ]);
 
@@ -1366,19 +1379,21 @@ H.googleSignin = function (rq, rs, redirect) {
             [function (s) {
                s.username = uuid ();
                var multi = redis.multi ();
-               multi.hmset ('users:' + s.username, {
+               var newUser = {
                   username:            s.username,
                   email:               user.email,
-                  firstName:           user.given_name,
-                  lastName:            user.family_name,
-                  googleId:            user.sub,
+                  firstName:           user.firstName,
+                  lastName:            user.lastName,
                   created:             Date.now (),
                   geo:                 1,
                   suggestSelection:    1,
                   onboarding:          1,
-               });
+               };
+               newUser [provider + 'Id'] = user.id;
+               multi.hmset ('users:' + s.username, newUser);
+
                multi.sadd ('users', s.username);
-               multi.set ('oauth:google:' + user.sub,    s.username);
+               multi.set ('oauth:' + provider + ':' + user.id, s.username);
                multi.set ('email:'        + user.email, s.username);
                mexec (s, multi);
             }],
@@ -1388,14 +1403,14 @@ H.googleSignin = function (rq, rs, redirect) {
                   to1:     s.username,
                   to2:     user.email,
                   subject: CONFIG.etemplates.welcome.subject,
-                  message: CONFIG.etemplates.welcome.message (user.given_name || user.email)
+                  message: CONFIG.etemplates.welcome.message (user.firstName || user.email)
                });
             },
             function (s) {
-               H.log (s, s.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], provider: 'google'});
+               H.log (s, s.username, {ev: 'auth', type: 'signup', ip: rq.origin, userAgent: rq.headers ['user-agent'], provider: provider});
             },
             function (s) {
-               notify (s, {priority: 'important', type: 'New user', user: s.username, email: user.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, provider: 'google'});
+               notify (s, {priority: 'important', type: 'New user', user: s.username, email: user.email, userAgent: rq.headers ['user-agent'], ip: rq.origin, provider: provider});
             },
             function (s) {
                login (s, s.username, true);
@@ -1406,8 +1421,8 @@ H.googleSignin = function (rq, rs, redirect) {
          if (usernameEmail && ! usernameOAuth) return a.seq ([
             [function (s) {
                var multi = redis.multi ();
-               multi.set ('oauth:google:' + user.sub, usernameEmail);
-               multi.hset ('users:' + usernameEmail, 'googleId', user.sub);
+               multi.set ('oauth:' + provider + ':' + user.id, usernameEmail);
+               multi.hset ('users:' + usernameEmail, provider + 'Id', user.id);
                mexec (s, multi);
             }],
             [login, usernameEmail],
@@ -2170,7 +2185,7 @@ var routes = [
                if (RS.body.aud !== SECRET.google.oauth.login.webClientId) return reportError ('Audience mismatch: expected ' + SECRET.google.oauth.login.webClientId + ', got ' + RS.body.aud);
 
                rs.oauthUser = RS.body;
-               H.googleSignin (rq, rs, true);
+               H.oauthSignin (rq, rs, 'google', true);
            }});
          }
       ]);
@@ -2190,7 +2205,7 @@ var routes = [
 
       if (! ENV && b.testToken) {
          rs.oauthUser = b.testToken;
-         return H.googleSignin (rq, rs);
+         return H.oauthSignin (rq, rs, 'google');
       }
 
       a.seq ([
@@ -2209,7 +2224,53 @@ var routes = [
             if (! user) return reply (rs, 401, {error: 'Invalid user', user: user});
 
             rs.oauthUser = user;
-            H.googleSignin (rq, rs);
+            H.oauthSignin (rq, rs, 'google');
+         }
+      ]);
+   }],
+
+   ['post', 'auth/signin/mobile/apple', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['body', b, 'object'],
+         ['keys of body', dale.keys (b), ENV ? ['token'] : ['token', 'testToken'], 'eachOf', teishi.test.equal],
+         ['body.token', b.token, 'string'],
+         ENV ? [] : ['body.testToken', b.testToken, 'object'],
+      ])) return;
+
+      if (! ENV && b.testToken) {
+         rs.oauthUser = b.testToken;
+         return H.oauthSignin (rq, rs, 'apple');
+      }
+
+      a.seq ([
+         [H.getApplePublicKeys],
+         function (s) {
+            if (s.error) return reply (rs, 500, {error: 'Could not retrieve the Apple Auth keys', details: s.error});
+
+            var keys = s.last;
+            var decodedHeader = jwt.decode (b.token, {complete: true});
+            var key = dale.stopNot (keys, undefined, function (key) {
+               if (key.kid === decodedHeader.header.kid) return key;
+            });
+
+            clog ('DEBUG KEY', key, keys);
+            if (! key) return reply (rs, 401, {error: 'Invalid token'});
+
+            var user = jwt.verify (b.token, key, {algorithms: ['RS256']});
+            clog ('DEBUG USER', user);
+
+            // TODO: audience
+            // var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
+            // TODO: iss
+
+            if (! user) return reply (rs, 401, {error: 'Invalid user', user: user});
+
+            return;
+            rs.oauthUser = user;
+            H.oauthSignin (rq, rs, 'apple');
          }
       ]);
    }],
