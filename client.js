@@ -4886,12 +4886,13 @@ views.feedback = function () {
    });
 }
 
+var googleClientId = '764404427753-v129e6ckia1eebpra59bmv648pidtjma.apps.googleusercontent.com';
+var googleRedirectURI = window.location.origin + window.location.pathname + 'auth/signin/web/google';
+var googleURI = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + googleClientId + '&redirect_uri=' + googleRedirectURI + '&response_type=code&scope=openid%20email%20profile';
+
 // *** LOGIN VIEW ***
 
 views.login = function () {
-   var googleClientId = '764404427753-v129e6ckia1eebpra59bmv648pidtjma.apps.googleusercontent.com';
-   var googleRedirectURI = window.location.origin + window.location.pathname + 'auth/signin/web/google';
-   var googleURI = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + googleClientId + '&redirect_uri=' + googleRedirectURI + '&response_type=code&scope=openid%20email%20profile';
    return ['div', [
       ['div', {class: 'enter'}, [
          ['div', {class: 'auth-card'}, [
@@ -4934,6 +4935,7 @@ views.signup = function () {
                   ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
                   ['a', {class: 'enter-form__forgot-password', href: '#/login'}, 'Already have an account? Log in.'],
+                  ['a', {href: googleURI}, 'Sign in with Google'],
                ]]
             ]]
          ]],
