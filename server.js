@@ -1293,9 +1293,9 @@ H.getGoogleToken = function (S, username) {
 }
 
 H.getGooglePublicKeys = function (s) {
-  hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'www.googleapis.com', path: 'oauth2/v1/certs', code: '*', apres: function (S, RQ, RS) {
+  hitit.one ({}, {timeout: 15, https: true, method: 'get', host: 'www.googleapis.com', path: 'oauth2/v3/certs', code: '*', apres: function (S, RQ, RS) {
      if (RS.code !== 200) return s.next (null, {code: RS.code, error: RS.body});
-     return s.next (RS.body);
+     return s.next (RS.body.keys);
   }});
 }
 
@@ -1322,8 +1322,8 @@ H.oauthSignin = function (rq, rs, provider, redirect) {
       function () {return [
          ['id', user.id, 'string'],
          ['email', user.email, H.email, teishi.test.match],
-         ['firstName', user.firstName, 'string'],
-         ['lastName', user.lastName, 'string'],
+         ['firstName', user.firstName, ['string', 'undefined'], 'oneOf'],
+         ['lastName', user.lastName, ['string', 'undefined'], 'oneOf'],
       ]},
    ])) return;
 
@@ -1337,7 +1337,7 @@ H.oauthSignin = function (rq, rs, provider, redirect) {
          },
          noLoginEvent ? [] : [a.get, H.log, '@username', {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
          // Update names
-         [Redis, 'hmset', 'users:' + s.username, {firstName: user.firstName, lastName: user.lastName}],
+         user.firstName && user.lastName ? [Redis, 'hmset', 'users:' + s.username, {firstName: user.firstName, lastName: user.lastName}] : [],
          ENV ? [] : function (s) {
             // Only for tests
             var multi = redis.multi ();
@@ -1382,14 +1382,14 @@ H.oauthSignin = function (rq, rs, provider, redirect) {
                var newUser = {
                   username:            s.username,
                   email:               user.email,
-                  firstName:           user.firstName,
-                  lastName:            user.lastName,
                   created:             Date.now (),
                   geo:                 1,
                   suggestSelection:    1,
                   onboarding:          1,
                };
                newUser [provider + 'Id'] = user.id;
+               if (user.firstName) newUser.firstName = user.firstName;
+               if (user.lastName)  newUser.lastName  = user.lastName;
                multi.hmset ('users:' + s.username, newUser);
 
                multi.sadd ('users', s.username);
@@ -2215,9 +2215,13 @@ var routes = [
 
             var keys = s.last;
             var decodedHeader = jwt.decode (b.token, {complete: true});
-            var key = keys [decodedHeader.header.kid];
+            var key = dale.stopNot (keys, undefined, function (key) {
+               if (key.kid === decodedHeader.header.kid) return key;
+            });
 
             if (! key) return reply (rs, 401, {error: 'Invalid token'});
+            // <3 https://stackoverflow.com/questions/72616533/how-to-verify-an-apple-jwt-using-a-public-key/78652065#78652065
+            key = crypto.createPublicKey ({key, format: 'jwk'});
 
             var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
 
@@ -2256,19 +2260,14 @@ var routes = [
                if (key.kid === decodedHeader.header.kid) return key;
             });
 
-            clog ('DEBUG KEY', key, keys);
             if (! key) return reply (rs, 401, {error: 'Invalid token'});
+            // <3 https://stackoverflow.com/questions/72616533/how-to-verify-an-apple-jwt-using-a-public-key/78652065#78652065
+            key = crypto.createPublicKey ({key, format: 'jwk'});
 
-            var user = jwt.verify (b.token, key, {algorithms: ['RS256']});
-            clog ('DEBUG USER', user);
-
-            // TODO: audience
-            // var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
-            // TODO: iss
+            var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: 'nl.altocode.tagaway'});
 
             if (! user) return reply (rs, 401, {error: 'Invalid user', user: user});
 
-            return;
             rs.oauthUser = user;
             H.oauthSignin (rq, rs, 'apple');
          }
