@@ -1310,11 +1310,13 @@ H.getApplePublicKeys = function (s) {
 H.oauthSignin = function (rq, rs, provider, redirect) {
 
    var user = {
-      id:        rs.oauthUser [{google: 'sub',         apple: '???'} [provider]],
-      email:     rs.oauthUser [{google: 'email',       apple: '???'} [provider]],
-      firstName: rs.oauthUser [{google: 'given_name',  apple: '???'} [provider]],
-      lastName:  rs.oauthUser [{google: 'family_name', apple: '???'} [provider]],
+      id:        rs.oauthUser [{google: 'sub',         apple: 'sub'}   [provider]],
+      email:     rs.oauthUser [{google: 'email',       apple: 'email'} [provider]],
+      firstName: rs.oauthUser [{google: 'given_name'}  [provider]],
+      lastName:  rs.oauthUser [{google: 'family_name'} [provider]],
    }
+
+   if (provider === 'apple' && rs.oauthUser.email_verified !== true) return reply (rs, 401, {error: 'Email must be verified with Apple'});
 
    if (stop (rs, [
       ['provider', provider, ['google', 'apple'], teishi.test.equal, 'oneOf'],
