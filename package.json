@@ -3,7 +3,7 @@
    "version": "0.1.0",
    "description": "Quality time with your pivs",
    "dependencies": {
-      "cicek":   "3.4.3",
+      "cicek":   "3.4.4",
       "dale":    "6.0.2",
       "gotob":   "2.3.0",
       "giz":     "0.3.1",
