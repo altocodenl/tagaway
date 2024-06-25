@@ -432,7 +432,7 @@ var H = {
                   if (type !== 'undefined') updateValid (rule [0], maker ());
                }
                else addTest ('type ' + type, rule [0], maker (), function (body) {
-                  if (rule [0].length === 0 && ! inc (['array', 'object'], type)) return body === 'All post requests must be either multipart/form-data or application/json!';
+                  if (rule [0].length === 0 && ! inc (['array', 'object'], type)) return body === 'All post requests must be multipart/form-data, application/x-www-urlencoded or application/json!';
                   var match = new RegExp ((last (rule [0]) !== undefined ? last (rule [0]) : 'body') + ' should have as type ' + sdesired + ' but (one of .+|instead) is .+ with type ' + type);
                   var customMatch;
                   if (rule [2]) customMatch = new RegExp (rule [2]);
@@ -1536,8 +1536,8 @@ suites.upload.piv = function () {
    return [
       suites.auth.in (tk.users.user1),
       dale.go ([
-         [1, 'All post requests must be either multipart/form-data or application/json!'],
-         ['id1', 'All post requests must be either multipart/form-data or application/json!'],
+         [1, 'All post requests must be multipart/form-data, application/x-www-urlencoded or application/json!'],
+         ['id1', 'All post requests must be multipart/form-data, application/x-www-urlencoded or application/json!'],
          [[], {error: 'body should have as type object but instead is [] with type array'}],
          [{}, {error: 'multipart'}],
          // multipart requests from now onwards
