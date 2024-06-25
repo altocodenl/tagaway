@@ -1355,7 +1355,8 @@ H.oauthSignin = function (rq, rs, provider, redirect) {
    }
 
    a.seq ([
-      ENV ? [] : [Redis, 'set', 'oauth-token', JSON.stringify (user)],
+      // We set the oauthUser on a key so it can be reused directly by the test suite (which will go and get it from the DB)
+      ENV ? [] : [Redis, 'set', 'oauth-token', JSON.stringify (rs.oauthUser)],
       [function (s) {
          var multi = redis.multi ();
          multi.get ('oauth:' + provider + ':' + user.id);
