@@ -1337,7 +1337,7 @@ H.oauthSignin = function (rq, rs, provider, redirect) {
          function (s) {
             Redis (s, 'setex', 'csrf:' + s.session, giz.config.expires, s.csrf);
          },
-         noLoginEvent ? [] : [a.get, H.log, '@username', {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent']}],
+         noLoginEvent ? [] : [a.get, H.log, '@username', {ev: 'auth', type: 'login', ip: rq.origin, userAgent: rq.headers ['user-agent'], provider: provider}],
          // Update names
          user.firstName && user.lastName ? [Redis, 'hmset', 'users:' + s.username, {firstName: user.firstName, lastName: user.lastName}] : [],
          ENV ? [] : function (s) {
@@ -1349,7 +1349,7 @@ H.oauthSignin = function (rq, rs, provider, redirect) {
          },
          function (s) {
             if (! redirect) reply (rs, 200, {csrf: s.csrf}, {'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
-            else           reply (rs, 302, {}, {location: CONFIG.domain + '#/pics', 'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
+            else            reply (rs, 302, {}, {location: CONFIG.domain + '#/pics', 'set-cookie': cicek.cookie.write (CONFIG.cookieName, s.session, {httponly: true, samesite: 'Lax', path: '/', expires: new Date (Date.now () + 1000 * 60 * 60 * 24 * 365 * 10)})});
          }
       ]);
    }
@@ -2226,7 +2226,13 @@ var routes = [
             // <3 https://stackoverflow.com/questions/72616533/how-to-verify-an-apple-jwt-using-a-public-key/78652065#78652065
             key = crypto.createPublicKey ({key, format: 'jwk'});
 
-            var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
+            var user;
+            try {
+               user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
+            }
+            catch (error) {
+               reply (rs, 401, {error: 'Invalid user'});
+            }
 
             if (! user) return reply (rs, 401, {error: 'Invalid user', user: user});
 
@@ -2235,6 +2241,52 @@ var routes = [
          }
       ]);
    }],
+
+   // Apple only wants to use POST when sending an id_token, for security reasons.
+   ['post', 'auth/signin/web/apple', function (rq, rs) {
+
+      var reportError = function (error) {
+         notify (a.creat (), {priority: 'important', type: 'signin-apple', ip: rq.origin, userAgent: rq.headers ['user-agent'], error: error});
+         return reply (rs, 302, {}, {location: CONFIG.domain + '#/login/apple/error'});
+      }
+
+      if (! rq.data.fields || ! rq.data.fields.id_token) return reportError ('No id_token in the form');
+
+      var token = rq.data.fields.id_token;
+
+      // This is almost the same code that I wrote below for POST auth/signin/mobile/apple (minus the audience and the error reporting)
+      // Implementing this oauth flow has been harrowingly demoralizing, so I'm not going to refactor it to avoid copy/paste, at least not for now.
+      a.seq ([
+         [H.getApplePublicKeys],
+         function (s) {
+            if (s.error) return reply (rs, 500, {error: 'Could not retrieve the Apple Auth keys', details: s.error});
+
+            var keys = s.last;
+            var decodedHeader = jwt.decode (token, {complete: true});
+            var key = dale.stopNot (keys, undefined, function (key) {
+               if (key.kid === decodedHeader.header.kid) return key;
+            });
+
+            if (! key) return reportError ('Invalid token');
+            // <3 https://stackoverflow.com/questions/72616533/how-to-verify-an-apple-jwt-using-a-public-key/78652065#78652065
+            key = crypto.createPublicKey ({key, format: 'jwk'});
+
+            var user;
+            try {
+               user = jwt.verify (token, key, {algorithms: ['RS256'], audience: 'nl.altocode.tagaway.login'});
+            }
+            catch (error) {
+               reportError (error);
+            }
+
+            if (! user) return reportError ('Invalid user');
+
+            rs.oauthUser = user;
+            H.oauthSignin (rq, rs, 'apple', true);
+         }
+      ]);
+   }],
+
 
    ['post', 'auth/signin/mobile/apple', function (rq, rs) {
 
@@ -2267,7 +2319,13 @@ var routes = [
             // <3 https://stackoverflow.com/questions/72616533/how-to-verify-an-apple-jwt-using-a-public-key/78652065#78652065
             key = crypto.createPublicKey ({key, format: 'jwk'});
 
-            var user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: 'nl.altocode.tagaway'});
+            var user;
+            try {
+               user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: 'nl.altocode.tagaway'});
+            }
+            catch (error) {
+               reply (rs, 401, {error: 'Invalid user'});
+            }
 
             if (! user) return reply (rs, 401, {error: 'Invalid user', user: user});
 

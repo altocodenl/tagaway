@@ -4909,7 +4909,11 @@ views.feedback = function () {
 
 var googleClientId = '764404427753-v129e6ckia1eebpra59bmv648pidtjma.apps.googleusercontent.com';
 var googleRedirectURI = window.location.origin + window.location.pathname + 'auth/signin/web/google';
-var googleURI = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + googleClientId + '&redirect_uri=' + googleRedirectURI + '&response_type=code&scope=openid%20email%20profile';
+var googleURI = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + googleClientId + '&redirect_uri=' + encodeURIComponent (googleRedirectURI) + '&response_type=code&scope=openid%20email%20profile';
+
+var appleClientId = 'nl.altocode.tagaway.login';
+var appleRedirectURI = window.location.origin + window.location.pathname + 'auth/signin/web/apple';
+var appleURI = 'https://appleid.apple.com/auth/authorize?response_type=code%20id_token&client_id=' + appleClientId + '&redirect_uri=' + encodeURIComponent (appleRedirectURI) + '&scope=openid%20email%20name&response_mode=form_post';
 
 // *** LOGIN VIEW ***
 
@@ -4927,7 +4931,7 @@ views.login = function () {
                      ]],
                      ['p', {class:'sign-up-in-with-google-p'}, 'Sign in with Google'],
                   ]],
-                  ['a', {class: 'sign-up-in-with-google-a',}, [
+                  ['a', {class: 'sign-up-in-with-google-a', href: appleURI}, [
                      ['span',{class: 'sign-up-in-with-google-span'}, [
                         [H.putSvg('appleIcon')]
                      ]],
@@ -4940,7 +4944,7 @@ views.login = function () {
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Log in', onclick: B.ev ('login', [])}],
                   ['a', {href: '#/recover', class: 'enter-form__forgot-password'}, 'Forgot password?'],
                   ['a', {href: '#/signup',  class: 'enter-form__forgot-password'}, 'Don\'t have an account? Create an account.'],
-                  
+
                ]]
             ]]
          ]],
@@ -4964,7 +4968,7 @@ views.signup = function () {
                      ]],
                      ['p', {class:'sign-up-in-with-google-p'}, 'Sign up with Google'],
                   ]],
-                  ['a', {class: 'sign-up-in-with-google-a',}, [
+                  ['a', {class: 'sign-up-in-with-google-a', href: appleURI}, [
                      ['span',{class: 'sign-up-in-with-google-span'}, [
                         [H.putSvg('appleIcon')]
                      ]],
@@ -4980,7 +4984,7 @@ views.signup = function () {
                   ['input', {id: 'auth-password-confirm', type: 'password', class: 'enter-form__input', placeholder: 'Repeat password'}],
                   ['input', {type: 'submit', class: 'enter-form__button enter-form__button--1 enter-form__button--submit', value: 'Create account', onclick: B.ev ('signup', [])}],
                   ['a', {class: 'enter-form__forgot-password', href: '#/login'}, 'Already have an account? Log in.'],
-                  
+
                ]]
             ]]
          ]],
