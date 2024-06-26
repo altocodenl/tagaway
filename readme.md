@@ -454,6 +454,16 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - The `token` should be a string that contains an id token obtained from Google.
    - If successful, the endpoint either logs in (if the user already had logged in with that Google account or with an email connected with that Google account) or creates an account.
 
+`POST /auth/signin/web/apple`
+   - This endpoint will be executed after the user has successfully authenticated with Apple and is redirected back to tagaway
+   - Receives a form parameter `id_token`
+   - If successful, the endpoint either logs in (if the user already had logged in with that Apple account or with an email connected with that Apple account) or creates an account.
+
+`POST /auth/signin/mobile/apple`
+   - Receives a body `{token: STRING}`.
+   - The `token` should be a string that contains an id token obtained from Apple.
+   - If successful, the endpoint either logs in (if the user already had logged in with that Apple account or with an email connected with that Apple account) or creates an account.
+
 #### App routes
 
 `POST /feedback`

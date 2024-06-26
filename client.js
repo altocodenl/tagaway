@@ -5059,7 +5059,7 @@ views.header = function (showUpload, showImport) {
       ['div', {class: 'header__user'}, [
          ['ul', {class: 'account-menu'}, [
             B.view (['Data', 'account'], function (user) {
-               return ['li', {class: 'username'}, user ? user.username : ''];
+               return ['li', {class: 'username'}, user ? (user.firstName || user.username) : ''];
             }),
             ['li', {class: 'account-menu__item'}, [
                H.putSvg ('accountMenu'),
@@ -5159,7 +5159,7 @@ views.onboarding = function () {
          ['div', {class: 'guide'}, [
             ['span', {style: style ({display: 'inline-flex'})}, [
                ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
-               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, account.firstName || account.username],
                ['h2', {class: 'guide__title'}, '!']
             ]],
             ['p', {class: 'guide__text', style: style ({width: 800, 'margin-bottom': CSS.vars ['padding--xl']})}, 'Thank you for joining tagaway. Are you ready to start organizing your digital memories?'],
@@ -5202,7 +5202,7 @@ views.home = function () {
          ['div', {class: 'guide'}, [
             ['span', {style: style ({display: 'inline-flex'})}, [
                ['h2', {class: 'guide__title', style: style ({'margin-right': CSS.vars ['padding--xs']})}, 'Welcome, '],
-               ['h2', {class: 'guide__title'}, account.username],
+               ['h2', {class: 'guide__title'}, account.firstName || account.username],
                ['h2', {class: 'guide__title'}, '!']
             ]],
             ['p', {class: 'guide__text'}, 'Click the box below and add shortcuts to your favorite tags.']
