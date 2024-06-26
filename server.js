@@ -2148,7 +2148,9 @@ var routes = [
 
    ['get', 'auth/signin/credentials/google', function (rq, rs) {
       reply (rs, 200, {
-         android: SECRET.google.oauth.login.androidClientId,
+         // With profuse thanks to @ascott18: https://github.com/flutter/flutter/issues/33393#issuecomment-964728679
+         // We need to use *webClientId* rather than *androidClientId*. Go figure.
+         android: SECRET.google.oauth.login.webClientId,
          ios: SECRET.google.oauth.login.iosClientId,
       });
    }],
@@ -2228,7 +2230,8 @@ var routes = [
 
             var user;
             try {
-               user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [b.platform + 'ClientId']});
+               // Yep, we need to use web, not android, for the android audience.
+               user = jwt.verify (b.token, key, {algorithms: ['RS256'], audience: SECRET.google.oauth.login [(b.platform === 'android' ? 'web' : b.platform) + 'ClientId']});
             }
             catch (error) {
                reply (rs, 401, {error: 'Invalid user'});
