@@ -769,6 +769,7 @@ suites.oauth = function () {
       ['get oauth client ids', 'get', 'auth/signin/credentials/google', {}, '', 200, H.cBody ({
          android: SECRET.google.oauth.login.androidClientId,
          ios: SECRET.google.oauth.login.iosClientId,
+         web: SECRET.google.oauth.login.webClientId,
       })],
       ['dummy request before starting OAuth flow requiring manual input', 'get', '/', {}, '', 200, function (s, rq, rs, next) {
 

@@ -2148,10 +2148,9 @@ var routes = [
 
    ['get', 'auth/signin/credentials/google', function (rq, rs) {
       reply (rs, 200, {
-         // With profuse thanks to @ascott18: https://github.com/flutter/flutter/issues/33393#issuecomment-964728679
-         // We need to use *webClientId* rather than *androidClientId*. Go figure.
-         android: SECRET.google.oauth.login.webClientId,
+         android: SECRET.google.oauth.login.androidClientId,
          ios: SECRET.google.oauth.login.iosClientId,
+         web: SECRET.google.oauth.login.webClientId,
       });
    }],
 
