@@ -3485,7 +3485,7 @@ suites.deleteTag = function () {
          s.uploadId = rs.body.id;
          return true;
       }],
-      ['upload small piv to test deletion', 'post', 'piv', {}, function (s) {return {multipart: [
+      ['upload small piv to test tag deletion', 'post', 'piv', {}, function (s) {return {multipart: [
          {type: 'file',  name: 'piv',          path:  tk.pivs.small.path},
          {type: 'field', name: 'id',           value: s.uploadId},
          {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime},
@@ -3493,18 +3493,36 @@ suites.deleteTag = function () {
          s.smallId = rs.body.id;
          return true;
       }],
-      ['tag piv to test deletion', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId]}}, 200],
+      ['upload medium piv to test tag deletion', 'post', 'piv', {}, function (s) {return {multipart: [
+         {type: 'file',  name: 'piv',          path:  tk.pivs.medium.path},
+         {type: 'field', name: 'id',           value: s.uploadId},
+         {type: 'field', name: 'lastModified', value: tk.pivs.medium.mtime},
+      ]}}, 200, function (s, rq, rs) {
+         s.mediumId = rs.body.id;
+         return true;
+      }],
+      ['tag pivs to test tag deletion', 'post', 'tag', {}, function (s) {return {tag: 'tag1', ids: [s.smallId, s.mediumId]}}, 200],
+      ['tag second piv with another tag', 'post', 'tag', {}, function (s) {return {tag: 'tag2', ids: [s.mediumId]}}, 200],
       ['share tag', 'post', 'sho', {}, {tag: 'tag1',  whom: tk.users.user2.email}, 200],
       ['delete shared tag', 'post', 'deleteTag', {}, {tag: 'tag1'}, 409, H.cBody ({error: 'shared'})],
       ['unshare tag', 'post', 'sho', {}, {tag: 'tag1',  whom: tk.users.user2.email, del: true}, 200],
       ['add tag to hometags', 'post', 'hometags', {}, {hometags: ['tag1']}, 200],
       ['delete tag', 'post', 'deleteTag', {}, {tag: 'tag1'}, 200],
-      ['query pivs after deleting tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 3}, 200, function (s, rq, rs) {
+      ['query pivs with tag after deleting tag', 'post', 'query', {}, {tags: ['tag1'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
          if (H.stop ('body.total', rs.body.total, 0)) return false;
          return true;
       }],
       ['get tags after deleting', 'get', 'tags', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {tags: tk.pivs.small.dateTags, hometags: [], organized: 0, homeThumbs: rs.body.homeThumbs})) return false;
+         if (inc (rs.body.tags, 'tag1')) return clog ('tag1 was not deleted from rs.body.tags');
+         return true;
+      }],
+      ['query all pivs with tag after deleting tag', 'post', 'query', {}, {tags: [], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+         if (H.stop ('body.total', rs.body.total, 2)) return false;
+         if (H.stop ('body.tags.u::', rs.body.tags ['u::'], 1)) return false;
+         return true;
+      }],
+      ['query untagged pivs, get only small piv', 'post', 'query', {}, {tags: ['u::'], sort: 'upload', from: 1, to: 10}, 200, function (s, rq, rs) {
+         if (H.stop ('body.pivs [0].id', rs.body.pivs [0].id, s.smallId)) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),

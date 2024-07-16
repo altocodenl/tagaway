@@ -2450,6 +2450,7 @@ var routes = [
                   if (b.username === undefined) multi.del ('csrf:' + rq.data.cookie [CONFIG.cookieName]);
                   multi.del ('email:'  + user.email);
                   multi.del ('oauth:google:'+ user.googleId);
+                  multi.del ('oauth:apple:'+ user.appleId);
                   multi.del ('tags:' + user.username);
                   multi.del ('hometags:' + user.username);
 
@@ -2545,6 +2546,7 @@ var routes = [
                firstName: rq.user.firstName,
                lastName:  rq.user.lastName,
                googleId:  rq.user.googleId,
+               appleId:   rq.user.appleId,
                created:   parseInt (rq.user.created),
                usage:    {
                   limit:  limit,
@@ -4052,13 +4054,23 @@ var routes = [
             multi.del ('tag:' + rq.user.username + ':' + b.tag);
             multi.srem ('tags:' + rq.user.username, b.tag);
             dale.go (s.last [0], function (id) {
-               multi.srem ('pivt:' + id, b.tag);
+               multi.srem     ('pivt:' + id, b.tag);
+               multi.smembers ('pivt:' + id);
             });
+            s.pivsToCheck = s.last [0];
 
             var hometags = dale.fil (teishi.parse (s.last [2]) || [], undefined, function (hometag) {
                 if (hometag !== b.tag) return hometag;
             });
             multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
+            mexec (s, multi);
+         },
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (s.pivsToCheck, function (id, k) {
+               var hasUserTag = dale.stop (s.last [2 + (k * 2) + 1], true, H.isUserTag);
+               if (! hasUserTag) multi.sadd ('tag:' + rq.user.username + ':u::', id);
+            });
             mexec (s, multi);
          },
          [reply, rs, 200]

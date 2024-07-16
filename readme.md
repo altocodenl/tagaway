@@ -834,6 +834,7 @@ All the routes below require an admin user to be logged in.
    firstName: STRING|undefined
    lastName: STRING|undefined
    googleId: STRING|undefined (id from Google OAuth)
+   appleId: STRING|undefined (id from Apple OAuth)
    created: INT
    lastActivity: INT
    geo: 1|undefined
@@ -4911,7 +4912,7 @@ We check for the existence of `tag:USERNAME:TAG`; also, we get the list of all t
          }],
 ```
 
-If the tag `from` doesn't exist for the user, we return a 404 with body `{error: 'tag'}`.
+If the tag has no pivs, the tag itself does not exist. Therefore, we return a 404 with body `{error: 'tag'}`.
 
 ```javascript
          function (s) {
@@ -4942,12 +4943,19 @@ We remove `b.tag` from `pivt:USERNAMe`.
             multi.srem ('tags:' + rq.user.username, b.tag);
 ```
 
-For each of the pivs tagged with `b.tag`, we remove `b.tag` from `pivt:PIVID`.
+For each of the pivs tagged with `b.tag`, we remove `b.tag` from `pivt:PIVID`. We will also get all the tags of the piv *after* we have removed `b.tag` -- we'll need this later to mark some pivs as untagged.
 
 ```javascript
             dale.go (s.last [0], function (id) {
-               multi.srem ('pivt:' + id, b.tag);
+               multi.srem     ('pivt:' + id, b.tag);
+               multi.smembers ('pivt:' + id);
             });
+```
+
+We will store the ids of the pivs with this tag in `s.pivsToCheck`, because we need a list of their ids later to see if they should be marked as untagged.
+
+```javascript
+            s.pivsToCheck = s.last [0];
 ```
 
 We first start by parsing the existing hometags; if no hometags exist, we will instead create an empty array. We will then iterate the array of hometags and create a new one, where `b.tag` will be omitted. If the array is empty, or `b.tag` is not there, the new array will be the same to the old one.
@@ -4964,11 +4972,48 @@ We will now update the array of hometags.
             multi.set ('hometags:' + rq.user.username, JSON.stringify (hometags));
 ```
 
-We execute the operations and return a 200 if the operation is successful. This concludes the endpoint.
+We execute the operations.
 
 ```javascript
             mexec (s, multi);
          },
+```
+
+We now go over the pivs that had the deleted tag, to see if they have any other user tags.
+
+```javascript
+         function (s) {
+            var multi = redis.multi ();
+            dale.go (s.pivsToCheck, function (id, k) {
+```
+
+In the previous set of operations, we made a call to get all the tags for each of the pivs. To access these tags from the results, we need to add 2 (since the first two operations were concerned with deleting two keys related to the tags; for every piv to check, there are two pairs of entries, one for the deletion of the tag (we don't care about the result returned by this one) and then one where we get the list of tags for that piv *after* the deleted piv is removed from it.
+
+This is the closest I've got to pointer arithmetic in my code.
+
+We ascertain whether there are any user tags remaining on each piv.
+
+```javascript
+               var hasUserTag = dale.stop (s.last [2 + (k * 2) + 1], true, H.isUserTag);
+```
+
+If there's no user tags left on the piv, we need to add its id to the tag that contains all the untagged pivs for the user.
+
+```javascript
+               if (! hasUserTag) multi.sadd ('tag:' + rq.user.username + ':u::', id);
+```
+
+We execute the operations.
+
+```javascript
+            });
+            mexec (s, multi);
+         },
+```
+
+Finally, we return a 200 if the operation is successful. This concludes the endpoint.
+
+```javascript
          [reply, rs, 200]
       ]);
    }]
