@@ -3466,10 +3466,6 @@ H.computeChunks = function (x, pivs) {
    return chunks;
 }
 
-// *** VIEWS ***
-
-var views = {};
-
 // *** NATIVE RESPONDERS ***
 
 window.onerror = function () {
@@ -4692,6 +4688,10 @@ B.mrespond ([
    }]
 
 ]);
+
+// *** VIEWS ***
+
+var views = {};
 
 // *** LOGO VIEW ***
 
