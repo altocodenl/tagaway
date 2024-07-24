@@ -20,8 +20,8 @@ if [ "$2" == "client" ] ; then
    exit 0
 fi
 
-if [ "$2" == "client2" ] ; then
-   scp client.js $HOST:$FOLDER/client2.js
+if [ "$2" == "channel" ] ; then
+   scp channel.js $HOST:$FOLDER/channel.js
    exit 0
 fi
 \

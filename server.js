@@ -1803,10 +1803,13 @@ var routes = [
 
    ['get', 'assets/gotoB.min.js', cicek.file, 'node_modules/gotob/gotoB.min.js'],
 
-   ['get', ['assets/*', 'client.js', 'client2.js', 'testclient.js', 'admin.js'], cicek.file],
+   ['get', ['assets/*', 'client.js', 'channel.js', 'testclient.js', 'admin.js'], cicek.file],
 
-   dale.go (['/', '/client2'], function (v) {
-      return ['get', v, reply, lith.g ([
+   // TODO: remove after writing the backend for channels
+   ['get', ['test/*'], cicek.file],
+
+   dale.go ({'/': 'client.js', 'channel/*': 'channel.js'}, function (file, route) {
+      return ['get', route, reply, lith.g ([
          ['!DOCTYPE HTML'],
          ['html', [
             ['head', [
@@ -1818,12 +1821,12 @@ var routes = [
             ]],
             ['body', [
                dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
-                  return ['script', {src: 'assets/' + v}];
+                  return ['script', {src: CONFIG.domain + 'assets/' + v}];
                }),
                ['script', 'B.prod = ' + (ENV === 'prod') + ';'],
                ['script', 'window.allowedFormats = ' + JSON.stringify (CONFIG.allowedFormats) + ';'],
                ['script', 'window.maxFileSize    = ' + CONFIG.maxFileSize + ';'],
-               ['script', {src: v === '/' ? 'client.js' : 'client2.js'}]
+               ['script', {src: CONFIG.domain + file}]
             ]]
          ]]
       ])];

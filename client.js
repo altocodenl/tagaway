@@ -5938,7 +5938,7 @@ views.open = function () {
             if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/M/' + piv.id, alt: 'picture'}];
             if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
             if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
-            return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true}];
+            return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true, alt: 'video'}];
          }) ()],
          ['div', {class: 'fullscreen__actions'}, [
                // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [

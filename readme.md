@@ -50,19 +50,19 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - server: investigate wrong number in stat with number of users
 --------------
 - small tasks
+   - server: when reuploading things that were deleted, put a PREVIOUSLY DELETED TAG; and when you tag one of these pivs (not during upload), it automatically gets removed. Or perhaps when you remove that tag itself, to make it much more explicit.
    - **server/client: set location**
-   - server: move to backblaze
    - server/config: fix google drive import
    - Test hoop from US: check latency, then check if we can do HTTPS with two IPs to the same domain. Also check whether that IP would be normally preferred on the Americas.
    - server: process to review unsupported formats, invalid pivs and errored mp4 conversions
    - server: review format errors with files that have a jpg extension
    - server: serve webp if there's browser support (check `request.header.accept`, modify tests to get both jpeg and original at M size).
-   - server/client: ignore deleted pivs flag for both upload & import, at an upload/import level.
    - client: retry upload button
    - client: see info of piv
    - client: upgrade pop up notice or email when running out of free space
 --------------
 - small internal tasks
+   - server: move to backblaze
    - remove critical notification for:"error": "response.connection.writable passed to cicek.file should be equal to true but instead is false",
    - server/client: rename everything to tagaway: folders, references.
    - server/client: Add mute events, use teishi.inc, teishi.prod = true in server // also in ac;web & ac;tools
