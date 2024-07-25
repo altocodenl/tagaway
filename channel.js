@@ -3237,12 +3237,13 @@ B.mrespond ([
       B.call (x, 'set', ['Data', 'channel'], {
          id: 'de0b966e-25b2-4500-805a-657bc55533ff',
          entries: [
-            {t: 1721852977121, text: 'Ay que hermosor'},
-            {t: 1721852977121, piv:  'test/rotate.jpg'},
-            {t: 1721852977121, piv:  'test/tram.mp4', vid: true},
-            {t: 1721852977121, text: 'Chinese noodles!'},
-            {t: 1721852977121, piv:  'test/small.png'},
-            {t: 1721852977121, text: 'Pero anda a comer chipa por tu casa'},
+            {from: 'Ro',       t: 1721852977121, piv:  'test/rotate.jpg'},
+            {from: 'fpereiro', t: 1721852977121, text: 'Ay que hermosor'},
+            {from: 'fpereiro', t: 1721852977121, piv:  'test/tram.mp4', vid: true},
+            {from: 'Ro',       t: 1721852977121, text: 'Chinese noodles!'},
+            {from: 'fpereiro', t: 1721852977121, piv:  'test/small.png'},
+            {from: 'Tom!',     t: 1721852977121, text: 'Pero anda a comer chipa por tu casa'},
+            {from: 'fpereiro', t: 1721852977121, text: 'Un MVP asi nomas'},
          ]
       });
    }],
@@ -3253,13 +3254,26 @@ B.mrespond ([
 var views = {};
 
 views.css = [
+   ['body', {
+      'background-color': '#222222'
+   }],
    ['div.channel', {
-      'width, max-width': 500,
-      margin: 'auto'
-   }],
-   ['span.channel', {
-      display: 'block'
-   }],
+      'width, max-width': 700,
+      'background-color': '#dddddd',
+      margin: 'auto',
+      'text-align': 'right',
+   }, [
+      ['div.card', {
+         width: 550,
+         'margin-left': 'auto',
+      }],
+      ['img, video', {
+         'max-height': 550,
+      }],
+      ['span', {
+         'max-width': 300
+      }],
+   ]],
 ];
 
 views.main = function () {
@@ -3271,6 +3285,33 @@ views.main = function () {
    ];
 };
 
+views.channel = function () {
+   var wrap = function (from, contents, count) {
+      return [['div', {class: 'card relative db pa3 br3 bg-light-gray fw8 f5 dark-gray ba b--silver tr'}, [
+         ['span', {class: 'dib pb3'}, from],
+         contents,
+         ['span', {class: 'whim absolute left-0 bottom-0 pa3', style: style ({'background-color': CSS.vars.tagColors [count % 6]})}, count],
+      ]]];
+   }
+
+   return B.view (['Data', 'channel'], function (channel) {
+      if (! channel) return ['div', {class: 'pa3 channel'}, 'Loading...'];
+
+      return ['div', {class: 'pa3 channel'}, dale.go (channel.entries, function (v, k) {
+         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-light-gray fw5 f5 dark-gray db tr'}, v.text], k + 1);
+
+         if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db', controls: true, autoplay: false, src: '../' + v.piv, type: 'video/mp4', loop: true, alt: 'video'}], k + 1);
+
+         if (v.piv && ! v.vid) return wrap (v.from, ['img', {class: 'ml-auto db', src: '../' + v.piv, alt: 'picture'}], k + 1);
+      })];
+   });
+}
+
+
+
+
+
+// TODO: move up
 views.snackbar = function () {
    return [
       ['style', [
@@ -3311,18 +3352,6 @@ views.snackbar = function () {
          ]];
       })
    ];
-}
-
-views.channel = function () {
-   return B.view (['Data', 'channel'], function (channel) {
-      if (! channel) return ['div', {class: 'channel'}, 'Loading...'];
-      clog (channel);
-      return ['div', {class: 'channel'}, dale.go (channel.entries, function (v) {
-         if (v.text) return [['span', v.text], ['br']];
-         if (v.piv && v.vid)   return [['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: false, src: '../' + v.piv, type: 'video/mp4', loop: true, alt: 'video'}], ['br']];
-         if (v.piv && ! v.vid) return [['img', {class: 'fullscreen__image', src: '../' + v.piv, alt: 'picture'}], ['br']];
-      })];
-   });
 }
 
 // *** INITIALIZATION ***
