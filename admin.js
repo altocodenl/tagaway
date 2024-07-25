@@ -413,11 +413,12 @@ B.mrespond ([
 
    // *** DEPLOY RESPONDERS ***
 
-   ['deploy', 'client', function (x) {
-      var input = c ('#deploy');
+   ['deploy', '*', function (x) {
+      var input = c ('#deploy-' + x.path [0]);
       if (! input.files.length) return B.call (x, 'snackbar', 'yellow', 'Please select a file.');
       var f = new FormData ();
       f.append ('file', input.files [0]);
+      f.append ('name', x.path [0] + '.js');
       B.call (x, 'post', 'admin/deploy', {}, f, function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', error.responseText);
          input.value = '';
@@ -768,15 +769,17 @@ views.logs = function () {
 // *** DEPLOY VIEW ***
 
 views.deploy = function () {
-   return ['div', {style: style ({padding: 60})}, [
-      ['h2', {class: 'page-title'}, 'Deploy client.js'],
-      ['br'], ['br'],
-      ['form', {onsubmit: 'event.preventDefault ()'}, [
-         ['input', {id: 'deploy', type: 'file', name: 'file'}],
+   return dale.go (['client', 'channel'], function (v) {
+      return ['div', {style: style ({padding: 60})}, [
+         ['h2', {class: 'page-title'}, 'Deploy ' + v],
          ['br'], ['br'],
-         ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('deploy', 'client')}, 'Update client.js'],
-      ]]
-   ]];
+         ['form', {onsubmit: 'event.preventDefault ()'}, [
+            ['input', {id: 'deploy-' + v, type: 'file', name: 'file'}],
+            ['br'], ['br'],
+            ['button', {class: 'pure-button pure-button-primary', onclick: B.ev ('deploy', v)}, 'Update ' + v],
+         ]]
+      ]];
+   });
 }
 
 // *** STATS VIEW ***

@@ -1818,6 +1818,7 @@ var routes = [
                ['title', 'ac;pic'],
                ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
                ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
+               ['link', {rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/tachyons/4.11.1/tachyons.min.css'}],
             ]],
             ['body', [
                dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
@@ -5036,9 +5037,10 @@ var routes = [
    ['post', 'admin/deploy', function (rq, rs) {
 
       if (! rq.data.files || ! rq.data.files.file) return reply (rs, 400);
+      if (['client.js', 'channel.js'].indexOf (rq.data.fields.name) === -1) return reply (rs, 400);
 
       astop (rs, [
-         [a.make (fs.rename), rq.data.files.file, 'client.js'],
+         [a.make (fs.rename), rq.data.files.file, rq.data.fields.name],
          [reply, rs, 200]
       ]);
    }],
