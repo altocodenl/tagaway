@@ -3258,20 +3258,20 @@ views.css = [
       'background-color': '#222222'
    }],
    ['div.channel', {
-      'width, max-width': 700,
+      'max-width': '90vw',
       'background-color': '#dddddd',
       margin: 'auto',
       'text-align': 'right',
    }, [
       ['div.card', {
-         width: 550,
          'margin-left': 'auto',
       }],
       ['img, video', {
-         'max-height': 550,
+         'max-height': '80vh',
+         'max-width': '80vw',
       }],
       ['span', {
-         'max-width': 300
+         'max-width': '80vw'
       }],
    ]],
 ];
@@ -3287,10 +3287,10 @@ views.main = function () {
 
 views.channel = function () {
    var wrap = function (from, contents, count) {
-      return [['div', {class: 'card relative db pa3 br3 bg-light-gray fw8 f5 dark-gray ba b--silver tr'}, [
-         ['span', {class: 'dib pb3'}, from],
+      return [['div', {class: 'card relative db pa3 br3 bg-light-gray dark-gray ba b--silver tr'}, [
+         ['span', {class: 'dib pb4 fw8 f1'}, from],
          contents,
-         ['span', {class: 'whim absolute left-0 bottom-0 pa3', style: style ({'background-color': CSS.vars.tagColors [count % 6]})}, count],
+         ['span', {class: 'absolute left-0 bottom-0 pa3 f1 fw8', style: style ({'background-color': CSS.vars.tagColors [count % 6]})}, count],
       ]]];
    }
 
@@ -3298,7 +3298,7 @@ views.channel = function () {
       if (! channel) return ['div', {class: 'pa3 channel'}, 'Loading...'];
 
       return ['div', {class: 'pa3 channel'}, dale.go (channel.entries, function (v, k) {
-         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-light-gray fw5 f5 dark-gray db tr'}, v.text], k + 1);
+         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-light-gray fw5 f1 dark-gray db tr'}, v.text], k + 1);
 
          if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db', controls: true, autoplay: false, src: '../' + v.piv, type: 'video/mp4', loop: true, alt: 'video'}], k + 1);
 
