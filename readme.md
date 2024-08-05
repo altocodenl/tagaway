@@ -39,6 +39,72 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
+- channels
+   - impl notes: a list, except that it behaves like a tag for querying for the user.
+   - post to channel: piv or message
+   - if channel is own and doesn't exist, create channel. not allowed for not logged in users.
+   - channel has uuid and name.
+   - access by uuid only, to avoid collisions and strangers guessing.
+   - name can be changed, but must be unique for that user (no renames that merge).
+   - channel deletion is explicit or implicit. implicit is when last element of the channel is deleted. this happens automatically through redis.
+   - element deletion (piv or text) can be done by owner only.
+   - when an entry is removed from the channel, if that entry is a piv, remove it from the c:: tag if it's the only instance of it
+   - For now, no way to remove text from a frontend, since channels are not in app.
+
+channels:USER (hash):
+   name: id
+   name2: id2
+channel:USER:NAME (list)
+   {id: ..., from: 'Ro',          t: 1721852977121, piv:  'uuid'},
+   {id: ..., from: 'u::fpereiro', t: 1721852977121, text: 'foo'}, // u::USER for users that are from tagaway, currently only one can be owner
+
+Public routes:
+- POST /channel/ID ({name: ...} for anonymous, {user: ...} if owner), plus a piv or text
+   - POST /channel/ID hits itself with POST /piv, with the channel as tag.
+- GET /channel/ID
+- GET /piv/ID?channel=CHANNEL_ID & GET /thumb/SIZE/ID?channel=CHANNEL_ID
+   - Get the channel itself and search for the piv there. If it is, serve it through the existing endpoints.
+   - Repurpose hasAccess to receive an optional channel argument.
+Owner routes:
+- POST /channel, to create a channel: {name: ...}
+- DELETE /channel/ID
+- DELETE /channel/ID/message/MESSAGEID
+- DELETE /channel/ID/piv/PIVID
+   - Find 1 or more instances of that piv and delete them.
+
+Changes:
+- When deleting piv, if piv is inside a channel, delete it from those channels
+- When querying pivs, see pivs with c:: only as untagged.
+
+No need for endpoint to list channels because they can be obtained from list of tags.
+
+Web client:
+- Enter your name, remember it in localstorage
+- Make call to GET /channel/id
+- For each piv item, make calls to GET /thumb/900/id?channel=cid (and for video, original)
+- For each piv item, add a button to download.
+- Send piv
+- Send text
+- Share link to channel to whatsapp/email...
+
+Mobile client:
+- Icon of channel next to tag
+- Open view like tag, but only showing existing channels
+- If enter new channel, post it, then upload to channel
+- If select existing, posts to it.
+- If unselect existing, delete the piv from the channel! But how, since you don't have the ID? Add an endpoint to this. It's an in-app way of removing all instances of a piv from the channel.
+- Share link to channel from that view (copy link).
+
+Channels in-app:
+- How would channels look in app?
+- channel consumer:
+   - see channel in app
+   - (un)subscribe to channel
+   - potentiall tag piv with subscription
+   - see subscriptions in app
+   - never query not-own channel.
+   - manage subscriptions
+
 - bugs
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
    - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**
@@ -62,6 +128,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - client: upgrade pop up notice or email when running out of free space
 --------------
 - small internal tasks
+   - server: log when server has a graceful shutdown.
    - server: move to backblaze
    - remove critical notification for:"error": "response.connection.writable passed to cicek.file should be equal to true but instead is false",
    - server/client: rename everything to tagaway: folders, references.
@@ -483,12 +550,6 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
    - Size must be 200 or 900.
    - If the piv has no thumbnail for that size, the original piv is returned.
-   - Depending on ETag, a 200 or 304 is returned.
-   - If the file is not found, a 404 is returned.
-
-- `GET /thumbof/ID`
-   - Gets the smallest thumbnail (or the piv, if the piv has none) of the piv with id ID.
-   - Piv must exist and the user must have permissions to see it (otherwise, 404).
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
 
