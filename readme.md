@@ -40,70 +40,87 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 ### Todo beta
 
 - channels
-   - impl notes: a list, except that it behaves like a tag for querying for the user.
-   - post to channel: piv or message
-   - if channel is own and doesn't exist, create channel. not allowed for not logged in users.
-   - channel has uuid and name.
-   - access by uuid only, to avoid collisions and strangers guessing.
-   - name can be changed, but must be unique for that user (no renames that merge).
    - channel deletion is explicit or implicit. implicit is when last element of the channel is deleted. this happens automatically through redis.
    - element deletion (piv or text) can be done by owner only.
    - when an entry is removed from the channel, if that entry is a piv, remove it from the c:: tag if it's the only instance of it
    - For now, no way to remove text from a frontend, since channels are not in app.
 
+- Channels
+   - Backend
+      - Get channels
+      - Create channel
+      - When deleting user, delete all channels
+      - Rename channel
+      - Delete channel
+
+      - Public: post text or piv to channel
+         - Pass channel info to POST /piv to let it resolve it, as well as avoid auth there
+      - Public: get channel
+      - Public: get piv or thumb from channel
+         - GET /piv/ID?owner=USERID&channel=CHANNELID & GET /thumb/SIZE/ID?owner=USERID&channel=CHANNELID
+         - Get the channel itself and search for the piv there. If it is, serve it through the existing endpoints.
+      - Repurpose hasAccess to receive an optional channel argument.
+      - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID
+      - When deleting piv, delete it from any channels that contain it
+      - When querying pivs, see pivs in own channel.
+   - Web client:
+      - Enter your name, remember it in localstorage
+      - Make call to GET /channel/id
+      - For each piv item, make calls to GET /thumb/900/id?channel=cid (and for video, original)
+      - For each piv item, add a button to download.
+      - Send piv
+      - Send text
+      - Share link to channel to whatsapp/email...
+   - Mobile client for owner:
+      - Icon of channel next to tag
+      - Open view like tag, but only showing existing channels
+      - If enter new channel, post it, then upload to channel
+      - If select existing, posts to it.
+      - If unselect existing, delete the piv from the channel! But how, since you don't have the ID? Add an endpoint to this. It's an in-app way of removing all instances of a piv from the channel.
+      - Share link to channel from that view (copy link).
+   - Channels in-app:
+      - How would channels look in app?
+      - channel consumer:
+         - see channel in app
+         - (un)subscribe to channel
+         - potentiall tag piv with subscription
+         - see subscriptions in app
+         - never query not-own channel.
+         - manage subscriptions
+
+
+
+- `POST /channel`.
+   - Body must be `{name: STRING}`.
+   - If user has already a channel with that `name`, returns a 409.
+   - Otherwise, it is successful and returns a 200 with body `{id: STRING}`.
+
+- `POST /channel/rename`
+   - Body must be of the form `{from: STRING, to: STRING}`, where both values are strings.
+   - If the user has no channel with name `from`, a 404 is returned with body `{error: 'tag'}`.
+   - If the user already has a channel with name `to` tag, to avoid overlapping two channels through a rename.
+   - If successful, returns a 200.
+
+- `GET /channels`
+   - Returns an object of the shape `{CHANNEL_NAME: ID, CHANNEL_NAME2: ID2, ...}`.
+
+- `POST /channel/delete`
+   - Body must be of the form `{id: STRING}`.
+   - If channel does not exist, a 404 is returned.
+   - If successful, returns a 200.
+
+- `POST /channel/USERID/CHANNELID`
+   - Body can be a JSON with the form `{from: STRING, text: STRING}`. Or it can be a multipart request of the form `{from: STRING, piv: BLOB}`.
+   - If `b.from` starts with `u::`, a 400 is returned.
+   - If there's no such, a 404 is returned.
+   - If successful, returns a 200.
+
 channels:USER (hash):
-   name: id
-   name2: id2
-channel:USER:NAME (list)
+   id: name
+   id2: name2
+channel:USER:ID (list)
    {id: ..., from: 'Ro',          t: 1721852977121, piv:  'uuid'},
-   {id: ..., from: 'u::fpereiro', t: 1721852977121, text: 'foo'}, // u::USER for users that are from tagaway, currently only one can be owner
-
-Public routes:
-- POST /channel/ID ({name: ...} for anonymous, {user: ...} if owner), plus a piv or text
-   - POST /channel/ID hits itself with POST /piv, with the channel as tag.
-- GET /channel/ID
-- GET /piv/ID?channel=CHANNEL_ID & GET /thumb/SIZE/ID?channel=CHANNEL_ID
-   - Get the channel itself and search for the piv there. If it is, serve it through the existing endpoints.
-   - Repurpose hasAccess to receive an optional channel argument.
-Owner routes:
-- POST /channel, to create a channel: {name: ...}
-- DELETE /channel/ID
-- DELETE /channel/ID/message/MESSAGEID
-- DELETE /channel/ID/piv/PIVID
-   - Find 1 or more instances of that piv and delete them.
-
-Changes:
-- When deleting piv, if piv is inside a channel, delete it from those channels
-- When querying pivs, see pivs with c:: only as untagged.
-
-No need for endpoint to list channels because they can be obtained from list of tags.
-
-Web client:
-- Enter your name, remember it in localstorage
-- Make call to GET /channel/id
-- For each piv item, make calls to GET /thumb/900/id?channel=cid (and for video, original)
-- For each piv item, add a button to download.
-- Send piv
-- Send text
-- Share link to channel to whatsapp/email...
-
-Mobile client:
-- Icon of channel next to tag
-- Open view like tag, but only showing existing channels
-- If enter new channel, post it, then upload to channel
-- If select existing, posts to it.
-- If unselect existing, delete the piv from the channel! But how, since you don't have the ID? Add an endpoint to this. It's an in-app way of removing all instances of a piv from the channel.
-- Share link to channel from that view (copy link).
-
-Channels in-app:
-- How would channels look in app?
-- channel consumer:
-   - see channel in app
-   - (un)subscribe to channel
-   - potentiall tag piv with subscription
-   - see subscriptions in app
-   - never query not-own channel.
-   - manage subscriptions
+   {id: ..., from: 'u::fpereiro', t: 1721852977122, text: 'foo'}, // u::USER for users that are from tagaway, currently only one can be owner
 
 - bugs
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
@@ -699,7 +716,6 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
    - Body must be of the form `{from: STRING, to: STRING}`, where both values are user tags - that is, a string that when trimmed *doesn't* start with a lowercased latin letter followed by two colons.
    - If `to` is not a user tag, a 400 is returned with body `{error: 'tag'}`.
    - If the user has no `from` tag, a 404 is returned with body `{error: 'tag'}`.
-   - If the user already has a `to` tag, a 409 is returned with body `{error: 'exists'}`, to avoid overlapping two tags through a rename.
    - If the `from` tag is shared with one or more users, a 409 is returned with body `{error: 'shared'}`.
    - If successful, returns a 200.
 

@@ -3849,6 +3849,66 @@ suites.geo = function () {
    ];
 }
 
+suites.channel = function () {
+   return [
+      suites.auth.in (tk.users.user1),
+      ['get channels before creating any', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {channels: {}})) return false;
+         return true;
+      }],
+      H.invalidTestMaker ('create channel', 'channel', [
+         [[], 'object'],
+         [[], 'keys', ['name']],
+         [[], 'invalidKeys', ['foo']],
+         [['name'], 'string'],
+      ]),
+      ['create channel', 'post', 'channel', {}, {name: 'foo'}, 200, function (s, rq, rs) {
+         if (H.stop ('body.id', type (rs.body.id), 'string')) return false;
+         if (! rs.body.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.is is not an uuid');
+         s.channelId = rs.body.id;
+         return true;
+      }],
+      ['create channel with same name, get conflict', 'post', 'channel', {}, {name: 'foo'}, 409],
+      ['create second channel', 'post', 'channel', {}, {name: 'bar'}, 200, function (s, rq, rs) {
+         s.channelId2 = rs.body.id;
+         return true;
+      }],
+      ['get channels', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {channels: {[s.channelId]: 'foo', [s.channelId2]: 'bar'}})) return false;
+         return true;
+      }],
+      H.invalidTestMaker ('rename channel', 'channel/rename', [
+         [[], 'object'],
+         [[], 'keys', ['from', 'to']],
+         [[], 'invalidKeys', ['foo']],
+         [['from'], 'string'],
+         [['to'], 'string'],
+      ]),
+      ['rename nonexisting channel', 'post', 'channel/rename', {}, {from: 'wha', to: 'bar'}, 404],
+      ['rename channel to another that exists, get conflict', 'post', 'channel/rename', {}, {from: 'foo', to: 'bar'}, 409],
+      ['rename channel successfully', 'post', 'channel/rename', {}, {from: 'foo', to: 'foo2'}, 200],
+      ['rename empty channel successfully', 'post', 'channel/rename', {}, {from: 'bar', to: 'bar2'}, 200],
+      ['get channels after renaming', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {channels: {[s.channelId]: 'foo2', [s.channelId2]: 'bar2'}})) return false;
+         return true;
+      }],
+      H.invalidTestMaker ('delete channel', 'channel/delete', [
+         [[], 'object'],
+         [[], 'keys', ['id']],
+         [[], 'invalidKeys', ['foo']],
+         [['id'], 'string'],
+      ]),
+      ['delete channel by name, get error', 'post', 'channel/delete', {}, function (s) {return {id: 'foo2'}}, 404],
+      ['delete channel by id', 'post', 'channel/delete', {}, function (s) {return {id: s.channelId}}, 200],
+      ['get channels after deletion', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('body', rs.body, {channels: {[s.channelId2]: 'bar2'}})) return false;
+         return true;
+      }],
+      ['post text to channel', 'post', function (s) {return 'channel/' + s.channelId}, {}, {}, 200],
+      suites.auth.out (tk.users.user1),
+   ];
+}
+
 suites.import = function () {
    if (noManual) return [];
    return [

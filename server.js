@@ -2438,7 +2438,8 @@ var routes = [
             if (! s.last) return reply (rs, 404);
             var user = s.last;
             a.seq (s, [
-               [a.set, 'allPivs',   [Redis, 'smembers', 'tag:' + user.username + ':a::']],
+               [a.set, 'allPivs',  [Redis, 'smembers', 'tag:' + user.username + ':a::']],
+               [a.set, 'channels', [Redis, 'hgetall', 'channels:' + user.username]],
                // TODO: add this logic back after enabling sharing! These lookups are expensive, so we temporarily turn them off. These will be replaced by sets of keys with hashtags and taghashes.
                ENV ? [] : [a.set, 'hashtags',  [redis.keyscan, 'hashtag:' + rq.user.username + ':*']],
                ENV ? [] : [a.set, 'taghashes', [redis.keyscan, 'taghash:' + rq.user.username + ':*']],
@@ -2457,6 +2458,11 @@ var routes = [
                   multi.del ('oauth:apple:'+ user.appleId);
                   multi.del ('tags:' + user.username);
                   multi.del ('hometags:' + user.username);
+                  multi.del ('channels:' + user.username);
+
+                  dale.go (s.channels, function (v, k) {
+                     multi.del ('channel:' + user.username + ':' + k);
+                  });
 
                   // hash and hashorig entries are deleted incrementally when deleting each piv.
                   multi.del ('hashdel:'     + user.username);
@@ -4313,6 +4319,165 @@ var routes = [
       ]);
    }],
 
+   // *** CHANNEL ***
+
+   ['post', 'channel', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['name'], 'eachOf', teishi.test.equal],
+         ['name', b.name, 'string']
+      ])) return;
+
+      b.name = H.trim (b.name);
+
+      astop (rs, [
+         [Redis, 'hgetall', 'channels:' + rq.user.username],
+         function (s) {
+            var nameExists = dale.stop (s.last, true, function (v) {
+               return v === b.name;
+            });
+            if (nameExists) return reply (rs, 409);
+            s.id = uuid ();
+            Redis (s, 'hset', 'channels:' + rq.user.username, s.id, b.name);
+         },
+         function (s) {
+            reply (rs, 200, {id: s.id});
+         }
+      ]);
+   }],
+
+   ['post', 'channel/rename', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['from', 'to'], 'eachOf', teishi.test.equal],
+         ['body.from', b.from, 'string'],
+         ['body.to', b.to, 'string'],
+      ])) return;
+
+      b.to = H.trim (b.to);
+
+      astop (rs, [
+         [Redis, 'hgetall', 'channels:' + rq.user.username],
+         function (s) {
+            var fromId, toId;
+            dale.go (s.last, function (v, id) {
+               if (v === b.from) fromId = id;
+               if (v === b.to)   toId   = id;
+            });
+            if (! fromId) return reply (rs, 404);
+            if (toId)     return reply (rs, 409);
+            Redis (s, 'hset', 'channels:' + rq.user.username, fromId, b.to);
+         },
+         [reply, rs, 200],
+      ]);
+   }],
+
+   ['get', 'channels', function (rq, rs) {
+      astop (rs, [
+         [Redis, 'hgetall', 'channels:' + rq.user.username],
+         function (s) {
+            reply (rs, 200, {channels: s.last || {}});
+         }
+      ]);
+   }],
+
+   ['post', 'channel/delete', function (rq, rs) {
+
+      var b = rq.body;
+
+      if (stop (rs, [
+         ['keys of body', dale.keys (b), ['id'], 'eachOf', teishi.test.equal],
+         ['body.id', b.id, 'string'],
+      ])) return;
+
+      astop (rs, [
+         [Redis, 'hget', 'channels:' + rq.user.username, b.id],
+         function (s) {
+            if (! s.last) return reply (rs, 404);
+            var multi = redis.multi ();
+            multi.hdel ('channels:' + rq.user.username, b.id);
+            multi.del ('channel:' + rq.user.username + ':' + b.id); // Could be a no-op if channel is empty, no problem.
+            mexec (s, multi);
+         },
+         [reply, rs, 200]
+      ]);
+   }],
+
+   ['post', 'channel/(*)/(*)', function (rq, rs) {
+      var userId    = rq.data.params [0];
+      var channelId = rq.data.params [1];
+
+      var b;
+
+      if (rq.data.fields) {
+
+         if (teishi.stop (['fields', dale.keys (rq.data.fields), ['from'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
+
+         if (! rq.data.fields.from) return reply (rs, 400, {error: 'from'});
+         if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
+         if (type (rq.data.files.piv) !== 'string') return reply (rs, 400, {error: 'invalidFile'});
+
+         b = {from: rq.data.fields.from, file: rq.data.files.piv};
+      }
+
+      else {
+         var b = rq.body;
+
+         if (rq.user) b.from = 'u::' + rq.user.username; // If user is logged in, use their user name
+
+         if (stop (rs, [
+            ['keys of body', dale.keys (b), ['from', 'text'], 'eachOf', teishi.test.equal],
+            ['body.from', b.from, 'string'],
+            ['body.text', b.text, 'string'],
+         ])) return;
+
+         b.from = H.trim (b.from);
+
+         if (! rq.user && b.from.match (/^u::/)) return reply (rs, 400, {error: 'Invalid from'});
+      }
+
+      astop (rs, [
+         [Redis, 'hget', 'channels:' + userId, channelId],
+         function (s) {
+            if (! s.last) return reply (rs, 404);
+            if (b.text) return Redis (s, 'rpush', 'channel:' + userId + ':' + channelId, JSON.stringify ({
+               id:   uuid (),
+               from: b.from,
+               t:    Date.now (),
+               text: b.text
+            }));
+            else {
+               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', body: {multipart: [
+                  // This `file` field is a dummy one to pass validation. The actual file information goes inside importData
+                  {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar' + Path.extname (file.name)},
+                  {type: 'field', name: 'id', value: Date.now ()},
+                  {type: 'field', name: 'lastModified', value: Date.now ()},
+                  {type: 'field', name: 'tags', value: JSON.stringify ('c::' + s.last)},
+               ]}, code: '*', apres: function (S, RQ, RS, next) {
+
+                  // NO MORE SPACE
+                  if (RS.code === 409) return reply (rs, 409, {error: 'No more space in your tagaway account.'});
+
+                  if (RS.code !== 200) return reply (rs, RS.code, RS.body);
+
+                  // SUCCESSFUL UPLOAD
+                  Redis (s, 'rpush', 'channel:' + userId + ':' + channelId, JSON.stringify ({
+                     id:   uuid (),
+                     from: b.from,
+                     t:    Date.now (),
+                     piv:  RS.body.id
+                  });
+               }});
+            }
+         },
+         [reply, rs, 200]
+      ]);
+   }],
+
    // *** IMPORT ***
 
    ['get', 'imports/:provider', function (rq, rs) {
@@ -4922,12 +5087,12 @@ var routes = [
                               currentStatus = 'after-upload';
                               clearInterval (waitInterval);
 
-                              // UNEXPECTED ERROR
-                              if (RS.code !== 200 && RS.code !== 400) return s.next (null, {error: RS.body, code: RS.code, file: file});
-
                               // NO MORE SPACE
                               // 409 errors for capacity limit reached are considered critical now in the beginning phases. This behavior will be changed as that becomes a more normal occurrence.
-                              if (RS.code === 409) return s.next (null, {error: 'No more space in your ac;pic account.', code: RS.code});
+                              if (RS.code === 409) return s.next (null, {error: 'No more space in your tagaway account.', code: RS.code});
+
+                              // UNEXPECTED ERROR
+                              if (RS.code !== 200 && RS.code !== 400) return s.next (null, {error: RS.body, code: RS.code, file: file});
 
                               // INVALID FILE (CANNOT BE TOO LARGE OR INVALID FORMAT BECAUSE WE PREFILTER THEM ABOVE)
                               // OR
