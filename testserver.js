@@ -3850,12 +3850,21 @@ suites.geo = function () {
 }
 
 suites.channel = function () {
+
+   var testInvalidUpload = function (body, expectedError, k) {
+      return ['post piv to channel, invalid body #' + (k + 1), 'post', 'channel/USERID/CHANNELID', {}, {multipart: body}, 400, function (s, rq, rs) {
+         if (H.stop ('error message for invalid payload #' + (k + 1), rs.body, expectedError)) return false;
+         return true;
+      }];
+   }
+
    return [
       suites.auth.in (tk.users.user1),
       ['get channels before creating any', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {channels: {}})) return false;
          return true;
       }],
+      ['get channel that does not exist', 'get', 'channel/nosuch/channel', {}, '', 404],
       H.invalidTestMaker ('create channel', 'channel', [
          [[], 'object'],
          [[], 'keys', ['name']],
@@ -3864,10 +3873,11 @@ suites.channel = function () {
       ]),
       ['create channel', 'post', 'channel', {}, {name: 'foo'}, 200, function (s, rq, rs) {
          if (H.stop ('body.id', type (rs.body.id), 'string')) return false;
-         if (! rs.body.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.is is not an uuid');
+         if (! rs.body.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.id is not an uuid');
          s.channelId = rs.body.id;
          return true;
       }],
+      ['get empty channel', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, H.cBody ([])],
       ['create channel with same name, get conflict', 'post', 'channel', {}, {name: 'foo'}, 409],
       ['create second channel', 'post', 'channel', {}, {name: 'bar'}, 200, function (s, rq, rs) {
          s.channelId2 = rs.body.id;
@@ -3890,8 +3900,96 @@ suites.channel = function () {
       ['rename empty channel successfully', 'post', 'channel/rename', {}, {from: 'bar', to: 'bar2'}, 200],
       ['get channels after renaming', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {channels: {[s.channelId]: 'foo2', [s.channelId2]: 'bar2'}})) return false;
+         // Logout for next test, but remember headers so we can make requests as user1 without having to login again
+         s.headersUser1 = s.headers;
+         s.headers = {};
          return true;
       }],
+      H.invalidTestMaker ('post text to channel', 'channel/USERID/CHANNELID', [
+         [[], 'object'],
+         [[], 'keys', ['from', 'text']],
+         [[], 'invalidKeys', ['foo']],
+         [['from'], 'string'],
+         [['text'], 'string'],
+         [['from'], 'invalidValues', ['u::user', ' u::user'], 'Invalid from'],
+      ]),
+      ['post text to channel without being logged in', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {from: 'charly', text: 'mocasines'}, 200],
+      ['get channel with text without being logged in', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
+         if (type (rs.body) !== 'array' || rs.body.length !== 1) return clog ('body must be an array of length 1');
+         var entry = rs.body [0];
+         if (H.stop ('body.from & body.text', {from: entry.from, text: entry.text}, {from: 'charly', text: 'mocasines'})) return false;
+         if (! entry.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.id is not an uuid');
+         if (type (entry.t) !== 'integer' && ((Date.now () - entry.t) > 500 || (Date.now () - entry.t < 0))) return clog ('body.t is not a valid timestamp');
+         return true;
+      }],
+      ['dummy request to log back in', 'get', '/', {}, '', 200, function (s) {
+         s.headers = s.headersUser1;
+         delete s.headersUser1;
+         return true;
+      }],
+      ['post text to nonexisting channel', 'post', function (s) {return 'channel/foo/bar'}, {}, {text: 'destape'}, 404],
+      ['post text to channel', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {text: 'destape'}, 200],
+      ['get channel with two texts', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
+         if (type (rs.body) !== 'array' || rs.body.length !== 2) return clog ('body must be an array of length 2');
+         var entry = rs.body [1];
+         if (H.stop ('body.from & body.text', {from: entry.from, text: entry.text}, {from: 'u::' + tk.users.user1.username, text: 'destape'})) return false;
+         if (! entry.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.id is not an uuid');
+         if (type (entry.t) !== 'integer' && ((Date.now () - entry.t) > 500 || (Date.now () - entry.t < 0))) return clog ('body.t is not a valid timestamp');
+
+         // Logout for next test, but remember headers so we can make requests as user1 without having to login again
+         s.headersUser1 = s.headers;
+         s.headers = {};
+         return true;
+      }],
+      dale.go ([
+         [[{type: 'field', name: 'foo', value: 'bar'}], {error: 'invalidField'}],
+         [[{type: 'file',  name: 'foo', value: 'bar'}], {error: 'invalidField'}],
+         [[], {error: 'file'}],
+         [[{type: 'field', name: 'from', value: 'foo'}], {error: 'file'}],
+         [[{type: 'field', name: 'lastModified', value: '1234'}, {type: 'field', name: 'from', value: 'u::foo'},  {type: 'file', name: 'piv', path: tk.pivs.small.path}], {error: 'Invalid from'}],
+         [[{type: 'field', name: 'lastModified', value: '1234'}, {type: 'field', name: 'from', value: ' u::foo'}, {type: 'file', name: 'piv', path: tk.pivs.small.path}], {error: 'Invalid from'}],
+         [[{type: 'field', name: 'from', value: ' u::foo'}, {type: 'file', name: 'piv', path: tk.pivs.small.path}], {error: 'lastModified'}],
+         [[{type: 'field', name: 'lastModified', value: 'foo234'}, {type: 'field', name: 'from', value: ' u::foo'}, {type: 'file', name: 'piv', path: tk.pivs.small.path}], {error: 'lastModified'}],
+      ], function (v, k) {
+         return testInvalidUpload (v [0], v [1], k);
+      }),
+      ['post piv without being logged in', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'charly'}, {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime}, {type: 'file', name: 'piv', path: tk.pivs.small.path}]}, 200, function (s, rq, rs) {
+         // Log in again as user1
+         s.headers = s.headersUser1;
+         delete s.headersUser1;
+         return true;
+      }],
+      ['post piv', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'charly'}, {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime}, {type: 'file', name: 'piv', path: tk.pivs.small.path}]}, 200],
+      suites.auth.in (tk.users.user2),
+      ['post piv as another user', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'charly'}, {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime}, {type: 'file', name: 'piv', path: tk.pivs.small.path}]}, 200],
+      ['get channel after three uploads', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
+         if (type (rs.body) !== 'array' || rs.body.length !== 5) return clog ('body must be an array of length 2');
+         if (H.stop ('from field of pivs uploaded', dale.go (rs.body.slice (2), function (v) {return v.from}), ['charly', 'u::' + tk.users.user1.username, 'u::' + tk.users.user2.username])) return false;
+         if (! rs.body [2].piv || rs.body [2].piv !== rs.body [3].piv || rs.body [3].piv !== rs.body [4].piv) return clog ('piv id missing, or different piv ids found where they should have been the same');
+         s.pivInChannel = rs.body [2].piv;
+         return true;
+      }],
+      ['query pivs as user2, no pivs should be there', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
+         if (rs.body.total !== 0 || rs.body.pivs.length !== 0) return clog ('user2 has a piv in a channel not owned by them');
+         return true;
+      }],
+      ['get piv as user 2', 'get', function (s) {return 'piv/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      ['get thumb as user 2', 'get', function (s) {return 'thumb/M/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      suites.auth.login (tk.users.user1),
+      ['get piv as user 1', 'get', function (s) {return 'piv/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      ['get thumb as user 1', 'get', function (s) {return 'thumb/M/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      ['query pivs as user1, one piv should be there', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
+         if (rs.body.total !== 1 || rs.body.pivs.length !== 1) return clog ('piv in channel does not appear to user1');
+         if (rs.body.tags ['c::foo2'] !== 1) return clog ('c:: tag missing from tags');
+         if (rs.body.pivs [0].tags [0] !== 'c::foo2') return clog ('c:: tag missing from piv');
+
+         // Logout for next test
+         s.headers = {};
+         return true;
+      }],
+      ['get piv without being logged in', 'get', function (s) {return 'piv/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      ['get thumb without being logged in', 'get', function (s) {return 'thumb/M/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      suites.auth.login (tk.users.user1),
       H.invalidTestMaker ('delete channel', 'channel/delete', [
          [[], 'object'],
          [[], 'keys', ['id']],
@@ -3900,12 +3998,13 @@ suites.channel = function () {
       ]),
       ['delete channel by name, get error', 'post', 'channel/delete', {}, function (s) {return {id: 'foo2'}}, 404],
       ['delete channel by id', 'post', 'channel/delete', {}, function (s) {return {id: s.channelId}}, 200],
+      ['post text to deleted channel', 'post', function (s) {return 'channel/foo/bar'}, {}, {text: 'destape'}, 404],
       ['get channels after deletion', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
          if (H.stop ('body', rs.body, {channels: {[s.channelId2]: 'bar2'}})) return false;
          return true;
       }],
-      ['post text to channel', 'post', function (s) {return 'channel/' + s.channelId}, {}, {}, 200],
       suites.auth.out (tk.users.user1),
+      suites.auth.out (tk.users.user2),
    ];
 }
 

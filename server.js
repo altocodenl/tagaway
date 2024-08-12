@@ -639,13 +639,26 @@ H.deletePiv = function (s, id, username) {
 }
 
 // If it returns false, piv does not exist or user has no access; otherwise, returns the piv itself.
-H.hasAccess = function (S, username, pivId) {
+H.hasAccess = function (S, username, pivId, channelId) {
    a.stop ([
+      [function (s) {
+         if (! channelId) return s.next ();
+         Redis (s, 'lrange', 'channel:' + username + ':' + channelId, 0, -1);
+      }],
+      function (s) {
+         if (! channelId) return s.next ();
+         if (! s.last) return S.next (false);
+         var pivInChannel = dale.stop (s.last, true, function (v) {
+            return v.piv === pivId;
+         });
+         s.next ();
+      },
       [Redis, 'hgetall', 'piv:' + pivId],
       function (s) {
          if (! s.last) return S.next (false);
          s.piv = s.last;
          if (s.piv.owner === username) return S.next (s.piv);
+         if (channelId) return S.next (s.piv); // If we're here, we did the check that the piv is in the channel and therefore accessible, so we also send it back.
          Redis (s, 'smembers', 'pivt:' + pivId);
       },
       function (s) {
@@ -1808,7 +1821,7 @@ var routes = [
    // TODO: remove after writing the backend for channels
    ['get', ['test/*'], cicek.file],
 
-   dale.go ({'/': 'client.js', 'channel/*': 'channel.js'}, function (file, route) {
+   dale.go ({'/': 'client.js', 'c/*': 'channel.js'}, function (file, route) {
       return ['get', route, reply, lith.g ([
          ['!DOCTYPE HTML'],
          ['html', [
@@ -2349,10 +2362,23 @@ var routes = [
 
       if (rq.method === 'get'  && rq.url === '/stats') return rs.next ();
 
-      if (! rq.data.cookie)                               return reply (rs, 403, {error: 'nocookie'});
-      if (! rq.data.cookie [CONFIG.cookieName]) {
-         if (rq.headers.cookie.match (CONFIG.cookieName)) return reply (rs, 403, {error: 'tampered'});
-                                                          return reply (rs, 403, {error: 'nocookie'});
+
+      if (rq.data.cookie && ! rq.data.cookie [CONFIG.cookieName] && rq.headers.cookie.match (CONFIG.cookieName)) return reply (rs, 403, {error: 'tampered'});
+      if (! rq.data.cookie || ! rq.data.cookie [CONFIG.cookieName]) {
+         // Semi public routes are routes that can be accessed as both logged in and non-logged in users, currently only used for channels.
+         var isSemiPublicRoute = (function () {
+            if (rq.method === 'get'  && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return true;
+            if (rq.method === 'post' && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return true;
+            if (rq.method === 'post' && rq.url === '/piv')    return true;
+            if (rq.method === 'post' && rq.url === '/upload') return true;
+            if (rq.method === 'get'  && rq.url.match (/^\/piv\/.+/)) return true;
+            if (rq.method === 'get'  && rq.url.match (/^\/thumb\/.+/)) return true;
+         }) ();
+
+         if (! isSemiPublicRoute) return reply (rs, 403, {error: 'nocookie'});
+         rq.semiPublic = true;
+
+         return rs.next ();
       }
 
       giz.auth (rq.data.cookie [CONFIG.cookieName], function (error, user) {
@@ -2392,6 +2418,7 @@ var routes = [
    ['post', '*', function (rq, rs) {
 
       if (rq.url.match (/^\/redmin/)) return rs.next ();
+      if (rq.semiPublic)              return rs.next ();
 
       var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
@@ -2614,8 +2641,11 @@ var routes = [
    // *** DOWNLOAD PIVS ***
 
    ['get', 'piv/:id', function (rq, rs) {
+      var channelId = rq.data.query && rq.data.query.channelId;
+      if (channelId) var username = rq.data.query.channelId.split (':') [0], channelId = rq.data.query.channelId.split (':') [1];
+
       astop (rs, [
-         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id], true], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, channelId ? username : rq.user.username, rq.data.params.id, channelId], true], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
@@ -2679,9 +2709,12 @@ var routes = [
    }],
 
    ['get', 'thumb/:size/:id', function (rq, rs) {
+      var channelId = rq.data.query && rq.data.query.channelId;
+      if (channelId) var username = rq.data.query.channelId.split (':') [0], channelId = rq.data.query.channelId.split (':') [1];
+
       if (! inc (['S', 'M'], rq.data.params.size)) return reply (rs, 400);
       astop (rs, [
-         [a.cond, [a.set, 'piv', [H.hasAccess, rq.user.username, rq.data.params.id], true], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, channelId ? username : rq.user.username, rq.data.params.id, channelId], true], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === 'S' ? 'xthumbS' : 'xthumbM', 1],
          function (s) {
             // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
@@ -2711,6 +2744,24 @@ var routes = [
          [H.getUploads, rq.user.username, {provider: null}, 20],
          function (s) {
             reply (rs, 200, s.last);
+         }
+      ]);
+   }],
+
+   // Check for non-logged in users that need this endpoint to create an upload group for the owner of the channel to which they are uploading
+   // We do this here so since it's more convenient to write it as middleware than as a conditional a.seq at the beginning.
+   ['post', 'upload', function (rq, rs) {
+      if (! rq.body || ! rq.body.channel) return rs.next ();
+
+      // If rq.body.channel exists, it will be of the shape USERID:CHANNELID
+      astop (rs, [
+         [Redis, 'hget', 'channels:' + rq.body.channel.split (':') [0], rq.body.channel.split (':') [1]],
+         function (s) {
+            if (s.last === null) return reply (rs, 404);
+            // In POST /upload, we only use `username` from `rq.user`. So we substitute it with the username of the user that owns the channel. Some surgery.
+            rq.user = {username: rq.body.channel.split (':') [0]};
+            delete rq.body.channel;
+            rs.next ();
          }
       ]);
    }],
@@ -2835,9 +2886,33 @@ var routes = [
       ]);
    }],
 
+   // Check for non-logged in users that are posting
+   // We do this here so since it's more convenient to write it as middleware than as a conditional a.seq at the beginning.
+   ['post', 'piv', function (rq, rs) {
+      if (! (rq.headers ['content-type'] || '').match (/^multipart\/form-data/i)) return reply (rs, 400, {error: 'multipart'});
+
+      if (! rq.data.fields.channel) return rs.next ();
+
+      // If rq.data.fields.channel exists, it will be of the shape USERID:CHANNELID
+      astop (rs, [
+         [Redis, 'hget', 'channels:' + rq.data.fields.channel.split (':') [0], rq.data.fields.channel.split (':') [1]],
+         function (s) {
+            if (s.last === null) return reply (rs, 404);
+            // In POST /piv, we only use `username` from `rq.user`. So we substitute it with the username of the user that owns the channel. Some surgery.
+            rq.user = {username: rq.data.fields.channel.split (':') [0]};
+            // We update rq.data.fields.channel with the actual name of the channel.
+            rq.data.fields.channel = s.last;
+            rs.next ();
+         }
+      ]);
+   }],
+
    ['post', 'piv', function (rq, rs) {
 
       if (! (rq.headers ['content-type'] || '').match (/^multipart\/form-data/i)) return reply (rs, 400, {error: 'multipart'});
+
+      var channelName = rq.data.fields.channel;
+      delete rq.data.fields.channel;
 
       if (teishi.stop (['fields', dale.keys (rq.data.fields), ['id', 'lastModified', 'tags', 'importData'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
 
@@ -3247,7 +3322,8 @@ var routes = [
                multi.sadd ('pivt:' + piv.id, 'v::');
             }
 
-            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (s.geotags), function (tag) {
+            // We put the channel tag here, to avoid someone posting a c:: tag that is invalid and then letting it pass. The only way it can go through if the channel itself was checked to exist.
+            dale.go (tags.concat (['d::' + new Date (piv.date).getUTCFullYear (), 'd::M' + (new Date (piv.date).getUTCMonth () + 1)]).concat (s.geotags).concat (channelName !== undefined ? 'c::' + channelName : []), function (tag) {
                multi.sadd ('pivt:' + piv.id, tag);
                multi.sadd ('tags:' + rq.user.username, tag);
                multi.sadd ('tag:'  + rq.user.username + ':' + tag, piv.id);
@@ -4370,7 +4446,10 @@ var routes = [
             });
             if (! fromId) return reply (rs, 404);
             if (toId)     return reply (rs, 409);
-            Redis (s, 'hset', 'channels:' + rq.user.username, fromId, b.to);
+            var multi = redis.multi ();
+            multi.hset ('channels:' + rq.user.username, fromId, b.to);
+            multi.del ('querycache:' + rq.user.username);
+            mexec (s, multi);
          },
          [reply, rs, 200],
       ]);
@@ -4407,6 +4486,25 @@ var routes = [
       ]);
    }],
 
+   ['get', 'channel/(*)/(*)', function (rq, rs) {
+
+      var userId    = rq.data.params [0];
+      var channelId = rq.data.params [1];
+
+      astop (rs, [
+         [function (s) {
+            var multi = redis.multi ();
+            multi.hexists ('channels:' + userId, channelId);
+            multi.lrange ('channel:' + userId + ':' + channelId, 0, -1);
+            mexec (s, multi);
+         }],
+         function (s) {
+            if (! s.last [0]) return reply (rs, 404);
+            reply (rs, 200, dale.go (s.last [1], function (v) {return JSON.parse (v)}));
+         }
+      ]);
+   }],
+
    ['post', 'channel/(*)/(*)', function (rq, rs) {
       var userId    = rq.data.params [0];
       var channelId = rq.data.params [1];
@@ -4415,21 +4513,30 @@ var routes = [
 
       if (rq.data.fields) {
 
-         if (teishi.stop (['fields', dale.keys (rq.data.fields), ['from'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
-
-         if (! rq.data.fields.from) return reply (rs, 400, {error: 'from'});
+         if (teishi.stop (['fields', dale.keys (rq.data.fields), ['from', 'lastModified'], 'eachOf', teishi.test.equal], function () {})) return reply (rs, 400, {error: 'invalidField'});
          if (! eq (dale.keys (rq.data.files), ['piv'])) return reply (rs, 400, {error: 'file'});
+
+         if (! rq.data.fields.lastModified)                 return reply (rs, 400, {error: 'lastModified'});
+         if (! rq.data.fields.lastModified.match (/^\d+$/)) return reply (rs, 400, {error: 'lastModified'});
+
+         if (rq.user) rq.data.fields.from = 'u::' + rq.user.username; // If user is logged in, use their user name
+
+         if (! rq.data.fields.from) return reply (rs, 400, {error: 'Missing from'});
+         rq.data.fields.from = H.trim (rq.data.fields.from);
+         if (! rq.user && rq.data.fields.from.match (/^u::/)) return reply (rs, 400, {error: 'Invalid from'});
+
          if (type (rq.data.files.piv) !== 'string') return reply (rs, 400, {error: 'invalidFile'});
 
          b = {from: rq.data.fields.from, file: rq.data.files.piv};
       }
 
       else {
-         var b = rq.body;
+         b = rq.body;
 
          if (rq.user) b.from = 'u::' + rq.user.username; // If user is logged in, use their user name
 
          if (stop (rs, [
+            ['body', b, 'object'],
             ['keys of body', dale.keys (b), ['from', 'text'], 'eachOf', teishi.test.equal],
             ['body.from', b.from, 'string'],
             ['body.text', b.text, 'string'],
@@ -4451,26 +4558,31 @@ var routes = [
                text: b.text
             }));
             else {
-               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', body: {multipart: [
-                  // This `file` field is a dummy one to pass validation. The actual file information goes inside importData
-                  {type: 'file',  name: 'piv', value: 'foobar', filename: 'foobar' + Path.extname (file.name)},
-                  {type: 'field', name: 'id', value: Date.now ()},
-                  {type: 'field', name: 'lastModified', value: Date.now ()},
-                  {type: 'field', name: 'tags', value: JSON.stringify ('c::' + s.last)},
-               ]}, code: '*', apres: function (S, RQ, RS, next) {
-
-                  // NO MORE SPACE
-                  if (RS.code === 409) return reply (rs, 409, {error: 'No more space in your tagaway account.'});
-
+               hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'upload', body: {op: 'start', total: 1, channel: userId + ':' + channelId}, code: '*', apres: function (S, RQ, RS, next) {
                   if (RS.code !== 200) return reply (rs, RS.code, RS.body);
+                  var uploadId = RS.body.id;
 
-                  // SUCCESSFUL UPLOAD
-                  Redis (s, 'rpush', 'channel:' + userId + ':' + channelId, JSON.stringify ({
-                     id:   uuid (),
-                     from: b.from,
-                     t:    Date.now (),
-                     piv:  RS.body.id
-                  });
+                  hitit.one ({}, {host: 'localhost', port: CONFIG.port, method: 'post', path: 'piv', body: {multipart: [
+                     {type: 'file',  name: 'piv', path: rq.data.files.piv}, // We reupload the file, since it should go fast anyway it being localhost.
+                     {type: 'field', name: 'id', value: uploadId},
+                     {type: 'field', name: 'channel', value: userId + ':' + channelId},
+                     {type: 'field', name: 'lastModified', value: rq.data.fields.lastModified},
+                     {type: 'field', name: 'tags', value: '[]'},
+                  ]}, code: '*', apres: function (S, RQ, RS, next) {
+
+                     // NO MORE SPACE
+                     if (RS.code === 409) return reply (rs, 409, {error: 'No more space in your tagaway account.'});
+
+                     if (RS.code !== 200) return reply (rs, RS.code, RS.body);
+
+                     // SUCCESSFUL UPLOAD
+                     Redis (s, 'rpush', 'channel:' + userId + ':' + channelId, JSON.stringify ({
+                        id:   uuid (),
+                        from: b.from,
+                        t:    Date.now (),
+                        piv:  RS.body.id
+                     }));
+                  }});
                }});
             }
          },

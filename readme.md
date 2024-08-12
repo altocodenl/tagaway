@@ -39,12 +39,6 @@ If you find a security vulnerability, please disclose it to us as soon as possib
 
 ### Todo beta
 
-- channels
-   - channel deletion is explicit or implicit. implicit is when last element of the channel is deleted. this happens automatically through redis.
-   - element deletion (piv or text) can be done by owner only.
-   - when an entry is removed from the channel, if that entry is a piv, remove it from the c:: tag if it's the only instance of it
-   - For now, no way to remove text from a frontend, since channels are not in app.
-
 - Channels
    - Backend
       - Get channels
@@ -52,17 +46,18 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - When deleting user, delete all channels
       - Rename channel
       - Delete channel
-
+      - Public: get channel
       - Public: post text or piv to channel
          - Pass channel info to POST /piv to let it resolve it, as well as avoid auth there
-      - Public: get channel
       - Public: get piv or thumb from channel
          - GET /piv/ID?owner=USERID&channel=CHANNELID & GET /thumb/SIZE/ID?owner=USERID&channel=CHANNELID
          - Get the channel itself and search for the piv there. If it is, serve it through the existing endpoints.
-      - Repurpose hasAccess to receive an optional channel argument.
-      - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID
+         - Repurpose hasAccess to receive an optional channel argument.
       - When deleting piv, delete it from any channels that contain it
-      - When querying pivs, see pivs in own channel.
+      - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID
+         - implicit channel deletion when last element of the channel is deleted. this happens automatically through redis.
+         - if last instance of a certain piv in the channel, remove the c:: tag from it
+      - When renaming channel, rename c:: tag
    - Web client:
       - Enter your name, remember it in localstorage
       - Make call to GET /channel/id
@@ -95,24 +90,32 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - If user has already a channel with that `name`, returns a 409.
    - Otherwise, it is successful and returns a 200 with body `{id: STRING}`.
 
+- `GET /channels`
+   - Returns an object of the shape `{CHANNEL_NAME: ID, CHANNEL_NAME2: ID2, ...}`.
+
+- `GET /channel/USERID/CHANNELID`
+   - User might or might not be logged in to use this route.
+   - If channel does not exist, returns a 404.
+   - If successful, returns a 200 with an array with zero or more objects of the following kinds:
+      - For piv messages:  `{id: STRING, from: STRING, t: INT, piv:  STRING}`
+      - For text messages: `{id: STRING, from: STRING, t: INT, text: STRING}`
+
+- `POST /channel/USERID/CHANNELID`
+   - User might or might not be logged in to use this route.
+   - Body can be a JSON with the form `{from: STRING, text: STRING}`. Or it can be a multipart request of the form `{from: STRING, lastModified: INT, piv: BLOB}`.
+   - If `b.from` starts with `u::`, a 400 is returned. If the user is logged in, the value of `b.from` is ignored and instead `u::USERNAME` is used.
+   - If there's no such, a 404 is returned.
+   - If successful, returns a 200.
+
 - `POST /channel/rename`
    - Body must be of the form `{from: STRING, to: STRING}`, where both values are strings.
    - If the user has no channel with name `from`, a 404 is returned with body `{error: 'tag'}`.
    - If the user already has a channel with name `to` tag, to avoid overlapping two channels through a rename.
    - If successful, returns a 200.
 
-- `GET /channels`
-   - Returns an object of the shape `{CHANNEL_NAME: ID, CHANNEL_NAME2: ID2, ...}`.
-
 - `POST /channel/delete`
    - Body must be of the form `{id: STRING}`.
    - If channel does not exist, a 404 is returned.
-   - If successful, returns a 200.
-
-- `POST /channel/USERID/CHANNELID`
-   - Body can be a JSON with the form `{from: STRING, text: STRING}`. Or it can be a multipart request of the form `{from: STRING, piv: BLOB}`.
-   - If `b.from` starts with `u::`, a 400 is returned.
-   - If there's no such, a 404 is returned.
    - If successful, returns a 200.
 
 channels:USER (hash):
@@ -121,6 +124,9 @@ channels:USER (hash):
 channel:USER:ID (list)
    {id: ..., from: 'Ro',          t: 1721852977121, piv:  'uuid'},
    {id: ..., from: 'u::fpereiro', t: 1721852977122, text: 'foo'}, // u::USER for users that are from tagaway, currently only one can be owner
+
+
+
 
 - bugs
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
@@ -155,10 +161,10 @@ channel:USER:ID (list)
    - server: rename b to rq.body throughout
    - server: get rid of thu entries, use id of piv + suffix
    - admin: add set of users for fast access rather than scanning db
-   - server: script to rename username
    - other: set automatic backup from Google Drive to altofile
 --------------
 - large tasks
+   - use ids to refer to users, rather than usernames
    - improve query performance
       - server/client: rethink need for refreshQuery field, if we are constantly updating the query.
       - server: improve performance of sorting within lua
