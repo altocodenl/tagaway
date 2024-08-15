@@ -3191,16 +3191,19 @@ B.mrespond ([
 
    ['initialize', [], {burn: true}, function (x) {
       document.querySelector ('meta[name="viewport"]').content = 'width=1200';
+
+      var url = window.location.href.split ('/');
+      B.call (x, 'set', ['State', 'channel'], {userId: last (url, 2), channelId: last (url)});
+      B.call (x, 'set', ['State', 'basePath'], window.location.href.replace (/\/c\/.+/, '/'));
+
       B.mount ('body', views.main);
-      B.call (x, 'load', 'data');
+      B.call (x, 'load', 'name');
+      B.call (x, 'load', 'channel');
+      B.call (x, 'set', ['State', 'load'], setInterval (function () {
+         B.call ('load', 'channel');
+      }, 2000));
    }],
-   ['clear', 'snackbar', function (x) {
-      var existing = B.get ('State', 'snackbar');
-      if (! existing) return;
-      if (existing.timeout) clearTimeout (existing.timeout);
-      B.call (x, 'rem', 'State', 'snackbar');
-   }],
-   ['snackbar', [], '*', function (x, snackbar, noTimeout) {
+   ['snackbar', '*', function (x, snackbar, noTimeout) {
       B.call (x, 'clear', 'snackbar');
       var colors = {green: '#04E762', red: '#D33E43', yellow: '#ffff00'};
       if (noTimeout) return B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar});
@@ -3209,10 +3212,16 @@ B.mrespond ([
       }, 4000);
       B.call (x, 'set', ['State', 'snackbar'], {color: colors [x.path [0]], message: snackbar, timeout: timeout});
    }],
-   [/^(get|post)$/, [], '*', function (x, headers, body, cb) {
+   ['clear', 'snackbar', function (x) {
+      var existing = B.get ('State', 'snackbar');
+      if (! existing) return;
+      if (existing.timeout) clearTimeout (existing.timeout);
+      B.call (x, 'rem', 'State', 'snackbar');
+   }],
+   [/^(get|post)$/, '*', function (x, headers, body, cb) {
       var t = Date.now (), verb = x.verb, path = x.path [0];
 
-      c.ajax (verb, path, headers, body, function (error, rs) {
+      c.ajax (verb, B.get ('State', 'basePath') + path, headers, body, function (error, rs) {
          if (cb) cb (x, error, rs);
       });
    }],
@@ -3232,20 +3241,72 @@ B.mrespond ([
 
    // *** CHANNEL RESPONDERS ***
 
-   ['load', 'data', function (x) {
-      // TODO: unhardcode
-      B.call (x, 'set', ['Data', 'channel'], {
-         id: 'de0b966e-25b2-4500-805a-657bc55533ff',
-         entries: [
-            {from: 'Ro',       t: 1721852977121, piv:  'test/rotate.jpg'},
-            {from: 'fpereiro', t: 1721852977121, text: 'Ay que hermosor'},
-            {from: 'fpereiro', t: 1721852977121, piv:  'test/tram.mp4', vid: true},
-            {from: 'Ro',       t: 1721852977121, text: 'Chinese noodles!'},
-            {from: 'fpereiro', t: 1721852977121, piv:  'test/small.png'},
-            {from: 'Tom!',     t: 1721852977121, text: 'Pero anda a comer chipa por tu casa'},
-            {from: 'fpereiro', t: 1721852977121, text: 'Un MVP asi nomas'},
-         ]
+   ['load', 'name', function (x) {
+      var name = localStorage.getItem ('name');
+      if (name) return B.call (x, 'set', ['State', 'name'], name);
+      name = prompt ('What\'s your name?');
+      if (! name) return B.call (x, 'load', 'name');
+      B.call (x, 'set', ['State', 'name'], name);
+      localStorage.setItem ('name', name);
+   }],
+   ['load', 'channel', function (x) {
+      B.call (x, 'get', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, '', function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'This channel does not exist or is no longer available');
+         clog (rs.body);
+         B.call (x, 'set', ['Data', 'channel'], {
+            id: B.get ('State', 'channel', 'channelId'),
+            name: rs.body.name,
+            entries: rs.body.entries
+         });
       });
+   }],
+
+   ['submit', 'text', function (x) {
+      var text = B.get ('State', 'text');
+      if (! text || ! text.trim ()) return;
+      B.call (x, 'set', ['State', 'post'], false);
+      B.call (x, 'post', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, {from: B.get ('State', 'name'), text: text}, function (x, error) {
+         if (error) return B.call (x, 'snackbar', 'red', error.responseText);
+         B.call (x, 'load', 'channel');
+         B.call (x, 'rem', 'State', 'text');
+      });
+   }],
+
+   ['upload', 'pivs', function (x) {
+      var input = c ('#files-upload');
+      var files = [];
+      dale.go (input.files, function (file) {
+         var fileType = file.type;
+         if (! fileType && file.name.match (/\.heic$/i)) fileType = 'image/heic';
+         if (file.size && file.size > window.maxFileSize)  return alert ('File is too large :(');
+         else if (! inc (window.allowedFormats, fileType)) return alert ('File format is unsupported :(');
+         files.push (file);
+      });
+      input.value = '';
+      B.call (x, 'set', ['State', 'post'], false);
+      B.call (x, 'snackbar', 'green', 'Uploading...', true);
+
+      var uploadFile = function () {
+         var file = files.shift ();
+         var f = new FormData ();
+         f.append ('from', B.get ('State', 'name'));
+         f.append ('lastModified', file.lastModified || file.lastModifiedDate || new Date ().getTime ());
+         f.append ('piv', file);
+         B.call (x, 'post', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, f, function (x, error, rs) {
+            if (error) {
+               if (error.status === 409 && error.responseText.match (/capacity/)) {
+                  return B.call (x, 'snackbar', 'yellow', 'Alas! You\'ve exceeded the maximum capacity for your account so you cannot upload any more pivs.');
+               }
+               return B.call (x, 'snackbar', 'red', error.responseText);
+            }
+            if (files.length) uploadFile ();
+            else {
+               B.call (x, 'clear', 'snackbar');
+               B.call (x, 'load', 'channel');
+            }
+         });
+      }
+      uploadFile ();
    }],
 ]);
 
@@ -3282,6 +3343,7 @@ views.main = function () {
       ['style', views.css], // CSS belonging only to channel.js
       views.snackbar (),
       views.channel (),
+      views.post (),
    ];
 };
 
@@ -3297,19 +3359,36 @@ views.channel = function () {
    return B.view (['Data', 'channel'], function (channel) {
       if (! channel) return ['div', {class: 'pa3 channel'}, 'Loading...'];
 
+      var queryParameter = '?channelId=' + B.get ('State', 'channel', 'userId') + ':' + B.get ('State', 'channel', 'channelId');
+
       return ['div', {class: 'pa3 channel'}, dale.go (channel.entries, function (v, k) {
+
+         if (v.from.match (/^u::/)) v.from = v.from.replace ('u::', '');
+
          if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-light-gray fw5 f1 dark-gray db tr'}, v.text], k + 1);
 
-         if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db', controls: true, autoplay: false, src: '../' + v.piv, type: 'video/mp4', loop: true, alt: 'video'}], k + 1);
+         if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db', controls: true, autoplay: false, src: B.get ('State', 'basePath') + 'piv/' + v.piv + queryParameter, poster: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, type: 'video/mp4', loop: true, alt: 'video'}], k + 1);
 
-         if (v.piv && ! v.vid) return wrap (v.from, ['img', {class: 'ml-auto db', src: '../' + v.piv, alt: 'picture'}], k + 1);
+         if (v.piv && ! v.vid) return wrap (v.from, ['img', {class: 'ml-auto db', src: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, alt: 'picture'}], k + 1);
       })];
    });
 }
 
-
-
-
+views.post = function () {
+   return B.view ([['State', 'text'], ['State', 'post']], function (text, post) {
+      if (! post) return ['button', {class: 'w-100 w-40-ns pa3 input-reset ba b--black-20 br2 bg-blue white pointer', onclick: B.ev ('set', ['State', 'post'], true)}, '+'];
+      return ['div', {class: 'fixed bottom-0 left-0 w-100 w-100-m w-80-l pa4 bg-light-gray shadow-1', style: style ({zIndex: 1000, left: '50%', transform: 'translateX(-50%)'})}, [
+         ['div', {class: 'flex flex-column flex-row-ns'}, [
+            ['input', {class: 'w-100 w-60-ns pa3 input-reset ba b--black-20 br2 mb3 mb0-ns mr0 mr3-ns', placeholder: 'Say something', value: text, onchange: B.ev ('set', ['State', 'text']), oninput: B.ev ('set', ['State', 'text'])}],
+            ['button', {class: 'w-100 w-40-ns pa3 input-reset ba b--black-20 br2 bg-blue white pointer', onclick: B.ev ('submit', 'text')}, 'Submit']
+         ]],
+         ['div', {class: 'mt3'}, [
+            ['input', {id: 'files-upload', class: 'pa3 input-reset ba b--black-20 br2 w-100', type: 'file', multiple: true, onchange: B.ev ('upload', 'pivs')}],
+            ['button', {class: 'w-100 w-40-ns pa3 input-reset ba b--black-20 br2 bg-blue white pointer', onclick: B.ev ('set', ['State', 'post'], false)}, 'Submit']
+         ]]
+      ]];
+   });
+}
 
 // TODO: move up
 views.snackbar = function () {

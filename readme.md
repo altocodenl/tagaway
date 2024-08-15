@@ -53,6 +53,9 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - GET /piv/ID?owner=USERID&channel=CHANNELID & GET /thumb/SIZE/ID?owner=USERID&channel=CHANNELID
          - Get the channel itself and search for the piv there. If it is, serve it through the existing endpoints.
          - Repurpose hasAccess to receive an optional channel argument.
+
+      - Add test for not sending channel without being logged in
+      - 403 when another user attempts to load
       - When deleting piv, delete it from any channels that contain it
       - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID
          - implicit channel deletion when last element of the channel is deleted. this happens automatically through redis.
@@ -65,6 +68,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - For each piv item, add a button to download.
       - Send piv
       - Send text
+
       - Share link to channel to whatsapp/email...
    - Mobile client for owner:
       - Icon of channel next to tag
@@ -75,15 +79,13 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Share link to channel from that view (copy link).
    - Channels in-app:
       - How would channels look in app?
-      - channel consumer:
-         - see channel in app
-         - (un)subscribe to channel
-         - potentiall tag piv with subscription
-         - see subscriptions in app
-         - never query not-own channel.
-         - manage subscriptions
-
-
+         - channel consumer:
+            - see channel in app
+            - (un)subscribe to channel
+            - potentiall tag piv with subscription
+            - see subscriptions in app
+            - never query not-own channel.
+            - manage subscriptions
 
 - `POST /channel`.
    - Body must be `{name: STRING}`.
@@ -562,6 +564,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `GET /piv/ID`
    - Piv must exist and the user must have permissions to see it (otherwise, 404).
+   - A query parameter `channelId?USERID:CHANNELID` can be passed, to get a piv that's inside the specified channel.
    - Depending on ETag, a 200 or 304 is returned.
    - If the file is not found, a 404 is returned.
    - If the file is a non-mp4 video:
@@ -571,6 +574,7 @@ All POST requests (unless marked otherwise) must contain a `csrf` field equivale
 
 - `GET /thumb/SIZE/ID`
    - Thumb must exist and the user must have permissions to see it (otherwise, 404).
+   - A query parameter `channelId?USERID:CHANNELID` can be passed, to get a thumb of a piv inside the specified channel.
    - Size must be 200 or 900.
    - If the piv has no thumbnail for that size, the original piv is returned.
    - Depending on ETag, a 200 or 304 is returned.

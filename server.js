@@ -2419,10 +2419,14 @@ var routes = [
 
       if (rq.url.match (/^\/redmin/)) return rs.next ();
       if (rq.semiPublic)              return rs.next ();
+      // For POST /channel/*/*, we ignore the validation even if the user is logged in
+      if (rq.method === 'post' && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return rs.next ();
 
       var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
-         if (rq.data.fields.csrf !== rq.user.csrf) return reply (rs, 403, {error: 'csrf'});
+         if (rq.data.fields.csrf !== rq.user.csrf) {
+            return reply (rs, 403, {error: 'csrf'});
+         }
          delete rq.data.fields.csrf;
       }
       else {
@@ -2642,10 +2646,11 @@ var routes = [
 
    ['get', 'piv/:id', function (rq, rs) {
       var channelId = rq.data.query && rq.data.query.channelId;
-      if (channelId) var username = rq.data.query.channelId.split (':') [0], channelId = rq.data.query.channelId.split (':') [1];
+      var username;
+      if (channelId) username = rq.data.query.channelId.split (':') [0], channelId = rq.data.query.channelId.split (':') [1];
 
       astop (rs, [
-         [a.cond, [a.set, 'piv', [H.hasAccess, channelId ? username : rq.user.username, rq.data.params.id, channelId], true], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, channelId ? username : (rq.user || {}).username, rq.data.params.id, channelId], true], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, 'xp', 1],
          function (s) {
             // We base etags solely on the id of the file; this requires files to never be changed once created. This is the case here.
@@ -2710,11 +2715,12 @@ var routes = [
 
    ['get', 'thumb/:size/:id', function (rq, rs) {
       var channelId = rq.data.query && rq.data.query.channelId;
-      if (channelId) var username = rq.data.query.channelId.split (':') [0], channelId = rq.data.query.channelId.split (':') [1];
+      var username;
+      if (channelId) username = rq.data.query.channelId.split (':') [0], channelId = rq.data.query.channelId.split (':') [1];
 
       if (! inc (['S', 'M'], rq.data.params.size)) return reply (rs, 400);
       astop (rs, [
-         [a.cond, [a.set, 'piv', [H.hasAccess, channelId ? username : rq.user.username, rq.data.params.id, channelId], true], {false: [reply, rs, 404]}],
+         [a.cond, [a.set, 'piv', [H.hasAccess, channelId ? username : (rq.user || {}).username, rq.data.params.id, channelId], true], {false: [reply, rs, 404]}],
          [Redis, 'hincrby', 'piv:' + rq.data.params.id, rq.data.params.size === 'S' ? 'xthumbS' : 'xthumbM', 1],
          function (s) {
             // If there's no thumbnail of the specified size, we return the small thumbnail. If there's no small thumbnail of the requested size, we return the original piv instead.
@@ -4494,13 +4500,13 @@ var routes = [
       astop (rs, [
          [function (s) {
             var multi = redis.multi ();
-            multi.hexists ('channels:' + userId, channelId);
+            multi.hget ('channels:' + userId, channelId);
             multi.lrange ('channel:' + userId + ':' + channelId, 0, -1);
             mexec (s, multi);
          }],
          function (s) {
-            if (! s.last [0]) return reply (rs, 404);
-            reply (rs, 200, dale.go (s.last [1], function (v) {return JSON.parse (v)}));
+            if (s.last [0] === null) return reply (rs, 404);
+            reply (rs, 200, {name: s.last [0], entries: dale.go (s.last [1], function (v) {return JSON.parse (v)})});
          }
       ]);
    }],

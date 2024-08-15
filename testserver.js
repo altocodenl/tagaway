@@ -3877,7 +3877,7 @@ suites.channel = function () {
          s.channelId = rs.body.id;
          return true;
       }],
-      ['get empty channel', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, H.cBody ([])],
+      ['get empty channel', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, H.cBody ({name: 'foo', entries: []})],
       ['create channel with same name, get conflict', 'post', 'channel', {}, {name: 'foo'}, 409],
       ['create second channel', 'post', 'channel', {}, {name: 'bar'}, 200, function (s, rq, rs) {
          s.channelId2 = rs.body.id;
@@ -3915,8 +3915,8 @@ suites.channel = function () {
       ]),
       ['post text to channel without being logged in', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {from: 'charly', text: 'mocasines'}, 200],
       ['get channel with text without being logged in', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
-         if (type (rs.body) !== 'array' || rs.body.length !== 1) return clog ('body must be an array of length 1');
-         var entry = rs.body [0];
+         if (type (rs.body.entries) !== 'array' || rs.body.entries.length !== 1) return clog ('body must be an array of length 1');
+         var entry = rs.body.entries [0];
          if (H.stop ('body.from & body.text', {from: entry.from, text: entry.text}, {from: 'charly', text: 'mocasines'})) return false;
          if (! entry.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.id is not an uuid');
          if (type (entry.t) !== 'integer' && ((Date.now () - entry.t) > 500 || (Date.now () - entry.t < 0))) return clog ('body.t is not a valid timestamp');
@@ -3930,8 +3930,10 @@ suites.channel = function () {
       ['post text to nonexisting channel', 'post', function (s) {return 'channel/foo/bar'}, {}, {text: 'destape'}, 404],
       ['post text to channel', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {text: 'destape'}, 200],
       ['get channel with two texts', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
-         if (type (rs.body) !== 'array' || rs.body.length !== 2) return clog ('body must be an array of length 2');
-         var entry = rs.body [1];
+         if (H.stop ('body.name', rs.body.name, 'foo2')) return false;
+
+         if (type (rs.body.entries) !== 'array' || rs.body.entries.length !== 2) return clog ('body must be an array of length 2');
+         var entry = rs.body.entries [1];
          if (H.stop ('body.from & body.text', {from: entry.from, text: entry.text}, {from: 'u::' + tk.users.user1.username, text: 'destape'})) return false;
          if (! entry.id.match (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)) return clog ('body.id is not an uuid');
          if (type (entry.t) !== 'integer' && ((Date.now () - entry.t) > 500 || (Date.now () - entry.t < 0))) return clog ('body.t is not a valid timestamp');
@@ -3963,10 +3965,10 @@ suites.channel = function () {
       suites.auth.in (tk.users.user2),
       ['post piv as another user', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'charly'}, {type: 'field', name: 'lastModified', value: tk.pivs.small.mtime}, {type: 'file', name: 'piv', path: tk.pivs.small.path}]}, 200],
       ['get channel after three uploads', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
-         if (type (rs.body) !== 'array' || rs.body.length !== 5) return clog ('body must be an array of length 2');
-         if (H.stop ('from field of pivs uploaded', dale.go (rs.body.slice (2), function (v) {return v.from}), ['charly', 'u::' + tk.users.user1.username, 'u::' + tk.users.user2.username])) return false;
-         if (! rs.body [2].piv || rs.body [2].piv !== rs.body [3].piv || rs.body [3].piv !== rs.body [4].piv) return clog ('piv id missing, or different piv ids found where they should have been the same');
-         s.pivInChannel = rs.body [2].piv;
+         if (type (rs.body.entries) !== 'array' || rs.body.entries.length !== 5) return clog ('body must be an array of length 2');
+         if (H.stop ('from field of pivs uploaded', dale.go (rs.body.entries.slice (2), function (v) {return v.from}), ['charly', 'u::' + tk.users.user1.username, 'u::' + tk.users.user2.username])) return false;
+         if (! rs.body.entries [2].piv || rs.body.entries [2].piv !== rs.body.entries [3].piv || rs.body.entries [3].piv !== rs.body.entries [4].piv) return clog ('piv id missing, or different piv ids found where they should have been the same');
+         s.pivInChannel = rs.body.entries [2].piv;
          return true;
       }],
       ['query pivs as user2, no pivs should be there', 'post', 'query', {}, {tags: [], sort: 'newest', from: 1, to: 10}, 200, function (s, rq, rs) {
