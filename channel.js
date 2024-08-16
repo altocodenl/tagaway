@@ -3252,12 +3252,17 @@ B.mrespond ([
    ['load', 'channel', function (x) {
       B.call (x, 'get', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'This channel does not exist or is no longer available');
-         clog (rs.body);
+
+         var scrollToBottom = window.innerHeight + window.scrollY + 100 >= document.body.offsetHeight;
+
          B.call (x, 'set', ['Data', 'channel'], {
             id: B.get ('State', 'channel', 'channelId'),
             name: rs.body.name,
             entries: rs.body.entries
          });
+
+         if (scrollToBottom) window.scrollTo ({top: document.body.scrollHeight, behavior: 'smooth'});
+
       });
    }],
 
@@ -3315,82 +3320,8 @@ B.mrespond ([
 var views = {};
 
 views.css = [
-   ['body', {
-      'background-color': '#222222'
-   }],
-   ['div.channel', {
-      'max-width': '90vw',
-      'background-color': '#dddddd',
-      margin: 'auto',
-      'text-align': 'right',
-   }, [
-      ['div.card', {
-         'margin-left': 'auto',
-      }],
-      ['img, video', {
-         'max-height': '80vh',
-         'max-width': '80vw',
-      }],
-      ['span', {
-         'max-width': '80vw'
-      }],
-   ]],
 ];
 
-views.main = function () {
-   return [
-      ['style', CSS.litc], // CSS from client.js
-      ['style', views.css], // CSS belonging only to channel.js
-      views.snackbar (),
-      views.channel (),
-      views.post (),
-   ];
-};
-
-views.channel = function () {
-   var wrap = function (from, contents, count) {
-      return [['div', {class: 'card relative db pa3 br3 bg-light-gray dark-gray ba b--silver tr'}, [
-         ['span', {class: 'dib pb4 fw8 f1'}, from],
-         contents,
-         ['span', {class: 'absolute left-0 bottom-0 pa3 f1 fw8', style: style ({'background-color': CSS.vars.tagColors [count % 6]})}, count],
-      ]]];
-   }
-
-   return B.view (['Data', 'channel'], function (channel) {
-      if (! channel) return ['div', {class: 'pa3 channel'}, 'Loading...'];
-
-      var queryParameter = '?channelId=' + B.get ('State', 'channel', 'userId') + ':' + B.get ('State', 'channel', 'channelId');
-
-      return ['div', {class: 'pa3 channel'}, dale.go (channel.entries, function (v, k) {
-
-         if (v.from.match (/^u::/)) v.from = v.from.replace ('u::', '');
-
-         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-light-gray fw5 f1 dark-gray db tr'}, v.text], k + 1);
-
-         if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db', controls: true, autoplay: false, src: B.get ('State', 'basePath') + 'piv/' + v.piv + queryParameter, poster: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, type: 'video/mp4', loop: true, alt: 'video'}], k + 1);
-
-         if (v.piv && ! v.vid) return wrap (v.from, ['img', {class: 'ml-auto db', src: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, alt: 'picture'}], k + 1);
-      })];
-   });
-}
-
-views.post = function () {
-   return B.view ([['State', 'text'], ['State', 'post']], function (text, post) {
-      if (! post) return ['button', {class: 'w-100 w-40-ns pa3 input-reset ba b--black-20 br2 bg-blue white pointer', onclick: B.ev ('set', ['State', 'post'], true)}, '+'];
-      return ['div', {class: 'fixed bottom-0 left-0 w-100 w-100-m w-80-l pa4 bg-light-gray shadow-1', style: style ({zIndex: 1000, left: '50%', transform: 'translateX(-50%)'})}, [
-         ['div', {class: 'flex flex-column flex-row-ns'}, [
-            ['input', {class: 'w-100 w-60-ns pa3 input-reset ba b--black-20 br2 mb3 mb0-ns mr0 mr3-ns', placeholder: 'Say something', value: text, onchange: B.ev ('set', ['State', 'text']), oninput: B.ev ('set', ['State', 'text'])}],
-            ['button', {class: 'w-100 w-40-ns pa3 input-reset ba b--black-20 br2 bg-blue white pointer', onclick: B.ev ('submit', 'text')}, 'Submit']
-         ]],
-         ['div', {class: 'mt3'}, [
-            ['input', {id: 'files-upload', class: 'pa3 input-reset ba b--black-20 br2 w-100', type: 'file', multiple: true, onchange: B.ev ('upload', 'pivs')}],
-            ['button', {class: 'w-100 w-40-ns pa3 input-reset ba b--black-20 br2 bg-blue white pointer', onclick: B.ev ('set', ['State', 'post'], false)}, 'Submit']
-         ]]
-      ]];
-   });
-}
-
-// TODO: move up
 views.snackbar = function () {
    return [
       ['style', [
@@ -3432,6 +3363,65 @@ views.snackbar = function () {
       })
    ];
 }
+
+views.main = function () {
+   return [
+      ['style', CSS.litc],  // CSS from client.js
+      ['style', views.css], // CSS belonging only to channel.js
+      views.snackbar (),
+      views.channel (),
+      views.post (),
+   ];
+};
+
+views.channel = function () {
+   var wrap = function (from, contents, count) {
+      return [['div', {class: 'ma3 pa4 br3 bg-near-white dark-gray ba b--light-silver relative'}, [
+         ['span', {class: 'dib pb4 fw6 f1'}, from], // Increased font size
+         contents,
+         ['span', {class: 'absolute left-0 bottom-0 pa3 f1 fw8', style: style ({'background-color': CSS.vars.tagColors [count % 6]})}, count],
+      ]]];
+   }
+
+   return B.view (['Data', 'channel'], function (channel) {
+      if (! channel) return ['div', {class: 'pa3 channel'}, 'Loading...'];
+
+      var queryParameter = '?channelId=' + B.get ('State', 'channel', 'userId') + ':' + B.get ('State', 'channel', 'channelId');
+
+      return ['div', {class: 'pa3 channel'}, dale.go (channel.entries, function (v, k) {
+
+         if (v.from.match (/^u::/)) v.from = v.from.replace ('u::', '');
+
+         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-near-white fw5 f1 dark-gray db tr pa3 br2'}, v.text], k + 1);
+
+         if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db br3', controls: true, autoplay: false, src: B.get ('State', 'basePath') + 'piv/' + v.piv + queryParameter, poster: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, type: 'video/mp4', loop: true, alt: 'video', style: style ({'max-width': 0.7})}], k + 1);
+
+         if (v.piv && ! v.vid) return wrap (v.from, ['img', {class: 'ml-auto db br3', src: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, alt: 'picture', style: style ({'max-width': 0.7})}], k + 1);
+      })];
+   });
+}
+
+views.post = function () {
+   return B.view ([['State', 'text'], ['State', 'post']], function (text, post) {
+      if (! post) return ['button', {
+         onclick: B.ev ('set', ['State', 'post'], true),
+         class: 'fixed bottom-0 pa4 mb4 ba b--black-20 bg-blue white pointer shadow-1',
+         style: style ({'font-size': '3rem', 'z-index': '1000', 'left': '30%', width: '40%'})
+      }, '+'];
+
+      return ['div', {class: 'fixed bottom-0 w-100 pa4 bg-near-white shadow-1', style: style ({'z-index': 1000})}, [
+         ['div', {class: 'flex flex-column flex-row-ns'}, [
+            ['input', {class: 'f1 w-100 w-60-ns pa3 ba b--black-20 br2 mb3 mb0-ns mr0 mr3-ns', placeholder: 'Say something', value: text, onchange: B.ev ('set', ['State', 'text']), oninput: B.ev ('set', ['State', 'text']), style: style ({'font-size': '3rem'})}],
+            ['button', {onclick: B.ev ('submit', 'text'), class: 'f1 w-100 w-40-ns pa3 ba b--black-20 br2 bg-blue white pointer'}, 'Submit']
+         ]],
+         ['div', {class: 'mt3'}, [
+            ['input', {id: 'files-upload', class: 'f1 pa3 ba b--black-20 br2 w-100', type: 'file', multiple: true, onchange: B.ev ('upload', 'pivs')}],
+            ['button', {onclick: B.ev ('rem', 'State', 'post'), class: 'f1 w-100 pa3 ba b--black-20 br2 bg-blue white pointer'}, 'Cancel']
+         ]]
+      ]];
+   });
+}
+
 
 // *** INITIALIZATION ***
 

@@ -1,5 +1,5 @@
 /*
-ac;pic - v0.1.0
+tagaway - v0.1.0
 
 Written by Altocode (https://altocode.nl) and released into the public domain.
 
@@ -143,7 +143,7 @@ aclog.initialize (function (log) {
       if (length > 5000) v = sv.slice (0, 2500) + ' [' + (length - 5000) + ' CHARACTERS OMITTED' + '] ' + sv.slice (-2500);
       return [k, v];
    });
-   log.application = 'ac;pic';
+   log.application = 'tagaway';
    log.environment = ENV;
    return log;
 });
@@ -1828,7 +1828,7 @@ var routes = [
             ['head', [
                ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
                ['meta', {charset: 'utf-8'}],
-               ['title', 'ac;pic'],
+               ['title', 'tagaway'],
                ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
                ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
                ['link', {rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/tachyons/4.11.1/tachyons.min.css'}],
@@ -1852,7 +1852,7 @@ var routes = [
          ['head', [
             ['meta', {name: 'viewport', content: 'width=device-width,initial-scale=1'}],
             ['meta', {charset: 'utf-8'}],
-            ['title', 'ac;pic admin'],
+            ['title', 'tagaway admin'],
             ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat'}],
             dale.go (['pure-min.css', 'ionicons.min.css'], function (v) {
                return ['link', {rel: 'stylesheet', href: 'assets/' + v}];
