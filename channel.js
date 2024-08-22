@@ -3266,14 +3266,12 @@ B.mrespond ([
       });
    }],
 
-   ['submit', 'text', function (x) {
-      var text = B.get ('State', 'text');
+   ['say', 'something', function (x) {
+      var text = prompt ('Say something!');
       if (! text || ! text.trim ()) return;
-      B.call (x, 'set', ['State', 'post'], false);
       B.call (x, 'post', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, {from: B.get ('State', 'name'), text: text}, function (x, error) {
          if (error) return B.call (x, 'snackbar', 'red', error.responseText);
          B.call (x, 'load', 'channel');
-         B.call (x, 'rem', 'State', 'text');
       });
    }],
 
@@ -3288,7 +3286,6 @@ B.mrespond ([
          files.push (file);
       });
       input.value = '';
-      B.call (x, 'set', ['State', 'post'], false);
       B.call (x, 'snackbar', 'green', 'Uploading...', true);
 
       var uploadFile = function () {
@@ -3312,6 +3309,17 @@ B.mrespond ([
          });
       }
       uploadFile ();
+   }],
+   ['download', '*', function (x) {
+      var id = x.path [0];
+      var a = document.createElement ('a');
+      // We add the `original` query parameter in case we're downloading a non-mp4 video. In all other cases, the parameter will be ignored.
+      var path = B.get ('State', 'basePath') + 'piv/' + id + '?original=1&channelId=' + B.get ('State', 'channel', 'userId') + ':' + B.get ('State', 'channel', 'channelId');
+      a.download = path;
+      a.href     = path;
+      document.body.appendChild (a);
+      a.click ();
+      document.body.removeChild (a);
    }],
 ]);
 
@@ -3394,34 +3402,75 @@ views.channel = function () {
 
          if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-near-white fw5 f1 dark-gray db tr pa3 br2'}, v.text], k + 1);
 
-         if (v.piv && v.vid) return wrap (v.from, ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db br3', controls: true, autoplay: false, src: B.get ('State', 'basePath') + 'piv/' + v.piv + queryParameter, poster: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, type: 'video/mp4', loop: true, alt: 'video', style: style ({'max-width': 0.7})}], k + 1);
+         var downloadButton = ['button', {
+            onclick: B.ev ('download', v.piv),
+            class: 'br-100 h4 w4 bg-green white pointer shadow-1 f1',
+            style: style ({
+               'z-index': '1000',
+               'position': 'absolute',
+               'left': 20,
+               'top': 100,
+               'font-size': 40,
+            })
+         }, ['i', {class: 'fas fa-download'}]];
 
-         if (v.piv && ! v.vid) return wrap (v.from, ['img', {class: 'ml-auto db br3', src: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, alt: 'picture', style: style ({'max-width': 0.7})}], k + 1);
+         if (v.piv && v.vid) return wrap (v.from, [
+            downloadButton,
+            ['video', {ontouchstart: 'event.stopPropagation ()', class: 'ml-auto db br3', controls: true, autoplay: false, src: B.get ('State', 'basePath') + 'piv/' + v.piv + queryParameter, poster: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter, type: 'video/mp4', loop: true, alt: 'video', style: style ({'max-width': 0.7})}],
+         ] , k + 1);
+
+         if (v.piv && ! v.vid) return wrap (v.from, [
+            downloadButton,
+            ['img', {
+               class: 'ml-auto db br3',
+               src: B.get ('State', 'basePath') + 'thumb/M/' + v.piv + queryParameter,
+               alt: 'picture',
+               style: style ({
+                  'max-width': 0.7,
+                  'min-width': 0.4,
+                  transform: {90: 'rotate(90deg)', '-90': 'rotate(270deg)', 180: 'rotate(180deg)'} [v.deg],
+               })
+            }]
+         ], k + 1);
       })];
    });
 }
 
 views.post = function () {
-   return B.view ([['State', 'text'], ['State', 'post']], function (text, post) {
-      if (! post) return ['button', {
-         onclick: B.ev ('set', ['State', 'post'], true),
-         class: 'fixed bottom-0 pa4 mb4 ba b--black-20 bg-blue white pointer shadow-1',
-         style: style ({'font-size': '3rem', 'z-index': '1000', 'left': '30%', width: '40%'})
-      }, '+'];
-
-      return ['div', {class: 'fixed bottom-0 w-100 pa4 bg-near-white shadow-1', style: style ({'z-index': 1000})}, [
-         ['div', {class: 'flex flex-column flex-row-ns'}, [
-            ['input', {class: 'f1 w-100 w-60-ns pa3 ba b--black-20 br2 mb3 mb0-ns mr0 mr3-ns', placeholder: 'Say something', value: text, onchange: B.ev ('set', ['State', 'text']), oninput: B.ev ('set', ['State', 'text']), style: style ({'font-size': '3rem'})}],
-            ['button', {onclick: B.ev ('submit', 'text'), class: 'f1 w-100 w-40-ns pa3 ba b--black-20 br2 bg-blue white pointer'}, 'Submit']
-         ]],
-         ['div', {class: 'mt3'}, [
-            ['input', {id: 'files-upload', class: 'f1 pa3 ba b--black-20 br2 w-100', type: 'file', multiple: true, onchange: B.ev ('upload', 'pivs')}],
-            ['button', {onclick: B.ev ('rem', 'State', 'post'), class: 'f1 w-100 pa3 ba b--black-20 br2 bg-blue white pointer'}, 'Cancel']
-         ]]
-      ]];
-   });
+   return ['div', {class: 'fixed bottom-0 w-100', style: style ({'z-index': 1000})}, [
+      ['input', {
+         id: 'files-upload',
+         type: 'file',
+         multiple: true,
+         class: 'dn', // 'dn' hides the input element
+         onchange: B.ev ('upload', 'pivs')
+      }],
+      ['button', {
+         onclick: 'c ("#files-upload").click ()',
+         class: 'br-100 h4 w4 bg-purple white pointer shadow-1 f1',
+         style: style ({
+            'z-index': '1000',
+            'position': 'absolute',
+            'left': '20%',
+            'bottom': '60px',
+            'font-size': 40,
+            transform: 'scale(' + (window.innerWidth < 1300 ? 2 : 1) + ')'
+         })
+      }, ['i', {class: 'fas fa-camera'}]],
+      ['button', {
+         onclick: B.ev ('say', 'something'),
+         class: 'br-100 h4 w4 bg-blue white pointer shadow-1 f1',
+         style: style ({
+            'z-index': '1000',
+            'position': 'absolute',
+            'left': '40%',
+            'bottom': '60px',
+            'font-size': 40,
+            transform: 'scale(' + (window.innerWidth < 1300 ? 2 : 1) + ')'
+         })
+      }, ['i', {class: 'fas fa-font'}]],
+   ]];
 }
-
 
 // *** INITIALIZATION ***
 

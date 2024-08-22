@@ -53,7 +53,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - GET /piv/ID?owner=USERID&channel=CHANNELID & GET /thumb/SIZE/ID?owner=USERID&channel=CHANNELID
          - Get the channel itself and search for the piv there. If it is, serve it through the existing endpoints.
          - Repurpose hasAccess to receive an optional channel argument.
+      - Download piv
 
+      - Rotated pivs should have height
+      - Rerun tests with deg
       - Add test for not sending channel without being logged in to /piv and /thumb
       - When deleting piv, delete it from any channels that contain it
       - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID

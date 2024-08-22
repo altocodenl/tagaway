@@ -1832,6 +1832,7 @@ var routes = [
                ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,600,600i&display=swap'}],
                ['link', {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Kadwa'}],
                ['link', {rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/tachyons/4.11.1/tachyons.min.css'}],
+               ['link', {rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'}],
             ]],
             ['body', [
                dale.go (['murmurhash.js', 'gotoB.min.js'], function (v) {
@@ -4506,7 +4507,25 @@ var routes = [
          }],
          function (s) {
             if (s.last [0] === null) return reply (rs, 404);
-            reply (rs, 200, {name: s.last [0], entries: dale.go (s.last [1], function (v) {return JSON.parse (v)})});
+            s.name = s.last [0];
+            s.entries = dale.go (s.last [1], function (v) {
+               return JSON.parse (v)
+            });
+
+            var multi = redis.multi ();
+            dale.go (s.entries, function (entry) {
+               if (entry.piv) multi.hget ('piv:' + entry.piv, 'deg');
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            dale.go (s.entries, function (entry) {
+               if (! entry.piv) return;
+               var deg = s.last.shift ();
+               if (deg) entry.deg = parseInt (deg);
+            });
+
+            reply (rs, 200, {name: s.name, entries: s.entries});
          }
       ]);
    }],
