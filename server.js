@@ -2381,6 +2381,7 @@ var routes = [
       }
 
       giz.auth (rq.data.cookie [CONFIG.cookieName], function (error, user) {
+         if (rq.semiPublic && (error || ! user)) return rs.next ();
          if (error) {
             if (error === 'User not found') return reply (rs, 403, {error: 'session'});
             else                            return reply (rs, 500, {error: error});

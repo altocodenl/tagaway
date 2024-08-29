@@ -3251,6 +3251,9 @@ B.mrespond ([
    }],
    ['load', 'channel', function (x) {
       B.call (x, 'get', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, '', function (x, error, rs) {
+
+         B.call (x, 'post', 'error', {error: 'channel not available', responseText: error.responseText});
+
          if (error) return B.call (x, 'snackbar', 'red', 'This channel does not exist or is no longer available');
 
          var scrollToBottom = window.innerHeight + window.scrollY + 100 >= document.body.offsetHeight;
