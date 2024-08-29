@@ -55,9 +55,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Repurpose hasAccess to receive an optional channel argument.
       - Download piv
 
-      - Rotated pivs should have height
-      - Rerun tests with deg
-      - Add test for not sending channel without being logged in to /piv and /thumb
+      - Fix rotated pivs height
       - When deleting piv, delete it from any channels that contain it
       - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID
          - implicit channel deletion when last element of the channel is deleted. this happens automatically through redis.
@@ -72,6 +70,11 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Send text
 
       - Share link to channel to whatsapp/email...
+   - Web app:
+      - List channels
+      - Copy link to channel
+      - Create channel
+      - Delete channel
    - Mobile client for owner:
       - Icon of channel next to tag
       - Open view like tag, but only showing existing channels

@@ -3991,6 +3991,23 @@ suites.channel = function () {
       }],
       ['get piv without being logged in', 'get', function (s) {return 'piv/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
       ['get thumb without being logged in', 'get', function (s) {return 'thumb/M/' + s.pivInChannel + '?channelId=' + tk.users.user1.username + ':' + s.pivInChannel}, {}, '', 200],
+      ['get piv without being logged in and without passing channelId', 'get', function (s) {return 'piv/' + s.pivInChannel}, {}, '', 404],
+      ['get thumb without being logged in and without passing channelId', 'get', function (s) {return 'thumb/M/' + s.pivInChannel}, {}, '', 404],
+      ['get piv without being logged in and passing wrong channelId', 'get', function (s) {return 'piv/' + s.pivInChannel + '?channelId=foo'}, {}, '', 404],
+      ['get thumb without being logged in and passing wrong channelId', 'get', function (s) {return 'thumb/M/' + s.pivInChannel + '?channelId=foo'}, {}, '', 404],
+      suites.auth.login (tk.users.user1),
+      ['post piv with rotation', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'charly'}, {type: 'field', name: 'lastModified', value: tk.pivs.rotate.mtime}, {type: 'file', name: 'piv', path: tk.pivs.rotate.path}]}, 200],
+      ['get channel with rotated piv', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
+         if (H.stop ('last piv.deg', teishi.last (rs.body.entries).deg, tk.pivs.rotate.deg)) return false;
+         return true;
+      }],
+      suites.auth.login (tk.users.user2),
+      ['post vid as another user', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'willy'}, {type: 'field', name: 'lastModified', value: tk.pivs.bach.mtime}, {type: 'file', name: 'piv', path: tk.pivs.bach.path}]}, 200],
+      ['get channel with vid', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
+         clog (rs.body.entries);
+         if (H.stop ('last piv.vid', teishi.last (rs.body.entries).vid, true)) return false;
+         return true;
+      }],
       suites.auth.login (tk.users.user1),
       H.invalidTestMaker ('delete channel', 'channel/delete', [
          [[], 'object'],
@@ -3999,6 +4016,14 @@ suites.channel = function () {
          [['id'], 'string'],
       ]),
       ['delete channel by name, get error', 'post', 'channel/delete', {}, function (s) {return {id: 'foo2'}}, 404],
+      suites.auth.login (tk.users.user2),
+      ['delete channel as logged non-owner', 'post', 'channel/delete', {}, function (s) {return {id: s.channelId}}, 404, function (s, rq, rs) {
+         // Log out
+         s.headers = {};
+         return true;
+      }],
+      ['delete channel being logged out', 'post', 'channel/delete', {}, function (s) {return {id: s.channelId}}, 403],
+      suites.auth.login (tk.users.user1),
       ['delete channel by id', 'post', 'channel/delete', {}, function (s) {return {id: s.channelId}}, 200],
       ['post text to deleted channel', 'post', function (s) {return 'channel/foo/bar'}, {}, {text: 'destape'}, 404],
       ['get channels after deletion', 'get', 'channels', {}, '', 200, function (s, rq, rs) {

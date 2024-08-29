@@ -2365,20 +2365,18 @@ var routes = [
 
 
       if (rq.data.cookie && ! rq.data.cookie [CONFIG.cookieName] && rq.headers.cookie.match (CONFIG.cookieName)) return reply (rs, 403, {error: 'tampered'});
+      // Semi public routes are routes that can be accessed as both logged in and non-logged in users, currently only used for channels.
+      rq.semiPublic = (function () {
+         if (rq.method === 'get'  && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return true;
+         if (rq.method === 'post' && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return true;
+         if (rq.method === 'post' && rq.url === '/piv')    return true;
+         if (rq.method === 'post' && rq.url === '/upload') return true;
+         if (rq.method === 'get'  && rq.url.match (/^\/piv\/.+/)) return true;
+         if (rq.method === 'get'  && rq.url.match (/^\/thumb\/.+/)) return true;
+      }) ();
+
       if (! rq.data.cookie || ! rq.data.cookie [CONFIG.cookieName]) {
-         // Semi public routes are routes that can be accessed as both logged in and non-logged in users, currently only used for channels.
-         var isSemiPublicRoute = (function () {
-            if (rq.method === 'get'  && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return true;
-            if (rq.method === 'post' && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return true;
-            if (rq.method === 'post' && rq.url === '/piv')    return true;
-            if (rq.method === 'post' && rq.url === '/upload') return true;
-            if (rq.method === 'get'  && rq.url.match (/^\/piv\/.+/)) return true;
-            if (rq.method === 'get'  && rq.url.match (/^\/thumb\/.+/)) return true;
-         }) ();
-
-         if (! isSemiPublicRoute) return reply (rs, 403, {error: 'nocookie'});
-         rq.semiPublic = true;
-
+         if (! rq.semiPublic) return reply (rs, 403, {error: 'nocookie'});
          return rs.next ();
       }
 
@@ -2419,20 +2417,17 @@ var routes = [
    ['post', '*', function (rq, rs) {
 
       if (rq.url.match (/^\/redmin/)) return rs.next ();
-      if (rq.semiPublic)              return rs.next ();
-      // For POST /channel/*/*, we ignore the validation even if the user is logged in
-      if (rq.method === 'post' && rq.url.match (/^\/channel\/[^\/]+\/[^\/]+$/)) return rs.next ();
 
       var ctype = rq.headers ['content-type'] || '';
       if (ctype.match (/^multipart\/form-data/i)) {
-         if (rq.data.fields.csrf !== rq.user.csrf) {
+         if (rq.data.fields.csrf !== (rq.user || {}).csrf && ! rq.semiPublic) {
             return reply (rs, 403, {error: 'csrf'});
          }
          delete rq.data.fields.csrf;
       }
       else {
          if (type (rq.body) !== 'object') return reply (rs, 400, {error: 'body should have as type object but instead is ' + JSON.stringify (rq.body) + ' with type ' + type (rq.body)});
-         if (rq.body.csrf !== rq.user.csrf)    return reply (rs, 403, {error: 'csrf'});
+         if (rq.body.csrf !== (rq.user || {}).csrf && ! rq.semiPublic) return reply (rs, 403, {error: 'csrf'});
          delete rq.body.csrf;
       }
       rs.next ();
@@ -2902,11 +2897,12 @@ var routes = [
 
       // If rq.data.fields.channel exists, it will be of the shape USERID:CHANNELID
       astop (rs, [
+         [a.set, 'spaceLimit', [Redis, 'hget', 'users:' + rq.data.fields.channel.split (':') [0], 'spaceLimit']],
          [Redis, 'hget', 'channels:' + rq.data.fields.channel.split (':') [0], rq.data.fields.channel.split (':') [1]],
          function (s) {
             if (s.last === null) return reply (rs, 404);
             // In POST /piv, we only use `username` from `rq.user`. So we substitute it with the username of the user that owns the channel. Some surgery.
-            rq.user = {username: rq.data.fields.channel.split (':') [0]};
+            rq.user = {username: rq.data.fields.channel.split (':') [0], spaceLimit: s.spaceLimit};
             // We update rq.data.fields.channel with the actual name of the channel.
             rq.data.fields.channel = s.last;
             rs.next ();
@@ -4514,15 +4510,16 @@ var routes = [
 
             var multi = redis.multi ();
             dale.go (s.entries, function (entry) {
-               if (entry.piv) multi.hget ('piv:' + entry.piv, 'deg');
+               if (entry.piv) multi.hmget ('piv:' + entry.piv, ['deg', 'vid']);
             });
             mexec (s, multi);
          },
          function (s) {
             dale.go (s.entries, function (entry) {
                if (! entry.piv) return;
-               var deg = s.last.shift ();
-               if (deg) entry.deg = parseInt (deg);
+               var pivMeta = s.last.shift ();
+               if (pivMeta [0]) entry.deg = parseInt (pivMeta [0]);
+               if (pivMeta [1]) entry.vid = pivMeta [1] === '1' ? true : pivMeta [1];
             });
 
             reply (rs, 200, {name: s.name, entries: s.entries});
@@ -4596,7 +4593,7 @@ var routes = [
                   ]}, code: '*', apres: function (S, RQ, RS, next) {
 
                      // NO MORE SPACE
-                     if (RS.code === 409) return reply (rs, 409, {error: 'No more space in your tagaway account.'});
+                     if (RS.code === 409) return reply (rs, 409, {error: RS.body});
 
                      if (RS.code !== 200) return reply (rs, RS.code, RS.body);
 
@@ -5300,16 +5297,18 @@ var routes = [
                multi.scard ('tag:' + username + ':a::');
                multi.scard ('tags:' + username);
                multi.get ('stat:f:byfs-' + username);
+               multi.hgetall ('channels:' + username);
             });
             mexec (s, multi);
          },
          function (s) {
             var users = dale.fil (s.last, undefined, function (user, k) {
-               if (k % 4 !== 0) return;
+               if (k % 5 !== 0) return;
                delete user.pass;
                user.pivs = s.last [k + 1];
                user.tags = s.last [k + 2];
                user.bytes = s.last [k + 3];
+               user.channels = s.last [k + 4].length;
                return user;
             });
             users.sort (function (A, B) {
