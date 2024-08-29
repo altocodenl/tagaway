@@ -4004,7 +4004,6 @@ suites.channel = function () {
       suites.auth.login (tk.users.user2),
       ['post vid as another user', 'post', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, {multipart: [{type: 'field', name: 'from', value: 'willy'}, {type: 'field', name: 'lastModified', value: tk.pivs.bach.mtime}, {type: 'file', name: 'piv', path: tk.pivs.bach.path}]}, 200],
       ['get channel with vid', 'get', function (s) {return 'channel/' + tk.users.user1.username + '/' + s.channelId}, {}, '', 200, function (s, rq, rs) {
-         clog (rs.body.entries);
          if (H.stop ('last piv.vid', teishi.last (rs.body.entries).vid, true)) return false;
          return true;
       }],
