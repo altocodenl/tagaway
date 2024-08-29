@@ -5308,7 +5308,7 @@ var routes = [
                user.pivs = s.last [k + 1];
                user.tags = s.last [k + 2];
                user.bytes = s.last [k + 3];
-               user.channels = s.last [k + 4].length;
+               user.channels = (s.last [k + 4] || []).length;
                return user;
             });
             users.sort (function (A, B) {
