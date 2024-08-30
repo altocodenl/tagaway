@@ -7346,8 +7346,8 @@ views.channel = function () {
             B.view ([['Data', 'channels'], ['Data', 'account', 'username']], function (channels, username) {
                if (! channels) return ['div'];
                return ['div', {class: 'page-section'}, [
-                  ['ul', {class: 'tag-share'}, dale.go (channels, function (channel) {
-                     return ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                  dale.go (channels, function (channel) {
+                     return ['ul', {class: 'tag-share'}, ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
                         ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
                            H.putSvg ('tagItem' + H.tagColor ('b'), 24),
                            ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
@@ -7365,8 +7365,8 @@ views.channel = function () {
                               ['a', {onclick: B.ev ('delete', 'channel', channel.id), class: 'button button--three'}, 'Delete channel']
                            ]]
                         ]]
-                     ]];
-                  })],
+                     ]]];
+                  }),
                   ['div', {class: 'tag-list-extended__item-info'}, [
                      ['div', {class: 'tag-list-extended__item-info-buttons'}, [
                         ['a', {onclick: B.ev ('create', 'channel'), class: 'button button--one'}, 'Create new channel'],
