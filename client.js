@@ -4682,7 +4682,7 @@ B.mrespond ([
    ['query', 'channels', function (x) {
       B.call (x, 'get', 'channels', {}, '', function (x, error, rs) {
          if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your channels.');
-         B.call (x, 'set', ['Data', 'channels'], rs.body.channels);
+         B.call (x, 'set', ['Data', 'channels'], rs.body);
       });
    }],
    ['create', 'channel', function (x) {
