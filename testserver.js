@@ -3861,7 +3861,7 @@ suites.channel = function () {
    return [
       suites.auth.in (tk.users.user1),
       ['get channels before creating any', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {channels: {}})) return false;
+         if (H.stop ('body', rs.body, [])) return false;
          return true;
       }],
       ['get channel that does not exist', 'get', 'channel/nosuch/channel', {}, '', 404],
@@ -3884,7 +3884,7 @@ suites.channel = function () {
          return true;
       }],
       ['get channels', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {channels: {[s.channelId]: 'foo', [s.channelId2]: 'bar'}})) return false;
+         if (H.stop ('body', rs.body, [{id: s.channelId, name: 'foo', entries: 0}, {id: s.channelId2, name: 'bar', entries: 0}])) return false;
          return true;
       }],
       H.invalidTestMaker ('rename channel', 'channel/rename', [
@@ -3899,7 +3899,7 @@ suites.channel = function () {
       ['rename channel successfully', 'post', 'channel/rename', {}, {from: 'foo', to: 'foo2'}, 200],
       ['rename empty channel successfully', 'post', 'channel/rename', {}, {from: 'bar', to: 'bar2'}, 200],
       ['get channels after renaming', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {channels: {[s.channelId]: 'foo2', [s.channelId2]: 'bar2'}})) return false;
+         if (H.stop ('body', rs.body, [{id: s.channelId, name: 'foo2', entries: 0}, {id: s.channelId2, name: 'bar2', entries: 0}])) return false;
          // Logout for next test, but remember headers so we can make requests as user1 without having to login again
          s.headersUser1 = s.headers;
          s.headers = {};
@@ -4026,7 +4026,7 @@ suites.channel = function () {
       ['delete channel by id', 'post', 'channel/delete', {}, function (s) {return {id: s.channelId}}, 200],
       ['post text to deleted channel', 'post', function (s) {return 'channel/foo/bar'}, {}, {text: 'destape'}, 404],
       ['get channels after deletion', 'get', 'channels', {}, '', 200, function (s, rq, rs) {
-         if (H.stop ('body', rs.body, {channels: {[s.channelId2]: 'bar2'}})) return false;
+         if (H.stop ('body', rs.body, [{id: s.channelId2, name: 'bar2', entries: 0}])) return false;
          return true;
       }],
       suites.auth.out (tk.users.user1),

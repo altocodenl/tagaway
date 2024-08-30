@@ -3641,7 +3641,7 @@ B.mrespond ([
    }],
    ['goto', 'page', {id: 'goto page'}, function (x, page, fromHash) {
       var pages = {
-         logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade'],
+         logged:   ['pics', 'upload', 'share', 'tags', 'import', 'account', 'upgrade', 'channel'],
          unlogged: ['login', 'signup', 'recover', 'reset']
       }
 
@@ -4673,6 +4673,34 @@ B.mrespond ([
       B.call (x, 'rem', 'State', 'changePassword');
    }],
 
+   // *** CHANNEL RESPONDERS ***
+
+   ['change', ['State', 'page'], function (x) {
+      if (B.get ('State', 'page') !== 'channel') return;
+      if (! B.get ('Data', 'channels')) B.call (x, 'query', 'channels');
+   }],
+   ['query', 'channels', function (x) {
+      B.call (x, 'get', 'channels', {}, '', function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error getting your channels.');
+         B.call (x, 'set', ['Data', 'channels'], rs.body.channels);
+      });
+   }],
+   ['create', 'channel', function (x) {
+      var name = prompt ('What is the name of the channel?');
+      if (! name) return;
+      B.call (x, 'post', 'channel', {}, {name: name}, function (x, error, rs) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error creating your channel.');
+         B.call (x, 'query', 'channels');
+      });
+   }],
+   ['delete', 'channel', function (x, id) {
+      var ok = confirm ('Are you sure? This operation cannot be reversed. The pivs in the channel will not be deleted from your account.');
+      if (! ok) return;
+      B.call (x, 'post', 'channel/delete', {}, {id: id}, function (x, error) {
+         if (error) return B.call (x, 'snackbar', 'red', 'There was an error deleting your channel.');
+         B.call (x, 'query', 'channels');
+      });
+   }],
    // *** DEBUG RESPONDERS ***
 
    ['debug', 'info', function (x, id) {
@@ -5072,15 +5100,15 @@ views.header = function (showUpload, showImport) {
       ]],
       //SHARE BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
-         ['a', {href: '', class: 'button button--green', onclick: B.ev (H.stopPropagation, ['snackbar', 'green', 'Coming soon, hang tight!'])}, [H.putSvg ('shareIcon'), 'Share']],
+         ['a', {href: '#/channel', class: 'button button--green'}, [H.putSvg ('shareIcon'), 'Channels']],
       ]],
       //IMPORT BUTTON
       ['div', {class: 'header__import-button', style: style ({opacity: showImport ? '1' : '0'})}, [
-         ['a', {href: '#/import', class: 'button button--one'}, [H.putSvg ('cloudImport'),'Import']],
+         ['a', {href: '#/import', class: 'button button--one'}, [H.putSvg ('cloudImport'), 'Import']],
       ]],
       // UPLOAD BUTTON
       ['div', {class: 'header__upload-button', style: style ({opacity: showUpload ? '1' : '0'})}, [
-         ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'),'Upload']],
+         ['a', {href: '#/upload', class: 'button button--one'}, [H.putSvg ('pcUpload'), 'Upload']],
       ]],
    ]];
 }
@@ -7299,6 +7327,55 @@ views.upgrade = function () {
             ]],
          ]],
       ]],
+   ]];
+}
+
+// *** CHANNEL VIEW ***
+
+views.channel = function () {
+   return ['div', [
+      views.header (true, true),
+      ['div', {class: 'main-centered'}, [
+         ['div', {class: 'main-centered__inner max-width--m'}, [
+            // PAGE HEADER
+            ['div', {class: 'page-header'}, [
+               ['h1', {class: 'page-header__title page-title'}, 'Channels'],
+               ['h2', {class: 'page-header__subtitle page-subtitle'}, 'Channels are a way to let anyone see and share pivs with anyone who has the link to it.']
+            ]],
+            //PAGE CONTENT
+            B.view ([['Data', 'channels'], ['Data', 'account', 'username']], function (channels, username) {
+               if (! channels) return ['div'];
+               return ['div', {class: 'page-section'}, [
+                  ['ul', {class: 'tag-share'}, dale.go (channels, function (channel) {
+                     return ['li', {class: 'tag-list-extended__item', style: style ({'flex-wrap': 'wrap'})}, [
+                        ['div', {class: 'tag tag--shared tag--hidden', style: style ({width: 1})}, [
+                           H.putSvg ('tagItem' + H.tagColor ('b'), 24),
+                           ['div', {class: 'tag__title', style: style ({display: 'contents'})}, [
+                              channel.name,
+                              ['span', {class: 'tag__title-amount'}, [
+                                 ' (',
+                                 ['em', {class: 'tag__title-number'}, channel.entries],
+                                 ' entries)'
+                              ]],
+                           ]],
+                        ]],
+                        ['div', {class: 'tag-list-extended__item-info'}, [
+                           ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                              ['a', {href: 'c/' + username + '/' + channel.id, target: '_blank', class: 'button button--one'}, 'Open channel'],
+                              ['a', {onclick: B.ev ('delete', 'channel', channel.id), class: 'button button--three'}, 'Delete channel']
+                           ]]
+                        ]]
+                     ]];
+                  })],
+                  ['div', {class: 'tag-list-extended__item-info'}, [
+                     ['div', {class: 'tag-list-extended__item-info-buttons'}, [
+                        ['a', {onclick: B.ev ('create', 'channel'), class: 'button button--one'}, 'Create new channel'],
+                     ]]
+                  ]],
+               ]];
+            }),
+         ]]
+      ]]
    ]];
 }
 

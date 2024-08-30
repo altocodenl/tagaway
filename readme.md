@@ -55,12 +55,12 @@ If you find a security vulnerability, please disclose it to us as soon as possib
          - Repurpose hasAccess to receive an optional channel argument.
       - Download piv
 
-      - Fix rotated pivs height
       - When deleting piv, delete it from any channels that contain it
+      - When renaming channel, rename c:: tag
+
       - Delete text or piv from channel by id: DELETE /channel/ID/ID/messageID
          - implicit channel deletion when last element of the channel is deleted. this happens automatically through redis.
          - if last instance of a certain piv in the channel, remove the c:: tag from it
-      - When renaming channel, rename c:: tag
    - Web client:
       - Enter your name, remember it in localstorage
       - Make call to GET /channel/id
@@ -69,6 +69,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Send piv
       - Send text
 
+      - Fix rotated pivs height
       - Share link to channel to whatsapp/email...
    - Web app:
       - List channels
@@ -1372,6 +1373,12 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
    4. `submit changePassword`: invokes `post auth/changePassword`, invokes `snackbar`; if successful, invokes `clear changePassword`.
    5. `clear changePassword`: clears inputs of the change password fields and removes `State.changePassword`.
 
+9. Channel
+   1. `change State.page`: if `State.page` is `channel`, calls `query channels`.
+   2. `query channels`: calls `get channels`; if successful, sets `Data.channels`.
+   3. `create channel`: calls `post channel`; if successful, calls `query channels`.
+   3. `delete channel ID`: calls `post channel/delete`; if successful, calls `query channels`.
+
 ### Store
 
 - `lastLogout`: date of the last logout done in the current tab.
@@ -1436,6 +1443,7 @@ Command to copy a key `x` to a destination `y` (it will delete the key at `y`), 
 
 - `Data`:
    - `account`: `{username: STRING, email: STRING, type: STRING, created: INTEGER, usage: {limit: INTEGER, used: INTEGER}, suggestGeotagging: true|UNDEFINED, suggestSelection: true|UNDEFINED, onboarding: true|UNDEFINED}`.
+   - `channels`: `[{id: STRING, name: STRING, entries: INT}, ...]`
    - `csrf`: if there's a valid session, contains a string which is a CSRF token. If there's no session (or the session expired), set to `false`. Useful as both a CSRF token and to tell the client whether there's a valid session or not.
    - `hometags`: an array of tags that are displayed in the home screen of the user.
    - `imports`: an object where each key is a provider. If defined, each key has as value an array with one or more imports. Imports that are in the process of being uploaded or have already been uploaded have the same shape as those in `Data.uploads`. However, there may be up to one import per provider representing an import in a listing or ready state. Also there might be just an object with the keys `redirect` and `provider`, if the OAuth flow has not been done yet.

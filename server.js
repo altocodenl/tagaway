@@ -4463,7 +4463,20 @@ var routes = [
       astop (rs, [
          [Redis, 'hgetall', 'channels:' + rq.user.username],
          function (s) {
-            reply (rs, 200, {channels: s.last || {}});
+            if (! s.last) return reply (rs, 200, []);
+            s.channels = [];
+            var multi = redis.multi ();
+            dale.go (s.last, function (name, id) {
+               s.channels.push ({id: id, name: name});
+               multi.llen ('channel:' + rq.user.username + ':' + id);
+            });
+            mexec (s, multi);
+         },
+         function (s) {
+            dale.go (s.last, function (entries, k) {
+               s.channels [k].entries = entries;
+            });
+            reply (rs, 200, s.channels);
          }
       ]);
    }],
