@@ -73,9 +73,10 @@ If you find a security vulnerability, please disclose it to us as soon as possib
       - Share link to channel to whatsapp/email...
    - Web app:
       - List channels
-      - Copy link to channel
       - Create channel
       - Delete channel
+
+      - Copy link to channel
    - Mobile client for owner:
       - Icon of channel next to tag
       - Open view like tag, but only showing existing channels
@@ -99,7 +100,7 @@ If you find a security vulnerability, please disclose it to us as soon as possib
    - Otherwise, it is successful and returns a 200 with body `{id: STRING}`.
 
 - `GET /channels`
-   - Returns an object of the shape `{CHANNEL_NAME: ID, CHANNEL_NAME2: ID2, ...}`.
+   - Returns an array where each element is of the shape `{id: STRING, name: STRING, entries: INTEGER}`.
 
 - `GET /channel/USERID/CHANNELID`
    - User might or might not be logged in to use this route.
