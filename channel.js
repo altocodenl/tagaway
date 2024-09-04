@@ -3441,39 +3441,42 @@ views.channel = function () {
 }
 
 views.post = function () {
-   return ['div', {class: 'fixed bottom-0 w-100', style: style ({'z-index': 1000})}, [
-      ['input', {
-         id: 'files-upload',
-         type: 'file',
-         multiple: true,
-         class: 'dn', // 'dn' hides the input element
-         onchange: B.ev ('upload', 'pivs')
-      }],
-      ['button', {
-         onclick: 'c ("#files-upload").click ()',
-         class: 'br-100 h4 w4 bg-purple white pointer shadow-1 f1',
-         style: style ({
-            'z-index': '1000',
-            'position': 'absolute',
-            'left': '20%',
-            'bottom': '60px',
-            'font-size': 40,
-            transform: 'scale(' + (window.innerWidth < 1300 ? 2 : 1) + ')'
-         })
-      }, ['i', {class: 'fas fa-camera'}]],
-      ['button', {
-         onclick: B.ev ('say', 'something'),
-         class: 'br-100 h4 w4 bg-blue white pointer shadow-1 f1',
-         style: style ({
-            'z-index': '1000',
-            'position': 'absolute',
-            'left': '40%',
-            'bottom': '60px',
-            'font-size': 40,
-            transform: 'scale(' + (window.innerWidth < 1300 ? 2 : 1) + ')'
-         })
-      }, ['i', {class: 'fas fa-font'}]],
-   ]];
+   return [
+      ['div', {class: 'fixed bottom-0 w-100', style: style ({'z-index': 1000})}, [
+         ['input', {
+            id: 'files-upload',
+            type: 'file',
+            multiple: true,
+            class: 'dn', // 'dn' hides the input element
+            onchange: B.ev ('upload', 'pivs')
+         }],
+         ['button', {
+            onclick: 'c ("#files-upload").click ()',
+            class: 'br-100 h4 w4 bg-purple white pointer shadow-1 f1',
+            style: style ({
+               'z-index': '1000',
+               'position': 'absolute',
+               'left': '20%',
+               'bottom': '60px',
+               'font-size': 40,
+               transform: 'scale(' + (window.innerWidth < 1300 ? 2 : 1) + ')'
+            })
+         }, ['i', {class: 'fas fa-camera'}]],
+         ['button', {
+            onclick: B.ev ('say', 'something'),
+            class: 'br-100 h4 w4 bg-blue white pointer shadow-1 f1',
+            style: style ({
+               'z-index': '1000',
+               'position': 'absolute',
+               'left': '40%',
+               'bottom': '60px',
+               'font-size': 40,
+               transform: 'scale(' + (window.innerWidth < 1300 ? 2 : 1) + ')'
+            })
+         }, ['i', {class: 'fas fa-font'}]],
+      ]],
+      ['div', {class: 'w-100', style: style ({height: 150})}],
+   ];
 }
 
 // *** INITIALIZATION ***
