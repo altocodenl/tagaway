@@ -3253,7 +3253,7 @@ B.mrespond ([
       B.call (x, 'get', 'channel/' + B.get ('State', 'channel', 'userId') + '/' + B.get ('State', 'channel', 'channelId'), {}, '', function (x, error, rs) {
 
          if (error) {
-            B.call (x, 'post', 'error', {}, {error: 'channel not available', responseText: error.responseText});
+            B.call (x, 'post', 'error', {}, {error: 'channel not available', responseText: error});
             return B.call (x, 'snackbar', 'red', 'This channel does not exist or is no longer available');
          }
 
@@ -3404,7 +3404,7 @@ views.channel = function () {
 
          if (v.from.match (/^u::/)) v.from = v.from.replace ('u::', '');
 
-         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-near-white fw5 f1 dark-gray db tr pa3 br2'}, v.text], k + 1);
+         if (v.text) return wrap (v.from, ['span', {class: 'ml-auto bg-near-white fw5 f1 dark-gray db tr pa3 br2', style: style ({'line-height': '50px'})}, v.text], k + 1);
 
          var downloadButton = ['button', {
             onclick: B.ev ('download', v.piv),
