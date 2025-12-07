@@ -141,6 +141,7 @@ channel:USER:ID (list)
    - **server: replicate & fix issue with hometags not being deleted when many pivs are deleted at the same time: change way in which hometags are removed in deletePiv and the outer calling function**
    - **server: investigate bug with piv with location but no geotags: for all users with geo enabled, see which pivs with geolocation don't have geotags and why**
    - **server: in GET /piv/ID, if conversion is in progress or errored but the original is requested, serve the original**
+   - **server: bug on `[H.getUploads, rq.user.username, {id: b.id}],` (rq.user not defined), probably when a user with an expired cookie creates a new upload, see log at 2025-01-08T15:45:26.668Z**
    - server: 404 errors on get piv or tag piv that is currently being uploaded (the id comes from an alreadyUploaded: true); 1) add temporary piv entry with {pendingUpload: true} (then delete it when you're done); 2) modify hasAccess function to wait for all piv entries that have a pending status and bail after 5 seconds
    - client: fix phantom selection when scrolling with a large selection
    - client: refresh always in upload, import and pics // check that `_blank` oauth flow bug is fixed in old tab
