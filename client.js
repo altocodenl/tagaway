@@ -5966,7 +5966,7 @@ views.grid = function () {
 // *** OPEN VIEW ***
 
 views.open = function () {
-   return B.view ([['State', 'open'], ['Data', 'pivs'], ['State', 'fullScreen']], function (open, pivs, fullScreen) {
+   return B.view ([['State', 'open'], ['Data', 'pivs'], ['State', 'noButtons']], function (open, pivs, noButtons) {
       if (open === undefined) return ['div'];
       var piv = pivs [open.k], next = pivs [open.k + 1];
 
@@ -5978,51 +5978,57 @@ views.open = function () {
          return ['transform-origin', 'center center'];
       });
 
-      if (fullScreen) {
-      }
-
       return ['div', {class: 'fullscreen'}, [
-         ['div', {class: 'fullscreen__close', onclick: B.ev ('exit', 'fullscreen')}, H.putSvg ('fullScreenClose')],
-         ['div', {class: 'fullscreen__nav fullscreen__nav--left', onclick: B.ev ('open', 'prev')}, H.putSvg ('left')],
-         ['div', {class: 'fullscreen__nav fullscreen__nav--right', onclick: B.ev ('open', 'next')}, H.putSvg ('right')],
-         ['div', {class: 'fullscreen__date'}, [
-            ['span', {class: 'fullscreen__date-text'}, H.formatDate (piv.date)],
-         ]],
-         ['style', media ('screen and (max-width: 767px)', [
-            ['.fullscreen__image-container', {padding: 0}],
-         ])],
-         ['div', {class: 'fullscreen__image-container', style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation})}, (function () {
+         H.if (! noButtons, [
+            ['div', {class: 'fullscreen__close', onclick: B.ev ('exit', 'fullscreen')}, H.putSvg ('fullScreenClose')],
+            ['div', {class: 'fullscreen__nav fullscreen__nav--left', onclick: B.ev ('open', 'prev')}, H.putSvg ('left')],
+            ['div', {class: 'fullscreen__nav fullscreen__nav--right', onclick: B.ev ('open', 'next')}, H.putSvg ('right')],
+            ['div', {class: 'fullscreen__date'}, [
+               ['span', {class: 'fullscreen__date-text'}, H.formatDate (piv.date)],
+            ]],
+         ]),
+         H.if (! noButtons,
+            ['style', media ('screen and (max-width: 767px)', ['.fullscreen__image-container', {padding: 0}])],
+            ['style', ['.fullscreen__image-container', {padding: 0}]]
+         ),
+         ['div', {
+            class: 'fullscreen__image-container',
+            style: style ({width: ! askance ? 1 : '100vh', height: ! askance ? 1 : '100vw', rotation: rotation}),
+            onclick: B.ev ('set', ['State', 'noButtons'], ! noButtons),
+         }, (function () {
             if (! piv.vid) return ['img', {class: 'fullscreen__image', src: 'thumb/M/' + piv.id, alt: 'picture'}];
             if (piv.vid === 'pending') return ['p', 'Video is being converted, please wait...'];
             if (piv.vid === 'error')   return ['p', 'Ouch, there was an error converting this video.'];
             return ['video', {ontouchstart: 'event.stopPropagation ()', class: 'fullscreen__image', controls: true, autoplay: true, src: 'piv/' + piv.id, type: 'video/mp4', poster: 'thumb/M/' + piv.id, loop: true, alt: 'video'}];
          }) ()],
-         ['div', {class: 'fullscreen__actions'}, [
-               // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
-               //    ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
-               //    ['div', {class: 'fullscreen__action-text'}, 'Share'],
-               // ]],
-            H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
-               ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
-               ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
-            ]]),
-            ! piv.loc ? [] : ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('open', 'location', piv)}, [
-               ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
-               ['div', {class: 'fullscreen__action-text'}, 'Location'],
+         H.if (! noButtons, [
+            ['div', {class: 'fullscreen__actions'}, [
+                  // ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15})}, [
+                  //    ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('shareIcon')],
+                  //    ['div', {class: 'fullscreen__action-text'}, 'Share'],
+                  // ]],
+               H.if (! piv.vid, ['div', {style: style ({'margin-right': 15}), class: 'fullscreen__action', onclick: B.ev ('rotate', 'pivs', 90, piv)}, [
+                  ['div', {class: 'fullscreen__action-icon-container fullscreen__action-icon-container-rotate'}, H.putSvg ('fullScreenRotate')],
+                  ['div', {class: 'fullscreen__action-text'}, 'Rotate'],
+               ]]),
+               ! piv.loc ? [] : ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('open', 'location', piv)}, [
+                  ['div', {class: 'fullscreen__action-icon-container geotag--open-pictures'}, H.putSvg ('geotagOpen')],
+                  ['div', {class: 'fullscreen__action-text'}, 'Location'],
+               ]],
+               B.prod ? [] : ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info'],
+               B.view (['State', 'slideshow'], function (slideshow) {
+                  return ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('set', ['State', 'slideshow'], ! slideshow)}, [
+                     ['div', {class: 'fullscreen__action-icon-container'}, H.putSvg (slideshow ? 'pause' : 'play')],
+                     ['div', {class: 'fullscreen__action-text'}, 'Slideshow'],
+                  ]];
+               }),
             ]],
-            B.prod ? [] : ['a', {href: '#', onclick: B.ev ('debug', 'info', piv.id)}, 'Info'],
-            B.view (['State', 'slideshow'], function (slideshow) {
-               return ['div', {class: 'fullscreen__action', style: style ({'margin-right': 15}), onclick: B.ev ('set', ['State', 'slideshow'], ! slideshow)}, [
-                  ['div', {class: 'fullscreen__action-icon-container'}, H.putSvg (slideshow ? 'pause' : 'play')],
-                  ['div', {class: 'fullscreen__action-text'}, 'Slideshow'],
-               ]];
-            }),
-         ]],
-         ['div', {class: 'fullscreen__count'}, [
-            ['span', {class: 'fullscreen__count-current'}, open.k + 1],
-            '/',
-            ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pivTotal')],
-         ]],
+            ['div', {class: 'fullscreen__count'}, [
+               ['span', {class: 'fullscreen__count-current'}, open.k + 1],
+               '/',
+               ['span', {class: 'fullscreen__count-total'}, B.get ('Data', 'pivTotal')],
+            ]],
+         ]),
          next ? ['img', {src: 'thumb/M/' + next.id, style: style ({display: 'none'})}] : [],
       ]];
    });
