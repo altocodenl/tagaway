@@ -5966,7 +5966,7 @@ views.grid = function () {
 // *** OPEN VIEW ***
 
 views.open = function () {
-   return B.view ([['State', 'open'], ['Data', 'pivs']], function (open, pivs) {
+   return B.view ([['State', 'open'], ['Data', 'pivs'], ['State', 'fullScreen']], function (open, pivs, fullScreen) {
       if (open === undefined) return ['div'];
       var piv = pivs [open.k], next = pivs [open.k + 1];
 
@@ -5977,6 +5977,10 @@ views.open = function () {
       rotation = ! piv.deg ? undefined : dale.obj (['', '-ms-', '-webkit-', '-o-', '-moz-'], rotation, function (v) {
          return ['transform-origin', 'center center'];
       });
+
+      if (fullScreen) {
+      }
+
       return ['div', {class: 'fullscreen'}, [
          ['div', {class: 'fullscreen__close', onclick: B.ev ('exit', 'fullscreen')}, H.putSvg ('fullScreenClose')],
          ['div', {class: 'fullscreen__nav fullscreen__nav--left', onclick: B.ev ('open', 'prev')}, H.putSvg ('left')],
@@ -6381,7 +6385,7 @@ views.upload = function () {
                                                    H.putSvg ('searchForm'),
                                                    ['div', {class: 'search-form__dropdown'}, [
                                                       // TAG LIST DROPDOWN
-                                                      ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags, function (tag) {
+                                                      ['ul', {class: 'tag-list-dropdown'}, dale.go (showTags.slice (0, 15), function (tag) {
                                                          return ['li', {class: 'tag-list-dropdown__item', style: style ({cursor: 'pointer'}), onclick: B.ev ('upload', 'tag', tag === filter + ' (new tag)' ? filter : tag)}, [
                                                             ['div', {class: 'tag tag-list__item--' + H.tagColor (tag)}, [
                                                                H.putSvg ('tagItem' + H.tagColor (tag)),
