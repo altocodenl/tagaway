@@ -2820,7 +2820,7 @@ CSS.litc = [
    }],
    ['.fullscreen__image', {
       'object-fit': 'contain',
-      'max-width, max-height': 1,
+      'width, height': 1,
    }],
    // fullscreen - Elements
    ['.fullscreen__close, .fullscreen__date, .fullscreen__nav, .fullscreen__actions, .fullscreen__count', {
